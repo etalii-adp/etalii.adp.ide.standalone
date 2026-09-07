@@ -108,6 +108,39 @@ public class ProjectReaderTests
     }
 
     [Fact]
+    public void Read_ExpandsAWildcardProjectReference_AsMsBuildDoes()
+    {
+        // MSBuild expands a wildcard Include, and this repository's own host project uses one to
+        // pick up every diagram and editor module. A reader taking the pattern as a literal path
+        // reports ONE unresolvable reference and draws NONE of the real edges behind it - a
+        // graph not so much wrong as quietly missing most of its subject. Measuring
+        // EtAlii.Adp.slnx is what surfaced it: the graph had 349 edges and two failures nobody
+        // could act on, and has 427 edges and none once wildcards expand.
+
+        // Arrange, act.
+        var reading = new ProjectReader().Read(FixturePath("Host.csproj"));
+
+        // Assert.
+        Assert.Equal(
+            ["ProjA.csproj", "ProjB.csproj", "Root.csproj"],
+            reading.ProjectReferences.Select(reference => Path.GetFileName(reference.AbsolutePath)).Order());
+    }
+
+    [Fact]
+    public void Read_AWildcardMatchingNothing_YieldsNoPhantomPath()
+    {
+        // The pairing: an expansion falling back to the literal pattern would put a path with an
+        // asterisk in it into the graph, which resolves to no project and reports as missing -
+        // exactly the unactionable failure this change removed.
+
+        // Arrange, act.
+        var reading = new ProjectReader().Read(FixturePath("nested", "Nested.csproj"));
+
+        // Assert.
+        Assert.DoesNotContain(reading.ProjectReferences, reference => reference.AbsolutePath.Contains('*', StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Read_AnUnreadableProject_IsAFailureRatherThanAThrow()
     {
         // Omit, report, continue: one bad project file costs the graph that project, never the

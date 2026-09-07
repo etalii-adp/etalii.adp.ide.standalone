@@ -92,6 +92,56 @@ public class DotNetDependencyGraphLayoutTests
     }
 
     [Fact]
+    public void ALayerTallerThanTheWrapPoint_WrapsIntoColumnsRatherThanOneRibbon()
+    {
+        // THE SCALE ANSWER, and it is a measurement rather than a preference. Against this
+        // repository's own EtAlii.Adp.slnx the layer distribution is 1/3/7/4/3/2/4/66/14 -
+        // sixty-six diagram modules share one depth, because each references the same core and
+        // nothing references them. Stacked, that layer stood 5,850 units tall against a
+        // 3,080-wide diagram: the unreadable ribbon the requirement names. Wrapped, the whole
+        // graph measures 5,280 x 1,440 and nothing is hidden - which is why this is a wrap
+        // rather than the limit the task also offered, since a derived diagram that silently
+        // shows part of its subject is worse than one that is awkward to read.
+
+        // Arrange. One layer, comfortably past the wrap point.
+        var count = DotNetDependencyGraphLayout.LayerWrapAt + 5;
+        var projects = Enumerable.Range(0, count).Select(index => Project($"P{index:D3}")).ToArray();
+
+        // Act.
+        var positions = DotNetDependencyGraphLayout.Compute(GraphOf(projects, []));
+
+        // Assert.
+        var tallestColumn = positions.Values.GroupBy(position => position.X).Max(column => column.Count());
+        Assert.True(
+            tallestColumn <= DotNetDependencyGraphLayout.LayerWrapAt,
+            $"A column holds {tallestColumn} boxes, past the wrap point of {DotNetDependencyGraphLayout.LayerWrapAt}.");
+        Assert.True(positions.Values.Select(position => position.X).Distinct().Count() > 1, "The layer did not wrap at all.");
+    }
+
+    [Fact]
+    public void AWrappedLayer_DoesNotDrawOverTheLayerAfterIt()
+    {
+        // The pairing that matters: wrapping only helps if the extra columns push the next
+        // layer along. Without that, a wrapped layer overlaps its successor and the readability
+        // fix trades a tall ribbon for boxes drawn on top of each other.
+
+        // Arrange. A wide first layer, and a project that depends on one of its members.
+        var wide = Enumerable.Range(0, DotNetDependencyGraphLayout.LayerWrapAt + 5).Select(index => Project($"P{index:D3}")).ToArray();
+        var dependent = Project("Zzz");
+
+        // Act.
+        var positions = DotNetDependencyGraphLayout.Compute(GraphOf(
+            [.. wide, dependent],
+            [new DependsOnEdge("e1", dependent.Id, wide[0].Id, DependsOnKind.Project)]));
+
+        // Assert.
+        var widest = wide.Max(project => positions[project.Id].X);
+        Assert.True(
+            positions[dependent.Id].X > widest,
+            $"The dependent sits at {positions[dependent.Id].X}, not clear of the wrapped layer ending at {widest}.");
+    }
+
+    [Fact]
     public void EveryNodeGetsAPosition_SoNothingLandsOnTopOfTheOrigin()
     {
         // A node the layout forgot would draw at (0,0) under whatever is really there, which

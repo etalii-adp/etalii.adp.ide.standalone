@@ -84,18 +84,92 @@ public sealed class ProjectReader
     /// Project-to-project references, each resolved to a full path so the graph can match them
     /// against the solution's own projects rather than comparing two spellings of one path.
     /// </summary>
-    private static IReadOnlyList<ProjectReferenceReading> ProjectReferencesOf(XDocument document, string directory) =>
-        document
-            .Descendants()
-            .Where(element => element.Name.LocalName == "ProjectReference")
-            .Select(element => (string?)element.Attribute("Include"))
-            .Where(include => !string.IsNullOrWhiteSpace(include))
-            .Select(include =>
+    private static IReadOnlyList<ProjectReferenceReading> ProjectReferencesOf(XDocument document, string directory)
+    {
+        var references = new List<ProjectReferenceReading>();
+
+        foreach (var element in document.Descendants().Where(candidate => candidate.Name.LocalName == "ProjectReference"))
+        {
+            var include = (string?)element.Attribute("Include");
+            if (string.IsNullOrWhiteSpace(include))
             {
-                var normalized = include!.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
-                return new ProjectReferenceReading(include!, Path.GetFullPath(Path.Combine(directory, normalized)));
-            })
-            .ToArray();
+                continue;
+            }
+
+            var normalized = include.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+
+            if (normalized.Contains('*', StringComparison.Ordinal))
+            {
+                // MSBuild expands a wildcard Include, and this repository's own host project
+                // uses one to pick up every diagram and editor module. A reader taking the
+                // pattern as a literal path reports one unresolvable reference and draws none
+                // of the sixty-plus real edges behind it - a graph that is not wrong so much as
+                // quietly missing most of its subject. Found by measuring EtAlii.Adp.slnx.
+                foreach (var match in ExpandWildcard(directory, normalized))
+                {
+                    references.Add(new ProjectReferenceReading(include, match));
+                }
+
+                continue;
+            }
+
+            references.Add(new ProjectReferenceReading(include, Path.GetFullPath(Path.Combine(directory, normalized))));
+        }
+
+        return references;
+    }
+
+    /// <summary>
+    /// Every file a wildcard <c>Include</c> names, expanded segment by segment so a <c>*</c> at
+    /// any depth works - <c>..\..\diagrams\*\backend\*\*.csproj</c> is three of them.
+    /// </summary>
+    /// <remarks>
+    /// An <c>Exclude</c> is deliberately NOT applied: this reader reads what a project file
+    /// declares rather than evaluating it, and a half-evaluated pattern would be a worse answer
+    /// than an honest over-inclusion. The module readme says so, beside the rest of what is not
+    /// resolved.
+    /// </remarks>
+    private static IReadOnlyList<string> ExpandWildcard(string directory, string pattern)
+    {
+        var segments = pattern.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        var roots = new List<string> { directory };
+
+        for (var index = 0; index < segments.Length; index++)
+        {
+            var segment = segments[index];
+            var last = index == segments.Length - 1;
+            var next = new List<string>();
+
+            foreach (var root in roots)
+            {
+                try
+                {
+                    if (!segment.Contains('*', StringComparison.Ordinal))
+                    {
+                        // A literal segment: ".." and a folder name alike.
+                        next.Add(Path.GetFullPath(Path.Combine(root, segment)));
+                        continue;
+                    }
+
+                    next.AddRange(last
+                        ? Directory.EnumerateFiles(root, segment)
+                        : Directory.EnumerateDirectories(root, segment));
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    // A folder that has gone or cannot be listed costs its own branch of the
+                    // expansion, never the whole read.
+                    _logger.Debug(error, "Could not expand {Pattern} under {Root}", pattern, root);
+                }
+            }
+
+            roots = next;
+        }
+
+        // Only files that exist: the last segment's enumeration already guarantees that where it
+        // was a wildcard, and a fully literal pattern never reaches here.
+        return roots.Where(File.Exists).Select(Path.GetFullPath).ToArray();
+    }
 
     /// <summary>
     /// Package references, with a version where one can be found: written on the reference, or

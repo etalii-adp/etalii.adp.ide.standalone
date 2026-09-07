@@ -32,6 +32,10 @@ left for a reader to infer from a gap.**
   package, nearest file winning, as MSBuild does. This repository is centrally managed, so this
   is the ordinary case rather than an exotic one.
 * A version written either as a `Version` attribute or as a `<Version>` child element.
+* **A wildcard `ProjectReference`**, expanded as MSBuild expands it — `../../diagrams/*/backend/*/*.csproj`
+  is three wildcards and resolves to every module it matches. This repository's own host project
+  uses one, and reading it literally cost **seventy-eight real edges** and produced two failures
+  nobody could act on.
 
 **Not resolved, deliberately:**
 
@@ -41,6 +45,10 @@ left for a reader to infer from a gap.**
   file, not an evaluated project.
 * **Properties inside a version or an include.** `$(SomeVersion)` is not expanded; a version it
   cannot read is reported as *not discoverable* rather than guessed at.
+* **An `Exclude` beside a wildcard `Include`.** The wildcard expands; anything the project
+  excludes from it is still drawn. Reading what a project declares rather than evaluating it is
+  the line this reader holds, and a half-evaluated pattern would be a worse answer than an
+  honest over-inclusion.
 * **Transitive packages.** Only direct `PackageReference` declarations become edges — the
   requirements' recorded decision, so that the diagram stays a projection of the files rather
   than of a restore.

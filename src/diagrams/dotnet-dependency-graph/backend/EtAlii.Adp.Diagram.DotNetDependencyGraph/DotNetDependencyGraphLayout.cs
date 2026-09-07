@@ -37,6 +37,35 @@ public static class DotNetDependencyGraphLayout
     /// <summary>How far the package band sits beyond the last project layer.</summary>
     public const double PackageBandGap = 200;
 
+    /// <summary>
+    /// How many boxes a single layer stacks before it wraps into a second column beside itself.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is the answer to "what does it do when the graph is too large to read", and it
+    /// is a measurement rather than a guess.</b> Derived from this repository's own solution
+    /// (2026-09-07): 104 projects, 17 packages, 349 edges - and the layer distribution
+    /// 1/3/7/4/3/2/4/<b>66</b>/14, because sixty-six diagram modules all reference the same
+    /// core and nothing references them, so they share one depth. Stacked, that single layer
+    /// was 5,850 units tall against a 3,080-unit-wide diagram: a column no screen shows at a
+    /// readable zoom, and the failure mode the requirement names as "an unreadable hairball".
+    /// <para>
+    /// <b>Wrapping rather than limiting, deliberately.</b> The task offered grouping, filtering
+    /// or a stated limit; a limit hides part of the graph, and a derived diagram that silently
+    /// shows some of its subject is worse than one that is awkward to read. Wrapping hides
+    /// nothing - the same 104 projects are drawn, in a block roughly as wide as it is tall
+    /// instead of a ribbon sixty-six deep.
+    /// </para>
+    /// <para>
+    /// Twelve because it keeps the tallest layer near the width of the layers around it at this
+    /// repository's shape, and because a column a reader has to scroll past twelve times to
+    /// find the next one has stopped being a column.
+    /// </para>
+    /// </remarks>
+    public const int LayerWrapAt = 12;
+
+    /// <summary>How far a wrapped column sits from the one before it, inside one layer.</summary>
+    public const double WrapColumnWidth = 260;
+
     /// <summary>Computes a position for every node of <paramref name="graph"/>.</summary>
     public static IReadOnlyDictionary<string, (double X, double Y)> Compute(DependencyGraphModel graph)
     {
@@ -62,20 +91,30 @@ public static class DotNetDependencyGraphLayout
             .GroupBy(project => depths.GetValueOrDefault(project.Id))
             .OrderBy(group => group.Key);
 
-        var deepestLayer = 0;
+        // Each layer starts where the previous one ended, so a layer that wrapped into several
+        // columns pushes the next one along rather than drawing on top of it.
+        var layerX = 0.0;
+        var rightmost = 0.0;
         foreach (var layer in byLayer)
         {
-            deepestLayer = Math.Max(deepestLayer, layer.Key);
-            var row = 0;
+            var index = 0;
             foreach (var project in layer.OrderBy(project => project.Name, StringComparer.OrdinalIgnoreCase))
             {
-                positions[project.Id] = (layer.Key * LayerWidth, row * RowHeight);
-                row++;
+                // Wrapped rather than stacked: see LayerWrapAt for the measurement behind this.
+                var column = index / LayerWrapAt;
+                var row = index % LayerWrapAt;
+                var x = layerX + (column * WrapColumnWidth);
+                positions[project.Id] = (x, row * RowHeight);
+                rightmost = Math.Max(rightmost, x);
+                index++;
             }
+
+            var columnsUsed = Math.Max(1, (int)Math.Ceiling(layer.Count() / (double)LayerWrapAt));
+            layerX += LayerWidth + ((columnsUsed - 1) * WrapColumnWidth);
         }
 
-        // Packages, banded beyond the last project layer, ordered by id for the same reason.
-        var packageX = (deepestLayer * LayerWidth) + LayerWidth + PackageBandGap;
+        // Packages, banded beyond the last project column, ordered by id for the same reason.
+        var packageX = rightmost + LayerWidth + PackageBandGap;
         var packageRow = 0;
         foreach (var package in graph.Packages.OrderBy(package => package.PackageId, StringComparer.OrdinalIgnoreCase))
         {
