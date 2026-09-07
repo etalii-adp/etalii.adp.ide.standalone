@@ -46,7 +46,7 @@ The `dotnet/dependency-graph` module reads a .NET solution, derives a graph of i
 
 **The location of the Contexts family is in flux** - a rename moving the Context provider contract out of `EtAlii.Adp.Common` into `EtAlii.Adp.Context` is in progress at the time of writing. **This design does not depend on where those types live.** It consumes `IContextPropertyProvider` and `IContextSourceResolver` by name through `EtAlii.Adp.Diagram`'s reference chain, exactly as the six existing modules do, so wherever the family lands the module follows without redesign. **Today's layout is recorded as today's, not as settled.**
 
-**Resolved: that rename has since landed.** The family now lives in `EtAlii.Adp.Context`; `EtAlii.Adp.Common/Contexts/` is empty. **This design needed no change for it** - which is what the note was for. The provisional wording is kept rather than tidied away, because it is the evidence that the dependency was avoided deliberately rather than by luck.
+**Resolved: that rename has since landed.** Twenty-nine of its types now live in `EtAlii.Adp.Context` and `EtAlii.Adp.Common/Contexts/` is empty - but **not the whole family went there**: `ContextOptionAnnotations` moved to `EtAlii.Adp.Hierarchy` in the backlog's item-8 pass, its only consumer. Said precisely because the looser wording would send a reader looking for it in the wrong project. **This design needed no change for it** - which is what the note was for. The provisional wording is kept rather than tidied away, because it is the evidence that the dependency was avoided deliberately rather than by luck.
 
 ## Architecture
 
