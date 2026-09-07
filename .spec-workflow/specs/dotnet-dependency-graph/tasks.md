@@ -94,7 +94,7 @@
   - **Move the row as the state changes** rather than adding it once and leaving it stale.
   - _Requirements: 1.3, 1.4_
 
-- [-] 13. Scale: run it against this repository's own solution **[normal]**
+- [x] 13. Scale: run it against this repository's own solution **[normal]**
   - Files: whatever the answer requires - grouping, filtering, or a stated limit - plus the measurement recorded in the implementation log.
   - **`EtAlii.Adp.slnx` is the subject: roughly thirty backend projects plus sixty-one diagram modules.** This is the one task that cannot be satisfied by assertion, because the requirement is that the type stays *usable* at that size.
   - **Rendering an unreadable hairball and calling it correct is the failure mode this task exists to prevent.** If the answer is a limit, the diagram must say it is limited rather than silently showing part of the graph.
