@@ -1,0 +1,10 @@
+{
+  "id": "approval_1788799641266_gwswafpep",
+  "title": "Requirements: .NET project and package dependency graph",
+  "filePath": ".spec-workflow/specs/dotnet-dependency-graph/requirements.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-09-07T16:47:21.266Z",
+  "category": "spec",
+  "categoryName": "dotnet-dependency-graph"
+}
