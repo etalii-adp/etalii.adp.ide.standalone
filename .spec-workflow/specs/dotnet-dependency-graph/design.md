@@ -40,9 +40,13 @@ The `dotnet/dependency-graph` module reads a .NET solution, derives a graph of i
 
 **Correction, added after approval and after measurement: the observation above is true and the remedy it implies is false.** Developer 3 enumerated all 65 Hierarchy types against all 947 module `.cs` files and found that **no module's only Hierarchy use is `RegistrationLayout` - not one.** All six that consume it also consume `DiagramFilePair`, `DiagramFileRouter` and `HierarchyModel`; the other six use Hierarchy types regardless. **So moving `RegistrationLayout` to `EtAlii.Adp.Documents` would remove no module's dependency on Hierarchy** - it would relocate a file and leave every edge in place. **The dependency is over-determined, and `RegistrationLayout` is not a necessary cause of it**, which is the same error this repository records at *not a cause* versus *not a necessary cause*. The verdict is **leave it**: no structural gain, roughly fifty files of churn, and item 12's sweep means twenty-nine of them would need a `using` deleted rather than swapped. The placement stays **current-but-questioned**, the false *"Defined once here, in core"* comment is fixed separately, and this paragraph exists so a reader meeting the true sentence above does not draw the false conclusion from it - as both its author and the coordinator did before it was measured.
 
+**Resolved: the user has ruled that `RegistrationLayout` stays in `EtAlii.Adp.Hierarchy`.** The placement is therefore **settled, not questioned** - the two paragraphs above are kept because they record why it was raised and why the remedy failed, and a reader meeting the observation should not re-open a decision that has been made. Only the false *"Defined once here, in core"* comment is still to be fixed, separately.
+
 ### A dependency deliberately not taken
 
 **The location of the Contexts family is in flux** - a rename moving the Context provider contract out of `EtAlii.Adp.Common` into `EtAlii.Adp.Context` is in progress at the time of writing. **This design does not depend on where those types live.** It consumes `IContextPropertyProvider` and `IContextSourceResolver` by name through `EtAlii.Adp.Diagram`'s reference chain, exactly as the six existing modules do, so wherever the family lands the module follows without redesign. **Today's layout is recorded as today's, not as settled.**
+
+**Resolved: that rename has since landed.** The family now lives in `EtAlii.Adp.Context`; `EtAlii.Adp.Common/Contexts/` is empty. **This design needed no change for it** - which is what the note was for. The provisional wording is kept rather than tidied away, because it is the evidence that the dependency was avoided deliberately rather than by luck.
 
 ## Architecture
 
