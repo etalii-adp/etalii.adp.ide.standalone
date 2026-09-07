@@ -20,9 +20,22 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// From the local NuGet cache, or <c>null</c> for not obtainable - never an error and never a
 /// wait (Requirement 5.3). Filled in by the description reader, not by the graph.
 /// </param>
+/// <param name="DependentProjectCount">
+/// How many of the solution's projects reference this package. Carried rather than recomputed
+/// because it is what <see cref="IsAmbient"/> is decided from, and a reader asking why a package
+/// is hidden deserves the number rather than the verdict alone.
+/// </param>
+/// <param name="IsAmbient">
+/// Whether this package is referenced by enough of the solution's projects to discriminate
+/// nothing - see <see cref="DependencyGraph.AmbientShare"/> for the threshold and the
+/// measurement behind it. <b>A marking, not a removal</b>: the node is in the graph either way,
+/// and it is the canvas that hides it by default, states that it has, and offers it back.
+/// </param>
 public sealed record PackageNode(
     string Id,
     string PackageId,
     IReadOnlyList<string> Versions,
     bool HasVersionConflict,
-    string? Description = null);
+    string? Description = null,
+    int DependentProjectCount = 0,
+    bool IsAmbient = false);

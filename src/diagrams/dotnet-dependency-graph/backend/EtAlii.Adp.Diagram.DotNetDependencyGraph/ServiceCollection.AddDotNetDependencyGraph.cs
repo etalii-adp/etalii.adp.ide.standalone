@@ -40,9 +40,12 @@ public static class ServiceCollectionAddDotNetDependencyGraphExtension
         services.AddSingleton<DependencyGraphStore>();
         services.AddSingleton<IDependencyGraphStore>(provider => provider.GetRequiredService<DependencyGraphStore>());
 
-        // PROVISIONAL, awaiting an Architect ruling - see DotNetSolutionDocumentFactory. Core
-        // refuses to start when a type declares a document extension and registers no factory,
-        // and the design's body: binding requires the extension to be declared.
+        // Core refuses to start when a type declares a document extension and registers no
+        // factory, and the design's body: binding requires the extension to be declared. That
+        // this does not breach the never-write-a-solution requirement is not a judgement call:
+        // core refuses to create at a name anything already occupies, so creation can only ever
+        // produce a new file. DotNetSolutionDocumentFactory carries the guard's location and the
+        // requirement's reading.
         services.AddSingleton<IDiagramDocumentFactory, DotNetSolutionDocumentFactory>();
 
         services.AddSingleton<DependencyElementMapper>();

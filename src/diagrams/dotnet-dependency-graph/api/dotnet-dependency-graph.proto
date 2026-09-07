@@ -37,6 +37,18 @@ message DependencyElementPayload {
   // "collapsing loudly": the canvas marks it, rather than the difference being lost in a
   // silent collapse to one box.
   bool has_version_conflict = 6;
+
+  // How many of the solution's projects reference this package; zero for a project node. Sent
+  // rather than derived on the canvas because it is the number the "N packages hidden" notice
+  // explains itself with, and a client counting edges it has been told to hide would count
+  // wrong.
+  int32 dependent_project_count = 7;
+
+  // Whether this package is referenced by so many of the solution's projects that the edge
+  // discriminates nothing - the scale answer. The CANVAS hides these by default, says how many
+  // it hid, and offers them back; nothing is removed from the graph, so this is a marking and
+  // not a truncation. See DependencyGraph.AmbientShare for the threshold and the measurement.
+  bool is_ambient = 8;
 }
 
 // What a node or edge of this graph is. The two node kinds are visually distinct on the canvas

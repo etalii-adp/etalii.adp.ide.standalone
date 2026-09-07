@@ -57,6 +57,47 @@ left for a reader to infer from a gap.**
 as not discoverable. Dropping it would misrepresent the project; an edge with an unknown version
 is the truth. **An edge is never invented and never silently omitted.**
 
+**The classic `.sln` path is exercised only by generated fixtures, and permanently so.**
+`dotnet solution migrate` goes `.sln` → `.slnx` and there is no reverse, and this repository
+holds no `.sln` anywhere — so no real file in this tree has ever reached that reader. What
+guards it instead is two fixtures produced by `dotnet new sln` and `dotnet solution add` rather
+than typed by hand: the default shape, which files a nested project under a solution folder, and
+the `--in-root` shape, which does not. **`--in-root` defaults to `False`, so the solution-folder
+line is the SDK's ordinary output** — the case a hand-written fixture would most likely have
+omitted, because nobody imagining a solution file imagines that. A maintainer reading a green
+suite deserves to know which half of the format has met a real file.
+
+## What it does when the graph is large
+
+**A handful of packages are hidden by default, and the diagram says so.**
+
+Measured against this repository's own `EtAlii.Adp.slnx`: 104 projects, 17 packages, 427 edges
+of which 155 are package references — and the package degrees run
+`26 26 26 19 18 14 6 6 4 2 2 1 1 1 1 1 1`. **Four package nodes carry 97 of those 155 edges**,
+and they discriminate nothing: an edge present on 26 of 104 projects says *this is a test
+project*, which the project's own name already says. **A near-universal edge is noise wearing
+the shape of information.**
+
+So a package referenced by **15% or more of a solution's projects** (and by at least five of
+them) is marked *ambient*, and the canvas leaves it out until you ask for it.
+
+* **Nothing is removed and nothing is truncated.** The graph holds every node and every edge;
+  ambient is a marking the canvas reads, and "Show them" restores rather than re-derives. **The
+  node count was never the problem** — 119 nodes laid out by depth is busy, not unreadable.
+  Nothing here is too big, only too uniformly connected, and a limit would lose real structure
+  to fix a problem that is not that shape.
+* **It is stated, always.** The canvas says how many it hid, names them, and gives them back in
+  one click. Filtering that cannot be seen is just a wrong diagram.
+* **Degree, never a list of package names.** A curated "build and test packages" list needs
+  maintaining and is wrong on the first repository that is not this one. That has a consequence
+  worth knowing rather than discovering: here no threshold separates `Grpc.Tools` (19) from
+  `Serilog` (18), so the rule catches both. That is the rule working.
+* **A small solution hides nothing.** The five-dependent floor is why: below a handful there is
+  no crowd to disappear into, and the shipped four-project example draws complete.
+
+Projects are **not** grouped or folded. 102 of them layered by depth is legible, and grouping is
+kept available as a later answer to be decided on evidence rather than pre-empted now.
+
 ## Where the package description comes from
 
 **The local NuGet cache, and nowhere else** — the `.nuspec` beside the restored package in the

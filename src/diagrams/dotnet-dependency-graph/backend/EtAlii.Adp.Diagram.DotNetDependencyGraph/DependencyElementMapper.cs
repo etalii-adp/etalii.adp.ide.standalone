@@ -74,6 +74,8 @@ public sealed class DependencyElementMapper
                     Kind = Wire.DependencyElementKind.Package,
                     Versions = { package.Versions },
                     HasVersionConflict = package.HasVersionConflict,
+                    DependentProjectCount = package.DependentProjectCount,
+                    IsAmbient = package.IsAmbient,
                 })));
         }
 

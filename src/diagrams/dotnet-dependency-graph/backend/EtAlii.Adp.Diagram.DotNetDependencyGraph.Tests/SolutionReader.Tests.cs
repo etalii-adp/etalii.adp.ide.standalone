@@ -3,10 +3,34 @@ using Xunit;
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 
 /// <summary>
-/// The reader against both serializations of one solution. The fixture pair describes the same
-/// three projects - one at the root, one nested, one absent - so the two formats can be
-/// asserted to agree rather than each being asserted on its own terms.
+/// The reader against both serializations of one solution. Every fixture describes the same
+/// three projects - one at the root, one nested, one absent - so the formats can be asserted to
+/// agree rather than each being asserted on its own terms.
 /// </summary>
+/// <remarks>
+/// <para>
+/// <b>The two classic fixtures are GENERATED, not authored</b>, by <c>dotnet new sln</c> and
+/// <c>dotnet solution add</c> on SDK 10.0.203, with <c>Missing.csproj</c> present at generation
+/// and deleted afterwards so the absent project is named by the tool rather than typed in.
+/// Regenerate them the same way rather than editing them.
+/// </para>
+/// <para>
+/// <b>That is not tidiness - a hand-written fixture guards what somebody imagined, and what
+/// somebody imagined here omitted the default.</b> <c>dotnet solution add</c> takes
+/// <c>--in-root</c> defaulting to <c>False</c>, so it creates a solution folder for a nested
+/// project unless told otherwise: the <c>2150E333-8FDC-42A3-9474-1A3956D46DE8</c> line that
+/// <c>Both.sln</c> carries is the SDK's ORDINARY OUTPUT, not an exotic shape. <c>Flat.sln</c> is
+/// the same solution with <c>--in-root</c>, and the two are asserted to agree - so the reader is
+/// held to both shapes the tool actually produces.
+/// </para>
+/// <para>
+/// <b>Classic support has fixtures and no live subject, permanently.</b>
+/// <c>dotnet solution migrate</c> goes <c>.sln</c> to <c>.slnx</c> only, there is no reverse,
+/// and this repository holds no <c>.sln</c> anywhere - so nothing here exercises the classic
+/// path except these files. The module readme says so too, for a reader who meets a green suite
+/// and assumes both halves of the format have met a real file.
+/// </para>
+/// </remarks>
 public class SolutionReaderTests
 {
     private static string FixturePath(string name) =>
@@ -15,6 +39,7 @@ public class SolutionReaderTests
     [Theory]
     [InlineData("Both.slnx")]
     [InlineData("Both.sln")]
+    [InlineData("Flat.sln")]
     public void Read_FindsTheProjectsThatExist_InEitherSerialization(string solution)
     {
         // Arrange.
@@ -35,6 +60,7 @@ public class SolutionReaderTests
     [Theory]
     [InlineData("Both.slnx")]
     [InlineData("Both.sln")]
+    [InlineData("Flat.sln")]
     public void Read_ReportsANamedProjectThatIsNotThere_AndKeepsTheRest(string solution)
     {
         // Requirement 2.4: the diagram opens with what resolved, and the failure is reported
@@ -71,6 +97,29 @@ public class SolutionReaderTests
         // Assert.
         Assert.DoesNotContain(reading.Projects, project => project.Name == "nested");
         Assert.DoesNotContain(reading.Failures, failure => failure.Path == "nested");
+    }
+
+    [Fact]
+    public void Read_TheTwoClassicShapesTheSdkProduces_Agree()
+    {
+        // The pairing that makes the solution-folder test mean something. Both.sln and Flat.sln
+        // are the SAME solution written by the same tool, differing only in --in-root: one files
+        // the nested project under a solution folder, the other does not. A reader that handled
+        // only the flat shape would still pass every other test in this class, because every
+        // other assertion holds for the flat file on its own.
+
+        // Arrange.
+        var reader = new SolutionReader();
+
+        // Act.
+        var withFolders = reader.Read(FixturePath("Both.sln"));
+        var flat = reader.Read(FixturePath("Flat.sln"));
+
+        // Assert.
+        Assert.Equal(
+            flat.Projects.Select(project => project.RelativePath).Order(),
+            withFolders.Projects.Select(project => project.RelativePath).Order());
+        Assert.Equal(flat.Failures.Count, withFolders.Failures.Count);
     }
 
     [Fact]

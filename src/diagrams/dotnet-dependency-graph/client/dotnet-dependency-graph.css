@@ -33,6 +33,37 @@
   cursor: pointer;
 }
 
+/*
+  The ambient-package notice. Anchored bottom-left rather than centred at the top, so it does
+  not sit under the rejection banner when both are up - a hidden-node notice that a rejection
+  covered would be filtering nobody can see, which is the one thing this notice exists to
+  prevent.
+*/
+.dotnet-dependency-canvas-filtered {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  max-width: min(46rem, calc(100% - 1rem));
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  background: var(--canvas-note-fill, #24303d);
+  color: var(--canvas-note-label, #cfe0f0);
+}
+
+.dotnet-dependency-canvas-filtered button {
+  flex: none;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid currentcolor;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
 /* ---- nodes --------------------------------------------------------------------------- */
 
 .dotnet-dependency-node-box {
