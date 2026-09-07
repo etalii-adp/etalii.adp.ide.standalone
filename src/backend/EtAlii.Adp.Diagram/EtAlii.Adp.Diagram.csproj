@@ -6,6 +6,7 @@
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,9 +21,6 @@
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" />
-    <PackageReference Include="Serilog" />
   </ItemGroup>
 
   <ItemGroup>
