@@ -47,7 +47,7 @@ public class DiagramTests
         // services to construct): present and correctly typed. A silent no-op edit once left
         // both unregistered while every other test stayed green - this is that guard.
         Assert.Contains(services, descriptor =>
-            descriptor.ServiceType == typeof(EtAlii.Adp.Diagram.IDiagramSessionFactory)
+            descriptor.ServiceType == typeof(IDiagramSessionFactory)
             && descriptor.ImplementationType == typeof(HelmSessionFactory));
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IDiagramValidator)

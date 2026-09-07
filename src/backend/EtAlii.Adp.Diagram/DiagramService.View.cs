@@ -42,8 +42,8 @@ public sealed partial class DiagramService
 
     private static bool IsInside(string rootPath, string fullPath)
     {
-        var root = System.IO.Path.GetFullPath(rootPath)
-            .TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar;
+        var root = Path.GetFullPath(rootPath)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
     }
 }

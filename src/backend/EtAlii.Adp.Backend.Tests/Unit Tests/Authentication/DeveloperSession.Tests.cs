@@ -54,7 +54,7 @@ public class DeveloperSessionTests
         DeveloperSessionDisabled = disabled,
     };
 
-    private static EtAlii.Adp.Authentication.AuthenticationService Service(
+    private static Authentication.AuthenticationService Service(
         ISessionStore store,
         LocalAuthenticatorOptions options,
         string environmentName = "Development") =>

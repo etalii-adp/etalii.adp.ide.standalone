@@ -100,7 +100,7 @@ public sealed partial class ContextService
         // id: without it, a commit that creates something could not report where it landed in
         // the project-relative terms the contract allows.
         Projects.ProjectRootResolver.TryResolve(
-            _projectStore, Common.SessionContext.GetUserId(context), request.ProjectId, out var rootPath, out _);
+            _projectStore, SessionContext.GetUserId(context), request.ProjectId, out var rootPath, out _);
 
         _contextInteractionStore.Begin(new ContextInteraction
         {
@@ -254,7 +254,7 @@ public sealed partial class ContextService
         ContextSource? source,
         ServerCallContext context)
     {
-        var userId = Common.SessionContext.GetUserId(context);
+        var userId = SessionContext.GetUserId(context);
         if (!Projects.ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out var rootPath, out _))
         {
             return null;

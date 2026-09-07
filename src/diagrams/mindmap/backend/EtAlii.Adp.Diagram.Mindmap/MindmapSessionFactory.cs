@@ -7,9 +7,9 @@ public sealed class MindmapSessionFactory : IDiagramSessionFactory
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
     private readonly MindmapElementMapper _mapper;
-    private readonly Common.IHistoryStackStore _historyStacks;
+    private readonly IHistoryStackStore _historyStacks;
 
-    public MindmapSessionFactory(IMindmapDocumentStore documents, MindmapViewState views, MindmapElementMapper mapper, Common.IHistoryStackStore historyStacks)
+    public MindmapSessionFactory(IMindmapDocumentStore documents, MindmapViewState views, MindmapElementMapper mapper, IHistoryStackStore historyStacks)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(views);

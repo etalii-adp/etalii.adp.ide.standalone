@@ -283,17 +283,17 @@ public class HierarchyContextSourceResolverTests : IDisposable
     // The workspace opens tabs from the pushed selection, so the detail must say which files
     // are diagrams - through the router, never a client-side file-type table.
 
-    private static readonly Common.DiagramDefinition Mindmap =
-        new(new Common.DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly DiagramDefinition Mindmap =
+        new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
-    private static readonly Common.DiagramDefinition RivalMindmap =
-        new(new Common.DiagramOrigin("xmind", "mindmap"), "Rival map", Extension: ".mm");
+    private static readonly DiagramDefinition RivalMindmap =
+        new(new DiagramOrigin("xmind", "mindmap"), "Rival map", Extension: ".mm");
 
     /// <summary>An editor resolver that knows no editors, so nothing falls through to the editor arm.</summary>
     private static readonly EditorResolver EmptyEditorResolver = new(new Editor.EditorDefinitionCatalog { All = [] });
 
     /// <summary>The resolver over a catalog that knows the given definitions, unlike the class's empty default.</summary>
-    private HierarchyContextSourceResolver ResolverKnowing(params Common.DiagramDefinition[] definitions) =>
+    private HierarchyContextSourceResolver ResolverKnowing(params DiagramDefinition[] definitions) =>
         new(_store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)), EmptyEditorResolver);
 
     private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)

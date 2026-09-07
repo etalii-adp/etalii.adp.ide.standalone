@@ -20,7 +20,7 @@ public sealed partial class HierarchyContextActionProvider
             return 0;
         }
 
-        var parent = System.IO.Path.GetDirectoryName(target.ResolvedFullPath);
+        var parent = Path.GetDirectoryName(target.ResolvedFullPath);
         return parent is null ? 0 : DiagramRegistrationSet.Over(parent, target.ResolvedFullPath, _catalog).Count();
     }
 

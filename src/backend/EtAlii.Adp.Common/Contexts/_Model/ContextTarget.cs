@@ -50,4 +50,4 @@ public sealed record ContextTarget(
     string RootPath = "",
     ShortGuid WatchId = default,
     string ElementId = "",
-    Common.DiagramOrigin? Origin = null);
+    DiagramOrigin? Origin = null);

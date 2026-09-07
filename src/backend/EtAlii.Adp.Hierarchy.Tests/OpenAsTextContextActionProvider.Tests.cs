@@ -27,8 +27,8 @@ public class OpenAsTextContextActionProviderTests : IDisposable
         TestFolder.TryDelete(_root);
     }
 
-    private static readonly Common.DiagramDefinition Mindmap =
-        new(new Common.DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly DiagramDefinition Mindmap =
+        new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private static readonly EditorDefinition Plain = new("plain", "Plain Text", IsFallback: true);
     private static readonly EditorDefinition RawMm = new("raw-mm", "Raw mind map text", Extensions: [".mm"]);

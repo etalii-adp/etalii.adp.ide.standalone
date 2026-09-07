@@ -76,7 +76,7 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : ICom
             // The view is already in the document; leaving it there with no registration would
             // be a half-done job, so undo it before reporting.
             C4ViewBlock.RemoveView(documents, command.BodyPath, command.ViewKey);
-            return Task.FromResult(CommandResult.Failure($"Could not create {System.IO.Path.GetFileName(command.RegistrationPath)}: {exception.Message}"));
+            return Task.FromResult(CommandResult.Failure($"Could not create {Path.GetFileName(command.RegistrationPath)}: {exception.Message}"));
         }
 
         return Task.FromResult(CommandResult.Success(
@@ -110,7 +110,7 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : I
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(CommandResult.Failure($"Could not remove {System.IO.Path.GetFileName(command.RegistrationPath)}: {exception.Message}"));
+            return Task.FromResult(CommandResult.Failure($"Could not remove {Path.GetFileName(command.RegistrationPath)}: {exception.Message}"));
         }
 
         // The inverse needs the body path relative to the registration's own folder; the
@@ -121,7 +121,7 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : I
             MimeTypeFor(kind),
             kind,
             command.ViewKey,
-            System.IO.Path.GetFileName(command.BodyPath))));
+            Path.GetFileName(command.BodyPath))));
     }
 
     private static string MimeTypeFor(C4ViewKind kind) => kind switch

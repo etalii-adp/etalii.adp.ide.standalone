@@ -70,7 +70,7 @@ public sealed class StartupRevalidation : IHostedService
     public void Prioritize(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
-        var root = System.IO.Path.GetFullPath(rootPath);
+        var root = Path.GetFullPath(rootPath);
         lock (_gate)
         {
             if (_seen.Add(root))

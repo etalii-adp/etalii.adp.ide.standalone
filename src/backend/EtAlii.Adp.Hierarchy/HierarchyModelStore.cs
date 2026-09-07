@@ -44,7 +44,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     {
         ArgumentNullException.ThrowIfNull(oldPath);
         ArgumentNullException.ThrowIfNull(newPath);
-        var old = System.IO.Path.GetFullPath(oldPath);
+        var old = Path.GetFullPath(oldPath);
 
         // Every model that contains the moved entry - a project may be watched on several
         // connections at once, each with its own private view, so each is told directly rather
@@ -67,7 +67,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
             return true;
         }
 
-        var prefix = root.EndsWith(System.IO.Path.DirectorySeparatorChar) ? root : root + System.IO.Path.DirectorySeparatorChar;
+        var prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
         return path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
     }
 

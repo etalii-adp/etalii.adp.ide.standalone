@@ -28,7 +28,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     private readonly EditorSessionFactories _editorSessionFactories;
     private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentReloadBridge _reloadBridge;
-    private readonly IReadOnlyList<Diagram.IDiagramToolboxProvider> _toolboxProviders;
+    private readonly IReadOnlyList<IDiagramToolboxProvider> _toolboxProviders;
 
     public DiagramService(
         IProjectStore projectStore,
@@ -39,7 +39,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         IDiagramViewportRegistry viewports,
         IHistoryStackStore historyStacks,
         DiagramDocumentReloadBridge reloadBridge,
-        IEnumerable<Diagram.IDiagramToolboxProvider> toolboxProviders)
+        IEnumerable<IDiagramToolboxProvider> toolboxProviders)
     {
         _historyStacks = historyStacks;
         _projectStore = projectStore;

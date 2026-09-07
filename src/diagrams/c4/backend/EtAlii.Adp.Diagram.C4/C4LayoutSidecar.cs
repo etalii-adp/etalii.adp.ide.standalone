@@ -39,9 +39,9 @@ public sealed class C4LayoutSidecar
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
 
-        var directory = System.IO.Path.GetDirectoryName(bodyPath) ?? "";
-        var name = System.IO.Path.GetFileNameWithoutExtension(bodyPath);
-        return System.IO.Path.Combine(directory, name + ".layout.json");
+        var directory = Path.GetDirectoryName(bodyPath) ?? "";
+        var name = Path.GetFileNameWithoutExtension(bodyPath);
+        return Path.Combine(directory, name + ".layout.json");
     }
 
     /// <summary>
@@ -239,7 +239,7 @@ public sealed class C4LayoutSidecar
     /// </remarks>
     /// <summary>What the caller says when the layout could not be updated at all.</summary>
     private static string Unreadable(string bodyPath) =>
-        $"The layout beside {System.IO.Path.GetFileName(bodyPath)} could not be updated, so positions may not be as expected when the diagram is reopened.";
+        $"The layout beside {Path.GetFileName(bodyPath)} could not be updated, so positions may not be as expected when the diagram is reopened.";
 
     private static string Persist(string bodyPath, Dictionary<string, Dictionary<string, C4SidecarPosition>> all)
     {
@@ -254,7 +254,7 @@ public sealed class C4LayoutSidecar
             _logger.Warning(exception, "Could not write the layout sidecar beside {BodyPath}", bodyPath);
 
             // AdpFileWriter.Save removes its own scratch file before the failure surfaces.
-            return $"The new position could not be saved beside {System.IO.Path.GetFileName(bodyPath)}, so it will not be there when the diagram is reopened.";
+            return $"The new position could not be saved beside {Path.GetFileName(bodyPath)}, so it will not be there when the diagram is reopened.";
         }
     }
 

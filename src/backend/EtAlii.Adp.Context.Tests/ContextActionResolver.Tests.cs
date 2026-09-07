@@ -14,7 +14,7 @@ public class ContextActionResolverTests
         new(scope, @"C:\root\item.txt", IsContainer: false, ShortGuid.NewShortGuid());
 
     /// <summary>A diagram element target resolved through one reading of a multiply-registered file.</summary>
-    private static ContextTarget TargetOf(Common.DiagramOrigin origin) =>
+    private static ContextTarget TargetOf(DiagramOrigin origin) =>
         new(ContextScope.DiagramElement, @"C:/root/vocabulary.ttl", IsContainer: false, ShortGuid.NewShortGuid(),
             RootPath: @"C:/root", WatchId: default, ElementId: "res:http://example.org/Thing", Origin: origin);
 
@@ -143,8 +143,8 @@ public class ContextActionResolverTests
         // there. This covers the case where a reading registers a provider of ITS OWN beside the
         // family s: then two providers each answer, container registration order decides, and no
         // ordering within either reaches it. No reading does that today; one reasonably might.
-        var shapes = new Common.DiagramOrigin("w3c", "shacl");
-        var scheme = new Common.DiagramOrigin("w3c", "skos");
+        var shapes = new DiagramOrigin("w3c", "shacl");
+        var scheme = new DiagramOrigin("w3c", "skos");
         var skos = new ContextActionResolverStubProvider(
             ContextScope.DiagramElement, "skos.remove-pair", new ContextShortcutDefinition("Delete"), answersFor: scheme);
         var shacl = new ContextActionResolverStubProvider(
@@ -166,7 +166,7 @@ public class ContextActionResolverTests
         // Arrange: a resolver that has not adopted the origin yet supplies none, and a null origin
         // means 'not known' rather than 'no reading' - so the reading's provider stays out and the
         // family answers, exactly as it did before. This is what makes the migration incremental.
-        var reading = new Common.DiagramOrigin("w3c", "shacl");
+        var reading = new DiagramOrigin("w3c", "shacl");
         var family = new ContextActionResolverStubProvider(
             ContextScope.DiagramElement, "family.remove-statement", new ContextShortcutDefinition("Delete"));
         var shapes = new ContextActionResolverStubProvider(
@@ -186,8 +186,8 @@ public class ContextActionResolverTests
     public async Task DiscoverAsync_ForOneOriginsTarget_ConcatenatesTheFamilyAndThatReadingOnly()
     {
         // Arrange: two readings over one file, plus the family beneath both.
-        var shapes = new Common.DiagramOrigin("w3c", "shacl");
-        var scheme = new Common.DiagramOrigin("w3c", "skos");
+        var shapes = new DiagramOrigin("w3c", "shacl");
+        var scheme = new DiagramOrigin("w3c", "skos");
         var resolver = new ContextActionResolver(
         [
             new ContextActionResolverStubProvider(ContextScope.DiagramElement, "family.rename"),

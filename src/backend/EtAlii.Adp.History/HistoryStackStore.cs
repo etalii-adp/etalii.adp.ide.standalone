@@ -124,6 +124,6 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
         (entry.Stack as IDisposable)?.Dispose();
     }
 
-    private static string Key(string rootPath) => System.IO.Path.GetFullPath(rootPath);
+    private static string Key(string rootPath) => Path.GetFullPath(rootPath);
 
 }

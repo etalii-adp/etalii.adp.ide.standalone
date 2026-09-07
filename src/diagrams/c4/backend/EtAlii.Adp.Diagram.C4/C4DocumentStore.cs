@@ -38,7 +38,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         _selfWrites[path] = 1;
         try
         {
-            var directory = System.IO.Path.GetDirectoryName(path);
+            var directory = Path.GetDirectoryName(path);
             if (directory is { Length: > 0 } && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
@@ -55,7 +55,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
             // Reported rather than swallowed. A bare return out of a void Save left the
             // caller answering success while the file still held the old content - the
             // defect found in WardleyDocumentStore and identical here.
-            return $"{System.IO.Path.GetFileName(path)} could not be written. The change is still here to try again.";
+            return $"{Path.GetFileName(path)} could not be written. The change is still here to try again.";
         }
         finally
         {

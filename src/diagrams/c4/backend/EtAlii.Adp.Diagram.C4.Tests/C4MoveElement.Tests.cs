@@ -56,7 +56,7 @@ public class C4MoveElementTests : IDisposable
     }
 
     private C4Session Open() => (C4Session)_services
-        .GetServices<EtAlii.Adp.Diagram.IDiagramSessionFactory>()
+        .GetServices<IDiagramSessionFactory>()
         .First(factory => factory.Origin.Key == "c4/system-landscape")
         .Open(ShortGuid.NewShortGuid(), _root, _bodyPath, null);
 
