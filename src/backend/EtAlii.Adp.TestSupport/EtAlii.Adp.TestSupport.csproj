@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared, REFERENCEABLE test support - the catalog and history-host helpers that several
+    test projects build hosts with (post-decomposition backlog, pulled ahead of item 10 to
+    unblock items 2, 6 and 7). Deliberately NOT named *.Tests: that suffix would compile
+    LogCapture into this assembly, whose [ModuleInitializer] must run once per TEST project
+    - the do-not-reference trap Directory.Build.targets documents. Per-assembly support
+    (LogCapture, TestFolder) stays source-compiled by the naming convention; only support
+    that is safe to share by reference lives here, public because a referenced internal
+    helps nobody.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+  </ItemGroup>
+
+</Project>

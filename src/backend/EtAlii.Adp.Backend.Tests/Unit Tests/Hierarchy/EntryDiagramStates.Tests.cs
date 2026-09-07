@@ -2,6 +2,7 @@ using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.TestSupport;
 using Xunit;
 
 namespace EtAlii.Adp.Backend.Tests;

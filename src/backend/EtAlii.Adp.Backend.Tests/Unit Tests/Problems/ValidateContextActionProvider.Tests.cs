@@ -4,6 +4,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
+using EtAlii.Adp.TestSupport;
 using Xunit;
 using IoPath = System.IO.Path;
 
