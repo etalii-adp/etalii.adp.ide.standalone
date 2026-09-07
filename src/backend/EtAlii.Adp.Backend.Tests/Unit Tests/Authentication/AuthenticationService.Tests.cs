@@ -1,6 +1,5 @@
 using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Xunit;

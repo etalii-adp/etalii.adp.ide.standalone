@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>Add a node immediately after <paramref name="SiblingId"/> under the same parent (Requirement 7.2).</summary>

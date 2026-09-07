@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.History;
 
 /// <summary>
 /// Executes commands and remembers the undoable ones, so they can be walked back and

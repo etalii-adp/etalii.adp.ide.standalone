@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>Add a node as the last child of <paramref name="ParentId"/> (Requirement 7.1).</summary>

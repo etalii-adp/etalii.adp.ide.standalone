@@ -1,6 +1,5 @@
-﻿
+﻿using EtAlii.Adp.History;
 
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>Switches a shape off or back on (Requirement 5.5).</summary>

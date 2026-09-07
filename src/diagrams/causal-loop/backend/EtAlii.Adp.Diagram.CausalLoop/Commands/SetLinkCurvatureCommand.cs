@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>Bows a link's arc to the other side of its chord, or puts it back.</summary>

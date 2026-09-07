@@ -1,4 +1,6 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.History;
+
 namespace EtAlii.Adp.Diagram.Sparql;
 
 /// <summary>Opens a <see cref="SparqlSession"/> for a query file.</summary>

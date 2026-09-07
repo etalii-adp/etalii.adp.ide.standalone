@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>Claims a feedback loop through the named variables.</summary>

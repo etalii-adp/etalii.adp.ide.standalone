@@ -1,7 +1,7 @@
-using EtAlii.Adp.Context;
+using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EtAlii.Adp.History;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Registers undo and redo as project-scope context actions (diagram-undo-redo Requirement 5).

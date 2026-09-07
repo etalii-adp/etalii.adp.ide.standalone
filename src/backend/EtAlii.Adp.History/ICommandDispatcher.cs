@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.History;
 
 /// <summary>
 /// Finds the <see cref="ICommandHandler{TCommand}"/> registered for a command's runtime type

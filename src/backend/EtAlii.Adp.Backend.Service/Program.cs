@@ -8,7 +8,6 @@ using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Problems;
 using EtAlii.Adp.Projects;
-using EtAlii.Adp.Sessions;
 using JetBrains.Annotations;
 using Serilog;
 

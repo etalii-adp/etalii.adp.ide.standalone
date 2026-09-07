@@ -1,13 +1,11 @@
-using EtAlii.Adp.Common;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Serilog;
 #if DEBUG
-using EtAlii.Adp.Authentication;
 using Microsoft.Extensions.Options;
 #endif
 
-namespace EtAlii.Adp.Sessions;
+namespace EtAlii.Adp.Authentication;
 
 /// <summary>
 /// Single enforcement point for Requirement 1.6 / grpc-core-communication Requirement 5.1:

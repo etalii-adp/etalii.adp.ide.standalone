@@ -1,4 +1,3 @@
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.History.Tests;
 
 /// <summary>Every command succeeds and reports itself as its own inverse - enough to record and to raise Changed.</summary>

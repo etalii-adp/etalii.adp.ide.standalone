@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Authentication;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Xunit;

@@ -1,6 +1,6 @@
 using Grpc.Core;
 
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Authentication;
 
 /// <summary>
 /// Single source of truth for stashing/reading the authenticated user's id on

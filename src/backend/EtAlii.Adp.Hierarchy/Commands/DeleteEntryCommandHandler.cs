@@ -1,4 +1,5 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.History;
 using Serilog;
 using IoPath = System.IO.Path;
 

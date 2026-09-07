@@ -1,6 +1,5 @@
-﻿
+﻿using EtAlii.Adp.History;
 
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>Declares one more target on a shape (Requirement 5.3).</summary>

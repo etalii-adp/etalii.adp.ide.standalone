@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
 using Serilog;

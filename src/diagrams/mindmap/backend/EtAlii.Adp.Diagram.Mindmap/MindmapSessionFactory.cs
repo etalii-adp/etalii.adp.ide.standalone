@@ -1,4 +1,6 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.History;
+
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>Opens a <see cref="MindmapSession"/> per connection - the module's fourth registration seam.</summary>

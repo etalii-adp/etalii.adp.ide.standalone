@@ -1,8 +1,6 @@
 #if DEBUG
 using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Common;
-using EtAlii.Adp.Sessions;
 using Grpc.Core;
 using Grpc.Core.Testing;
 using Microsoft.Extensions.FileProviders;

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Common;
 using System.Reflection;
 using Grpc.Core;
 using Serilog;

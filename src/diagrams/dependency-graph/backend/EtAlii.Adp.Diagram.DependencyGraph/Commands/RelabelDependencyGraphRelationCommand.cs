@@ -1,6 +1,7 @@
 
 
-using EtAlii.Adp.Common;
+using EtAlii.Adp.History;
+
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>Changes what a dependency is called; an empty label removes the key.</summary>

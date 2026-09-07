@@ -1,5 +1,3 @@
-using EtAlii.Adp.Common;
-
 namespace EtAlii.Adp.History;
 
 /// <summary>

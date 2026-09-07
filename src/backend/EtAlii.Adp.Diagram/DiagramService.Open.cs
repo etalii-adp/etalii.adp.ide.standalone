@@ -1,4 +1,5 @@
 ﻿using System.Threading.Channels;
+using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;

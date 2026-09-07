@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>Carries out a relabel. The inverse is the same command carrying the previous label.</summary>

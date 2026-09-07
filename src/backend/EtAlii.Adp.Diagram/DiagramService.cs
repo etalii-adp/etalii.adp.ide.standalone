@@ -1,8 +1,9 @@
 ﻿using System.Threading.Channels;
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using Google.Protobuf;
 using Grpc.Core;

@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>Carries out an add. The inverse is the removal of what was added.</summary>

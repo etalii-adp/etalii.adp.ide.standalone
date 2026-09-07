@@ -1,6 +1,7 @@
 
 
-using EtAlii.Adp.Common;
+using EtAlii.Adp.History;
+
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>Removes one connection.</summary>

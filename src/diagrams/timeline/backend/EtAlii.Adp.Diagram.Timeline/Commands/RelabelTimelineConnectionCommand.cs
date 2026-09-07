@@ -1,6 +1,7 @@
 
 
-using EtAlii.Adp.Common;
+using EtAlii.Adp.History;
+
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>Changes what a connection is called; an empty label removes the key.</summary>

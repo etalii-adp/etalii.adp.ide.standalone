@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>Rename an element (Requirement 13.1).</summary>

@@ -17,4 +17,11 @@
     <Protobuf Include="..\..\api\authentication.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\authentication.proto" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- SessionInterceptor.IsExempt is internal: which paths bypass the session check is
+         this project's own affair, visible only to the backend's tests. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Sessions.Tests" />
+  </ItemGroup>
+
 </Project>

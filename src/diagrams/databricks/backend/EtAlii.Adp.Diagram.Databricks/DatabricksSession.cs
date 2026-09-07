@@ -1,5 +1,6 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.History;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.Databricks;

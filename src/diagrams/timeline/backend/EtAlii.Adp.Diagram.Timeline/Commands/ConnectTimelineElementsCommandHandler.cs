@@ -1,6 +1,5 @@
+using EtAlii.Adp.History;
 
-
-using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>Carries out a connect. The inverse is the disconnection of what was connected.</summary>

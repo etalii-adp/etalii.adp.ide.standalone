@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
 using Grpc.Core;
