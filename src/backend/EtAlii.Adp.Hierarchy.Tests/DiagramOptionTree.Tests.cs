@@ -1,10 +1,9 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class DiagramOptionTreeTests
 {

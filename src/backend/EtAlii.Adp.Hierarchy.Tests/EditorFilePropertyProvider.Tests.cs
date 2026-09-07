@@ -1,11 +1,10 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// The editor family's one property provider (modular-text-editors Requirements 9.1-9.3):

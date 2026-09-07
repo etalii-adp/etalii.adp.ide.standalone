@@ -2,11 +2,10 @@ using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Editor;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// "Open as text" and "Open with…" (modular-text-editors Requirements 5.2, 4.4): offered

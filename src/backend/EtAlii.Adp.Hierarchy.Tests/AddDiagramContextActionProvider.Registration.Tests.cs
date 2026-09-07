@@ -1,12 +1,12 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// Add on a file registers it: the file becomes a diagram of a type the user names, by writing

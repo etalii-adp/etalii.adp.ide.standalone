@@ -1,10 +1,9 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// A publish over a nested registration's subject must not un-nest it. The product's writes go

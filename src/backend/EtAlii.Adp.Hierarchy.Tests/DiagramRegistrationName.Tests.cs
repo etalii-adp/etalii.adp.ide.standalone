@@ -1,7 +1,6 @@
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// The registration naming convention of adp-file-nesting Requirement 1, and the one thing it

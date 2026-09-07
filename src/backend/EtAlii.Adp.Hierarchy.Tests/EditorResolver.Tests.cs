@@ -1,10 +1,9 @@
 using EtAlii.Adp.Editor;
-using EtAlii.Adp.Hierarchy;
 using Serilog;
 using Serilog.Events;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// Which editor a file resolves to (modular-text-editors Requirements 2.2, 2.3, 3.2, 4.2,

@@ -1,10 +1,9 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// The three-valued explorer state, one fact per rule (small-refinements Requirements 3.1,

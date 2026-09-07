@@ -1,11 +1,10 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Editor;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// The explorer's diagram state, computed by the model's own scan and kept live over the
