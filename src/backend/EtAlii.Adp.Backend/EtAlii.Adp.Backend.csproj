@@ -24,11 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Hierarchy\Commands\" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- EditorResolver's logger-injecting constructor is internal: only the tests need it,
-         to keep the once-at-Error contract assertable without the shared static pipeline. -->
+    <!-- History's remaining internals - CommandHandlerInvoker, ICommandHandlerInvoker and
+         RetainedHistoryStack - are what the tests reach; the EditorResolver justification
+         this comment used to carry left with the Hierarchy extraction
+         (backend-project-decomposition task 10). -->
     <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
   </ItemGroup>
 
