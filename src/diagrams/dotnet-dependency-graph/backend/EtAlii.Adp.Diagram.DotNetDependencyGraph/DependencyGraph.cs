@@ -89,6 +89,40 @@ public sealed class DependencyGraph
     /// </remarks>
     public const int AmbientFloor = 5;
 
+    // WHY THIS RULE IS ABOUT PACKAGES, AND MUST STAY ABOUT PACKAGES.
+    //
+    // "Why not projects too" is the first question a reader has, and it is measured rather than
+    // argued. The two highest-degree nodes in this repository's own graph are BOTH PROJECTS, and
+    // both beat every package hub:
+    //
+    //   out-degree 87   EtAlii.Adp.Backend.Service   the composition root (project edges only;
+    //                                                 89 counting its two package references)
+    //   in-degree  65   EtAlii.Adp.Diagram           the contract every module implements
+    //   in-degree  26   xunit.v3 and the other two test-harness packages
+    //
+    // A degree rule applied to every node would hide both. And they carry the OPPOSITE
+    // information from a package hub at the same degree. `xunit.v3` on 26 test projects tells
+    // you nothing the project names do not; `Backend.Service` referencing 87 modules tells you
+    // exactly how this application is assembled, and `EtAlii.Adp.Diagram` with 65 dependents is
+    // the module contract itself. SAME DEGREE SIGNATURE, OPPOSITE INFORMATION CONTENT.
+    //
+    // The in-degree line is the one that matters, because it closes the obvious escape. It is
+    // tempting to answer "the rule measures how many projects reference a thing, so a
+    // composition root's outgoing edges were never at risk" - and that would be true of
+    // Backend.Service alone. EtAlii.Adp.Diagram is a project with an IN-degree of 65, measured
+    // exactly as a package's is, and larger than any of them. So the scoping is doing real work
+    // rather than being incidentally safe.
+    //
+    // Both figures were invisible until wildcard ProjectReferences were expanded (task 3): read
+    // literally, the composition root declares two references rather than 87.
+    //
+    // A note on the numbers themselves, because getting them wrong is how this paragraph was
+    // written twice. DIRECTION AND EDGE KIND ARE PART OF WHAT A DEGREE COUNTS. The first draft
+    // set an out-degree of 89 against an in-degree of 65 - and the 89 mixed project and package
+    // edges while the 65 was project edges alone, so it compared two different quantities twice
+    // over. Both drafts read plausibly. Say which direction and which kind before quoting a
+    // degree here.
+
     /// <summary>Derives the graph from one solution reading and the projects' own readings.</summary>
     /// <param name="solution">What the solution named and what resolved.</param>
     /// <param name="readings">
