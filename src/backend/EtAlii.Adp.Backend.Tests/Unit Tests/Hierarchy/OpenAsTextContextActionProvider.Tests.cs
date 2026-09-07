@@ -3,6 +3,7 @@ using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.TestSupport;
 using Xunit;
 using IoPath = System.IO.Path;
 

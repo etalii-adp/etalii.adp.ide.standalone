@@ -1,10 +1,9 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.TestSupport;
 
 /// <summary>
 /// A real <see cref="IHistoryStackStore"/> over the real dispatcher and the real handlers,
@@ -17,7 +16,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// keeps these tests checking what the user would get, and it is what lets them assert that
 /// an action can be undone.
 /// </remarks>
-internal static class TestHistory
+public static class TestHistory
 {
     /// <summary>
     /// The per-project store a provider now takes. A test hands this to the provider and

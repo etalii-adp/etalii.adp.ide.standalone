@@ -1,7 +1,6 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Diagram;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.TestSupport;
 
 /// <summary>
 /// The diagram definitions a test wants a subject to see, instead of whatever the running
@@ -9,9 +8,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// private copy before the nested types were lifted out, which is six places to change when
 /// the catalog interface moves.
 /// </summary>
-internal sealed class TestDiagramDefinitionCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
+public sealed class TestDiagramDefinitionCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
 {
-    internal TestDiagramDefinitionCatalog(params DiagramDefinition[] definitions)
+    public TestDiagramDefinitionCatalog(params DiagramDefinition[] definitions)
         : this((IReadOnlyList<DiagramDefinition>)definitions)
     {
     }

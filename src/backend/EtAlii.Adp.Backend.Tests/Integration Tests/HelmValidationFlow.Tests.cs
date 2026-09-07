@@ -3,6 +3,7 @@ using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.HelmCharts;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
+using EtAlii.Adp.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
