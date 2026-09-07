@@ -1,8 +1,8 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// Claims every element id, as every diagram module's resolver does, and then decides whether it

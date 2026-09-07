@@ -1,11 +1,11 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using Xunit;
 using Path = EtAlii.Adp.Common.Wire.Path;
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 public class ContextSelectionStoreTests : IDisposable
 {

@@ -20,9 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The context unit tests live in EtAlii.Adp.Backend.Tests and reach internals - the
-         moved-internals pattern, fourth instance. -->
-    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+    <!-- The context unit tests live in EtAlii.Adp.Context.Tests and reach internals - the
+         moved-internals pattern, repointed when the tests followed their subject home. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Context.Tests" />
   </ItemGroup>
 
 </Project>

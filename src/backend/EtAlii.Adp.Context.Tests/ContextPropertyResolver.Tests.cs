@@ -1,9 +1,9 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// The routing between the property grid and whichever module owns what is selected.

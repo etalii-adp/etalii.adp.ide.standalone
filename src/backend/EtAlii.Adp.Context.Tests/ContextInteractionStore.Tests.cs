@@ -1,11 +1,11 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// Uses real channels rather than a mocked writer, so these tests exercise exactly what

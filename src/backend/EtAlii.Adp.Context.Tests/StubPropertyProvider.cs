@@ -1,8 +1,8 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// A property provider that describes what it was given and records what it was asked to write.

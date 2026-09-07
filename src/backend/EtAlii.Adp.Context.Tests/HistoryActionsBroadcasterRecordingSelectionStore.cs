@@ -1,9 +1,9 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>Records the project-actions pushes; every other member is unreached by the broadcaster.</summary>
 internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContextSelectionStore

@@ -1,8 +1,8 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// Answers for entry ids, echoing the client path (or a fixed fill-in), and records
