@@ -4,7 +4,7 @@ using Grpc.Core;
 using Grpc.Core.Testing;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Sessions.Tests;
 
 public class SessionInterceptorTests
 {

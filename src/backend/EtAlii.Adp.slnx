@@ -33,6 +33,8 @@
   <Project Path="EtAlii.Adp.History/EtAlii.Adp.History.csproj" />
   <Project Path="EtAlii.Adp.History.Tests/EtAlii.Adp.History.Tests.csproj" />
   <Project Path="EtAlii.Adp.TestSupport/EtAlii.Adp.TestSupport.csproj" />
+  <Project Path="EtAlii.Adp.Projects.Tests/EtAlii.Adp.Projects.Tests.csproj" />
+  <Project Path="EtAlii.Adp.Sessions.Tests/EtAlii.Adp.Sessions.Tests.csproj" />
   <Project Path="EtAlii.Adp.Hierarchy/EtAlii.Adp.Hierarchy.csproj" />
   <Project Path="EtAlii.Adp.Projects/EtAlii.Adp.Projects.csproj" />
   <Project Path="EtAlii.Adp.Common/EtAlii.Adp.Common.csproj" />

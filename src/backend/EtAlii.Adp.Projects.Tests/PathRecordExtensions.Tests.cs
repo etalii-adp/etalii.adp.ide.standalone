@@ -2,7 +2,7 @@ using EtAlii.Adp.Projects;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Projects.Tests;
 
 /// <summary>
 /// The wire-path-to-absolute-path reconstruction (github-build-pipeline task 4.3's first
