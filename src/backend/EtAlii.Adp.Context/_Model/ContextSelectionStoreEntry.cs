@@ -1,5 +1,4 @@
 ﻿using System.Threading.Channels;
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Context.Wire;
 
 namespace EtAlii.Adp.Context;

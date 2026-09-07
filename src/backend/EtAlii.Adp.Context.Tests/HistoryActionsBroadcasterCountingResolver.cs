@@ -1,6 +1,4 @@
-﻿using EtAlii.Adp.Common;
-
-namespace EtAlii.Adp.Context.Tests;
+﻿namespace EtAlii.Adp.Context.Tests;
 
 internal sealed class HistoryActionsBroadcasterCountingResolver : IContextActionResolver
 {

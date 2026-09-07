@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common.Wire;
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// One editable - or merely visible - property of whatever is selected.

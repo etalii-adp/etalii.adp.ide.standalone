@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common.Wire;
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Contributes the properties of whatever is selected, and applies a change to one.

@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// A keypress an action answers to, expressed exactly as the client will see it on a

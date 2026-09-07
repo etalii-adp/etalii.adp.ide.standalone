@@ -1,4 +1,6 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Context;
+
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>

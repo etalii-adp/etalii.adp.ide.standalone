@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common.Wire;
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Resolves ids of one kind (one <see cref="ContextSource"/> member) into locations the

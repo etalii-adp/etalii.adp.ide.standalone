@@ -1,5 +1,4 @@
-﻿using EtAlii.Adp.Common;
-using EtAlii.Adp.Common.Wire;
+﻿using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
