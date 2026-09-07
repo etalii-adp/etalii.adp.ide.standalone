@@ -1,4 +1,4 @@
-using EtAlii.Adp.Backend.Problems;
+using EtAlii.Adp.Problems;
 
 namespace EtAlii.Adp.Backend.Tests;
 

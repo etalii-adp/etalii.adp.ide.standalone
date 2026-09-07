@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// What one validation run produced, and how much ground it actually covered - so a caller

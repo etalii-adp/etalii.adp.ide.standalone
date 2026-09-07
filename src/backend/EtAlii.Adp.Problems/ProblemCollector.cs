@@ -2,7 +2,7 @@ using EtAlii.Adp.Common;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>One run's growing answer: the problems, the counters and the two once-only guards.</summary>
 internal sealed class ProblemCollector(string root)

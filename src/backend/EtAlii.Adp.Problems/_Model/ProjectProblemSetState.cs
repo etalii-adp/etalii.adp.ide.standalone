@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// What a project's problem set means. Deliberately not a bool: an empty list that was

@@ -2,6 +2,8 @@
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
   </ItemGroup>

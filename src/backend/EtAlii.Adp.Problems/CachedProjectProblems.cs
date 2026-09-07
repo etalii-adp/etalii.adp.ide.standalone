@@ -1,6 +1,6 @@
 // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 internal sealed class CachedProjectProblems(string rootPath)
 {

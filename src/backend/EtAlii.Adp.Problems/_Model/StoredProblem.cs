@@ -1,6 +1,6 @@
 using EtAlii.Adp.Common;
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// One remembered problem: what a validator (or the router) reported, pinned to the file and

@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 internal sealed class NoProblemTracking : IDisposable
 {

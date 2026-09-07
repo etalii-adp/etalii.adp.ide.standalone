@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// Everything currently known to be wrong in one project - what the store holds and the

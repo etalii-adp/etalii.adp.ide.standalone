@@ -2,7 +2,7 @@ using Serilog;
 
 // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>One tracked project: its watcher, and the burst of paths waiting to settle.</summary>
 internal sealed class TrackedProblemRoot : IDisposable

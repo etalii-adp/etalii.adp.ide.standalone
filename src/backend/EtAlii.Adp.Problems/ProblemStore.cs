@@ -7,7 +7,7 @@ using EtAlii.Adp.Hierarchy;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <inheritdoc cref="IProblemStore" />
 /// <remarks>
