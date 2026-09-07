@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Problems\EtAlii.Adp.Problems.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.C4\EtAlii.Adp.Diagram.C4.csproj" />
   </ItemGroup>
 

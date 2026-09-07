@@ -2,7 +2,7 @@ using Microsoft.Extensions.Hosting;
 
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// After a restart, walks every project the store knows and re-validates it - sequentially,

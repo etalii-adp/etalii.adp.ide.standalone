@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// What is currently known to be wrong per project, and what survives a restart. One set

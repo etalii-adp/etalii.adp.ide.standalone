@@ -4,7 +4,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// Offers <b>Validate</b> on a diagram and <b>Validate folder</b> on a folder - the label

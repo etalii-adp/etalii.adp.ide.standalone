@@ -2,7 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// The problems area's answer to <see cref="IContextWatchHooks"/>: when a project gains a

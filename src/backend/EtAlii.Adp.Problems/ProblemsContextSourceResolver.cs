@@ -2,7 +2,7 @@ using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 
-namespace EtAlii.Adp.Backend.Problems;
+namespace EtAlii.Adp.Problems;
 
 /// <summary>
 /// Resolves the <c>problems</c> selection source - the errors-and-warnings panel selecting
