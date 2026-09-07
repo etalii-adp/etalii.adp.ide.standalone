@@ -1,7 +1,7 @@
-using EtAlii.Adp.Context;
+﻿using EtAlii.Adp.Context;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// The broadcaster turns a history change into one project-actions push. Driven with a fake

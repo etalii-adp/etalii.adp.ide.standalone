@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Tests;
+﻿namespace EtAlii.Adp.Context.Tests;
 
 internal sealed class StubResolverSubscription(ContextSelectionStoreStubResolver owner) : IDisposable
 {

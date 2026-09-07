@@ -1,8 +1,8 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 internal sealed class ContextActionResolverStubProvider : IContextActionProvider
 {

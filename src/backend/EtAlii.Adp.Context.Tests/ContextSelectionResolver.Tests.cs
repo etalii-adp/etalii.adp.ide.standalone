@@ -1,11 +1,11 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
 using Path = EtAlii.Adp.Common.Wire.Path;
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>
 /// The chain resolver must know nothing about any concrete kind of thing, so every test

@@ -1,8 +1,8 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Context.Tests;
 
 /// <summary>A resolver whose tracks the test can fire by hand and count disposals of.</summary>
 internal sealed class ContextSelectionStoreStubResolver : IContextSourceResolver
