@@ -97,11 +97,11 @@ them) is marked *ambient*, and the canvas leaves it out until you ask for it.
 
 **Only packages are ever hidden, and that is deliberate rather than incidental.** The two
 highest-degree nodes here are both *projects*, and both beat every package hub:
-`EtAlii.Adp.Backend.Service` with 89 outgoing edges, and `EtAlii.Adp.Diagram` with 65 incoming
-ones — more than the 26 of the largest package. A degree rule applied to every node would hide
-both, and they carry the **opposite** information from a package at the same degree: `xunit.v3`
-on 26 test projects tells you nothing the project names do not, while the composition root
-referencing 89 modules tells you how the application is assembled. Same degree signature,
+`EtAlii.Adp.Backend.Service` with 87 outgoing project edges, and `EtAlii.Adp.Diagram` with 65
+incoming ones — more than the 26 of the largest package. A degree rule applied to every node
+would hide both, and they carry the **opposite** information from a package at the same degree:
+`xunit.v3` on 26 test projects tells you nothing the project names do not, while the composition
+root referencing 87 modules tells you how the application is assembled. Same degree signature,
 opposite information content.
 
 Projects are **not** grouped or folded either. 102 of them layered by depth is legible, and
