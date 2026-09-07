@@ -1,9 +1,8 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Documents.Tests;
 
 /// <summary>
 /// What a reader must permit for <see cref="AdpFileWriter.Save"/> to be able to replace the file

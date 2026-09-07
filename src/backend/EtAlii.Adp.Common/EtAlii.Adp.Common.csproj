@@ -3,7 +3,7 @@
   <!--
     The bottom of the backend: the contracts and primitives many areas share. Deliberately
     empty at creation (backend-project-decomposition task 2) - the shared protos, the
-    command/history contract, the Line document family and SessionContext descend into it
+    command/history contract and SessionContext descend into it
     one coordinated landing at a time. Nothing here may reference any other project.
   -->
 

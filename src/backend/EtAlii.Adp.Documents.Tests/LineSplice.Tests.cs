@@ -1,8 +1,7 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Documents.Tests;
 
 /// <summary>
 /// The shared splice mechanics (file-io-centralization Requirement 3.1), exercised against

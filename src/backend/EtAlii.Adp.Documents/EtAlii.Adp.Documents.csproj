@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The shared document machinery, extracted from Common on the user's decision
+    (post-decomposition backlog item 5): the Line document family every diagram
+    module parses with, AdpFileWriter and its result model, and the shared reader.
+    The extraction relocates a widely shared dependency rather than decoupling one
+    - nearly every consumer of Common references this project too, by design.
+    No protos live here: no proto names a document type.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+  </ItemGroup>
+
+</Project>

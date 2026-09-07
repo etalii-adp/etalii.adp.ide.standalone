@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Common;
+using EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// Finding and replacing lines inside a <see cref="LineDocument"/>: the mechanics a

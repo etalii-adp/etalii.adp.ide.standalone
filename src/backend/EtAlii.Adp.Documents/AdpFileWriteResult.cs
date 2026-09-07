@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Common;
+using EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// What came of trying to create a file. A taken name is its own outcome rather than a

@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.Databricks\EtAlii.Adp.Diagram.Databricks.csproj" />
   </ItemGroup>
