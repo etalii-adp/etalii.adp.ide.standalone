@@ -2489,3 +2489,44 @@ measurement, on the two models the report named.
   are pinned by DiagramCanvas.test.tsx's abandon pair instead. Perceived smoothness is
   quantified by the jsdom halves in the task-5 implementation log (before: 10.4-47.8ms per
   frame on the rdf shapes; after: 0.23-0.33ms, flat across model sizes).
+
+## A cached `core.unknown-type` problem outlives the build that produced it (dotnet-dependency-graph, showcase report)
+
+**A user reported this module's showcase as broken and it is not.** The diagram opens and draws
+correctly; what was wrong was the problems panel, which carried a validation result from a build
+in which the type did not yet exist — and carried it **without the `stale` marker other outdated
+entries wear**. Three people, this Developer included, spent an evening diagnosing a module from
+a message that was describing a previous build.
+
+The reason it is here rather than in a unit test: **nothing below the running app has the
+persistent problem cache in it.** The integration suites deliberately replace `IProblemStore`
+with one rooted in a temp folder — the comment in `DiagramToolboxFlow.Tests.cs` says why, and it
+is a good reason — so every automated test starts with an empty cache and cannot see an entry
+that survives a restart. The cache lives in the real user profile, which is exactly what makes
+the defect reachable and what makes it invisible to the suite.
+
+- **Steps**: run the app from a worktree on the Developer's reserved ports (both port files
+  changed and reverted afterwards — `src/client/vite.config.ts`,
+  `src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json` and the
+  `applicationUrl` in `Properties/launchSettings.json`), browsing the backend's port. Open the
+  **Showcase** project, expand `diagrams / dotnet-dependency-graph / pipeline-toolkit`, expand
+  `PipelineToolkit.slnx` — **the registration nests under the solution, so it is not a visible
+  sibling** — and double-click `PipelineToolkit.adp`. Read the problems panel **before**
+  pressing anything, then press **Validate**.
+- **Expected**: the canvas draws four project boxes (`Pipeline.Core`, `Pipeline.Storage` on
+  `net10.0, netstandard2.0`, `Pipeline.Cli`, `Pipeline.Core.Tests`) and three package boxes
+  banded to their right, with **`Serilog` showing `3.1.1, 4.4.0`** — the version conflict the
+  example exists to demonstrate. No package is hidden: four projects is below the ambient
+  filter's five-dependent floor, so the "N packages are hidden" notice must **not** appear.
+  The problems panel must carry **no** entry for this path. If it carries
+  `'dotnet/dependency-graph' is not a known diagram type.` while the backend's startup log says
+  `Discovered diagram type dotnet/dependency-graph`, that entry is cached from an older build:
+  pressing Validate clears it and the count drops.
+- **Result 2026-09-08**: **run** from worktree `ddgfix` on backend 5091 / client 5191, on
+  develop `a45f6f5b`, via the developer session (no sign-in form — see the note at the top of
+  this file). The diagram drew all seven boxes with the `Serilog 3.1.1, 4.4.0` conflict and no
+  hidden-package notice, exactly as expected. The panel **did** carry the stale
+  `not a known diagram type` entry, unmarked, on a backend that had logged the discovery
+  seconds earlier; **Validate cleared it and the error count went 3 → 2**, which is the
+  evidence that it was cached rather than live. The reported "no projects ADP could resolve"
+  did not reproduce at all, on this build or in any harness.
