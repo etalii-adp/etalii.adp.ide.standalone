@@ -111,7 +111,7 @@ action id for the word "rename" would put your module's vocabulary into shared c
 family rulings forbid.
 
 So the backend says it. Pass `target.ElementId` as the trailing argument of
-[`ContextInputRequest`](../src/backend/EtAlii.Adp.Common/Contexts/_Model/ContextDialogRequest.cs)
+[`ContextInputRequest`](../src/backend/EtAlii.Adp.Context/_Model/ContextDialogRequest.cs)
 on exactly the prompts whose value is the label, and leave every other prompt alone — the
 argument is defaulted, so nothing you already wrote changes.
 [`MindmapContextActionProvider`](../src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/MindmapContextActionProvider.cs)
