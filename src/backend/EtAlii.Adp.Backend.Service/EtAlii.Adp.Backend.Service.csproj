@@ -1,7 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\EtAlii.Adp.Client\EtAlii.Adp.Client.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Authentication\EtAlii.Adp.Authentication.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Sessions\EtAlii.Adp.Sessions.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
