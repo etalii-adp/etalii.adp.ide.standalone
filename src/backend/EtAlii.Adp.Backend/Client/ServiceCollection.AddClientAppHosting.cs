@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace EtAlii.Adp.Client;
+namespace EtAlii.Adp.Backend.Client;
 
 public static class ServiceCollectionAddClientAppHostingExtensions
 {

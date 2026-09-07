@@ -1,4 +1,4 @@
-<Solution>
+﻿<Solution>
   <Folder Name="/_Globals/">
     <File Path="../../.gitignore" />
     <File Path="../../CLAUDE.md" />
@@ -24,7 +24,6 @@
   <Project Path="EtAlii.Adp.Tests/EtAlii.Adp.Tests.csproj" />
   <Project Path="EtAlii.Adp.Backend.Service/EtAlii.Adp.Backend.Service.csproj" />
   <Project Path="EtAlii.Adp.Backend.Tests/EtAlii.Adp.Backend.Tests.csproj" />
-  <Project Path="EtAlii.Adp.Client/EtAlii.Adp.Client.csproj" />
   <Project Path="EtAlii.Adp.Authentication/EtAlii.Adp.Authentication.csproj" />
   <Project Path="EtAlii.Adp.Sessions/EtAlii.Adp.Sessions.csproj" />
   <Project Path="EtAlii.Adp.Context/EtAlii.Adp.Context.csproj" />

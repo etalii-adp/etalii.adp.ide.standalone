@@ -1,13 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Source-empty since the post-decomposition backlog's item 4 (History was the last
-    resident): this shell survives as the destination backlog item 9 moves the Client
-    hosting into. It owns no generated types - a new .proto is deliberately added to
-    the project that should own it, never picked up by a glob; the default-include
-    glob that used to live here was removed with its last exclusion, because an
-    exclude list is a rule that must be remembered and an absent item is a rule that
-    cannot be forgotten.
+    The host-facing residue of the decomposition: after eleven tasks shed every
+    functional area, backlog item 9 folded the client hosting in under Client/ -
+    serving the built client app and proxying to the Vite dev server in development,
+    hosting-facing code that takes the ASP.NET Core frame and depends on no
+    functional project. It owns no generated types - a new .proto is deliberately
+    added to the project that should own it, never picked up by a glob; the
+    default-include glob that used to live here was removed with its last exclusion,
+    because an exclude list is a rule that must be remembered and an absent item is
+    a rule that cannot be forgotten.
   -->
 
   <ItemGroup>
