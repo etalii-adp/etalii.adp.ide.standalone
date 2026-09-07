@@ -47,7 +47,7 @@
   - **The guarding test: a package whose version changes keeps its element id.** It **must be seen to fail** against an id that includes the version, and only then be trusted. A test that has never been watched failing against the defect it guards is not a guard - and this one guards the design's load-bearing decision, which review left unchallenged rather than endorsed on its merits.
   - _Requirements: 3.1, 3.4, 3.5, 6.7_
 
-- [ ] 5. `PackageDescriptionReader` - the local NuGet cache, and nothing else **[normal]**
+- [-] 5. `PackageDescriptionReader` - the local NuGet cache, and nothing else **[normal]**
   - Files: `PackageDescriptionReader.cs`, tests.
   - Reads the `.nuspec` from the global packages folder and takes its description. **No feed. No network. No exception.** This is the user's decision, taken over a more capable recommendation, to keep the workspace-files-only principle absolute.
   - **A package that is not cached yields absence, not an error** - and absence must be distinguishable from an empty description.
