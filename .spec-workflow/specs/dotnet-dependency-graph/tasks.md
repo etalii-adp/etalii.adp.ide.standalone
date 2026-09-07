@@ -34,13 +34,13 @@
   - **An unreadable solution and a missing project file are reported, never swallowed and never fatal** - the diagram opens with what resolved.
   - _Requirements: 2.1, 2.2, 2.4_
 
-- [ ] 3. `ProjectReader` - references, frameworks, central package management **[normal]**
+- [-] 3. `ProjectReader` - references, frameworks, central package management **[normal]**
   - Files: `ProjectReader.cs`, tests.
   - `ProjectReference`, `PackageReference`, `TargetFramework`/`TargetFrameworks`. **A `PackageReference` with no `Version` resolves from `Directory.Packages.props`, walking upward as MSBuild does - this repository uses central package management, so it is the normal case here, not an edge case.**
   - **What the reader does not resolve is written in the module readme**, not left for a reader to discover from a missing edge.
   - _Requirements: 3.2, 3.3, 3.6_
 
-- [ ] 4. `DependencyGraph` and the element id scheme **[normal]**
+- [-] 4. `DependencyGraph` and the element id scheme **[normal]**
   - Files: `DependencyGraph.cs`, `_Model/` node and edge records, tests.
   - Ids: `project:<path relative to the solution>`, `package:<package id>` - **the package id carries no version, deliberately.**
   - One element per package id; a package referenced at several versions is **one element marked as a version conflict, with the versions carried as properties**. Collapsing loudly, not silently.
