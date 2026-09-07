@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
-import { ProblemSchema, ProblemSeverity } from "@client/generated/context_pb";
+import { ProblemSchema, ProblemSeverity } from "@client/generated/problems_pb";
 import {
   PipelineElementKindProto,
   PipelineElementPayloadSchema,

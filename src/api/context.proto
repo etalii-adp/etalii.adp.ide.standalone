@@ -4,6 +4,7 @@ package etalii.adp;
 
 import "shared.proto";     // ShortGuid
 import "context-contract.proto"; // the shared context vocabulary
+import "problems.proto"; // ProjectProblems rides the stream
 import "connection.proto"; // Path
 import "elements.proto";   // ElementId
 import "google/protobuf/any.proto";
@@ -99,76 +100,6 @@ message ContextSelectionChanged {
 // Requirement 5.3, Deviation 1).
 message ContextProjectActions {
   repeated ContextActionGroup actions = 1;
-}
-
-// Where in a document a problem sits, when its rule can say. Unset on the Problem means
-// the file itself is the subject.
-message ProblemLocation {
-  oneof location {
-    // The diagram element the problem sits on - the same id the delta stream carries for
-    // it, so activating the problem can select the element.
-    ElementId element_id = 1;
-    // The 1-based line of the document text, for a rule that judged the text.
-    uint32 line = 2;
-    // Another file entirely, for a diagram whose subject is a folder of them: the mistake is
-    // in the file that declared it, not in the .adp that marks the folder. Activating such a
-    // problem reveals that file rather than the diagram.
-    ProblemFileLocation file = 3;
-  }
-}
-
-// A file inside a folder-subject diagram, and optionally a line in it.
-message ProblemFileLocation {
-  // Project-relative, never absolute - the same rule Problem.path obeys.
-  Path path = 1;
-  uint32 line = 2;  // 1-based; 0 when the rule can only name the file
-}
-
-enum ProblemSeverity {
-  PROBLEM_SEVERITY_UNSPECIFIED = 0;
-  WARNING = 1;
-  ERROR = 2;
-  // Informational: worth saying, nothing wrong. Numbered 3 rather than inserted below
-  // WARNING because proto enum values are append-only - renumbering WARNING and ERROR would
-  // reinterpret every message already on a wire or in a client's hands. The severity ORDER
-  // lives in the domain enum (DiagramProblemSeverity), never in these numbers.
-  INFO = 3;
-}
-
-// One thing wrong with one file, as validation found it.
-message Problem {
-  ProblemSeverity severity = 1;
-  string message = 2;              // meant for the user
-  // Project-relative, never absolute: the client never sees a filesystem path, and two
-  // viewers of the same project must read the same locator (tech.md).
-  Path path = 3;
-  ProblemLocation location = 4;    // unset: the file itself
-  string rule_id = 5;              // "core.unknown-type", "mindmap.empty-root", ...
-  bool stale = 6;                  // the file (or its rules) changed since this was found
-}
-
-// Whether the problem list can be believed. NEVER_VALIDATED is not the same as "clean":
-// an empty list that was never checked says nothing (Requirement 1.7).
-enum ProblemSetState {
-  PROBLEM_SET_STATE_UNSPECIFIED = 0;
-  NEVER_VALIDATED = 1;
-  VALIDATING = 2;
-  VALIDATED = 3;
-}
-
-// Everything currently known to be wrong in the project - pushed on register and on every
-// change, to every connection in the project, so two viewers cannot disagree.
-message ProjectProblems {
-  ProblemSetState state = 1;
-  repeated Problem problems = 2;
-  // Counts are of the whole set, not of what was sent: a truncated list still says how
-  // bad things really are (Requirement 5.6).
-  uint32 error_count = 3;
-  uint32 warning_count = 4;
-  uint32 truncated_at = 5;         // 0 when the whole set was sent
-  // Informational findings are counted separately and never folded into warning_count: a
-  // panel that adds them together would report a clean file as having something wrong.
-  uint32 info_count = 6;
 }
 
 // Everything the Watch stream carries: selection changes, prompts an action started on this

@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Problems.Tests;
 
 internal sealed class ProjectValidatorTestValidator(
     DiagramOrigin origin, IReadOnlyList<DiagramProblem> problems, bool throwing, bool hanging) : IDiagramValidator

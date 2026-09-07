@@ -1,10 +1,11 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Problems;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Problems.Tests;
 
 /// <summary>
 /// The informational severity, guarded at every point it could quietly disappear.

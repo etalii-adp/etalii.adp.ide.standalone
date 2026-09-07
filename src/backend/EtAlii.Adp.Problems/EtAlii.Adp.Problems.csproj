@@ -13,6 +13,7 @@
     <!-- The problems unit tests live in EtAlii.Adp.Backend.Tests and reach internals - the
          moved-internals pattern, fifth instance. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Problems.Tests" />
   </ItemGroup>
 
 </Project>

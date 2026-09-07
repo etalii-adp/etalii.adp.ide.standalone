@@ -4,7 +4,7 @@ import {
   PipelineElementKindProto,
   PipelineElementPayloadSchema,
 } from "@client/generated/azure-pipeline_pb";
-import { ProblemSchema, ProblemSeverity } from "@client/generated/context_pb";
+import { ProblemSchema, ProblemSeverity } from "@client/generated/problems_pb";
 import { indicatorsOf, problemMarkOf, problemsOn } from "./pipelineIndicators";
 
 function payload(extra: Record<string, unknown> = {}) {

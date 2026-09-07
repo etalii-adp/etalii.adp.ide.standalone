@@ -9,8 +9,10 @@ import {
 } from "react";
 import { create } from "@bufbuild/protobuf";
 import { ContextSelectionSource } from "../../generated/context-contract_pb";
-import { ContextSelectionAction, ContextSelectionSchema, ProblemSetState, ProblemSeverity } from "../../generated/context_pb";
-import type { ContextSelection, Problem } from "../../generated/context_pb";
+import { ContextSelectionAction, ContextSelectionSchema } from "../../generated/context_pb";
+import { ProblemSetState, ProblemSeverity } from "../../generated/problems_pb";
+import type { ContextSelection } from "../../generated/context_pb";
+import type { Problem } from "../../generated/problems_pb";
 import { ContextMenu } from "../context/ContextMenu";
 import { toMenuGroups } from "../context/toMenuGroups";
 import { requestTextTab } from "./textTabRequests";

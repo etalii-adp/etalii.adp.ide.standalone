@@ -7,7 +7,7 @@ using EtAlii.Adp.TestSupport;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Problems.Tests;
 
 public class ProblemStoreTests : IDisposable
 {
