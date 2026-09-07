@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/dotnet-dependency-graph/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-07T20:40:22.165Z",
       "trigger": "initial",
+      "approvalId": "approval_1788813621886_o7ebmwc7w",
+      "approvalTitle": "Tasks: .NET project and package dependency graph"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-07T20:41:18.877Z",
+      "trigger": "approved",
       "approvalId": "approval_1788813621886_o7ebmwc7w",
       "approvalTitle": "Tasks: .NET project and package dependency graph"
     }

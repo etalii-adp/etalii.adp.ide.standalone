@@ -3,8 +3,10 @@
   "title": "Tasks: .NET project and package dependency graph",
   "filePath": ".spec-workflow/specs/dotnet-dependency-graph/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-07T20:40:21.887Z",
   "category": "spec",
-  "categoryName": "dotnet-dependency-graph"
+  "categoryName": "dotnet-dependency-graph",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-07T20:41:18.887Z"
 }
