@@ -1,3 +1,4 @@
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Context;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,6 +39,11 @@ public static class ServiceCollectionAddDotNetDependencyGraphExtension
         // property grid read the same graph rather than each deriving its own.
         services.AddSingleton<DependencyGraphStore>();
         services.AddSingleton<IDependencyGraphStore>(provider => provider.GetRequiredService<DependencyGraphStore>());
+
+        // PROVISIONAL, awaiting an Architect ruling - see DotNetSolutionDocumentFactory. Core
+        // refuses to start when a type declares a document extension and registers no factory,
+        // and the design's body: binding requires the extension to be declared.
+        services.AddSingleton<IDiagramDocumentFactory, DotNetSolutionDocumentFactory>();
 
         services.AddSingleton<DependencyElementMapper>();
         services.AddSingleton<IDiagramSessionFactory, DotNetDependencyGraphSessionFactory>();

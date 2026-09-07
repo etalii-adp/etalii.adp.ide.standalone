@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using EtAlii.Adp.Documents;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
@@ -59,7 +60,11 @@ public sealed class SolutionReader
         string text;
         try
         {
-            text = File.ReadAllText(solutionPath);
+            // SharedDocumentReader rather than File.ReadAllText: the raw API opens at
+            // FileShare.Read and loses to a concurrent save, so a solution being written by an
+            // IDE at the moment the diagram opens would read as unreadable. ShapeOfFileAccess
+            // caught this - the guard is real, and it was right.
+            text = SharedDocumentReader.ReadAllText(solutionPath);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
