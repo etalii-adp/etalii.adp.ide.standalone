@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package etalii.adp.dotnetdependencygraph;
+
+// A sub-namespace rather than the module's own, following the ansible and mindmap precedent:
+// this module's wire shapes and its domain model share names - the node and edge kinds are
+// genuinely the same concepts, flattened - and generating into the module namespace would
+// collide with the _Model records outright. `Wire.DependencyElementKind` versus
+// `DependsOnKind` reads unambiguously at every use site.
+option csharp_namespace = "EtAlii.Adp.Diagram.DotNetDependencyGraph.Wire";
+
+// The payload of one node or edge of a .NET dependency graph, packed into the core Element's
+// Any. Defined in this module's own api folder; no core proto is edited to add it. Position,
+// size, id and type live on the core Element; this carries only what is this graph's own.
+message DependencyElementPayload {
+  // "EtAlii.Adp.Diagram" for a project, "Serilog" for a package - what the box is labelled.
+  string name = 1;
+
+  DependencyElementKind kind = 2;
+
+  // Project-relative, never absolute: what the canvas hands to revealPath when a project node
+  // is activated, following the precedent every other module's locator sets. The client never
+  // sees a filesystem path, and two viewers of one solution read the same locator. Empty for a
+  // package, which is not a file in this workspace at all.
+  repeated string project_relative_path = 3;
+
+  // Every framework a project targets; empty for a package. Multi-targeting is ordinary, so
+  // this is repeated rather than a single string.
+  repeated string target_frameworks = 4;
+
+  // Every version the solution's projects ask for, for a package; empty for a project. More
+  // than one entry is a version conflict, which `has_version_conflict` states outright rather
+  // than leaving the canvas to infer it from a count.
+  repeated string versions = 5;
+
+  // Whether this solution's projects disagree about the package's version. Requirement 3.5's
+  // "collapsing loudly": the canvas marks it, rather than the difference being lost in a
+  // silent collapse to one box.
+  bool has_version_conflict = 6;
+}
+
+// What a node or edge of this graph is. The two node kinds are visually distinct on the canvas
+// (Requirement 3.1) and the two edge kinds carry the two reference kinds apart.
+enum DependencyElementKind {
+  DEPENDENCY_ELEMENT_KIND_UNSPECIFIED = 0;
+  DEPENDENCY_ELEMENT_KIND_PROJECT = 1;
+  DEPENDENCY_ELEMENT_KIND_PACKAGE = 2;
+  DEPENDENCY_ELEMENT_KIND_PROJECT_REFERENCE = 3;
+  DEPENDENCY_ELEMENT_KIND_PACKAGE_REFERENCE = 4;
+}
