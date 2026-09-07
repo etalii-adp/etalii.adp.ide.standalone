@@ -1,8 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Code, ConnectError, createClient } from "@connectrpc/connect";
-import { useAuth } from "@client/auth/AuthContext";
-import { DiagramService } from "@client/generated/diagrams_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { useDiagramStream } from "@client/diagrams/useDiagramStream";
 import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type DotNetDependencyGraphModel } from "./dotnetDependencyGraphModel";
 
@@ -29,75 +26,34 @@ export interface DotNetDependencyGraphStream {
 }
 
 /**
- * Opens the dependency graph at `path` over `DiagramService.Open` and folds its delta stream
- * into a `DotNetDependencyGraphModel`, re-baselining on reconnect. The whole graph is delivered
- * at open; the view report tells the backend what the reader is looking at.
+ * Opens the dependency graph at `path` and folds its delta stream into a
+ * `DotNetDependencyGraphModel`. Transport, lifecycle, retry and state are the shared
+ * `useDiagramStream`'s; what is this module's own is the model, its mapping, and the two calls
+ * built on the client that hook returns.
+ *
+ * <b>This hand-rolled its own open loop until now, and the loop had drifted.</b> Hand-rolling is
+ * sanctioned - `useDiagramStream`'s own doc-comment says three modules do it and report
+ * perfectly well - so the defect was never the duplication itself. It was what the duplicate
+ * had lost: <b>on a clean stream end this re-opened immediately, with no delay</b>, where the
+ * shared hook waits `RECONNECT_DELAY_MS`. That delay is hot-loop protection
+ * (technical-debt-cleanup R3.4): a server that keeps closing the stream could otherwise have
+ * this client re-opening it as fast as the event loop allows.
+ *
+ * Adopting rather than adding the delay, because a second copy that has already drifted once
+ * will drift again, and nothing here needed to be different.
  */
-export function useDotNetDependencyGraphStream(projectId: Uint8Array, path: readonly string[]): DotNetDependencyGraphStream {
-  const { transport } = useAuth();
+export function useDotNetDependencyGraphStream(
+  projectId: Uint8Array,
+  path: readonly string[],
+): DotNetDependencyGraphStream {
   const { watchId } = useContextConnection();
-  const [model, setModel] = useState<DotNetDependencyGraphModel>(emptyModel);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-  const clientRef = useRef(createClient(DiagramService, transport));
+  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
 
-  const pathKey = path.join("/");
-
-  const reportView = viewReportOf(clientRef.current, projectId, watchId, path);
-
-  useEffect(() => {
-    const client = clientRef.current;
-    const controller = new AbortController();
-    let active = true;
-    setModel(emptyModel);
-    setFailed(false);
-    setLoading(true);
-
-    void (async () => {
-      while (active) {
-        try {
-          const stream = client.open(
-            { projectId: { value: projectId }, watchId: { value: watchId }, path: { segments: [...path] } },
-            { signal: controller.signal },
-          );
-          for await (const delta of stream) {
-            if (!active) {
-              return;
-            }
-            setLoading(false);
-            setModel((current) => applyDelta(current, delta));
-          }
-        } catch (error) {
-          if (!active) {
-            return;
-          }
-          if (
-            error instanceof ConnectError &&
-            (error.code === Code.FailedPrecondition ||
-              error.code === Code.NotFound ||
-              error.code === Code.Unimplemented)
-          ) {
-            setFailed(true);
-            setLoading(false);
-            return;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          setModel(emptyModel);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-    // path is compared by value through pathKey, not by array identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, watchId, pathKey]);
+  const reportView = viewReportOf(client, projectId, watchId, path);
 
   const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
     try {
-      const response = await clientRef.current.moveElement({
+      const response = await client.moveElement({
         projectId: { value: projectId },
         watchId: { value: watchId },
         path: { segments: [...path] },
