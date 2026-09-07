@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common;
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Finds the properties of a target across every provider registered for its scope, and applies

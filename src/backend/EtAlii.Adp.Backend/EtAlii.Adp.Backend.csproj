@@ -6,6 +6,7 @@
     <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
@@ -23,7 +24,7 @@
       client stubs generated here to call the services in-process.
     -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both"
-              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto;..\..\api\diagrams.proto;..\..\api\deltas.proto;..\..\api\projects.proto;..\..\api\authentication.proto;..\..\api\context-contract.proto;..\..\api\hierarchy.proto" />
+              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto;..\..\api\diagrams.proto;..\..\api\deltas.proto;..\..\api\projects.proto;..\..\api\authentication.proto;..\..\api\context-contract.proto;..\..\api\hierarchy.proto;..\..\api\context.proto" />
   </ItemGroup>
 
   <ItemGroup>

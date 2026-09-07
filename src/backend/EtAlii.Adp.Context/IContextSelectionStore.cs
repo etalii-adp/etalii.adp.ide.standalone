@@ -1,7 +1,8 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Context.Wire;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Re-derives a record's actions after the things it names changed underneath it.

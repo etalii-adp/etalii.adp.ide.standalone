@@ -3,7 +3,7 @@ using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// The one thing that turns a history change into a push: it subscribes once to the history

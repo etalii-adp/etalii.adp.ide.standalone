@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using EtAlii.Adp.Context.Wire;
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <inheritdoc cref="IContextInteractionStore" />
 public sealed class ContextInteractionStore : IContextInteractionStore

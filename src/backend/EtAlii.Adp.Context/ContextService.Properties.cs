@@ -1,7 +1,8 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Context.Wire;
 using Grpc.Core;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// The property half of <see cref="ContextService"/>: what the selection has, and changing

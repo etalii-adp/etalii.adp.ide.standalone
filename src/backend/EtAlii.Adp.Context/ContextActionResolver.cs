@@ -1,6 +1,6 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Routes purely by scope and by what providers report - it knows no action id and no

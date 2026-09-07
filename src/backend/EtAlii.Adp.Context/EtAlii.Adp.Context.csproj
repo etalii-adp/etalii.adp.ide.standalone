@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The context wire contract - the stream envelope and the service - owned here since
+         the area extraction; the vocabulary every area speaks lives in context-contract.proto
+         under Common. -->
+    <Protobuf Include="..\..\api\context.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\context.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The context unit tests live in EtAlii.Adp.Backend.Tests and reach internals - the
+         moved-internals pattern, fourth instance. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+  </ItemGroup>
+
+</Project>

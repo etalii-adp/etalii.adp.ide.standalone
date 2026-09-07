@@ -1,10 +1,11 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Owns what each connection currently has selected, and the one stream a browser
@@ -17,7 +18,7 @@ namespace EtAlii.Adp.Backend.Context;
 /// Nothing here knows about files, folders or any diagram type: resolution goes through
 /// <see cref="ContextSelectionResolver"/> and actions through <see cref="IContextActionResolver"/>.
 /// </remarks>
-public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextServiceBase
+public sealed partial class ContextService : Wire.ContextService.ContextServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<ContextService>();
 
@@ -28,9 +29,7 @@ public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextSe
     private readonly IContextPropertyResolver _contextPropertyResolver;
     private readonly IContextInteractionStore _contextInteractionStore;
     private readonly IHistoryStackStore _historyStacks;
-    private readonly Problems.ProblemBroadcaster _problemBroadcaster;
-    private readonly Problems.ProblemMaintenance _problemMaintenance;
-    private readonly Problems.StartupRevalidation _startupRevalidation;
+    private readonly IContextWatchHooks _watchHooks;
 
     public ContextService(
         IProjectStore projectStore,
@@ -40,9 +39,7 @@ public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextSe
         IContextPropertyResolver contextPropertyResolver,
         IContextInteractionStore contextInteractionStore,
         IHistoryStackStore historyStacks,
-        Problems.ProblemBroadcaster problemBroadcaster,
-        Problems.ProblemMaintenance problemMaintenance,
-        Problems.StartupRevalidation startupRevalidation)
+        IContextWatchHooks watchHooks)
     {
         _projectStore = projectStore;
         _selectionStore = selectionStore;
@@ -51,9 +48,7 @@ public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextSe
         _contextPropertyResolver = contextPropertyResolver;
         _contextInteractionStore = contextInteractionStore;
         _historyStacks = historyStacks;
-        _problemBroadcaster = problemBroadcaster;
-        _problemMaintenance = problemMaintenance;
-        _startupRevalidation = startupRevalidation;
+        _watchHooks = watchHooks;
     }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
@@ -138,13 +133,12 @@ public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextSe
         // watcher follows its files, and if the startup pass is still working through the
         // backlog this project's turn moves to the front - its freshness is the one the
         // user can see (errors-and-warnings-panel Requirements 4.2, 5).
-        _problemMaintenance.Track(rootPath);
-        _startupRevalidation.Prioritize(rootPath);
+        _watchHooks.ProjectWatched(rootPath);
 
         // Registering writes the baseline first, so a late subscriber is consistent
         // before anything else can arrive. The problems ride along as data: only the
         // broadcaster knows both stores.
-        _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions, _problemBroadcaster.CurrentFor(rootPath));
+        _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions, _watchHooks.CurrentFor(rootPath));
         _contextInteractionStore.Register(watchId, channel.Writer);
         _logger.Information(
             "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",

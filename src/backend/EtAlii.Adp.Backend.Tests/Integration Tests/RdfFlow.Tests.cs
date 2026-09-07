@@ -1,6 +1,7 @@
 using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;

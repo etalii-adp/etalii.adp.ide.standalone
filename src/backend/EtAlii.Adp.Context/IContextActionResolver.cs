@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common;
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>Resolved action, paired with the provider that owns it.</summary>
 public sealed record ContextActionOwner(IContextActionProvider Provider, ContextActionDefinition Action);

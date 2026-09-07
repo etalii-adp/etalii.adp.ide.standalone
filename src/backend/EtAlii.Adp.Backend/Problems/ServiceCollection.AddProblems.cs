@@ -1,5 +1,5 @@
-using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,6 +44,10 @@ public static class ServiceCollectionAddProblemsExtension
         services.AddSingleton<IContextActionProvider, ValidateContextActionProvider>();
         services.AddSingleton<IContextActionProvider, ValidateAllContextActionProvider>();
         services.AddSingleton<IContextSourceResolver, ProblemsContextSourceResolver>();
+
+        // The watch seam Context consumes - see ContextWatchHooks; registered here
+        // because the implementation is this area's, however Context-shaped the interface.
+        services.AddSingleton<IContextWatchHooks, ContextWatchHooks>();
 
         return services;
     }

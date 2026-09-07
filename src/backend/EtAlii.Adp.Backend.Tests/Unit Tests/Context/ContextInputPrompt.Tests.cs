@@ -1,10 +1,9 @@
-using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Context;
 using Xunit;
-
 // The generated gRPC stub for `service ContextService` claims the same simple name in
 // EtAlii.Adp, so the backend's own service has to be named through an alias here.
-using BackendContextService = EtAlii.Adp.Backend.Context.ContextService;
+using BackendContextService = EtAlii.Adp.Context.ContextService;
 
 namespace EtAlii.Adp.Backend.Tests;
 
