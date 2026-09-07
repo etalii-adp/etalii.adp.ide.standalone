@@ -1,7 +1,5 @@
 using System.Globalization;
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using YamlDotNet.RepresentationModel;
 
 namespace EtAlii.Adp.Diagram.Timeline;

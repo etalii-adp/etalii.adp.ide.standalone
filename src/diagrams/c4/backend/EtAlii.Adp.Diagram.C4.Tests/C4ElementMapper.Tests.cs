@@ -1,5 +1,4 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Diagram;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;

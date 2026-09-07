@@ -1,8 +1,5 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
-using EtAlii.Adp.Context.Wire;
-using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Problems;
 using Xunit;
 
 namespace EtAlii.Adp.Problems.Tests;

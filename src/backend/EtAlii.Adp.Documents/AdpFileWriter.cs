@@ -1,5 +1,4 @@
 using System.Text;
-using EtAlii.Adp.Common;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Common.Wire.Path (the proto message) would otherwise shadow System.IO.Path here
 

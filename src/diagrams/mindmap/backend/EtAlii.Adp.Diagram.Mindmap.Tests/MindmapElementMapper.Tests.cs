@@ -1,4 +1,3 @@
-using EtAlii.Adp.Diagram;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Diagram;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>Opens a session for a <c>.cld</c> file.</summary>

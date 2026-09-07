@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 

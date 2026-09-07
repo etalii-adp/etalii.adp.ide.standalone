@@ -1,7 +1,4 @@
-using EtAlii.Adp.Common;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;

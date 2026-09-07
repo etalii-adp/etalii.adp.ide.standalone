@@ -1,4 +1,3 @@
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;

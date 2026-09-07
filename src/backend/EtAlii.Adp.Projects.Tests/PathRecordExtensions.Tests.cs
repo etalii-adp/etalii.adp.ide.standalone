@@ -1,4 +1,3 @@
-using EtAlii.Adp.Projects;
 using Xunit;
 using IoPath = System.IO.Path;
 
