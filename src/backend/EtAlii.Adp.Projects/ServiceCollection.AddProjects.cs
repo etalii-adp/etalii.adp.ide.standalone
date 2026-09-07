@@ -11,7 +11,7 @@ public static class ServiceCollectionAddProjectsExtension
     /// <remarks>
     /// The root is a parameter rather than read from the environment here, so a test can point
     /// the store at a temporary folder without replacing the registration - the same shape
-    /// <see cref="Problems.ServiceCollectionAddProblemsExtension.AddProblems"/> uses.
+    /// <see href="EtAlii.Adp.Problems.ServiceCollectionAddProblemsExtension.AddProblems"/> uses.
     /// </remarks>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="ArgumentException"></exception>

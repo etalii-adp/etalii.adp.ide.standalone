@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Problems;
 /// <remarks>
 /// One method rather than a list of registrations in the host, so a test that needs the
 /// real pipeline wires up exactly what the host does - the same reason
-/// <see cref="ServiceCollectionAddCommandsExtension.AddCommands"/> exists.
+/// <see href="ServiceCollectionAddCommandsExtension.AddCommands"/> exists.
 /// </remarks>
 public static class ServiceCollectionAddProblemsExtension
 {

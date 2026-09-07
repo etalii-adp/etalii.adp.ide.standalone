@@ -13,8 +13,8 @@ namespace EtAlii.Adp.Sessions;
 /// <remarks>
 /// One method rather than a list of registrations in the host, so a test that needs a real
 /// login wires up exactly what the host does - the same reason
-/// <see cref="ServiceCollectionAddProblemsExtension.AddProblems"/> and
-/// <see cref="ServiceCollectionAddCommandsExtension.AddCommands"/> exist.
+/// <see href="ServiceCollectionAddProblemsExtension.AddProblems"/> and
+/// <see href="ServiceCollectionAddCommandsExtension.AddCommands"/> exist.
 /// <para>
 /// Deliberately not named <c>AddAuthentication</c>: ASP.NET Core already puts a method of
 /// that name on <see cref="IServiceCollection"/>, and a second one differing only in its

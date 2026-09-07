@@ -20,7 +20,7 @@ public static class AdpFileWriter
 {
     /// <summary>
     /// The temporary name pattern. It lives in the destination folder because a move is only
-    /// atomic within one volume, and <see cref="HierarchyModel"/> ignores this pattern so
+    /// atomic within one volume, and <see href="HierarchyModel"/> ignores this pattern so
     /// ADP's own scratch file never surfaces as an entry.
     /// </summary>
     public const string TempPrefix = "~adp-";

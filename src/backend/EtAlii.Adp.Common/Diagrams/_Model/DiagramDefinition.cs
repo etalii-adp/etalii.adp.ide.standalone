@@ -43,7 +43,7 @@ namespace EtAlii.Adp.Common;
 /// is - so a definition that declares nothing keeps today's behaviour exactly.
 /// <para>
 /// Declaring <see cref="DiagramSubject.Folder"/> alongside an <paramref name="Extension"/> is a
-/// contradiction: a folder has no sibling body to name. <see cref="DiagramDefinitionDiscovery"/>
+/// contradiction: a folder has no sibling body to name. <see href="DiagramDefinitionDiscovery"/>
 /// drops such a definition rather than picking one of the two to believe, the same way it drops
 /// any other malformed one.
 /// </para>
