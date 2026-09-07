@@ -13,6 +13,7 @@
     <!-- SessionInterceptor.IsExempt is internal: which paths bypass the session check is
          this project's own affair, visible only to the backend's tests. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Sessions.Tests" />
   </ItemGroup>
 
 </Project>
