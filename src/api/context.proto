@@ -9,7 +9,7 @@ import "elements.proto";   // ElementId
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Context.Wire";
 
 // The scope-agnostic vocabulary behind the context: what the user currently has
 // selected (and how), what actions a selected thing currently offers, how each can be

@@ -1,6 +1,7 @@
 using System.Threading.Channels;
+using EtAlii.Adp.Context.Wire;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Owns, strictly per <c>watch_id</c>, the channel a connection's prompts are pushed down

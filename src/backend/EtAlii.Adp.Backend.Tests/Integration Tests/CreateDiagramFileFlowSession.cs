@@ -1,3 +1,4 @@
+using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using Grpc.Core;
 using Grpc.Net.Client;

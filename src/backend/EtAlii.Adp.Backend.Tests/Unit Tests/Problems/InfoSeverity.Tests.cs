@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram;
 
 using Xunit;

@@ -2,7 +2,7 @@ using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Routes purely by scope and by what providers report - it knows no property id of its own,

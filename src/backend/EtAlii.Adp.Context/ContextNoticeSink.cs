@@ -1,6 +1,6 @@
 using EtAlii.Adp.Common;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>Puts a command's warning on the context stream of every watcher of that project.</summary>
 internal sealed class ContextNoticeSink : IContextNoticeSink

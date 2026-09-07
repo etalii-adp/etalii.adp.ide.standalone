@@ -1,7 +1,8 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Context.Wire;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Maps the shared action-group contract onto the context stream's wire envelope. Lives at

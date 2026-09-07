@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Registers the context area: the per-connection selection and interaction stores, the

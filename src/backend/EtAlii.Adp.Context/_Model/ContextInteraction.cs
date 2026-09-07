@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common;
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// One in-flight action awaiting the user's answer, owned by the connection that

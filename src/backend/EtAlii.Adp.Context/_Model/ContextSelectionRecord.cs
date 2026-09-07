@@ -1,5 +1,6 @@
 using EtAlii.Adp.Common;
-namespace EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Context.Wire;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// A connection's recorded selection: the chain as accepted (paths filled in), every

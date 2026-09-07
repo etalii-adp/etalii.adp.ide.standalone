@@ -1,7 +1,8 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Context.Wire;
 using Path = EtAlii.Adp.Common.Wire.Path;
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Context;
 
 /// <summary>
 /// Turns a client's selection chain into resolved levels by walking it outer to inner
