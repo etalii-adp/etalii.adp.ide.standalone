@@ -95,8 +95,18 @@ them) is marked *ambient*, and the canvas leaves it out until you ask for it.
 * **A small solution hides nothing.** The five-dependent floor is why: below a handful there is
   no crowd to disappear into, and the shipped four-project example draws complete.
 
-Projects are **not** grouped or folded. 102 of them layered by depth is legible, and grouping is
-kept available as a later answer to be decided on evidence rather than pre-empted now.
+**Only packages are ever hidden, and that is deliberate rather than incidental.** The two
+highest-degree nodes here are both *projects*, and both beat every package hub:
+`EtAlii.Adp.Backend.Service` with 89 outgoing edges, and `EtAlii.Adp.Diagram` with 65 incoming
+ones — more than the 26 of the largest package. A degree rule applied to every node would hide
+both, and they carry the **opposite** information from a package at the same degree: `xunit.v3`
+on 26 test projects tells you nothing the project names do not, while the composition root
+referencing 89 modules tells you how the application is assembled. Same degree signature,
+opposite information content.
+
+Projects are **not** grouped or folded either. 102 of them layered by depth is legible, and
+grouping is kept available as a later answer to be decided on evidence rather than pre-empted
+now.
 
 ## Where the package description comes from
 
