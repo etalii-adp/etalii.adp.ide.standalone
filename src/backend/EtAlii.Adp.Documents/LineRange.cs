@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Common;
+using EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// An inclusive range of line indices, zero-based - the lines that declare one construct, as a

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -39,7 +40,7 @@ public static class RdfRegistrationHeaders
             // headers in place, and a default-share reader would refuse - and be refused by -
             // that write on Windows. (Changed under the family coordination ruling of
             // 2026-09-03, alongside the skos-diagram group 2 work.)
-            using var reader = Common.SharedDocumentReader.OpenText(registrationPath);
+            using var reader = Documents.SharedDocumentReader.OpenText(registrationPath);
             reader.ReadLine(); // the MIME line
             for (var scanned = 0; scanned < HeaderScanLimit; scanned++)
             {

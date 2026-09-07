@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Common;
+using EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// Opens a user-editable file for reading without contending with whoever may be writing it.

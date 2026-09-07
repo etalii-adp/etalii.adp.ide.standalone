@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Common;
+using EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// A run of lines captured before a removal, with the index it sat at - what a byte-exact undo

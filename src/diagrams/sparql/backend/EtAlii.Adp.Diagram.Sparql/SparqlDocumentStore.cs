@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -62,7 +63,7 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
             // and the author is told their query "could not be written". This module has no
             // writer of its own (NoWriterSurfaceTests), but the editor the query is authored
             // in does, which is precisely the contention this reader exists to permit.
-            text = Common.SharedDocumentReader.ReadAllText(path);
+            text = Documents.SharedDocumentReader.ReadAllText(path);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

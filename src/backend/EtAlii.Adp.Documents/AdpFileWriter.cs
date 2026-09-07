@@ -1,8 +1,9 @@
 using System.Text;
+using EtAlii.Adp.Common;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Common.Wire.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// Publishes file content so that a reader either does not see the change at all or sees it

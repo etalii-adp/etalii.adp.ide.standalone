@@ -12,6 +12,8 @@
   </Folder>
   <Project Path="EtAlii.Adp/EtAlii.Adp.csproj" />
   <Project Path="EtAlii.Adp.Diagram/EtAlii.Adp.Diagram.csproj" />
+  <Project Path="EtAlii.Adp.Documents/EtAlii.Adp.Documents.csproj" />
+  <Project Path="EtAlii.Adp.Documents.Tests/EtAlii.Adp.Documents.Tests.csproj" />
   <Project Path="EtAlii.Adp.Editor/EtAlii.Adp.Editor.csproj" />
   <Project Path="EtAlii.Adp.Editor.Tests/EtAlii.Adp.Editor.Tests.csproj" />
   <Folder Name="/editors/">

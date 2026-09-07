@@ -1,6 +1,7 @@
 using System.Text;
+using EtAlii.Adp.Common;
 
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// A hand-authored file as the lines it is made of, with edits applied by splicing one range of

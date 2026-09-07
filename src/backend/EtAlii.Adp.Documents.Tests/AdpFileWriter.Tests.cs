@@ -4,7 +4,7 @@ using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Documents.Tests;
 
 public class AdpFileWriterTests : IDisposable
 {
