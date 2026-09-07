@@ -247,4 +247,109 @@ public class DependencyGraphTests
         // Assert.
         Assert.Single(graph.Edges);
     }
+
+    /// <summary>
+    /// A solution of <paramref name="projectCount"/> projects, the first
+    /// <paramref name="everywhereOn"/> of which reference "Everywhere" and the first two of which
+    /// reference "Occasional".
+    /// </summary>
+    private static DependencyGraphModel GraphOf(int projectCount, int everywhereOn)
+    {
+        var projects = Enumerable.Range(0, projectCount).Select(index => Project($"P{index:D3}.csproj", $"P{index:D3}")).ToArray();
+        var readings = new Dictionary<string, ProjectReading>();
+
+        for (var index = 0; index < projectCount; index++)
+        {
+            var packages = new List<PackageReferenceReading>();
+            if (index < everywhereOn)
+            {
+                packages.Add(new PackageReferenceReading("Everywhere", "1.0.0"));
+            }
+
+            if (index < 2)
+            {
+                packages.Add(new PackageReferenceReading("Occasional", "1.0.0"));
+            }
+
+            readings[projects[index].AbsolutePath] = Reading(packages);
+        }
+
+        return new DependencyGraph().Derive(new SolutionReading(projects, []), readings);
+    }
+
+    [Fact]
+    public void APackageMostProjectsReference_IsMarkedAmbient_AndOneFewProjectsReferenceIsNot()
+    {
+        // THE SCALE ANSWER, and it is a measurement rather than a preference. Against this
+        // repository's own EtAlii.Adp.slnx (104 projects, 17 packages, 427 edges of which 155
+        // are package references) the package degrees are 26 26 26 19 18 14 6 6 4 2 2 1 1 1 1 1
+        // 1: FOUR package nodes carry 97 of the 155 package edges, 63% of them, and they
+        // discriminate nothing - an edge on 26 of 104 projects says "this is a test project",
+        // which the project's own name already says. The node count was never the problem;
+        // nothing here is too big, only too uniformly connected.
+
+        // Arrange, act. 100 projects: the threshold is 15 of them.
+        var graph = GraphOf(projectCount: 100, everywhereOn: 40);
+
+        // Assert.
+        var everywhere = Assert.Single(graph.Packages, package => package.PackageId == "Everywhere");
+        Assert.True(everywhere.IsAmbient);
+        Assert.Equal(40, everywhere.DependentProjectCount);
+
+        var occasional = Assert.Single(graph.Packages, package => package.PackageId == "Occasional");
+        Assert.False(occasional.IsAmbient);
+        Assert.Equal(2, occasional.DependentProjectCount);
+    }
+
+    [Fact]
+    public void TheAmbientThresholdIsAShareOfTheSolution_NotAFixedCount()
+    {
+        // The pairing that makes the test above mean something: a fixed count would mark the
+        // same package in both of these, and a rule that ignored the solution's size would call
+        // a package on 20 of 25 projects ordinary while calling one on 20 of 1000 ambient.
+        // Degree relative to the subject is the whole idea, and it is why this is not a curated
+        // list of build and test package names - a name list needs maintaining and is wrong on
+        // the first repository that is not this one.
+
+        // Arrange, act. The same 20 dependents, in a small solution and a large one.
+        var small = GraphOf(projectCount: 25, everywhereOn: 20);
+        var large = GraphOf(projectCount: 1000, everywhereOn: 20);
+
+        // Assert.
+        Assert.True(Assert.Single(small.Packages, package => package.PackageId == "Everywhere").IsAmbient);
+        Assert.False(Assert.Single(large.Packages, package => package.PackageId == "Everywhere").IsAmbient);
+    }
+
+    [Fact]
+    public void ASmallSolution_HidesNothing_HoweverManyOfItsProjectsShareAPackage()
+    {
+        // Below a handful of dependents there is no crowd to disappear into. On the share alone
+        // a four-project solution referencing one package everywhere would hide it - which is
+        // not background, it is the graph. The shipped four-project example is exactly this
+        // shape, and it must draw complete.
+
+        // Arrange, act.
+        var graph = GraphOf(projectCount: 4, everywhereOn: 4);
+
+        // Assert.
+        Assert.All(graph.Packages, package => Assert.False(package.IsAmbient));
+    }
+
+    [Fact]
+    public void AnAmbientPackage_IsStillInTheGraph_WithEveryEdgeItHad()
+    {
+        // NOT A LIMIT AND NOT A TRUNCATION. Ambient is a marking the canvas reads to decide what
+        // to draw by default; the graph keeps every node and every edge, which is what makes the
+        // canvas's "show them" restore rather than re-derive. A derivation that dropped them
+        // would silently show part of its subject, which is worse than a diagram that is
+        // awkward to read.
+
+        // Arrange, act.
+        var graph = GraphOf(projectCount: 100, everywhereOn: 40);
+
+        // Assert.
+        var everywhere = Assert.Single(graph.Packages, package => package.PackageId == "Everywhere");
+        Assert.True(everywhere.IsAmbient);
+        Assert.Equal(40, graph.Edges.Count(edge => edge.ToElementId == everywhere.Id));
+    }
 }

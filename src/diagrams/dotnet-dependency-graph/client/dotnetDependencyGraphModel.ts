@@ -106,6 +106,58 @@ export function edgesOf(model: DotNetDependencyGraphModel): readonly DependencyE
     .sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
 }
 
+/** What the canvas draws once ambient packages are taken out, and what it must say about them. */
+export interface AmbientFiltering {
+  /** The nodes to draw. */
+  nodes: readonly DependencyElement[];
+  /** The edges to draw - none of them touching a hidden node. */
+  edges: readonly DependencyElement[];
+  /** The nodes NOT drawn, so the canvas can say how many and which. Empty when showing all. */
+  hidden: readonly DependencyElement[];
+}
+
+/**
+ * The scale answer, applied.
+ *
+ * A handful of packages are referenced by so many of a solution's projects that the edge
+ * discriminates nothing - `xunit.v3` on every test project says "this is a test project", which
+ * the project's own name already says. The backend marks those `isAmbient` (see
+ * `DependencyGraph.AmbientShare` for the threshold and the measurement); this drops them and
+ * every edge that touches them.
+ *
+ * **Nothing is removed from the model, and the count comes back with the result.** The graph
+ * still holds every node, `showAmbient` puts them straight back, and `hidden` is what the canvas
+ * states rather than leaving the reader to wonder why a package they know about is not drawn.
+ * Filtering that cannot be seen is just a wrong diagram.
+ */
+export function withoutAmbientPackages(
+  model: DotNetDependencyGraphModel,
+  showAmbient: boolean,
+): AmbientFiltering {
+  const nodes = nodesOf(model);
+  const edges = edgesOf(model);
+
+  if (showAmbient) {
+    return { nodes, edges, hidden: [] };
+  }
+
+  const hidden = nodes.filter((node) => node.payload.isAmbient);
+  if (hidden.length === 0) {
+    return { nodes, edges, hidden: [] };
+  }
+
+  const hiddenIds = new Set(hidden.map((node) => node.id));
+  return {
+    nodes: nodes.filter((node) => !hiddenIds.has(node.id)),
+    // An edge to a node that is not drawn would be a connector to nothing, so it goes with it.
+    edges: edges.filter((edge) => {
+      const ends = endsOf(model, edge);
+      return ends !== null && !hiddenIds.has(ends.from.id) && !hiddenIds.has(ends.to.id);
+    }),
+    hidden,
+  };
+}
+
 /**
  * The two ends of an edge, taken from its own id.
  *

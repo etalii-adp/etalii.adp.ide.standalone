@@ -5,7 +5,14 @@ import {
   DependencyElementKind,
   DependencyElementPayloadSchema,
 } from "@client/generated/dotnet-dependency-graph_pb";
-import { applyDelta, edgesOf, emptyModel, endsOf, nodesOf } from "./dotnetDependencyGraphModel";
+import {
+  applyDelta,
+  edgesOf,
+  emptyModel,
+  endsOf,
+  nodesOf,
+  withoutAmbientPackages,
+} from "./dotnetDependencyGraphModel";
 
 const TYPE_URL = "type.googleapis.com/etalii.adp.dotnetdependencygraph.DependencyElementPayload";
 
@@ -115,6 +122,69 @@ describe("dotnetDependencyGraphModel", () => {
     const after = applyDelta(added, removeDelta("project:A.csproj"));
 
     expect(nodesOf(after).map((node) => node.id)).toEqual(["project:B.csproj"]);
+  });
+
+  describe("ambient packages", () => {
+    // One project, two packages: xunit ambient, Serilog not, and one edge to each.
+    const graph = () =>
+      applyDelta(
+        emptyModel,
+        addDelta(
+          element("project:A.csproj", "dotnet/dependency-graph+project", DependencyElementKind.PROJECT),
+          element("package:xunit.v3", "dotnet/dependency-graph+package", DependencyElementKind.PACKAGE, {
+            isAmbient: true,
+            dependentProjectCount: 26,
+          }),
+          element("package:Serilog", "dotnet/dependency-graph+package", DependencyElementKind.PACKAGE, {
+            dependentProjectCount: 3,
+          }),
+          element("depends:project:A.csproj->package:xunit.v3", "dotnet/dependency-graph+edge", DependencyElementKind.PACKAGE_REFERENCE),
+          element("depends:project:A.csproj->package:Serilog", "dotnet/dependency-graph+edge", DependencyElementKind.PACKAGE_REFERENCE),
+        ),
+      );
+
+    it("hides an ambient package and the edges that reach it", () => {
+      // The scale answer applied: four package nodes carry 63% of this repository's package
+      // edges and discriminate nothing. An edge left behind would be a connector to nothing,
+      // so it goes with the node.
+      const { nodes, edges } = withoutAmbientPackages(graph(), false);
+
+      expect(nodes.map((node) => node.id)).toEqual(["package:Serilog", "project:A.csproj"]);
+      expect(edges.map((edge) => edge.id)).toEqual(["depends:project:A.csproj->package:Serilog"]);
+    });
+
+    it("reports what it hid, so the filtering can be seen", () => {
+      // Part of the feature, not a nicety: filtering that cannot be seen is just a wrong
+      // diagram. The canvas names them, so the count and the identity both have to survive.
+      const { hidden } = withoutAmbientPackages(graph(), false);
+
+      expect(hidden.map((node) => node.payload.name)).toEqual(["package:xunit.v3"]);
+    });
+
+    it("puts every node back when asked to show them", () => {
+      // Restorable, and from the model rather than by re-deriving: nothing was ever removed.
+      const { nodes, edges, hidden } = withoutAmbientPackages(graph(), true);
+
+      expect(nodes).toHaveLength(3);
+      expect(edges).toHaveLength(2);
+      expect(hidden).toHaveLength(0);
+    });
+
+    it("hides nothing when the backend marked nothing", () => {
+      // A small solution reaches the canvas with no marking at all, and must draw complete.
+      const model = applyDelta(
+        emptyModel,
+        addDelta(
+          element("project:A.csproj", "dotnet/dependency-graph+project", DependencyElementKind.PROJECT),
+          element("package:Serilog", "dotnet/dependency-graph+package", DependencyElementKind.PACKAGE),
+        ),
+      );
+
+      const { nodes, hidden } = withoutAmbientPackages(model, false);
+
+      expect(nodes).toHaveLength(2);
+      expect(hidden).toHaveLength(0);
+    });
   });
 
   it("never mutates the model it was given", () => {

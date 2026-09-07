@@ -22,7 +22,12 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { DependencyElementKind } from "@client/generated/dotnet-dependency-graph_pb";
 import { useDotNetDependencyGraphStream } from "./useDotNetDependencyGraphStream";
-import { edgesOf, endsOf, nodesOf, type DependencyElement } from "./dotnetDependencyGraphModel";
+import {
+  endsOf,
+  nodesOf,
+  withoutAmbientPackages,
+  type DependencyElement,
+} from "./dotnetDependencyGraphModel";
 
 /** How wide and tall a box is drawn. The backend sends no size: every node here is one shape. */
 const NODE_WIDTH = 220;
@@ -169,8 +174,17 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
   const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const nodes = useMemo(() => nodesOf(model), [model]);
-  const edges = useMemo(() => edgesOf(model), [model]);
+  // Ambient packages are hidden by DEFAULT - the scale answer is on unless the reader turns it
+  // off, because a graph whose readability depends on the reader finding a control is not
+  // readable. The state is the canvas's own: it is a way of looking at the solution, not a fact
+  // about it, so it is never written to the registration.
+  const [showAmbient, setShowAmbient] = useState(false);
+
+  const everyNode = useMemo(() => nodesOf(model), [model]);
+  const { nodes, edges, hidden } = useMemo(
+    () => withoutAmbientPackages(model, showAmbient),
+    [model, showAmbient],
+  );
   const selectedId = selectedElementIdOf(selection);
 
   /** Reveals the project file a node stands for. A package is not a file here, so it reveals nothing. */
@@ -267,7 +281,9 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
     return <div className="dotnet-dependency-canvas-message">Reading the solution…</div>;
   }
 
-  if (nodes.length === 0) {
+  // Emptiness is judged on the whole graph, never on what the filter left: a solution whose
+  // every node was ambient would otherwise report itself as having no projects at all.
+  if (everyNode.length === 0) {
     return (
       <div className="dotnet-dependency-canvas-message">
         This solution has no projects ADP could resolve. Any reason is reported in the problems panel.
@@ -280,6 +296,31 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
       {rejection ? (
         <div className="dotnet-dependency-canvas-rejection" role="status" onClick={() => setRejection(null)}>
           {rejection}
+        </div>
+      ) : null}
+      {/*
+        Filtering that cannot be seen is just a wrong diagram, so the notice is part of the
+        feature rather than a nicety: it says how many were hidden, names them, says on what
+        grounds, and puts them back in one click.
+      */}
+      {hidden.length > 0 ? (
+        <div className="dotnet-dependency-canvas-filtered" role="status">
+          <span>
+            {hidden.length} {hidden.length === 1 ? "package is" : "packages are"} hidden as ambient
+            — referenced by so many of this solution&apos;s projects that the edge tells you nothing:{" "}
+            {hidden.map((node) => node.payload.name).join(", ")}.
+          </span>
+          <button type="button" onClick={() => setShowAmbient(true)}>
+            Show them
+          </button>
+        </div>
+      ) : null}
+      {showAmbient ? (
+        <div className="dotnet-dependency-canvas-filtered" role="status">
+          <span>Every package is drawn, including the ambient ones.</span>
+          <button type="button" onClick={() => setShowAmbient(false)}>
+            Hide ambient packages
+          </button>
         </div>
       ) : null}
       <DiagramCanvas

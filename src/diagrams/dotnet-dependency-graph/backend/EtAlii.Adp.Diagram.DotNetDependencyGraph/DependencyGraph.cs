@@ -35,6 +35,60 @@ public sealed class DependencyGraph
         RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(5));
 
+    /// <summary>
+    /// The share of a solution's projects at which a package stops discriminating anything and
+    /// becomes background: referenced by this fraction or more, it is marked ambient and the
+    /// canvas hides it by default.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Measured, and the measurement is the whole argument.</b> Against this repository's own
+    /// <c>EtAlii.Adp.slnx</c> (2026-09-08): 104 projects, 17 packages, 427 edges of which 155 are
+    /// package references. The degrees are
+    /// <c>26 26 26 19 18 14 6 6 4 2 2 1 1 1 1 1 1</c> - so <b>four package nodes carry 97 of the
+    /// 155 package edges, 63% of them</b>, and they discriminate nothing: an edge present on 26
+    /// of 104 projects says <i>this is a test project</i>, which the project's own name already
+    /// says. <b>A near-universal edge is noise wearing the shape of information.</b>
+    /// </para>
+    /// <para>
+    /// <b>The node count was never the problem.</b> 119 nodes laid out by depth is busy, not
+    /// unreadable. So this is not a limit and not a grouping: <b>nothing here is too big, only
+    /// too uniformly connected</b>, and truncation would lose real structure to fix a problem it
+    /// is not the shape of.
+    /// </para>
+    /// <para>
+    /// <b>Degree rather than a curated list of build and test package names</b>, deliberately. A
+    /// name list needs maintaining and is wrong on the first repository that is not this one.
+    /// Degree is a property of the subject rather than of our opinion about names - and it has a
+    /// consequence worth stating rather than discovering: <b>at this repository no threshold can
+    /// separate <c>Grpc.Tools</c> (19) from <c>Serilog</c> (18)</b>, so a rule catching the one
+    /// catches the other. That is the rule working. Fifteen percent hides five packages here and
+    /// keeps twelve; nothing is lost, because hidden is a view state the canvas states and
+    /// offers back.
+    /// </para>
+    /// <para>
+    /// <b>Why fifteen percent and not something that sounds like "near-universal".</b> The hubs
+    /// sit at a quarter of the projects and the fourth of them at 18%, so a threshold that
+    /// catches what the measurement identifies has to be well below universal. The marking is
+    /// called <i>ambient</i> rather than <i>near-universal</i> for that reason: a reader meeting
+    /// a package on 16 of 104 projects would rightly reject the stronger word, and the property
+    /// being measured is background-ness rather than ubiquity.
+    /// </para>
+    /// </remarks>
+    public const double AmbientShare = 0.15;
+
+    /// <summary>
+    /// The fewest dependents a package can have and still be ambient, whatever the share says.
+    /// </summary>
+    /// <remarks>
+    /// <b>Below a handful of dependents there is no crowd to disappear into.</b> The share alone
+    /// makes a seven-project solution hide a package two of them use, which is not background,
+    /// it is a third of the solution - and the crowding this exists to relieve does not occur at
+    /// that size. This floor is what keeps a rule measured on 104 projects from misfiring on
+    /// four, and it is why the shipped four-project example hides nothing at all.
+    /// </remarks>
+    public const int AmbientFloor = 5;
+
     /// <summary>Derives the graph from one solution reading and the projects' own readings.</summary>
     /// <param name="solution">What the solution named and what resolved.</param>
     /// <param name="readings">
@@ -132,14 +186,34 @@ public sealed class DependencyGraph
             }
         }
 
+        // How many projects reference each package. One edge per project per package by
+        // construction above, so counting edges counts projects.
+        var dependents = edges
+            .Where(edge => edge.Kind == DependsOnKind.Package)
+            .GroupBy(edge => edge.ToElementId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+
+        // The threshold in projects rather than in a fraction, so the comparison below is
+        // integer and the number can be stated. Ceiling, so the share is a floor rather than
+        // something a rounding could slip under.
+        var ambientAt = Math.Max(AmbientFloor, (int)Math.Ceiling(projects.Count * AmbientShare));
+
         var packages = versionsByPackage
-            .Select(entry => new PackageNode(
-                IdOfPackage(entry.Key),
-                entry.Key,
-                [.. entry.Value],
-                // A conflict is disagreement about the version: two known versions, or a known
-                // one beside a reference whose version could not be discovered.
-                entry.Value.Count > 1 || (entry.Value.Count > 0 && versionlessPackages.Contains(entry.Key))))
+            .Select(entry =>
+            {
+                var id = IdOfPackage(entry.Key);
+                var dependentCount = dependents.GetValueOrDefault(id);
+                return new PackageNode(
+                    id,
+                    entry.Key,
+                    [.. entry.Value],
+                    // A conflict is disagreement about the version: two known versions, or a
+                    // known one beside a reference whose version could not be discovered.
+                    entry.Value.Count > 1 || (entry.Value.Count > 0 && versionlessPackages.Contains(entry.Key)),
+                    Description: null,
+                    DependentProjectCount: dependentCount,
+                    IsAmbient: dependentCount >= ambientAt);
+            })
             .OrderBy(package => package.PackageId, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
