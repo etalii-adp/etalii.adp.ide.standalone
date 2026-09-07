@@ -20,7 +20,7 @@ elements:
     row: 2
   - id: notification-service
     label: Notification service
-    x: 521.1026632022358
+    x: 419.92197785733026
     row: -4
   - id: payment-service
     label: Payment service
