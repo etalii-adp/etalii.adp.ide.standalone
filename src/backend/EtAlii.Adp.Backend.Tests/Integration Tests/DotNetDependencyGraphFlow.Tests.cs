@@ -85,6 +85,78 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         throw new DirectoryNotFoundException("the showcase folder was not found");
     }
 
+    /// <summary>
+    /// The same showcase, opened the way a USER opens it: the whole <c>src/examples</c> tree as
+    /// the project, with the diagram four folders down inside it.
+    /// </summary>
+    /// <remarks>
+    /// <b>The fact below cannot discriminate, and this one can.</b> Adding
+    /// <c>pipeline-toolkit</c> itself as the project puts the registration, the solution and
+    /// every project file in or under one folder - so "resolve relative to the solution" and
+    /// "resolve relative to the registration" give identical answers there, and a wrong base
+    /// would pass indefinitely. This moves the project root four levels up without moving the
+    /// subject, which is the arrangement the shipped showcase is actually browsed in.
+    /// </remarks>
+    [Fact]
+    public async Task TheShowcase_OpensWithTheWholeExamplesTreeAsTheProject()
+    {
+        var httpClient = _factory.CreateDefaultClient();
+        using var channel = GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
+
+        var auth = new AuthenticationService.AuthenticationServiceClient(channel);
+        var login = await auth.LoginAsync(
+            new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential },
+            cancellationToken: TestContext.Current.CancellationToken);
+        var headers = new Metadata { { SessionTokenHeader, login.Session.Value } };
+
+        // src/examples, four levels above the diagram.
+        var examplesRoot = IoPath.GetFullPath(IoPath.Combine(_projectFolder, "..", "..", ".."));
+        var projects = new ProjectService.ProjectServiceClient(channel);
+        var folder = new Path();
+        folder.Segments.AddRange(examplesRoot.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var added = await projects.AddProjectAsync(
+            new AddProjectRequest { Path = folder }, headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        var diagramPath = new Path();
+        diagramPath.Segments.Add("diagrams");
+        diagramPath.Segments.Add("dotnet-dependency-graph");
+        diagramPath.Segments.Add("pipeline-toolkit");
+        diagramPath.Segments.Add("PipelineToolkit.adp");
+
+        var diagrams = new DiagramService.DiagramServiceClient(channel);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(30));
+
+        var delivered = new List<Common.Wire.Element>();
+        using var stream = diagrams.Open(
+            new OpenDiagramRequest
+            {
+                ProjectId = added.Added.Id,
+                WatchId = ShortGuid.NewShortGuid(),
+                Path = diagramPath,
+            },
+            headers,
+            cancellationToken: cts.Token);
+
+        while (await stream.ResponseStream.MoveNext(cts.Token))
+        {
+            var delta = stream.ResponseStream.Current;
+            if (delta.Add is not null)
+            {
+                delivered.AddRange(delta.Add.Elements);
+            }
+
+            if (delivered.Count > 0)
+            {
+                break;
+            }
+        }
+
+        Assert.Equal(4, delivered.Count(element => element.Type == "dotnet/dependency-graph+project"));
+        Assert.Equal(3, delivered.Count(element => element.Type == "dotnet/dependency-graph+package"));
+        Assert.Equal(9, delivered.Count(element => element.Type == "dotnet/dependency-graph+edge"));
+    }
+
     [Fact]
     public async Task TheShippedShowcase_StreamsItsProjectsPackagesAndEdges()
     {
