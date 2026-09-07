@@ -5,6 +5,7 @@ using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;

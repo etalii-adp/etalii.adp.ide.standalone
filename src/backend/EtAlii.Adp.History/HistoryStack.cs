@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using Serilog;
 
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.History;
 
 /// <summary>
 /// An in-memory undo/redo stack over <see cref="ICommandDispatcher"/>.

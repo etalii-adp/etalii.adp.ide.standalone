@@ -2,7 +2,7 @@ using EtAlii.Adp.Common;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.History.Tests;
 
 /// <summary>
 /// One history per project, keyed by resolved root path, with the same idle-grace eviction the

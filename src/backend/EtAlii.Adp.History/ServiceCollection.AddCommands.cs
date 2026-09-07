@@ -2,7 +2,7 @@ using EtAlii.Adp.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.History;
 
 /// <summary>
 /// Registers the command pipeline and every handler in it.

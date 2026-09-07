@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using EtAlii.Adp.Common;
 
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.History;
 
 /// <summary>
 /// Resolves handlers out of the service provider, keyed by the command's runtime type.

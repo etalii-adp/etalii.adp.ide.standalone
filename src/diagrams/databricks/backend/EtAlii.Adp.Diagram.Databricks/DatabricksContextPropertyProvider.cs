@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 namespace EtAlii.Adp.Diagram.Databricks;

@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.History.Tests;
 
 public class CommandResultTests
 {
