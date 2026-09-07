@@ -19,9 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The hierarchy unit tests live in EtAlii.Adp.Backend.Tests and reach internals
-         (DiagramFilePair, EditorResolver and friends) - the moved-internals pattern from
-         the Sessions extraction. -->
+    <!-- The hierarchy unit tests reach internals (DiagramFilePair, EditorResolver and
+         friends) - the moved-internals pattern from the Sessions extraction. They now live
+         in EtAlii.Adp.Hierarchy.Tests (post-decomposition backlog item 2); the
+         EtAlii.Adp.Backend.Tests grant remains for the AdpFileWriter/LineDocument/LineSplice
+         tests still there and any other consumer. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Hierarchy.Tests" />
     <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
   </ItemGroup>
 

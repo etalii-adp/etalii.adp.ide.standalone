@@ -1,5 +1,6 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.TestSupport;
 using Xunit;
 using IoPath = System.IO.Path;
 

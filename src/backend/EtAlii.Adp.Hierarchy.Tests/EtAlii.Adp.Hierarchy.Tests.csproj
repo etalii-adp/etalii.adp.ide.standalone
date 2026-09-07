@@ -16,15 +16,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
-    <!-- History/undo infrastructure (HistoryStack, CommandDispatcher) still lives in the host
-         EtAlii.Adp.Backend; eight Hierarchy tests drive their handlers through it. This is the
-         reverse of the edge the decomposition removed (Backend no longer references any
-         functional area), so it introduces no cycle. -->
-    <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+    <!-- HistoryStack/CommandDispatcher moved to EtAlii.Adp.History (backlog item 4); eight
+         Hierarchy tests drive their handlers through it. -->
+    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <!-- Shared, referenceable test support (TestDiagramDefinitionCatalog, TestHistory),
+         extracted from Backend.Tests ahead of item 10 to unblock this project. -->
+    <ProjectReference Include="..\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>
