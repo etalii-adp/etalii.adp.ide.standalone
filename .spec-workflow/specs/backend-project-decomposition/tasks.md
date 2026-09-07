@@ -69,7 +69,7 @@
   - **First because it is clean** — zero cross-folder dependencies, so it proves the extraction pattern with the least risk. No proto.
   - _Requirements: 5.1, 5.2_ · _Prompt: Role: C# developer | Task: extract Client to EtAlii.Adp.Client | Restrictions: four gates + fresh-tree build | Success: Client is its own project, referenced where used. Mark in-progress, log-implementation, mark complete._
 
-- [-] 10. Extract the remaining areas to `EtAlii.Adp.<Area>`, one project per landing **[HOLD each]**
+- [x] 10. Extract the remaining areas to `EtAlii.Adp.<Area>`, one project per landing **[HOLD each]**
   - Files: per area — `Hierarchy`, `Context`, `Problems`, `Projects`, `Sessions`, `Authentication` → `EtAlii.Adp.<Area>` with its proto linked and generating `EtAlii.Adp.<Area>.Wire`; the `NamespaceFoldersToSkip` entries; the module-tree imports of each renamed namespace
   - **Each area is its own landing, in dependency order** (an area extracts only once every area it depends on is already a project or in Common — `findings.md` gives the order). **39 of Hierarchy's 73 types and 18 of Context's 49 are internal-only free movers**, so each extraction is less work than the folder size suggests. `context.proto → hierarchy.proto` becomes `EtAlii.Adp.Context` → `EtAlii.Adp.Hierarchy`, a project reference. `HistoryActionsBroadcaster` (declared in Context, used by History/Service) resolves to its real home here. **Each rename touches module imports — coordinated hold per area.**
   - **The dependency order is re-measured on the landed tree, not read from `findings.md`.** The decomposition changed its own graph as it went — most cross-area edges are already in Common — so as of the area-1 landing the order is: Projects and Authentication first (zero outgoing), then Sessions→Authentication, then Hierarchy once Context's provider contract descends, then Context, then Problems. Re-measure before each area; the planned order is a stale map.
@@ -84,7 +84,7 @@
 
 ## Phase 4 — Confirm the inversion
 
-- [ ] 11. Verify `EtAlii.Adp.Backend` depends on no functional project, and record the exception budget **[normal]**
+- [-] 11. Verify `EtAlii.Adp.Backend` depends on no functional project, and record the exception budget **[normal]**
   - Files: a structural check (a test or a documented `inspectcode`/reference-graph read) asserting Backend references no `EtAlii.Adp.<Area>`; the implementation log listing any retained back-edge with its cost
   - The user's aim was "try to"; this task states the final position honestly — either Backend depends on no functional project, or each remaining edge is named with why it resisted and what it costs. **Seen, not assumed**: the reference graph is read, not trusted.
   - **Verify each deferred `Backend → <Area>` reference is *gone*, do not inherit the promise that it will leave.** The decomposition recurs a pattern: an area extracts, something still inside Backend consumes it, so Backend keeps a reference to the new project until the *consumer* extracts in a later area. Each such reference is neither a violation nor an oversight but a scheduled removal — task 11 confirms it is actually absent by then, rather than reading its presence as a failure or its promised removal as done. **A reader meeting these cold, unlisted, sees a specification that violated its own constraint once per entry; the list is here so each is checked as discharged.** Known as of each landing (extend as areas land):
