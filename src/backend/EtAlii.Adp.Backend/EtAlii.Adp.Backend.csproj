@@ -1,5 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Source-empty since the post-decomposition backlog's item 4 (History was the last
+    resident): this shell survives as the destination backlog item 9 moves the Client
+    hosting into. It owns no generated types - a new .proto is deliberately added to
+    the project that should own it, never picked up by a glob; the default-include
+    glob that used to live here was removed with its last exclusion, because an
+    exclude list is a rule that must be remembered and an absent item is a rule that
+    cannot be forgotten.
+  -->
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Grpc.AspNetCore" />
@@ -7,28 +17,6 @@
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <!-- Core -> abstraction only: the Add action reads DiagramDefinition.All; no module is referenced. -->
-  </ItemGroup>
-
-  <ItemGroup>
-    <!--
-      GrpcServices="Both": this project is the single owner of the generated
-      message/service types (server base classes it implements, plus client
-      stubs). EtAlii.Adp.Backend.Tests references this project rather than
-      independently including these .proto files itself, to avoid duplicate
-      generated types across assemblies; its integration tests use the
-      client stubs generated here to call the services in-process.
-    -->
-    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both"
-              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto;..\..\api\diagrams.proto;..\..\api\deltas.proto;..\..\api\projects.proto;..\..\api\authentication.proto;..\..\api\context-contract.proto;..\..\api\hierarchy.proto;..\..\api\context.proto" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- History's remaining internals - CommandHandlerInvoker, ICommandHandlerInvoker and
-         RetainedHistoryStack - are what the tests reach; the EditorResolver justification
-         this comment used to carry left with the Hierarchy extraction
-         (backend-project-decomposition task 10). -->
-    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
   </ItemGroup>
 
 </Project>
