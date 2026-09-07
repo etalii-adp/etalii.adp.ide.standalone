@@ -28,7 +28,7 @@
   - **Core gains nothing.** If a task in this list needs a change under `src/backend/`, stop and route it: the design says core learns no .NET, MSBuild, NuGet or solution vocabulary.
   - _Requirements: 1.1, 1.2_
 
-- [ ] 2. `SolutionReader` - read `.sln` and `.slnx` **[normal]**
+- [-] 2. `SolutionReader` - read `.sln` and `.slnx` **[normal]**
   - Files: `SolutionReader.cs`, tests.
   - Both formats: the classic `Project(...)` lines and the newer XML. Project paths resolved relative to the solution file.
   - **An unreadable solution and a missing project file are reported, never swallowed and never fatal** - the diagram opens with what resolved.
