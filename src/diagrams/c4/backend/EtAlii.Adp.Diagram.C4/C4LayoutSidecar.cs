@@ -1,7 +1,5 @@
 using System.Text.Json;
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Documents;
-using EtAlii.Adp.Hierarchy;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.C4;

@@ -1,5 +1,4 @@
-﻿using EtAlii.Adp.Context;
-using Xunit;
+﻿using Xunit;
 
 namespace EtAlii.Adp.Context.Tests;
 

@@ -1,6 +1,5 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;

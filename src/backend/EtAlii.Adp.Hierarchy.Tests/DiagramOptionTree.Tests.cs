@@ -1,6 +1,4 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Context;
-using EtAlii.Adp.Diagram;
 using Xunit;
 
 namespace EtAlii.Adp.Hierarchy.Tests;

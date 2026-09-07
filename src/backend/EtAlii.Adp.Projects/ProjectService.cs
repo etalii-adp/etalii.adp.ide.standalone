@@ -1,5 +1,4 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
 using Serilog;

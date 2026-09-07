@@ -1,7 +1,5 @@
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Context.Wire;
-using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 
 namespace EtAlii.Adp.Problems;
 

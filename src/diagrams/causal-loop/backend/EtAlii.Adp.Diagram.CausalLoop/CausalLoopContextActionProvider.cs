@@ -1,7 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
-using EtAlii.Adp.Diagram;
 
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
