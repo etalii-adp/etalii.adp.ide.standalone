@@ -84,7 +84,7 @@
 
 ## Phase 4 — Confirm the inversion
 
-- [-] 11. Verify `EtAlii.Adp.Backend` depends on no functional project, and record the exception budget **[normal]**
+- [x] 11. Verify `EtAlii.Adp.Backend` depends on no functional project, and record the exception budget **[normal]**
   - Files: a structural check (a test or a documented `inspectcode`/reference-graph read) asserting Backend references no `EtAlii.Adp.<Area>`; the implementation log listing any retained back-edge with its cost
   - The user's aim was "try to"; this task states the final position honestly — either Backend depends on no functional project, or each remaining edge is named with why it resisted and what it costs. **Seen, not assumed**: the reference graph is read, not trusted.
   - **Verify each deferred `Backend → <Area>` reference is *gone*, do not inherit the promise that it will leave.** The decomposition recurs a pattern: an area extracts, something still inside Backend consumes it, so Backend keeps a reference to the new project until the *consumer* extracts in a later area. Each such reference is neither a violation nor an oversight but a scheduled removal — task 11 confirms it is actually absent by then, rather than reading its presence as a failure or its promised removal as done. **A reader meeting these cold, unlisted, sees a specification that violated its own constraint once per entry; the list is here so each is checked as discharged.** Known as of each landing (extend as areas land):
