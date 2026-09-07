@@ -53,19 +53,19 @@
   - **A package that is not cached yields absence, not an error** - and absence must be distinguishable from an empty description.
   - _Requirements: 5.2, 5.3, 5.4_
 
-- [ ] 6. `DotNetContextPropertyProvider` - every row read-only **[normal]**
+- [-] 6. `DotNetContextPropertyProvider` - every row read-only **[normal]**
   - Files: `DotNetContextPropertyProvider.cs`, tests.
   - Project rows: name, target framework, .NET version where discoverable. Package rows: id, version(s), description.
   - **Every row carries a non-empty `ReadOnlyReason`**, in the house shape - cause first, then remedy, naming the file the value lives in. `SetAsync` refuses even though the resolver already refuses server-side.
   - **A property with no value shows its absence explicitly**, never an empty field indistinguishable from an empty value.
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 5.1_
 
-- [ ] 7. Session and factory - bind through the `body:` header **[normal]**
+- [-] 7. Session and factory - bind through the `body:` header **[normal]**
   - Files: `DotNetDependencyGraphSession.cs`, `DotNetDependencyGraphSessionFactory.cs`, `DotNetContextSourceResolver.cs`, tests.
   - The module declares `.sln`/`.slnx` as document extensions and binds through `body:` - **the `c4` pattern, not the ansible one**, because a bare registration cannot say which solution when a folder holds two.
   - _Requirements: 2.3_
 
-- [ ] 8. Layout - adopt `RegistrationLayout`, add nothing **[normal]**
+- [-] 8. Layout - adopt `RegistrationLayout`, add nothing **[normal]**
   - Files: `DotNetDependencyGraphLayout.cs` (computation only), tests.
   - Computed layering for a directed graph; `RegistrationLayout.Apply` overlays stored positions element by element; reposition dispatched as core's `SetRegistrationLayoutCommand`, undoable.
   - **If this task finds itself writing layout parsing, persistence or pruning, it has gone wrong** - core has all three and they are offered to every module.
