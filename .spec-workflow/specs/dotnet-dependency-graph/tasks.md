@@ -73,28 +73,28 @@
   - **If this task finds itself writing layout parsing, persistence or pruning, it has gone wrong** - core has all three and they are offered to every module.
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
-- [ ] 9. Refresh - automatic and explicit, for different reasons **[normal]**
+- [-] 9. Refresh - automatic and explicit, for different reasons **[normal]**
   - Files: watcher over the solution, its project files and `Directory.Packages.props`; an explicit refresh action; tests.
   - Automatic because the product capability is live pushed updates. **Explicit as well because a description can become available after a `restore` that touches no watched file** - a consequence of the cache-only decision reaching past the property it was about.
   - A refresh **must not cost the user their arrangement**; a vanished element's stored id is dropped on the next write.
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 10. Client canvas **[normal]**
+- [-] 10. Client canvas **[normal]**
   - Files: `client/` canvas, stream hook, tests.
   - Follows `generic/dependencies`' conventions so two dependency graphs do not feel like two products. Projects and packages visually distinct; edges directed; **elements drag although the subject is read-only.**
   - _Requirements: 3.1 (visual), and the consistency non-functional requirement_
 
-- [ ] 11. Examples **[normal]**
+- [-] 11. Examples **[normal]**
   - Files: `examples/`, replicated per structure.md; a readme recording what the corpus does **not** demonstrate.
   - **Any vendored data: permissive licence only, share-alike refused, `LICENSE.md` verbatim beside the data, read from the dataset's own statement rather than the page around it.**
   - _Requirements: 8.1, 8.2, 8.3_
 
-- [ ] 12. Catalog row and documentation **[normal]**
+- [-] 12. Catalog row and documentation **[normal]**
   - Files: `docs/diagrams.md` row with state icon and the `dotnet/dependency-graph` origin tag; `docs/creating-a-diagram-module.md` where this module moves a touch point it names.
   - **Move the row as the state changes** rather than adding it once and leaving it stale.
   - _Requirements: 1.3, 1.4_
 
-- [ ] 13. Scale: run it against this repository's own solution **[normal]**
+- [-] 13. Scale: run it against this repository's own solution **[normal]**
   - Files: whatever the answer requires - grouping, filtering, or a stated limit - plus the measurement recorded in the implementation log.
   - **`EtAlii.Adp.slnx` is the subject: roughly thirty backend projects plus sixty-one diagram modules.** This is the one task that cannot be satisfied by assertion, because the requirement is that the type stays *usable* at that size.
   - **Rendering an unreadable hairball and calling it correct is the failure mode this task exists to prevent.** If the answer is a limit, the diagram must say it is limited rather than silently showing part of the graph.
