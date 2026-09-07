@@ -22,7 +22,7 @@
 
 ## Tasks
 
-- [ ] 1. Create the module skeleton and register the type **[normal]**
+- [-] 1. Create the module skeleton and register the type **[normal]**
   - Files: `src/diagrams/dotnet-dependency-graph/` with `api/`, `backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/`, `client/`, `examples/`; `Diagram.cs` declaring the origin; `ServiceCollection.AddDotNetDependencyGraph.cs`; solution entry.
   - **Land it empty and green before anything reads a file.** The module registers, resolves, and draws nothing - so every later task is a change to a working module rather than a step in a module that has never built.
   - **Core gains nothing.** If a task in this list needs a change under `src/backend/`, stop and route it: the design says core learns no .NET, MSBuild, NuGet or solution vocabulary.
