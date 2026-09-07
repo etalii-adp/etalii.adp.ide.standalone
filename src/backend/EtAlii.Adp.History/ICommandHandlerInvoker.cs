@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common;
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.History;
 
 internal interface ICommandHandlerInvoker
 {

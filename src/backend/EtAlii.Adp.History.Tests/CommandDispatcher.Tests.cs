@@ -2,7 +2,7 @@ using EtAlii.Adp.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.History.Tests;
 
 public class CommandDispatcherTests
 {

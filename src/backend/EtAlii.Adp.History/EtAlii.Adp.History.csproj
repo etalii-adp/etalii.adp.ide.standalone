@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CommandHandlerInvoker, ICommandHandlerInvoker and RetainedHistoryStack are internal:
+         the pipeline's innards are this project's own affair, visible to its tests alone
+         (post-decomposition backlog item 4). -->
+    <InternalsVisibleTo Include="EtAlii.Adp.History.Tests" />
+  </ItemGroup>
+
+</Project>

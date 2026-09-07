@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.AnsibleStructure\EtAlii.Adp.Diagram.AnsibleStructure.csproj" />
   </ItemGroup>
 

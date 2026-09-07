@@ -1,6 +1,6 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.History;
 
 /// <summary>
 /// Offers undo and redo as ordinary context actions for the project scope, so they reach the

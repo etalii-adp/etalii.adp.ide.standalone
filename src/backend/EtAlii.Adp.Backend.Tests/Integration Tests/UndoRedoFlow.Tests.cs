@@ -3,6 +3,7 @@ using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using Google.Protobuf.WellKnownTypes;

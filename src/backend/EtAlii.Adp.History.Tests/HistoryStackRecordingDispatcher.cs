@@ -1,5 +1,5 @@
 using EtAlii.Adp.Common;
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.History.Tests;
 
 /// <summary>
 /// Applies <see cref="HistoryStackSetCommand"/>s to an in-memory value, recording the order every

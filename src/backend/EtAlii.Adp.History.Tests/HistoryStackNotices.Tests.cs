@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.History.Tests;
 
 /// <summary>
 /// A command that succeeded with something worth saying tells the project, once, and a command

@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using EtAlii.Adp.Common;
 using Serilog;
 
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.History;
 
 /// <inheritdoc cref="IHistoryStackStore" />
 /// <remarks>
