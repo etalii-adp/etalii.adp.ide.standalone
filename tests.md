@@ -2522,6 +2522,12 @@ the defect reachable and what makes it invisible to the suite.
   `'dotnet/dependency-graph' is not a known diagram type.` while the backend's startup log says
   `Discovered diagram type dotnet/dependency-graph`, that entry is cached from an older build:
   pressing Validate clears it and the count drops.
+  **Since the fix, such an entry must also wear the `stale` marker** — a core verdict about
+  routing is re-checked against the router when the panel is answered, so a cached
+  "not a known diagram type" for a type the running build *does* know reads as stale rather
+  than as a claim about now. **An unmarked one is now itself the defect**, and the thing to
+  report: it would mean the entry is live rather than cached, which is a different bug from
+  the one this step was written for.
 - **Result 2026-09-08**: **run** from worktree `ddgfix` on backend 5091 / client 5191, on
   develop `a45f6f5b`, via the developer session (no sign-in form — see the note at the top of
   this file). The diagram drew all seven boxes with the `Serilog 3.1.1, 4.4.0` conflict and no

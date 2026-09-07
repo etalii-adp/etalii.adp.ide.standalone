@@ -212,7 +212,16 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
         if (problem.RulesVersion.Length == 0)
         {
-            return false; // A core verdict: core is always its own current version.
+            // A core verdict, so there is no module version to compare - core is its own
+            // current version. But two of them are claims about the diagram-type REGISTRY
+            // rather than about the file, and the registry moves when a module is discovered:
+            // "'dotnet/dependency-graph' is not a known diagram type" stops being true the
+            // moment that module is built, while the .adp it names never changes. Neither the
+            // file stamp nor the rules version can carry that news, so such a verdict outlived
+            // a rebuild and a restart and was shown with the authority of a current one - it
+            // cost three sessions an evening diagnosing a module that was working. The router
+            // is the authority the verdict was drawn from, so ask it again.
+            return CoreRuleIds.IsAboutRouting(problem.Problem.RuleId) && _router.Route(fullPath) is DiagramRouted;
         }
 
         // A module release invalidates its own verdicts (Requirement 4.7): compare against

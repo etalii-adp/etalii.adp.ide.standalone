@@ -38,6 +38,6 @@ internal sealed class ProblemCollector(string root)
     }
 
     /// <summary>A problem core itself found - a rules version of its own would say nothing, so it stays empty.</summary>
-    public void AddCore(string path, string message, string ruleId = "core.unreadable") =>
+    public void AddCore(string path, string message, string ruleId = CoreRuleIds.Unreadable) =>
         Add(new DiagramProblem(DiagramProblemSeverity.Error, message, ruleId), path, path, rulesVersion: "");
 }
