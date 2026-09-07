@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
@@ -14,6 +14,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Diagram.DotNetDependencyGraph\EtAlii.Adp.Diagram.DotNetDependencyGraph.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Solutions and project files beside the test binary, so a test reads them from disk
+      exactly as the backend will. PreserveNewest rather than Always: these fixtures are the
+      subject of read-only assertions, and a copy rewritten under a running test would make a
+      failure look like a parser bug.
+    -->
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
