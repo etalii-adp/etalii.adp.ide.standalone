@@ -1,0 +1,101 @@
+/*
+ * All of this type's appearance. The canvas names classes and never colours, per tech.md's
+ * centralised-styling rule - so a theme change is a change here rather than in a component,
+ * and the backend never puts a colour on the wire.
+ *
+ * Requirement 3.1's "the two kinds SHALL be visually distinguishable" is satisfied here rather
+ * than in the canvas: a project is a solid box in the canvas node colour, a package a lighter
+ * one with a dashed border, because a package is something the solution consumes rather than
+ * something it builds.
+ */
+
+.dotnet-dependency-canvas-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.dotnet-dependency-canvas-message {
+  padding: 1rem;
+  color: var(--canvas-muted-label, #8a94a6);
+}
+
+.dotnet-dependency-canvas-rejection {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  background: var(--canvas-warning-fill, #6b3b12);
+  color: var(--canvas-warning-label, #ffe6c7);
+  cursor: pointer;
+}
+
+/* ---- nodes --------------------------------------------------------------------------- */
+
+.dotnet-dependency-node-box {
+  rx: 6;
+  stroke-width: 1.5;
+}
+
+.dotnet-dependency-node-project .dotnet-dependency-node-box {
+  fill: var(--canvas-node-fill, #3b6ea5);
+  stroke: var(--canvas-node-stroke, #2b537c);
+}
+
+/*
+ * A package reads as consumed rather than built: lighter, and dashed to say it comes from
+ * outside the solution entirely.
+ */
+.dotnet-dependency-node-package .dotnet-dependency-node-box {
+  fill: var(--canvas-secondary-fill, #4a5568);
+  stroke: var(--canvas-secondary-stroke, #6b7280);
+  stroke-dasharray: 4 3;
+}
+
+.dotnet-dependency-node-label {
+  fill: var(--canvas-node-label, #ffffff);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.dotnet-dependency-node-subtitle {
+  fill: var(--canvas-node-sublabel, #cbd5e1);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.dotnet-dependency-node-selected .dotnet-dependency-node-box {
+  stroke: var(--canvas-selection, #ffd166);
+  stroke-width: 2.5;
+}
+
+/*
+ * A version conflict is marked on the element, which is what Requirement 3.5 asks for: the
+ * difference is made visible rather than silently collapsed into one box that says nothing.
+ */
+.dotnet-dependency-node-conflict .dotnet-dependency-node-box {
+  stroke: var(--canvas-warning-stroke, #e0a458);
+  stroke-width: 2.5;
+  stroke-dasharray: none;
+}
+
+/* ---- edges --------------------------------------------------------------------------- */
+
+.dotnet-dependency-edge-line {
+  fill: none;
+  stroke: var(--canvas-connection, #7f8c9b);
+  stroke-width: 1.5;
+}
+
+/*
+ * The two reference kinds read apart at a glance: a project reference is solid because it is
+ * a relationship inside the solution, a package reference dashed because it leaves it - the
+ * same distinction the node styling makes, said once more where the eye follows it.
+ */
+.dotnet-dependency-edge-package .dotnet-dependency-edge-line {
+  stroke-dasharray: 5 4;
+  stroke: var(--canvas-connection-muted, #5f6b7a);
+}
