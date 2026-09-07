@@ -34,6 +34,13 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// <summary>The project's history, so a drag is one undo away. Null makes the diagram read-only.</summary>
     private readonly IHistoryStack? _history;
 
+    /// <summary>
+    /// Watches the files this graph was derived from, so a change on disk pushes a refresh
+    /// (Requirement 7.1). Null when watching was declined - which the tests do, so that a test
+    /// asserting a refresh is asserting the refresh rather than the file system's timing.
+    /// </summary>
+    private readonly SolutionWatcher? _watcher;
+
     private IReadOnlyList<DiagramElement> _delivered = [];
 
     public DotNetDependencyGraphSession(
@@ -41,7 +48,8 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         DependencyGraphStore store,
         DependencyElementMapper mapper,
         string? registrationPath = null,
-        IHistoryStack? history = null)
+        IHistoryStack? history = null,
+        bool watch = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(solutionPath);
         ArgumentNullException.ThrowIfNull(store);
@@ -52,6 +60,14 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         _mapper = mapper;
         _registrationPath = registrationPath;
         _history = history;
+
+        if (watch)
+        {
+            // Automatic, because the product capability is live pushed updates and every other
+            // module behaves that way.
+            _watcher = new SolutionWatcher(_store.WatchedFiles(solutionPath));
+            _watcher.Stale += OnSolutionStale;
+        }
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
@@ -120,8 +136,18 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// <summary>
     /// Recomputes from the files and pushes what changed - the refresh of Requirement 7.
     /// Stored positions are re-applied by <see cref="Stored"/> on the way out, so a refresh
-    /// never costs the user their arrangement (Requirement 7.2).
+    /// never costs the user their arrangement (Requirement 7.2), and an element that has
+    /// vanished from the recomputed graph is removed (Requirement 7.3).
     /// </summary>
+    /// <remarks>
+    /// <b>Explicit as well as automatic, for a reason the cache-only decision created</b>
+    /// (Requirement 7.4). A watcher covers every file the graph was derived from, but a package
+    /// description becomes available after a <c>restore</c> writes into the machine's NuGet
+    /// cache - which is not a watched file and is not in the workspace at all. Without an
+    /// explicit refresh a user who restored a package would have no way to make its description
+    /// appear short of reopening the diagram. The cache-only decision therefore reaches past the
+    /// property it was about, and this method is where that shows.
+    /// </remarks>
     public void Refresh()
     {
         var after = _mapper.Elements(_store.Reload(_solutionPath), Stored());
@@ -143,5 +169,17 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
             ? RegistrationLayout.Read(_registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    /// <summary>The watcher's own signal: the files moved, so recompute and push.</summary>
+    private void OnSolutionStale(object? sender, EventArgs args) => Refresh();
+
+    public ValueTask DisposeAsync()
+    {
+        if (_watcher is not null)
+        {
+            _watcher.Stale -= OnSolutionStale;
+            _watcher.Dispose();
+        }
+
+        return ValueTask.CompletedTask;
+    }
 }

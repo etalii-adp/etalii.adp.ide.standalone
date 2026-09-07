@@ -101,13 +101,21 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         return (solution, registration);
     }
 
+    /// <summary>
+    /// A session with watching DECLINED, deliberately. A test asserting a refresh through a real
+    /// FileSystemWatcher would be asserting the file system's timing rather than this module's
+    /// behaviour: the settle delay, the platform's own event coalescing and the runner's
+    /// scheduling would all be inside the assertion. Refresh() is called directly instead -
+    /// which is exactly what the watcher calls - and SolutionWatcher's wiring is tested apart.
+    /// </summary>
     private static DotNetDependencyGraphSession SessionFor(string solution, string? registration, IHistoryStack? history = null) =>
         new(
             solution,
             new DependencyGraphStore(new SolutionReader(), new ProjectReader(), new PackageDescriptionReader(Path.Combine("no", "such", "cache"))),
             new DependencyElementMapper(),
             registration,
-            history);
+            history,
+            watch: false);
 
     [Fact]
     public void Baseline_DrawsEveryProjectPackageAndEdge()
