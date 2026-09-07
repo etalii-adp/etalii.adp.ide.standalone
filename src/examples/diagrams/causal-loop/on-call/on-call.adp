@@ -8,4 +8,5 @@ layout:
   variable:mistakes: 589.576 -81.002
   variable:onCallLoad: 47.597 -44.524
   variable:teamSize: -81.673 182.278
-  variable:toil: -220.621 -311.289
+  variable:toil: -212.522 -285.028
+  variable:variable1: -31.614 -381.231

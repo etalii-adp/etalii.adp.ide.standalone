@@ -14,7 +14,6 @@ variable attrition "Attrition"
 variable teamSize "Team size"
 variable automation "Automation work"
 variable toil "Manual toil"
-variable Test "Test"
 
 # ---- the spiral --------------------------------------------------------------
 # Incidents wake people up, tired people make mistakes, mistakes cause
@@ -54,5 +53,6 @@ loop R2 "Fewer hands, heavier rota" onCallLoad fatigue attrition teamSize
 link toil -> onCallLoad +
 link automation -> toil - delayed "sdfsdf"
 link onCallLoad -> automation - "no time to fix the thing that has no time"
+loop R4 "" incidents onCallLoad automation toil
 
 loop R3 "Too busy to stop being busy" onCallLoad automation toil
