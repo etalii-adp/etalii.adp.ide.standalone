@@ -12,7 +12,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The module's own wire payload, packed into the core Element's Any. Included BY NAME rather
+      than by a `*.proto` glob: a glob is a rule that keeps applying to files nobody meant it to
+      catch, and EtAlii.Adp.Backend carried exactly that trap until the post-decomposition
+      backlog removed it - a proto dropped into the folder was silently double-generated. One
+      named entry per proto is a rule that cannot be forgotten.
+    -->
+    <Protobuf Include="..\..\api\dotnet-dependency-graph.proto" ProtoRoot="..\..\api" GrpcServices="None" />
   </ItemGroup>
 
   <ItemGroup>
