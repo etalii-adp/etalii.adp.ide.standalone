@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The unknown-type fixture is created, not found (no real registration names an
+         unknown MIME type); it ships to the output directory for DiagramFilePair.Tests. -->
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- LogCapture builds a Serilog pipeline of its own to assert on what the code logs. -->
     <PackageReference Include="Serilog" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
