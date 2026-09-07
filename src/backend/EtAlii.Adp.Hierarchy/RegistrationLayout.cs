@@ -18,8 +18,8 @@ public readonly record struct RegistrationPosition(double X, double Y);
 /// entries. The <c>.adp</c> is ADP's own file, so the block itself may be normalized freely
 /// on write - but everything above it is preserved byte for byte, because the headers belong
 /// to <see cref="DiagramFilePair"/>'s contract and a layout write must never disturb them.
-/// Defined once here, in core, and offered to every module; no module-specific knowledge
-/// lives in this class.
+/// Defined once and offered to every module; no module-specific knowledge lives in this
+/// class.
 /// </remarks>
 public static class RegistrationLayout
 {
