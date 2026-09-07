@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only: the context resolver and property provider seams, and the diagram
+      session seam. The dependency runs this way and never back - core must compile and test
+      with this module absent (structure.md's dependency direction), and core learns no .NET,
+      MSBuild, NuGet or solution vocabulary from it.
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -86,6 +86,9 @@
     <Project Path="../diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph.Tests/EtAlii.Adp.Diagram.DependencyGraph.Tests.csproj" />
     <Project Path="../diagrams/dfd-data-flow/backend/EtAlii.Adp.Diagram.DfdDataFlow/EtAlii.Adp.Diagram.DfdDataFlow.csproj" />
     <Project Path="../diagrams/diagrams-python-cloud-infrastructure/backend/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure.csproj" />
+    <!-- The authored dependency graph's derived twin: a solution's projects and packages, read not drawn. -->
+    <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/EtAlii.Adp.Diagram.DotNetDependencyGraph.csproj" />
+    <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.csproj" />
     <Project Path="../diagrams/erd-entity-relationship/backend/EtAlii.Adp.Diagram.ErdEntityRelationship/EtAlii.Adp.Diagram.ErdEntityRelationship.csproj" />
     <Project Path="../diagrams/gcp-architecture/backend/EtAlii.Adp.Diagram.GcpArchitecture/EtAlii.Adp.Diagram.GcpArchitecture.csproj" />
     <Project Path="../diagrams/generic-swimlane/backend/EtAlii.Adp.Diagram.GenericSwimlane/EtAlii.Adp.Diagram.GenericSwimlane.csproj" />
