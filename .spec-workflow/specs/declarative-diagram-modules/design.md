@@ -179,6 +179,8 @@ Then, in order and each its own landing: the single-label modules, the multi-lab
 
 ## Deviations and notes
 
-**None against the approved requirements.** The wire split under *What crosses the wire* is a reading of Requirement 5.2's *"the design SHALL state what crosses and why"*, not a departure from it — but the user's chosen option said the mapping should *disappear* rather than become declarative, and half of it becomes a binding here, so it is raised rather than assumed.
+**None against the approved requirements.** The wire split under *What crosses the wire* is a reading of Requirement 5.2's *"the design SHALL state what crosses and why"*, not a departure from it — but the user's chosen option said the mapping should *disappear* rather than become declarative, and half of it becomes a binding here, so it was raised rather than assumed.
+
+**And it was answered: the user ruled for the split on 2026-09-08, with the alternative in front of them.** They were shown their own client-and-wire ruling read literally — both halves over the wire — against this design's narrower split, together with the argument for it: pushing the semantic half over would put *"which line is the header"* in a `.proto` and invert the dependency direction `structure.md` sets. **They chose the split.** Recorded in these terms deliberately, because *the user chose the narrower scope with the argument in front of them* and *the architect narrowed the scope* are different provenances, and only the first survives someone asking later why the semantic half never crossed the wire.
 
 **The approved requirements carried four gaps that nobody challenged in review.** They are treated here as approved rather than as unchallenged: the design closes all four, and a later reader should not read silence as scope to drop one.
