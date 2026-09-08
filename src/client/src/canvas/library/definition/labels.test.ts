@@ -212,3 +212,31 @@ describe("labels — the row-with-columns case the rdf family needs", () => {
     expect(out.find((line) => line.text === "Shape")!.editable).toBe(true);
   });
 });
+
+describe("labels — an offset measured from an edge (sufficiency row 5)", () => {
+  it("keeps a line the same distance below the box's TOP however tall the box is", () => {
+    // A C4 card's three lines are pinned 22, 38 and 58 below the top, so they stay put as the
+    // card grows. Measured from the CENTRE - the default - the same declaration drifts down by
+    // half the extra height, which is what the sabotage that found this hole did.
+    const declaration: LabelDeclaration = { text: { path: "payload.name" }, anchorTo: "top", offset: { x: 0, y: 22 } };
+    const short = layoutLabels([declaration], source({ name: "Customer" }), { x: -100, y: -40, width: 200, height: 80 });
+    const tall = layoutLabels([declaration], source({ name: "Customer" }), { x: -100, y: -90, width: 200, height: 180 });
+
+    expect(short[0]!.y).toBe(-40 + 22);
+    expect(tall[0]!.y).toBe(-90 + 22);
+  });
+
+  it("measures from the centre when nothing says otherwise, which every other module wants", () => {
+    const declaration: LabelDeclaration = { text: { path: "payload.name" }, offset: { x: 0, y: 22 } };
+    const out = layoutLabels([declaration], source({ name: "Customer" }), { x: -100, y: -40, width: 200, height: 80 });
+
+    expect(out[0]!.y).toBe(22);
+  });
+
+  it("measures from the bottom when asked, so a footer line rides the lower edge", () => {
+    const declaration: LabelDeclaration = { text: { path: "payload.name" }, anchorTo: "bottom", offset: { x: 0, y: -6 } };
+    const out = layoutLabels([declaration], source({ name: "Customer" }), { x: -100, y: -40, width: 200, height: 80 });
+
+    expect(out[0]!.y).toBe(40 - 6);
+  });
+});

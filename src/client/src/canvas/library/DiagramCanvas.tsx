@@ -1969,6 +1969,10 @@ function declaredBackground(
 /** The lines a type's `labels` declare, positioned and painted. */
 function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, source: BindingSource): ReactNode {
   const lines = layoutLabels(type.labels, source, bounds);
+  // A document that sets its elements' text colour sets it for their LINES, which are what a
+  // reader sees. A label naming its own colour keeps it: the declaration is more specific than
+  // the element's, so it wins.
+  const inherited = resolveBound(type.boundStyle?.labelColor, source);
   return lines.map((line) => (
     <text
       key={`${line.declarationIndex}-${line.lineIndex}`}
@@ -1983,7 +1987,7 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
         fontSize: line.typography?.fontSize,
         fontWeight: line.typography?.fontWeight,
         fontStyle: line.typography?.fontStyle,
-        fill: tokenColour(line.typography?.color),
+        fill: tokenColour(line.typography?.color ?? inherited),
       }}
     >
       {line.tooltip ? <title>{line.tooltip}</title> : null}
@@ -2164,6 +2168,7 @@ function renderShapeBody(
           y={element.y}
           width={bounds.width}
           height={bounds.height}
+          shape={resolveBound(bound?.silhouette, source)}
           background={tokenColour(resolveBound(bound?.fill, source) ?? style.fill) ?? "var(--canvas-node-fill, #3b6ea5)"}
           color={tokenColour(resolveBound(bound?.labelColor, source) ?? style.labelTypography?.color) ?? "var(--canvas-node-label, #ffffff)"}
           name={label}

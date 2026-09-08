@@ -329,8 +329,17 @@ export interface LabelDeclaration {
   placement?: LabelPlacement;
   /** A named line inside the box. Ignored when `offset` is given. */
   slot?: LabelSlot;
-  /** Explicit position relative to the element's centre, for a notation with its own geometry. */
+  /** Explicit position relative to {@link anchorTo}, for a notation with its own geometry. */
   offset?: { x: number; y: number };
+  /**
+   * What an `offset` is measured from. Defaults to the element's centre.
+   *
+   * <b>Sufficiency row 5 needs `top`</b>: a C4 card's three lines are pinned 22, 38 and 58
+   * pixels below the box's TOP, so they stay put as the card grows taller - measured from the
+   * centre they would drift apart on every differently-sized element, which a fixed offset
+   * cannot express and a slot fraction gets wrong in the other direction.
+   */
+  anchorTo?: "centre" | "top" | "bottom";
   /** For a collection binding: how its lines stack. Ignored for a single-value binding. */
   stack?: LabelStack;
   typography?: LabelTypography;
@@ -476,6 +485,14 @@ export interface BoundElementStyle {
   fill?: Binding;
   stroke?: Binding;
   labelColor?: Binding;
+  /**
+   * Which silhouette a `styled-box` draws - `"Person"`, `"Cylinder"`, `"Box"`, `"RoundedBox"`.
+   *
+   * <b>Sufficiency row 5.</b> A C4 document sets its elements' shapes as well as their colours,
+   * so the silhouette is data about the element rather than a property of its type - which is
+   * exactly what `boundStyle` is for, and why this sits here rather than beside `shape`.
+   */
+  silhouette?: Binding;
 }
 
 /** One kind of thing a diagram draws boxes for. */

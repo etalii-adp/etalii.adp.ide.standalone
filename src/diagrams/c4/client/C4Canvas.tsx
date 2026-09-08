@@ -1,13 +1,10 @@
 import { useMemo, useState } from "react";
 
-import { StyledBoxElement } from "@client/canvas/elements/styled-box/StyledBoxElement";
-import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { CustomShapeRef, CustomShapeState, DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -24,9 +21,6 @@ import { useC4Stream } from "./useC4Stream";
  * name's baseline 22 below the box's top, so a 20-tall editor starting 6 below the top covers
  * that line and nothing else. The inset label rule carries these as definition data.
  */
-const NAME_TOP = 6;
-const NAME_HEIGHT = 20;
-const NAME_INSET = 4;
 
 export interface C4CanvasProps {
   projectId: Uint8Array;
@@ -38,69 +32,6 @@ export interface C4CanvasProps {
 type C4NodeElement = DiagramModelElement & { node: C4Node };
 type C4BoundaryElement = DiagramModelElement & { boundary: C4BoundaryBox };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
-
-/**
- * One element card as a first-class custom shape: the shared styled box with the palette the
- * backend resolved - shape, background, colour, the three text lines - while hit-testing,
- * edge attachment and dragging stay the library's.
- */
-const cardShape: CustomShapeRef = {
-  customShape: "c4-card",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as C4NodeElement;
-    const { name, typeLine, description, width, height, style } = element.node.payload;
-    return (
-      <StyledBoxElement
-        className={`c4-node${state?.selected ? " c4-node-focused" : ""}${state?.dragging ? " c4-node-dragging" : ""}`}
-        x={element.x}
-        y={element.y}
-        width={width}
-        height={height}
-        shape={style?.shape ?? "RoundedBox"}
-        background={style?.background ?? "#1168bd"}
-        color={style?.color ?? "#ffffff"}
-        name={name}
-        typeLine={typeLine}
-        description={description}
-        nameClassName="c4-node-name"
-        typeClassName="c4-node-type"
-        descriptionClassName="c4-node-description"
-        role="button"
-        aria-label={name}
-      />
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/** The dashed rectangle around a system's containers or a container's components - inert. */
-const boundaryShape: CustomShapeRef = {
-  customShape: "c4-boundary",
-  render: (raw) => {
-    const element = raw as C4BoundaryElement;
-    const { name, kind, width, height } = element.boundary.payload;
-    return (
-      <FrameElement
-        className="c4-boundary"
-        x={element.x}
-        y={element.y}
-        width={width}
-        height={height}
-        label={`${name} [${kind}]`}
-        labelClassName="c4-boundary-label"
-      />
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
 
 /**
  * What a C4 view allows, stated once: element cards that drag, rename their NAME line in
@@ -113,12 +44,62 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
     {
       id: "element",
-      shape: cardShape,
+      // The shared styled box, with the silhouette and the palette the DOCUMENT names: a C4
+      // author sets an element's shape and colours, so both are bound rather than fixed on the
+      // type. That is the distinction `boundStyle` exists for.
+      shape: "styled-box",
+      boundStyle: {
+        silhouette: { path: "payload.shape" },
+        fill: { path: "payload.background" },
+        labelColor: { path: "payload.color" },
+      },
+      classNames: [
+        { className: "c4-node" },
+        { className: "c4-node-focused", when: { path: "state.selected", is: "true" } },
+        { className: "c4-node-dragging", when: { path: "state.dragging", is: "true" } },
+      ],
+      labels: [
+        {
+          // The three lines the card draws, pinned to its TOP so they stay put however tall it
+          // is - which is what `anchorTo` exists for, and what a centre offset cannot say.
+          text: { path: "payload.name" },
+          anchorTo: "top",
+              offset: { x: 0, y: 22 },
+          editable: true,
+          className: "c4-node-name",
+        },
+        {
+          text: { path: "payload.typeLine" },
+          anchorTo: "top",
+          offset: { x: 0, y: 38 },
+          when: { path: "payload.typeLine", is: "non-empty" },
+          className: "c4-node-type",
+        },
+        {
+          text: { path: "payload.description" },
+          anchorTo: "top",
+          offset: { x: 0, y: 58 },
+          when: { path: "payload.description", is: "non-empty" },
+          className: "c4-node-description",
+        },
+      ],
+      accessibility: { role: "button", label: { path: "payload.name" } },
       anchors: { kind: "edge" },
       sizing: "model",
-      label: { placement: "inset", editable: true, insetTop: NAME_TOP, insetHeight: NAME_HEIGHT, insetX: NAME_INSET },
     },
-    { id: "boundary", shape: boundaryShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
+    {
+      id: "boundary",
+      // The dashed rectangle around a system's containers - a frame with one composed label.
+      shape: "frame",
+      // On the ELEMENT rather than the shape: a boundary is its frame AND its label, and the
+      // test that reads its text reads the whole thing. A card is the other way round, because
+      // what a drag moves is the styled box's own group.
+      classNames: [{ className: "c4-boundary", on: "element" }],
+      labels: [{ text: { template: "{payload.name} [{payload.kind}]" }, placement: "above", className: "c4-boundary-label" }],
+      anchors: { kind: "edge" },
+      sizing: "model",
+      draggable: false,
+    },
   ],
   relationTypes: [
     {
@@ -168,6 +149,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       width: boundary.payload.width,
       height: boundary.payload.height,
       label: `${boundary.payload.name} [${boundary.payload.kind}]`,
+      payload: { name: boundary.payload.name, kind: boundary.payload.kind },
       boundary,
     }));
     const nodes = [...model.nodes.values()].map((node): C4NodeElement => ({
@@ -178,6 +160,15 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       width: node.payload.width,
       height: node.payload.height,
       label: node.payload.name,
+      // What the declaration reads: the document's own palette and the card's three lines.
+      payload: {
+        name: node.payload.name,
+        typeLine: node.payload.typeLine,
+        description: node.payload.description,
+        shape: node.payload.style?.shape ?? "RoundedBox",
+        background: node.payload.style?.background ?? "#1168bd",
+        color: node.payload.style?.color ?? "#ffffff",
+      },
       node,
     }));
     const relationships = [...model.relationships.values()].map((relationship) => {
