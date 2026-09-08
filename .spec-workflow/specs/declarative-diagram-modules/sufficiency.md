@@ -32,8 +32,8 @@ And the converse (Requirement 3.5): **a property added because a row needed it i
 | 8 | causal-loop · loopShape | — (glyph only) | polarity caption | polarity arc + arrowhead | — | — | G1, G2, G8, G11 |
 | 9 | databricks · nodeShape | box | label; badges joined | — | — | F2, Enter, Delete | G1, G2, G4 |
 | 10 | databricks · frameShape | frame | label; mode/default/overrides joined | — | — | — | G1, G2, G4, G5 |
-| 11 | dependency-graph · nodeShape | span | label ∥ id | — | — | F2, Insert, Tab, Enter, Delete | G1, G2 |
-| 12 | dotnet-dependency-graph · nodeShape | span | name; versions/frameworks below; tooltip | — | — | activate, contextSelect | G1, G2, G4, G7 |
+| 11 | dependency-graph · nodeShape | span | label ∥ id | — | — | F2, Insert, Tab, Enter, Delete | G1, G2, G20, G21 |
+| 12 | dotnet-dependency-graph · nodeShape | span | name; versions/frameworks below; tooltip | — | — | activate, contextSelect | G1, G2, G4, G7, G20, G21 |
 | 13 | helm-charts · nodeShape | box | name; tooltip | — | — | activate, contextSelect | G1, G2, G7 |
 | 14 | helm-charts · stubShape | — (glyph only) | edge text | line stub | — | — | G1, G8 |
 | 15 | mindmap · nodeShape | centered-box | text; conditional indicator glyphs | drop-target ring, dashed branch preview | — | F2, Insert, Tab, Enter, Delete | G1, G2, G4, G12 |
@@ -47,7 +47,7 @@ And the converse (Requirement 3.5): **a property added because a row needed it i
 | 23 | sparql · nodeShape | box | display; annotation when present | projection arrow when projected | — | rename | G1, G2 |
 | 24 | sparql · regionShape | frame | label | — | — | — | G1 |
 | 25 | sparql · annotationShape | — (text only) | text | — | — | — | G1, G8 |
-| 26 | timeline · spanShape | span | label ∥ id; drag hint | moment dot when not a period | ruler (now chrome, task 7) | F2, Insert, Tab, Enter, Delete | G1, G2, G16, G17 |
+| 26 | timeline · spanShape | span | label ∥ id; drag hint | moment dot when not a period | ruler (now chrome, task 7) | F2, Insert, Tab, Enter, Delete | G1, G2, G16, G17, G20, G21 |
 | 27 | wardley-map · markShape | symbol | name at a model-supplied pixel offset; decorator badges | square / circle / double circle by kind; inertia mark | axes, bands, attitudes, accelerators, notes, annotations | F2, Enter | G1, G2, G4, G14, G18, G19 |
 | 28 | wardley-map · evolveTargetShape | symbol | override name when present | dot | (as row 27) | — | G1, G14 |
 
@@ -78,12 +78,16 @@ Every entry is now **closed**, and the third column says what closed it — the 
 | **G17** | **`span` has no `moment`** — a point in time rather than a period, which is a different drawing rather than a class. | 26 | the `moment` built-in, selected per element |
 | **G18** | **Background items driven by a model collection at model coordinates** — attitudes, accelerators, notes, numbered annotations. Task 4's background takes fixed lists in extent fractions. | 27 | `MarkDeclaration` — one positioned item per collection entry; nested collections refused |
 | **G19** | **Typography that scales with the view** — Wardley's stage and axis labels hold a readable size as the map zooms, while the boundaries they name do not. | 27 | `LabelTypography.scaleWithView`, clamped by the declaration |
+| **G20** | **Edge attachment constrained to one axis.** Three canvases attach on the left or right side facing the other end whatever the angle, because the notation reads left-to-right; a true edge intersection leaves through the top for a steep pair. Each spells it in a custom shape's `edgePoint`, which is one of the two reasons those shapes exist. | 11, 12, 26 | `AnchorEnablement.edgeSides` — beside `visible` and `enabled`, because it governs the fallback a named-anchor type still uses |
+| **G21** | **An editor over a *declared* label.** `labels` replaced `label` for drawing in task 2, and the inline-editor placement was left reading only the deprecated rule — so a migrated type marked editable silently got no editor. | 11, 12, 26, and every editable row | `placementOfLabel` reads the editable declaration, and opens over the line rather than over the element |
 
 ## Status after the re-check
 
-**Nineteen gaps found, nineteen closed, no module marked an exception, and no unfillable row left.** Every closure is a central extension in the library — nothing was added to a module, and nothing was added that no row asked for.
+**Twenty-one gaps found, twenty-one closed, no module marked an exception, and no unfillable row left.** Nineteen came from the table; **two came from the reference migration doing what the migration is for** — G20 and G21 below. That two of twenty-one were invisible to a row-by-row reading is the honest measure of what a table can and cannot check: it reads what an element *draws*, and both of those are about what happens *around* the drawing. Every closure is a central extension in the library — nothing was added to a module, and nothing was added that no row asked for.
 
 **What is proven and what is not.** Each extension has unit guards, and each guard was seen to fail against the defect it covers: nine sabotages across the three landings — state dropped from the root, an empty collection joined to a blank line, parts joined without filtering, `plus` applied before `times`, an absent number read as zero, declared classes dropped from the shape, a shape selection always taking its fallback, a bound decoration class dropped, the view scale left unclamped. What is **not** proven is that a migrated module draws what it drew before; that is Group 3's job, one module at a time, and the table is its order and its acceptance.
+
+**A sabotage found a hole in the reference migration's own safety net.** Removing `edgeSides` from `dependency-graph` left all forty-five of its tests green: the module routes with its own path builder, which takes the endpoint *bounds* and picks its own anchors, so the attachment point never reaches the drawn line there. The guard for that behaviour therefore lives in the library, where it stands for rows 12 and 26, which have no such shelter. Without the sabotage the declaration would have looked verified and been nothing of the kind.
 
 **One defect was found by writing the guards rather than by review**: `Number(null)` is `0`, so a missing count read as *"0 jobs"* and a missing instant as *1 Jan 1970* — data where there was none, breaking the rule the binding resolver rests on. It is fixed, and it is the kind of thing this table exists to surface before thirteen modules depend on it.
 
