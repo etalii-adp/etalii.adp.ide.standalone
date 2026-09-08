@@ -142,6 +142,24 @@ export type AnchorPositions =
 export interface AnchorEnablement {
   visible?: DeclaredFlag;
   enabled?: DeclaredFlag;
+  /**
+   * Which sides a connector may reach when it attaches by edge rather than to a named anchor.
+   *
+   * <b>Register entry G20, found by the reference migration rather than by the table</b> - which
+   * is the migration doing its job. Three canvases do not want a true edge intersection: they
+   * attach on the LEFT or RIGHT side facing the other end, whatever the angle, because the
+   * notation reads left-to-right and a connector leaving through the top of a box reads as a
+   * different relation. Each spells that in a custom shape's `edgePoint` today, and it is one
+   * of the two reasons those shapes exist at all.
+   *
+   * It lives beside `visible` and `enabled` rather than inside `{ kind: "edge" }` because it
+   * governs the FALLBACK, which a type declaring named anchors still uses for the ends that do
+   * not name one - dependency-graph declares two side anchors and attaches its targets by edge.
+   *
+   * Unset means a true edge intersection: what every other module wants, and what the canvas
+   * has always done.
+   */
+  edgeSides?: "all" | "horizontal" | "vertical";
 }
 
 export type AnchorSet = AnchorPositions & AnchorEnablement;

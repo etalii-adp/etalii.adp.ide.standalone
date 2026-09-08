@@ -157,3 +157,59 @@ describe("the shapes and the paint a row could not otherwise reach", () => {
     expect(container.querySelector('[data-element-id="a"] title')!.textContent).toBe("Play web");
   });
 });
+
+/**
+ * EDGE ATTACHMENT ON ONE AXIS — register entry G20, and the guard exists because a SABOTAGE
+ * found the module's own suite blind to it.
+ *
+ * Three canvases attach on the left or right side facing the other end, whatever the angle,
+ * because the notation reads left-to-right and a connector leaving through the top of a box
+ * reads as a different relation. Each spells that in a custom shape's `edgePoint` today.
+ *
+ * The reference migration declared it and every one of dependency-graph's forty-five tests
+ * still passed when it was removed again - that module routes with its own path builder, which
+ * takes the end BOUNDS and picks its own anchors, so the attachment point never reaches the
+ * drawn line there. Rows 12 and 26 do not have that shelter, and this is what stands in for
+ * the coverage their suites will need.
+ */
+describe("edge attachment constrained to an axis (G20)", () => {
+  function twoNodes(edgeSides?: "all" | "horizontal" | "vertical") {
+    const definition: DiagramDefinition = {
+      elementTypes: [{ id: "node", shape: "box", anchors: { kind: "edge", ...(edgeSides ? { edgeSides } : {}) }, sizing: "model" }],
+      relationTypes: [{ id: "to", route: "straight", endpoints: { source: { elementTypes: ["node"] }, target: { elementTypes: ["node"] }, allowSelf: false } }],
+      layout: { modes: ["manual"] },
+      dragging: "enabled",
+    };
+
+    // Beta sits well BELOW and a little to the right: a true edge intersection leaves through
+    // the bottom, and a horizontal constraint leaves through the right side.
+    const model: DiagramModel = {
+      elements: [
+        { id: "a", type: "node", x: 0, y: 0, width: 100, height: 40 },
+        { id: "b", type: "node", x: 40, y: 400, width: 100, height: 40 },
+      ],
+      connections: [{ id: "a->b", type: "to", sourceId: "a", targetId: "b" }],
+    };
+
+    const { container } = render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvas definition={definition} model={model} events={{}} />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+
+    return container.querySelector('[data-connection-id="a->b"] path.canvas-connection-line')!.getAttribute("d")!;
+  }
+
+  it("leaves through the bottom by default, and through the side when the type says horizontal", () => {
+    // Alpha is 100x40 centred on the origin. Unconstrained, a line toward a box far below
+    // leaves at the bottom edge, y = 20. Constrained, it leaves at the right edge, x = 50.
+    expect(twoNodes()).toMatch(/^M [\d.-]+ 20 /);
+    expect(twoNodes("horizontal")).toMatch(/^M 50 0 /);
+  });
+
+  it("leaves through the top or bottom when the type says vertical", () => {
+    expect(twoNodes("vertical")).toMatch(/^M 0 20 /);
+  });
+});

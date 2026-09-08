@@ -104,6 +104,18 @@
   stroke-width: 2.5;
 }
 
+/*
+ * A declared label's default alignment.
+ *
+ * The library's own rule rather than an inline attribute, so a declaration that says nothing
+ * about alignment emits no `text-anchor` - which is what every shared element does today, and
+ * what the modules' tests assert. An `align` that differs from this still writes the attribute,
+ * where it wins over this rule.
+ */
+.library-element-label {
+  text-anchor: middle;
+}
+
 .canvas-node-label {
   fill: var(--color-text, #1c2333);
   font-size: 12px;
