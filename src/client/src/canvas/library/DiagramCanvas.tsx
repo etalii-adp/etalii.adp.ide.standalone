@@ -35,6 +35,7 @@ import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
 import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
 import { layoutLabels } from "./definition/labels";
+import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -1606,16 +1607,81 @@ function renderShape(
   state?: import("./definition/diagramDefinition").CustomShapeState,
 ): ReactNode {
   const body = renderShapeBody(element, type, bounds, state);
-  if (type?.labels === undefined) {
+  if (type?.labels === undefined && type?.decorations === undefined) {
     return body;
   }
 
   return (
     <>
       {body}
-      {declaredLabels(element, type, bounds)}
+      {type?.decorations ? declaredDecorations(element, type, bounds) : null}
+      {type?.labels ? declaredLabels(element, type, bounds) : null}
     </>
   );
+}
+
+/**
+ * The ornaments a type's `decorations` declare.
+ *
+ * Drawn BENEATH the declared labels and above the shape, and carrying `pointerEvents: none`
+ * throughout: a decoration takes no gesture, which is the line that keeps it an ornament rather
+ * than a second kind of element. Anything that needs to be clicked is an element type.
+ */
+function declaredDecorations(element: DiagramModelElement, type: ElementTypeDefinition, bounds: ConnectorBox): ReactNode {
+  const resolved = resolveDecorations(type.decorations, { element, payload: element.payload }, bounds);
+  return resolved.map((decoration) => (
+    <g key={decoration.index} className={decoration.className} style={{ pointerEvents: "none" }} aria-hidden="true">
+      {decorationGlyph(decoration)}
+      {decoration.text !== undefined ? (
+        <text
+          className="library-decoration-text"
+          x={decoration.textAt.x}
+          y={decoration.textAt.y}
+          textAnchor={decoration.textAnchor}
+          style={{
+            fontSize: decoration.typography?.fontSize,
+            fontWeight: decoration.typography?.fontWeight,
+            fontStyle: decoration.typography?.fontStyle,
+            fill: tokenColour(decoration.typography?.color),
+          }}
+        >
+          {decoration.text}
+        </text>
+      ) : null}
+    </g>
+  ));
+}
+
+/** One glyph of the closed set. A `marker` with no name draws nothing but its text. */
+function decorationGlyph(decoration: ResolvedDecoration): ReactNode {
+  switch (decoration.glyph) {
+    case "line":
+      return <line x1={decoration.from.x} y1={decoration.from.y} x2={decoration.to.x} y2={decoration.to.y} />;
+    case "path":
+      return decoration.d !== undefined ? <path d={decoration.d} /> : null;
+    case "circle":
+      return <circle cx={decoration.from.x} cy={decoration.from.y} r={decoration.radius} />;
+    case "rect":
+      return (
+        <rect
+          x={decoration.from.x}
+          y={decoration.from.y}
+          width={decoration.width}
+          height={decoration.height}
+          rx={decoration.radius}
+        />
+      );
+    case "marker":
+      return decoration.marker !== undefined ? (
+        <line
+          x1={decoration.from.x}
+          y1={decoration.from.y}
+          x2={decoration.to.x}
+          y2={decoration.to.y}
+          markerEnd={`url(#library-${decoration.marker})`}
+        />
+      ) : null;
+  }
 }
 
 /** The lines a type's `labels` declare, positioned and painted. */

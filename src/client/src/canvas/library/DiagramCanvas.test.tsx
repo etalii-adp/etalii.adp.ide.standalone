@@ -923,3 +923,53 @@ describe("declared labels", () => {
     expect(screen.getByText("Store")).toBeTruthy();
   });
 });
+
+describe("declared decorations", () => {
+  /**
+   * The canvas half of task 3. `resolveDecorations` is tested pure; this asserts the ornament
+   * reaches the drawing and takes no gestures — a decoration that could be clicked would be a
+   * second kind of element, which is the line the addition exists to hold.
+   */
+  const decorated = () =>
+    definitionOf({
+      elementTypes: [
+        {
+          id: "node",
+          shape: "box",
+          anchors: { kind: "edge" },
+          sizing: "model",
+          decorations: [
+            {
+              glyph: "line",
+              from: { x: 50, y: 0 },
+              to: { x: 40, y: 0 },
+              text: { path: "payload.missing" },
+              textAt: { x: 58, y: -6 },
+              className: "stub",
+            },
+          ],
+        },
+      ],
+      relationTypes: [],
+    });
+
+  const decoratedModel = (): DiagramModel => ({
+    elements: [{ id: "n", type: "node", x: 0, y: 0, width: 100, height: 40, label: "Play", payload: { missing: "db_servers" } }],
+    connections: [],
+  });
+
+  it("draws the ornament and its text", () => {
+    const { container } = renderCanvas({}, decorated(), decoratedModel());
+
+    expect(screen.getByText("db_servers")).toBeTruthy();
+    expect(container.querySelector("g.stub line")).toBeTruthy();
+  });
+
+  it("takes no pointer events, so an ornament is never a second kind of element", () => {
+    const { container } = renderCanvas({}, decorated(), decoratedModel());
+    const group = container.querySelector("g.stub") as SVGGElement;
+
+    expect(group.style.pointerEvents).toBe("none");
+    expect(group.getAttribute("aria-hidden")).toBe("true");
+  });
+});

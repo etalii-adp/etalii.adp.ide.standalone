@@ -152,6 +152,72 @@ export interface LabelTypography {
   color?: string;
 }
 
+
+/**
+ * A number in a declaration: written outright, or bound to a model field.
+ *
+ * Both, rather than only a binding, because most geometry is a constant the author knows -
+ * a stub's length, a badge's radius - and forcing those through the model would push authored
+ * layout into the backend for no gain.
+ */
+export type DeclaredNumber = number | Binding;
+
+/**
+ * The closed glyph set a decoration draws.
+ *
+ * <b>Closed on purpose.</b> A decoration vocabulary that could express anything would be a
+ * renderer with extra steps, which is the thing this specification exists to remove. Five
+ * entries, and each earns its place from a renderer that draws it today.
+ */
+export type DecorationGlyph = "line" | "path" | "circle" | "rect" | "marker";
+
+/**
+ * An ornament attached to an element - drawn relative to it, and nothing more than drawn.
+ *
+ * <b>No hit-testing, no gesture, no anchor.</b> Anything that needs those is an element type,
+ * and that line is what keeps this a small closed set rather than a second element system.
+ *
+ * The four shapes it must express are measured, not imagined - the five renderers that use no
+ * shared component today draw exactly these: a STUB (a line to nowhere with a label, in
+ * ansible and helm), a BADGE (a curved marker with a caption, in causal-loop), an ANNOTATION
+ * (bare positioned text, in sparql), and a TARGET (a circle with a label, in wardley).
+ */
+export interface DecorationDeclaration {
+  glyph: DecorationGlyph;
+  /** Where it starts, relative to the element's centre. */
+  from?: { x: DeclaredNumber; y: DeclaredNumber };
+  /** Where a `line` ends, relative to the element's centre. */
+  to?: { x: DeclaredNumber; y: DeclaredNumber };
+  /** A `circle`'s radius, or a `rect`'s corner rounding. */
+  radius?: DeclaredNumber;
+  width?: DeclaredNumber;
+  height?: DeclaredNumber;
+  /**
+   * A `path`'s `d`, as data.
+   *
+   * <b>This is the one place a decoration can carry an arbitrary shape, and it is deliberately
+   * a BINDING rather than a function.</b> causal-loop's polarity arc is computed today by
+   * `loopMarkerPath(x, y, r, clockwise)` in the renderer; as a binding, the same path arrives
+   * as a string the module's own backend or model produces. That keeps it data - checkable,
+   * serialisable, and unable to call anything - which is the whole distinction this
+   * specification rests on. Whether causal-loop's arc is better as a bound `d` or as a named
+   * marker is a question for the sufficiency table rather than one to settle here.
+   */
+  d?: Binding;
+  /** A `marker`'s name, from the library's own registry - an arrowhead, a tick. */
+  marker?: string;
+  /** Optional text drawn with the glyph: the stub's label, the badge's caption. */
+  text?: Binding;
+  /** Where that text sits, relative to the element's centre. */
+  textAt?: { x: DeclaredNumber; y: DeclaredNumber };
+  textAnchor?: "start" | "middle" | "end";
+  typography?: LabelTypography;
+  /** Classes for the glyph, so colour stays in the stylesheet. */
+  className?: string;
+  /** Drawn only when this holds - a badge that appears for one polarity and not the other. */
+  when?: Condition;
+}
+
 /** Where a label sits relative to its element's shape. Carried over from `LabelRule`. */
 export type LabelPlacement = "inside" | "above" | "below" | "beside" | "inset";
 
@@ -254,6 +320,11 @@ export interface ElementTypeDefinition {
    * one of them bound to a model collection. Present, this replaces {@link label} entirely.
    */
   labels?: readonly LabelDeclaration[];
+  /**
+   * Ornaments this type draws beside its shape - the stubs, badges, annotations and targets
+   * that five renderers draw with no shared component at all. Drawn, never interactive.
+   */
+  decorations?: readonly DecorationDeclaration[];
   anchors: AnchorSet;
   sizing: SizingRule;
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */

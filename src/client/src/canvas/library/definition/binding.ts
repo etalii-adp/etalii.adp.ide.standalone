@@ -217,6 +217,28 @@ export function resolveOne(binding: Binding, source: BindingSource): string | nu
 }
 
 /**
+ * The one NUMBER a binding yields, or null.
+ *
+ * Geometry binds to numbers - a decoration's radius, a band's extent - and a declaration that
+ * had to spell those as text would be a worse thing to read and a worse thing to check. Parsing
+ * rather than a separate numeric binding form, because the alternative is two resolvers that
+ * can disagree about what `payload.r` means.
+ *
+ * A value that is not a number yields null, and the caller draws nothing: exactly the rule the
+ * string form follows, for exactly the reason - a typo in an authored declaration must cost one
+ * ornament, not the canvas.
+ */
+export function resolveNumber(binding: Binding, source: BindingSource): number | null {
+  const text = resolveOne(binding, source);
+  if (text === null) {
+    return null;
+  }
+
+  const value = Number(text);
+  return Number.isFinite(value) ? value : null;
+}
+
+/**
  * Every value a binding yields: none, one, or one per entry of a collection.
  *
  * <b>Nothing here throws.</b> A path that does not resolve, a collection that is not a list, an

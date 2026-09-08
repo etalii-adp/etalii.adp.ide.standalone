@@ -51,6 +51,11 @@ describe("no unstyled library classes", () => {
     "library-element",
     "library-element-dragging",
     "library-element-label",
+    // A declared decoration's text, and the same category as `library-element-label` beside it:
+    // text carrying no fill of its own. Its colour comes from the declaration's own
+    // `typography.color`, applied inline, or from the module's `className` on the surrounding
+    // group - which is where a decoration's colour belongs, since the notation owns it.
+    "library-decoration-text",
     "library-connection",
     "library-connection-label",
     "library-connection-line",
