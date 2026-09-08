@@ -550,12 +550,17 @@ export interface DiagramBackgroundRef {
 /**
  * <b>A third function-valued escape hatch, and one Requirement 2.9 does not name.</b>
  *
- * 2.9 requires `CustomShapeRef` and `CustomRouteRef` to become unreachable from a module client.
- * `DiagramBackgroundRef` is the same thing for the backdrop - a module-supplied `render` the
- * library calls - and it is used by exactly the two modules the background addition is for.
- * It stays reachable until wardley-map and sparql migrate, then it goes the same way; the
- * declared form beside it is what replaces it. Flagged rather than removed here, because
- * removing a contract two unmigrated modules still use would break them.
+ * Requirement 2.9 originally listed `CustomShapeRef` and `CustomRouteRef`; it now states the
+ * property instead - no function-valued escape hatch reachable from a module client - because a
+ * list of two admits a third silently, which is this specification's own subject appearing
+ * inside its own requirements.
+ *
+ * `DiagramBackgroundRef` is that third: a module-supplied `render` the library calls, for the
+ * backdrop. <b>It has exactly one user - `wardley-map`</b>. I first reported two; sparql
+ * declares no background at all, and its `sparql-region` is a custom SHAPE drawn as an element
+ * rather than a backdrop. So this dies with wardley's migration at task 14, not with a second
+ * module's. It stays reachable until then because removing a contract an unmigrated module
+ * still uses would break it; the declared form beside it is what replaces it.
  */
 export type DiagramBackground = DiagramBackgroundRef | BackgroundDeclaration;
 
