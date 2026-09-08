@@ -63,7 +63,9 @@ Three gaps follow, and they are different from each other:
 
 1. **Multiple labels.** One label per shape, no way to declare a second line, its position, or its typography. Ten renderers hand-roll `<text>` for exactly this.
 2. **Decorations.** A stub reaching to nothing, a loop badge, an annotation, an evolution target — five renderers draw a small fixed ornament with no component and no vocabulary.
-3. **A notation background.** `wardley-map` draws axes, evolution stage bands, attitude regions and annotations under everything; `timeline` draws a ruler. This is a coordinate-space backdrop, not element chrome, and nothing declares it.
+3. **A notation background.** `wardley-map` draws axes, evolution stage bands, attitude regions and annotations under everything — a coordinate-space backdrop, drawn in the diagram's own units beneath the elements, and nothing declares it.
+
+   *Corrected on 2026-09-08, during task 4.* This gap originally read *"`timeline` draws a ruler"* as a second instance of the same thing. **It is not.** `TimelineRuler.tsx` is 38 lines of HTML — a `<div>` of `<span>`s, `aria-hidden`, absolutely positioned over the scrolling surface so it never scrolls out of sight — whose tick positions are **pixels computed from the viewport** and whose tick *set* changes with zoom. Its own doc-comment says *"chrome fixed to the view, not to the diagram"*. **Wardley's is coordinate-space; timeline's is view-fixed chrome, and they share only the word "drawn around the diagram".** The ruler belongs with Requirement 6, and the sentence that grouped them was true about what each draws and false about what either is.
 
 **The proof case is not what it appears.** `WardleyCanvas` is the largest at 621 lines and the only canvas with substantial raw SVG — but of its twenty-four raw-SVG lines, **three are an element** (a circle and a label) and **twenty-one are its background**. Wardley's shapes are trivial; its *background* is the gap. A specification that reads "wardley is the hard shape" would solve the wrong problem.
 
@@ -113,13 +115,15 @@ The user's revision feedback, anchored on the shapes requirement: *"Not only how
 6. WHEN an element type's actions are declared THEN the declaration SHALL state **which actions it offers** — rename, delete, connect and the module's own — **whether each is enabled**, what it applies to, and what invokes it; and no module client SHALL hand-write a shortcut key list or synthesise a keystroke to express an action.
 7. WHEN an action is declared THEN **only its handler SHALL remain imperative** — the code that runs when it fires — because that is precisely the carve-out the user permitted, and the declaration is what makes the carve-out checkable.
 8. WHEN enablement is declared THEN it SHALL be stated uniformly, so that a type offering no rename is distinguishable from a type whose rename nobody wired — a distinction the tree cannot currently make.
-9. WHEN this requirement is complete THEN `CustomShapeRef` and `CustomRouteRef` SHALL be removed from the contract or unreachable from any module client, and the choice recorded with its reason.
+9. WHEN this requirement is complete THEN **no function-valued escape hatch SHALL remain reachable from a module client** — a contract member whose value is a function the library calls, by any name. `CustomShapeRef`, `CustomRouteRef` and **`DiagramBackgroundRef`** are the three that exist; each is removed from the contract or made unreachable, and the choice recorded with its reason.
+
+   *Amended on 2026-09-08, during task 4.* This criterion originally named two members by hand and a third existed — `DiagramBackgroundRef`, `{ background: string; render: (view) => unknown }`, used by `wardley-map` alone. **The defect was not the missing name; it was that the criterion was a list where it needed to be a property.** A list of two admits a third silently, which is the failure this specification is about, appearing inside its own requirements.
 
 ### Requirement 3 — The vocabulary gains exactly what the escape hatch was covering
 
 1. WHEN the vocabulary is extended THEN it SHALL close the four measured gaps — **multiple labels, decorations, a notation background, and declared actions with their enablement** — and the design SHALL treat each as its own addition rather than one general mechanism.
 2. WHEN a decoration is declared THEN a stub, a badge, an annotation and a target dot SHALL all be expressible, since those are the five that use no component today.
-3. WHEN a notation background is declared THEN `wardley-map`'s axes, stage bands and regions and `timeline`'s ruler SHALL both be expressible, because two instances make it a category rather than a special case.
+3. WHEN a notation background is declared THEN `wardley-map`'s axes, stage bands, regions and annotations SHALL be expressible in the diagram's own coordinate space. **`timeline`'s ruler is not a second instance and SHALL NOT be made one** — it is view-fixed chrome and belongs to Requirement 6. A background stretched until it could express a view-pinned tick ladder whose contents change with zoom would be able to express anything, which is the property this specification refuses everywhere else.
 4. WHEN actions are declared THEN the four drifted shortcut lists SHALL collapse to one stated rule, and the nine synthesised `Delete` keystrokes SHALL disappear — a module SHALL never build a key event to name an action.
 5. WHEN an addition is proposed THEN it SHALL be justified by a module that needs it, named, and SHALL NOT be added speculatively.
 6. **THEN the shared library change SHALL be recognised as its own body of work**, sequenced before module migration, and SHALL NOT be discovered inside a module task.
@@ -140,7 +144,7 @@ The user's revision feedback, anchored on the shapes requirement: *"Not only how
 
 ### Requirement 6 — Chrome and background are declared
 
-1. WHEN a canvas shows loading, unavailable, a title or a legend THEN those SHALL be declared, with content bound to model fields, rather than hand-written per module.
+1. WHEN a canvas shows loading, unavailable, a title, a legend **or a view-fixed ruler** THEN those SHALL be declared, with content bound to model fields, rather than hand-written per module. **`timeline`'s ruler is a member of this set**, moved here from Requirement 3.3 on 2026-09-08 when its mechanism was read rather than its purpose: view-pinned, tick set derived from the viewport, HTML rather than SVG.
 2. WHEN a module wants none THEN the absence SHALL be as explicit as the presence.
 3. WHEN two modules show the same state THEN a reader SHALL see the same thing.
 

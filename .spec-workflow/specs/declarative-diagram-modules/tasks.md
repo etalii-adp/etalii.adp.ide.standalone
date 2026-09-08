@@ -30,7 +30,8 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
 - [-] 4. `background`
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - Bands, axes with end labels and rotated titles, gridlines, and regions bound to model collections. Beneath everything, `aria-hidden`, takes no gestures.
-  - Acceptance is `wardley-map`'s twenty-one background lines and `timeline`'s ruler — two instances, which is what makes it a category rather than a special case.
+  - **Acceptance is `wardley-map`'s twenty-one background lines, and that alone.** `timeline`'s ruler was named here as a second instance and is not one: it is 38 lines of view-fixed HTML whose tick set changes with zoom, and it moved to task 7 on 2026-09-08. **Do not stretch `background` to reach it** — a backdrop that could express a view-pinned tick ladder could express anything, which this specification refuses everywhere else.
+  - The single instance is not a weakness in the vocabulary: bands, axes, gridlines and bound regions are general on their face, and the argument the second instance was carrying — *do not special-case wardley* — is carried by the vocabulary being notation-neutral rather than by the count.
   - _Requirements: 3.3_
 
 - [ ] 5. `actions` and anchor enablement, and the library owning the keyboard
@@ -49,7 +50,8 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
 
 - [ ] 7. Chrome declared
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
-  - Loading, unavailable, title and legend as declarations with content bound to model fields. A module wanting none declares none, **as explicitly as presence**.
+  - Loading, unavailable, title, legend **and view-fixed rulers** as declarations with content bound to model fields. A module wanting none declares none, **as explicitly as presence**.
+  - **`timeline`'s ruler lands here**, moved from task 4 on 2026-09-08 after its mechanism was read: HTML rather than SVG, absolutely positioned over the scrolling surface, `aria-hidden`, tick positions in viewport pixels and the tick *set* derived from `ticksFor(startSeconds, endSeconds, widthPx)` so it changes with zoom. A view-fixed chrome declaration therefore needs a **tick-ladder kind** whose entries are derived from the visible range, not a fixed list.
   - _Requirements: 6.1, 6.2, 6.3_
 
 - [ ] 8. Gate and land Group 1
@@ -90,8 +92,9 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - The stubs, badges and annotations task 3 was specified against.
   - _Requirements: 9.3, 9.4, 8.1_
 
-- [ ] 14. `wardley-map`, last
+- [ ] 14. `wardley-map`, last — and the last escape hatch closes with it
   - The background's proof: twenty-one of its twenty-four raw-SVG lines are axes and stage bands, and its shapes are a symbol and a dot. Last because a vocabulary that expresses it expresses the rest, and because failing here early would stall the twelve that do not need it.
+  - **`DiagramBackgroundRef` is removed with this migration.** It is the third function-valued escape hatch, found at task 4, and `wardley-map` is its **only** user — verified: `sparql` declares no background at all, and its `sparql-region` is a custom *shape*, not a backdrop. Keeping it as a union until this task is correct, because removing a contract an unmigrated module still uses would break it; once wardley declares its background as data, nothing reaches it and Requirement 2.9 is satisfied for all three hatches.
   - _Requirements: 9.3, 9.4, 8.1_
 
 ---
