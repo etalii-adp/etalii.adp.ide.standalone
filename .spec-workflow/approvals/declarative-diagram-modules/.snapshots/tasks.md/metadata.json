@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/declarative-diagram-modules/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-08T19:01:26.311Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788894085963_8ptrx9i2e",
+      "approvalTitle": "declarative-diagram-modules tasks"
+    }
+  ]
+}
