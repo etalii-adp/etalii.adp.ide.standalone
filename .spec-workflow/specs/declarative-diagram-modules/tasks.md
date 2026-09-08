@@ -8,7 +8,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
 
 ## Group 1 — The shared library surface
 
-- [ ] 1. The binding resolver
+- [-] 1. The binding resolver
   - Files: `src/client/src/canvas/library/definition/binding.ts` (new), `binding.test.ts` (new)
   - Field paths, templates, collection bindings with `each`, and `when` conditions, resolving against `DiagramModelElement` and its module payload. Pure, no React.
   - **The prohibition goes in the code, not only in the design**: a doc-comment stating that a binding is data and **cannot call anything**, with the reason — a callable binding is the escape hatch under a new name, and `binding.ts` is where someone will be tempted, not the design document. The type makes a function-valued binding unrepresentable rather than discouraged.
