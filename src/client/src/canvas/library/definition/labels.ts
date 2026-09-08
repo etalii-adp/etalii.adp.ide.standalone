@@ -88,7 +88,11 @@ function placementOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: n
   const centreY = bounds.y + bounds.height / 2;
 
   if (declaration.offset) {
-    return { x: centreX + declaration.offset.x, y: centreY + declaration.offset.y, anchor: "middle" };
+    // Measured from the edge the declaration names, so a line pinned below a card's top stays
+    // there however tall the card is.
+    const originY =
+      declaration.anchorTo === "top" ? bounds.y : declaration.anchorTo === "bottom" ? bounds.y + bounds.height : centreY;
+    return { x: centreX + declaration.offset.x, y: originY + declaration.offset.y, anchor: "middle" };
   }
 
   switch (declaration.placement ?? "inside") {
