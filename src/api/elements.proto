@@ -11,9 +11,46 @@ message ElementId {
   string value = 1;
 }
 
+// A drawn extent. Separate from BoundingBox, which carries a position too: an element's
+// position is already field 2, and a message that repeated it would let the two disagree.
+message Size2D {
+  double width = 1;
+  double height = 2;
+}
+
 message Element {
   ElementId id = 1;
   Point2D position = 2;            // Point2D from connection.proto
   string type = 3;                 // mime-style, e.g. "mindmap/node"
   google.protobuf.Any payload = 4; // type-specific message, defined per diagram module
+
+  // ---- the structural half, sent shaped for the canvas -------------------------------------
+  //
+  // Identity, type, position, size and connection endpoints are the same concepts in every
+  // module, and are what the client's DiagramModel already is. Sending them shaped is what
+  // removes the bulk of the 665 lines of per-module mapping: today each module hard-codes a
+  // size constant, hard-codes the definition's element-type id, and reconstructs an edge's two
+  // ends - dotnet-dependency-graph parses them out of the element id, others read them from
+  // their payload, and no two do it alike.
+  //
+  // THE SEMANTIC HALF DELIBERATELY DOES NOT CROSS. Which payload field is the header, which
+  // collection are the rows, which flag drives a status colour - that is each module's own
+  // vocabulary, and putting it here would mean a .proto deciding presentation, inverting the
+  // dependency structure.md sets. It stays a binding in the module's declaration.
+  //
+  // Every field below is OPTIONAL and unset by every module until it migrates, so this changes
+  // nothing for the twelve that have not.
+
+  Size2D size = 5;                 // the drawn extent, where the module knows it
+
+  // The definition's own elementTypes/relationTypes id - "node", "package-reference" - as
+  // against field 3's mime-style type. Modules hard-code this mapping in their canvas today.
+  string element_type = 6;
+
+  // Set only on an element that IS a connection. Their presence is what tells the client this
+  // is a connection rather than a node, so no module needs a rule of its own for the split.
+  ElementId source_id = 7;
+  ElementId target_id = 8;
+  string source_anchor = 9;
+  string target_anchor = 10;
 }

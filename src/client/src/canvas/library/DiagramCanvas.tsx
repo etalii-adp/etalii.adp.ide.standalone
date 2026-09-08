@@ -34,6 +34,11 @@ import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
 import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
+import { layoutLabels } from "./definition/labels";
+import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
+import { resolveBackground } from "./definition/background";
+import { actionForGesture, actionForKey } from "./definition/actions";
+import { isBackgroundRef } from "./definition/diagramDefinition";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -1031,6 +1036,18 @@ export function DiagramCanvas({
       return;
     }
 
+    // A DECLARED ACTION FIRST, and only for a type that declares one.
+    //
+    // Inert for the twelve modules that have not migrated: `definition.actions` undefined means
+    // this whole branch is skipped and the delete path below behaves exactly as it always has.
+    // That is Requirement 8.1 at the library level - the addition changes nothing until a module
+    // asks for it.
+    if (definition.actions !== undefined || [...elementTypes.values()].some((type) => type.actions !== undefined)) {
+      if (dispatchDeclaredAction(event)) {
+        return;
+      }
+    }
+
     if (event.key !== "Delete" && event.key !== "Backspace") {
       return;
     }
@@ -1039,16 +1056,79 @@ export function DiagramCanvas({
       if (item.kind === "element") {
         const element = elementsById.get(item.id);
         const type = element !== undefined ? elementTypes.get(element.type) : undefined;
-        if (element !== undefined && (type?.deletable ?? true)) {
+
+        // A declared delete action replaces the synthesised keystroke: the module hears its own
+        // action id rather than building `{ key: "Delete", ... }` to say the same thing.
+        const declared =
+          element === undefined
+            ? null
+            : actionForGesture(
+                {
+                  actions: [...(definition.actions ?? []), ...(type?.actions ?? [])],
+                  targetKind: "element",
+                  targetId: item.id,
+                  typeId: element.type,
+                  source: { element, payload: element.payload },
+                },
+                "delete",
+              );
+
+        if (declared !== null) {
+          event.preventDefault();
+          raise({ kind: "action-invoked", ...declared });
+        } else if (element !== undefined && (type?.deletable ?? true)) {
           event.preventDefault();
           raise({ kind: "element-deleted", elementId: item.id });
         }
       } else {
+        const connection = model.connections.find((candidate) => candidate.id === item.id);
+        const declared =
+          connection === undefined
+            ? null
+            : actionForGesture(
+                {
+                  actions: definition.actions,
+                  targetKind: "connection",
+                  targetId: item.id,
+                  typeId: connection.type,
+                  source: { element: { id: item.id, type: connection.type, x: 0, y: 0 } },
+                },
+                "delete",
+              );
+
         event.preventDefault();
-        raise({ kind: "connection-deleted", connectionId: item.id });
+        raise(declared !== null ? { kind: "action-invoked", ...declared } : { kind: "connection-deleted", connectionId: item.id });
       }
     }
   };
+
+  /** A declared shortcut, dispatched by action id. True when one fired. */
+  function dispatchDeclaredAction(event: React.KeyboardEvent): boolean {
+    for (const item of selection) {
+      const element = item.kind === "element" ? elementsById.get(item.id) : undefined;
+      const type = element !== undefined ? elementTypes.get(element.type) : undefined;
+      const connection = item.kind === "connection" ? model.connections.find((c) => c.id === item.id) : undefined;
+
+      const found = actionForKey(
+        {
+          actions: [...(definition.actions ?? []), ...(type?.actions ?? [])],
+          targetKind: item.kind === "element" ? "element" : "connection",
+          targetId: item.id,
+          typeId: element?.type ?? connection?.type,
+          source: { element: element ?? { id: item.id, type: connection?.type ?? "", x: 0, y: 0 }, payload: element?.payload },
+        },
+        { key: event.key, ctrlKey: event.ctrlKey, shiftKey: event.shiftKey, altKey: event.altKey, metaKey: event.metaKey },
+      );
+
+      if (found !== null) {
+        event.preventDefault();
+        raise({ kind: "action-invoked", ...found });
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   // ---- context menu (Requirement 7.2) ------------------------------------------------------
 
@@ -1264,8 +1344,15 @@ export function DiagramCanvas({
         </defs>
 
         {definition.background !== undefined && (
-          <g className="library-canvas-background" data-testid="canvas-background" pointerEvents="none">
-            {definition.background.render({ x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h }) as ReactNode}
+          <g className="library-canvas-background" data-testid="canvas-background" pointerEvents="none" aria-hidden="true">
+            {isBackgroundRef(definition.background)
+              ? (definition.background.render({ x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h }) as ReactNode)
+              : declaredBackground(definition.background, model, {
+                  x: effectiveView.x,
+                  y: effectiveView.y,
+                  width: effectiveView.w,
+                  height: effectiveView.h,
+                })}
           </g>
         )}
 
@@ -1590,13 +1677,178 @@ class ShapeErrorBoundary extends Component<{ bounds: ConnectorBox; label: string
  * renderer for a custom shape, and a visible fallback for anything undeclared - a mapping bug
  * shown rather than hidden (design, Error Handling 1).
  */
+/**
+ * An element's drawing: its shape, and the lines its type declares.
+ *
+ * Declared labels are drawn as siblings ON TOP of the shape rather than inside it, so a
+ * built-in shape needs no knowledge of them and a module needs no renderer to place a second
+ * line - which is the whole point of the addition. Geometry comes from `layoutLabels`, which is
+ * pure and tested apart from React.
+ */
 function renderShape(
   element: DiagramModelElement,
   type: ElementTypeDefinition | undefined,
   bounds: ConnectorBox,
   state?: import("./definition/diagramDefinition").CustomShapeState,
 ): ReactNode {
-  const label = element.label ?? "";
+  const body = renderShapeBody(element, type, bounds, state);
+  if (type?.labels === undefined && type?.decorations === undefined) {
+    return body;
+  }
+
+  return (
+    <>
+      {body}
+      {type?.decorations ? declaredDecorations(element, type, bounds) : null}
+      {type?.labels ? declaredLabels(element, type, bounds) : null}
+    </>
+  );
+}
+
+/**
+ * The ornaments a type's `decorations` declare.
+ *
+ * Drawn BENEATH the declared labels and above the shape, and carrying `pointerEvents: none`
+ * throughout: a decoration takes no gesture, which is the line that keeps it an ornament rather
+ * than a second kind of element. Anything that needs to be clicked is an element type.
+ */
+function declaredDecorations(element: DiagramModelElement, type: ElementTypeDefinition, bounds: ConnectorBox): ReactNode {
+  const resolved = resolveDecorations(type.decorations, { element, payload: element.payload }, bounds);
+  return resolved.map((decoration) => (
+    <g key={decoration.index} className={decoration.className} style={{ pointerEvents: "none" }} aria-hidden="true">
+      {decorationGlyph(decoration)}
+      {decoration.text !== undefined ? (
+        <text
+          className="library-decoration-text"
+          x={decoration.textAt.x}
+          y={decoration.textAt.y}
+          textAnchor={decoration.textAnchor}
+          style={{
+            fontSize: decoration.typography?.fontSize,
+            fontWeight: decoration.typography?.fontWeight,
+            fontStyle: decoration.typography?.fontStyle,
+            fill: tokenColour(decoration.typography?.color),
+          }}
+        >
+          {decoration.text}
+        </text>
+      ) : null}
+    </g>
+  ));
+}
+
+/** One glyph of the closed set. A `marker` with no name draws nothing but its text. */
+function decorationGlyph(decoration: ResolvedDecoration): ReactNode {
+  switch (decoration.glyph) {
+    case "line":
+      return <line x1={decoration.from.x} y1={decoration.from.y} x2={decoration.to.x} y2={decoration.to.y} />;
+    case "path":
+      return decoration.d !== undefined ? <path d={decoration.d} /> : null;
+    case "circle":
+      return <circle cx={decoration.from.x} cy={decoration.from.y} r={decoration.radius} />;
+    case "rect":
+      return (
+        <rect
+          x={decoration.from.x}
+          y={decoration.from.y}
+          width={decoration.width}
+          height={decoration.height}
+          rx={decoration.radius}
+        />
+      );
+    case "marker":
+      return decoration.marker !== undefined ? (
+        <line
+          x1={decoration.from.x}
+          y1={decoration.from.y}
+          x2={decoration.to.x}
+          y2={decoration.to.y}
+          markerEnd={`url(#library-${decoration.marker})`}
+        />
+      ) : null;
+  }
+}
+
+
+/**
+ * The declared backdrop: bands, axes, gridlines and regions, in the view's own units.
+ *
+ * It resolves against the MODEL's background rather than an element's payload, because no
+ * element owns the axis. The synthetic element exists only to satisfy the one binding source
+ * shape every resolver takes - it carries no data and nothing reads it.
+ */
+function declaredBackground(
+  background: import("./definition/background").BackgroundDeclaration,
+  model: DiagramModel,
+  extent: { x: number; y: number; width: number; height: number },
+): ReactNode {
+  const resolved = resolveBackground(
+    background,
+    { element: { id: "__background__", type: "__background__", x: 0, y: 0 }, payload: model.background },
+    extent,
+  );
+
+  return (
+    <>
+      {resolved.rects.map((rect) => (
+        <rect key={rect.key} className={rect.className} x={rect.x} y={rect.y} width={rect.width} height={rect.height} />
+      ))}
+      {resolved.lines.map((line) => (
+        <line key={line.key} className={line.className} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+      ))}
+      {resolved.texts.map((text) => (
+        <text
+          key={text.key}
+          className={text.className}
+          x={text.rotate === undefined ? text.x : undefined}
+          y={text.rotate === undefined ? text.y : undefined}
+          transform={text.rotate === undefined ? undefined : `translate(${text.x} ${text.y}) rotate(${text.rotate})`}
+          textAnchor={text.anchor}
+        >
+          {text.text}
+        </text>
+      ))}
+    </>
+  );
+}
+
+/** The lines a type's `labels` declare, positioned and painted. */
+function declaredLabels(element: DiagramModelElement, type: ElementTypeDefinition, bounds: ConnectorBox): ReactNode {
+  const lines = layoutLabels(type.labels, { element, payload: element.payload }, bounds);
+  return lines.map((line) => (
+    <text
+      key={`${line.declarationIndex}-${line.lineIndex}`}
+      className={["library-element-label", line.className].filter(Boolean).join(" ")}
+      x={line.x}
+      y={line.y}
+      textAnchor={line.anchor}
+      style={{
+        fontSize: line.typography?.fontSize,
+        fontWeight: line.typography?.fontWeight,
+        fontStyle: line.typography?.fontStyle,
+        fill: tokenColour(line.typography?.color),
+      }}
+    >
+      {line.tooltip ? <title>{line.tooltip}</title> : null}
+      {line.text}
+    </text>
+  ));
+}
+
+/**
+ * The shape itself, and the single `label` a built-in carries.
+ *
+ * A type declaring `labels` passes an EMPTY string here and draws its text through
+ * {@link declaredLabels} instead - the two never compose, so a reader never has to work out
+ * which line came from which mechanism. An unmigrated type is untouched by any of this.
+ */
+function renderShapeBody(
+  element: DiagramModelElement,
+  type: ElementTypeDefinition | undefined,
+  bounds: ConnectorBox,
+  state?: import("./definition/diagramDefinition").CustomShapeState,
+): ReactNode {
+  const label = type?.labels !== undefined ? "" : (element.label ?? "");
   if (type === undefined) {
     return fallbackBox(bounds, element.label ?? element.id);
   }

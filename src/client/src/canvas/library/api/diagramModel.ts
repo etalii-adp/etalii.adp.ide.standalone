@@ -9,6 +9,15 @@ import type { ConnectionStyle, ElementStyle, ShapePoint } from "../definition/di
 export interface DiagramModel {
   elements: readonly DiagramModelElement[];
   connections: readonly DiagramModelConnection[];
+  /**
+   * What a declared `background` binds against - wardley's evolution stages and attitudes.
+   *
+   * On the model rather than on an element because a background belongs to the DIAGRAM: no
+   * element owns the axis. Opaque for the same reason the element payload is - the library
+   * walks it only by a path the module's own declaration names, so nothing here learns a
+   * diagram type's schema.
+   */
+  background?: unknown;
 }
 
 export interface DiagramModelElement {
@@ -35,6 +44,21 @@ export interface DiagramModelElement {
   parentId?: string;
   /** Per-element override of the type's style (Requirement 2.2). */
   style?: ElementStyle;
+  /**
+   * The module's own fields, which a declared label, decoration or action binds against.
+   *
+   * <b>Deliberately `unknown` and deliberately opaque.</b> The library never reads a field of
+   * it - only {@link resolveMany} walks it, by a path the module's own declaration names - so
+   * nothing here learns a diagram type's schema, which is `structure.md`'s rule and the reason
+   * this is one property rather than a typed surface.
+   *
+   * <b>Task 1 left this out on purpose and task 2 needs it</b>, which is worth saying rather
+   * than quietly reversing: the binding resolver could be built and tested without it, but the
+   * canvas cannot resolve `payload.name` against an element that has no payload. Task 6 decides
+   * what the backend sends and in what shape; this is the field it lands in, and adding it
+   * early costs nothing because it is optional and the library never inspects it.
+   */
+  payload?: unknown;
 }
 
 export interface DiagramModelConnection {

@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elements.proto.
  */
 export const file_elements: GenFile = /*@__PURE__*/
-  fileDesc("Cg5lbGVtZW50cy5wcm90bxIKZXRhbGlpLmFkcCIaCglFbGVtZW50SWQSDQoFdmFsdWUYASABKAkiiAEKB0VsZW1lbnQSIQoCaWQYASABKAsyFS5ldGFsaWkuYWRwLkVsZW1lbnRJZBIlCghwb3NpdGlvbhgCIAEoCzITLmV0YWxpaS5hZHAuUG9pbnQyRBIMCgR0eXBlGAMgASgJEiUKB3BheWxvYWQYBCABKAsyFC5nb29nbGUucHJvdG9idWYuQW55QhmqAhZFdEFsaWkuQWRwLkNvbW1vbi5XaXJlYgZwcm90bzM", [file_connection, file_google_protobuf_any]);
+  fileDesc("Cg5lbGVtZW50cy5wcm90bxIKZXRhbGlpLmFkcCIaCglFbGVtZW50SWQSDQoFdmFsdWUYASABKAkiJwoGU2l6ZTJEEg0KBXdpZHRoGAEgASgBEg4KBmhlaWdodBgCIAEoASLCAgoHRWxlbWVudBIhCgJpZBgBIAEoCzIVLmV0YWxpaS5hZHAuRWxlbWVudElkEiUKCHBvc2l0aW9uGAIgASgLMhMuZXRhbGlpLmFkcC5Qb2ludDJEEgwKBHR5cGUYAyABKAkSJQoHcGF5bG9hZBgEIAEoCzIULmdvb2dsZS5wcm90b2J1Zi5BbnkSIAoEc2l6ZRgFIAEoCzISLmV0YWxpaS5hZHAuU2l6ZTJEEhQKDGVsZW1lbnRfdHlwZRgGIAEoCRIoCglzb3VyY2VfaWQYByABKAsyFS5ldGFsaWkuYWRwLkVsZW1lbnRJZBIoCgl0YXJnZXRfaWQYCCABKAsyFS5ldGFsaWkuYWRwLkVsZW1lbnRJZBIVCg1zb3VyY2VfYW5jaG9yGAkgASgJEhUKDXRhcmdldF9hbmNob3IYCiABKAlCGaoCFkV0QWxpaS5BZHAuQ29tbW9uLldpcmViBnByb3RvMw", [file_connection, file_google_protobuf_any]);
 
 /**
  * @generated from message etalii.adp.ElementId
@@ -32,6 +32,31 @@ export type ElementId = Message<"etalii.adp.ElementId"> & {
  */
 export const ElementIdSchema: GenMessage<ElementId> = /*@__PURE__*/
   messageDesc(file_elements, 0);
+
+/**
+ * A drawn extent. Separate from BoundingBox, which carries a position too: an element's
+ * position is already field 2, and a message that repeated it would let the two disagree.
+ *
+ * @generated from message etalii.adp.Size2D
+ */
+export type Size2D = Message<"etalii.adp.Size2D"> & {
+  /**
+   * @generated from field: double width = 1;
+   */
+  width: number;
+
+  /**
+   * @generated from field: double height = 2;
+   */
+  height: number;
+};
+
+/**
+ * Describes the message etalii.adp.Size2D.
+ * Use `create(Size2DSchema)` to create a new message.
+ */
+export const Size2DSchema: GenMessage<Size2D> = /*@__PURE__*/
+  messageDesc(file_elements, 1);
 
 /**
  * @generated from message etalii.adp.Element
@@ -62,6 +87,44 @@ export type Element = Message<"etalii.adp.Element"> & {
    * @generated from field: google.protobuf.Any payload = 4;
    */
   payload?: Any | undefined;
+
+  /**
+   * the drawn extent, where the module knows it
+   *
+   * @generated from field: etalii.adp.Size2D size = 5;
+   */
+  size?: Size2D | undefined;
+
+  /**
+   * The definition's own elementTypes/relationTypes id - "node", "package-reference" - as
+   * against field 3's mime-style type. Modules hard-code this mapping in their canvas today.
+   *
+   * @generated from field: string element_type = 6;
+   */
+  elementType: string;
+
+  /**
+   * Set only on an element that IS a connection. Their presence is what tells the client this
+   * is a connection rather than a node, so no module needs a rule of its own for the split.
+   *
+   * @generated from field: etalii.adp.ElementId source_id = 7;
+   */
+  sourceId?: ElementId | undefined;
+
+  /**
+   * @generated from field: etalii.adp.ElementId target_id = 8;
+   */
+  targetId?: ElementId | undefined;
+
+  /**
+   * @generated from field: string source_anchor = 9;
+   */
+  sourceAnchor: string;
+
+  /**
+   * @generated from field: string target_anchor = 10;
+   */
+  targetAnchor: string;
 };
 
 /**
@@ -69,5 +132,5 @@ export type Element = Message<"etalii.adp.Element"> & {
  * Use `create(ElementSchema)` to create a new message.
  */
 export const ElementSchema: GenMessage<Element> = /*@__PURE__*/
-  messageDesc(file_elements, 1);
+  messageDesc(file_elements, 2);
 

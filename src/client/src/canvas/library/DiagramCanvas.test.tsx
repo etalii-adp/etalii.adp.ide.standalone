@@ -854,3 +854,187 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector("foreignObject input")).toBeNull();
   });
 });
+
+describe("declared labels", () => {
+  /**
+   * The canvas half of task 2. `layoutLabels` is tested pure and apart; what this asserts is
+   * that the declaration actually reaches the drawing - a declaration nothing renders would
+   * pass every unit test and draw an empty box.
+   */
+  const declaredDefinition = () =>
+    definitionOf({
+      elementTypes: [
+        {
+          id: "card",
+          shape: "box",
+          anchors: { kind: "edge" },
+          sizing: "model",
+          labels: [
+            { text: { path: "payload.name" }, slot: "header" },
+            {
+              text: { path: "payload.rows", each: { template: "{predicate}: {value}" } },
+              slot: "body",
+              stack: { lineHeight: 12 },
+            },
+          ],
+        },
+      ],
+      relationTypes: [],
+    });
+
+  const declaredModel = (): DiagramModel => ({
+    elements: [
+      {
+        id: "c",
+        type: "card",
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 80,
+        label: "the single label",
+        payload: { name: "Marie Curie", rows: [{ predicate: "born", value: "1867" }, { predicate: "died", value: "1934" }] },
+      },
+    ],
+    connections: [],
+  });
+
+  it("draws every declared line, including one per collection entry", () => {
+    renderCanvas({}, declaredDefinition(), declaredModel());
+
+    expect(screen.getByText("Marie Curie")).toBeTruthy();
+    expect(screen.getByText("born: 1867")).toBeTruthy();
+    expect(screen.getByText("died: 1934")).toBeTruthy();
+  });
+
+  it("suppresses the built-in's own single label, so the two mechanisms never compose", () => {
+    // A reader must never have to work out which line came from `label` and which from
+    // `labels`. The element carries both here on purpose: only the declaration draws.
+    renderCanvas({}, declaredDefinition(), declaredModel());
+
+    expect(screen.queryByText("the single label")).toBeNull();
+  });
+
+  it("leaves a type that declares no labels exactly as it was", () => {
+    // Requirement 8.1's bar at the library level: the addition is inert for the twelve
+    // modules that have not migrated.
+    renderCanvas();
+
+    expect(screen.getByText("Alpha")).toBeTruthy();
+    expect(screen.getByText("Store")).toBeTruthy();
+  });
+});
+
+describe("declared decorations", () => {
+  /**
+   * The canvas half of task 3. `resolveDecorations` is tested pure; this asserts the ornament
+   * reaches the drawing and takes no gestures — a decoration that could be clicked would be a
+   * second kind of element, which is the line the addition exists to hold.
+   */
+  const decorated = () =>
+    definitionOf({
+      elementTypes: [
+        {
+          id: "node",
+          shape: "box",
+          anchors: { kind: "edge" },
+          sizing: "model",
+          decorations: [
+            {
+              glyph: "line",
+              from: { x: 50, y: 0 },
+              to: { x: 40, y: 0 },
+              text: { path: "payload.missing" },
+              textAt: { x: 58, y: -6 },
+              className: "stub",
+            },
+          ],
+        },
+      ],
+      relationTypes: [],
+    });
+
+  const decoratedModel = (): DiagramModel => ({
+    elements: [{ id: "n", type: "node", x: 0, y: 0, width: 100, height: 40, label: "Play", payload: { missing: "db_servers" } }],
+    connections: [],
+  });
+
+  it("draws the ornament and its text", () => {
+    const { container } = renderCanvas({}, decorated(), decoratedModel());
+
+    expect(screen.getByText("db_servers")).toBeTruthy();
+    expect(container.querySelector("g.stub line")).toBeTruthy();
+  });
+
+  it("takes no pointer events, so an ornament is never a second kind of element", () => {
+    const { container } = renderCanvas({}, decorated(), decoratedModel());
+    const group = container.querySelector("g.stub") as SVGGElement;
+
+    expect(group.style.pointerEvents).toBe("none");
+    expect(group.getAttribute("aria-hidden")).toBe("true");
+  });
+});
+
+describe("declared actions", () => {
+  /**
+   * The canvas half of task 5, and the two things that had to disappear.
+   *
+   * A module declares its actions; the library derives the key set and dispatches an action ID.
+   * So there is no hand-written shortcut list to spell four different ways, and no synthesised
+   * `{ key: "Delete", ... }` to name a deletion.
+   */
+  const withActions = () =>
+    definitionOf({
+      elementTypes: [{ id: "service", shape: "box", anchors: { kind: "edge" }, sizing: "model" }],
+      relationTypes: [],
+      actions: [
+        { id: "svc.rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+        { id: "svc.remove", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
+      ],
+    });
+
+  const oneElement = (): DiagramModel => ({
+    elements: [{ id: "a", type: "service", x: 0, y: 0, width: 100, height: 40, label: "Alpha" }],
+    connections: [],
+  });
+
+  function selectAndPress(events: DiagramEventHandlers, key: string) {
+    const { container } = renderCanvas(events, withActions(), oneElement());
+    const shape = container.querySelector('[data-element-id="a"]') ?? container.querySelector("svg")!;
+    press(shape as Element);
+    fireEvent.keyDown(container.querySelector("svg")!, { key });
+    return container;
+  }
+
+  it("dispatches a declared shortcut as an action id", () => {
+    const onActionInvoked = vi.fn();
+    selectAndPress({ onActionInvoked }, "F2");
+
+    expect(onActionInvoked).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "action-invoked", actionId: "svc.rename", targetKind: "element", targetId: "a" }),
+    );
+  });
+
+  it("dispatches a declared delete as an action id rather than as element-deleted", () => {
+    // THE SYNTHESISED KEYSTROKE, GONE. The module hears `svc.remove`; nothing builds a fake
+    // key event, and the old element-deleted path does not fire for a type that declares one.
+    const onActionInvoked = vi.fn();
+    const onElementDeleted = vi.fn();
+    selectAndPress({ onActionInvoked, onElementDeleted }, "Delete");
+
+    expect(onActionInvoked).toHaveBeenCalledWith(expect.objectContaining({ actionId: "svc.remove" }));
+    expect(onElementDeleted).not.toHaveBeenCalled();
+  });
+
+  it("leaves a definition declaring no actions exactly as it was", () => {
+    // Requirement 8.1 at the library level: inert for the twelve unmigrated modules. The old
+    // element-deleted path still fires, because nothing declared a replacement.
+    const onElementDeleted = vi.fn();
+    const onActionInvoked = vi.fn();
+    const { container } = renderCanvas({ onElementDeleted, onActionInvoked });
+    const svg = container.querySelector("svg")!;
+    press(container.querySelector('[data-element-id="a"]') ?? svg);
+    fireEvent.keyDown(svg, { key: "Delete" });
+
+    expect(onActionInvoked).not.toHaveBeenCalled();
+  });
+});

@@ -26,7 +26,8 @@ export type DiagramEvent =
   | SelectionChanged
   | LabelCommitRequested
   | ViewChanged
-  | LayoutModeChanged;
+  | LayoutModeChanged
+  | ActionInvoked;
 
 /** A toolbox item landed on the canvas at a position the definition allows (Requirement 5.3). */
 export interface ElementDropped {
@@ -142,6 +143,21 @@ export interface DiagramViewport {
 export interface ViewChanged {
   kind: "view-changed";
   viewport: DiagramViewport;
+}
+
+/**
+ * A declared action fired - by its shortcut, its menu entry, or a canvas gesture.
+ *
+ * <b>The action arrives by ID, never as a keystroke.</b> That is the whole point of task 5: nine
+ * canvases synthesise `{ key: "Delete", ... }` today to say "delete this", and a module
+ * manufacturing a fake key event to name an action is the sharpest evidence available that the
+ * action had nowhere to be declared. Only the handler for this event stays imperative.
+ */
+export interface ActionInvoked {
+  kind: "action-invoked";
+  actionId: string;
+  targetKind: "element" | "connection" | "canvas";
+  targetId?: string;
 }
 
 /** The user switched between the definition's allowed layout modes (Requirement 8.2). */
