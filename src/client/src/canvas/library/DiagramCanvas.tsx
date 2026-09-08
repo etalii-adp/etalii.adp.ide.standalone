@@ -64,6 +64,7 @@ import type {
   BuiltInShape,
   CustomShapeState,
   DiagramDefinition,
+  DropTargetDeclaration,
   ElementTypeDefinition,
   RelationTypeDefinition,
   ShapeSelection,
@@ -1484,6 +1485,15 @@ export function DiagramCanvas({
 
         {aboveConnections.map((element) => renderLibraryElement(element))}
 
+        {definition.dropTarget !== undefined && (
+          <DropTargetLayer
+            value={dragValue}
+            declaration={definition.dropTarget}
+            elements={model.elements}
+            elementTypes={elementTypes}
+          />
+        )}
+
         <ConnectPreviewLayer value={connectValue} />
 
         {editing !== undefined && editing.editingId !== null && editingPlacement !== null && (
@@ -1567,6 +1577,139 @@ function ConnectPreviewLayer({ value }: { value: GestureValue<ConnectPreview> })
       pointerEvents="none"
     />
   );
+}
+
+/**
+ * What a drag would land on, drawn while it is in flight - register entry G12.
+ *
+ * <b>It subscribes to the drag the way the connect preview does</b>, so a drag re-renders this
+ * one component per frame and no element at all. That is the whole reason the candidate is
+ * computed here rather than pushed into a module's state: a per-frame `setState` in a module
+ * would re-render every element of the diagram, which is the cost the library's gesture
+ * plumbing was built to avoid.
+ *
+ * The DECISION about what a drop means stays the module's, in `onElementMoved`. This draws the
+ * proposal and raises nothing.
+ */
+function DropTargetLayer({
+  value,
+  declaration,
+  elements,
+  elementTypes,
+}: {
+  value: GestureValue<ElementDragOffset>;
+  declaration: DropTargetDeclaration;
+  elements: readonly DiagramModelElement[];
+  elementTypes: Map<string, ElementTypeDefinition>;
+}) {
+  const drag = useSyncExternalStore(value.subscribe, value.get);
+  if (drag === null) {
+    return null;
+  }
+
+  const dragged = elements.find((element) => element.id === drag.id);
+  if (dragged === undefined) {
+    return null;
+  }
+
+  const at = { x: dragged.x + drag.dx, y: dragged.y + drag.dy };
+  const candidate = dropCandidate(elements, elementTypes, declaration.parentPath, dragged.id, at);
+  if (candidate === undefined) {
+    return null;
+  }
+
+  const candidateBounds = elementBounds(candidate, elementTypes.get(candidate.type));
+  const draggedBounds = elementBounds({ ...dragged, ...at }, elementTypes.get(dragged.type));
+  const from = facingSide(candidateBounds, draggedBounds);
+  const to = facingSide(draggedBounds, candidateBounds);
+
+  return (
+    <g className={declaration.group?.className} {...dataAttributesOf(resolvedStatic(declaration.group?.data))} pointerEvents="none">
+      <rect
+        className={declaration.ring?.className}
+        {...dataAttributesOf(resolvedStatic(declaration.ring?.data))}
+        x={candidateBounds.x}
+        y={candidateBounds.y}
+        width={candidateBounds.width}
+        height={candidateBounds.height}
+      />
+      <path
+        className={declaration.preview?.className}
+        {...dataAttributesOf(resolvedStatic(declaration.preview?.data))}
+        d={horizontalBezierPath(from, to)}
+      />
+    </g>
+  );
+}
+
+/**
+ * The element a drop would land on, or none.
+ *
+ * <b>The topmost hit decides, even when it is not allowed.</b> A node held over one of its own
+ * descendants offers NO parent rather than the next box down - which is the recorded behaviour,
+ * and the right one: the reader is pointing at that node, and quietly re-parenting somewhere
+ * else because the obvious answer was refused would be worse than refusing.
+ */
+function dropCandidate(
+  elements: readonly DiagramModelElement[],
+  elementTypes: Map<string, ElementTypeDefinition>,
+  parentPath: string,
+  draggedId: string,
+  at: Point,
+): DiagramModelElement | undefined {
+  for (let index = elements.length - 1; index >= 0; index--) {
+    const candidate = elements[index]!;
+    const bounds = elementBounds(candidate, elementTypes.get(candidate.type));
+    if (at.x < bounds.x || at.x > bounds.x + bounds.width || at.y < bounds.y || at.y > bounds.y + bounds.height) {
+      continue;
+    }
+
+    const allowed = candidate.id !== draggedId && !isInside(elements, parentPath, candidate.id, draggedId);
+    return allowed ? candidate : undefined;
+  }
+
+  return undefined;
+}
+
+/** Whether `candidateId` sits inside the branch rooted at `rootId` - itself included. */
+function isInside(elements: readonly DiagramModelElement[], parentPath: string, candidateId: string, rootId: string): boolean {
+  const byId = new Map(elements.map((element) => [element.id, element]));
+  const seen = new Set<string>(); // a defensive stop; a well-formed model never cycles
+  let cursor: string | undefined = candidateId;
+  while (cursor !== undefined && !seen.has(cursor)) {
+    if (cursor === rootId) {
+      return true;
+    }
+
+    seen.add(cursor);
+    const element = byId.get(cursor);
+    cursor = element === undefined ? undefined : (resolveOne({ path: parentPath }, { element, payload: element.payload }) ?? undefined);
+  }
+
+  return false;
+}
+
+/** The side of `box` facing `other`, at mid-height - how a branch leaves a node in a tree. */
+function facingSide(box: ConnectorBox, other: ConnectorBox): Point {
+  const centreX = box.x + box.width / 2;
+  const otherCentreX = other.x + other.width / 2;
+  return { x: otherCentreX >= centreX ? box.x + box.width : box.x, y: box.y + box.height / 2 };
+}
+
+/** A declared `data-*` map with no bindings in it - the drop preview belongs to no element. */
+function resolvedStatic(data: Readonly<Record<string, unknown>> | undefined): Record<string, string> | undefined {
+  if (data === undefined) {
+    return undefined;
+  }
+
+  const out: Record<string, string> = {};
+  for (const [name, value] of Object.entries(data)) {
+    if (typeof value === "string") {
+      out[name] = value;
+    }
+  }
+
+  return out;
 }
 
 function LibraryElement({

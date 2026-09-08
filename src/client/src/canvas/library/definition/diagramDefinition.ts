@@ -500,6 +500,35 @@ export function isCustomShape(shape: ShapeKind): shape is CustomShapeRef {
   return typeof shape !== "string" && "customShape" in shape;
 }
 
+/**
+ * What a drag would land on, drawn before the button is released.
+ *
+ * <b>This is register entry G12, and it is the one the sufficiency table could not settle.</b>
+ * The table's ruling was that the DECISION stays an event handler and the DRAWING becomes
+ * declared - and the drawing turned out to need something no module can supply: the candidate
+ * changes every frame of a drag, so it is neither a model field nor anything a payload can
+ * carry, and the library is the only thing that knows it.
+ *
+ * So the library computes it, from a rule the module DECLARES rather than one it hard-codes:
+ * the topmost element whose box holds the dragged element's centre, excluding the dragged
+ * element itself and anything inside its own branch. `parentPath` is what makes "its own
+ * branch" meaning anything - without it a tree would offer a node its own child as a parent.
+ *
+ * <b>The drop itself is still the module's</b>: the library draws the proposal and raises
+ * nothing. What a drop MEANS - a re-parent, a refusal, a backend call - is answered in
+ * `onElementMoved`, exactly as before.
+ */
+export interface DropTargetDeclaration {
+  /** How the model says which element is inside which - `payload.parentId`. */
+  parentPath: BindingPath;
+  /** The outline drawn over the candidate. */
+  ring?: { className?: string; data?: DataAttributes };
+  /** The branch the drop would create, drawn between the candidate and the dragged element. */
+  preview?: { className?: string; data?: DataAttributes };
+  /** A group around both, for a module that styles or tests them together. */
+  group?: { className?: string; data?: DataAttributes };
+}
+
 /** `data-*` attributes by name, each stated outright or read from the model. */
 export type DataAttributes = Readonly<Record<string, string | Binding>>;
 
@@ -852,6 +881,8 @@ export interface DiagramDefinition {
    * definitional, not derived (Requirement 9.2).
    */
   extent?: ShapeBounds;
+  /** What a drag would land on, drawn while it is in flight. See {@link DropTargetDeclaration}. */
+  dropTarget?: DropTargetDeclaration;
   background?: DiagramBackground;
   /**
    * What the canvas shows AROUND the diagram: loading, unavailable, a title, a legend, and

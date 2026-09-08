@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
 
-import { CenteredBoxElement } from "@client/canvas/elements/centered-box/CenteredBoxElement";
-import { horizontalBezierPath } from "@client/canvas/connectors";
 import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { CustomShapeRef, CustomShapeState, DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -39,18 +37,6 @@ function sizeOf(element: MindmapElement): { width: number; height: number } {
   };
 }
 
-/**
- * The facing-side attachment `branchAnchorsBetween` always made: a branch leaves and arrives
- * on the vertical sides facing each other, at mid-height, so the curve runs in the corridor
- * between columns instead of cutting across whatever sits between.
- */
-function facingSidePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centreX = bounds.x + bounds.width / 2;
-  return {
-    x: towards.x >= centreX ? bounds.x + bounds.width : bounds.x,
-    y: bounds.y + bounds.height / 2,
-  };
-}
 
 /**
  * Where a drop at `point` would land: the topmost node under it that the backend could accept.
@@ -98,80 +84,40 @@ function isInSubtree(model: MindmapModel, candidateId: string, rootId: string): 
  * manual/external and leaves it untouched. Wiring the client-side tree algorithm against a
  * backend-arranged diagram would run a second layout to fight the wire's.
  */
-function definitionOf(model: MindmapModel): DiagramDefinition {
-  /**
-   * A node as a first-class custom shape: the shared centered box with this notation's
-   * indicators, and - while it is being dragged - the dashed branch to the candidate parent,
-   * so the tree the drop would produce is on screen before the button is released. The
-   * library already carries the node to the pointer; the preview branch derives from that
-   * same position, exactly the discipline the timeline's drag hint set.
-   */
-  const nodeShape: CustomShapeRef = {
-    customShape: "mindmap-node",
-    render: (raw, state?: CustomShapeState) => {
-      const element = raw as NodeElement;
-      const { text, notes, hasChildren, link } = element.node.payload;
-      const { width, height } = sizeOf(element.node);
-      const indicators = [notes ? "•" : "", link ? "↗" : "", element.folded && hasChildren ? "⊕" : ""].join(" ").trim();
-      const classes = [
-        "mindmap-node",
-        state?.selected ? "mindmap-node-focused" : "",
-        state?.dragging ? "mindmap-node-dragging" : "",
-      ].filter(Boolean).join(" ");
-
-      const candidate = state?.dragging === true ? dropTargetAt(model, element.id, { x: element.x, y: element.y }) : undefined;
-      const preview =
-        candidate !== undefined
-          ? horizontalBezierPath(
-              facingSidePoint({ x: candidate.x - sizeOf(candidate).width / 2, y: candidate.y - sizeOf(candidate).height / 2, ...sizeOf(candidate) }, element),
-              facingSidePoint({ x: element.x - width / 2, y: element.y - height / 2, width, height }, candidate),
-            )
-          : null;
-
-      return (
-        <g>
-          {candidate !== undefined && (
-            // The candidate parent, marked from the dragged node's own render: a ring over its
-            // box says where the drop would land, and the dashed branch says what it would
-            // create - both on screen before the button is released.
-            <g className="mindmap-drag-preview" pointerEvents="none" data-testid="mindmap-drag-preview">
-              <rect
-                className="mindmap-node-drop-target-ring"
-                data-testid="mindmap-drop-ring"
-                x={candidate.x - sizeOf(candidate).width / 2}
-                y={candidate.y - sizeOf(candidate).height / 2}
-                width={sizeOf(candidate).width}
-                height={sizeOf(candidate).height}
-              />
-              {preview !== null && <path className="mindmap-edge mindmap-edge-preview" d={preview} />}
-            </g>
-          )}
-          <CenteredBoxElement
-            className={classes}
-            x={element.x}
-            y={element.y}
-            halfWidth={width / 2}
-            halfHeight={height / 2}
-            text={text}
-            indicators={indicators || undefined}
-            indicatorsClassName="mindmap-node-indicators"
-            role="treeitem"
-            aria-selected={state?.selected === true}
-          />
-        </g>
-      );
-    },
-    edgePoint: facingSidePoint,
-  };
-
+function definitionOf(): DiagramDefinition {
   return assertValidDiagramDefinition({
     elementTypes: [
       {
         id: "node",
-        shape: nodeShape,
-        anchors: { kind: "edge" },
+        // The shared centered box the renderer wrapped. What it added - three classes, a line
+        // of indicator glyphs, and the drag preview - is a declaration now.
+        shape: "centered-box",
+        classNames: [
+          { className: "mindmap-node", on: "element" },
+          { className: "mindmap-node-focused", on: "element", when: { path: "state.selected", is: "true" } },
+          { className: "mindmap-node-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
+        ],
+        labels: [
+          {
+            text: { path: "payload.text" },
+            editable: true,
+          },
+          {
+            // The corner glyphs: notes, a link, a folded branch. Joined by the fold rather than
+            // drawn one at a time, because the notation shows them as one line.
+            text: { path: "payload.indicators" },
+            when: { path: "payload.indicators", is: "non-empty" },
+            anchorTo: "top",
+            offset: { x: 0, y: 12 },
+            align: "end",
+            insetX: 4,
+            className: "mindmap-node-indicators",
+          },
+        ],
+        // A branch leaves a node SIDEWAYS at mid-height, whatever the angle - the difference
+        // between a tree and a graph, and what `facingSidePoint` did in the renderer.
+        anchors: { kind: "edge", edgeSides: "horizontal" },
         sizing: "model",
-        label: { placement: "inside", editable: true },
       },
     ],
     relationTypes: [
@@ -189,6 +135,15 @@ function definitionOf(model: MindmapModel): DiagramDefinition {
     ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
+    // THE DRAG PREVIEW, declared. The library computes the candidate parent per frame - it is
+    // the only thing that knows where the drag is - from the parent link this names; what a
+    // drop MEANS is still answered in `onElementMoved` below.
+    dropTarget: {
+      parentPath: "payload.parentId",
+      group: { className: "mindmap-drag-preview", data: { testid: "mindmap-drag-preview" } },
+      ring: { className: "mindmap-node-drop-target-ring", data: { testid: "mindmap-drop-ring" } },
+      preview: { className: "mindmap-edge mindmap-edge-preview" },
+    },
   });
 }
 
@@ -211,19 +166,31 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
 
-  const definition = useMemo(() => definitionOf(model), [model]);
+  const definition = useMemo(() => definitionOf(), [model]);
 
   const diagramModel = useMemo<DiagramModel>(() => {
-    const elements = [...model.elements.values()].map((element): NodeElement => ({
-      id: element.id,
-      type: "node",
-      x: element.x,
-      y: element.y,
-      ...sizeOf(element),
-      label: element.payload.text,
-      node: element,
-      folded: isFolded(model, element.id),
-    }));
+    const elements = [...model.elements.values()].map((element): NodeElement => {
+      const folded = isFolded(model, element.id);
+      return {
+        id: element.id,
+        type: "node",
+        x: element.x,
+        y: element.y,
+        ...sizeOf(element),
+        label: element.payload.text,
+        // What the declaration reads: the text, the corner glyphs, and the parent link the
+        // library follows to know which nodes a drag may not be dropped on.
+        payload: {
+          text: element.payload.text,
+          parentId: element.payload.parentId,
+          indicators: [element.payload.notes ? "•" : "", element.payload.link ? "↗" : "", folded && element.payload.hasChildren ? "⊕" : ""]
+            .join(" ")
+            .trim(),
+        },
+        node: element,
+        folded,
+      };
+    });
     // The branches, from the payload's parent id - each node knows whose child it is, and
     // nothing more is needed to see the tree.
     const connections = [...model.elements.values()]
