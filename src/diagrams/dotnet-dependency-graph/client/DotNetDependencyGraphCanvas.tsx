@@ -1,11 +1,18 @@
 import { useMemo, useState } from "react";
 
-import { edgePointOf } from "@client/canvas/connectors";
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
+import {
+  facingAnchorsBetween,
+  forwardBezierPath,
+  horizontalBezierPath,
+  sideAnchorOf,
+  type ConnectorBox,
+} from "@client/canvas/connectors";
+import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
+  CustomRouteRef,
   CustomShapeRef,
   CustomShapeState,
   DiagramDefinition,
@@ -40,21 +47,40 @@ type NodeElement = DiagramModelElement & {
   contextSelect: () => void;
 };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
+/**
+ * The class contract the shared span draws through, mirroring `generic/dependencies` slot for
+ * slot so the two dependency graphs are the same drawing with different colours. Every colour
+ * stays in the stylesheet (tech.md's centralised-styling rule); this file names slots only.
+ */
+const SPAN_CLASSES: SpanElementClasses = {
+  span: "dotnet-dependency-node canvas-node",
+  moment: "dotnet-dependency-node-point",
+  label: "dotnet-dependency-node-label canvas-node-label",
+  hint: "dotnet-dependency-node-hint canvas-hint",
+  adorner: "dotnet-dependency-node-adorner",
+  anchor: "dotnet-dependency-node-anchor canvas-anchor",
+  anchorHit: "dotnet-dependency-node-anchor-hit canvas-anchor-hit",
+};
+
+/** A node's box in connector terms - centre-anchored, which is how the span is positioned. */
+const boxOf = (bounds: ShapeBounds): ConnectorBox => ({
+  x: bounds.x + bounds.width / 2,
+  y: bounds.y + bounds.height / 2,
+  width: bounds.width,
+  height: bounds.height,
+});
 
 /**
- * One box, project or package.
+ * One node, project or package, as the shared span draws it.
  *
- * The two kinds are told apart by a CSS class rather than an inline style, so every colour
- * stays in the stylesheet (tech.md's centralised-styling rule) - and the requirement that the
- * two be "visually distinguishable" (3.1) is met by the sheet rather than by this file.
+ * <b>The span rather than a box, to match the authored `generic/dependencies` canvas.</b> That
+ * consistency is a non-functional requirement of this module's own specification, recorded
+ * there as "a review criterion rather than an assertable test" - and it was never reviewed, so
+ * the two dependency graphs shipped looking like different products. See the mounted canvas
+ * test for the assertion that now stands in place of the review.
+ *
+ * The two kinds are still told apart by a CSS class rather than an inline style, so
+ * Requirement 3.1's "visually distinguishable" is met by the sheet rather than by this file.
  */
 const nodeShape: CustomShapeRef = {
   customShape: "dotnet-dependency-node",
@@ -64,12 +90,12 @@ const nodeShape: CustomShapeRef = {
     const isPackage = node.payload.kind === DependencyElementKind.PACKAGE;
     const kind = isPackage ? "package" : "project";
     const classes = [
-      "dotnet-dependency-node",
-      `dotnet-dependency-node-${kind}`,
-      state?.selected ? "dotnet-dependency-node-selected" : "",
+      "dotnet-dependency-element canvas-element",
+      `dotnet-dependency-element-${kind}`,
+      state?.selected ? "dotnet-dependency-selected" : "",
       // Collapsing LOUDLY: a package the solution's projects disagree about is marked on the
       // element, which Requirement 3.5 asks for as against the silent collapse it forbids.
-      node.payload.hasVersionConflict ? "dotnet-dependency-node-conflict" : "",
+      node.payload.hasVersionConflict ? "dotnet-dependency-conflict" : "",
     ]
       .filter(Boolean)
       .join(" ");
@@ -81,16 +107,15 @@ const nodeShape: CustomShapeRef = {
       : `Project ${node.payload.name}`;
 
     return (
-      <BoxElement
+      <SpanElement
         className={classes}
         data-kind={kind}
-        x={element.x - NODE_WIDTH / 2}
-        y={element.y - NODE_HEIGHT / 2}
-        width={NODE_WIDTH}
-        height={NODE_HEIGHT}
+        box={{ x: element.x, y: element.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
         label={node.payload.name}
-        boxClassName="dotnet-dependency-node-box"
-        labelClassName="dotnet-dependency-node-label"
+        // The library renders the anchors the definition declares, so the span's own selection
+        // furniture stays off - the same call `generic/dependencies` makes, for the same reason.
+        selected={false}
+        classes={SPAN_CLASSES}
         role="button"
         tabIndex={0}
         aria-label={title}
@@ -101,15 +126,55 @@ const nodeShape: CustomShapeRef = {
         }}
       >
         <title>{title}</title>
+        {/*
+          The one thing this graph shows that the authored one has no equivalent of: a project's
+          target frameworks, a package's versions. It rides as a child of the span rather than
+          being lost, offset below the label's centre line.
+        */}
         {subtitle ? (
-          <text className="dotnet-dependency-node-subtitle" x={element.x} y={element.y + 16} textAnchor="middle">
+          <text className="dotnet-dependency-node-subtitle" x={element.x} y={element.y + 14} textAnchor="middle">
             {subtitle}
           </text>
         ) : null}
-      </BoxElement>
+      </SpanElement>
     );
   },
-  edgePoint: boxEdgePoint,
+  /**
+   * Connectors leave a node horizontally - the side facing the other end - so the resolved
+   * endpoints match the anchors the drawn bezier runs between. Copied from
+   * `generic/dependencies`, where the same pairing exists for the same reason.
+   */
+  edgePoint: (bounds: ShapeBounds, towards: ShapePoint): ShapePoint => {
+    const box = boxOf(bounds);
+    return sideAnchorOf(box, towards.x >= box.x ? "right" : "left");
+  },
+};
+
+/**
+ * The connector, curved between facing side anchors.
+ *
+ * <b>This follows from the edge attachment rather than being a separate choice.</b> Side
+ * anchors with straight lines draw a connector that leaves horizontally and then cuts diagonally
+ * across the canvas - a half-match that would look worse than either whole. The authored graph
+ * pairs the two, and so does this.
+ */
+const dependencyRoute: CustomRouteRef = {
+  customRoute: "dotnet-dependency-bezier",
+  path: (from, to, _waypoints, ends) => {
+    if (!ends) {
+      return horizontalBezierPath(from, to);
+    }
+
+    const fromBox = boxOf(ends.source);
+    const toBox = boxOf(ends.target);
+    // A dependency pointing back the way it came needs the long way round, or the curve
+    // doubles back through its own source.
+    const loopsBack = ends.target.x < ends.source.x + ends.source.width;
+    const [a, b] = loopsBack
+      ? [sideAnchorOf(fromBox, "right"), sideAnchorOf(toBox, "left")]
+      : facingAnchorsBetween(fromBox, toBox);
+    return loopsBack ? forwardBezierPath(a, b) : horizontalBezierPath(a, b);
+  },
 };
 
 /**
@@ -124,7 +189,7 @@ const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefini
   relationTypes: [
     {
       id: "project-reference",
-      route: "straight",
+      route: dependencyRoute,
       style: { endMarker: "arrow" },
       className: "dotnet-dependency-edge dotnet-dependency-edge-project",
       lineClassName: "dotnet-dependency-edge-line",
@@ -136,7 +201,7 @@ const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefini
     },
     {
       id: "package-reference",
-      route: "straight",
+      route: dependencyRoute,
       style: { endMarker: "arrow" },
       className: "dotnet-dependency-edge dotnet-dependency-edge-package",
       lineClassName: "dotnet-dependency-edge-line",

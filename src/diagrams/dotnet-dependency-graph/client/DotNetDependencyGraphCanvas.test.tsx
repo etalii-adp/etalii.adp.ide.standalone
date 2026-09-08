@@ -136,8 +136,39 @@ describe("DotNetDependencyGraphCanvas", () => {
     const { container, queryByText } = renderCanvas();
 
     expect(queryByText(/no projects ADP could resolve/i)).toBeNull();
-    expect(container.querySelectorAll(".dotnet-dependency-node-project")).toHaveLength(4);
-    expect(container.querySelectorAll(".dotnet-dependency-node-package").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".dotnet-dependency-element-project")).toHaveLength(4);
+    expect(container.querySelectorAll(".dotnet-dependency-element-package").length).toBeGreaterThan(0);
+  });
+
+  it("draws each node through the shared span, as the authored dependency graph does", () => {
+    // THE REVIEW CRITERION, MADE ASSERTABLE. This module's specification carries "consistency
+    // with the authored generic/dependencies canvas" as a non-functional requirement, and its
+    // tasks document records it as "a review criterion rather than an assertable test". Nobody
+    // reviewed it, and the two dependency graphs shipped looking like different products - a
+    // criterion whose absence leaves no trace is one nothing will ever report.
+    //
+    // What this can and cannot prove, stated so the next reader does not over-read it: it pins
+    // the SLOT CONTRACT the shared span renders and the stylesheet depends on - a body rect and
+    // a label text carrying the module's span classes, inside the element group. A different
+    // primitive given the same class names would still pass. What it catches is the change that
+    // actually happened here: a canvas drawing its own furniture under its own class names,
+    // which is what this one did until the swap.
+    currentModel = showcaseModel();
+    currentLoading = false;
+    currentFailed = false;
+
+    const { container } = renderCanvas();
+
+    const project = container.querySelector(".dotnet-dependency-element-project");
+    expect(project, "no project element was rendered at all").not.toBeNull();
+
+    // The body and the label, in the span's own slots.
+    expect(project!.querySelector("rect.dotnet-dependency-node")).not.toBeNull();
+    expect(project!.querySelector("text.dotnet-dependency-node-label")).not.toBeNull();
+
+    // And the one thing the authored graph has no equivalent of, kept rather than lost in the
+    // swap: the second line. A project shows its target frameworks.
+    expect(project!.querySelector("text.dotnet-dependency-node-subtitle")?.textContent).toBe("net10.0");
   });
 
   it("still says the solution is empty when the backend really resolved nothing", () => {
