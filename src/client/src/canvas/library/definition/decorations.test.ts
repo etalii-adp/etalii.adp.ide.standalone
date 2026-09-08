@@ -162,3 +162,68 @@ describe("decorations — what rows 3, 4 and 8 needed", () => {
     expect(balancing.map((decoration) => decoration.d)).toEqual(["M 1 1 A 0 0"]);
   });
 });
+
+/**
+ * ONE GLYPH PER THING THE MODEL HAS — register entry G27, and four rows need it: a pipeline
+ * stage's status indicators, a job's, mindmap's note/link/folded marks, wardley's decorator
+ * badges. A fixed list of declarations cannot say "as many as there are".
+ */
+describe("decorations — the collection form", () => {
+  const indicators = [
+    { key: "disabled", glyph: "⊘", title: "Disabled: this will not run.", className: "pipeline-indicator-disabled" },
+    { key: "manual", glyph: "▶", title: "Manual trigger: this waits to be started by a person." },
+    { key: "condition", glyph: "?", title: "Runs only when: succeeded()" },
+  ];
+
+  it("draws one entry per item, stepped along from the declaration's origin", () => {
+    const resolved = resolveDecorations(
+      [
+        {
+          glyph: "marker",
+          each: { path: "payload.indicators" },
+          from: { x: 40, y: -10 },
+          step: { x: -14, y: 0 },
+          text: { path: "glyph" },
+          tooltip: { path: "title" },
+          className: { path: "className" },
+          data: { testid: { template: "indicator-{key}" } },
+        },
+      ],
+      source({ indicators }),
+      bounds,
+    );
+
+    expect(resolved.map((decoration) => decoration.text)).toEqual(["⊘", "▶", "?"]);
+    expect(resolved.map((decoration) => decoration.from.x)).toEqual([40, 26, 12]);
+    // Rooted at the ITEM, like every other `each` in this vocabulary.
+    expect(resolved[0]!.tooltip).toBe("Disabled: this will not run.");
+    expect(resolved[0]!.className).toBe("pipeline-indicator-disabled");
+    // A class the entry does not carry is absent rather than the string "undefined".
+    expect(resolved[1]!.className).toBeUndefined();
+    // And the test ids the module's own suite reads, one per entry, rooted at the entry.
+    expect(resolved.map((decoration) => decoration.data?.testid)).toEqual(["indicator-disabled", "indicator-manual", "indicator-condition"]);
+  });
+
+  it("draws nothing at all when the collection is empty, rather than one empty glyph", () => {
+    const resolved = resolveDecorations(
+      [{ glyph: "marker", each: { path: "payload.indicators" }, text: { path: "glyph" } }],
+      source({ indicators: [] }),
+      bounds,
+    );
+
+    expect(resolved).toEqual([]);
+  });
+
+  it("gives each entry its own key, so a re-render does not reuse one glyph for another", () => {
+    const resolved = resolveDecorations(
+      [
+        { glyph: "circle", each: { path: "payload.indicators" }, radius: 4 },
+        { glyph: "rect", width: 10, height: 10 },
+      ],
+      source({ indicators }),
+      bounds,
+    );
+
+    expect(new Set(resolved.map((decoration) => decoration.index)).size).toBe(resolved.length);
+  });
+});

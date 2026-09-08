@@ -557,6 +557,19 @@ export function resolveNumber(binding: Binding, source: BindingSource): number |
 }
 
 /**
+ * The RAW value a path names, for a caller that needs the list itself rather than its lines.
+ *
+ * Exported because two features - a background's marks and a decoration's `each` - lay their own
+ * geometry out per entry, so they need the entries rather than the text. It walks the same roots
+ * as everything else here, which is the point: a local copy in each caller drifts the day a root
+ * is added, and one already had - `background` walked `element` and `payload` only, so it could
+ * not have seen `state` or `bounds`.
+ */
+export function valueAtPath(path: BindingPath, source: BindingSource): unknown {
+  return valueAt(rootOf(source), path);
+}
+
+/**
  * Every value a binding yields: none, one, or one per entry of a collection.
  *
  * <b>Nothing here throws.</b> A path that does not resolve, a collection that is not a list, an

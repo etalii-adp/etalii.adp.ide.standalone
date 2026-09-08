@@ -1268,10 +1268,10 @@ export function DiagramCanvas({
             return null;
           }
 
-          const height = (declared.typography?.fontSize ?? 12) + 8;
-          // The line's own baseline, converted back to a box top: the editor covers the text,
-          // and for a single centred label that is the element's box, exactly as before.
-          const top = line.y - bounds.y - height + 4;
+          // The declaration's own editor box where it states one - the port of `insetTop` and
+          // `insetHeight` - and otherwise derived from the line's baseline and its size.
+          const height = declared.editorBox?.height ?? (declared.typography?.fontSize ?? 12) + 8;
+          const top = declared.editorBox?.top ?? line.y - bounds.y - height + 4;
           return insetLabelPlacement({ x: element.x, y: element.y, width: bounds.width, height: bounds.height }, top, height, text);
         }
 
@@ -1653,6 +1653,7 @@ function LibraryElement({
       {...press}
       onContextMenu={onContextMenu}
       onDoubleClick={onDoubleClick}
+      {...dataAttributesOf(declaredData(type, sourceOf(element, groupState, bounds)))}
       role={accessibility?.role}
       tabIndex={accessibility?.focusable === true ? 0 : undefined}
       aria-label={accessibleName ?? undefined}
@@ -1849,11 +1850,14 @@ function declaredDecorations(type: ElementTypeDefinition, bounds: ConnectorBox, 
     <g
       key={decoration.index}
       className={decoration.className}
+      {...dataAttributesOf(decoration.data)}
+      role={decoration.role}
+      aria-label={decoration.accessibleName}
       style={{ pointerEvents: "none" }}
-      // A decoration carrying a title is describing something a reader may need - a problem's
-      // message - so it stops being hidden from assistive technology at that point, and only
-      // at that point.
-      aria-hidden={decoration.tooltip === undefined ? true : undefined}
+      // A decoration carrying a title or a name is describing something a reader may need - a
+      // problem's message - so it stops being hidden from assistive technology at that point,
+      // and only at that point.
+      aria-hidden={decoration.tooltip === undefined && decoration.accessibleName === undefined ? true : undefined}
       markerEnd={markerRef(decoration.markerEnd ?? "none")}
     >
       {decoration.tooltip !== undefined ? <title>{decoration.tooltip}</title> : null}
@@ -2027,6 +2031,33 @@ function sourceOf(element: DiagramModelElement, state?: CustomShapeState, bounds
             centreY: bounds.y + bounds.height / 2,
           },
   };
+}
+
+/** A resolved `data-*` map as React props: `{ testid: "x" }` becomes `data-testid="x"`. */
+function dataAttributesOf(data: Readonly<Record<string, string>> | undefined): Record<string, string> {
+  const props: Record<string, string> = {};
+  for (const [name, value] of Object.entries(data ?? {})) {
+    props[`data-${name}`] = value;
+  }
+
+  return props;
+}
+
+/** The `data-*` attributes a type declares for its elements, resolved against this one. */
+function declaredData(type: ElementTypeDefinition | undefined, source: BindingSource): Readonly<Record<string, string>> | undefined {
+  if (type?.data === undefined) {
+    return undefined;
+  }
+
+  const out: Record<string, string> = {};
+  for (const [name, value] of Object.entries(type.data)) {
+    const resolved = typeof value === "string" ? value : resolveOne(value, source);
+    if (resolved !== null) {
+      out[name] = resolved;
+    }
+  }
+
+  return out;
 }
 
 /** The classes a type declares for one target - the shape's body, or the element's group. */

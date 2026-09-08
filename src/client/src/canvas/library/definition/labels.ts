@@ -65,11 +65,11 @@ function baselineOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: nu
     return placed;
   }
 
-  return { x: alignedX(declaration.align, bounds), y: placed.y, anchor: declaration.align };
+  return { x: alignedX(declaration.align, bounds, declaration.insetX), y: placed.y, anchor: declaration.align };
 }
 
 /** Where a column or an aligned label sits horizontally, for the alignment it declares. */
-function alignedX(align: "start" | "middle" | "end", bounds: ShapeBounds, insetX = LABEL_INSET): number {
+function alignedX(align: "start" | "middle" | "end", bounds: ShapeBounds, insetX: number = LABEL_INSET): number {
   switch (align) {
     case "start":
       return bounds.x + insetX;

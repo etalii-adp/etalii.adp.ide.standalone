@@ -1,16 +1,14 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
   CustomRouteRef,
-  CustomShapeRef,
   DiagramDefinition,
+  ElementTypeDefinition,
   ShapeBounds,
-  ShapePoint,
 } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
@@ -19,10 +17,9 @@ import { innermostKey, useContextConnection, useContextPrompt, useContextProblem
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
-import { indicatorsOf, problemMarkOf, problemsOn, type PipelineIndicator } from "./pipelineIndicators";
+import { indicatorsOf, problemMarkOf, problemsOn } from "./pipelineIndicators";
 import {
   endpointsOf,
-  jobCountLabel,
   JOB_TYPE,
   STAGE_TYPE,
   TEMPLATE_TYPE,
@@ -30,9 +27,6 @@ import {
 } from "./pipelineModel";
 import { usePipelineStream } from "./usePipelineStream";
 
-/** The stage card's name line: baseline 24 with the job count under it, so the editor covers the name alone. */
-const STAGE_NAME_TOP = 6;
-const STAGE_NAME_HEIGHT = 24;
 
 /** The fixed control reach the "waits for" arrows have always had. */
 const EDGE_REACH = 30;
@@ -43,175 +37,10 @@ export interface PipelineCanvasProps {
   path: readonly string[];
 }
 
-type ProblemMarkData = { severity: string; title: string } | null;
 
-/** An element as the library carries it here: the model node plus what it draws. */
-type PipelineElement = DiagramModelElement & {
-  node: PipelineNode;
-  expanded: boolean;
-  focused: boolean;
-  problem: ProblemMarkData;
-};
 
-function sideEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centreX = bounds.x + bounds.width / 2;
-  return {
-    x: towards.x >= centreX ? bounds.x + bounds.width : bounds.x,
-    y: bounds.y + bounds.height / 2,
-  };
-}
 
-/**
- * The badges along the top-right of an element: what it is telling you without being opened
- * (Requirement 8.4). Laid out right to left so the first one is nearest the corner and adding
- * another does not move the ones already there.
- */
-function PipelineIndicators({ indicators, x, y }: { indicators: PipelineIndicator[]; x: number; y: number }) {
-  return (
-    <>
-      {indicators.map((indicator, index) => (
-        <text
-          key={indicator.key}
-          className="pipeline-indicator"
-          data-testid={`indicator-${indicator.key}`}
-          x={x - index * 16}
-          y={y}
-          textAnchor="end"
-        >
-          {indicator.glyph}
-          <title>{indicator.title}</title>
-        </text>
-      ))}
-    </>
-  );
-}
 
-/**
- * The mark on an element something is wrong with, so a dangling dependsOn is visible where it
- * is rather than only in a list (Requirement 8.7).
- */
-function ProblemMark({
-  elementId,
-  problem,
-  x,
-  y,
-}: {
-  elementId: string;
-  problem: { severity: string; title: string };
-  x: number;
-  y: number;
-}) {
-  return (
-    <text
-      className={`pipeline-problem-mark pipeline-problem-mark-${problem.severity}`}
-      data-testid={`problem-${elementId}`}
-      x={x}
-      y={y}
-      textAnchor="end"
-      role="img"
-      aria-label={problem.title}
-    >
-      {problem.severity === "error" ? "✖" : "⚠"}
-      <title>{problem.title}</title>
-    </text>
-  );
-}
-
-/**
- * A stage: a container holding its jobs when open, a single box with its job count when
- * closed (Requirement 8.2). Painted beneath the connections, so the arrows between the jobs
- * it holds stay visible over its card. A manual-trigger stage is marked, because "this one
- * waits for a person" is not something a reader should have to open the file to discover
- * (Requirement 8.3).
- */
-const stageShape: CustomShapeRef = {
-  customShape: "pipeline-stage",
-  render: (raw) => {
-    const element = raw as PipelineElement;
-    const { displayName, width, height, jobCount, indeterminate, fromTemplate } = element.node.payload;
-    const classes = [
-      "pipeline-stage",
-      element.expanded ? "pipeline-stage-expanded" : "pipeline-stage-collapsed",
-      element.focused ? "pipeline-focused" : "",
-      indeterminate ? "pipeline-indeterminate" : "",
-      fromTemplate ? "pipeline-from-template" : "",
-      element.problem ? `pipeline-problem pipeline-problem-${element.problem.severity}` : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    return (
-      <BoxElement
-        className={classes}
-        x={element.x - width / 2}
-        y={element.y - height / 2}
-        width={width}
-        height={height}
-        rx={6}
-        label={displayName}
-        boxClassName="pipeline-stage-box"
-        labelClassName="pipeline-stage-name"
-        labelX={12}
-        labelY={24}
-        role="button"
-        aria-label={displayName}
-        data-testid={`stage-${element.id}`}
-        data-expanded={element.expanded}
-      >
-        {!element.expanded && (
-          <text className="pipeline-stage-count" x={12} y={44}>
-            {jobCountLabel(jobCount)}
-          </text>
-        )}
-        <PipelineIndicators indicators={indicatorsOf(element.node.payload)} x={width - 12} y={20} />
-        {element.problem && <ProblemMark elementId={element.id} problem={element.problem} x={width - 12} y={height - 12} />}
-      </BoxElement>
-    );
-  },
-  edgePoint: sideEdgePoint,
-};
-
-/** A job, a step or an unfollowed template: a plain box, drawn by what kind it says it is. */
-const boxShape: CustomShapeRef = {
-  customShape: "pipeline-box",
-  render: (raw) => {
-    const element = raw as PipelineElement;
-    const { displayName, width, height, kind, indeterminate, fromTemplate, unresolvedReason } = element.node.payload;
-    const deployment = kind === PipelineElementKindProto.PIPELINE_ELEMENT_KIND_DEPLOYMENT_JOB;
-    const classes = [
-      element.node.type === JOB_TYPE ? "pipeline-job" : element.node.type === TEMPLATE_TYPE ? "pipeline-template" : "pipeline-step",
-      deployment ? "pipeline-deployment" : "",
-      element.focused ? "pipeline-focused" : "",
-      indeterminate ? "pipeline-indeterminate" : "",
-      fromTemplate ? "pipeline-from-template" : "",
-      element.problem ? `pipeline-problem pipeline-problem-${element.problem.severity}` : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    return (
-      <BoxElement
-        className={classes}
-        x={element.x - width / 2}
-        y={element.y - height / 2}
-        width={width}
-        height={height}
-        label={displayName}
-        boxClassName="pipeline-box"
-        labelClassName="pipeline-box-name"
-        labelX={10}
-        role="button"
-        aria-label={displayName}
-        data-testid={`node-${element.id}`}
-      >
-        <PipelineIndicators indicators={indicatorsOf(element.node.payload)} x={width - 8} y={16} />
-        {element.problem && <ProblemMark elementId={element.id} problem={element.problem} x={width - 8} y={height - 6} />}
-        {unresolvedReason.length > 0 && <title>{unresolvedReason}</title>}
-      </BoxElement>
-    );
-  },
-  edgePoint: sideEdgePoint,
-};
 
 /**
  * One "waits for" arrow, exactly as FixedBezierConnection drew it: a horizontal cubic from
@@ -233,20 +62,145 @@ const waitsForRoute: CustomRouteRef = {
  * Stages paint beneath the connections so the arrows between their jobs stay visible; the
  * one relation is render-only, its implicit/broken stylings carried per connection.
  */
+/** Which class each box kind carries - what the renderer chose with a nested ternary. */
+const BOX_CLASS = { job: "pipeline-job", template: "pipeline-template", step: "pipeline-step" } as const;
+
 const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
     {
       id: "stage",
-      shape: stageShape,
-      label: { placement: "inset", editable: true, insetTop: STAGE_NAME_TOP, insetHeight: STAGE_NAME_HEIGHT },
+      shape: "rounded-rectangle",
+      style: { cornerRadius: 6 },
+      classNames: [
+        { className: "pipeline-stage", on: "element" },
+        { className: "pipeline-stage-expanded", on: "element", when: { path: "payload.expanded", is: "true" } },
+        { className: "pipeline-stage-collapsed", on: "element", when: { path: "payload.expanded", is: "false" } },
+        { className: "pipeline-focused", on: "element", when: { path: "payload.focused", is: "true" } },
+        { className: "pipeline-indeterminate", on: "element", when: { path: "payload.indeterminate", is: "true" } },
+        { className: "pipeline-from-template", on: "element", when: { path: "payload.fromTemplate", is: "true" } },
+        { className: "pipeline-problem", on: "element", when: { path: "payload.problemSeverity", is: "present" } },
+        { className: { template: "pipeline-problem-{payload.problemSeverity}" }, on: "element", when: { path: "payload.problemSeverity", is: "present" } },
+        { className: "pipeline-stage-box", on: "shape" },
+      ],
+      data: { testid: { template: "stage-{element.id}" }, expanded: { path: "payload.expanded" } },
+      accessibility: { role: "button", label: { path: "payload.displayName" } },
+      labels: [
+        {
+          text: { path: "payload.displayName" },
+          anchorTo: "top",
+          offset: { x: 0, y: 24 },
+          align: "start",
+          insetX: 12,
+          editable: true,
+          editorBox: { top: 6, height: 24 },
+          className: "pipeline-stage-name",
+        },
+        {
+          // The job count a closed stage shows in place of the jobs themselves - a count that
+          // declines its noun, which is the whole of `plural`'s justification.
+          text: { path: "payload.jobCount", plural: { one: "job", other: "jobs" } },
+          anchorTo: "top",
+          offset: { x: 0, y: 44 },
+          align: "start",
+          insetX: 12,
+          when: { path: "payload.expanded", is: "false" },
+          className: "pipeline-stage-count",
+        },
+      ],
+      decorations: [
+        {
+          // ONE GLYPH PER THING THE MODEL SAYS, which is why decorations take an `each`: a
+          // stage may be disabled, manual, conditional, tolerant of failure and multiplied, and
+          // a fixed list of declarations cannot say "as many as there are".
+          glyph: "marker",
+          each: { path: "payload.indicators" },
+          from: { x: { path: "bounds.right", number: { plus: -12 } }, y: { path: "bounds.top", number: { plus: 20 } } },
+          step: { x: -16, y: 0 },
+          text: { path: "glyph" },
+          tooltip: { path: "title" },
+          textAnchor: "end",
+          className: "pipeline-indicator",
+          data: { testid: { template: "indicator-{key}" } },
+        },
+        {
+          // The problem mark: WHERE a problem is shown and what colours it, while the module's
+          // model still says what a problem IS. That boundary is deliberate - the problems
+          // service is not this canvas's to own.
+          glyph: "marker",
+          from: { x: { path: "bounds.right", number: { plus: -12 } }, y: { path: "bounds.bottom", number: { plus: -12 } } },
+          text: { path: "payload.problemGlyph" },
+          tooltip: { path: "payload.problemTitle" },
+          textAnchor: "end",
+          className: { template: "pipeline-problem-mark pipeline-problem-mark-{payload.problemSeverity}" },
+          accessibility: { role: "img", label: { path: "payload.problemTitle" } },
+          data: { testid: { template: "problem-{element.id}" } },
+          when: { path: "payload.problemSeverity", is: "present" },
+        },
+      ],
       anchors: { kind: "edge" },
       sizing: "model",
       deletable: false,
       beneathConnections: true,
     },
-    { id: "job", shape: boxShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model", deletable: false },
-    { id: "template", shape: boxShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model", deletable: false },
-    { id: "step", shape: boxShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model", deletable: false },
+    ...(["job", "template", "step"] as const).map((id): ElementTypeDefinition => ({
+      id,
+      shape: "box" as const,
+      classNames: [
+        { className: BOX_CLASS[id], on: "element" },
+        { className: "pipeline-deployment", on: "element", when: { path: "payload.deployment", is: "true" } },
+        { className: "pipeline-focused", on: "element", when: { path: "payload.focused", is: "true" } },
+        { className: "pipeline-indeterminate", on: "element", when: { path: "payload.indeterminate", is: "true" } },
+        { className: "pipeline-from-template", on: "element", when: { path: "payload.fromTemplate", is: "true" } },
+        { className: "pipeline-problem", on: "element", when: { path: "payload.problemSeverity", is: "present" } },
+        { className: { template: "pipeline-problem-{payload.problemSeverity}" }, on: "element", when: { path: "payload.problemSeverity", is: "present" } },
+        { className: "pipeline-box", on: "shape" as const },
+      ],
+      data: { testid: { template: "node-{element.id}" } },
+      accessibility: { role: "button", label: { path: "payload.displayName" } },
+      tooltip: { path: "payload.unresolvedReason", when: { path: "payload.unresolvedReason", is: "non-empty" } },
+      labels: [
+        {
+          text: { path: "payload.displayName" },
+          align: "start" as const,
+          insetX: 10,
+          editable: true,
+          className: "pipeline-box-name",
+        },
+      ],
+      decorations: [
+        {
+          // ONE GLYPH PER THING THE MODEL SAYS, which is why decorations take an `each`: a
+          // stage may be disabled, manual, conditional, tolerant of failure and multiplied, and
+          // a fixed list of declarations cannot say "as many as there are".
+          glyph: "marker",
+          each: { path: "payload.indicators" },
+          from: { x: { path: "bounds.right", number: { plus: -8 } }, y: { path: "bounds.top", number: { plus: 16 } } },
+          step: { x: -16, y: 0 },
+          text: { path: "glyph" },
+          tooltip: { path: "title" },
+          textAnchor: "end",
+          className: "pipeline-indicator",
+          data: { testid: { template: "indicator-{key}" } },
+        },
+        {
+          // The problem mark: WHERE a problem is shown and what colours it, while the module's
+          // model still says what a problem IS. That boundary is deliberate - the problems
+          // service is not this canvas's to own.
+          glyph: "marker",
+          from: { x: { path: "bounds.right", number: { plus: -8 } }, y: { path: "bounds.bottom", number: { plus: -6 } } },
+          text: { path: "payload.problemGlyph" },
+          tooltip: { path: "payload.problemTitle" },
+          textAnchor: "end",
+          className: { template: "pipeline-problem-mark pipeline-problem-mark-{payload.problemSeverity}" },
+          accessibility: { role: "img", label: { path: "payload.problemTitle" } },
+          data: { testid: { template: "problem-{element.id}" } },
+          when: { path: "payload.problemSeverity", is: "present" },
+        },
+      ],
+      anchors: { kind: "edge" as const },
+      sizing: "model" as const,
+      deletable: false,
+    })),
   ],
   relationTypes: [
     {
@@ -300,19 +254,32 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
     // Stages first so the jobs inside them draw on top; the stage type's beneathConnections
     // keeps the arrows above the cards as well.
     const ordered = [...nodes.filter((node) => node.type === STAGE_TYPE), ...nodes.filter((node) => node.type !== STAGE_TYPE)];
-    const elements = ordered.map((node): PipelineElement => ({
-      id: node.id,
-      type: elementTypeOf(node),
-      x: node.x + node.payload.width / 2,
-      y: node.y + node.payload.height / 2,
-      width: node.payload.width,
-      height: node.payload.height,
-      label: node.payload.displayName,
-      node,
-      expanded: !model.collapsed.has(node.id),
-      focused: node.id === focusedId,
-      problem: problemMarkOf(problemsOn(problems, path, node.id)),
-    }));
+    const elements = ordered.map((node): DiagramModelElement => {
+      const problem = problemMarkOf(problemsOn(problems, path, node.id));
+      // What the declaration reads. Which indicators a node shows, and what a problem is, stay
+      // this module's knowledge; where they are drawn is the library's.
+      return {
+        id: node.id,
+        type: elementTypeOf(node),
+        x: node.x + node.payload.width / 2,
+        y: node.y + node.payload.height / 2,
+        width: node.payload.width,
+        height: node.payload.height,
+        label: node.payload.displayName,
+        payload: {
+          displayName: node.payload.displayName,
+          jobCount: node.payload.jobCount,
+          indeterminate: node.payload.indeterminate,
+          fromTemplate: node.payload.fromTemplate,
+          unresolvedReason: node.payload.unresolvedReason,
+          deployment: node.payload.kind === PipelineElementKindProto.PIPELINE_ELEMENT_KIND_DEPLOYMENT_JOB,
+          indicators: indicatorsOf(node.payload),
+          expanded: !model.collapsed.has(node.id),
+          focused: node.id === focusedId,
+          ...(problem ? { problemSeverity: problem.severity, problemTitle: problem.title, problemGlyph: problem.severity === "error" ? "✖" : "⚠" } : {}),
+        },
+      };
+    });
     // An edge whose ends are not both on the canvas is not drawn: a job's dependency inside a
     // collapsed stage has nowhere to start, and a line into empty space says less than no line.
     const connections = [...model.edges.values()].flatMap((edge) => {
