@@ -34,7 +34,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - The single instance is not a weakness in the vocabulary: bands, axes, gridlines and bound regions are general on their face, and the argument the second instance was carrying — *do not special-case wardley* — is carried by the vocabulary being notation-neutral rather than by the count.
   - _Requirements: 3.3_
 
-- [ ] 5. `actions` and anchor enablement, and the library owning the keyboard
+- [-] 5. `actions` and anchor enablement, and the library owning the keyboard
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - `id`, `invokedBy` (shortcut/menu/gesture), `appliesTo`, `enabled` binding, `label`. The library dispatches; **only the module's handler stays imperative.**
   - **Two things disappear and the task is not done until they do**: the four hand-written shortcut key lists, and the synthesised `{ key: "Delete", … }` object in nine canvases. A module must have no way to name an action by manufacturing a key event.
@@ -42,13 +42,13 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - **Anchors gain `visible` and `enabled` bindings on the same mechanism.** `AnchorSet` says where anchors are and nothing about whether they are shown or usable; Requirement 2.4 requires the declaration to state **whether an anchor is visible or enabled, and never how it looks**. All twenty-nine anchor declarations in the tree are `{ kind: "edge" }`, so the positional half has never been needed and the half that was missing is the one modules actually want.
   - _Requirements: 2.4, 2.6, 2.7, 2.8, 3.4_
 
-- [ ] 6. The structural half of the model over the wire
+- [-] 6. The structural half of the model over the wire
   - Files: module backends, the diagram contract, the client stream hooks
   - Identity, type, position, size and connection endpoints arrive shaped for the canvas, removing the bulk of the 665 mapping lines. **The semantic half stays a binding** — the user ruled for this split on 2026-09-08 with the alternative in front of them.
   - Each module's backend keeps owning what its elements mean; only the handover shape changes.
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 7. Chrome declared
+- [-] 7. Chrome declared
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - Loading, unavailable, title, legend **and view-fixed rulers** as declarations with content bound to model fields. A module wanting none declares none, **as explicitly as presence**.
   - **`timeline`'s ruler lands here**, moved from task 4 on 2026-09-08 after its mechanism was read: HTML rather than SVG, absolutely positioned over the scrolling surface, `aria-hidden`, tick positions in viewport pixels and the tick *set* derived from `ticksFor(startSeconds, endSeconds, widthPx)` so it changes with zoom. A view-fixed chrome declaration therefore needs a **tick-ladder kind** whose entries are derived from the visible range, not a fixed list.
