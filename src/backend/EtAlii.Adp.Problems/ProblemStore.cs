@@ -192,6 +192,22 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         && relativePath.StartsWith(covering, StringComparison.OrdinalIgnoreCase)
         && (relativePath.Length == covering.Length || relativePath[covering.Length] is '\\' or '/');
 
+    /// <summary>
+    /// Whether a remembered verdict may no longer hold.
+    /// </summary>
+    /// <remarks>
+    /// The obvious half is the file: it changed, or it is gone. The half that cost this
+    /// repository three defects in one night is the other one - <b>a verdict whose authority
+    /// moved out from under it while its file stood still.</b> Three ways that happens, and
+    /// no file stamp can see any of them, by construction: the registry GAINS a type and a
+    /// core "not a known diagram type" goes on denying it; a module is released and its own
+    /// verdicts describe rules that no longer judge the file; a module is REMOVED and its
+    /// verdicts, and core's verdicts about it, have nothing left standing behind them. Each
+    /// check below is one of those, and each was found by fixing the one before it. Adding a
+    /// new kind of verdict means asking which authority it rests on and whether that
+    /// authority can move - because if it can and nothing here asks, the panel will present
+    /// the verdict as a claim about now.
+    /// </remarks>
     private bool IsStale(string rootPath, StoredProblem problem)
     {
         // The subject may be a folder as well as a file - a rule that blames a role folder has
@@ -224,10 +240,23 @@ public sealed class ProblemStore : IProblemStore, IDisposable
             return CoreRuleIds.IsAboutRouting(problem.Problem.RuleId) && _router.Route(fullPath) is DiagramRouted;
         }
 
+        // Nothing routes the file any more, so the module that judged it is gone -
+        // unregistered, uninstalled, or dropped from a build. There is no version left to
+        // compare and nothing standing behind the verdict, which is precisely what stale
+        // means. Gating the comparison on a successful route instead left such a verdict
+        // reading fresh for ever, the mirror of the case above: there the registry GAINED a
+        // type and a core verdict went on denying it; here it LOSES one and a module's
+        // verdict goes on asserting it. The entry is marked rather than dropped so the
+        // record of a problem that was once real survives, and a module removed by accident
+        // does not silently take its findings with it.
+        if (_router.Route(fullPath) is not DiagramRouted routed)
+        {
+            return true;
+        }
+
         // A module release invalidates its own verdicts (Requirement 4.7): compare against
         // the rules that would judge the file today.
-        return _router.Route(fullPath) is DiagramRouted routed
-               && !string.Equals(_validators.RulesVersion(routed.Definition.Origin), problem.RulesVersion, StringComparison.Ordinal);
+        return !string.Equals(_validators.RulesVersion(routed.Definition.Origin), problem.RulesVersion, StringComparison.Ordinal);
     }
 
     private CachedProjectProblems GetOrLoad(string rootPath)

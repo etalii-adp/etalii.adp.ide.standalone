@@ -87,6 +87,54 @@ public class ProblemStoreRegistryStalenessTests : IDisposable
         Assert.False(verdict.Stale, "Nothing changed: the type is still unknown and the verdict still holds.");
     }
 
+    [Fact]
+    public void AVersionedVerdict_GoesStale_OnceTheModuleThatJudgedItIsGone()
+    {
+        // Arrange.
+        // The third case in the family, and the mirror of the first: there the registry gained
+        // a type and a core verdict went on denying it; here the registry LOSES the type and a
+        // module's verdict goes on asserting it. Nothing claims the file now, so there is no
+        // rules version to compare and no authority behind the verdict - but the file it names
+        // never moved, so the file stamp cannot notice either.
+        CreatePair("services", "dotnet/dependency-graph", ".dgr");
+        using (var whileTheModuleExisted = Store(MindmapDefinition, DependencyGraphDefinition))
+        {
+            whileTheModuleExisted.Replace(_root, [ModuleVerdict("services.adp", rulesVersion: "1.2.3")]);
+        }
+
+        // Act.
+        // The module is removed - unregistered, uninstalled, or dropped from a build.
+        using var afterItWasRemoved = Store(MindmapDefinition);
+        var set = afterItWasRemoved.Get(_root);
+
+        // Assert.
+        var verdict = Assert.Single(set.Problems);
+        Assert.True(
+            verdict.Stale,
+            "Nothing claims this type any more, so nothing stands behind the verdict - it must not read as current.");
+    }
+
+    [Fact]
+    public void AVersionedVerdict_StaysFresh_WhileItsModuleIsStillThereAtTheSameVersion()
+    {
+        // Arrange.
+        // The floor: the test above must not pass by marking every versioned verdict stale.
+        CreatePair("services", "dotnet/dependency-graph", ".dgr");
+        var version = new DiagramValidators([]).RulesVersion(DependencyGraph);
+        using (var before = Store(MindmapDefinition, DependencyGraphDefinition))
+        {
+            before.Replace(_root, [ModuleVerdict("services.adp", version)]);
+        }
+
+        // Act.
+        using var unchanged = Store(MindmapDefinition, DependencyGraphDefinition);
+        var set = unchanged.Get(_root);
+
+        // Assert.
+        var verdict = Assert.Single(set.Problems);
+        Assert.False(verdict.Stale, "The module is still there at the same version: the verdict still holds.");
+    }
+
     private ProblemStore Store(params DiagramDefinition[] definitions) =>
         new(_appData,
             new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)),
@@ -112,5 +160,20 @@ public class ProblemStoreRegistryStalenessTests : IDisposable
             info.LastWriteTimeUtc,
             info.Length,
             RulesVersion: "");
+    }
+
+    /// <summary>
+    /// What a module's own validator produces, pinned to the file and carrying the rules
+    /// version that judged it - so only the module's fate can make it stale.
+    /// </summary>
+    private StoredProblem ModuleVerdict(string relativePath, string rulesVersion)
+    {
+        var info = new FileInfo(IoPath.Combine(_root, relativePath));
+        return new StoredProblem(
+            new DiagramProblem(DiagramProblemSeverity.Error, "The graph names a project that is not in the solution.", "dependency-graph.missing-project"),
+            relativePath,
+            info.LastWriteTimeUtc,
+            info.Length,
+            rulesVersion);
     }
 }
