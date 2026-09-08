@@ -37,7 +37,19 @@ internal sealed class ProblemCollector(string root)
         _problems.Add(new StoredProblem(problem, IoPath.GetRelativePath(Root, attributionPath), lastWriteTimeUtc, length, rulesVersion));
     }
 
-    /// <summary>A problem core itself found - a rules version of its own would say nothing, so it stays empty.</summary>
-    public void AddCore(string path, string message, string ruleId = CoreRuleIds.Unreadable) =>
-        Add(new DiagramProblem(DiagramProblemSeverity.Error, message, ruleId), path, path, rulesVersion: "");
+    /// <summary>
+    /// A problem core itself found. Core has no rules version of its own - one would say
+    /// nothing - so <paramref name="rulesVersion"/> is empty for the verdicts that are core's
+    /// alone.
+    /// </summary>
+    /// <param name="rulesVersion">
+    /// The module's version, for a verdict core reached ABOUT a module rather than about the
+    /// file: a validator that threw or timed out is named in its own message, and that
+    /// module's next release is exactly what should re-check it. Left empty and such a verdict
+    /// can never be marked stale, because the store has nothing to compare and the routing
+    /// re-check answers a different question - whether anything claims the type, not whether
+    /// the thing that claims it still fails.
+    /// </param>
+    public void AddCore(string path, string message, string ruleId = CoreRuleIds.Unreadable, string rulesVersion = "") =>
+        Add(new DiagramProblem(DiagramProblemSeverity.Error, message, ruleId), path, path, rulesVersion);
 }

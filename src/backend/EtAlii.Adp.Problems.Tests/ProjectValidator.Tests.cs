@@ -253,6 +253,45 @@ public class ProjectValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task ValidateAsync_StampsAValidatorFailureWithTheFailingModulesRulesVersion()
+    {
+        // Arrange.
+        // A validator failure is a verdict ABOUT a module - it names the module in its own
+        // message - so what re-checks it is that module's rules version, exactly as for a
+        // verdict the module produced itself. Stamped with "" it fell into the core branch,
+        // where nothing can ever mark it stale: a module fixed and released tomorrow leaves
+        // yesterday's "the validator failed" standing as a claim about now.
+        CreatePair("a", "first");
+        var validator = Validator(throwing: true);
+
+        // Act.
+        var outcome = await Validate(validator, new ProjectValidationScope(_root));
+
+        // Assert.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Equal(CoreRuleIds.ValidatorFailed, stored.Problem.RuleId);
+        Assert.NotEqual("", stored.RulesVersion);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_StampsAnUnroutableVerdictWithNoRulesVersion()
+    {
+        // Arrange.
+        // The floor for the test above: it must not pass by stamping every core verdict. No
+        // module judged this file - none claims its type - so there is no rules version that
+        // could re-check the verdict, and the routing re-check is what covers it instead.
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
+
+        // Assert.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Equal(CoreRuleIds.UnknownType, stored.Problem.RuleId);
+        Assert.Equal("", stored.RulesVersion);
+    }
+
+    [Fact]
     public async Task ValidateAsync_AbandonsAHangingValidator()
     {
         // Arrange.
