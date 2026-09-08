@@ -91,7 +91,11 @@ An action declares:
 
 **The line the user drew, made structural:** the declaration says an action exists, what invokes it, what it applies to and when it is enabled. **The handler that runs when it fires stays imperative** — that is the permitted carve-out, and it is now the *only* thing in a module's client that is code. `structuralShortcutFor` and the synthesised keystroke both disappear: the library owns the keyboard, because the declaration tells it which keys mean what.
 
-Enablement already half-exists — `dragging`, `draggable`, `deletable`, `label.editable`, `connectOnRightDrag`, endpoint constraints, `layout.modes`. **Those are not replaced.** They are the same idea stated per-concern, and the design keeps them, because a mechanism that already reads correctly should not be relitigated to satisfy a symmetry nobody asked for. `enabled` bindings extend the idea to actions, which is where it stops today.
+Enablement already half-exists — `dragging`, `draggable`, `deletable`, `label.editable`, `connectOnRightDrag`, endpoint constraints, `layout.modes`. **Those are not replaced.** They are the same idea stated per-concern, and the design keeps them, because a mechanism that already reads correctly should not be relitigated to satisfy a symmetry nobody asked for.
+
+**`enabled` bindings extend the idea to two places it does not reach: actions, and anchors.** `AnchorSet` says *where* anchors are — `edge`, `compass`, `sides`, `points` — and says nothing about whether they are shown or usable. Requirement 2.4 is explicit that the declaration states **whether an anchor is visible or enabled and never how it looks**, so an anchor gains a `visible` and an `enabled` binding on the same mechanism as an action's. That all twenty-nine anchor declarations in the tree are `{ kind: "edge" }` is why this reads as a small addition: no module has ever needed the positional half, and the half they do need is the one that was missing.
+
+*Added on 2026-09-08 after the design was approved: the mechanical coverage diff against the tasks found Requirement 2.4 claimed by nothing, and tracing it back showed the design had not addressed it either. Recorded as a correction rather than folded in silently.*
 
 ### What crosses the wire, and a nuance on the user's ruling
 
