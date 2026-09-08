@@ -21,13 +21,13 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - **The collection case is the acceptance**, not a variant of it: a declaration must express `owl-card`'s shape — a header, a badge line present only when its list is non-empty, and one line per entry of a model collection composed as `predicate: value annotation` and truncated to the box. A design that passes with three fixed slots has not satisfied this task.
   - _Requirements: 2.2, 2.3, 3.1_
 
-- [ ] 3. `decorations`
+- [-] 3. `decorations`
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - The closed glyph set — `line`, `path`, `circle`, `rect`, named marker — with bound geometry, class and optional text. Drawn relative to its element, **no hit-testing, no gesture, no anchor**; anything needing those is an element type.
   - Acceptance is the five renderers that use no shared component today: a stub, a badge, an annotation, a target.
   - _Requirements: 3.2_
 
-- [ ] 4. `background`
+- [-] 4. `background`
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - Bands, axes with end labels and rotated titles, gridlines, and regions bound to model collections. Beneath everything, `aria-hidden`, takes no gestures.
   - Acceptance is `wardley-map`'s twenty-one background lines and `timeline`'s ruler — two instances, which is what makes it a category rather than a special case.
