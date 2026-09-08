@@ -1,6 +1,7 @@
 import type { Binding, Condition } from "./binding";
 import type { BackgroundDeclaration } from "./background";
 import type { ActionDeclaration, DeclaredFlag } from "./actions";
+import type { ChromeDeclaration } from "./chrome";
 
 /**
  * The diagram definition: the one declarative place that states what a diagram type allows
@@ -583,6 +584,12 @@ export interface DiagramDefinition {
    */
   extent?: ShapeBounds;
   background?: DiagramBackground;
+  /**
+   * What the canvas shows AROUND the diagram: loading, unavailable, a title, a legend, and
+   * view-fixed rulers. Eleven percent of every module client is this today, hand-written, and
+   * two modules showing the same state show it differently.
+   */
+  chrome?: ChromeDeclaration;
   /**
    * Every action this diagram type offers, with what invokes each and whether it is enabled.
    *
