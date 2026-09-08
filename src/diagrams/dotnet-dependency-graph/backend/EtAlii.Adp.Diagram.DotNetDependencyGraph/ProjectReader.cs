@@ -193,13 +193,13 @@ public sealed class ProjectReader
 
             if (string.IsNullOrWhiteSpace(version))
             {
-                version = CentrallyManagedVersionOf(id!, directory);
+                version = CentrallyManagedVersionOf(id, directory);
             }
 
             // Null rather than "" when nothing could be found: not discoverable and empty are
             // different answers, and the property grid renders them differently (Requirement 4.4).
             references.Add(new PackageReferenceReading(
-                id!.Trim(),
+                id.Trim(),
                 string.IsNullOrWhiteSpace(version) ? null : version.Trim()));
         }
 

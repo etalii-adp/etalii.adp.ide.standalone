@@ -35,7 +35,7 @@ public sealed class SolutionWatcherTests : IDisposable
         File.WriteAllText(watched, "<Solution><Project Path=\"A.csproj\" /></Solution>");
 
         // Assert.
-        Assert.True(stale.Wait(TimeSpan.FromSeconds(10)), "The watcher did not report the change.");
+        Assert.True(stale.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken), "The watcher did not report the change.");
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class SolutionWatcherTests : IDisposable
 
         // Assert. A short wait: this asserts an absence, so it can only ever be evidence rather
         // than proof - but a wait many times the settle delay makes it good evidence.
-        Assert.False(stale.Wait(TimeSpan.FromMilliseconds(500)), "The watcher woke for a file the graph never read.");
+        Assert.False(stale.Wait(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken), "The watcher woke for a file the graph never read.");
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class SolutionWatcherTests : IDisposable
         }
 
         // Assert.
-        Assert.True(stale.Wait(TimeSpan.FromSeconds(10)), "The watcher did not report the burst.");
+        Assert.True(stale.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken), "The watcher did not report the burst.");
         Thread.Sleep(400); // well past the settle delay, so a second report would have arrived
         Assert.Equal(1, Volatile.Read(ref reports));
     }
@@ -108,7 +108,7 @@ public sealed class SolutionWatcherTests : IDisposable
         File.WriteAllText(watched, "<Solution><Project Path=\"A.csproj\" /></Solution>");
 
         // Assert.
-        Assert.False(stale.Wait(TimeSpan.FromMilliseconds(500)), "A disposed watcher still reported.");
+        Assert.False(stale.Wait(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken), "A disposed watcher still reported.");
     }
 
     public void Dispose()
