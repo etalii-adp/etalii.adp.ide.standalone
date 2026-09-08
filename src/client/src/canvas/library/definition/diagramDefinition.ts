@@ -455,6 +455,20 @@ export function isCustomShape(shape: ShapeKind): shape is CustomShapeRef {
 export interface ClassDeclaration {
   className: string | Binding;
   when?: Condition;
+  /**
+   * What the class lands on: the SHAPE's own body, or the group wrapping shape, labels and
+   * decorations together.
+   *
+   * <b>Both are needed and a module means different things by them</b>, which the single-label
+   * migrations made unmissable: `dotnet-dependency-element-project` selects the whole element -
+   * its box, its two lines of text - while `dotnet-dependency-node` is the box's own fill and
+   * stroke. Collapsing the two would put a descendant selector's anchor inside the thing it is
+   * supposed to contain, and a test looking for `rect` INSIDE `.dotnet-dependency-element` would
+   * find nothing.
+   *
+   * Defaults to `shape`, which is where a class most often bites.
+   */
+  on?: "element" | "shape";
 }
 
 /** Paint read from the model. Theme token names, exactly as {@link ElementStyle} takes them. */
@@ -514,6 +528,23 @@ export interface ElementTypeDefinition {
   decorations?: readonly DecorationDeclaration[];
   /** Actions this type offers, beyond the ones the whole diagram declares. */
   actions?: readonly ActionDeclaration[];
+  /**
+   * How an element reaches a screen reader and the keyboard.
+   *
+   * <b>Register entry G23, and the same three rows as G22</b> - ansible-structure,
+   * dotnet-dependency-graph and helm-charts each set `role`, `tabIndex` and an `aria-label` on
+   * the element they render. Left undeclared, migrating those three would quietly drop an
+   * element out of the tab order and off the accessibility tree: a regression no test in this
+   * repository would have reported, which is exactly why it belongs in the declaration rather
+   * than in whatever a renderer remembered to pass.
+   */
+  accessibility?: {
+    role?: string;
+    /** In the tab order, as `tabIndex={0}` puts it. */
+    focusable?: boolean;
+    /** The accessible name. Usually the same binding as {@link tooltip}, and separate because they are. */
+    label?: Binding;
+  };
   anchors: AnchorSet;
   sizing: SizingRule;
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
