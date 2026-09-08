@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/declarative-diagram-modules/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-08T13:46:47.369Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788875207067_zrszgewpl",
+      "approvalTitle": "declarative-diagram-modules design"
+    }
+  ]
+}
