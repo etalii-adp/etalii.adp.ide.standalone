@@ -15,7 +15,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - Tested: each binding form; a path that does not resolve draws nothing rather than throwing; a collection binding over an empty list yields nothing.
   - _Requirements: 2.5, 3.1_
 
-- [ ] 2. `labels` — multiple, bound, stacked
+- [-] 2. `labels` — multiple, bound, stacked
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - The text declaration of the design's table: `text` binding, `slot`/`offset`, `stack` for collections, `typography`, `editable`, `truncate`, `when`, `tooltip`. `LabelRule` is superseded; a single-label module writes one entry.
   - **The collection case is the acceptance**, not a variant of it: a declaration must express `owl-card`'s shape — a header, a badge line present only when its list is non-empty, and one line per entry of a model collection composed as `predicate: value annotation` and truncated to the box. A design that passes with three fixed slots has not satisfied this task.
