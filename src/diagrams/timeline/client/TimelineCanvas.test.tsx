@@ -297,6 +297,23 @@ describe("the timeline canvas, on the library", () => {
     expect(hint!.textContent).toContain("row 1");
   });
 
+  it("shows the landing row as a WHOLE row, not the fraction it is dragged to", () => {
+    // THE ASSERTION `toContain("row 1")` CANNOT MAKE, and a sabotage found the gap: an
+    // unrounded row reads "row 1.03333" and contains "row 1" as a substring, so the test above
+    // stays green against a hint that shows a fraction of a row. Only an exact tail
+    // discriminates - the same shape of vacuity as a membership check against a uniform shift.
+    const { container } = renderCanvas();
+    const units = unitsOf(currentModel);
+    const element = elementOn(container, "aaa");
+    const y = units.y(0) + 18;
+
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 200, clientY: y }));
+    fireEvent(element, pointer("pointermove", { clientX: 300, clientY: y + ROW_HEIGHT + 4 }));
+
+    const hint = container.querySelector(".timeline-hint")!;
+    expect(hint.textContent!.endsWith("· row 1")).toBe(true);
+  });
+
   it("relates the source to the target in one stateless call, in the gesture's own direction", () => {
     const { container } = renderCanvas();
     const units = unitsOf(currentModel);
