@@ -1,4 +1,4 @@
-import { holds, resolveMany, type BindingSource } from "./binding";
+import { holds, resolveEntries, resolveMany, resolveOneAt, type BindingSource } from "./binding";
 import type { LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
 
 /**
@@ -57,6 +57,33 @@ function trimmedToWidth(text: string, width: number): string {
 }
 
 function baselineOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: number; y: number; anchor: "start" | "middle" | "end" } {
+  const placed = placementOf(declaration, bounds);
+  // A declared alignment overrides the placement's own, and moves the x to the edge it names:
+  // an `end` label sits at the box's right edge, which is what shacl's badges and cardinalities
+  // do (sufficiency row 20) and what a vertical slot fraction cannot say.
+  if (declaration.align === undefined || declaration.offset !== undefined) {
+    return placed;
+  }
+
+  return { x: alignedX(declaration.align, bounds), y: placed.y, anchor: declaration.align };
+}
+
+/** Where a column or an aligned label sits horizontally, for the alignment it declares. */
+function alignedX(align: "start" | "middle" | "end", bounds: ShapeBounds, insetX = LABEL_INSET): number {
+  switch (align) {
+    case "start":
+      return bounds.x + insetX;
+    case "end":
+      return bounds.x + bounds.width - insetX;
+    case "middle":
+      return bounds.x + bounds.width / 2;
+  }
+}
+
+/** How far from an edge an aligned label or column sits, when it does not say. */
+const LABEL_INSET = 8;
+
+function placementOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: number; y: number; anchor: "start" | "middle" | "end" } {
   const centreX = bounds.x + bounds.width / 2;
   const centreY = bounds.y + bounds.height / 2;
 
@@ -89,10 +116,33 @@ function baselineOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: nu
  * resolver's rules, not new ones — this function adds position and nothing else, which is what
  * keeps the two testable apart.
  */
+/**
+ * Typography with a view-dependent size resolved, if it declares one.
+ *
+ * <b>Sufficiency row 27.</b> A Wardley map's stage and axis labels hold a readable size as the
+ * map zooms while the boundaries they name do not, because a position is only meaningful
+ * against its own axes - so the text has to grow in canvas units exactly as the view does.
+ * The module computes that today from the view width; the library is what knows the view.
+ *
+ * The clamp is the declaration's, not a default: a label that grew without bound would swallow
+ * the map at the far end of a zoom, and one that shrank without bound would vanish.
+ */
+export function scaledTypography(typography: LabelTypography | undefined, viewScale: number): LabelTypography | undefined {
+  const scale = typography?.scaleWithView;
+  if (typography === undefined || scale === undefined) {
+    return typography;
+  }
+
+  const factor = Math.max(scale.min, Math.min(scale.max, viewScale));
+  return { ...typography, fontSize: (typography.fontSize ?? 12) * factor };
+}
+
 export function layoutLabels(
   declarations: readonly LabelDeclaration[] | undefined,
   source: BindingSource,
   bounds: ShapeBounds,
+  /** The view's width over the definition's own extent - 1 when the diagram declares none. */
+  viewScale = 1,
 ): readonly LaidOutLabel[] {
   if (!declarations || declarations.length === 0) {
     return [];
@@ -105,10 +155,12 @@ export function layoutLabels(
       return;
     }
 
-    const lines = resolveMany(declaration.text, source);
-    if (lines.length === 0) {
+    const entries = resolveEntries(declaration.text, source);
+    if (entries.length === 0) {
       return;
     }
+
+    const lines = entries.map((entry) => entry.text);
 
     const base = baselineOf(declaration, bounds);
     const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
@@ -116,12 +168,35 @@ export function layoutLabels(
 
     lines.forEach((line, lineIndex) => {
       const y = stack ? base.y + (stack.start ?? 0) + lineIndex * stack.lineHeight : base.y;
+      for (const column of declaration.columns ?? []) {
+        // The entry's OWN root: for a collection, the item this line came from.
+        const text = resolveOneAt(column.text, entries[lineIndex]!.root);
+        if (text === null) {
+          continue;
+        }
+
+        const align = column.align ?? "start";
+        laidOut.push({
+          text: column.truncate ? trimmedToWidth(text, bounds.width) : text,
+          x: alignedX(align, bounds, column.insetX),
+          y,
+          anchor: align,
+          typography: scaledTypography(declaration.typography, viewScale),
+          // Never editable: a column is a second value on somebody else's line, and an editor
+          // over it would commit to a field the line does not name.
+          editable: false,
+          className: column.className,
+          declarationIndex,
+          lineIndex,
+        });
+      }
+
       laidOut.push({
         text: declaration.truncate ? trimmedToWidth(line, bounds.width) : line,
         x: base.x,
         y,
         anchor: base.anchor,
-        typography: declaration.typography,
+        typography: scaledTypography(declaration.typography, viewScale),
         // A collection line has no single authored value to write back to, so it is never
         // editable however the declaration is written. Stated here rather than trusted to the
         // author, because an editor over a computed line would commit to nothing.

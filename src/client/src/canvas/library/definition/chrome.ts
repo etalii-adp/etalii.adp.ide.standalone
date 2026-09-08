@@ -1,4 +1,4 @@
-import { holds, resolveMany, resolveOne, type Binding, type BindingSource, type Condition } from "./binding";
+import { formatEpochSeconds, holds, resolveMany, resolveOne, type Binding, type BindingSource, type Condition, type TemporalFormat } from "./binding";
 import type { LabelTypography } from "./diagramDefinition";
 
 /**
@@ -56,8 +56,11 @@ export interface RulerRung {
   /**
    * How a tick at this rung is labelled. A format the library understands, not a function:
    * `"yyyy"`, `"MMM"`, `"d MMM"`, `"HH:mm"`, or `"number"` for a plain count.
+   *
+   * The same closed set a binding's `number.format` uses, and the SAME formatter behind it: a
+   * ruler's tick and a label bound to the same instant must read identically.
    */
-  label: "yyyy" | "MMM" | "MMM yyyy" | "d MMM" | "HH:mm" | "HH:mm:ss" | "number";
+  label: TemporalFormat;
 }
 
 /** A ruler pinned to the view rather than to the diagram. */
@@ -169,47 +172,11 @@ function approximateSpan(rung: RulerRung): number {
   }
 }
 
-function pad(value: number): string {
-  return value < 10 ? `0${value}` : String(value);
-}
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/**
- * A tick's label.
- *
- * <b>UTC throughout, deliberately.</b> Timeline's own ruler takes times at face value with no
- * timezone, so that the same document shows the same ruler on every machine; a formatter using
- * local time would shift every label by the viewer's offset and the defect would be invisible to
- * whoever wrote it.
- */
-function labelOf(at: number, format: RulerRung["label"]): string {
-  if (format === "number") {
-    return String(at);
-  }
-
-  const date = new Date(at * 1000);
-  switch (format) {
-    case "yyyy":
-      return String(date.getUTCFullYear());
-    case "MMM":
-      return MONTHS[date.getUTCMonth()]!;
-    case "MMM yyyy":
-      return `${MONTHS[date.getUTCMonth()]!} ${date.getUTCFullYear()}`;
-    case "d MMM":
-      return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]!}`;
-    case "HH:mm":
-      return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
-    case "HH:mm:ss":
-      return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
-  }
-}
-
-function fixedTicks(from: number, to: number, step: number, format: RulerRung["label"]): ResolvedTick[] {
+function fixedTicks(from: number, to: number, step: number, format: TemporalFormat): ResolvedTick[] {
   const ticks: ResolvedTick[] = [];
   // Round boundaries, so a label falls on the hour rather than wherever the view happens to start.
   for (let at = Math.ceil(from / step) * step; at <= to; at += step) {
-    ticks.push({ at, label: labelOf(at, format) });
+    ticks.push({ at, label: formatEpochSeconds(at, format) });
   }
 
   return ticks;
@@ -220,7 +187,7 @@ function calendarTicks(
   to: number,
   unit: "month" | "quarter" | "year",
   count: number,
-  format: RulerRung["label"],
+  format: TemporalFormat,
 ): ResolvedTick[] {
   const ticks: ResolvedTick[] = [];
   const start = new Date(from * 1000);
@@ -235,7 +202,7 @@ function calendarTicks(
     }
 
     if (at >= from) {
-      ticks.push({ at, label: labelOf(at, format) });
+      ticks.push({ at, label: formatEpochSeconds(at, format) });
     }
 
     month += months;

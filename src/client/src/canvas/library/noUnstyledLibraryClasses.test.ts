@@ -56,6 +56,10 @@ describe("no unstyled library classes", () => {
     // `typography.color`, applied inline, or from the module's `className` on the surrounding
     // group - which is where a decoration's colour belongs, since the notation owns it.
     "library-decoration-text",
+    // The inner ring of a `double-ellipse`, painted by the SAME inline `style={paint}` as the
+    // outer one it sits inside - the `library-shape` case exactly, and listed for that reason
+    // rather than because nobody got round to a rule.
+    "library-shape-inner",
     "library-connection",
     "library-connection-label",
     "library-connection-line",

@@ -118,3 +118,47 @@ describe("decorations — resolution rules", () => {
     expect(resolveDecorations([], source({}), bounds)).toEqual([]);
   });
 });
+
+/**
+ * THE PROBLEM MARK AND THE POLARITY ARC — register entries G6 and G11.
+ *
+ * Both were unfillable rows: a severity class the library cannot know, and an arc that reads
+ * as a stray curve without its arrowhead.
+ */
+describe("decorations — what rows 3, 4 and 8 needed", () => {
+  it("binds a decoration's class, so a severity the library never heard of can colour it (G6)", () => {
+    const declaration: DecorationDeclaration = {
+      glyph: "marker",
+      marker: "warning",
+      className: { template: "pipeline-problem-mark-{payload.problem.severity}" },
+      text: { path: "payload.problem.glyph" },
+      tooltip: { path: "payload.problem.title" },
+      when: { path: "payload.problem", is: "present" },
+    };
+
+    const resolved = resolveDecorations([declaration], source({ problem: { severity: "error", glyph: "✖", title: "Stage has no jobs" } }), bounds);
+
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0]!.className).toBe("pipeline-problem-mark-error");
+    expect(resolved[0]!.tooltip).toBe("Stage has no jobs");
+    // And an element with no problem draws no mark at all - the condition, not an empty glyph.
+    expect(resolveDecorations([declaration], source({}), bounds)).toEqual([]);
+  });
+
+  it("puts an arrowhead on the polarity arc, without which it reads as a stray curve (G11)", () => {
+    // causal-loop's sweep: reinforcing clockwise, balancing anticlockwise, each a bound path
+    // with an end marker, chosen by a condition rather than by a function argument.
+    const declarations: DecorationDeclaration[] = [
+      { glyph: "path", d: { path: "payload.clockwisePath" }, markerEnd: "arrow", when: { path: "payload.reinforcing", is: "true" } },
+      { glyph: "path", d: { path: "payload.anticlockwisePath" }, markerEnd: "arrow", when: { path: "payload.reinforcing", is: "false" } },
+    ];
+
+    const reinforcing = resolveDecorations(declarations, source({ reinforcing: true, clockwisePath: "M 0 0 A 1 1", anticlockwisePath: "M 1 1 A 0 0" }), bounds);
+    expect(reinforcing).toHaveLength(1);
+    expect(reinforcing[0]!.d).toBe("M 0 0 A 1 1");
+    expect(reinforcing[0]!.markerEnd).toBe("arrow");
+
+    const balancing = resolveDecorations(declarations, source({ reinforcing: false, clockwisePath: "M 0 0 A 1 1", anticlockwisePath: "M 1 1 A 0 0" }), bounds);
+    expect(balancing.map((decoration) => decoration.d)).toEqual(["M 1 1 A 0 0"]);
+  });
+});

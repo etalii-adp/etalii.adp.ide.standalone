@@ -10,7 +10,8 @@ import {
   type FieldBinding,
   type TemplateBinding,
 } from "./binding";
-import type { DeclaredNumber, ShapeBounds } from "./diagramDefinition";
+import type { DeclaredNumber, LabelTypography, ShapeBounds } from "./diagramDefinition";
+import { scaledTypography } from "./labels";
 
 /**
  * `background` — the coordinate-space backdrop a notation draws beneath everything.
@@ -46,6 +47,8 @@ export interface BandDeclaration {
   /** A rule at the band's leading edge - wardley's boundary between two stages. */
   edge?: boolean;
   className?: string;
+  /** How the band's label reads. `scaleWithView` is what keeps a stage name legible when zoomed. */
+  typography?: LabelTypography;
   when?: Condition;
 }
 
@@ -56,6 +59,7 @@ export interface AxisDeclaration {
   startLabel?: Binding;
   endLabel?: Binding;
   className?: string;
+  typography?: LabelTypography;
 }
 
 /** One rule across the canvas at a fixed proportion. */
@@ -76,11 +80,56 @@ export interface RegionDeclaration {
   className?: string;
 }
 
+/**
+ * One positioned item per entry of a collection - a glyph, a caption, or both.
+ *
+ * <b>Sufficiency row 27 justifies this, and it is the last thing a Wardley backdrop needed.</b>
+ * Bands, axes, gridlines and regions covered the map's frame; what they could not express is
+ * the map's own furniture - accelerators drawn as a short rule with a name, notes as free text,
+ * numbered annotations as a circle with its number and its text on hover. All three are
+ * collection-driven items at model positions, which is a different shape from a slab or a rule.
+ *
+ * <b>Nested collections are deliberately not supported</b>, and this is the honest limit rather
+ * than a silent one: an annotation pinned in three places is three items, so the module's fold
+ * presents a flat list. Two levels of item-rooting is where a path language starts becoming a
+ * query language, and a query language in a declaration is the escape hatch by another name.
+ */
+export interface MarkDeclaration {
+  /** A collection path: one mark per entry, its own paths rooted at the ITEM. */
+  each: Binding;
+  x: DeclaredNumber;
+  y: DeclaredNumber;
+  /** What is drawn at the position. `none` is a caption with no glyph - a map's note. */
+  glyph?: "none" | "circle" | "rule";
+  radius?: DeclaredNumber;
+  /** A `rule`'s half-length, so it is centred on the position the way the map draws it. */
+  width?: DeclaredNumber;
+  label?: Binding;
+  labelOffset?: { x: number; y: number };
+  labelAnchor?: "start" | "middle" | "end";
+  /** The `<title>` an item carries - an annotation's text, which is how the map shows it. */
+  tooltip?: Binding;
+  className?: string;
+  typography?: LabelTypography;
+  when?: Condition;
+}
+
 export interface BackgroundDeclaration {
   bands?: readonly BandDeclaration[];
   axes?: readonly AxisDeclaration[];
   gridlines?: readonly GridlineDeclaration[];
   regions?: readonly RegionDeclaration[];
+  marks?: readonly MarkDeclaration[];
+}
+
+/** A circle a mark draws, in absolute canvas units. */
+export interface BackgroundCircle {
+  cx: number;
+  cy: number;
+  r: number;
+  className?: string;
+  tooltip?: string;
+  key: string;
 }
 
 export interface BackgroundRect {
@@ -108,6 +157,8 @@ export interface BackgroundText {
   anchor: "start" | "middle" | "end";
   rotate?: number;
   className?: string;
+  /** Resolved from the declaration's typography, with any view-dependent size applied. */
+  typography?: LabelTypography;
   key: string;
 }
 
@@ -116,6 +167,7 @@ export interface ResolvedBackground {
   rects: BackgroundRect[];
   lines: BackgroundLine[];
   texts: BackgroundText[];
+  circles: BackgroundCircle[];
 }
 
 function numberOf(value: DeclaredNumber | undefined, source: BindingSource, fallback: number): number {
@@ -190,13 +242,16 @@ export function resolveBackground(
   background: BackgroundDeclaration | undefined,
   source: BindingSource,
   extent: ShapeBounds,
+  /** The view's width over the definition's own extent, for a declared `scaleWithView`. */
+  viewScale = 1,
 ): ResolvedBackground {
   const rects: BackgroundRect[] = [];
   const lines: BackgroundLine[] = [];
   const texts: BackgroundText[] = [];
+  const circles: BackgroundCircle[] = [];
 
   if (!background) {
-    return { rects, lines, texts };
+    return { rects, lines, texts, circles };
   }
 
   const atX = (fraction: number) => extent.x + fraction * extent.width;
@@ -233,8 +288,8 @@ export function resolveBackground(
       if (label !== null) {
         texts.push(
           vertical
-            ? { x: atX((start + end) / 2), y: extent.y + extent.height + 34, text: label, anchor: "middle", className: suffixed(band.className, "label"), key: `${key}-label` }
-            : { x: extent.x - 8, y: atY((start + end) / 2), text: label, anchor: "end", className: suffixed(band.className, "label"), key: `${key}-label` },
+            ? { x: atX((start + end) / 2), y: extent.y + extent.height + 34, text: label, anchor: "middle", className: suffixed(band.className, "label"), typography: scaledTypography(band.typography, viewScale), key: `${key}-label` }
+            : { x: extent.x - 8, y: atY((start + end) / 2), text: label, anchor: "end", className: suffixed(band.className, "label"), typography: scaledTypography(band.typography, viewScale), key: `${key}-label` },
         );
       }
     });
@@ -254,8 +309,8 @@ export function resolveBackground(
     if (title !== null) {
       texts.push(
         vertical
-          ? { x: extent.x - 34, y: extent.y + extent.height / 2, text: title, anchor: "middle", rotate: -90, className: suffixed(axis.className, "title"), key: `${key}-title` }
-          : { x: extent.x + extent.width / 2, y: extent.y + extent.height + 66, text: title, anchor: "middle", className: suffixed(axis.className, "title"), key: `${key}-title` },
+          ? { x: extent.x - 34, y: extent.y + extent.height / 2, text: title, anchor: "middle", rotate: -90, className: suffixed(axis.className, "title"), typography: scaledTypography(axis.typography, viewScale), key: `${key}-title` }
+          : { x: extent.x + extent.width / 2, y: extent.y + extent.height + 66, text: title, anchor: "middle", className: suffixed(axis.className, "title"), typography: scaledTypography(axis.typography, viewScale), key: `${key}-title` },
       );
     }
 
@@ -263,8 +318,8 @@ export function resolveBackground(
     if (startLabel !== null) {
       texts.push(
         vertical
-          ? { x: extent.x - 14, y: extent.y + 12, text: startLabel, anchor: "end", className: suffixed(axis.className, "end"), key: `${key}-start` }
-          : { x: extent.x, y: extent.y + extent.height + 18, text: startLabel, anchor: "start", className: suffixed(axis.className, "end"), key: `${key}-start` },
+          ? { x: extent.x - 14, y: extent.y + 12, text: startLabel, anchor: "end", className: suffixed(axis.className, "end"), typography: scaledTypography(axis.typography, viewScale), key: `${key}-start` }
+          : { x: extent.x, y: extent.y + extent.height + 18, text: startLabel, anchor: "start", className: suffixed(axis.className, "end"), typography: scaledTypography(axis.typography, viewScale), key: `${key}-start` },
       );
     }
 
@@ -272,8 +327,8 @@ export function resolveBackground(
     if (endLabel !== null) {
       texts.push(
         vertical
-          ? { x: extent.x - 14, y: extent.y + extent.height, text: endLabel, anchor: "end", className: suffixed(axis.className, "end"), key: `${key}-end` }
-          : { x: extent.x + extent.width, y: extent.y + extent.height + 18, text: endLabel, anchor: "end", className: suffixed(axis.className, "end"), key: `${key}-end` },
+          ? { x: extent.x - 14, y: extent.y + extent.height, text: endLabel, anchor: "end", className: suffixed(axis.className, "end"), typography: scaledTypography(axis.typography, viewScale), key: `${key}-end` }
+          : { x: extent.x + extent.width, y: extent.y + extent.height + 18, text: endLabel, anchor: "end", className: suffixed(axis.className, "end"), typography: scaledTypography(axis.typography, viewScale), key: `${key}-end` },
       );
     }
   });
@@ -317,5 +372,38 @@ export function resolveBackground(
     });
   });
 
-  return { rects, lines, texts };
+  (background.marks ?? []).forEach((mark, markIndex) => {
+    if (!holds(mark.when, source)) {
+      return;
+    }
+
+    itemsOf(mark.each, source).forEach((item, index) => {
+      const key = `mark-${markIndex}-${index}`;
+      const x = atX(itemNumberOf(mark.x, item, 0));
+      const y = atY(itemNumberOf(mark.y, item, 0));
+      const tooltip = itemTextOf(mark.tooltip, item) ?? undefined;
+
+      if (mark.glyph === "circle") {
+        circles.push({ cx: x, cy: y, r: itemNumberOf(mark.radius, item, 8), className: mark.className, tooltip, key });
+      } else if (mark.glyph === "rule") {
+        const half = itemNumberOf(mark.width, item, 16);
+        lines.push({ x1: x - half, y1: y, x2: x + half, y2: y, className: mark.className, key });
+      }
+
+      const label = itemTextOf(mark.label, item);
+      if (label !== null) {
+        texts.push({
+          x: x + (mark.labelOffset?.x ?? 0),
+          y: y + (mark.labelOffset?.y ?? 0),
+          text: label,
+          anchor: mark.labelAnchor ?? "start",
+          className: suffixed(mark.className, "label"),
+          typography: scaledTypography(mark.typography, viewScale),
+          key: `${key}-label`,
+        });
+      }
+    });
+  });
+
+  return { rects, lines, texts, circles };
 }

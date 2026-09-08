@@ -1,4 +1,4 @@
-import type { Binding, Condition } from "./binding";
+import type { Binding, BindingPath, Condition } from "./binding";
 import type { BackgroundDeclaration } from "./background";
 import type { ActionDeclaration, DeclaredFlag } from "./actions";
 import type { ChromeDeclaration } from "./chrome";
@@ -40,6 +40,14 @@ export interface ShapeBounds {
  * connecting and anchoring rather than a decorated box.
  */
 export type BuiltInShape =
+  /**
+   * <b>Draws no body at all</b>, so an element that is only its labels and decorations - a
+   * connector stub, a loop badge, a bare annotation - can still be an element type.
+   *
+   * Sufficiency rows 2, 8, 14 and 25 justify it. Before this, `shape` was required and every
+   * built-in drew something, so those four had no expression that was not a custom renderer.
+   */
+  | "none"
   | "box"
   | "centered-box"
   | "ellipse"
@@ -52,10 +60,18 @@ export type BuiltInShape =
   | "hexagon"
   | "pill"
   | "parallelogram"
-  | "cylinder";
+  | "cylinder"
+  /**
+   * A point in time rather than a period: the span's dot form (row 26). A different drawing
+   * rather than a class on the same one, which is why it is a shape and not a style.
+   */
+  | "moment"
+  /** A ring inside the ellipse - owl's `doubled` and wardley's submap mark (rows 18, 27, 28). */
+  | "double-ellipse";
 
 /** Every built-in shape, enumerable - what a guard walks and a toolbox derives icons from. */
 export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
+  "none",
   "box",
   "centered-box",
   "ellipse",
@@ -69,6 +85,8 @@ export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
   "pill",
   "parallelogram",
   "cylinder",
+  "moment",
+  "double-ellipse",
 ];
 
 /**
@@ -173,6 +191,15 @@ export interface LabelTypography {
   fontStyle?: "normal" | "italic";
   /** A theme token name. */
   color?: string;
+  /**
+   * Holds a readable size as the diagram is zoomed, between these bounds.
+   *
+   * Sufficiency row 27: a Wardley map's stage and axis labels stay readable as the map zooms
+   * while the boundaries they name do not, because a position is only meaningful against its
+   * own axes. The module computes that today from the view width; declared, it is the library
+   * that knows the view, which is the right place for it.
+   */
+  scaleWithView?: { min: number; max: number };
 }
 
 
@@ -235,8 +262,24 @@ export interface DecorationDeclaration {
   textAt?: { x: DeclaredNumber; y: DeclaredNumber };
   textAnchor?: "start" | "middle" | "end";
   typography?: LabelTypography;
-  /** Classes for the glyph, so colour stays in the stylesheet. */
-  className?: string;
+  /**
+   * Classes for the glyph, so colour stays in the stylesheet.
+   *
+   * <b>Bindable since the sufficiency table</b> (register entry G6): a problem mark is
+   * `pipeline-problem-mark-{payload.problem.severity}`, and a severity the library does not
+   * know cannot be spelled as a fixed string. The library still says nothing about what a
+   * problem IS - it draws where the module's model says one is, and colours it by a field.
+   */
+  className?: string | Binding;
+  /**
+   * An arrowhead at the end of a `line` or `path`.
+   *
+   * Sufficiency row 8: causal-loop's polarity arc is an arc WITH an arrowhead, and the sweep
+   * without the head reads as a stray curve rather than as a direction of travel.
+   */
+  markerEnd?: MarkerKind;
+  /** The `<title>` a decoration carries - a problem mark's message, an annotation's text. */
+  tooltip?: Binding;
   /** Drawn only when this holds - a badge that appears for one polarity and not the other. */
   when?: Condition;
 }
@@ -287,6 +330,34 @@ export interface LabelDeclaration {
   tooltip?: Binding;
   /** Extra classes for the drawn text, so colour stays in the stylesheet where a token is not enough. */
   className?: string;
+  /**
+   * Which end of the text sits at its position. Defaults to the placement's own alignment.
+   *
+   * Sufficiency row 20: shacl's badges and cardinalities are right-aligned to the card's edge,
+   * which slots - vertical fractions - have no way to say.
+   */
+  align?: "start" | "middle" | "end";
+  /**
+   * Further columns on the SAME line, each with its own inset and alignment.
+   *
+   * <b>Sufficiency row 20 is the only reason this exists</b>, and it is a real one: a shacl
+   * constraint row is a path on the left, a summary in the middle and a cardinality on the
+   * right, per item of a collection. Declaring three labels over the same collection would
+   * resolve it three times and, worse, let the three drift out of step if one had a condition.
+   * A column is text plus where it sits; it is not a nested label, and deliberately carries no
+   * `when`, no collection of its own and no editability.
+   */
+  columns?: readonly LabelColumn[];
+}
+
+/** One further column on a label's line. See {@link LabelDeclaration.columns}. */
+export interface LabelColumn {
+  text: Binding;
+  /** Horizontal inset from the box's left edge, or from its right when aligned `end`. */
+  insetX: number;
+  align?: "start" | "middle" | "end";
+  className?: string;
+  truncate?: boolean;
 }
 
 /**
@@ -330,11 +401,86 @@ export interface RouteLabelRule {
 /** Where an element type's size comes from (Requirement 2.5). */
 export type SizingRule = "model" | "content" | "user";
 
+/**
+ * A shape chosen per element, from a field of the model.
+ *
+ * <b>Rows 5, 18, 27 and 28 justify it.</b> A wardley mark is a square when it is an anchor, a
+ * double circle when it is a submap and a circle otherwise; a c4 element carries its shape name
+ * in the document. Those are one element type drawing itself differently per element - not four
+ * types, which would fragment the notation's own vocabulary, and not a custom renderer.
+ *
+ * <b>Closed by construction</b>: the cases map to built-in shapes only. A selection that could
+ * name a `CustomShapeRef` would be the escape hatch reachable through data, which is worse than
+ * the escape hatch reachable through code, because a guard reading the source would not see it.
+ */
+export interface ShapeSelection {
+  path: BindingPath;
+  cases: Readonly<Record<string, BuiltInShape>>;
+  /** What an unresolved or unlisted value draws. Required: an element always draws something. */
+  fallback: BuiltInShape;
+}
+
+export type ShapeKind = BuiltInShape | ShapeSelection | CustomShapeRef;
+
+/**
+ * Whether a shape is a module-supplied renderer, as against a selection over built-ins.
+ *
+ * Both are objects, so `typeof shape !== "string"` no longer answers the question it used to -
+ * and every caller that asked it meant "is this a custom renderer?". Named here so the three
+ * places that ask cannot drift apart.
+ */
+export function isCustomShape(shape: ShapeKind): shape is CustomShapeRef {
+  return typeof shape !== "string" && "customShape" in shape;
+}
+
+/** One class an element carries, stated or bound, optionally conditioned. */
+export interface ClassDeclaration {
+  className: string | Binding;
+  when?: Condition;
+}
+
+/** Paint read from the model. Theme token names, exactly as {@link ElementStyle} takes them. */
+export interface BoundElementStyle {
+  fill?: Binding;
+  stroke?: Binding;
+  labelColor?: Binding;
+}
+
 /** One kind of thing a diagram draws boxes for. */
 export interface ElementTypeDefinition {
   id: string;
-  shape: BuiltInShape | CustomShapeRef;
+  shape: ShapeKind;
   style?: ElementStyle;
+  /**
+   * Paint taken from the model rather than fixed in the declaration.
+   *
+   * Sufficiency row 5: a c4 element carries its own background and text colour in the document,
+   * because the notation lets an author set them per element. `style` names theme tokens chosen
+   * once for the type, which cannot express that. Where both are given, this wins for the
+   * fields it names and `style` supplies the rest.
+   */
+  boundStyle?: BoundElementStyle;
+  /**
+   * Classes this type's elements carry, beyond the library's own.
+   *
+   * <b>Every one of the twenty-eight sufficiency rows needed this</b> (register entry G1), and
+   * it is the largest single thing the table found: a built-in shape hard-coded `library-shape`
+   * and offered no hook at all, so a migrated element would have lost its entire visual
+   * identity - its kind colour, its dashed unresolved state, its selection ring. A vocabulary
+   * that can draw the right geometry in the wrong colours has not replaced a renderer.
+   *
+   * A class may be stated outright, bound to a field - `helm-node-{payload.kind}` through a
+   * template - or conditioned, including on the canvas's own {@link InteractionState}.
+   */
+  classNames?: readonly ClassDeclaration[];
+  /**
+   * The `<title>` this type's elements carry as a whole.
+   *
+   * Rows 1, 12, 13, 17 and 21: a tooltip is the element's, not any one line's, and five
+   * renderers write one by hand today - `kind name`, with `— hosts: …` appended when known,
+   * which is a parts binding rather than a template for the reason given there.
+   */
+  tooltip?: Binding;
   /** @deprecated Superseded by {@link labels}; kept until every module has migrated. */
   label?: LabelRule;
   /**

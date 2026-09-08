@@ -174,3 +174,116 @@ describe("binding — the prohibition", () => {
     expect(called, "the resolver called a function while walking a path").toBe(false);
   });
 });
+
+/**
+ * THE FIVE THINGS THE SUFFICIENCY TABLE FOUND MISSING, and each names the row that justifies
+ * it. Nothing below was added because it seemed generally useful: a vocabulary that grows on
+ * taste rather than on a measured row is how the escape hatch comes back wearing a new coat.
+ */
+describe("binding — what the sufficiency table forced", () => {
+  it("reads the canvas's own state, which 23 of the 28 rows style on (G2)", () => {
+    const selected: BindingSource = { element, payload: {}, state: { selected: true } };
+
+    expect(holds({ path: "state.selected", is: "true" }, selected)).toBe(true);
+    expect(holds({ path: "state.dragging", is: "true" }, selected)).toBe(false);
+    // And an element nobody is touching answers the same way as one whose state is absent -
+    // the "every failure answers identically" rule, applied to a root that may not be there.
+    expect(holds({ path: "state.selected", is: "true" }, source({}))).toBe(false);
+  });
+
+  it("keeps state out of reach of a payload field with the same name", () => {
+    // The reason state is its own root rather than merged in: a module payload carrying
+    // `selected` must not be able to decide how selection looks.
+    const source_: BindingSource = { element, payload: { selected: true }, state: { selected: false } };
+
+    expect(holds({ path: "state.selected", is: "true" }, source_)).toBe(false);
+    expect(holds({ path: "payload.selected", is: "true" }, source_)).toBe(true);
+  });
+
+  it("joins a collection into one badge strip rather than a stack of lines (G4)", () => {
+    const badges = { path: "payload.badges", each: { path: "name" }, join: " · " } as const;
+
+    expect(resolveMany(badges, source({ badges: [{ name: "Dataset" }, { name: "Table" }] }))).toEqual(["Dataset · Table"]);
+    // AND AN EMPTY COLLECTION STAYS EMPTY. Joining nothing yields "", which would draw as a
+    // blank label rather than as no label - the difference between an absent badge strip and
+    // an empty one, which is exactly the distinction this specification keeps insisting on.
+    expect(resolveMany(badges, source({ badges: [] }))).toEqual([]);
+  });
+
+  it("drops an absent part AND its separator, which a template cannot (G5)", () => {
+    // The measured case: `mode · default · 2 overrides`, where "default" is conditional. The
+    // template form leaves `mode ·  · 2 overrides` behind, which is the stated limit of
+    // fillTemplate - so this is a different mechanism rather than a nicer template.
+    const badges = {
+      parts: [
+        { path: "payload.mode" },
+        { path: "payload.default", when: { path: "payload.default", is: "present" } },
+        { template: "{payload.overrides} overrides", when: { path: "payload.overrides", is: "present" } },
+      ],
+      join: " · ",
+    } as const;
+
+    expect(resolveOne(badges, source({ mode: "shared", default: "default", overrides: 2 }))).toBe("shared · default · 2 overrides");
+    expect(resolveOne(badges, source({ mode: "shared", overrides: 2 }))).toBe("shared · 2 overrides");
+    expect(resolveOne(badges, source({ mode: "shared" }))).toBe("shared");
+    expect(resolveOne(badges, source({}))).toBeNull();
+  });
+
+  it("declines the noun with the count, which a template cannot (G9)", () => {
+    const jobs = { path: "payload.jobCount", plural: { one: "job", other: "jobs" } } as const;
+
+    expect(resolveOne(jobs, source({ jobCount: 1 }))).toBe("1 job");
+    expect(resolveOne(jobs, source({ jobCount: 3 }))).toBe("3 jobs");
+    // Zero takes the plural, as English does - and a missing count draws nothing rather than
+    // "undefined jobs".
+    expect(resolveOne(jobs, source({ jobCount: 0 }))).toBe("0 jobs");
+    expect(resolveOne(jobs, source({}))).toBeNull();
+  });
+
+  it("scales and offsets a number, which is the timeline's drag hint (G16)", () => {
+    // x times seconds-per-unit plus origin, formatted as a clock: the one row whose text is
+    // arithmetic over the module's scale rather than a field of the model.
+    const hint = {
+      path: "element.x",
+      number: { times: "payload.secondsPerUnit", plus: "payload.originSeconds", format: "HH:mm" },
+    } as const;
+    const jan2026 = Date.UTC(2026, 0, 1) / 1000;
+
+    expect(resolveOne(hint, { element: { ...element, x: 3 }, payload: { secondsPerUnit: 3600, originSeconds: jan2026 } })).toBe("03:00");
+    // TIMES BEFORE PLUS, and this is the assertion that says so: with the order reversed the
+    // same declaration reads 4562:00-ish rather than 03:00, because the origin would be scaled
+    // by 3600 as well. An author guessing at precedence gets a wrong drawing, not an error.
+    expect(resolveOne({ path: "element.x", number: { times: 2, plus: 10 } }, { element: { ...element, x: 3 }, payload: {} })).toBe("16");
+    // A field that is not a number draws nothing, like every other unresolvable path.
+    expect(resolveOne({ path: "payload.name", number: { times: 2 } }, source({ name: "x" }))).toBeNull();
+  });
+
+  it("formats an instant identically to a ruler tick, because it is the same formatter", () => {
+    const at = Date.UTC(2026, 2, 9, 22, 30) / 1000;
+
+    expect(resolveOne({ path: "payload.at", number: { format: "d MMM" } }, source({ at }))).toBe("9 Mar");
+    expect(resolveOne({ path: "payload.at", number: { format: "HH:mm" } }, source({ at }))).toBe("22:30");
+  });
+});
+
+describe("binding — the palette slot (G3)", () => {
+  it("wraps an index into a fixed number of colour slots", () => {
+    // Sufficiency row 1: ansible colours a play by `playIndex % PALETTE_SLOTS`, so the
+    // fourteenth play reuses the first play's colour rather than running out. Without the
+    // third term this is arithmetic no declaration can do, and the module keeps a renderer
+    // for a class name.
+    const slot = { path: "payload.playIndex", number: { modulo: 8 } } as const;
+
+    expect(resolveOne(slot, source({ playIndex: 0 }))).toBe("0");
+    expect(resolveOne(slot, source({ playIndex: 7 }))).toBe("7");
+    expect(resolveOne(slot, source({ playIndex: 8 }))).toBe("0");
+    expect(resolveOne(slot, source({ playIndex: 13 }))).toBe("5");
+  });
+
+  it("wraps a NEGATIVE index into the same range rather than out of it", () => {
+    // JavaScript's % keeps the sign, so -1 % 8 is -1 and the class would be
+    // `ansible-play--1` - a selector that matches nothing, silently, for the elements that
+    // belong to no play. The sign is corrected here rather than left to the author.
+    expect(resolveOne({ path: "payload.playIndex", number: { modulo: 8 } }, source({ playIndex: -1 }))).toBe("7");
+  });
+});

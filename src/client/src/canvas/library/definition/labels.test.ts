@@ -140,3 +140,75 @@ describe("labels — the empty cases", () => {
     expect(layoutLabels([], source({}), bounds)).toEqual([]);
   });
 });
+
+/**
+ * COLUMNS AND ALIGNMENT — sufficiency rows 20 and 13, and nothing else.
+ *
+ * A shacl constraint row is a path on the left, a summary in the middle and a cardinality on
+ * the right, once per constraint. That is one line with three columns, not three collections.
+ */
+describe("labels — the row-with-columns case the rdf family needs", () => {
+  it("aligns a label to the box's right edge, which a vertical slot cannot say (G15)", () => {
+    const out = layoutLabels([{ text: { path: "payload.severity" }, align: "end" }], source({ severity: "Violation" }), bounds);
+
+    expect(out[0]!.anchor).toBe("end");
+    // At the right edge less the standard inset, rather than at the centre the slot would give.
+    expect(out[0]!.x).toBe(bounds.x + bounds.width - 8);
+  });
+
+  it("draws a column on the SAME line, reading the SAME item", () => {
+    const declaration: LabelDeclaration = {
+      text: { path: "payload.rows", each: { path: "path" } },
+      stack: { lineHeight: 16 },
+      columns: [{ text: { path: "cardinality" }, insetX: 8, align: "end" }],
+    };
+    const out = layoutLabels(declaration ? [declaration] : [], source({ rows: [{ path: "sh:name", cardinality: "1..1" }, { path: "sh:age", cardinality: "0..1" }] }), bounds);
+
+    const cardinalities = out.filter((line) => line.anchor === "end");
+    expect(cardinalities.map((line) => line.text)).toEqual(["1..1", "0..1"]);
+    // ON THE SAME LINE as the path it belongs to - the assertion that makes this a column
+    // rather than a second label that happens to draw nearby.
+    const paths = out.filter((line) => line.anchor !== "end");
+    expect(cardinalities.map((line) => line.y)).toEqual(paths.map((line) => line.y));
+  });
+
+  it("keeps a column paired with its own row when an earlier row resolves to nothing", () => {
+    // THE DRIFT THIS SHAPE EXISTS TO PREVENT, and the reason columns are not three separate
+    // collections: a row whose text is absent contributes no line, so a column resolved
+    // independently would slide up and pair row 2's cardinality with row 3's path. Here they
+    // come from the same entry and cannot.
+    const declaration: LabelDeclaration = {
+      text: { path: "payload.rows", each: { path: "path" } },
+      stack: { lineHeight: 16 },
+      columns: [{ text: { path: "cardinality" }, insetX: 8, align: "end" }],
+    };
+    const rows = [{ path: "sh:name", cardinality: "1..1" }, { cardinality: "0..*" }, { path: "sh:age", cardinality: "0..1" }];
+    const out = layoutLabels([declaration], source({ rows }), bounds);
+
+    const pairs = out.reduce<Record<number, string[]>>((acc, line) => {
+      (acc[line.y] ??= []).push(line.text);
+      return acc;
+    }, {});
+
+    // Sorted, because what is being claimed is the PAIRING, not the order the two are emitted
+    // in: a column drawn before its line paints the same picture.
+    expect(Object.values(pairs).map((texts) => [...texts].sort())).toEqual([
+      ["1..1", "sh:name"],
+      ["0..1", "sh:age"],
+    ]);
+  });
+
+  it("never marks a column editable, whatever the declaration says", () => {
+    const out = layoutLabels(
+      [{ text: { path: "payload.name" }, editable: true, columns: [{ text: { path: "payload.badge" }, insetX: 8 }] }],
+      source({ name: "Shape", badge: "closed" }),
+      bounds,
+    );
+
+    const badge = out.find((line) => line.text === "closed")!;
+    expect(badge.editable).toBe(false);
+    // The line itself stays editable: a column is a second value on somebody else's line, and
+    // that is the only thing being denied here.
+    expect(out.find((line) => line.text === "Shape")!.editable).toBe(true);
+  });
+});

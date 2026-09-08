@@ -1,4 +1,4 @@
-import type { CustomRouteRef, CustomShapeRef, DiagramDefinition } from "./diagramDefinition";
+import { isCustomShape, type CustomRouteRef, type CustomShapeRef, type DiagramDefinition } from "./diagramDefinition";
 
 /**
  * Checks a diagram definition at construction, before anything renders from it. The shapes of
@@ -20,7 +20,7 @@ export function validateDiagramDefinition(definition: DiagramDefinition): readon
   const knownElementTypes = new Set(definition.elementTypes.map((type) => type.id));
 
   for (const element of definition.elementTypes) {
-    if (typeof element.shape !== "string" && !isRenderableCustomShape(element.shape)) {
+    if (isCustomShape(element.shape) && !isRenderableCustomShape(element.shape)) {
       problems.push(
         `Element type "${element.id}" names custom shape "${element.shape.customShape}" without supplying its renderer and edge function.`,
       );
