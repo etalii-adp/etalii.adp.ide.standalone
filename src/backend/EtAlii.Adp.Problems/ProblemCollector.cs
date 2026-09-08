@@ -38,17 +38,24 @@ internal sealed class ProblemCollector(string root)
     }
 
     /// <summary>
-    /// A problem core itself found. Core has no rules version of its own - one would say
-    /// nothing - so <paramref name="rulesVersion"/> is empty for the verdicts that are core's
-    /// alone.
+    /// Adds a core problem to the problem collector. Core problems are identified
+    /// by their lack of a specific rules version, using a default rule ID that
+    /// indicates the issue stems from core validation logic.
     /// </summary>
+    /// <param name="path">
+    /// The file or resource path associated with the problem. This is the target
+    /// location for which the problem should be recorded.
+    /// </param>
+    /// <param name="message">
+    /// The description of the problem, detailing what the issue is.
+    /// </param>
+    /// <param name="ruleId">
+    /// The identifier for the rule that was violated. Defaults to a core rule ID
+    /// that represents unreadable issues.
+    /// </param>
     /// <param name="rulesVersion">
-    /// The module's version, for a verdict core reached ABOUT a module rather than about the
-    /// file: a validator that threw or timed out is named in its own message, and that
-    /// module's next release is exactly what should re-check it. Left empty and such a verdict
-    /// can never be marked stale, because the store has nothing to compare and the routing
-    /// re-check answers a different question - whether anything claims the type, not whether
-    /// the thing that claims it still fails.
+    /// The module's rules version involved in the problem. Core problems typically
+    /// leave this empty because they are not tied to module rules.
     /// </param>
     public void AddCore(string path, string message, string ruleId = CoreRuleIds.Unreadable, string rulesVersion = "") =>
         Add(new DiagramProblem(DiagramProblemSeverity.Error, message, ruleId), path, path, rulesVersion);

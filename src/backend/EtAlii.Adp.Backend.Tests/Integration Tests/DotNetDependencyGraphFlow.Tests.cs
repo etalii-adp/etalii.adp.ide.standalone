@@ -233,6 +233,8 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
             delivered.Where(element => element.Type == "dotnet/dependency-graph+edge"),
             element =>
             {
+                ArgumentNullException.ThrowIfNull(element);
+
                 Assert.StartsWith("depends:", element.Id.Value, StringComparison.Ordinal);
                 Assert.Contains("->", element.Id.Value, StringComparison.Ordinal);
             });

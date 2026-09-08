@@ -45,6 +45,8 @@ public class DotNetContextPropertyProviderTests
         Assert.NotEmpty(packageRows);
         Assert.All(projectRows.Concat(packageRows), row =>
         {
+            ArgumentNullException.ThrowIfNull(row);
+
             Assert.NotEqual("", row.ReadOnlyReason);
             Assert.False(row.IsEditable);
         });
@@ -111,7 +113,7 @@ public class DotNetContextPropertyProviderTests
         // that could equally mean the package has no description of its own.
 
         // Arrange.
-        var graph = GraphOf(package: new PackageNode("package:Obscure", "Obscure", ["1.0.0"], false, null));
+        var graph = GraphOf(package: new PackageNode("package:Obscure", "Obscure", ["1.0.0"], false));
 
         // Act.
         var rows = await Describe(graph, "package:Obscure");
@@ -127,7 +129,7 @@ public class DotNetContextPropertyProviderTests
         // two entries states the fact; the conflict row states what the fact means.
 
         // Arrange.
-        var graph = GraphOf(package: new PackageNode("package:Serilog", "Serilog", ["3.1.0", "4.4.0"], true, null));
+        var graph = GraphOf(package: new PackageNode("package:Serilog", "Serilog", ["3.1.0", "4.4.0"], true));
 
         // Act.
         var rows = await Describe(graph, "package:Serilog");
@@ -144,7 +146,7 @@ public class DotNetContextPropertyProviderTests
         // the condition unless something proves it stays away when the condition is false.
 
         // Arrange.
-        var graph = GraphOf(package: new PackageNode("package:Serilog", "Serilog", ["4.4.0"], false, null));
+        var graph = GraphOf(package: new PackageNode("package:Serilog", "Serilog", ["4.4.0"], false));
 
         // Act.
         var rows = await Describe(graph, "package:Serilog");
