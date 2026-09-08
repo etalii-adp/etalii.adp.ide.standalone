@@ -55,30 +55,44 @@ And the converse (Requirement 3.5): **a property added because a row needed it i
 
 Nineteen entries. Each names the rows that justify it; none is speculative. **Every one is a central extension** — a property on the library's declaration types — and none is a module carve-out.
 
-| Id | What is missing | Justified by |
-|---|---|---|
-| **G1** | **A class hook on a built-in shape.** Every built-in hard-codes `library-shape` and offers no way to add a type's own class, so a migrated element loses its entire visual identity. Needs a declared class list on the element type, and per-element classes derived from bound values. | Every row, 1–28 |
-| **G2** | **A condition over interaction state** — `selected`, `dragging`, `connectTarget`, `focused`, `expanded`. `Condition` reads the model only, and twenty-three rows put a class on one of these. | 1, 3–5, 7–13, 15–23, 26, 27 |
-| **G3** | **A categorical slot assigned across the model** — ansible's play palette index, which is an ordinal over the model's plays rather than a field on the element. | 1 |
-| **G4** | **A collection joined into one line with a separator.** Labels stack lines; badges are `join(" · ")` on one. | 3, 4, 9, 10, 12, 15, 16, 19, 20, 27 |
-| **G5** | **A line assembled from conditional parts** — `mode`, `"default"` when default, `"N overrides"` when non-zero — where an absent part leaves no separator behind. | 3, 10 |
-| **G6** | **The problem mark.** A severity badge fed by the problems service rather than the diagram model, drawn at a corner of whichever element carries a problem. | 3, 4 |
-| **G7** | **A tooltip with a conditional tail** — `kind name` alone, or `kind name — hosts: …` when hosts are known. `tooltip` exists on a label; a tooltip on the element as a whole does not. | 1, 12, 13, 17, 21 |
-| **G8** | **An element with no body** — a stub line, a loop badge, a bare annotation. `shape` is required and every built-in draws something. | 2, 8, 14, 25 |
-| **G9** | **A formatted count** — `3 jobs` / `1 job`. A template can interpolate the number; nothing can decline the plural. | 3 |
-| **G10** | **Per-element style bound from the model.** c4 stores shape, background and colour on the payload; `ElementStyle` takes theme token names fixed in the declaration. | 5 |
-| **G11** | **A decoration path chosen by a condition** — the reinforcing sweep clockwise, the balancing sweep anticlockwise, with an end marker. Two `path` decorations with `when` cover it only if a decoration may carry `markerEnd`. | 8 |
-| **G12** | **Drag-time preview requiring a model query** — the candidate parent under the pointer, ringed, with the branch that would be created. This is the one row where the honest answer may be "an event handler", and saying so here is the point: it is recorded, not hidden. | 15 |
-| **G13** | **A row-per-item block with per-item internal layout** — predicate, value and annotation composed into one line, one line per collection item, offset by index. `CollectionBinding` plus `stack` reaches this; what is missing is a **second and third column within the item's line**. | 16, 19, 20 |
-| **G14** | **A shape variant chosen per element** — square / circle / double circle, ellipse doubled. `symbol` and `ellipse` render one form each. | 18, 27, 28 |
-| **G15** | **Right-aligned and column-positioned label placement.** Slots are vertical fractions; `textAnchor="end"` at the box's right edge and a fixed x-column have no expression. | 20 |
-| **G16** | **A label from a value computed against the module's scale** — the drag hint's formatted time and row. Bindings read paths; this is arithmetic over `secondsPerUnit` and `originSeconds`. | 26 |
-| **G17** | **`span` has no `moment`** — a point in time rather than a period, which is a different drawing rather than a class. | 26 |
-| **G18** | **Background items driven by a model collection at model coordinates** — attitudes, accelerators, notes, numbered annotations. Task 4's background takes fixed lists in extent fractions. | 27 |
-| **G19** | **Typography that scales with the view** — Wardley's stage and axis labels hold a readable size as the map zooms, while the boundaries they name do not. | 27 |
+Every entry is now **closed**, and the third column says what closed it — the property added and where it lives, so a reader can check the claim rather than take it. The two rulings are marked as rulings, because a ruling is a different kind of answer from a mechanism.
 
-## Status
+| Id | What is missing | Justified by | Closed by |
+|---|---|---|---|
+| **G1** | **A class hook on a built-in shape.** Every built-in hard-codes `library-shape` and offers no way to add a type's own class, so a migrated element loses its entire visual identity. Needs a declared class list on the element type, and per-element classes derived from bound values. | Every row, 1–28 | `ElementTypeDefinition.classNames` — stated, bound or conditioned, on every built-in shape |
+| **G2** | **A condition over interaction state** — `selected`, `dragging`, `connectTarget`, `focused`, `expanded`. `Condition` reads the model only, and twenty-three rows put a class on one of these. | 1, 3–5, 7–13, 15–23, 26, 27 | `BindingSource.state`, a third root beside `element` and `payload`, read as `state.selected` |
+| **G3** | **A categorical slot assigned across the model** — ansible's play palette index, which is an ordinal over the model's plays rather than a field on the element. | 1 | `NumberFormat.modulo`, sign-corrected |
+| **G4** | **A collection joined into one line with a separator.** Labels stack lines; badges are `join(" · ")` on one. | 3, 4, 9, 10, 12, 15, 16, 19, 20, 27 | `CollectionBinding.join` |
+| **G5** | **A line assembled from conditional parts** — `mode`, `"default"` when default, `"N overrides"` when non-zero — where an absent part leaves no separator behind. | 3, 10 | `PartsBinding` |
+| **G6** | **The problem mark.** A severity badge fed by the problems service rather than the diagram model, drawn at a corner of whichever element carries a problem. | 3, 4 | `DecorationDeclaration.className` becomes bindable, plus `tooltip` — the module's model still says what a problem is |
+| **G7** | **A tooltip with a conditional tail** — `kind name` alone, or `kind name — hosts: …` when hosts are known. `tooltip` exists on a label; a tooltip on the element as a whole does not. | 1, 12, 13, 17, 21 | `ElementTypeDefinition.tooltip` |
+| **G8** | **An element with no body** — a stub line, a loop badge, a bare annotation. `shape` is required and every built-in draws something. | 2, 8, 14, 25 | the `none` built-in shape |
+| **G9** | **A formatted count** — `3 jobs` / `1 job`. A template can interpolate the number; nothing can decline the plural. | 3 | `FieldBinding.plural` |
+| **G10** | **Per-element style bound from the model.** c4 stores shape, background and colour on the payload; `ElementStyle` takes theme token names fixed in the declaration. | 5 | `ElementTypeDefinition.boundStyle`, and `ShapeSelection` for the shape itself |
+| **G11** | **A decoration path chosen by a condition** — the reinforcing sweep clockwise, the balancing sweep anticlockwise, with an end marker. Two `path` decorations with `when` cover it only if a decoration may carry `markerEnd`. | 8 | `DecorationDeclaration.markerEnd`, with the two sweeps as two `when`-conditioned paths |
+| **G12** | **Drag-time preview requiring a model query** — the candidate parent under the pointer, ringed, with the branch that would be created. This is the one row where the honest answer may be "an event handler", and saying so here is the point: it is recorded, not hidden. | 15 | **a ruling, not a mechanism** — see below |
+| **G13** | **A row-per-item block with per-item internal layout** — predicate, value and annotation composed into one line, one line per collection item, offset by index. `CollectionBinding` plus `stack` reaches this; what is missing is a **second and third column within the item's line**. | 16, 19, 20 | `LabelDeclaration.columns`, paired to their row by `resolveEntries` |
+| **G14** | **A shape variant chosen per element** — square / circle / double circle, ellipse doubled. `symbol` and `ellipse` render one form each. | 18, 27, 28 | `ShapeSelection`, plus the `double-ellipse` built-in |
+| **G15** | **Right-aligned and column-positioned label placement.** Slots are vertical fractions; `textAnchor="end"` at the box's right edge and a fixed x-column have no expression. | 20 | `LabelDeclaration.align` and a column's `insetX` |
+| **G16** | **A label from a value computed against the module's scale** — the drag hint's formatted time and row. Bindings read paths; this is arithmetic over `secondsPerUnit` and `originSeconds`. | 26 | `FieldBinding.number` — `times`, then `plus`, then `modulo` |
+| **G17** | **`span` has no `moment`** — a point in time rather than a period, which is a different drawing rather than a class. | 26 | the `moment` built-in, selected per element |
+| **G18** | **Background items driven by a model collection at model coordinates** — attitudes, accelerators, notes, numbered annotations. Task 4's background takes fixed lists in extent fractions. | 27 | `MarkDeclaration` — one positioned item per collection entry; nested collections refused |
+| **G19** | **Typography that scales with the view** — Wardley's stage and axis labels hold a readable size as the map zooms, while the boundaries they name do not. | 27 | `LabelTypography.scaleWithView`, clamped by the declaration |
 
-**Nineteen gaps, no unfillable rows once they are closed, and no module marked an exception.** The register is the input to the central extension that must land before task 10 begins; each closure is verified by re-reading the row that justified it, not by the extension's own tests.
+## Status after the re-check
 
-Two entries deserve their honesty stated rather than buried. **G12** may turn out to be an event handler rather than a declaration — the permitted carve-out — and if it does, that is recorded as a decision with a reason, not as mindmap being unusual. **G6** crosses a boundary this specification does not own: the problem mark is fed by the problems service, so its declaration says *where a problem mark goes*, never *what a problem is*.
+**Nineteen gaps found, nineteen closed, no module marked an exception, and no unfillable row left.** Every closure is a central extension in the library — nothing was added to a module, and nothing was added that no row asked for.
+
+**What is proven and what is not.** Each extension has unit guards, and each guard was seen to fail against the defect it covers: nine sabotages across the three landings — state dropped from the root, an empty collection joined to a blank line, parts joined without filtering, `plus` applied before `times`, an absent number read as zero, declared classes dropped from the shape, a shape selection always taking its fallback, a bound decoration class dropped, the view scale left unclamped. What is **not** proven is that a migrated module draws what it drew before; that is Group 3's job, one module at a time, and the table is its order and its acceptance.
+
+**One defect was found by writing the guards rather than by review**: `Number(null)` is `0`, so a missing count read as *"0 jobs"* and a missing instant as *1 Jan 1970* — data where there was none, breaking the rule the binding resolver rests on. It is fixed, and it is the kind of thing this table exists to surface before thirteen modules depend on it.
+
+### The two answers that are rulings rather than mechanisms
+
+**G12 — mindmap's drag preview.** The candidate parent under the pointer, ringed, with the branch that would be created: it needs a query over the model at drag time, which no binding can express and none should. The ruling splits it where the specification already draws the line: **the decision stays an event handler** — the permitted carve-out — **and the drawing becomes declared decorations** on the candidate, conditioned on a field the module's own fold sets while the drag is in flight. No new mechanism, and mindmap keeps no renderer. It is a ruling rather than a proof: it is verified when mindmap migrates in task 11, and if it fails there the failure is the design's, not mindmap's.
+
+**G6 — the problem mark.** The problems service is not this specification's to move, so the declaration says *where a problem mark goes and what colours it*, and the module's model still says *what a problem is*. That boundary is deliberate: a library that knew what a problem was would own two things at once.
+
+### What the design got right, stated as plainly as what it got wrong
+
+Fourteen of the nineteen gaps are one property each on an existing type, and not one required a new mechanism beside `binding`. The four features — labels, decorations, background, actions — absorbed twenty-eight renderers' worth of drawing without gaining a fifth. The one structural addition, `resolveEntries`, exists to make a whole class of bug impossible rather than to add an ability: a column reads the item its line came from, so it cannot pair row 2's cardinality with row 3's path.
