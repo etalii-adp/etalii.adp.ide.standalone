@@ -81,6 +81,16 @@ export interface NumberFormat {
    * do, and the module would keep a renderer for a class name.
    */
   modulo?: BindingPath | number;
+  /**
+   * Rounds the result before it is formatted.
+   *
+   * `nearest` rounds halves AWAY FROM ZERO, matching the row arithmetic on both sides of the
+   * wire: `TimelineRows.ToNearestRow` and every module's `nearestRow` do the same, and
+   * JavaScript's `Math.round` does not - it rounds -0.5 to -0, which would put a drag one row
+   * out above the origin and nowhere else. A rounding rule that is right in the common half of
+   * the canvas and wrong in the other is worse than no rounding at all.
+   */
+  round?: "nearest" | "floor" | "ceil";
   /** How the result reads. `number` keeps it as it is; the temporal formats read it as epoch seconds. */
   format?: TemporalFormat;
 }
@@ -92,7 +102,17 @@ export interface NumberFormat {
  * formatter using local time would shift every label by the viewer's offset - a defect
  * invisible to whoever wrote it, because they would see the right answer on their own screen.
  */
-export type TemporalFormat = "yyyy" | "MMM" | "MMM yyyy" | "d MMM" | "HH:mm" | "HH:mm:ss" | "number";
+export type TemporalFormat =
+  | "yyyy"
+  | "MMM"
+  | "MMM yyyy"
+  | "d MMM"
+  | "HH:mm"
+  | "HH:mm:ss"
+  /** The two ISO forms a timeline writes its own times in, on the wire and in a drag hint. */
+  | "yyyy-MM-dd"
+  | "yyyy-MM-ddTHH:mm:ss"
+  | "number";
 
 /** One value, read from the model. */
 export interface FieldBinding {
@@ -122,7 +142,15 @@ export interface FieldBinding {
  * nothing rather than a stray delimiter.
  */
 export interface PartsBinding {
-  parts: readonly (FieldBinding | TemplateBinding)[];
+  /**
+   * The parts, which may themselves be parts.
+   *
+   * <b>Nesting because the timeline's drag hint needs it</b>, and it costs nothing: the hint is
+   * `<time> · row <n>`, where "row <n>" is a literal word beside a COMPUTED number - and a
+   * template can interpolate a path but not a computation. One recursive type rather than a
+   * `prefix` field that would be a second way to say the same thing.
+   */
+  parts: readonly (FieldBinding | TemplateBinding | PartsBinding)[];
   /** What goes between the parts that survived. */
   join: string;
   when?: Condition;
@@ -184,6 +212,31 @@ export interface BindingSource {
    * thing that was missing was the state being IN the root at all.
    */
   state?: InteractionState;
+  /**
+   * Where the element is right now, in canvas units, under the `bounds` root.
+   *
+   * <b>Register entry G24, and the timeline's drag hint is the whole of its justification.</b>
+   * That hint reads the time under the element's LEFT EDGE while a drag is in flight - which is
+   * neither a model field (the model still holds the pre-drag position) nor something a payload
+   * can carry (it changes every frame). The canvas has already computed it; before this it had
+   * no way to say so, and the module kept a renderer to read it.
+   *
+   * Live rather than folded: during a drag these are the DRAGGED bounds, which is exactly what a
+   * hint saying "where this would land" must show.
+   */
+  bounds?: ElementBounds;
+}
+
+/** An element's drawn rectangle, in canvas units. See {@link BindingSource.bounds}. */
+export interface ElementBounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+  centreX: number;
+  centreY: number;
 }
 
 /**
@@ -250,7 +303,7 @@ function rootOf(source: BindingSource): Record<string, unknown> {
   // `state` sits beside `element` and `payload` rather than inside either: it is neither the
   // library's model nor the module's data, and merging it into one of them would let a payload
   // field named `selected` decide how selection looks.
-  return { element: source.element, payload: source.payload, state: source.state ?? {} };
+  return { element: source.element, payload: source.payload, state: source.state ?? {}, bounds: source.bounds };
 }
 
 /** Whether a condition holds. An unresolvable path is `absent`, never an error. */
@@ -404,11 +457,30 @@ function formatNumber(raw: unknown, format: NumberFormat, root: unknown): string
   // precedence and never gets a wrong drawing instead of an error.
   const scaled = base * termOf(format.times, root, 1) + termOf(format.plus, root, 0);
   const modulo = format.modulo === undefined ? undefined : termOf(format.modulo, root, 0);
-  const value = modulo !== undefined && modulo > 0 ? ((scaled % modulo) + modulo) % modulo : scaled;
+  const wrapped = modulo !== undefined && modulo > 0 ? ((scaled % modulo) + modulo) % modulo : scaled;
+  const value = roundedBy(wrapped, format.round);
   return formatEpochSeconds(value, format.format ?? "number");
 }
 
+/** Away from zero at a half, which is the rule both sides of the wire already use. */
+function roundedBy(value: number, round: NumberFormat["round"]): number {
+  switch (round) {
+    case "floor":
+      return Math.floor(value);
+    case "ceil":
+      return Math.ceil(value);
+    case "nearest":
+      return value >= 0 ? Math.floor(value + 0.5) : -Math.floor(-value + 0.5);
+    default:
+      return value;
+  }
+}
+
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function isoDay(date: Date): string {
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
 
 function pad(value: number): string {
   return value < 10 ? `0${value}` : String(value);
@@ -444,6 +516,10 @@ export function formatEpochSeconds(value: number, format: TemporalFormat): strin
       return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
     case "HH:mm:ss":
       return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+    case "yyyy-MM-dd":
+      return isoDay(date);
+    case "yyyy-MM-ddTHH:mm:ss":
+      return `${isoDay(date)}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
   }
 }
 

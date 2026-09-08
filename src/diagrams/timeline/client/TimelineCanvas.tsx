@@ -1,6 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { forwardBezierPath, horizontalBezierPath } from "@client/canvas/connectors";
-import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
@@ -11,7 +10,7 @@ import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panel
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
-import type { CustomShapeRef, DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, LabelDeclaration } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import type { DiagramEventHandlers, DiagramSelection, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
@@ -121,6 +120,12 @@ export function endSecondsOf(element: TimelineElement): number {
   return Number.isFinite(parsed) ? parsed : element.x;
 }
 
+/** One canvas unit as a fraction of a row, for the hint's declared row arithmetic. */
+const ROWS_PER_UNIT = 1 / ROW_HEIGHT;
+
+/** How far above the box the drag hint sits, matching where the shared span drew it. */
+const HINT_ABOVE = ELEMENT_HEIGHT / 2 + 8;
+
 /** The nearest row for a module-space y, matching TimelineRows.ToNearestRow's away-from-zero midpoint. */
 function nearestRow(y: number): number {
   const exact = y / ROW_HEIGHT;
@@ -139,52 +144,40 @@ function newPlacementId(seconds: number, row: number): string {
   return `new:${seconds},${row}`;
 }
 
-/** The class names the shared span element hangs the timeline's styling on. */
-const SPAN_CLASSES: SpanElementClasses = {
-  span: "timeline-period canvas-node",
-  moment: "timeline-moment",
-  label: "timeline-label canvas-node-label",
-  hint: "timeline-hint canvas-hint",
-  adorner: "timeline-adorner",
-  anchor: "timeline-anchor canvas-anchor",
-  anchorHit: "timeline-anchor-hit canvas-anchor-hit",
-};
-
-/** An element as the library carries it here: the model element plus what draws it. */
-type SpanModelElement = DiagramModelElement & { source: TimelineElement; scale: TimelineScale };
-
 /**
- * The period-or-moment as a custom shape: the shared SpanElement draws the box or diamond
- * and the label that trims itself, while the library owns selection, anchors, resizing and
- * every gesture - so the span's own selection furniture stays off (`selected={false}`), and
- * the drag hint is computed from the position the library has already carried it to.
+ * The drag hint both element types show, declared once.
+ *
+ * <b>The one row in the tree whose text is arithmetic rather than a field</b>: the time under
+ * the element's left edge, and the row its top would land on. Both read the LIVE bounds, which
+ * is why `bounds` is a binding root at all - the model still holds the PRE-drag position while
+ * this is on screen, so no payload could carry either number.
  */
-const spanShape: CustomShapeRef = {
-  customShape: "timeline-span",
-  render: (raw, state) => {
-    const element = raw as SpanModelElement;
-    const { source, scale } = element;
-    const width = element.width ?? 1;
-    const hint = state?.dragging === true
-      ? `${formatSeconds(scale.originSeconds + (element.x - width / 2) * scale.secondsPerUnit, source.dateOnly)} · row ${nearestRow(element.y - ELEMENT_HEIGHT / 2 + scale.originY)}`
-      : null;
-
-    return (
-      <SpanElement
-        box={{ x: element.x, y: element.y, width, height: element.height ?? ELEMENT_HEIGHT }}
-        moment={!source.isPeriod}
-        label={source.label || source.id}
-        hint={hint}
-        selected={false}
-        pointRadius={MOMENT_RADIUS}
-        classes={SPAN_CLASSES}
-      />
-    );
+const DRAG_HINT: LabelDeclaration = {
+  // THE DRAG HINT, and the one row in the whole tree whose text is arithmetic rather
+  // than a field: the time under the element's left edge, and the row its top would
+  // land on. Both read the LIVE bounds, which is why `bounds` is a root at all - the
+  // model still holds the PRE-drag position while this is on screen, so a payload
+  // could not carry either of them.
+  text: {
+    parts: [
+      {
+        path: "bounds.left",
+        number: { times: "payload.secondsPerUnit", plus: "payload.originSeconds", format: "yyyy-MM-ddTHH:mm:ss" },
+      },
+      {
+        // `row N`: a literal word beside a computed number, which is why parts nest.
+        parts: [
+          { template: "row" },
+          { path: "bounds.top", number: { times: ROWS_PER_UNIT, plus: "payload.originRows", round: "nearest" } },
+        ],
+        join: " ",
+      },
+    ],
+    join: " · ",
   },
-  edgePoint: (bounds, towards) => ({
-    x: towards.x >= bounds.x + bounds.width / 2 ? bounds.x + bounds.width : bounds.x,
-    y: bounds.y + bounds.height / 2,
-  }),
+  when: { path: "state.dragging", is: "true" },
+  offset: { x: 0, y: -HINT_ABOVE },
+  className: "timeline-hint canvas-hint",
 };
 
 /**
@@ -196,29 +189,54 @@ const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
     {
       id: "period",
-      shape: spanShape,
+      // The box the shared span drew, chosen by TYPE rather than by a payload flag: the
+      // definition already had two types and the renderer decided between them again at draw
+      // time, which is the duplication this migration removes.
+      shape: "span",
+      classNames: [{ className: "timeline-period canvas-node", on: "shape" }],
+      labels: [
+        {
+          text: { template: "{element.label}" },
+          placement: "inside",
+          truncate: true,
+          editable: true,
+          className: "timeline-label canvas-node-label",
+        },
+        DRAG_HINT,
+      ],
       anchors: {
         kind: "sides",
         fractions: [
           { side: "left", at: 0.5, name: "begin" },
           { side: "right", at: 0.5, name: "end" },
         ],
+        edgeSides: "horizontal",
       },
       sizing: "user",
-      label: { placement: "inside", editable: true },
     },
     {
       id: "moment",
-      shape: spanShape,
+      // A diamond rather than a box - the built-in that exists because this row needed it.
+      shape: "moment",
+      classNames: [{ className: "timeline-moment", on: "shape" }],
+      labels: [
+        {
+          text: { template: "{element.label}" },
+          placement: "beside",
+          editable: true,
+          className: "timeline-label canvas-node-label",
+        },
+        DRAG_HINT,
+      ],
       anchors: {
         kind: "sides",
         fractions: [
           { side: "left", at: 0.5, name: "begin" },
           { side: "right", at: 0.5, name: "end" },
         ],
+        edgeSides: "horizontal",
       },
       sizing: "model",
-      label: { placement: "beside", editable: true },
     },
   ],
   relationTypes: [
@@ -280,7 +298,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const toModuleY = (units: number) => units + scale.originY;
 
   const diagramModel = useMemo<DiagramModel>(() => {
-    const elements = [...model.elements.values()].map((element): SpanModelElement => {
+    const elements = [...model.elements.values()].map((element): DiagramModelElement => {
       const width = element.isPeriod
         ? Math.max((endSecondsOf(element) - element.x) / scale.secondsPerUnit, 2)
         : MOMENT_RADIUS * 2;
@@ -291,9 +309,15 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         y: toUnitsY(element.y) + ELEMENT_HEIGHT / 2,
         width,
         height: ELEMENT_HEIGHT,
-        label: element.label,
-        source: element,
-        scale,
+        // `label || id`, as the span drew it, and the scale the drag hint's arithmetic reads.
+        label: element.label || element.id,
+        payload: {
+          secondsPerUnit: scale.secondsPerUnit,
+          originSeconds: scale.originSeconds,
+          // In ROWS rather than units: the hint scales the y first and then adds this, because
+          // `times` runs before `plus` and a scale constant is the module's to convert.
+          originRows: scale.originY / ROW_HEIGHT,
+        },
       };
     });
     const connections = [...model.connections.values()].map((connection) => ({

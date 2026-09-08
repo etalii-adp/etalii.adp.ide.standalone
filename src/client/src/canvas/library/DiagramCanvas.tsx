@@ -1821,7 +1821,7 @@ function renderShape(
     return body;
   }
 
-  const source = sourceOf(element, state);
+  const source = sourceOf(element, state, bounds);
   // The element's own title, which five renderers write by hand today. A <title> describes its
   // PARENT element, so it rides here beside the body rather than inside whichever shape drew.
   const tooltip = type?.tooltip ? resolveOne(type.tooltip, source) : null;
@@ -2002,11 +2002,26 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
  * selected. Built in one place so a label, a class and a decoration all answer alike - three
  * sources that could disagree is the drift this specification exists to remove.
  */
-function sourceOf(element: DiagramModelElement, state?: CustomShapeState): BindingSource {
+function sourceOf(element: DiagramModelElement, state?: CustomShapeState, bounds?: ConnectorBox): BindingSource {
   return {
     element,
     payload: element.payload,
     state: state === undefined ? {} : { selected: state.selected, dragging: state.dragging, connectTarget: state.connectTarget },
+    // The LIVE rectangle, so a hint bound to `bounds.left` shows where a drag would land rather
+    // than where the element was before it started.
+    bounds:
+      bounds === undefined
+        ? undefined
+        : {
+            left: bounds.x,
+            top: bounds.y,
+            right: bounds.x + bounds.width,
+            bottom: bounds.y + bounds.height,
+            width: bounds.width,
+            height: bounds.height,
+            centreX: bounds.x + bounds.width / 2,
+            centreY: bounds.y + bounds.height / 2,
+          },
   };
 }
 
@@ -2078,7 +2093,7 @@ function renderShapeBody(
     return <>{type.shape.render(element, state) as ReactNode}</>;
   }
 
-  const source = sourceOf(element, state);
+  const source = sourceOf(element, state, bounds);
   const style = { ...type.style, ...element.style };
   const bound = type.boundStyle;
   const paint = {
@@ -2099,16 +2114,16 @@ function renderShapeBody(
     case "none":
       // No body at all: this element is its labels and its decorations. Rows 2, 8, 14 and 25.
       return null;
-    case "moment":
-      return (
-        <circle
-          className={shapeClass}
-          cx={element.x}
-          cy={element.y}
-          r={Math.max(2, Math.min(bounds.width, bounds.height) / 2)}
-          style={paint}
-        />
-      );
+    case "moment": {
+      // A DIAMOND rather than a circle, because that is what the notation that justified this
+      // shape draws: `SpanElement` renders a moment as `M x-r y L x y-r L x+r y L x y+r Z`, and
+      // a built-in whose only row draws something else is a built-in nobody can use. Caught by
+      // reading the component the row's renderer wraps rather than by assuming a "point" is
+      // round.
+      const r = Math.max(2, Math.min(bounds.width, bounds.height) / 2);
+      const d = `M ${element.x - r} ${element.y} L ${element.x} ${element.y - r} L ${element.x + r} ${element.y} L ${element.x} ${element.y + r} Z`;
+      return <path className={shapeClass} d={d} style={paint} />;
+    }
     case "double-ellipse":
       return (
         <g className={declared || undefined}>
