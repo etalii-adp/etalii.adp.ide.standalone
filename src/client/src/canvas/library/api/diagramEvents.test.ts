@@ -25,6 +25,7 @@ const oneOfEvery: readonly DiagramEvent[] = [
   { kind: "label-commit-requested", target: { kind: "connection", id: "a->b" }, value: "renamed" },
   { kind: "view-changed", viewport: { x: 0, y: 0, width: 800, height: 600 } },
   { kind: "layout-mode-changed", mode: "tree" },
+  { kind: "action-invoked", actionId: "mindmap.add-child", targetKind: "element", targetId: "a" },
 ];
 
 describe("the diagram event surface", () => {
@@ -46,6 +47,7 @@ describe("the diagram event surface", () => {
       onLabelCommitRequested: (event) => seen.push(event.kind),
       onViewChanged: (event) => seen.push(event.kind),
       onLayoutModeChanged: (event) => seen.push(event.kind),
+      onActionInvoked: (event) => seen.push(event.kind),
     };
 
     for (const event of oneOfEvery) {
@@ -56,6 +58,8 @@ describe("the diagram event surface", () => {
     // The canaries: the members the design names must be in the population.
     expect(seen).toContain("connection-drawn");
     expect(seen).toContain("label-commit-requested");
+    // The declarative-modules member: an action reaches its handler by ID, never as a keystroke.
+    expect(seen).toContain("action-invoked");
   });
 
   it("an event nobody handles is ignored, because a request may be declined by silence", () => {

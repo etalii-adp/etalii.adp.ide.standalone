@@ -1,5 +1,6 @@
 import type { Binding, Condition } from "./binding";
 import type { BackgroundDeclaration } from "./background";
+import type { ActionDeclaration, DeclaredFlag } from "./actions";
 
 /**
  * The diagram definition: the one declarative place that states what a diagram type allows
@@ -100,11 +101,31 @@ export interface CustomShapeRef {
  * Where connectors may attach to an element type (Requirement 2.4). A type may declare none -
  * `edge` - in which case connectors attach by edge intersection exactly as today's canvases do.
  */
-export type AnchorSet =
+export type AnchorPositions =
   | { kind: "edge" }
   | { kind: "compass"; positions: readonly CompassPosition[] }
   | { kind: "sides"; fractions: readonly SideFraction[] }
   | { kind: "points"; points: readonly NamedAnchorPoint[] };
+
+/**
+ * Whether an element's anchors are shown and usable - <b>the half of the anchor declaration
+ * that was missing</b>.
+ *
+ * Requirement 2.4 asks the declaration to say where anchors are and <em>whether they are
+ * visible or enabled</em>, and never how they look. `AnchorSet` said only where. And the tree
+ * measured: <b>all twenty-nine anchor declarations are `{ kind: "edge" }`</b>, so the positional
+ * half has never once been needed, while the half modules actually want had nowhere to go.
+ *
+ * Bindings, on the same {@link DeclaredFlag} mechanism actions use, because "connectable only
+ * when the model says so" is the same question as "enabled only when the model says so" and two
+ * mechanisms for it would be one too many.
+ */
+export interface AnchorEnablement {
+  visible?: DeclaredFlag;
+  enabled?: DeclaredFlag;
+}
+
+export type AnchorSet = AnchorPositions & AnchorEnablement;
 
 export type CompassPosition = "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw";
 
@@ -326,6 +347,8 @@ export interface ElementTypeDefinition {
    * that five renderers draw with no shared component at all. Drawn, never interactive.
    */
   decorations?: readonly DecorationDeclaration[];
+  /** Actions this type offers, beyond the ones the whole diagram declares. */
+  actions?: readonly ActionDeclaration[];
   anchors: AnchorSet;
   sizing: SizingRule;
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
@@ -555,6 +578,13 @@ export interface DiagramDefinition {
    */
   extent?: ShapeBounds;
   background?: DiagramBackground;
+  /**
+   * Every action this diagram type offers, with what invokes each and whether it is enabled.
+   *
+   * The library derives its shortcut key set from these and dispatches an action id, so a
+   * module never writes a key list and never manufactures a key event to name an action.
+   */
+  actions?: readonly ActionDeclaration[];
   /**
    * Draw a relation by dragging with the RIGHT button from an element's body to another - the
    * gesture a causal loop diagram links with, where the arrows are the whole point and reaching

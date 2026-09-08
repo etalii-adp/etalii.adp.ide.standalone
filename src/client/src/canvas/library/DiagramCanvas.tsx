@@ -37,6 +37,7 @@ import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpoi
 import { layoutLabels } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
+import { actionForGesture, actionForKey } from "./definition/actions";
 import { isBackgroundRef } from "./definition/diagramDefinition";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
@@ -1035,6 +1036,18 @@ export function DiagramCanvas({
       return;
     }
 
+    // A DECLARED ACTION FIRST, and only for a type that declares one.
+    //
+    // Inert for the twelve modules that have not migrated: `definition.actions` undefined means
+    // this whole branch is skipped and the delete path below behaves exactly as it always has.
+    // That is Requirement 8.1 at the library level - the addition changes nothing until a module
+    // asks for it.
+    if (definition.actions !== undefined || [...elementTypes.values()].some((type) => type.actions !== undefined)) {
+      if (dispatchDeclaredAction(event)) {
+        return;
+      }
+    }
+
     if (event.key !== "Delete" && event.key !== "Backspace") {
       return;
     }
@@ -1043,16 +1056,79 @@ export function DiagramCanvas({
       if (item.kind === "element") {
         const element = elementsById.get(item.id);
         const type = element !== undefined ? elementTypes.get(element.type) : undefined;
-        if (element !== undefined && (type?.deletable ?? true)) {
+
+        // A declared delete action replaces the synthesised keystroke: the module hears its own
+        // action id rather than building `{ key: "Delete", ... }` to say the same thing.
+        const declared =
+          element === undefined
+            ? null
+            : actionForGesture(
+                {
+                  actions: [...(definition.actions ?? []), ...(type?.actions ?? [])],
+                  targetKind: "element",
+                  targetId: item.id,
+                  typeId: element.type,
+                  source: { element, payload: element.payload },
+                },
+                "delete",
+              );
+
+        if (declared !== null) {
+          event.preventDefault();
+          raise({ kind: "action-invoked", ...declared });
+        } else if (element !== undefined && (type?.deletable ?? true)) {
           event.preventDefault();
           raise({ kind: "element-deleted", elementId: item.id });
         }
       } else {
+        const connection = model.connections.find((candidate) => candidate.id === item.id);
+        const declared =
+          connection === undefined
+            ? null
+            : actionForGesture(
+                {
+                  actions: definition.actions,
+                  targetKind: "connection",
+                  targetId: item.id,
+                  typeId: connection.type,
+                  source: { element: { id: item.id, type: connection.type, x: 0, y: 0 } },
+                },
+                "delete",
+              );
+
         event.preventDefault();
-        raise({ kind: "connection-deleted", connectionId: item.id });
+        raise(declared !== null ? { kind: "action-invoked", ...declared } : { kind: "connection-deleted", connectionId: item.id });
       }
     }
   };
+
+  /** A declared shortcut, dispatched by action id. True when one fired. */
+  function dispatchDeclaredAction(event: React.KeyboardEvent): boolean {
+    for (const item of selection) {
+      const element = item.kind === "element" ? elementsById.get(item.id) : undefined;
+      const type = element !== undefined ? elementTypes.get(element.type) : undefined;
+      const connection = item.kind === "connection" ? model.connections.find((c) => c.id === item.id) : undefined;
+
+      const found = actionForKey(
+        {
+          actions: [...(definition.actions ?? []), ...(type?.actions ?? [])],
+          targetKind: item.kind === "element" ? "element" : "connection",
+          targetId: item.id,
+          typeId: element?.type ?? connection?.type,
+          source: { element: element ?? { id: item.id, type: connection?.type ?? "", x: 0, y: 0 }, payload: element?.payload },
+        },
+        { key: event.key, ctrlKey: event.ctrlKey, shiftKey: event.shiftKey, altKey: event.altKey, metaKey: event.metaKey },
+      );
+
+      if (found !== null) {
+        event.preventDefault();
+        raise({ kind: "action-invoked", ...found });
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   // ---- context menu (Requirement 7.2) ------------------------------------------------------
 

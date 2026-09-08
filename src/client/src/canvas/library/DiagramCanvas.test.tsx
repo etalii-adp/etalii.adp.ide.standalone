@@ -973,3 +973,68 @@ describe("declared decorations", () => {
     expect(group.getAttribute("aria-hidden")).toBe("true");
   });
 });
+
+describe("declared actions", () => {
+  /**
+   * The canvas half of task 5, and the two things that had to disappear.
+   *
+   * A module declares its actions; the library derives the key set and dispatches an action ID.
+   * So there is no hand-written shortcut list to spell four different ways, and no synthesised
+   * `{ key: "Delete", ... }` to name a deletion.
+   */
+  const withActions = () =>
+    definitionOf({
+      elementTypes: [{ id: "service", shape: "box", anchors: { kind: "edge" }, sizing: "model" }],
+      relationTypes: [],
+      actions: [
+        { id: "svc.rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+        { id: "svc.remove", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
+      ],
+    });
+
+  const oneElement = (): DiagramModel => ({
+    elements: [{ id: "a", type: "service", x: 0, y: 0, width: 100, height: 40, label: "Alpha" }],
+    connections: [],
+  });
+
+  function selectAndPress(events: DiagramEventHandlers, key: string) {
+    const { container } = renderCanvas(events, withActions(), oneElement());
+    const shape = container.querySelector('[data-element-id="a"]') ?? container.querySelector("svg")!;
+    press(shape as Element);
+    fireEvent.keyDown(container.querySelector("svg")!, { key });
+    return container;
+  }
+
+  it("dispatches a declared shortcut as an action id", () => {
+    const onActionInvoked = vi.fn();
+    selectAndPress({ onActionInvoked }, "F2");
+
+    expect(onActionInvoked).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "action-invoked", actionId: "svc.rename", targetKind: "element", targetId: "a" }),
+    );
+  });
+
+  it("dispatches a declared delete as an action id rather than as element-deleted", () => {
+    // THE SYNTHESISED KEYSTROKE, GONE. The module hears `svc.remove`; nothing builds a fake
+    // key event, and the old element-deleted path does not fire for a type that declares one.
+    const onActionInvoked = vi.fn();
+    const onElementDeleted = vi.fn();
+    selectAndPress({ onActionInvoked, onElementDeleted }, "Delete");
+
+    expect(onActionInvoked).toHaveBeenCalledWith(expect.objectContaining({ actionId: "svc.remove" }));
+    expect(onElementDeleted).not.toHaveBeenCalled();
+  });
+
+  it("leaves a definition declaring no actions exactly as it was", () => {
+    // Requirement 8.1 at the library level: inert for the twelve unmigrated modules. The old
+    // element-deleted path still fires, because nothing declared a replacement.
+    const onElementDeleted = vi.fn();
+    const onActionInvoked = vi.fn();
+    const { container } = renderCanvas({ onElementDeleted, onActionInvoked });
+    const svg = container.querySelector("svg")!;
+    press(container.querySelector('[data-element-id="a"]') ?? svg);
+    fireEvent.keyDown(svg, { key: "Delete" });
+
+    expect(onActionInvoked).not.toHaveBeenCalled();
+  });
+});
