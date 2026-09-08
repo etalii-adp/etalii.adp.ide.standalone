@@ -62,7 +62,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
 
 ## Group 2 — Sufficiency, proven before anything migrates
 
-- [ ] 9. The translation table
+- [x] 9. The translation table
   - Files: `.spec-workflow/specs/declarative-diagram-modules/sufficiency.md` (new)
   - **Twenty-eight rows, one per element type**, naming: module, current custom shape, replacing built-in, labels needed, decorations needed, background needed, actions needed, and **any property that does not yet exist**.
   - Produced **after** Group 1 and **before** Group 3, so it checks the design rather than plans the work.
