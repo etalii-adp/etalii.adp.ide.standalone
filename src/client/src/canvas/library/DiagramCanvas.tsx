@@ -1350,12 +1350,16 @@ export function DiagramCanvas({
           <g className="library-canvas-background" data-testid="canvas-background" pointerEvents="none" aria-hidden="true">
             {isBackgroundRef(definition.background)
               ? (definition.background.render({ x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h }) as ReactNode)
-              : declaredBackground(definition.background, model, {
-                  x: effectiveView.x,
-                  y: effectiveView.y,
-                  width: effectiveView.w,
-                  height: effectiveView.h,
-                })}
+              : declaredBackground(
+                  definition.background,
+                  model,
+                  { x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h },
+                  // The view over the diagram's OWN extent: the ratio a label declaring
+                  // `scaleWithView` grows by, so text keeps a readable size on screen while the
+                  // geometry it names does not. One when a diagram declares no extent, which is
+                  // every diagram whose plane is whatever its contents span.
+                  definition.extent !== undefined && definition.extent.width > 0 ? effectiveView.w / definition.extent.width : 1,
+                )}
           </g>
         )}
 
@@ -1724,7 +1728,17 @@ function renderShape(
 function declaredDecorations(type: ElementTypeDefinition, bounds: ConnectorBox, source: BindingSource): ReactNode {
   const resolved = resolveDecorations(type.decorations, source, bounds);
   return resolved.map((decoration) => (
-    <g key={decoration.index} className={decoration.className} style={{ pointerEvents: "none" }} aria-hidden="true">
+    <g
+      key={decoration.index}
+      className={decoration.className}
+      style={{ pointerEvents: "none" }}
+      // A decoration carrying a title is describing something a reader may need - a problem's
+      // message - so it stops being hidden from assistive technology at that point, and only
+      // at that point.
+      aria-hidden={decoration.tooltip === undefined ? true : undefined}
+      markerEnd={markerRef(decoration.markerEnd ?? "none")}
+    >
+      {decoration.tooltip !== undefined ? <title>{decoration.tooltip}</title> : null}
       {decorationGlyph(decoration)}
       {decoration.text !== undefined ? (
         <text
@@ -1790,11 +1804,13 @@ function declaredBackground(
   background: import("./definition/background").BackgroundDeclaration,
   model: DiagramModel,
   extent: { x: number; y: number; width: number; height: number },
+  viewScale: number,
 ): ReactNode {
   const resolved = resolveBackground(
     background,
     { element: { id: "__background__", type: "__background__", x: 0, y: 0 }, payload: model.background },
     extent,
+    viewScale,
   );
 
   return (
@@ -1805,10 +1821,21 @@ function declaredBackground(
       {resolved.lines.map((line) => (
         <line key={line.key} className={line.className} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
       ))}
+      {resolved.circles.map((circle) => (
+        <circle key={circle.key} className={circle.className} cx={circle.cx} cy={circle.cy} r={circle.r}>
+          {circle.tooltip !== undefined ? <title>{circle.tooltip}</title> : null}
+        </circle>
+      ))}
       {resolved.texts.map((text) => (
         <text
           key={text.key}
           className={text.className}
+          style={{
+            fontSize: text.typography?.fontSize,
+            fontWeight: text.typography?.fontWeight,
+            fontStyle: text.typography?.fontStyle,
+            fill: tokenColour(text.typography?.color),
+          }}
           x={text.rotate === undefined ? text.x : undefined}
           y={text.rotate === undefined ? text.y : undefined}
           transform={text.rotate === undefined ? undefined : `translate(${text.x} ${text.y}) rotate(${text.rotate})`}

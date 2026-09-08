@@ -116,10 +116,33 @@ function placementOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: n
  * resolver's rules, not new ones — this function adds position and nothing else, which is what
  * keeps the two testable apart.
  */
+/**
+ * Typography with a view-dependent size resolved, if it declares one.
+ *
+ * <b>Sufficiency row 27.</b> A Wardley map's stage and axis labels hold a readable size as the
+ * map zooms while the boundaries they name do not, because a position is only meaningful
+ * against its own axes - so the text has to grow in canvas units exactly as the view does.
+ * The module computes that today from the view width; the library is what knows the view.
+ *
+ * The clamp is the declaration's, not a default: a label that grew without bound would swallow
+ * the map at the far end of a zoom, and one that shrank without bound would vanish.
+ */
+export function scaledTypography(typography: LabelTypography | undefined, viewScale: number): LabelTypography | undefined {
+  const scale = typography?.scaleWithView;
+  if (typography === undefined || scale === undefined) {
+    return typography;
+  }
+
+  const factor = Math.max(scale.min, Math.min(scale.max, viewScale));
+  return { ...typography, fontSize: (typography.fontSize ?? 12) * factor };
+}
+
 export function layoutLabels(
   declarations: readonly LabelDeclaration[] | undefined,
   source: BindingSource,
   bounds: ShapeBounds,
+  /** The view's width over the definition's own extent - 1 when the diagram declares none. */
+  viewScale = 1,
 ): readonly LaidOutLabel[] {
   if (!declarations || declarations.length === 0) {
     return [];
@@ -158,7 +181,7 @@ export function layoutLabels(
           x: alignedX(align, bounds, column.insetX),
           y,
           anchor: align,
-          typography: declaration.typography,
+          typography: scaledTypography(declaration.typography, viewScale),
           // Never editable: a column is a second value on somebody else's line, and an editor
           // over it would commit to a field the line does not name.
           editable: false,
@@ -173,7 +196,7 @@ export function layoutLabels(
         x: base.x,
         y,
         anchor: base.anchor,
-        typography: declaration.typography,
+        typography: scaledTypography(declaration.typography, viewScale),
         // A collection line has no single authored value to write back to, so it is never
         // editable however the declaration is written. Stated here rather than trusted to the
         // author, because an editor over a computed line would commit to nothing.

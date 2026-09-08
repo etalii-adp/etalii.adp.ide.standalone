@@ -4,6 +4,7 @@ import type {
   DecorationGlyph,
   DeclaredNumber,
   LabelTypography,
+  MarkerKind,
   ShapeBounds,
 } from "./diagramDefinition";
 
@@ -37,6 +38,8 @@ export interface ResolvedDecoration {
   textAnchor: "start" | "middle" | "end";
   typography?: LabelTypography;
   className?: string;
+  markerEnd?: MarkerKind;
+  tooltip?: string;
   index: number;
 }
 
@@ -111,7 +114,13 @@ export function resolveDecorations(
       textAt: pointOf(declaration.textAt, source, from),
       textAnchor: declaration.textAnchor ?? "start",
       typography: declaration.typography,
-      className: declaration.className,
+      // Bound, so a problem mark can be coloured by a severity the library has never heard of.
+      className:
+        typeof declaration.className === "string" || declaration.className === undefined
+          ? declaration.className
+          : (resolveOne(declaration.className, source) ?? undefined),
+      markerEnd: declaration.markerEnd,
+      tooltip: declaration.tooltip ? (resolveOne(declaration.tooltip, source) ?? undefined) : undefined,
       index,
     });
   });

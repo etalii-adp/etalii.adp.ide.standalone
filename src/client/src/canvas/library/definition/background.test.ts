@@ -149,7 +149,7 @@ describe("background — gridlines and the empty cases", () => {
 
   it("returns nothing at all for no background", () => {
     const out = resolveBackground(undefined, source({}), extent);
-    expect(out).toEqual({ rects: [], lines: [], texts: [] });
+    expect(out).toEqual({ rects: [], lines: [], texts: [], circles: [] });
   });
 
   it("offsets everything by the extent's own origin, so a background is not pinned to 0,0", () => {
@@ -157,5 +157,81 @@ describe("background — gridlines and the empty cases", () => {
     const out = resolveBackground({ gridlines: [{ orientation: "vertical", at: 0.5 }] }, source({}), shifted);
 
     expect(out.lines[0]).toMatchObject({ x1: 300, y1: 200, x2: 300, y2: 300 });
+  });
+});
+
+/**
+ * MARKS — the last thing the Wardley backdrop needed, and register entry G18.
+ *
+ * Bands, axes, gridlines and regions draw the map's frame. Its furniture - accelerators,
+ * notes, numbered annotations - is collection-driven items at model positions, which is a
+ * different shape from a slab or a rule and had no expression before this.
+ */
+describe("background — marks, the map's own furniture", () => {
+  it("draws one item per entry, at the entry's own position", () => {
+    const declaration: BackgroundDeclaration = {
+      marks: [
+        {
+          each: { path: "payload.annotations" },
+          x: { path: "x" },
+          y: { path: "y" },
+          glyph: "circle",
+          radius: 11,
+          label: { path: "number" },
+          labelAnchor: "middle",
+          tooltip: { path: "text" },
+          className: "wardley-annotation",
+        },
+      ],
+    };
+
+    const resolved = resolveBackground(declaration, source({ annotations: [
+      { x: 0.25, y: 0.5, number: "1", text: "Consider outsourcing" },
+      { x: 0.75, y: 0.2, number: "2", text: "Watch this evolve" },
+    ] }), extent);
+
+    // Fractions of the extent, as every other background kind reads them.
+    expect(resolved.circles.map((circle) => [circle.cx, circle.cy])).toEqual([[250, 250], [750, 100]]);
+    expect(resolved.circles.map((circle) => circle.tooltip)).toEqual(["Consider outsourcing", "Watch this evolve"]);
+    expect(resolved.texts.map((text) => text.text)).toEqual(["1", "2"]);
+  });
+
+  it("draws a caption with no glyph, which is what a map's note is", () => {
+    const resolved = resolveBackground(
+      { marks: [{ each: { path: "payload.notes" }, x: { path: "x" }, y: { path: "y" }, glyph: "none", label: { path: "text" } }] },
+      source({ notes: [{ x: 0.5, y: 0.5, text: "beware the plateau" }] }),
+      extent,
+    );
+
+    expect(resolved.circles).toEqual([]);
+    expect(resolved.lines).toEqual([]);
+    expect(resolved.texts.map((text) => text.text)).toEqual(["beware the plateau"]);
+  });
+
+  it("grows a declared label with the view, and clamps it at both ends (G19)", () => {
+    // Sufficiency row 27: stage names hold a readable size as the map zooms while the
+    // boundaries they name do not. Three views, one declaration - and the clamp is the
+    // declaration's, because a label that grew without bound would swallow the map.
+    const declaration: BackgroundDeclaration = {
+      bands: [
+        {
+          each: { path: "payload.stages" },
+          orientation: "vertical",
+          start: { path: "start" },
+          end: { path: "end" },
+          label: { path: "label" },
+          typography: { fontSize: 20, scaleWithView: { min: 0.35, max: 2.5 } },
+        },
+      ],
+    };
+    const stages = source({ stages: [{ start: 0, end: 1, label: "Genesis" }] });
+
+    const sizeAt = (viewScale: number) => resolveBackground(declaration, stages, extent, viewScale).texts[0]!.typography!.fontSize;
+
+    expect(sizeAt(1)).toBe(20);
+    expect(sizeAt(2)).toBe(40);
+    // Clamped at both ends rather than growing or vanishing without limit.
+    expect(sizeAt(10)).toBe(50);
+    expect(sizeAt(0.01)).toBe(7);
   });
 });

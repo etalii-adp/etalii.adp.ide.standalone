@@ -265,3 +265,25 @@ describe("binding — what the sufficiency table forced", () => {
     expect(resolveOne({ path: "payload.at", number: { format: "HH:mm" } }, source({ at }))).toBe("22:30");
   });
 });
+
+describe("binding — the palette slot (G3)", () => {
+  it("wraps an index into a fixed number of colour slots", () => {
+    // Sufficiency row 1: ansible colours a play by `playIndex % PALETTE_SLOTS`, so the
+    // fourteenth play reuses the first play's colour rather than running out. Without the
+    // third term this is arithmetic no declaration can do, and the module keeps a renderer
+    // for a class name.
+    const slot = { path: "payload.playIndex", number: { modulo: 8 } } as const;
+
+    expect(resolveOne(slot, source({ playIndex: 0 }))).toBe("0");
+    expect(resolveOne(slot, source({ playIndex: 7 }))).toBe("7");
+    expect(resolveOne(slot, source({ playIndex: 8 }))).toBe("0");
+    expect(resolveOne(slot, source({ playIndex: 13 }))).toBe("5");
+  });
+
+  it("wraps a NEGATIVE index into the same range rather than out of it", () => {
+    // JavaScript's % keeps the sign, so -1 % 8 is -1 and the class would be
+    // `ansible-play--1` - a selector that matches nothing, silently, for the elements that
+    // belong to no play. The sign is corrected here rather than left to the author.
+    expect(resolveOne({ path: "payload.playIndex", number: { modulo: 8 } }, source({ playIndex: -1 }))).toBe("7");
+  });
+});

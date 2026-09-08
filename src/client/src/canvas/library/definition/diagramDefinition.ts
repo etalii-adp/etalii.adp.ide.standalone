@@ -262,8 +262,24 @@ export interface DecorationDeclaration {
   textAt?: { x: DeclaredNumber; y: DeclaredNumber };
   textAnchor?: "start" | "middle" | "end";
   typography?: LabelTypography;
-  /** Classes for the glyph, so colour stays in the stylesheet. */
-  className?: string;
+  /**
+   * Classes for the glyph, so colour stays in the stylesheet.
+   *
+   * <b>Bindable since the sufficiency table</b> (register entry G6): a problem mark is
+   * `pipeline-problem-mark-{payload.problem.severity}`, and a severity the library does not
+   * know cannot be spelled as a fixed string. The library still says nothing about what a
+   * problem IS - it draws where the module's model says one is, and colours it by a field.
+   */
+  className?: string | Binding;
+  /**
+   * An arrowhead at the end of a `line` or `path`.
+   *
+   * Sufficiency row 8: causal-loop's polarity arc is an arc WITH an arrowhead, and the sweep
+   * without the head reads as a stray curve rather than as a direction of travel.
+   */
+  markerEnd?: MarkerKind;
+  /** The `<title>` a decoration carries - a problem mark's message, an annotation's text. */
+  tooltip?: Binding;
   /** Drawn only when this holds - a badge that appears for one polarity and not the other. */
   when?: Condition;
 }

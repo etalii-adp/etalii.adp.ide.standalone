@@ -72,6 +72,15 @@ export type Condition =
 export interface NumberFormat {
   times?: BindingPath | number;
   plus?: BindingPath | number;
+  /**
+   * Wraps the result into `0..modulo-1`.
+   *
+   * <b>Sufficiency row 1 justifies the third term</b>, and it is the last one: ansible colours a
+   * play by `playIndex % PALETTE_SLOTS`, so that the fourteenth play reuses the first play's
+   * colour rather than running out. Without it a palette slot is arithmetic no declaration can
+   * do, and the module would keep a renderer for a class name.
+   */
+  modulo?: BindingPath | number;
   /** How the result reads. `number` keeps it as it is; the temporal formats read it as epoch seconds. */
   format?: TemporalFormat;
 }
@@ -391,7 +400,11 @@ function formatNumber(raw: unknown, format: NumberFormat, root: unknown): string
 
   // Times then plus, in that order, because a scale is applied before an origin is added - and
   // because an order stated once cannot be got wrong by an author guessing at precedence.
-  const value = base * termOf(format.times, root, 1) + termOf(format.plus, root, 0);
+  // Times, then plus, then modulo - one order, stated once, so an author never guesses at
+  // precedence and never gets a wrong drawing instead of an error.
+  const scaled = base * termOf(format.times, root, 1) + termOf(format.plus, root, 0);
+  const modulo = format.modulo === undefined ? undefined : termOf(format.modulo, root, 0);
+  const value = modulo !== undefined && modulo > 0 ? ((scaled % modulo) + modulo) % modulo : scaled;
   return formatEpochSeconds(value, format.format ?? "number");
 }
 
