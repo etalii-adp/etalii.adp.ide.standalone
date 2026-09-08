@@ -8,33 +8,33 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
 
 ## Group 1 — The shared library surface
 
-- [-] 1. The binding resolver
+- [x] 1. The binding resolver
   - Files: `src/client/src/canvas/library/definition/binding.ts` (new), `binding.test.ts` (new)
   - Field paths, templates, collection bindings with `each`, and `when` conditions, resolving against `DiagramModelElement` and its module payload. Pure, no React.
   - **The prohibition goes in the code, not only in the design**: a doc-comment stating that a binding is data and **cannot call anything**, with the reason — a callable binding is the escape hatch under a new name, and `binding.ts` is where someone will be tempted, not the design document. The type makes a function-valued binding unrepresentable rather than discouraged.
   - Tested: each binding form; a path that does not resolve draws nothing rather than throwing; a collection binding over an empty list yields nothing.
   - _Requirements: 2.5, 3.1_
 
-- [-] 2. `labels` — multiple, bound, stacked
+- [x] 2. `labels` — multiple, bound, stacked
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - The text declaration of the design's table: `text` binding, `slot`/`offset`, `stack` for collections, `typography`, `editable`, `truncate`, `when`, `tooltip`. `LabelRule` is superseded; a single-label module writes one entry.
   - **The collection case is the acceptance**, not a variant of it: a declaration must express `owl-card`'s shape — a header, a badge line present only when its list is non-empty, and one line per entry of a model collection composed as `predicate: value annotation` and truncated to the box. A design that passes with three fixed slots has not satisfied this task.
   - _Requirements: 2.2, 2.3, 3.1_
 
-- [-] 3. `decorations`
+- [x] 3. `decorations`
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - The closed glyph set — `line`, `path`, `circle`, `rect`, named marker — with bound geometry, class and optional text. Drawn relative to its element, **no hit-testing, no gesture, no anchor**; anything needing those is an element type.
   - Acceptance is the five renderers that use no shared component today: a stub, a badge, an annotation, a target.
   - _Requirements: 3.2_
 
-- [-] 4. `background`
+- [x] 4. `background`
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - Bands, axes with end labels and rotated titles, gridlines, and regions bound to model collections. Beneath everything, `aria-hidden`, takes no gestures.
   - **Acceptance is `wardley-map`'s twenty-one background lines, and that alone.** `timeline`'s ruler was named here as a second instance and is not one: it is 38 lines of view-fixed HTML whose tick set changes with zoom, and it moved to task 7 on 2026-09-08. **Do not stretch `background` to reach it** — a backdrop that could express a view-pinned tick ladder could express anything, which this specification refuses everywhere else.
   - The single instance is not a weakness in the vocabulary: bands, axes, gridlines and bound regions are general on their face, and the argument the second instance was carrying — *do not special-case wardley* — is carried by the vocabulary being notation-neutral rather than by the count.
   - _Requirements: 3.3_
 
-- [-] 5. `actions` and anchor enablement, and the library owning the keyboard
+- [x] 5. `actions` and anchor enablement, and the library owning the keyboard
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - `id`, `invokedBy` (shortcut/menu/gesture), `appliesTo`, `enabled` binding, `label`. The library dispatches; **only the module's handler stays imperative.**
   - **Two things disappear and the task is not done until they do**: the four hand-written shortcut key lists, and the synthesised `{ key: "Delete", … }` object in nine canvases. A module must have no way to name an action by manufacturing a key event.
@@ -42,19 +42,19 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - **Anchors gain `visible` and `enabled` bindings on the same mechanism.** `AnchorSet` says where anchors are and nothing about whether they are shown or usable; Requirement 2.4 requires the declaration to state **whether an anchor is visible or enabled, and never how it looks**. All twenty-nine anchor declarations in the tree are `{ kind: "edge" }`, so the positional half has never been needed and the half that was missing is the one modules actually want.
   - _Requirements: 2.4, 2.6, 2.7, 2.8, 3.4_
 
-- [-] 6. The structural half of the model over the wire
+- [x] 6. The structural half of the model over the wire
   - Files: module backends, the diagram contract, the client stream hooks
   - Identity, type, position, size and connection endpoints arrive shaped for the canvas, removing the bulk of the 665 mapping lines. **The semantic half stays a binding** — the user ruled for this split on 2026-09-08 with the alternative in front of them.
   - Each module's backend keeps owning what its elements mean; only the handover shape changes.
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [-] 7. Chrome declared
+- [x] 7. Chrome declared
   - Files: `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`, tests
   - Loading, unavailable, title, legend **and view-fixed rulers** as declarations with content bound to model fields. A module wanting none declares none, **as explicitly as presence**.
   - **`timeline`'s ruler lands here**, moved from task 4 on 2026-09-08 after its mechanism was read: HTML rather than SVG, absolutely positioned over the scrolling surface, `aria-hidden`, tick positions in viewport pixels and the tick *set* derived from `ticksFor(startSeconds, endSeconds, widthPx)` so it changes with zoom. A view-fixed chrome declaration therefore needs a **tick-ladder kind** whose entries are derived from the visible range, not a fixed list.
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 8. Gate and land Group 1
+- [x] 8. Gate and land Group 1
   - All four gates green on the merged tree; the library surface is on `develop` before any module task begins.
   - _Requirements: 3.6_
 
