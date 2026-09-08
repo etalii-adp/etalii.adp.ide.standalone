@@ -80,7 +80,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - Its readme records what it declares.
   - _Requirements: 9.1, 9.2, 9.4, 8.1_
 
-- [ ] 11. The single-label modules: `dotnet-dependency-graph`, `timeline`, `c4`, `mindmap`, `azure-pipeline`
+- [x] 11. The single-label modules: `dotnet-dependency-graph`, `timeline`, `c4`, `mindmap`, `azure-pipeline`
   - Each its own landing, each with its existing tests passing unchanged.
   - _Requirements: 9.3, 9.4, 8.1, 8.2_
 
