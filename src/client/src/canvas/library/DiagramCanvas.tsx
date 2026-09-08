@@ -34,6 +34,7 @@ import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
 import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
+import { layoutLabels } from "./definition/labels";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -1590,13 +1591,70 @@ class ShapeErrorBoundary extends Component<{ bounds: ConnectorBox; label: string
  * renderer for a custom shape, and a visible fallback for anything undeclared - a mapping bug
  * shown rather than hidden (design, Error Handling 1).
  */
+/**
+ * An element's drawing: its shape, and the lines its type declares.
+ *
+ * Declared labels are drawn as siblings ON TOP of the shape rather than inside it, so a
+ * built-in shape needs no knowledge of them and a module needs no renderer to place a second
+ * line - which is the whole point of the addition. Geometry comes from `layoutLabels`, which is
+ * pure and tested apart from React.
+ */
 function renderShape(
   element: DiagramModelElement,
   type: ElementTypeDefinition | undefined,
   bounds: ConnectorBox,
   state?: import("./definition/diagramDefinition").CustomShapeState,
 ): ReactNode {
-  const label = element.label ?? "";
+  const body = renderShapeBody(element, type, bounds, state);
+  if (type?.labels === undefined) {
+    return body;
+  }
+
+  return (
+    <>
+      {body}
+      {declaredLabels(element, type, bounds)}
+    </>
+  );
+}
+
+/** The lines a type's `labels` declare, positioned and painted. */
+function declaredLabels(element: DiagramModelElement, type: ElementTypeDefinition, bounds: ConnectorBox): ReactNode {
+  const lines = layoutLabels(type.labels, { element, payload: element.payload }, bounds);
+  return lines.map((line) => (
+    <text
+      key={`${line.declarationIndex}-${line.lineIndex}`}
+      className={["library-element-label", line.className].filter(Boolean).join(" ")}
+      x={line.x}
+      y={line.y}
+      textAnchor={line.anchor}
+      style={{
+        fontSize: line.typography?.fontSize,
+        fontWeight: line.typography?.fontWeight,
+        fontStyle: line.typography?.fontStyle,
+        fill: tokenColour(line.typography?.color),
+      }}
+    >
+      {line.tooltip ? <title>{line.tooltip}</title> : null}
+      {line.text}
+    </text>
+  ));
+}
+
+/**
+ * The shape itself, and the single `label` a built-in carries.
+ *
+ * A type declaring `labels` passes an EMPTY string here and draws its text through
+ * {@link declaredLabels} instead - the two never compose, so a reader never has to work out
+ * which line came from which mechanism. An unmigrated type is untouched by any of this.
+ */
+function renderShapeBody(
+  element: DiagramModelElement,
+  type: ElementTypeDefinition | undefined,
+  bounds: ConnectorBox,
+  state?: import("./definition/diagramDefinition").CustomShapeState,
+): ReactNode {
+  const label = type?.labels !== undefined ? "" : (element.label ?? "");
   if (type === undefined) {
     return fallbackBox(bounds, element.label ?? element.id);
   }

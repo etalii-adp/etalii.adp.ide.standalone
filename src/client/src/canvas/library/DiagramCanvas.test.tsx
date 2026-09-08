@@ -854,3 +854,72 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector("foreignObject input")).toBeNull();
   });
 });
+
+describe("declared labels", () => {
+  /**
+   * The canvas half of task 2. `layoutLabels` is tested pure and apart; what this asserts is
+   * that the declaration actually reaches the drawing - a declaration nothing renders would
+   * pass every unit test and draw an empty box.
+   */
+  const declaredDefinition = () =>
+    definitionOf({
+      elementTypes: [
+        {
+          id: "card",
+          shape: "box",
+          anchors: { kind: "edge" },
+          sizing: "model",
+          labels: [
+            { text: { path: "payload.name" }, slot: "header" },
+            {
+              text: { path: "payload.rows", each: { template: "{predicate}: {value}" } },
+              slot: "body",
+              stack: { lineHeight: 12 },
+            },
+          ],
+        },
+      ],
+      relationTypes: [],
+    });
+
+  const declaredModel = (): DiagramModel => ({
+    elements: [
+      {
+        id: "c",
+        type: "card",
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 80,
+        label: "the single label",
+        payload: { name: "Marie Curie", rows: [{ predicate: "born", value: "1867" }, { predicate: "died", value: "1934" }] },
+      },
+    ],
+    connections: [],
+  });
+
+  it("draws every declared line, including one per collection entry", () => {
+    renderCanvas({}, declaredDefinition(), declaredModel());
+
+    expect(screen.getByText("Marie Curie")).toBeTruthy();
+    expect(screen.getByText("born: 1867")).toBeTruthy();
+    expect(screen.getByText("died: 1934")).toBeTruthy();
+  });
+
+  it("suppresses the built-in's own single label, so the two mechanisms never compose", () => {
+    // A reader must never have to work out which line came from `label` and which from
+    // `labels`. The element carries both here on purpose: only the declaration draws.
+    renderCanvas({}, declaredDefinition(), declaredModel());
+
+    expect(screen.queryByText("the single label")).toBeNull();
+  });
+
+  it("leaves a type that declares no labels exactly as it was", () => {
+    // Requirement 8.1's bar at the library level: the addition is inert for the twelve
+    // modules that have not migrated.
+    renderCanvas();
+
+    expect(screen.getByText("Alpha")).toBeTruthy();
+    expect(screen.getByText("Store")).toBeTruthy();
+  });
+});

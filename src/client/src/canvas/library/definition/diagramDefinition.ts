@@ -1,3 +1,5 @@
+import type { Binding, Condition } from "./binding";
+
 /**
  * The diagram definition: the one declarative place that states what a diagram type allows
  * (diagram-library Requirement 4). A module hands one of these to the library's canvas
@@ -139,11 +141,75 @@ export interface ElementStyle {
 export interface LabelTypography {
   fontSize?: number;
   fontWeight?: "normal" | "bold";
+  /**
+   * The fourth of the four the user's guidance named - size, weight, slant, colour - and the
+   * only one this did not already carry. Added by the declarative-modules work rather than
+   * speculatively: `sparql`'s annotation and `rdf`'s datatype line are both drawn italic today
+   * by a class the renderer applies by hand.
+   */
+  fontStyle?: "normal" | "italic";
   /** A theme token name. */
   color?: string;
 }
 
-/** How an element's label sits, wraps and edits (Requirement 2.3). */
+/** Where a label sits relative to its element's shape. Carried over from `LabelRule`. */
+export type LabelPlacement = "inside" | "above" | "below" | "beside" | "inset";
+
+/**
+ * A named vertical position inside the box, for the stacked-line case.
+ *
+ * Three names rather than free coordinates because a card's lines should line up between
+ * modules; `offset` is there for the notation that genuinely needs its own geometry.
+ */
+export type LabelSlot = "header" | "body" | "footer";
+
+/** How successive lines of a collection binding stack. */
+export interface LabelStack {
+  /** Distance between consecutive lines, replacing the hand-written `(index + 1) * ROW_HEIGHT`. */
+  lineHeight: number;
+  /** Where the first line sits relative to the slot's own baseline. */
+  start?: number;
+}
+
+/** One declared label. A single-label module writes one of these, which is why migration is mechanical. */
+export interface LabelDeclaration {
+  /** What it says: a field, a template, or a collection with `each`. */
+  text: Binding;
+  /** Relative to the shape. Defaults to `inside`, which is what a single centred label is. */
+  placement?: LabelPlacement;
+  /** A named line inside the box. Ignored when `offset` is given. */
+  slot?: LabelSlot;
+  /** Explicit position relative to the element's centre, for a notation with its own geometry. */
+  offset?: { x: number; y: number };
+  /** For a collection binding: how its lines stack. Ignored for a single-value binding. */
+  stack?: LabelStack;
+  typography?: LabelTypography;
+  /**
+   * Editable means through the shared inline editor, committing as an event - exactly what
+   * `LabelRule.editable` means today. A label with no single authored value beneath it is never
+   * marked editable, and a collection line cannot be: there is no one field to write back to.
+   */
+  editable?: boolean;
+  /** Trim to the box with an ellipsis, replacing the `fit(text, width)` card renderers call by hand. */
+  truncate?: boolean;
+  /** Conditional presence, replacing `badges.length > 0 ? … : null`. */
+  when?: Condition;
+  /** The `<title>` every card renderer writes by hand. */
+  tooltip?: Binding;
+  /** Extra classes for the drawn text, so colour stays in the stylesheet where a token is not enough. */
+  className?: string;
+}
+
+/**
+ * How an element's label sits, wraps and edits (Requirement 2.3).
+ *
+ * <b>Superseded by {@link ElementTypeDefinition.labels}</b>, which expresses as many lines as an
+ * element draws rather than exactly one. This stays until every module has migrated, because
+ * the library lands before any module is touched and thirteen modules still declare it; a
+ * single-label module's migration is one `LabelRule` becoming one entry in `labels`. When a
+ * type declares both, `labels` wins and this is ignored - the two never compose, because a
+ * reader should never have to work out which line came from which mechanism.
+ */
 export interface LabelRule {
   placement: "inside" | "above" | "below" | "beside" | "inset";
   /**
@@ -180,7 +246,14 @@ export interface ElementTypeDefinition {
   id: string;
   shape: BuiltInShape | CustomShapeRef;
   style?: ElementStyle;
+  /** @deprecated Superseded by {@link labels}; kept until every module has migrated. */
   label?: LabelRule;
+  /**
+   * Every line this element draws, declared - the addition that lets a module stop hand-rolling
+   * `<text>`. A single-label type writes one entry; `owl-card`'s three-part shape writes three,
+   * one of them bound to a model collection. Present, this replaces {@link label} entirely.
+   */
+  labels?: readonly LabelDeclaration[];
   anchors: AnchorSet;
   sizing: SizingRule;
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
