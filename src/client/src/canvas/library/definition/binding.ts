@@ -197,6 +197,30 @@ function fillTemplate(template: string, root: unknown): string | null {
   return collapsed.length > 0 ? collapsed : null;
 }
 
+/**
+ * One value, resolved against a ROOT rather than against a source.
+ *
+ * The per-item form: inside a collection, a path names a field of the item, not of the element.
+ * `labels`' `each` has worked this way since task 2, and `background`'s bands and regions use
+ * the same rule - because an author who had to remember that `labels.each` roots at the item
+ * while `bands.each` roots at the payload would get it wrong, and would get it wrong silently,
+ * since a mis-rooted path resolves to nothing rather than failing.
+ */
+export function resolveOneAt(binding: FieldBinding | TemplateBinding, root: unknown): string | null {
+  return resolveAgainst(binding, root);
+}
+
+/** The per-item numeric form, for a band's `start` or a region's `width`. */
+export function resolveNumberAt(binding: FieldBinding | TemplateBinding, root: unknown): number | null {
+  const text = resolveAgainst(binding, root);
+  if (text === null) {
+    return null;
+  }
+
+  const value = Number(text);
+  return Number.isFinite(value) ? value : null;
+}
+
 function resolveAgainst(binding: FieldBinding | TemplateBinding, root: unknown): string | null {
   if (!holds(binding.when, root)) {
     return null;

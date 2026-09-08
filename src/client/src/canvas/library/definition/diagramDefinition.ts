@@ -1,4 +1,5 @@
 import type { Binding, Condition } from "./binding";
+import type { BackgroundDeclaration } from "./background";
 
 /**
  * The diagram definition: the one declarative place that states what a diagram type allows
@@ -523,6 +524,23 @@ export interface DiagramBackgroundRef {
   render: (view: ShapeBounds) => unknown;
 }
 
+/**
+ * <b>A third function-valued escape hatch, and one Requirement 2.9 does not name.</b>
+ *
+ * 2.9 requires `CustomShapeRef` and `CustomRouteRef` to become unreachable from a module client.
+ * `DiagramBackgroundRef` is the same thing for the backdrop - a module-supplied `render` the
+ * library calls - and it is used by exactly the two modules the background addition is for.
+ * It stays reachable until wardley-map and sparql migrate, then it goes the same way; the
+ * declared form beside it is what replaces it. Flagged rather than removed here, because
+ * removing a contract two unmigrated modules still use would break them.
+ */
+export type DiagramBackground = DiagramBackgroundRef | BackgroundDeclaration;
+
+/** Whether a background is the old callable form rather than the declared one. */
+export function isBackgroundRef(background: DiagramBackground): background is DiagramBackgroundRef {
+  return "render" in background;
+}
+
 /** The whole statement of what a diagram type allows (Requirement 4.1). */
 export interface DiagramDefinition {
   elementTypes: readonly ElementTypeDefinition[];
@@ -536,7 +554,7 @@ export interface DiagramDefinition {
    * definitional, not derived (Requirement 9.2).
    */
   extent?: ShapeBounds;
-  background?: DiagramBackgroundRef;
+  background?: DiagramBackground;
   /**
    * Draw a relation by dragging with the RIGHT button from an element's body to another - the
    * gesture a causal loop diagram links with, where the arrows are the whole point and reaching

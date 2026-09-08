@@ -36,6 +36,8 @@ import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineL
 import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
 import { layoutLabels } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
+import { resolveBackground } from "./definition/background";
+import { isBackgroundRef } from "./definition/diagramDefinition";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -1266,8 +1268,15 @@ export function DiagramCanvas({
         </defs>
 
         {definition.background !== undefined && (
-          <g className="library-canvas-background" data-testid="canvas-background" pointerEvents="none">
-            {definition.background.render({ x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h }) as ReactNode}
+          <g className="library-canvas-background" data-testid="canvas-background" pointerEvents="none" aria-hidden="true">
+            {isBackgroundRef(definition.background)
+              ? (definition.background.render({ x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h }) as ReactNode)
+              : declaredBackground(definition.background, model, {
+                  x: effectiveView.x,
+                  y: effectiveView.y,
+                  width: effectiveView.w,
+                  height: effectiveView.h,
+                })}
           </g>
         )}
 
@@ -1682,6 +1691,49 @@ function decorationGlyph(decoration: ResolvedDecoration): ReactNode {
         />
       ) : null;
   }
+}
+
+
+/**
+ * The declared backdrop: bands, axes, gridlines and regions, in the view's own units.
+ *
+ * It resolves against the MODEL's background rather than an element's payload, because no
+ * element owns the axis. The synthetic element exists only to satisfy the one binding source
+ * shape every resolver takes - it carries no data and nothing reads it.
+ */
+function declaredBackground(
+  background: import("./definition/background").BackgroundDeclaration,
+  model: DiagramModel,
+  extent: { x: number; y: number; width: number; height: number },
+): ReactNode {
+  const resolved = resolveBackground(
+    background,
+    { element: { id: "__background__", type: "__background__", x: 0, y: 0 }, payload: model.background },
+    extent,
+  );
+
+  return (
+    <>
+      {resolved.rects.map((rect) => (
+        <rect key={rect.key} className={rect.className} x={rect.x} y={rect.y} width={rect.width} height={rect.height} />
+      ))}
+      {resolved.lines.map((line) => (
+        <line key={line.key} className={line.className} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+      ))}
+      {resolved.texts.map((text) => (
+        <text
+          key={text.key}
+          className={text.className}
+          x={text.rotate === undefined ? text.x : undefined}
+          y={text.rotate === undefined ? text.y : undefined}
+          transform={text.rotate === undefined ? undefined : `translate(${text.x} ${text.y}) rotate(${text.rotate})`}
+          textAnchor={text.anchor}
+        >
+          {text.text}
+        </text>
+      ))}
+    </>
+  );
 }
 
 /** The lines a type's `labels` declare, positioned and painted. */

@@ -9,6 +9,15 @@ import type { ConnectionStyle, ElementStyle, ShapePoint } from "../definition/di
 export interface DiagramModel {
   elements: readonly DiagramModelElement[];
   connections: readonly DiagramModelConnection[];
+  /**
+   * What a declared `background` binds against - wardley's evolution stages and attitudes.
+   *
+   * On the model rather than on an element because a background belongs to the DIAGRAM: no
+   * element owns the axis. Opaque for the same reason the element payload is - the library
+   * walks it only by a path the module's own declaration names, so nothing here learns a
+   * diagram type's schema.
+   */
+  background?: unknown;
 }
 
 export interface DiagramModelElement {
