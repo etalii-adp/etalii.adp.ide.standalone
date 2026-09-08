@@ -81,9 +81,39 @@ Every entry is now **closed**, and the third column says what closed it — the 
 | **G20** | **Edge attachment constrained to one axis.** Three canvases attach on the left or right side facing the other end whatever the angle, because the notation reads left-to-right; a true edge intersection leaves through the top for a steep pair. Each spells it in a custom shape's `edgePoint`, which is one of the two reasons those shapes exist. | 11, 12, 26 | `AnchorEnablement.edgeSides` — beside `visible` and `enabled`, because it governs the fallback a named-anchor type still uses |
 | **G21** | **An editor over a *declared* label.** `labels` replaced `label` for drawing in task 2, and the inline-editor placement was left reading only the deprecated rule — so a migrated type marked editable silently got no editor. | 11, 12, 26, and every editable row | `placementOfLabel` reads the editable declaration, and opens over the line rather than over the element |
 
+## The second register — what the migrations found
+
+**Group 3 has found more than the table did, and that is the honest headline.** The table reads
+what an element *draws*; a migration meets everything that was *attached* to the drawing — the
+handlers, the accessible name, the test ids the module's own suite reads, the editor over one
+line of a card. None of that is visible in a row-by-row reading of twenty-eight renderers, and
+every entry below was found by making a module actually work without its renderer.
+
+| Id | What was missing | Found by | Closed by |
+|---|---|---|---|
+| **G22** | **`activate` and `context-menu` as declared gestures.** Three canvases hang `onDoubleClick` and `onContextMenu` on the element they render — the *other* reason those three need a custom shape: not the drawing, the handlers attached to it. | dotnet-dependency-graph (rows 1, 12, 13) | Two more entries in the gesture set; the module hears its own action id |
+| **G23** | **An element's role, focusability and accessible name.** Left undeclared, migrating those three would have dropped an element out of the tab order and off the accessibility tree — a regression no test in this repository reports. | dotnet-dependency-graph (rows 1, 12, 13) | `ElementTypeDefinition.accessibility` |
+| **G24** | **The LIVE bounds as a binding root.** The timeline's drag hint reads the time under the element's left edge *while a drag is in flight*: not a model field, and nothing a payload can carry, because the model still holds the pre-drag position. | timeline (row 26) | `BindingSource.bounds` |
+| **G25** | **Rounding, and two ISO formats.** A landing row is a whole row; a timeline writes `yyyy-MM-ddTHH:mm:ss`. Halves round away from zero, matching `TimelineRows` on both sides of the wire. | timeline (row 26) | `NumberFormat.round`, two more `TemporalFormat` members, and nested `parts` |
+| **G26** | **Which target a class lands on.** `dotnet-dependency-element-project` selects the whole element; `dotnet-dependency-node` is the box's own fill. Collapsed, a descendant selector anchors inside the thing it is meant to contain. | dotnet-dependency-graph, c4, azure-pipeline | `ClassDeclaration.on` |
+| **G27** | **A collection of ornaments.** Four rows draw a *variable number* of small marks in a row; a fixed list of declarations cannot say "as many as there are". | azure-pipeline (rows 3, 4), mindmap (15), wardley (27) | `DecorationDeclaration.each` and `step` |
+| **G28** | **Declared `data-*` attributes.** The modules' own suites read `data-testid` and `data-expanded`, and those suites *are* this migration's acceptance: a vocabulary that could not reproduce them would force the safety net to be rewritten before it could catch anything. | azure-pipeline (rows 3, 4) | `data` on element types and on decorations — one mechanism, after a `testId` field lasted an hour |
+| **G29** | **An offset measured from an edge, and an inset from a side.** A C4 card pins three lines below its *top* so they stay put as it grows; a pipeline stage's name sits 12 from its left. | c4 (row 5), azure-pipeline (3, 4) | `LabelDeclaration.anchorTo` and `insetX` |
+| **G30** | **Where the editor opens over one line of a card.** The port of `LabelRule.insetTop`/`insetHeight`, which existed for exactly this. Derived from the typography it was two pixels out, and a test said so. | azure-pipeline (rows 3, 4) | `LabelDeclaration.editorBox` |
+| **G31** | **A silhouette and a text colour the document sets.** A C4 author sets an element's shape *and* its colours; theme tokens fixed on the type cannot say that. | c4 (row 5) | `boundStyle.silhouette`, and declared labels inheriting the element's bound label colour |
+| **G32** | **A decoration's own role and accessible name.** A glyph that means something to a reader who can see it must mean the same to one who cannot. | azure-pipeline (rows 3, 4) | `DecorationDeclaration.accessibility` |
+| **G33** | **The drop preview — G12's real closure.** The ruling that the drawing could be declared from a payload was WRONG: the candidate parent changes every frame of a drag, so no payload can carry it and the library is the only thing that knows it. | mindmap (row 15) | `DiagramDefinition.dropTarget` — the module declares the parent link, the library computes the candidate per frame and subscribes to the drag exactly as the connect preview does |
+
+**G33 is worth reading twice.** The table ruled on G12 without proof and said so at the time —
+*"it is verified when mindmap migrates, and if it fails there the failure is the design's, not
+mindmap's."* It failed there, in the half nobody had checked, and the design absorbed it: the
+decision is still the module's event handler, and the drawing is now something the library
+computes because it is the only thing that can. The ruling was right about where the seam goes
+and wrong about who could reach it.
+
 ## Status after the re-check
 
-**Twenty-one gaps found, twenty-one closed, no module marked an exception, and no unfillable row left.** Nineteen came from the table; **two came from the reference migration doing what the migration is for** — G20 and G21 below. That two of twenty-one were invisible to a row-by-row reading is the honest measure of what a table can and cannot check: it reads what an element *draws*, and both of those are about what happens *around* the drawing. Every closure is a central extension in the library — nothing was added to a module, and nothing was added that no row asked for.
+**Thirty-three gaps found, thirty-three closed, no module marked an exception, and no unfillable row left.** Twenty-one before the migrations began (nineteen from the table, two from the reference migration) and twelve more from Group 3 itself. Nineteen came from the table; **two came from the reference migration doing what the migration is for** — G20 and G21 below. That two of twenty-one were invisible to a row-by-row reading is the honest measure of what a table can and cannot check: it reads what an element *draws*, and both of those are about what happens *around* the drawing. Every closure is a central extension in the library — nothing was added to a module, and nothing was added that no row asked for.
 
 **What is proven and what is not.** Each extension has unit guards, and each guard was seen to fail against the defect it covers: nine sabotages across the three landings — state dropped from the root, an empty collection joined to a blank line, parts joined without filtering, `plus` applied before `times`, an absent number read as zero, declared classes dropped from the shape, a shape selection always taking its fallback, a bound decoration class dropped, the view scale left unclamped. What is **not** proven is that a migrated module draws what it drew before; that is Group 3's job, one module at a time, and the table is its order and its acceptance.
 
