@@ -281,7 +281,11 @@ public sealed class ProjectValidator
                 await abandon.CancelAsync();
                 _ = verdict.ContinueWith(task => _ = task.Exception, TaskScheduler.Default);
                 _logger.Warning("The {Origin} validator did not answer for {Path} within {Timeout}", origin.Key, attribution, _validatorTimeout);
-                collector.AddCore(attribution, $"The {origin.Key} validator did not answer within {_validatorTimeout.TotalSeconds:0}s.", CoreRuleIds.ValidatorFailed);
+                collector.AddCore(
+                    attribution,
+                    $"The {origin.Key} validator did not answer within {_validatorTimeout.TotalSeconds:0}s.",
+                    CoreRuleIds.ValidatorFailed,
+                    _validators.RulesVersion(origin));
                 return;
             }
             problems = await verdict;
@@ -295,7 +299,11 @@ public sealed class ProjectValidator
         {
             // A throwing module costs its own file's results and nothing more (Requirement 3.4).
             _logger.Warning(exception, "The {Origin} validator failed for {Path}", origin.Key, attribution);
-            collector.AddCore(attribution, $"The {origin.Key} validator failed: {exception.Message}", CoreRuleIds.ValidatorFailed);
+            collector.AddCore(
+                attribution,
+                $"The {origin.Key} validator failed: {exception.Message}",
+                CoreRuleIds.ValidatorFailed,
+                _validators.RulesVersion(origin));
             return;
         }
 
