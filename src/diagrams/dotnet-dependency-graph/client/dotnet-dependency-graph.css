@@ -66,12 +66,18 @@
 
 /* ---- nodes --------------------------------------------------------------------------- */
 
-.dotnet-dependency-node-box {
+/*
+  The span the shared element draws, styled to match `generic/dependencies` slot for slot -
+  the two dependency graphs are one drawing in two colourways. The kind, the selection and the
+  conflict ride the WRAPPING GROUP the shape renders, so a selector reads
+  `<state> <the span>` exactly as the authored graph's does.
+*/
+.dotnet-dependency-node {
   rx: 6;
   stroke-width: 1.5;
 }
 
-.dotnet-dependency-node-project .dotnet-dependency-node-box {
+.dotnet-dependency-element-project .dotnet-dependency-node {
   fill: var(--canvas-node-fill, #3b6ea5);
   stroke: var(--canvas-node-stroke, #2b537c);
 }
@@ -80,7 +86,7 @@
  * A package reads as consumed rather than built: lighter, and dashed to say it comes from
  * outside the solution entirely.
  */
-.dotnet-dependency-node-package .dotnet-dependency-node-box {
+.dotnet-dependency-element-package .dotnet-dependency-node {
   fill: var(--canvas-secondary-fill, #4a5568);
   stroke: var(--canvas-secondary-stroke, #6b7280);
   stroke-dasharray: 4 3;
@@ -92,13 +98,17 @@
   pointer-events: none;
 }
 
+/*
+  The second line the authored graph has no equivalent of: target frameworks on a project,
+  versions on a package. Nudged up off the span's centre so the pair reads as one block.
+*/
 .dotnet-dependency-node-subtitle {
   fill: var(--canvas-node-sublabel, #cbd5e1);
   font-size: 0.75rem;
   pointer-events: none;
 }
 
-.dotnet-dependency-node-selected .dotnet-dependency-node-box {
+.dotnet-dependency-selected .dotnet-dependency-node {
   stroke: var(--canvas-selection, #ffd166);
   stroke-width: 2.5;
 }
@@ -107,7 +117,7 @@
  * A version conflict is marked on the element, which is what Requirement 3.5 asks for: the
  * difference is made visible rather than silently collapsed into one box that says nothing.
  */
-.dotnet-dependency-node-conflict .dotnet-dependency-node-box {
+.dotnet-dependency-conflict .dotnet-dependency-node {
   stroke: var(--canvas-warning-stroke, #e0a458);
   stroke-width: 2.5;
   stroke-dasharray: none;
