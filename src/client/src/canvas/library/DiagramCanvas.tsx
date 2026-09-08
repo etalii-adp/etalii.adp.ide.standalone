@@ -9,6 +9,7 @@ import {
   orthogonalPath,
   polylinePath,
   quadraticBezierPath,
+  sideAnchorOf,
   splinePath,
   straightPath,
   horizontalBezierPath,
@@ -511,7 +512,21 @@ export function DiagramCanvas({
       // conversion here is load-bearing - without it every edge left from the corner as if
       // it were the centre, and the guard above this comment's test was seen to fail on it.
       const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-      return edgePointOf({ x: centre.x, y: centre.y, width: bounds.width, height: bounds.height }, towards.x - centre.x, towards.y - centre.y);
+      const box = { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height };
+
+      // An axis-constrained edge: the side facing the other end, whatever the angle. What
+      // three canvases spell in a custom `edgePoint` today, and one of the two reasons those
+      // shapes exist at all.
+      const sides = type?.anchors.edgeSides ?? "all";
+      if (sides === "horizontal") {
+        return sideAnchorOf(box, towards.x >= box.x ? "right" : "left");
+      }
+
+      if (sides === "vertical") {
+        return { x: box.x, y: towards.y >= box.y ? box.y + box.height / 2 : box.y - box.height / 2 };
+      }
+
+      return edgePointOf(box, towards.x - centre.x, towards.y - centre.y);
     },
     [elementTypes],
   );
@@ -1175,6 +1190,46 @@ export function DiagramCanvas({
       const element = elementsById.get(id);
       if (element !== undefined) {
         const type = elementTypes.get(element.type);
+
+        /*
+         * A DECLARED label's editor, which is register entry G21 - found by the reference
+         * migration rather than by the sufficiency table, because it is not something an
+         * element DRAWS.
+         *
+         * `labels` replaced `label` for drawing in task 2, and this function was left reading
+         * only the deprecated rule: a migrated type marked its label editable and got no
+         * editor at all. Silent, and invisible to every unit test of `layoutLabels`, which is
+         * exactly the class of thing the migration exists to catch.
+         *
+         * The editable line's own declaration decides where the editor opens, so the editor is
+         * over the text rather than over the element - the property `insetLabelPlacement` was
+         * written for and the one a three-line card needs.
+         */
+        const declared = (type?.labels ?? []).find((declaration) => declaration.editable === true);
+        if (declared !== undefined) {
+          const bounds = elementBounds(element, type);
+          const text = element.label ?? "";
+          if (declared.placement === "beside") {
+            return element.labelAt !== undefined
+              ? asideLabelPlacement(element.labelAt, 0, text)
+              : asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, text);
+          }
+
+          const lines = layoutLabels([declared], sourceOf(element), bounds);
+          const line = lines.find((candidate) => candidate.editable);
+          if (line === undefined) {
+            // The declaration is editable but this element draws no line for it - an absent
+            // field, a failed condition. There is nothing to open an editor over.
+            return null;
+          }
+
+          const height = (declared.typography?.fontSize ?? 12) + 8;
+          // The line's own baseline, converted back to a box top: the editor covers the text,
+          // and for a single centred label that is the element's box, exactly as before.
+          const top = line.y - bounds.y - height + 4;
+          return insetLabelPlacement({ x: element.x, y: element.y, width: bounds.width, height: bounds.height }, top, height, text);
+        }
+
         if (type?.label?.editable !== true) {
           return null;
         }
@@ -1857,7 +1912,10 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
       className={["library-element-label", line.className].filter(Boolean).join(" ")}
       x={line.x}
       y={line.y}
-      textAnchor={line.anchor}
+      // Only when it differs from `library-element-label`'s own rule: an inline attribute for
+      // the default would override a module's stylesheet for no reason, and every shared
+      // element leaves the anchor to CSS today.
+      textAnchor={line.anchor === "middle" ? undefined : line.anchor}
       style={{
         fontSize: line.typography?.fontSize,
         fontWeight: line.typography?.fontWeight,

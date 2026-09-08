@@ -7,19 +7,11 @@ import {
   sideAnchorOf,
   type ConnectorBox,
 } from "@client/canvas/connectors";
-import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type {
-  CustomRouteRef,
-  CustomShapeRef,
-  CustomShapeState,
-  DiagramDefinition,
-  ShapeBounds,
-  ShapePoint,
-} from "@client/canvas/library/definition/diagramDefinition";
+import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
@@ -49,62 +41,6 @@ const NODE_WIDTH = 160;
 
 /** An element as the library carries it here: the model element plus what it draws. */
 type NodeElement = DiagramModelElement & { node: DependencyGraphElement };
-
-/**
- * The class names the shared span element hangs this type's styling on. The adorner and
- * anchor entries are never rendered - the span is handed `selected: false` so the library's
- * own selection furniture is the only one drawn - but the shared type asks for them.
- */
-const SPAN_CLASSES: SpanElementClasses = {
-  span: "dependency-graph-node canvas-node",
-  moment: "dependency-graph-node-point",
-  label: "dependency-graph-label canvas-node-label",
-  hint: "dependency-graph-hint canvas-hint",
-  adorner: "dependency-graph-adorner",
-  anchor: "dependency-graph-anchor canvas-anchor",
-  anchorHit: "dependency-graph-anchor-hit canvas-anchor-hit",
-};
-
-/**
- * A node as the shared span draws it: the rounded box with the label that trims to fit.
- * Selection classes ride the wrapping group; the span's own selection furniture stays off,
- * because the library renders the anchors the definition declares.
- */
-const nodeShape: CustomShapeRef = {
-  customShape: "dependency-node",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as NodeElement;
-    const classes = ["dependency-graph-element canvas-element"];
-    if (state?.selected) {
-      classes.push("dependency-graph-selected");
-    }
-
-    if (state?.connectTarget) {
-      classes.push("dependency-graph-connect-target canvas-connect-target");
-    }
-
-    return (
-      <SpanElement
-        className={classes.join(" ")}
-        box={{ x: element.x, y: element.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
-        label={element.node.label || element.node.id}
-        selected={false}
-        classes={SPAN_CLASSES}
-      />
-    );
-  },
-  // Connectors leave a node horizontally: the side anchor facing the other end, so the
-  // resolved endpoints match the anchors the drawn bezier runs between.
-  edgePoint: (bounds: ShapeBounds, towards: ShapePoint): ShapePoint => {
-    const box: ConnectorBox = {
-      x: bounds.x + bounds.width / 2,
-      y: bounds.y + bounds.height / 2,
-      width: bounds.width,
-      height: bounds.height,
-    };
-    return sideAnchorOf(box, towards.x >= box.x ? "right" : "left");
-  },
-};
 
 /** A corner-based bounds as the centre-based connector geometry wants it. */
 function boxOf(bounds: ShapeBounds): ConnectorBox {
@@ -150,14 +86,36 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
   elementTypes: [
     {
       id: "node",
-      shape: nodeShape,
-      label: { placement: "inside", editable: true },
+      // THE SHAPE THIS MODULE USED TO DRAW ITSELF. `span` is the same shared component the
+      // custom renderer wrapped - the renderer existed to add three classes and an edge rule,
+      // both of which are declarations now.
+      shape: "span",
+      classNames: [
+        { className: "dependency-graph-element canvas-element" },
+        { className: "dependency-graph-node canvas-node" },
+        { className: "dependency-graph-selected", when: { path: "state.selected", is: "true" } },
+        { className: "dependency-graph-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+      ],
+      labels: [
+        {
+          // `label || id`, as the renderer wrote it: the element's own label, falling back to
+          // its id when the document names none.
+          text: { template: "{element.label}" },
+          placement: "inside",
+          truncate: true,
+          editable: true,
+          className: "dependency-graph-label canvas-node-label",
+        },
+      ],
       anchors: {
         kind: "sides",
         fractions: [
           { side: "left", at: 0.5, name: "left" },
           { side: "right", at: 0.5, name: "right" },
         ],
+        // The other half of what `nodeShape.edgePoint` did: a target end attaches on the side
+        // facing its source rather than by true edge intersection.
+        edgeSides: "horizontal",
       },
       sizing: "model",
     },
@@ -173,6 +131,9 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
       hitClassName: "dependency-graph-relation-hit",
       endpoints: {
         source: { elementTypes: ["node"], anchors: ["left", "right"] },
+        // `anchors: "edge"` with the type's own horizontal constraint: a connector reaches the
+        // side facing its other end, whatever the angle, because this notation reads
+        // left-to-right and an edge through the top of a box reads as a different relation.
         target: { elementTypes: ["node"], anchors: "edge" },
         allowSelf: false,
       },
