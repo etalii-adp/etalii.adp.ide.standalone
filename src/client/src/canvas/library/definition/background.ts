@@ -4,6 +4,7 @@ import {
   resolveNumberAt,
   resolveOne,
   resolveOneAt,
+  valueAtPath,
   type Binding,
   type BindingSource,
   type Condition,
@@ -211,20 +212,13 @@ function itemTextOf(binding: Binding | undefined, item: unknown): string | null 
  * than its text, so it walks the path itself and hands back the objects.
  */
 function itemsOf(binding: Binding | undefined, source: BindingSource): readonly unknown[] {
+  // No collection: one item, rooted at the source - the fixed-band case.
   if (!binding || !("path" in binding)) {
     return [null];
   }
 
-  let current: unknown = { element: source.element, payload: source.payload };
-  for (const step of binding.path.split(".")) {
-    if (typeof current !== "object" || current === null || Array.isArray(current)) {
-      return [];
-    }
-
-    current = (current as Record<string, unknown>)[step];
-  }
-
-  return Array.isArray(current) ? current : [];
+  const value = valueAtPath(binding.path, source);
+  return Array.isArray(value) ? value : [];
 }
 
 function suffixed(className: string | undefined, suffix: string): string | undefined {

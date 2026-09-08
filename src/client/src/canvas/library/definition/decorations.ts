@@ -1,4 +1,16 @@
-import { holds, resolveNumber, resolveOne, type BindingSource } from "./binding";
+import {
+  holds,
+  resolveNumber,
+  resolveNumberAt,
+  resolveOne,
+  resolveOneAt,
+  valueAtPath,
+  type Binding,
+  type BindingSource,
+  type FieldBinding,
+  type PartsBinding,
+  type TemplateBinding,
+} from "./binding";
 import type {
   DecorationDeclaration,
   DecorationGlyph,
@@ -40,6 +52,9 @@ export interface ResolvedDecoration {
   className?: string;
   markerEnd?: MarkerKind;
   tooltip?: string;
+  data?: Readonly<Record<string, string>>;
+  role?: string;
+  accessibleName?: string;
   index: number;
 }
 
@@ -100,6 +115,11 @@ export function resolveDecorations(
       return;
     }
 
+    if (declaration.each !== undefined) {
+      resolveEach(declaration, source, centre, index, resolved);
+      return;
+    }
+
     const from = pointOf(declaration.from, source, centre);
     resolved.push({
       glyph: declaration.glyph,
@@ -121,9 +141,119 @@ export function resolveDecorations(
           : (resolveOne(declaration.className, source) ?? undefined),
       markerEnd: declaration.markerEnd,
       tooltip: declaration.tooltip ? (resolveOne(declaration.tooltip, source) ?? undefined) : undefined,
+      data: resolvedData(declaration.data, (binding) => resolveOne(binding, source)),
+      role: declaration.accessibility?.role,
+      accessibleName: declaration.accessibility?.label ? (resolveOne(declaration.accessibility.label, source) ?? undefined) : undefined,
       index,
     });
   });
 
   return resolved;
+}
+
+/**
+ * One decoration per entry of a collection, stepped along from the declaration's own origin.
+ *
+ * <b>Rooted at the ITEM</b>, like every other `each` in this vocabulary: `{ path: "glyph" }`
+ * inside one reads the entry's own field, not the element's. An author who had to remember that
+ * this one rooted differently would get it wrong silently, because a mis-rooted path resolves
+ * to nothing rather than failing.
+ */
+function resolveEach(
+  declaration: DecorationDeclaration,
+  source: BindingSource,
+  centre: { x: number; y: number },
+  index: number,
+  into: ResolvedDecoration[],
+): void {
+  const items = itemsOf(declaration.each!, source);
+  const origin = pointOf(declaration.from, source, centre);
+  const step = declaration.step ?? { x: 0, y: 0 };
+
+  items.forEach((item, entry) => {
+    const at = { x: origin.x + step.x * entry, y: origin.y + step.y * entry };
+    into.push({
+      glyph: declaration.glyph,
+      from: at,
+      to: at,
+      radius: itemNumber(declaration.radius, item, 0),
+      width: itemNumber(declaration.width, item, 0),
+      height: itemNumber(declaration.height, item, 0),
+      d: declaration.d ? (resolveOneAt(asItemBinding(declaration.d), item) ?? undefined) : undefined,
+      marker: declaration.marker,
+      text: declaration.text ? (resolveOneAt(asItemBinding(declaration.text), item) ?? undefined) : undefined,
+      textAt: at,
+      textAnchor: declaration.textAnchor ?? "start",
+      typography: declaration.typography,
+      className:
+        typeof declaration.className === "string" || declaration.className === undefined
+          ? declaration.className
+          : (resolveOneAt(asItemBinding(declaration.className), item) ?? undefined),
+      markerEnd: declaration.markerEnd,
+      tooltip: declaration.tooltip ? (resolveOneAt(asItemBinding(declaration.tooltip), item) ?? undefined) : undefined,
+      data: resolvedData(declaration.data, (binding) => resolveOneAt(asItemBinding(binding), item)),
+      role: declaration.accessibility?.role,
+      accessibleName: declaration.accessibility?.label
+        ? (resolveOneAt(asItemBinding(declaration.accessibility.label), item) ?? undefined)
+        : undefined,
+      // The declaration's index and the entry's, so React keys stay stable across a re-render -
+      // and OFFSET past the plain declarations, because `index * 1000 + entry` collides with
+      // declaration 1 on the second entry of declaration 0. A test caught that, and the failure
+      // it prevents is two glyphs sharing a key and one of them vanishing on a re-render.
+      index: (index + 1) * 1000 + entry,
+    });
+  });
+}
+
+/**
+ * The `data-*` attributes a declaration names, resolved.
+ *
+ * An attribute whose binding resolves to nothing is LEFT OUT rather than written as the string
+ * "undefined" - the same rule every other resolution here follows, and the difference between
+ * an absent flag and one that reads as present.
+ */
+function resolvedData(
+  declared: Readonly<Record<string, string | Binding>> | undefined,
+  resolve: (binding: Binding) => string | null,
+): Readonly<Record<string, string>> | undefined {
+  if (declared === undefined) {
+    return undefined;
+  }
+
+  const out: Record<string, string> = {};
+  for (const [name, value] of Object.entries(declared)) {
+    const resolved = typeof value === "string" ? value : resolve(value);
+    if (resolved !== null) {
+      out[name] = resolved;
+    }
+  }
+
+  return out;
+}
+
+/** The entries a collection binding names, or none. */
+function itemsOf(each: Binding, source: BindingSource): readonly unknown[] {
+  if (!("path" in each)) {
+    return [];
+  }
+
+  const value = valueAtPath(each.path, source);
+  return Array.isArray(value) ? value : [];
+}
+
+/** A binding used per item: only the field and template forms make sense rooted at an entry. */
+function asItemBinding(binding: Binding): FieldBinding | TemplateBinding | PartsBinding {
+  return binding as FieldBinding | TemplateBinding | PartsBinding;
+}
+
+function itemNumber(value: DeclaredNumber | undefined, item: unknown, fallback: number): number {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  return resolveNumberAt(asItemBinding(value), item) ?? fallback;
 }

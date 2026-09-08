@@ -252,6 +252,24 @@ export type DecorationGlyph = "line" | "path" | "circle" | "rect" | "marker";
  */
 export interface DecorationDeclaration {
   glyph: DecorationGlyph;
+  /**
+   * A collection path: one decoration per entry, its own paths rooted at the ITEM, laid out
+   * along {@link step} from {@link from}.
+   *
+   * <b>Register entry G27, and four rows need it</b> - azure-pipeline's status indicators on a
+   * stage and on a job, mindmap's notes/link/folded glyphs, wardley's decorator badges. Every
+   * one of them draws a VARIABLE NUMBER of small marks in a row, and a fixed list of
+   * declarations cannot say "one per thing the model has". It is the same `each` labels and
+   * background already take, for the same reason.
+   */
+  each?: Binding;
+  /**
+   * How far apart successive entries sit. Only meaningful with {@link each}.
+   *
+   * A step rather than a per-item position, because the model does not know where its
+   * indicators go - it knows how many there are, and the notation decides the spacing.
+   */
+  step?: { x: number; y: number };
   /** Where it starts, relative to the element's centre. */
   from?: { x: DeclaredNumber; y: DeclaredNumber };
   /** Where a `line` ends, relative to the element's centre. */
@@ -298,6 +316,16 @@ export interface DecorationDeclaration {
   markerEnd?: MarkerKind;
   /** The `<title>` a decoration carries - a problem mark's message, an annotation's text. */
   tooltip?: Binding;
+  /** `data-*` attributes this ornament carries. See {@link ElementTypeDefinition.data}. */
+  data?: DataAttributes;
+  /**
+   * How this ornament reaches a screen reader.
+   *
+   * A problem mark is `role="img"` with the problem's message as its name: a glyph that means
+   * something to a reader who can see it must mean the same to one who cannot. The element's
+   * own {@link ElementTypeDefinition.accessibility} says nothing about its ornaments.
+   */
+  accessibility?: { role?: string; label?: Binding };
   /** Drawn only when this holds - a badge that appears for one polarity and not the other. */
   when?: Condition;
 }
@@ -364,6 +392,18 @@ export interface LabelDeclaration {
    * which slots - vertical fractions - have no way to say.
    */
   align?: "start" | "middle" | "end";
+  /** How far from the aligned edge the line sits. Only meaningful with {@link align}. */
+  insetX?: number;
+  /**
+   * Where the inline editor opens over this line, measured from the box's top.
+   *
+   * <b>The port of `LabelRule.insetTop` and `insetHeight`</b>, which existed for exactly this:
+   * an editor over a composite card must cover the ONE line it edits, not the card. Stated
+   * rather than derived from the typography, because the drawn size lives in the stylesheet and
+   * a declaration that guessed at it would be a second copy of a number nobody would remember
+   * to keep in step.
+   */
+  editorBox?: { top: number; height: number };
   /**
    * Further columns on the SAME line, each with its own inset and alignment.
    *
@@ -460,6 +500,9 @@ export function isCustomShape(shape: ShapeKind): shape is CustomShapeRef {
   return typeof shape !== "string" && "customShape" in shape;
 }
 
+/** `data-*` attributes by name, each stated outright or read from the model. */
+export type DataAttributes = Readonly<Record<string, string | Binding>>;
+
 /** One class an element carries, stated or bound, optionally conditioned. */
 export interface ClassDeclaration {
   className: string | Binding;
@@ -522,6 +565,20 @@ export interface ElementTypeDefinition {
    * template - or conditioned, including on the canvas's own {@link InteractionState}.
    */
   classNames?: readonly ClassDeclaration[];
+  /**
+   * `data-*` attributes, stated or bound - `{ testid: "stage-Build", expanded: … }`.
+   *
+   * <b>The one non-visual thing a declaration carries, and it is here because the modules' own
+   * suites are this migration's acceptance</b> (Requirement 8.1). Canvases hang test ids and
+   * state flags on what they render - `stage-Build`, `data-expanded`, `indicator-manual` - and
+   * their tests read them. A vocabulary that could not reproduce them would force exactly the
+   * tests being relied on as the safety net to be rewritten first, which would leave the
+   * migration proving nothing.
+   *
+   * ONE mechanism rather than a field per attribute: `data-expanded` arrived a day after
+   * `data-testid`, and a third would have arrived after that.
+   */
+  data?: DataAttributes;
   /**
    * The `<title>` this type's elements carry as a whole.
    *
