@@ -38,7 +38,7 @@ import { layoutLabels } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
 import { actionForGesture, actionForKey } from "./definition/actions";
-import { isBackgroundRef } from "./definition/diagramDefinition";
+import { isBackgroundRef, isCustomShape } from "./definition/diagramDefinition";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -60,11 +60,14 @@ import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "
 import { layoutAlgorithmFor, type LayoutInput } from "./layout/layoutAlgorithm";
 import type {
   AnchorSet,
-  CustomShapeRef,
+  BuiltInShape,
+  CustomShapeState,
   DiagramDefinition,
   ElementTypeDefinition,
   RelationTypeDefinition,
+  ShapeSelection,
 } from "./definition/diagramDefinition";
+import { holds, resolveOne, type Binding, type BindingSource } from "./definition/binding";
 
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
@@ -500,7 +503,7 @@ export function DiagramCanvas({
         }
       }
 
-      if (type !== undefined && typeof type.shape !== "string") {
+      if (type !== undefined && isCustomShape(type.shape)) {
         return type.shape.edgePoint(bounds, towards);
       }
 
@@ -1692,15 +1695,21 @@ function renderShape(
   state?: import("./definition/diagramDefinition").CustomShapeState,
 ): ReactNode {
   const body = renderShapeBody(element, type, bounds, state);
-  if (type?.labels === undefined && type?.decorations === undefined) {
+  if (type?.labels === undefined && type?.decorations === undefined && type?.tooltip === undefined) {
     return body;
   }
 
+  const source = sourceOf(element, state);
+  // The element's own title, which five renderers write by hand today. A <title> describes its
+  // PARENT element, so it rides here beside the body rather than inside whichever shape drew.
+  const tooltip = type?.tooltip ? resolveOne(type.tooltip, source) : null;
+
   return (
     <>
+      {tooltip !== null ? <title>{tooltip}</title> : null}
       {body}
-      {type?.decorations ? declaredDecorations(element, type, bounds) : null}
-      {type?.labels ? declaredLabels(element, type, bounds) : null}
+      {type?.decorations ? declaredDecorations(type, bounds, source) : null}
+      {type?.labels ? declaredLabels(type, bounds, source) : null}
     </>
   );
 }
@@ -1712,8 +1721,8 @@ function renderShape(
  * throughout: a decoration takes no gesture, which is the line that keeps it an ornament rather
  * than a second kind of element. Anything that needs to be clicked is an element type.
  */
-function declaredDecorations(element: DiagramModelElement, type: ElementTypeDefinition, bounds: ConnectorBox): ReactNode {
-  const resolved = resolveDecorations(type.decorations, { element, payload: element.payload }, bounds);
+function declaredDecorations(type: ElementTypeDefinition, bounds: ConnectorBox, source: BindingSource): ReactNode {
+  const resolved = resolveDecorations(type.decorations, source, bounds);
   return resolved.map((decoration) => (
     <g key={decoration.index} className={decoration.className} style={{ pointerEvents: "none" }} aria-hidden="true">
       {decorationGlyph(decoration)}
@@ -1813,8 +1822,8 @@ function declaredBackground(
 }
 
 /** The lines a type's `labels` declare, positioned and painted. */
-function declaredLabels(element: DiagramModelElement, type: ElementTypeDefinition, bounds: ConnectorBox): ReactNode {
-  const lines = layoutLabels(type.labels, { element, payload: element.payload }, bounds);
+function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, source: BindingSource): ReactNode {
+  const lines = layoutLabels(type.labels, source, bounds);
   return lines.map((line) => (
     <text
       key={`${line.declarationIndex}-${line.lineIndex}`}
@@ -1835,6 +1844,70 @@ function declaredLabels(element: DiagramModelElement, type: ElementTypeDefinitio
   ));
 }
 
+
+/**
+ * What a declaration resolves against, with the canvas's own state included.
+ *
+ * <b>The state half is what register entry G2 was about.</b> Twenty-three of the twenty-eight
+ * sufficiency rows put a class on `selected`, `dragging` or `connectTarget`; before this the
+ * conditions could see the model and nothing else, so a declared element could not look
+ * selected. Built in one place so a label, a class and a decoration all answer alike - three
+ * sources that could disagree is the drift this specification exists to remove.
+ */
+function sourceOf(element: DiagramModelElement, state?: CustomShapeState): BindingSource {
+  return {
+    element,
+    payload: element.payload,
+    state: state === undefined ? {} : { selected: state.selected, dragging: state.dragging, connectTarget: state.connectTarget },
+  };
+}
+
+/** The classes a type declares for an element, resolved and joined. */
+function declaredClassNames(type: ElementTypeDefinition, source: BindingSource): string {
+  const classes: string[] = [];
+  for (const declaration of type.classNames ?? []) {
+    if (!holds(declaration.when, source)) {
+      continue;
+    }
+
+    // Stated outright, or bound - `helm-node-{payload.kind}` is a template, which is how a
+    // kind-suffixed class arrives without the library knowing any module's kinds.
+    const resolved = typeof declaration.className === "string" ? declaration.className : resolveOne(declaration.className, source);
+    if (resolved !== null && resolved.length > 0) {
+      classes.push(resolved);
+    }
+  }
+
+  return classes.join(" ");
+}
+
+/** One bound paint value, or undefined - a theme token name, exactly as `style` takes. */
+function resolveBound(binding: Binding | undefined, source: BindingSource): string | undefined {
+  if (binding === undefined) {
+    return undefined;
+  }
+
+  return resolveOne(binding, source) ?? undefined;
+}
+
+/**
+ * The built-in a type draws for THIS element.
+ *
+ * A selection resolves through the model; an unlisted or unresolved value takes the declared
+ * fallback, because an element always draws something. There is deliberately no way for a
+ * selection to reach a custom renderer: that would be the escape hatch arriving as data, which
+ * a guard reading the source could not see.
+ */
+function shapeOf(shape: BuiltInShape | ShapeSelection, source: BindingSource): BuiltInShape {
+  if (typeof shape === "string") {
+    return shape;
+  }
+
+  const value = resolveOne({ path: shape.path }, source);
+  return (value !== null ? shape.cases[value] : undefined) ?? shape.fallback;
+}
+
+
 /**
  * The shape itself, and the single `label` a built-in carries.
  *
@@ -1853,63 +1926,117 @@ function renderShapeBody(
     return fallbackBox(bounds, element.label ?? element.id);
   }
 
+  if (isCustomShape(type.shape)) {
+    return <>{type.shape.render(element, state) as ReactNode}</>;
+  }
+
+  const source = sourceOf(element, state);
   const style = { ...type.style, ...element.style };
+  const bound = type.boundStyle;
   const paint = {
-    fill: tokenColour(style.fill),
-    stroke: tokenColour(style.stroke),
+    // Bound paint wins over the type's tokens for the fields it names, because it is the
+    // document speaking about this element rather than the declaration speaking about the type.
+    fill: tokenColour(resolveBound(bound?.fill, source) ?? style.fill),
+    stroke: tokenColour(resolveBound(bound?.stroke, source) ?? style.stroke),
     strokeWidth: style.strokeWidth,
     strokeDasharray: style.dash?.join(" "),
   };
+  const shape = shapeOf(type.shape, source);
+  // The class hook every one of the twenty-eight sufficiency rows needed: without it a migrated
+  // element draws the right geometry in the library's colours instead of its own.
+  const declared = declaredClassNames(type, source);
+  const shapeClass = ["library-shape", declared].filter(Boolean).join(" ");
 
-  if (typeof type.shape !== "string") {
-    return <>{(type.shape as CustomShapeRef).render(element, state) as ReactNode}</>;
-  }
-
-  switch (type.shape) {
+  switch (shape) {
+    case "none":
+      // No body at all: this element is its labels and its decorations. Rows 2, 8, 14 and 25.
+      return null;
+    case "moment":
+      return (
+        <circle
+          className={shapeClass}
+          cx={element.x}
+          cy={element.y}
+          r={Math.max(2, Math.min(bounds.width, bounds.height) / 2)}
+          style={paint}
+        />
+      );
+    case "double-ellipse":
+      return (
+        <g className={declared || undefined}>
+          <ellipse className="library-shape" cx={element.x} cy={element.y} rx={bounds.width / 2} ry={bounds.height / 2} style={paint} />
+          <ellipse
+            className="library-shape library-shape-inner"
+            cx={element.x}
+            cy={element.y}
+            rx={Math.max(1, bounds.width / 2 - 4)}
+            ry={Math.max(1, bounds.height / 2 - 4)}
+            style={paint}
+          />
+          {centredText(element, label)}
+        </g>
+      );
     case "box":
-      return <BoxElement x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={style.cornerRadius} label={label} boxClassName="library-shape" style={paint} />;
+      return <BoxElement x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={style.cornerRadius} label={label} boxClassName={shapeClass} style={paint} />;
     case "rounded-rectangle":
-      return <BoxElement x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={style.cornerRadius ?? 8} label={label} boxClassName="library-shape" style={paint} />;
+      return <BoxElement x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={style.cornerRadius ?? 8} label={label} boxClassName={shapeClass} style={paint} />;
     case "pill":
-      return <BoxElement x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={bounds.height / 2} label={label} boxClassName="library-shape" style={paint} />;
+      return <BoxElement x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={bounds.height / 2} label={label} boxClassName={shapeClass} style={paint} />;
     case "centered-box":
-      return <CenteredBoxElement x={element.x} y={element.y} halfWidth={bounds.width / 2} halfHeight={bounds.height / 2} text={label} style={paint} />;
+      return <CenteredBoxElement className={declared || undefined} x={element.x} y={element.y} halfWidth={bounds.width / 2} halfHeight={bounds.height / 2} text={label} style={paint} />;
     case "ellipse":
-      return <EllipseElement x={element.x} y={element.y} radiusX={bounds.width / 2} radiusY={bounds.height / 2} text={label} ellipseClassName="library-shape" style={paint} />;
+      return <EllipseElement x={element.x} y={element.y} radiusX={bounds.width / 2} radiusY={bounds.height / 2} text={label} ellipseClassName={shapeClass} style={paint} />;
     case "frame":
       // FrameElement is centre-based like the other shared elements; the corner-based bounds
       // shifted every boundary by half its box (the third corner/centre instance, caught by
       // the c4 migration's frame test before one ever mounted).
-      return <FrameElement className="library-frame" x={element.x} y={element.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
+      return <FrameElement className={["library-frame", declared].filter(Boolean).join(" ")} x={element.x} y={element.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
     case "span":
-      return <SpanElement box={{ x: element.x, y: element.y, width: bounds.width, height: bounds.height }} label={label} classes={{ span: "library-shape library-span", moment: "library-span-moment", label: "library-span-label", hint: "library-span-hint", adorner: "library-span-adorner", anchor: "library-span-anchor", anchorHit: "library-span-anchor-hit" }} style={paint} />;
+      return <SpanElement box={{ x: element.x, y: element.y, width: bounds.width, height: bounds.height }} label={label} classes={{ span: ["library-shape library-span", declared].filter(Boolean).join(" "), moment: "library-span-moment", label: "library-span-label", hint: "library-span-hint", adorner: "library-span-adorner", anchor: "library-span-anchor", anchorHit: "library-span-anchor-hit" }} style={paint} />;
     case "styled-box":
-      return <StyledBoxElement x={element.x} y={element.y} width={bounds.width} height={bounds.height} background={tokenColour(style.fill) ?? "var(--canvas-node-fill, #3b6ea5)"} color={tokenColour(style.labelTypography?.color) ?? "var(--canvas-node-label, #ffffff)"} name={label} />;
+      return (
+        <StyledBoxElement
+          className={declared || undefined}
+          x={element.x}
+          y={element.y}
+          width={bounds.width}
+          height={bounds.height}
+          background={tokenColour(resolveBound(bound?.fill, source) ?? style.fill) ?? "var(--canvas-node-fill, #3b6ea5)"}
+          color={tokenColour(resolveBound(bound?.labelColor, source) ?? style.labelTypography?.color) ?? "var(--canvas-node-label, #ffffff)"}
+          name={label}
+        />
+      );
     case "symbol":
-      return <SymbolElement x={element.x} y={element.y} label={label} labelX={element.x + 12} labelY={element.y - 8} markClassName="library-shape" style={paint} />;
+      return <SymbolElement x={element.x} y={element.y} label={label} labelX={element.x + 12} labelY={element.y - 8} markClassName={shapeClass} style={paint} />;
     case "diamond":
-      return polygonShape(bounds, label, paint, [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]]);
+      return polygonShape(bounds, label, paint, [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]], shapeClass);
     case "hexagon":
-      return polygonShape(bounds, label, paint, [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]]);
+      return polygonShape(bounds, label, paint, [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]], shapeClass);
     case "parallelogram":
-      return polygonShape(bounds, label, paint, [[0.2, 0], [1, 0], [0.8, 1], [0, 1]]);
+      return polygonShape(bounds, label, paint, [[0.2, 0], [1, 0], [0.8, 1], [0, 1]], shapeClass);
     case "cylinder":
       return (
         <g>
-          <rect className="library-shape" x={bounds.x} y={bounds.y + 6} width={bounds.width} height={bounds.height - 12} style={paint} />
-          <ellipse className="library-shape" cx={element.x} cy={bounds.y + 6} rx={bounds.width / 2} ry={6} style={paint} />
-          <ellipse className="library-shape" cx={element.x} cy={bounds.y + bounds.height - 6} rx={bounds.width / 2} ry={6} style={paint} />
+          <rect className={shapeClass} x={bounds.x} y={bounds.y + 6} width={bounds.width} height={bounds.height - 12} style={paint} />
+          <ellipse className={shapeClass} cx={element.x} cy={bounds.y + 6} rx={bounds.width / 2} ry={6} style={paint} />
+          <ellipse className={shapeClass} cx={element.x} cy={bounds.y + bounds.height - 6} rx={bounds.width / 2} ry={6} style={paint} />
           {centredText(element, label)}
         </g>
       );
   }
 }
 
-function polygonShape(bounds: ConnectorBox, label: string, paint: React.CSSProperties, corners: readonly (readonly [number, number])[]): ReactNode {
+function polygonShape(
+  bounds: ConnectorBox,
+  label: string,
+  paint: React.CSSProperties,
+  corners: readonly (readonly [number, number])[],
+  className = "library-shape",
+): ReactNode {
   const points = corners.map(([fx, fy]) => `${bounds.x + fx * bounds.width},${bounds.y + fy * bounds.height}`).join(" ");
   return (
     <g>
-      <polygon className="library-shape" points={points} style={paint} />
+      <polygon className={className} points={points} style={paint} />
       {centredText({ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }, label)}
     </g>
   );

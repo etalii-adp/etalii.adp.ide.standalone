@@ -1,4 +1,4 @@
-import { holds, resolveMany, type BindingSource } from "./binding";
+import { holds, resolveEntries, resolveMany, resolveOneAt, type BindingSource } from "./binding";
 import type { LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
 
 /**
@@ -57,6 +57,33 @@ function trimmedToWidth(text: string, width: number): string {
 }
 
 function baselineOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: number; y: number; anchor: "start" | "middle" | "end" } {
+  const placed = placementOf(declaration, bounds);
+  // A declared alignment overrides the placement's own, and moves the x to the edge it names:
+  // an `end` label sits at the box's right edge, which is what shacl's badges and cardinalities
+  // do (sufficiency row 20) and what a vertical slot fraction cannot say.
+  if (declaration.align === undefined || declaration.offset !== undefined) {
+    return placed;
+  }
+
+  return { x: alignedX(declaration.align, bounds), y: placed.y, anchor: declaration.align };
+}
+
+/** Where a column or an aligned label sits horizontally, for the alignment it declares. */
+function alignedX(align: "start" | "middle" | "end", bounds: ShapeBounds, insetX = LABEL_INSET): number {
+  switch (align) {
+    case "start":
+      return bounds.x + insetX;
+    case "end":
+      return bounds.x + bounds.width - insetX;
+    case "middle":
+      return bounds.x + bounds.width / 2;
+  }
+}
+
+/** How far from an edge an aligned label or column sits, when it does not say. */
+const LABEL_INSET = 8;
+
+function placementOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: number; y: number; anchor: "start" | "middle" | "end" } {
   const centreX = bounds.x + bounds.width / 2;
   const centreY = bounds.y + bounds.height / 2;
 
@@ -105,10 +132,12 @@ export function layoutLabels(
       return;
     }
 
-    const lines = resolveMany(declaration.text, source);
-    if (lines.length === 0) {
+    const entries = resolveEntries(declaration.text, source);
+    if (entries.length === 0) {
       return;
     }
+
+    const lines = entries.map((entry) => entry.text);
 
     const base = baselineOf(declaration, bounds);
     const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
@@ -116,6 +145,29 @@ export function layoutLabels(
 
     lines.forEach((line, lineIndex) => {
       const y = stack ? base.y + (stack.start ?? 0) + lineIndex * stack.lineHeight : base.y;
+      for (const column of declaration.columns ?? []) {
+        // The entry's OWN root: for a collection, the item this line came from.
+        const text = resolveOneAt(column.text, entries[lineIndex]!.root);
+        if (text === null) {
+          continue;
+        }
+
+        const align = column.align ?? "start";
+        laidOut.push({
+          text: column.truncate ? trimmedToWidth(text, bounds.width) : text,
+          x: alignedX(align, bounds, column.insetX),
+          y,
+          anchor: align,
+          typography: declaration.typography,
+          // Never editable: a column is a second value on somebody else's line, and an editor
+          // over it would commit to a field the line does not name.
+          editable: false,
+          className: column.className,
+          declarationIndex,
+          lineIndex,
+        });
+      }
+
       laidOut.push({
         text: declaration.truncate ? trimmedToWidth(line, bounds.width) : line,
         x: base.x,

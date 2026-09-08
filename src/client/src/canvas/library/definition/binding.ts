@@ -475,6 +475,54 @@ export function resolveNumber(binding: Binding, source: BindingSource): number |
  * four is the same: draw nothing. A binding is authored data that ships to users, and a
  * declaration with a typo in it must leave a gap in a diagram rather than take the canvas down.
  */
+/**
+ * One resolved line, and the root it was resolved against.
+ *
+ * <b>Added so a second column can read the SAME item its line came from.</b> A shacl row is a
+ * path, a summary and a cardinality on one line, per constraint; declaring three collections
+ * over the same list would resolve it three times, and - the real hazard - would let the three
+ * fall out of step the moment one carried a condition, silently pairing row 2's cardinality
+ * with row 3's path. Pairing them here makes that impossible rather than unlikely.
+ */
+export interface ResolvedEntry {
+  text: string;
+  /** What a per-item path resolves against: the item for a collection, the source root otherwise. */
+  root: unknown;
+}
+
+/** Every line a binding yields, each with the root it came from. See {@link ResolvedEntry}. */
+export function resolveEntries(binding: Binding, source: BindingSource): readonly ResolvedEntry[] {
+  const root = rootOf(source);
+
+  if (!holds(binding.when, source)) {
+    return [];
+  }
+
+  if (!("each" in binding)) {
+    const one = resolveAgainst(binding, root);
+    return one === null ? [] : [{ text: one, root }];
+  }
+
+  const items = valueAt(root, binding.path);
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  const entries: ResolvedEntry[] = [];
+  for (const item of items) {
+    const line = resolveAgainst(binding.each, item);
+    if (line !== null) {
+      entries.push({ text: line, root: item });
+    }
+  }
+
+  // A joined collection is ONE line, and its root is the source rather than any one item: a
+  // column beside a badge strip belongs to the element, not to the third badge.
+  return binding.join !== undefined
+    ? (entries.length > 0 ? [{ text: entries.map((entry) => entry.text).join(binding.join), root }] : [])
+    : entries;
+}
+
 export function resolveMany(binding: Binding, source: BindingSource): readonly string[] {
   const root = rootOf(source);
 
