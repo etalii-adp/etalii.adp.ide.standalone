@@ -1120,6 +1120,43 @@ export function DiagramCanvas({
     }
   };
 
+  /**
+   * A declared gesture on ONE element - a double-click, a right-click - dispatched by action id.
+   *
+   * Three canvases hang `onDoubleClick` and `onContextMenu` on the element they render, which is
+   * the other half of why they need a custom shape: not the drawing, the handlers attached to
+   * it. Returns true when an action fired, so the caller can leave its own behaviour alone when
+   * none did - the addition changes nothing for a module that declares no such action.
+   */
+  const dispatchElementGesture = useCallback(
+    (elementId: string, gesture: "activate" | "context-menu"): boolean => {
+      const element = elementsById.get(elementId);
+      if (element === undefined) {
+        return false;
+      }
+
+      const type = elementTypes.get(element.type);
+      const declared = actionForGesture(
+        {
+          actions: [...(definition.actions ?? []), ...(type?.actions ?? [])],
+          targetKind: "element",
+          targetId: elementId,
+          typeId: element.type,
+          source: { element, payload: element.payload },
+        },
+        gesture,
+      );
+
+      if (declared === null) {
+        return false;
+      }
+
+      raise({ kind: "action-invoked", ...declared });
+      return true;
+    },
+    [elementsById, elementTypes, definition.actions, raise],
+  );
+
   /** A declared shortcut, dispatched by action id. True when one fired. */
   function dispatchDeclaredAction(event: React.KeyboardEvent): boolean {
     for (const item of selection) {
@@ -1157,6 +1194,14 @@ export function DiagramCanvas({
   );
 
   const onItemContextMenu = (id: string) => (event: React.MouseEvent) => {
+    // A declared context-menu action takes it first: the module hears its own action id, which
+    // is what its `onContextMenu` did by hand. Nothing declared, and this behaves exactly as it
+    // always has.
+    if (dispatchElementGesture(id, "context-menu")) {
+      event.preventDefault();
+      return;
+    }
+
     if (context === undefined) {
       return;
     }
@@ -1353,6 +1398,7 @@ export function DiagramCanvas({
       press={gesture.press({ kind: "element", element })}
       anchorPress={(anchor, at) => gesture.press({ kind: "anchor", element, anchor, at })}
       onContextMenu={onItemContextMenu(element.id)}
+      onDoubleClick={() => dispatchElementGesture(element.id, "activate")}
     />
   );
 
@@ -1535,6 +1581,7 @@ function LibraryElement({
   press,
   anchorPress,
   onContextMenu,
+  onDoubleClick,
 }: {
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
@@ -1547,6 +1594,7 @@ function LibraryElement({
   press: PointerPressWiring;
   anchorPress: (anchor: string | undefined, at: Point) => PointerPressWiring;
   onContextMenu: (event: React.MouseEvent) => void;
+  onDoubleClick: (event: React.MouseEvent) => void;
 }) {
   // The scoped re-render: each element subscribes with a snapshot that is null unless the
   // published displacement is ITS OWN, so a per-frame publication re-renders the dragged
@@ -1582,18 +1630,33 @@ function LibraryElement({
   const resizing: DiagramModelElement = resize
     ? { ...shifted, x: bounds.x + bounds.width / 2, width: bounds.width }
     : shifted;
+  const groupState = { selected, dragging: offset !== null, connectTarget: connectHighlight === "valid" };
   const classes = [
     "library-element",
     selected ? "canvas-selected" : "",
     offset ? "library-element-dragging" : "",
     connectHighlight === "valid" ? "library-connect-target" : "",
     connectHighlight === "invalid" ? "library-connect-forbidden" : "",
+    // The declared half that belongs to the element rather than to its body.
+    type !== undefined ? declaredClassNames(type, sourceOf(element, groupState), "element") : "",
   ]
     .filter(Boolean)
     .join(" ");
 
+  const accessibility = type?.accessibility;
+  const accessibleName = accessibility?.label !== undefined ? resolveOne(accessibility.label, sourceOf(element)) : null;
+
   return (
-    <g className={classes} data-element-id={element.id} {...press} onContextMenu={onContextMenu}>
+    <g
+      className={classes}
+      data-element-id={element.id}
+      {...press}
+      onContextMenu={onContextMenu}
+      onDoubleClick={onDoubleClick}
+      role={accessibility?.role}
+      tabIndex={accessibility?.focusable === true ? 0 : undefined}
+      aria-label={accessibleName ?? undefined}
+    >
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
         {renderShape(resizing, type, bounds, { selected, dragging: offset !== null, connectTarget: connectHighlight === "valid" })}
       </ShapeErrorBoundary>
@@ -1947,11 +2010,11 @@ function sourceOf(element: DiagramModelElement, state?: CustomShapeState): Bindi
   };
 }
 
-/** The classes a type declares for an element, resolved and joined. */
-function declaredClassNames(type: ElementTypeDefinition, source: BindingSource): string {
+/** The classes a type declares for one target - the shape's body, or the element's group. */
+function declaredClassNames(type: ElementTypeDefinition, source: BindingSource, on: "element" | "shape" = "shape"): string {
   const classes: string[] = [];
   for (const declaration of type.classNames ?? []) {
-    if (!holds(declaration.when, source)) {
+    if ((declaration.on ?? "shape") !== on || !holds(declaration.when, source)) {
       continue;
     }
 

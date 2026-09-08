@@ -7,18 +7,10 @@ import {
   sideAnchorOf,
   type ConnectorBox,
 } from "@client/canvas/connectors";
-import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type {
-  CustomRouteRef,
-  CustomShapeRef,
-  CustomShapeState,
-  DiagramDefinition,
-  ShapeBounds,
-  ShapePoint,
-} from "@client/canvas/library/definition/diagramDefinition";
+import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -40,28 +32,6 @@ import {
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 56;
 
-/** A node as the library hands it back to the shape renderer. */
-type NodeElement = DiagramModelElement & {
-  node: DependencyElement;
-  activate: () => void;
-  contextSelect: () => void;
-};
-
-/**
- * The class contract the shared span draws through, mirroring `generic/dependencies` slot for
- * slot so the two dependency graphs are the same drawing with different colours. Every colour
- * stays in the stylesheet (tech.md's centralised-styling rule); this file names slots only.
- */
-const SPAN_CLASSES: SpanElementClasses = {
-  span: "dotnet-dependency-node canvas-node",
-  moment: "dotnet-dependency-node-point",
-  label: "dotnet-dependency-node-label canvas-node-label",
-  hint: "dotnet-dependency-node-hint canvas-hint",
-  adorner: "dotnet-dependency-node-adorner",
-  anchor: "dotnet-dependency-node-anchor canvas-anchor",
-  anchorHit: "dotnet-dependency-node-anchor-hit canvas-anchor-hit",
-};
-
 /** A node's box in connector terms - centre-anchored, which is how the span is positioned. */
 const boxOf = (bounds: ShapeBounds): ConnectorBox => ({
   x: bounds.x + bounds.width / 2,
@@ -69,86 +39,6 @@ const boxOf = (bounds: ShapeBounds): ConnectorBox => ({
   width: bounds.width,
   height: bounds.height,
 });
-
-/**
- * One node, project or package, as the shared span draws it.
- *
- * <b>The span rather than a box, to match the authored `generic/dependencies` canvas.</b> That
- * consistency is a non-functional requirement of this module's own specification, recorded
- * there as "a review criterion rather than an assertable test" - and it was never reviewed, so
- * the two dependency graphs shipped looking like different products. See the mounted canvas
- * test for the assertion that now stands in place of the review.
- *
- * The two kinds are still told apart by a CSS class rather than an inline style, so
- * Requirement 3.1's "visually distinguishable" is met by the sheet rather than by this file.
- */
-const nodeShape: CustomShapeRef = {
-  customShape: "dotnet-dependency-node",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as NodeElement;
-    const node = element.node;
-    const isPackage = node.payload.kind === DependencyElementKind.PACKAGE;
-    const kind = isPackage ? "package" : "project";
-    const classes = [
-      "dotnet-dependency-element canvas-element",
-      `dotnet-dependency-element-${kind}`,
-      state?.selected ? "dotnet-dependency-selected" : "",
-      // Collapsing LOUDLY: a package the solution's projects disagree about is marked on the
-      // element, which Requirement 3.5 asks for as against the silent collapse it forbids.
-      node.payload.hasVersionConflict ? "dotnet-dependency-conflict" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    const versions = node.payload.versions.join(", ");
-    const subtitle = isPackage ? versions : node.payload.targetFrameworks.join(", ");
-    const title = isPackage
-      ? `Package ${node.payload.name}${versions ? ` (${versions})` : ""}${node.payload.hasVersionConflict ? " - referenced at more than one version" : ""}`
-      : `Project ${node.payload.name}`;
-
-    return (
-      <SpanElement
-        className={classes}
-        data-kind={kind}
-        box={{ x: element.x, y: element.y, width: NODE_WIDTH, height: NODE_HEIGHT }}
-        label={node.payload.name}
-        // The library renders the anchors the definition declares, so the span's own selection
-        // furniture stays off - the same call `generic/dependencies` makes, for the same reason.
-        selected={false}
-        classes={SPAN_CLASSES}
-        role="button"
-        tabIndex={0}
-        aria-label={title}
-        onDoubleClick={element.activate}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          element.contextSelect();
-        }}
-      >
-        <title>{title}</title>
-        {/*
-          The one thing this graph shows that the authored one has no equivalent of: a project's
-          target frameworks, a package's versions. It rides as a child of the span rather than
-          being lost, offset below the label's centre line.
-        */}
-        {subtitle ? (
-          <text className="dotnet-dependency-node-subtitle" x={element.x} y={element.y + 14} textAnchor="middle">
-            {subtitle}
-          </text>
-        ) : null}
-      </SpanElement>
-    );
-  },
-  /**
-   * Connectors leave a node horizontally - the side facing the other end - so the resolved
-   * endpoints match the anchors the drawn bezier runs between. Copied from
-   * `generic/dependencies`, where the same pairing exists for the same reason.
-   */
-  edgePoint: (bounds: ShapeBounds, towards: ShapePoint): ShapePoint => {
-    const box = boxOf(bounds);
-    return sideAnchorOf(box, towards.x >= box.x ? "right" : "left");
-  },
-};
 
 /**
  * The connector, curved between facing side anchors.
@@ -184,7 +74,57 @@ const dependencyRoute: CustomRouteRef = {
  */
 const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
-    { id: "node", shape: nodeShape, anchors: { kind: "edge" }, sizing: "model", deletable: false },
+    {
+      id: "node",
+      // The same shared span the renderer wrapped, and the same slot contract underneath: a
+      // body rect and a label text carrying this module's classes, which is what its test
+      // pins and what makes the two dependency graphs one drawing with different colours.
+      shape: "span",
+      classNames: [
+        { className: "dotnet-dependency-element canvas-element", on: "element" },
+        { className: { template: "dotnet-dependency-element-{payload.kindClass}" }, on: "element" },
+        { className: "dotnet-dependency-selected", on: "element", when: { path: "state.selected", is: "true" } },
+        // Collapsing LOUDLY: a package the solution's projects disagree about is marked on the
+        // element, which Requirement 3.5 asks for as against the silent collapse it forbids.
+        { className: "dotnet-dependency-conflict", on: "element", when: { path: "payload.hasVersionConflict", is: "true" } },
+        { className: "dotnet-dependency-node canvas-node", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.name" },
+          placement: "inside",
+          truncate: true,
+          className: "dotnet-dependency-node-label canvas-node-label",
+        },
+        {
+          // The one thing this graph shows that the authored one has no equivalent of: a
+          // project's target frameworks, a package's versions - below the label's centre line.
+          text: { path: "payload.subtitle" },
+          offset: { x: 0, y: 14 },
+          when: { path: "payload.subtitle", is: "non-empty" },
+          className: "dotnet-dependency-node-subtitle",
+        },
+      ],
+      tooltip: {
+        parts: [
+          { template: "Project {payload.name}", when: { path: "payload.kindClass", equals: "project" } },
+          { template: "Package {payload.name}", when: { path: "payload.kindClass", equals: "package" } },
+          { template: "({payload.subtitle})", when: { path: "payload.hasVersions", is: "true" } },
+          { template: "- referenced at more than one version", when: { path: "payload.hasVersionConflict", is: "true" } },
+        ],
+        join: " ",
+      },
+      accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
+      actions: [
+        // What `onDoubleClick` and `onContextMenu` did on the rendered element. The module
+        // still decides what they mean; it no longer needs a renderer to hear them.
+        { id: "dotnet-dependency.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
+        { id: "dotnet-dependency.context-menu", invokedBy: [{ kind: "gesture", gesture: "context-menu" }], appliesTo: [{ kind: "element" }] },
+      ],
+      anchors: { kind: "edge", edgeSides: "horizontal" },
+      sizing: "model",
+      deletable: false,
+    },
   ],
   relationTypes: [
     {
@@ -262,7 +202,18 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const elements: DiagramModelElement[] = nodes.map((node) => {
-      const element: NodeElement = {
+      const isPackage = node.payload.kind === DependencyElementKind.PACKAGE;
+      const versions = node.payload.versions.join(", ");
+      const subtitle = isPackage ? versions : node.payload.targetFrameworks.join(", ");
+      const kindClass = isPackage ? "package" : "project";
+      const title = isPackage
+        ? `Package ${node.payload.name}${versions ? ` (${versions})` : ""}${node.payload.hasVersionConflict ? " - referenced at more than one version" : ""}`
+        : `Project ${node.payload.name}`;
+
+      // The payload the DECLARATION reads. Composing it here rather than in a renderer is the
+      // point of the migration: what a subtitle is made of is this module's knowledge, and
+      // where it is drawn is not.
+      const element: DiagramModelElement = {
         id: node.id,
         type: "node",
         x: node.x,
@@ -270,9 +221,14 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
         label: node.payload.name,
-        node,
-        activate: () => activate(node),
-        contextSelect: () => select(elementSelectionOf(entryId, path, node.id, ContextSelectionAction.CONTEXT_MENU)),
+        payload: {
+          name: node.payload.name,
+          kindClass,
+          subtitle,
+          hasVersions: isPackage && versions.length > 0,
+          hasVersionConflict: node.payload.hasVersionConflict,
+          title,
+        },
       };
       return element;
     });
@@ -316,6 +272,26 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
           setRejection(error);
         }
       });
+    },
+    // The two gestures the rendered element used to answer itself. Same behaviour, reached by
+    // action id: the module still decides what "activate" means, and no longer needs a shape
+    // to be told that it happened.
+    onActionInvoked: ({ actionId, targetId }) => {
+      if (targetId === undefined) {
+        return;
+      }
+
+      if (actionId === "dotnet-dependency.activate") {
+        const node = nodes.find((candidate) => candidate.id === targetId);
+        if (node !== undefined) {
+          activate(node);
+        }
+        return;
+      }
+
+      if (actionId === "dotnet-dependency.context-menu") {
+        select(elementSelectionOf(entryId, path, targetId, ContextSelectionAction.CONTEXT_MENU));
+      }
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };

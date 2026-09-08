@@ -43,7 +43,14 @@ export type ActionInvocation =
    * what nine canvases express today by building a fake `Delete` keystroke, and declaring it
    * here is what lets the library dispatch the action directly.
    */
-  | { kind: "gesture"; gesture: "delete" | "connect" | "drop" };
+  /**
+   * `activate` and `context-menu` were added by the single-label migrations (register entry
+   * G22). Three canvases - ansible-structure, dotnet-dependency-graph and helm-charts - hang
+   * `onDoubleClick` and `onContextMenu` on the element they render, which is the OTHER reason
+   * those three need a custom shape at all: not the drawing, the two handlers attached to it.
+   * Declared, the library dispatches the module's own action id and the shape goes.
+   */
+  | { kind: "gesture"; gesture: "delete" | "connect" | "drop" | "activate" | "context-menu" };
 
 /** What an action applies to. */
 export type ActionTarget =
@@ -181,7 +188,10 @@ export function actionForKey(
  * its own declared action id, so no module builds a key event to say "delete this" — and a type
  * that declares no delete action simply has none, rather than having one nobody wired.
  */
-export function actionForGesture(lookup: ActionLookup, gesture: "delete" | "connect" | "drop"): DispatchedAction | null {
+export function actionForGesture(
+  lookup: ActionLookup,
+  gesture: "delete" | "connect" | "drop" | "activate" | "context-menu",
+): DispatchedAction | null {
   for (const action of lookup.actions ?? []) {
     if (!holds(action.when, lookup.source) || !flagHolds(action.enabled, lookup.source)) {
       continue;

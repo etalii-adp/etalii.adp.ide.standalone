@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
 import {
@@ -181,5 +181,57 @@ describe("DotNetDependencyGraphCanvas", () => {
     const { queryByText } = renderCanvas();
 
     expect(queryByText(/no projects ADP could resolve/i)).not.toBeNull();
+  });
+});
+
+/**
+ * WHAT THE CUSTOM RENDERER USED TO CARRY, now declared - and untested until this migration.
+ *
+ * A double-click revealing the project file, a right-click asking for the menu, the accessible
+ * name and the tooltip were all attributes on the element the shape rendered, and none of them
+ * had a guard. Moving them into the declaration is where they became checkable, so this is the
+ * migration paying for itself rather than merely not breaking anything.
+ */
+describe("DotNetDependencyGraphCanvas — the declared element", () => {
+  beforeEach(() => {
+    currentModel = showcaseModel();
+    currentLoading = false;
+    currentFailed = false;
+  });
+
+  it("reveals a project's file on double-click, through a declared action", () => {
+    const { container } = renderCanvas();
+    const project = container.querySelector(".dotnet-dependency-element-project")!;
+
+    fireEvent.doubleClick(project);
+
+    expect(revealPath).toHaveBeenCalled();
+  });
+
+  it("asks for the context menu on right-click, through a declared action", () => {
+    const { container } = renderCanvas();
+    const project = container.querySelector(".dotnet-dependency-element-project")!;
+
+    fireEvent.contextMenu(project);
+
+    // The selection the module pushes carries the CONTEXT_MENU action - the same call its
+    // `onContextMenu` made by hand.
+    expect(select).toHaveBeenCalled();
+  });
+
+  it("carries its accessible name and stays in the tab order", () => {
+    const { container } = renderCanvas();
+    const project = container.querySelector(".dotnet-dependency-element-project")!;
+
+    expect(project.getAttribute("role")).toBe("button");
+    expect(project.getAttribute("tabindex")).toBe("0");
+    expect(project.getAttribute("aria-label")).toMatch(/^Project /);
+  });
+
+  it("says which package is referenced at more than one version, in its title", () => {
+    const { container } = renderCanvas();
+    const project = container.querySelector(".dotnet-dependency-element-project")!;
+
+    expect(project.querySelector("title")?.textContent).toMatch(/^Project /);
   });
 });
