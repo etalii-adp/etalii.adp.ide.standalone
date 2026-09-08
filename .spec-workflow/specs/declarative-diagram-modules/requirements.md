@@ -2,175 +2,194 @@
 
 ## Introduction
 
-The user's instruction, verbatim, because its last sentence is the whole specification:
+The user's instruction, verbatim, because its last sentence is the whole boundary:
 
 > *"Create a specification that standardized the code for the diagrams even more. There should be no imperative code in the modules client anymore. only declarative code that in properties and values describe how the diagram should look and behave. Only thing what is allowed is the handling of events for actions and logic validations."*
 
-So a module's client becomes **properties and values** describing appearance and behaviour, and the **only** permitted imperative code is event handling for actions and validation logic.
+And, on scope: *"also be expansive. This now needs to be done right."* — read here as licence for the specification to be as large as the problem is, and as an instruction not to trade correctness for landability. It is **not** licence to widen the boundary above; anything outside it is a question for the user rather than a requirement.
 
-This is the second standardisation pass. `diagram-library-adoption` was the first: it is archived, its criteria hold tree-wide — zero private `dragRef`/`panRef`/`connectRef` in any module, all thirteen modules rendering through `DiagramCanvas`, and canvases falling from a 466–924 line baseline to 294–621. **That pass moved the mechanics into the library. This one moves the descriptions into data.**
+Two decisions the user took directly on 2026-09-07, both against the recommendation offered:
 
-## What the measurement found
+- **Shape renderers go.** Not exempted, not kept behind an escape hatch. With the vocabulary's own shape named: *"the labels in an element should be configureable, and if those can be edited. what their layout and font size/boldness/italic are. Where the anchor points are and when they are enabled and/or not. In terms of anchor points it should not about how they look like but rather if they are visible or not."*
+- **Scope is client and wire**, so a module's model may arrive already shaped for the canvas rather than being translated by hand.
 
-**Every line of every module canvas was attributed to exactly one category by walking the TypeScript AST** — 16 canvases across 13 modules (`rdf` carries four readings; `databricks`' three wrappers delegate to one inner canvas and are excluded as trivial). The categories are disjoint and sum to the file, checked: **6,595 of 6,595 lines, exact.**
+This is the second standardisation pass. `diagram-library-adoption` was the first and is archived: zero private `dragRef`/`panRef`/`connectRef` remain, all thirteen modules render through `DiagramCanvas`, and canvases fell from a 466–924 line baseline to 294–621. **That pass moved the mechanics into the library. This one moves the descriptions into data.**
+
+## What was measured
+
+Every line of every module canvas was attributed to exactly one category by walking the TypeScript AST. The categories are disjoint and sum to the file: **6,595 of 6,595 lines, checksum exact.**
+
+**The sixteen canvases**, named so the measurement is reproducible rather than merely stated — nineteen files match `*Canvas.tsx` under `src/diagrams/*/client/`; three are `databricks`' eleven-to-thirteen-line wrappers over one inner canvas and are excluded as trivial:
+
+`AnsibleCanvas`, `PipelineCanvas` (azure-pipeline), `C4Canvas`, `CausalLoopCanvas`, `DatabricksCanvas`, `DependencyGraphCanvas`, `DotNetDependencyGraphCanvas`, `HelmCanvas`, `MindmapCanvas`, `OwlCanvas`, `RdfCanvas`, `ShaclCanvas`, `SkosCanvas`, `SparqlCanvas`, `TimelineCanvas`, `WardleyCanvas` — sixteen across thirteen modules, `rdf` contributing four readings.
 
 | Category | Lines | Share | Under the user's rule |
 | --- | --- | --- | --- |
-| Diagram definition — properties and values | 571 | 9% | **This is what should remain** |
-| Shape and route renderers (`CustomShapeRef.render`) | 997 | 15% | Imperative |
-| Event handlers (`DiagramEventHandlers`) | 470 | 7% | **Permitted** — the user's carve-out |
+| Diagram definition — properties and values | 571 | 9% | **What should remain** |
+| Shape and route renderers | 997 | 15% | Imperative |
+| Event handlers | 470 | 7% | **Permitted** — the carve-out |
 | Model mapping (module model → `DiagramModel`) | 665 | 10% | Imperative |
-| Chrome JSX (loading, failure, title, legend, host) | 731 | 11% | Imperative |
+| Chrome JSX (loading, failure, title, legend, background) | 731 | 11% | Imperative |
 | Types, constants, helpers, hook wiring | 1,545 | 23% | Imperative |
-| Imports | 383 | 6% | — |
-| Comments | 714 | 11% | — |
-| Blank | 519 | 8% | — |
+| Imports / comments / blank | 1,616 | 25% | — |
 
-**Nine percent of a module client is declarative today. Seven percent is the permitted carve-out. Fifty-nine percent is imperative code the instruction says should not exist.**
+**Nine percent of a module client is declarative. Seven percent is the permitted carve-out. Fifty-nine percent is imperative code the instruction says should not exist.**
 
-### The central finding: the vocabulary exists and has no adopters
+### The vocabulary exists, is fully implemented, and has no adopters
 
-`diagramDefinition.ts` already declares everything the instruction describes, and the tree already holds the components it names:
+`BuiltInShape` declares **thirteen** shapes — `box`, `centered-box`, `ellipse`, `frame`, `span`, `styled-box`, `symbol`, `rounded-rectangle`, `diamond`, `hexagon`, `pill`, `parallelogram`, `cylinder` — and **all thirteen render**: seven through components under `canvas/elements/`, and six inline in `DiagramCanvas` (`rounded-rectangle` and `pill` as `BoxElement` with a different corner radius, three polygons through a shared helper, `cylinder` as a composed group). *A declared shape without its own component folder is not an unkept promise; that reading was checked and withdrawn.*
 
-- **`BuiltInShape`** is exactly `"box" | "centered-box" | "ellipse" | "frame" | "span" | "styled-box" | "symbol"` — the seven components under `canvas/elements/`.
-- **`LabelRule`** carries `placement`, `editable`, `wrap`, `truncate` and the inset offsets.
-- **`ElementStyle`** carries `fill`, `stroke`, `strokeWidth`, `dash`, `cornerRadius` and **`LabelTypography`** — `fontSize`, `fontWeight`, `color`.
-- **`AnchorSet`** carries `edge`, `compass`, `sides` and `points`.
-- `sizing`, `draggable`, `deletable`, `beneathConnections` are all declared properties.
+Beside it: `LabelRule` carries placement, editability, wrap and truncation; `ElementStyle` carries fill, stroke, dash, corner radius and a `LabelTypography` of size, weight and colour — **the user's label guidance describes fields that already exist**; `AnchorSet` carries `edge`, `compass`, `sides` and `points`.
 
-**Zero of the sixteen canvases declare a built-in shape. All sixteen declare a `CustomShapeRef` instead** — and **not one of those renderers draws arbitrary graphics: every one wraps one of the same seven components.** The 997 lines are overwhelmingly prop-shuffling: reading model fields and handing them to a component the definition could have named.
+And yet:
 
-**All twenty-nine anchor declarations in the tree are `{ kind: "edge" }`.** The compass, sides and points vocabularies have never been used once.
+- **Zero of the sixteen canvases declare a built-in shape.** All twenty-eight element types across thirteen modules declare a `CustomShapeRef` instead. The editor modules declare none at all, so this is a diagram-module pattern exactly.
+- **All twenty-nine anchor declarations in the tree are `{ kind: "edge" }`.** Compass, sides and points have never been used once.
+- **`BUILT_IN_SHAPES`, the exported enumeration, has exactly one reference in the tree: its own definition** — under a comment describing a guard and a toolbox that derive from it. Both consumers are imagined. This is a stale record in the file this specification builds on.
 
-So this specification is not building a vocabulary. **It is closing an escape hatch that was taken universally, and extending the vocabulary exactly where the escape hatch was covering for a gap.** That is a far smaller problem than 997 lines suggests, and it has a precedent tonight: the shared appearance layer was built, six modules adopted it, five bypassed it, and nothing failed — a shared capability with an unguarded alternative is a shared capability with drift.
+### Why the vocabulary went unused — three gaps, measured not guessed
+
+All twenty-eight renderers were parsed. Not one draws a freehand diagram; every one either wraps a shared component or draws a small fixed decoration:
+
+| What the renderer does | Count |
+| --- | --- |
+| Wraps exactly one shared component, no raw SVG | **12** |
+| Wraps a component **and adds raw `<text>`** | ~10 |
+| Uses **no** shared component — a stub, a badge, an annotation, a target dot | **5** |
+
+The cause is one sentence: **every built-in shape carries exactly one `label`.** Only `styled-box` carries more, and its three are fixed as name, type-line and description. So a module drawing a card with a second line of text has no declarative way to say so, and must escape. That is the user's guidance about configurable labels arriving as **the diagnosis of the failure** rather than as a request.
+
+Three gaps follow, and they are different from each other:
+
+1. **Multiple labels.** One label per shape, no way to declare a second line, its position, or its typography. Ten renderers hand-roll `<text>` for exactly this.
+2. **Decorations.** A stub reaching to nothing, a loop badge, an annotation, an evolution target — five renderers draw a small fixed ornament with no component and no vocabulary.
+3. **A notation background.** `wardley-map` draws axes, evolution stage bands, attitude regions and annotations under everything; `timeline` draws a ruler. This is a coordinate-space backdrop, not element chrome, and nothing declares it.
+
+**The proof case is not what it appears.** `WardleyCanvas` is the largest at 621 lines and the only canvas with substantial raw SVG — but of its twenty-four raw-SVG lines, **three are an element** (a circle and a label) and **twenty-one are its background**. Wardley's shapes are trivial; its *background* is the gap. A specification that reads "wardley is the hard shape" would solve the wrong problem.
+
+### Behaviour is not declared either — it is wired by hand, and it has drifted
+
+The user's revision feedback, anchored on the shapes requirement: *"Not only how they look, but also if and how they are enabled, how actions work (rename, delete, connect etc.)"*. Measured against the tree, that is the same finding as labels, one layer over.
+
+**Enablement is half-declared.** `dragging: DraggingPolicy` states it canvas-wide; `draggable` and `deletable` override per element type; `label.editable` and the route label's `editable` state it per label; `connectOnRightDrag` states one gesture; relation definitions constrain endpoints and `allowSelf`; `layout.modes` states which arrangements a type allows. **So the contract knows how to say "enabled", and says it for six things and not for the rest.**
+
+**Actions are not declared at all.** Which actions a diagram type offers is inferred from which handlers its author happened to write, and the wiring is copied per module:
+
+- **Eleven canvases hand-write a structural shortcut list**, and there are **four different lists for the same intent**: `["F2"]` in seven, `["F2", "Insert"]` in c4, `["F2", "Insert", "Tab", "Enter"]` in dependency-graph and timeline, and `["Insert", "Enter", "F2", " ", "Tab"]` in mindmap. Same rule, four spellings, hand-copied apart — precisely what `usePointerGesture`'s own comment records about the movement threshold before it was centralised.
+- **Nine canvases synthesise a keystroke to express an action**, building `{ key: "Delete", ctrl: false, shift: false, alt: false, meta: false }` by hand and sending it to the backend. A module manufacturing a fake key event to say "delete this" is the sharpest evidence available that the action itself has nowhere to be declared.
+- **Six canvases wire no structural action at all**, and nothing distinguishes "this type has no rename" from "nobody wired one".
+
+**The line the feedback draws is sharper than the one the first draft drew.** The user's boundary permits *"handling of events for actions"*. So **an action's wiring — that it exists, whether it is enabled, what it applies to, what invokes it — is description and belongs in the declaration; the handler that runs when it fires stays imperative.** "Event handlers are allowed" was not testable. "An action is declared, its handler is code" is.
 
 ### Why review will not hold this
 
-`dotnet-dependency-graph`'s own requirements carried *"consistency with the authored `generic/dependencies` canvas"* as **a review criterion rather than an assertable test. It was never reviewed and it is not satisfied.** A standardisation rule that cannot fail a build will drift the same way, and this tree already has the mechanism that does not: `noPrivateGestures.test.ts`, `noPrivateScrollbars.test.ts`, `noPrivateLabelEditors.test.ts` and `sharedStylesheetImports.test.ts` each walk every module, collect every offender, fail once naming all of them, and carry a population canary so an empty offender list means compliance rather than a walk that matched nothing.
+`dotnet-dependency-graph`'s own requirements carried *"consistency with the authored `generic/dependencies` canvas"* as **a review criterion rather than an assertable test. It was never reviewed and it is not satisfied.** This tree already has the mechanism that does not drift: `noPrivateGestures`, `noPrivateScrollbars`, `noPrivateLabelEditors` and `sharedStylesheetImports` each walk every module, collect every offender, fail once naming all of them, and carry a population canary so an empty offender list means compliance rather than a walk that matched nothing.
 
 ## Alignment with Product Vision
 
-`structure.md` requires that canvas rendering infrastructure not depend on any single diagram type's schema, and that a new diagram type be addable without touching core code. **A module that ships a renderer has a private rendering path; a module that ships a declaration does not.** This is that rule applied to the last thing the modules still hold: the drawing itself.
+`structure.md` requires canvas infrastructure not to depend on any diagram type's schema, and a new type to be addable without touching core code. **A module that ships a renderer holds a private rendering path; a module that ships a declaration does not.** This applies that rule to the last thing modules still hold — the drawing itself.
 
-`product.md`'s **"Don't reinvent, integrate"**, read inward: sixteen canvases re-implementing prop-passing over seven shared components is reinvention inside our own walls, and the measurement above is its size.
+`product.md`'s **"Don't reinvent, integrate"**, read inward: twenty-eight renderers re-implementing prop-passing over a vocabulary that already exists is reinvention inside our own walls, and the table above is its size.
 
 ## Requirements
 
 ### Requirement 1 — The permitted surface is defined so a build can check it
 
-**User Story:** As the person who set this rule, I want "no imperative code except event handling and validation" to be a statement a test can evaluate, so that compliance is a fact rather than an opinion.
+1. WHEN the permitted surface is stated THEN it SHALL name exactly what a module client may contain — a **declaration** of properties and values, **event handlers** for actions, **validation logic**, and the registration binding them — and SHALL name nothing else.
+2. WHEN "event handling for actions" is defined THEN it SHALL mean receiving a library event and dispatching a backend action, command or selection — **not** computing appearance, position or geometry, which is description.
+3. WHEN "validation logic" is defined THEN it SHALL mean answering whether an operation is permitted, and SHALL NOT be read as licence for arbitrary computation under a validating name.
+4. WHEN the rule is applied THEN a module SHALL be judged by what its client contains, not by how its author described it.
+5. WHERE a module cannot comply without a change to shared code THEN that SHALL be a stop-and-report producing a **central** change, never a local exception.
 
-#### Acceptance Criteria
+### Requirement 2 — Appearance AND behaviour are declared, never written
 
-1. WHEN the permitted surface is stated THEN it SHALL name exactly what a module client may contain: a **diagram definition** of properties and values, **event handlers** for actions, **validation logic**, and the registration that binds them — and SHALL name nothing else.
-2. WHEN "event handling for actions" is defined THEN it SHALL mean a handler that receives a library event and dispatches a backend action, command or selection — **not** a handler that computes appearance, position or geometry, which is description and belongs in the declaration.
-3. WHEN "validation logic" is defined THEN it SHALL mean a module answering whether an operation is permitted — a refusal, a guard on a gesture — and SHALL NOT be read as licence for arbitrary computation under a validating name.
-4. WHEN the rule is applied THEN it SHALL be expressible as a check over every module client, and a module SHALL be judged by what its client contains rather than by how its author described it.
-5. WHERE a module cannot comply without a change to shared code THEN that SHALL be a stop-and-report producing a central change, never a local exception.
+**User Story:** As a module author, I want to state in properties what my elements look like, whether they are enabled, and how their actions work — rename, delete, connect — so that no module ships a renderer or hand-wires an action.
 
-### Requirement 2 — Shapes are declared, never rendered
+1. WHEN a module declares an element type THEN it SHALL name a built-in shape and configure it with properties, and **no module client SHALL contain a shape or route render function.**
+2. WHEN a label is declared THEN its content, position, editability and typography SHALL all be properties.
+3. WHEN an element needs more than one label THEN the declaration SHALL express **as many as it draws**, each with its own position and typography — the gap that sent ten renderers to raw `<text>`.
+4. WHEN anchors are declared THEN the declaration SHALL say where they are and **whether they are visible or enabled**, and SHALL NOT describe how they look.
+5. WHEN appearance varies with data THEN it SHALL be a **binding from a model field to a property**, never a function computing the property.
+6. WHEN an element type's actions are declared THEN the declaration SHALL state **which actions it offers** — rename, delete, connect and the module's own — **whether each is enabled**, what it applies to, and what invokes it; and no module client SHALL hand-write a shortcut key list or synthesise a keystroke to express an action.
+7. WHEN an action is declared THEN **only its handler SHALL remain imperative** — the code that runs when it fires — because that is precisely the carve-out the user permitted, and the declaration is what makes the carve-out checkable.
+8. WHEN enablement is declared THEN it SHALL be stated uniformly, so that a type offering no rename is distinguishable from a type whose rename nobody wired — a distinction the tree cannot currently make.
+9. WHEN this requirement is complete THEN `CustomShapeRef` and `CustomRouteRef` SHALL be removed from the contract or unreachable from any module client, and the choice recorded with its reason.
 
-**User Story:** As a module author, I want to say what my elements look like in properties, so that no module ships a renderer.
+### Requirement 3 — The vocabulary gains exactly what the escape hatch was covering
 
-#### Acceptance Criteria
+1. WHEN the vocabulary is extended THEN it SHALL close the four measured gaps — **multiple labels, decorations, a notation background, and declared actions with their enablement** — and the design SHALL treat each as its own addition rather than one general mechanism.
+2. WHEN a decoration is declared THEN a stub, a badge, an annotation and a target dot SHALL all be expressible, since those are the five that use no component today.
+3. WHEN a notation background is declared THEN `wardley-map`'s axes, stage bands and regions and `timeline`'s ruler SHALL both be expressible, because two instances make it a category rather than a special case.
+4. WHEN actions are declared THEN the four drifted shortcut lists SHALL collapse to one stated rule, and the nine synthesised `Delete` keystrokes SHALL disappear — a module SHALL never build a key event to name an action.
+5. WHEN an addition is proposed THEN it SHALL be justified by a module that needs it, named, and SHALL NOT be added speculatively.
+6. **THEN the shared library change SHALL be recognised as its own body of work**, sequenced before module migration, and SHALL NOT be discovered inside a module task.
 
-1. WHEN a module declares an element type THEN it SHALL name a **built-in shape** and configure it with properties, and **no module client SHALL contain a shape or route render function.**
-2. WHEN a label is declared THEN its **content, layout, editability and typography SHALL all be properties** — which line of the element it is, where it sits, whether it may be edited in place, and its size, weight and slant — so that a module never writes markup to place or style text.
-3. WHEN anchors are declared THEN the declaration SHALL say **where they are and whether they are visible or enabled**, and SHALL NOT describe how they look — appearance is the shared layer's, and a module choosing an anchor's appearance is the drift this specification removes.
-4. WHEN an element's appearance varies with its data — a status colour, a kind-specific silhouette — THEN that SHALL be expressed as a **binding from a model field to a property**, never as a function computing the property.
-5. WHEN a module's current renderer does something no property can express THEN the missing property SHALL be **added to the shared vocabulary**, and the finding SHALL be recorded with the module that needed it.
-6. WHEN this requirement is complete THEN `CustomShapeRef` and `CustomRouteRef` SHALL either be removed from the definition contract or be unreachable from any module client, and the choice SHALL be recorded with its reason.
+### Requirement 4 — Sufficiency is proven, not asserted
 
-### Requirement 3 — The vocabulary is proven sufficient, not asserted sufficient
+1. WHEN the vocabulary is designed THEN its sufficiency SHALL be established against **all sixteen canvases**, not a representative sample.
+2. WHEN a shape is examined THEN the record SHALL state which built-in replaces it and which properties carry what its renderer computed.
+3. WHERE a canvas cannot be expressed THEN that SHALL be reported as a gap **before** migration, never resolved by leaving a module imperative.
+4. WHEN sufficiency is claimed THEN it SHALL come with sixteen worked answers attached, not from the vocabulary existing.
 
-**User Story:** As the developer doing this, I want to know before I start that all thirteen modules can be expressed, so that I do not discover on the last one that the vocabulary cannot say what it needs.
+### Requirement 5 — The model arrives shaped for the canvas
 
-#### Acceptance Criteria
+1. WHEN a module's model reaches its client THEN it SHALL arrive in the shape the canvas consumes, so the 665 lines of per-module mapping become declared bindings or nothing.
+2. WHEN the mapping is removed THEN the change MAY reach the wire and the module backends — scope decided by the user on 2026-09-07 — and the design SHALL state what crosses and why.
+3. WHEN the wire changes THEN each module's backend SHALL keep owning what its elements mean; only the handover shape changes.
+4. WHEN this is designed THEN the cost of a protocol change SHALL be weighed against a client-side binding and the choice recorded — the backend completed an eleven-task decomposition the day before this was written.
 
-1. WHEN the vocabulary is designed THEN its sufficiency SHALL be established against **all sixteen canvases**, not against a representative sample — the appearance-layer finding this week measured two offenders where five existed, because the detector was keyed on the fix rather than the defect.
-2. WHEN a shape is examined THEN the record SHALL state which built-in shape replaces it and which properties carry what its renderer computed.
-3. WHERE a canvas cannot be expressed THEN that SHALL be reported as a vocabulary gap with the property it needs, **before** migration begins, rather than resolved by leaving that module imperative.
-4. WHEN the hard cases are considered THEN `wardley-map` — the largest canvas at 621 lines, the only one drawing substantial raw SVG, and the one whose notation carries a fixed coordinate space and a map background — SHALL be treated as the proof case, since a vocabulary that expresses it expresses the rest.
-5. WHEN sufficiency is claimed THEN it SHALL be claimed with the sixteen worked answers attached, not from the seven built-in shapes existing.
+### Requirement 6 — Chrome and background are declared
 
-### Requirement 4 — The model arrives shaped for the canvas
+1. WHEN a canvas shows loading, unavailable, a title or a legend THEN those SHALL be declared, with content bound to model fields, rather than hand-written per module.
+2. WHEN a module wants none THEN the absence SHALL be as explicit as the presence.
+3. WHEN two modules show the same state THEN a reader SHALL see the same thing.
 
-**User Story:** As a module author, I want the data I receive to be what the canvas draws, so that no module writes a translation loop.
+### Requirement 7 — Compliance is asserted, never reviewed
 
-#### Acceptance Criteria
+1. WHEN the rule is guarded THEN one shared check SHALL walk every module client, collect every offender, and fail once naming all of them with file and rule.
+2. WHEN the check is written THEN it SHALL carry a population canary in **both** shapes — a floor on modules walked, and a named member asserted present.
+3. WHEN the check discovers modules THEN it SHALL discover **by artifact rather than by folder**, keyed per the file owning the property, so composition cannot misreport.
+4. WHEN the check is accepted THEN it SHALL first have been **seen to fail** against a deliberately non-compliant module.
+5. WHERE the check reads text and can be evaded by a renderer under an unrecognisable name THEN that limit SHALL be stated in its own doc-comment.
+6. **THEN `BUILT_IN_SHAPES`' stale comment SHALL be made true or corrected** — it describes a guard and a toolbox that do not exist, and this specification creates the guard.
 
-1. WHEN a module's model reaches its client THEN it SHALL arrive in the shape the canvas consumes, so that the 665 lines of per-module mapping become **declared field bindings or nothing at all**.
-2. WHEN the mapping is removed THEN the change MAY reach the wire and the module backends — this specification's scope is client **and** wire, decided by the user on 2026-09-07 — and the design SHALL state what crosses and why.
-3. WHEN the wire changes THEN each module's backend SHALL keep owning what its elements mean; only the shape in which they are handed over changes.
-4. WHEN a module is migrated THEN what the user sees SHALL be identical, and the module's existing tests SHALL pass unchanged.
-5. WHEN this requirement is designed THEN the cost of a protocol change SHALL be weighed against a purely client-side binding, and the choice recorded — the backend has just completed an eleven-task decomposition, and its contract layer settled hours before this specification was written.
+### Requirement 8 — Nothing a user sees changes
 
-### Requirement 5 — The surrounding chrome is declared too
+1. WHEN a module is migrated THEN its existing client tests SHALL pass unchanged; a test that must change is **evidence of a behaviour change**, not a test to update.
+2. WHEN a migration alters what is drawn THEN it is a defect in the vocabulary or the declaration, not an acceptable cost.
+3. WHEN typography moves from a stylesheet into declared properties THEN that is a visible-outcome change and SHALL be verified rather than assumed.
+4. WHEN the work completes THEN a manual check SHALL confirm in a real browser that a representative diagram of each shape family draws as before.
 
-**User Story:** As a reader, I want loading, failure, titles and legends to look the same in every diagram, because they are the same thing in every diagram.
+### Requirement 9 — Thirteen modules is the migration, and its shape is stated
 
-#### Acceptance Criteria
-
-1. WHEN a canvas shows a loading state, an unavailable state, a title or a legend THEN those SHALL be **declared** — present or absent, with their content bound to model fields — rather than hand-written per module, which is where 731 lines currently sit.
-2. WHEN chrome is declared THEN a module that wants none SHALL declare none, and the absence SHALL be as explicit as the presence.
-3. WHEN two modules show the same state THEN a reader SHALL see the same thing, since the only reason they differ today is that each wrote its own.
-
-### Requirement 6 — Compliance is asserted, never reviewed
-
-**User Story:** As a maintainer, I want the rule to fail a build, because a standardisation rule this repository could only review has already drifted once.
-
-#### Acceptance Criteria
-
-1. WHEN the rule is guarded THEN one shared check SHALL walk **every module client**, collect every offender, and fail once naming all of them with the file and the rule — the shape `noPrivateGestures`, `noPrivateScrollbars`, `noPrivateLabelEditors` and `sharedStylesheetImports` already use.
-2. WHEN the check is written THEN it SHALL carry a **population canary in both shapes** the record names: a floor on how many modules it walked, and a named member asserted present — so an empty offender list means compliance rather than a walk that matched nothing.
-3. WHEN the check discovers modules THEN it SHALL discover them **by artifact rather than by folder**, and be keyed per the file that owns the property, so that composition — `databricks`' three wrappers over one inner canvas — cannot misreport.
-4. WHEN the check is accepted THEN it SHALL first have been **seen to fail** against a deliberately non-compliant module, because a guard that has only ever passed is asserting its own regex.
-5. WHEN the check reports THEN its message SHALL name the module, the rule and the file in one sentence a module author can act on without opening this specification.
-6. WHERE the check reads text and can therefore be evaded by a renderer under an unrecognisable name THEN that limit SHALL be stated in the check's own doc-comment, as the sibling guards state theirs.
-
-### Requirement 7 — Nothing a user sees changes
-
-**User Story:** As someone using these diagrams, I want a standardisation to cost me nothing.
-
-#### Acceptance Criteria
-
-1. WHEN a module is migrated THEN its existing client tests SHALL pass unchanged, and a test that must change SHALL be **evidence of a behaviour change** rather than a test to update.
-2. WHEN a migration alters what is drawn THEN it SHALL be treated as a defect in the vocabulary or the declaration, not as an acceptable cost of standardising.
-3. WHEN a module declared appearance through CSS classes THEN its stylesheet SHALL keep working, or the change SHALL be stated: typography moving from a stylesheet into declared properties is a visible-outcome change and SHALL be verified rather than assumed.
-4. WHEN the work is complete THEN a manual check SHALL confirm in a real browser that a representative diagram of each shape family draws as it did before.
-
-### Requirement 8 — Thirteen modules is the migration, and its shape is stated
-
-**User Story:** As the developer who will do this, I want to know whether I am making one change or sixteen, before I start.
-
-#### Acceptance Criteria
-
-1. WHEN the migration is planned THEN **one module SHALL be migrated first as the reference**, and its diff SHALL be the pattern the rest follow — the shape `diagram-library-adoption` used.
-2. WHEN the reference is chosen THEN it SHALL be justified, and the vocabulary gaps it exposes SHALL be closed centrally before the second module begins.
-3. WHEN modules are migrated THEN each SHALL be its own landing with its own tests passing unchanged, and they SHALL NOT be swept together.
-4. WHEN a module is migrated THEN its readme SHALL record what it declares, so the next author copies a declaration rather than inferring one.
-5. WHERE a module is being changed by other work while this proceeds THEN the ordering SHALL account for it — `dotnet-dependency-graph` was under active change when this specification was written.
-6. WHEN every module is migrated THEN the measured shares in the table above SHALL be re-measured and recorded, so the outcome is a number rather than a claim.
+1. WHEN the migration is planned THEN **one module SHALL be migrated first as the reference**, and its diff SHALL be the pattern.
+2. WHEN the reference is chosen THEN it SHALL be justified, and the gaps it exposes closed centrally before the second begins.
+3. WHEN modules are migrated THEN each SHALL be its own landing with tests passing unchanged, never swept together.
+4. WHEN a module is migrated THEN its readme SHALL record what it declares.
+5. WHERE a module is under active change THEN ordering SHALL account for it.
+6. WHEN every module is migrated THEN the measured shares SHALL be **re-measured and recorded**, so the outcome is a number rather than a claim.
 
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
-- The vocabulary is shared code and belongs to the canvas library; what a module's elements *mean* stays in the module. A property whose name contains a diagram type is a design error.
-- A module adopts by deleting, not by adding: the declaration replaces the renderer, the mapping and the chrome rather than sitting beside them.
+- The vocabulary is shared code; what a module's elements *mean* stays in the module. A property whose name contains a diagram type is a design error.
+- A module adopts by **deleting**: the declaration replaces the renderer, the mapping and the chrome rather than sitting beside them.
 
 ### Reliability
 
-- A migrated module draws what it drew. Requirement 7.1's pass-unchanged bar is the instrument, and it is nearly free.
+- A migrated module draws what it drew. Requirement 8.1's pass-unchanged bar is the instrument and it is nearly free.
 
 ### Usability
 
-- A module author meeting the vocabulary should be able to express a new diagram type without reading another module's client — which is the test `structure.md` already sets and that a tree of sixteen renderers currently fails.
+- A module author should express a new diagram type without reading another module's client — the test `structure.md` already sets and that twenty-eight renderers currently fail.
 
 ## Sources
 
-- The line attribution: every module canvas parsed with the TypeScript compiler at `0a8c6137`, categories disjoint, checksum exact at 6,595 lines.
-- `src/client/src/canvas/library/definition/diagramDefinition.ts` — `BuiltInShape`, `LabelRule`, `ElementStyle`, `LabelTypography`, `AnchorSet`, and the `CustomShapeRef` escape hatch.
-- `src/client/src/canvas/elements/` — the seven components the built-in shapes name.
-- `noPrivateGestures.test.ts`, `noPrivateScrollbars.test.ts`, `noPrivateLabelEditors.test.ts`, `sharedStylesheetImports.test.ts` — the guard shape Requirement 6 follows.
-- The archived `diagram-library-adoption` specification — the first pass, its criteria, and its reference-migration shape.
+- Line attribution: every module canvas parsed with the TypeScript compiler at `0a8c6137`; categories disjoint, checksum exact at 6,595 lines. A first brace-counting heuristic returned three canvases with zero definition lines and was discarded rather than quoted.
+- Renderer analysis: all 28 `CustomShapeRef` declarations parsed for the components and raw SVG each uses.
+- `diagramDefinition.ts` — `BuiltInShape` (13), `LabelRule`, `ElementStyle`, `LabelTypography`, `AnchorSet`, `BUILT_IN_SHAPES`.
+- `DiagramCanvas.tsx` — the shape switch, thirteen cases, verified individually.
+- Behaviour analysis: every `structuralShortcutFor` key list and every synthesised `key: "Delete"` object across the sixteen canvases, counted at `0a8c6137`.
+- The user's revision feedback on card `approval_1788853854128_nsokaved5`, 2026-09-08, anchored on the shapes requirement.
+- The archived `diagram-library-adoption` — the first pass and its reference-migration shape.
