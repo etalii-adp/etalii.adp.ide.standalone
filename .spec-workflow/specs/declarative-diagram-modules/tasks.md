@@ -74,7 +74,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
 
 ## Group 3 — The migration, one module per landing
 
-- [ ] 10. Reference migration: `dependency-graph`
+- [x] 10. Reference migration: `dependency-graph`
   - One element type, one route, one shared component with no raw SVG, a full action set including a synthesised Delete, median size at 382 lines. It exercises labels, actions and the shape swap **without** also being the first test of decorations or background. `dotnet-dependency-graph` is deliberately not the reference despite being smaller: it was under active change when this was written, and a reference measured against a moving target proves nothing.
   - **Its diff is the pattern**, and the gaps it exposes are closed centrally before task 11 begins.
   - Its readme records what it declares.
