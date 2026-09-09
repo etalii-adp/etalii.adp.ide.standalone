@@ -1,13 +1,10 @@
 import { useMemo, useState } from "react";
 
-import { straightPath } from "@client/canvas/connectors";
-import { SymbolElement } from "@client/canvas/elements/symbol/SymbolElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { CustomShapeRef, CustomShapeState, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -21,7 +18,7 @@ import {
   WardleyDecorator,
   WardleyElementKind,
 } from "@client/generated/wardley-map_pb";
-import type { WardleyAxis, WardleyElement, WardleyModel } from "./wardleyModel";
+import type { WardleyElement, WardleyModel } from "./wardleyModel";
 import { useWardleyStream } from "./useWardleyStream";
 
 /**
@@ -143,85 +140,8 @@ function attitudeName(kind: WardleyAttitudeKind): string {
   }
 }
 
-/** A circle's edge, for the connector geometry - the same box edge the old canvas anchored on. */
-function circleEdgePoint(bounds: ShapeBounds, towards: { x: number; y: number }) {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/**
- * A component, anchor or submap as a first-class custom shape: the shared symbol mark with
- * this notation's decorations - variant by kind, decorator badges, inertia, the label at its
- * authored pixel offset - while hit-testing, edge attachment and dragging stay the library's.
- */
-const markShape: CustomShapeRef = {
-  customShape: "wardley-mark",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as MarkElement;
-    const mark = element.mark;
-    const x = element.x;
-    const y = element.y;
 
-    // The label offset is in PIXELS rather than map coordinates - a property of the format,
-    // which ADP reproduces rather than corrects.
-    const labelX = x + (mark.labelOffset?.x ?? DOT + 6);
-    const labelY = y + (mark.labelOffset?.y ?? 4);
-
-    const decorations = mark.decorators.map(decoratorName).filter((name) => name.length > 0);
-    const badges = [...decorations, ...(mark.inertia ? ["inertia"] : [])];
-
-    const variant =
-      mark.kind === WardleyElementKind.ANCHOR
-        ? ("square" as const)
-        : mark.kind === WardleyElementKind.SUBMAP
-          ? ("double-circle" as const)
-          : ("circle" as const);
-
-    return (
-      <SymbolElement
-        className={`wardley-element-group wardley-kind-${kindName(mark.kind)}${state?.dragging ? " wardley-dragging" : ""}${state?.selected ? " wardley-selected" : ""}`}
-        x={x}
-        y={y}
-        radius={DOT}
-        variant={variant}
-        label={mark.name}
-        labelX={labelX}
-        labelY={labelY}
-        badges={badges}
-        inertia={mark.inertia}
-        markClassName="wardley-element"
-        outerClassName="wardley-element-outer"
-        labelClassName="wardley-element-label"
-        badgesClassName="wardley-element-badges"
-        inertiaClassName="wardley-inertia"
-      />
-    );
-  },
-  edgePoint: circleEdgePoint,
-};
-
-/** The destination of an evolve statement: the hollow dot, with the override name where one is given. */
-const evolveTargetShape: CustomShapeRef = {
-  customShape: "wardley-evolve-target",
-  render: (raw) => {
-    const element = raw as EvolveTargetElement;
-    return (
-      <g>
-        <circle className="wardley-evolve-target" cx={element.x} cy={element.y} r={DOT} />
-        {element.overrideName ? (
-          <text className="wardley-element-label" x={element.x + DOT + 6} y={element.y + 4}>
-            {element.overrideName}
-          </text>
-        ) : null}
-      </g>
-    );
-  },
-  edgePoint: circleEdgePoint,
-};
 
 /**
  * What a Wardley map allows, stated once: marks that drag inside the intrinsic 0..1 space and
@@ -232,13 +152,165 @@ const evolveTargetShape: CustomShapeRef = {
  * none). The axis chrome, attitudes, accelerators, notes and annotations are the background:
  * inert before the migration, inert after it.
  */
-function definitionOf(model: WardleyModel, scale: MapScale): DiagramDefinition {
+function definitionOf(scale: MapScale): DiagramDefinition {
   return assertValidDiagramDefinition({
     elementTypes: [
-      { id: "component", shape: markShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "beside", editable: true } },
-      { id: "anchor", shape: markShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "beside", editable: true } },
-      { id: "submap", shape: markShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "beside", editable: true } },
-      { id: "evolve-target", shape: evolveTargetShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
+      {
+        id: "component",
+        // The mark the notation draws, chosen per element from the document: a component is a
+        // circle, an anchor a square, a submap a double ring.
+        shape: "symbol",
+        boundStyle: { silhouette: { path: "payload.variant" } },
+        classNames: [
+          { className: "wardley-element-group", on: "element" },
+          { className: { template: "wardley-kind-{payload.kind}" }, on: "element" },
+          { className: "wardley-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
+          { className: "wardley-selected", on: "element", when: { path: "state.selected", is: "true" } },
+          { className: "wardley-element", on: "shape" },
+          { className: "wardley-element-outer", on: "shape-inner" },
+        ],
+        labels: [
+          {
+            // AT THE DOCUMENT'S OWN OFFSET. A Wardley map stores each mark's label offset in
+            // pixels - a property of the format, which ADP reproduces rather than corrects -
+            // and `beside` now draws where the element says, which is where its editor opens.
+            text: { path: "payload.name" },
+            placement: "beside",
+            editable: true,
+            className: "wardley-element-label",
+          },
+          {
+            // What the author claimed about this element, and the wall it is pushed against.
+            text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+            when: { path: "payload.badges", is: "non-empty" },
+            placement: "beside",
+            offset: { x: 0, y: 14 },
+            className: "wardley-element-badges",
+          },
+        ],
+        decorations: [
+          {
+            // The inertia bar: the wall movement would meet, drawn where it stands.
+            glyph: "line",
+            from: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.top", number: { plus: -6 } } },
+            to: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.bottom", number: { plus: 6 } } },
+            className: "wardley-inertia",
+            when: { path: "payload.inertia", is: "true" },
+          },
+        ],
+        anchors: { kind: "edge" },
+        sizing: "model",
+      },
+      {
+        id: "anchor",
+        // The mark the notation draws, chosen per element from the document: a component is a
+        // circle, an anchor a square, a submap a double ring.
+        shape: "symbol",
+        boundStyle: { silhouette: { path: "payload.variant" } },
+        classNames: [
+          { className: "wardley-element-group", on: "element" },
+          { className: { template: "wardley-kind-{payload.kind}" }, on: "element" },
+          { className: "wardley-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
+          { className: "wardley-selected", on: "element", when: { path: "state.selected", is: "true" } },
+          { className: "wardley-element", on: "shape" },
+          { className: "wardley-element-outer", on: "shape-inner" },
+        ],
+        labels: [
+          {
+            // AT THE DOCUMENT'S OWN OFFSET. A Wardley map stores each mark's label offset in
+            // pixels - a property of the format, which ADP reproduces rather than corrects -
+            // and `beside` now draws where the element says, which is where its editor opens.
+            text: { path: "payload.name" },
+            placement: "beside",
+            editable: true,
+            className: "wardley-element-label",
+          },
+          {
+            // What the author claimed about this element, and the wall it is pushed against.
+            text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+            when: { path: "payload.badges", is: "non-empty" },
+            placement: "beside",
+            offset: { x: 0, y: 14 },
+            className: "wardley-element-badges",
+          },
+        ],
+        decorations: [
+          {
+            // The inertia bar: the wall movement would meet, drawn where it stands.
+            glyph: "line",
+            from: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.top", number: { plus: -6 } } },
+            to: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.bottom", number: { plus: 6 } } },
+            className: "wardley-inertia",
+            when: { path: "payload.inertia", is: "true" },
+          },
+        ],
+        anchors: { kind: "edge" },
+        sizing: "model",
+      },
+      {
+        id: "submap",
+        // The mark the notation draws, chosen per element from the document: a component is a
+        // circle, an anchor a square, a submap a double ring.
+        shape: "symbol",
+        boundStyle: { silhouette: { path: "payload.variant" } },
+        classNames: [
+          { className: "wardley-element-group", on: "element" },
+          { className: { template: "wardley-kind-{payload.kind}" }, on: "element" },
+          { className: "wardley-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
+          { className: "wardley-selected", on: "element", when: { path: "state.selected", is: "true" } },
+          { className: "wardley-element", on: "shape" },
+          { className: "wardley-element-outer", on: "shape-inner" },
+        ],
+        labels: [
+          {
+            // AT THE DOCUMENT'S OWN OFFSET. A Wardley map stores each mark's label offset in
+            // pixels - a property of the format, which ADP reproduces rather than corrects -
+            // and `beside` now draws where the element says, which is where its editor opens.
+            text: { path: "payload.name" },
+            placement: "beside",
+            editable: true,
+            className: "wardley-element-label",
+          },
+          {
+            // What the author claimed about this element, and the wall it is pushed against.
+            text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+            when: { path: "payload.badges", is: "non-empty" },
+            placement: "beside",
+            offset: { x: 0, y: 14 },
+            className: "wardley-element-badges",
+          },
+        ],
+        decorations: [
+          {
+            // The inertia bar: the wall movement would meet, drawn where it stands.
+            glyph: "line",
+            from: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.top", number: { plus: -6 } } },
+            to: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.bottom", number: { plus: 6 } } },
+            className: "wardley-inertia",
+            when: { path: "payload.inertia", is: "true" },
+          },
+        ],
+        anchors: { kind: "edge" },
+        sizing: "model",
+      },
+      {
+        id: "evolve-target",
+        // The destination dot of an `evolve` statement: a mark and, where the statement renames
+        // it, the name it lands under.
+        shape: "symbol",
+        classNames: [{ className: "wardley-evolve-target", on: "shape" }],
+        labels: [
+          {
+            text: { path: "payload.overrideName" },
+            when: { path: "payload.overrideName", is: "non-empty" },
+            placement: "beside",
+            className: "wardley-element-label",
+          },
+        ],
+        anchors: { kind: "edge" },
+        sizing: "model",
+        draggable: false,
+      },
     ],
     relationTypes: [
       {
@@ -282,9 +354,91 @@ function definitionOf(model: WardleyModel, scale: MapScale): DiagramDefinition {
     extent: { x: -MARGIN, y: -MARGIN, width: scale.width + MARGIN * 2, height: scale.height + MARGIN * 2 },
     // And its hard edge: a mark must not be draggable off the map while the pointer is down.
     dragBounds: { x: 0, y: 0, width: scale.width, height: scale.height },
+    // THE BACKDROP, DECLARED - and with it the third escape hatch closes. Twenty-one of the
+    // twenty-four raw-SVG lines this module drew were these: evolution bands with their
+    // boundaries and names, two axes with a rotated title and end labels, attitude regions, and
+    // the map's own furniture. Every position below is a fraction of the declared extent, which
+    // the fold converts from the map's 0..1 space - the module's arithmetic, not the library's.
     background: {
-      background: "wardley-chrome",
-      render: (view: ShapeBounds) => <WardleyBackground model={model} view={view} scale={scale} />,
+      className: "wardley-chrome",
+      bands: [
+        {
+          each: { path: "payload.stages" },
+          orientation: "vertical",
+          start: { path: "start" },
+          end: { path: "end" },
+          label: { path: "label" },
+          // A boundary BETWEEN stages: the library skips the first, because a rule at the map's
+          // own left edge would be the axis rather than a boundary.
+          edge: true,
+          className: { path: "className" },
+          typography: { fontSize: 20, scaleWithView: { min: 0.35, max: 2.5 } },
+        },
+      ],
+      axes: [
+        {
+          orientation: "vertical",
+          title: { template: "Value chain" },
+          startLabel: { template: "Visible" },
+          endLabel: { template: "Invisible" },
+          className: "wardley-axis",
+          typography: { fontSize: 20, scaleWithView: { min: 0.35, max: 2.5 } },
+        },
+        {
+          orientation: "horizontal",
+          title: { template: "Evolution" },
+          className: "wardley-axis",
+          typography: { fontSize: 20, scaleWithView: { min: 0.35, max: 2.5 } },
+        },
+      ],
+      regions: [
+        {
+          each: { path: "payload.attitudes" },
+          x: { path: "x" },
+          y: { path: "y" },
+          width: { path: "width" },
+          height: { path: "height" },
+          label: { path: "label" },
+          className: { path: "className" },
+        },
+      ],
+      marks: [
+        {
+          // An accelerator: a short rule with the name it carries.
+          each: { path: "payload.accelerators" },
+          x: { path: "x" },
+          y: { path: "y" },
+          glyph: "rule",
+          width: 16,
+          label: { path: "name" },
+          labelOffset: { x: 22, y: 4 },
+          className: { path: "className" },
+        },
+        {
+          // A note: free text where its author pinned it, and no glyph at all.
+          each: { path: "payload.notes" },
+          x: { path: "x" },
+          y: { path: "y" },
+          glyph: "none",
+          label: { path: "text" },
+          className: "wardley-note",
+        },
+        {
+          // EVERY OCCURRENCE, not just the first: one numbered annotation may be pinned in
+          // several places and none of them may be lost - which is why the fold hands over a
+          // FLAT list, and why nested collections are refused rather than quietly half-drawn.
+          each: { path: "payload.annotations" },
+          x: { path: "x" },
+          y: { path: "y" },
+          glyph: "circle",
+          radius: 11,
+          label: { path: "number" },
+          labelOffset: { x: 0, y: 4 },
+          labelAnchor: "middle",
+          tooltip: { path: "text" },
+          className: "wardley-annotation",
+        },
+      ],
     },
   });
 }
@@ -318,7 +472,7 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
 
   // The definition closes over the model for its background - read every render, so the axis
   // and the inert furniture follow the document without a remount.
-  const definition = useMemo(() => definitionOf(model, scale), [model, scale]);
+  const definition = useMemo(() => definitionOf(scale), [model, scale]);
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const marks = [...model.elements.values()].map((element): MarkElement => ({
@@ -335,6 +489,22 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         x: scale.x(element.x) + (element.labelOffset?.x ?? DOT + 6),
         y: scale.y(element.y) + (element.labelOffset?.y ?? 4) - 4,
       },
+      // What the declaration reads: the mark's kind, the badges the author claimed, and the
+      // wall it is pushed against.
+      payload: {
+        name: element.name,
+        kind: kindName(element.kind),
+        variant:
+          element.kind === WardleyElementKind.ANCHOR
+            ? "square"
+            : element.kind === WardleyElementKind.SUBMAP
+              ? "double-circle"
+              : "circle",
+        inertia: element.inertia,
+        badges: [...element.decorators.map(decoratorName).filter((name) => name.length > 0), ...(element.inertia ? ["inertia"] : [])].map(
+          (text) => ({ text }),
+        ),
+      },
       mark: element,
     }));
 
@@ -350,6 +520,8 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         y: scale.y(element.y),
         width: DOT * 2,
         height: DOT * 2,
+        payload: { overrideName: element.evolve!.overrideName },
+        labelAt: { x: scale.x(element.evolve!.maturity) + DOT + 6, y: scale.y(element.y) + 4 },
         overrideName: element.evolve!.overrideName || undefined,
       }));
 
@@ -374,8 +546,15 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         targetId: `evolve:${element.id}`,
       }));
 
-    return { elements: [...marks, ...evolveTargets], connections: [...links, ...evolves] };
-  }, [model]);
+    return {
+      elements: [...marks, ...evolveTargets],
+      connections: [...links, ...evolves],
+      // THE BACKDROP AS DATA. Every position is a fraction of the declared extent, which is the
+      // map's 0..1 space plus its margin - the conversion is this module's arithmetic, because
+      // the margin is this notation's and the library has no opinion about it.
+      background: backgroundOf(model, scale),
+    };
+  }, [model, scale]);
 
   /** The backend's push is the selection; the canvas renders it and never decides. */
   const librarySelection = useMemo<DiagramSelection>(
@@ -488,133 +667,54 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   );
 }
 
+
 /**
- * Everything inert, drawn behind the elements: the bands, axes and their labels, the attitude
- * regions, the accelerators, the notes and the numbered annotations. All of it ignored every
- * gesture before the migration, and the background layer is what keeps it that way - at the
- * recorded cost that a note overlapping a link now draws beneath it rather than above.
+ * The map's chrome as data: bands, attitudes, accelerators, notes and numbered annotations,
+ * every one of them positioned as a fraction of the declared extent.
  *
- * The stage boundaries come from the model's axis, never from a constant here: the backend
- * holds the one copy and this draws what it is told.
+ * <b>This is where the third escape hatch closes.</b> `DiagramBackgroundRef` was a function the
+ * library called to draw a backdrop; what it drew was this, and it is a value now.
+ *
+ * <b>Annotations are FLATTENED here</b>, one entry per occurrence: a numbered annotation may be
+ * pinned in several places, and a background's `each` reads one level. Doing it in the fold is
+ * the module saying what its own model means, which is the half that stays module code.
  */
-function WardleyBackground({ model, view, scale }: { model: WardleyModel; view: ShapeBounds; scale: MapScale }) {
-  // Stage and axis labels hold a readable size as the map is zoomed; the boundaries they name
-  // do not, because a position is only meaningful against its own axes.
-  const scaleFactor = view.width / (scale.width + MARGIN * 2);
-  const labelSize = 20 * Math.max(0.35, Math.min(2.5, scaleFactor));
+function backgroundOf(model: WardleyModel, scale: MapScale): unknown {
+  // A map coordinate as a fraction of the extent: the plotted space sits inside a margin on
+  // every side, so 0 on the map is not 0 on the extent.
+  const fx = (value: number) => (scale.x(value) + MARGIN) / (scale.width + MARGIN * 2);
+  const fy = (value: number) => (scale.y(value) + MARGIN) / (scale.height + MARGIN * 2);
 
-  return (
-    <g className="wardley-chrome" aria-hidden="true">
-      <WardleyAxes axis={model.axis} labelSize={labelSize} scale={scale} />
-
-      {[...model.attitudes.values()].map((attitude) => (
-        <g key={attitude.id}>
-          <rect
-            className={`wardley-attitude wardley-attitude-${attitudeName(attitude.kind)}`}
-            x={scale.x(Math.min(attitude.x, attitude.opposite.x))}
-            y={scale.y(Math.min(attitude.y, attitude.opposite.y))}
-            width={scale.x(Math.abs(attitude.opposite.x - attitude.x))}
-            height={scale.y(Math.abs(attitude.opposite.y - attitude.y))}
-          />
-          <text
-            className="wardley-attitude-label"
-            x={scale.x(Math.min(attitude.x, attitude.opposite.x)) + 8}
-            y={scale.y(Math.min(attitude.y, attitude.opposite.y)) + 22}
-          >
-            {attitudeName(attitude.kind)}
-          </text>
-        </g>
-      ))}
-
-      {[...model.accelerators.values()].map((accelerator) => (
-        <g key={accelerator.id} className="wardley-accelerator">
-          <path
-            className={accelerator.isDeaccelerator ? "wardley-accelerator-back" : "wardley-accelerator-forward"}
-            d={straightPath(
-              { x: scale.x(accelerator.x) - 16, y: scale.y(accelerator.y) },
-              { x: scale.x(accelerator.x) + 16, y: scale.y(accelerator.y) },
-            )}
-          />
-          <text className="wardley-element-label" x={scale.x(accelerator.x) + 22} y={scale.y(accelerator.y) + 4}>
-            {accelerator.name}
-          </text>
-        </g>
-      ))}
-
-      {[...model.notes.values()].map((note) => (
-        <text key={note.id} className="wardley-note" x={scale.x(note.x)} y={scale.y(note.y)}>
-          {note.text}
-        </text>
-      ))}
-
-      {/* Every occurrence, not just the first: one numbered annotation may be pinned in
-          several places, and none of them may be lost. */}
-      {[...model.annotations.values()].flatMap((annotation) =>
-        annotation.occurrences.map((occurrence, index) => (
-          <g key={`${annotation.id}-${index}`} className="wardley-annotation">
-            <circle cx={scale.x(occurrence.x)} cy={scale.y(occurrence.y)} r={11} />
-            <text x={scale.x(occurrence.x)} y={scale.y(occurrence.y) + 4} textAnchor="middle">
-              {annotation.number}
-            </text>
-            <title>{annotation.text}</title>
-          </g>
-        )),
-      )}
-    </g>
-  );
+  return {
+    stages: (model.axis?.stages ?? []).map((stage, index) => ({
+      start: fx(stage.start),
+      end: fx(stage.end),
+      label: stage.label,
+      className: `wardley-band wardley-band-${index}`,
+    })),
+    attitudes: [...model.attitudes.values()].map((attitude) => ({
+      x: fx(Math.min(attitude.x, attitude.opposite.x)),
+      y: fy(Math.min(attitude.y, attitude.opposite.y)),
+      width: fx(Math.abs(attitude.opposite.x - attitude.x)) - fx(0),
+      height: fy(Math.abs(attitude.opposite.y - attitude.y)) - fy(0),
+      label: attitudeName(attitude.kind),
+      className: `wardley-attitude wardley-attitude-${attitudeName(attitude.kind)}`,
+    })),
+    accelerators: [...model.accelerators.values()].map((accelerator) => ({
+      x: fx(accelerator.x),
+      y: fy(accelerator.y),
+      name: accelerator.name,
+      className: accelerator.isDeaccelerator ? "wardley-accelerator-back" : "wardley-accelerator-forward",
+    })),
+    notes: [...model.notes.values()].map((note) => ({ x: fx(note.x), y: fy(note.y), text: note.text })),
+    annotations: [...model.annotations.values()].flatMap((annotation) =>
+      annotation.occurrences.map((occurrence) => ({
+        x: fx(occurrence.x),
+        y: fy(occurrence.y),
+        number: String(annotation.number),
+        text: annotation.text,
+      })),
+    ),
+  };
 }
 
-/** The bands, the two axes and their labels - what an empty map shows on its own. */
-function WardleyAxes({ axis, labelSize, scale }: { axis?: WardleyAxis; labelSize: number; scale: MapScale }) {
-  return (
-    <>
-      {(axis?.stages ?? []).map((stage, index) => (
-        <g key={stage.label}>
-          <rect
-            className={`wardley-band wardley-band-${index}`}
-            x={scale.x(stage.start)}
-            y={0}
-            width={scale.x(stage.end - stage.start)}
-            height={scale.height}
-          />
-          {index > 0 ? (
-            <line
-              className="wardley-band-edge"
-              x1={scale.x(stage.start)}
-              y1={0}
-              x2={scale.x(stage.start)}
-              y2={scale.height}
-            />
-          ) : null}
-          <text
-            className="wardley-band-label"
-            x={scale.x((stage.start + stage.end) / 2)}
-            y={scale.height + 34}
-            fontSize={labelSize}
-            textAnchor="middle"
-          >
-            {stage.label}
-          </text>
-        </g>
-      ))}
-
-      {/* The value chain: the user need at the top, invisible at the bottom. */}
-      <line className="wardley-axis" x1={0} y1={0} x2={0} y2={scale.height} />
-      {/* Evolution: genesis at the left, commodity at the right. */}
-      <line className="wardley-axis" x1={0} y1={scale.height} x2={scale.width} y2={scale.height} />
-
-      <text className="wardley-axis-label" transform={`translate(${-34} ${scale.height / 2}) rotate(-90)`} fontSize={labelSize} textAnchor="middle">
-        Value chain
-      </text>
-      <text className="wardley-axis-end" x={-14} y={12} fontSize={labelSize * 0.8} textAnchor="end">
-        Visible
-      </text>
-      <text className="wardley-axis-end" x={-14} y={scale.height} fontSize={labelSize * 0.8} textAnchor="end">
-        Invisible
-      </text>
-      <text className="wardley-axis-label" x={scale.width / 2} y={scale.height + 66} fontSize={labelSize} textAnchor="middle">
-        Evolution
-      </text>
-    </>
-  );
-}

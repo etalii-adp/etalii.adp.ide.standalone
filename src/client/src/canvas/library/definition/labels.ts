@@ -78,8 +78,12 @@ function numberOf(value: DeclaredNumber | undefined, source: BindingSource, fall
   return resolveNumber(value, source) ?? fallback;
 }
 
-function baselineOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: number; y: number; anchor: "start" | "middle" | "end" } {
-  const placed = placementOf(declaration, bounds);
+function baselineOf(
+  declaration: LabelDeclaration,
+  bounds: ShapeBounds,
+  element: { labelAt?: { x: number; y: number } },
+): { x: number; y: number; anchor: "start" | "middle" | "end" } {
+  const placed = placementOf(declaration, bounds, element);
   // A declared alignment overrides the placement's own, and moves the x to the edge it names:
   // an `end` label sits at the box's right edge, which is what shacl's badges and cardinalities
   // do (sufficiency row 20) and what a vertical slot fraction cannot say.
@@ -105,7 +109,11 @@ function alignedX(align: "start" | "middle" | "end", bounds: ShapeBounds, insetX
 /** How far from an edge an aligned label or column sits, when it does not say. */
 const LABEL_INSET = 8;
 
-function placementOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: number; y: number; anchor: "start" | "middle" | "end" } {
+function placementOf(
+  declaration: LabelDeclaration,
+  bounds: ShapeBounds,
+  element: { labelAt?: { x: number; y: number } },
+): { x: number; y: number; anchor: "start" | "middle" | "end" } {
   const centreX = bounds.x + bounds.width / 2;
   const centreY = bounds.y + bounds.height / 2;
 
@@ -122,8 +130,20 @@ function placementOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: n
       return { x: centreX, y: bounds.y - 6, anchor: "middle" };
     case "below":
       return { x: centreX, y: bounds.y + bounds.height + 14, anchor: "middle" };
-    case "beside":
-      return { x: bounds.x + bounds.width + 6, y: centreY + 4, anchor: "start" };
+    case "beside": {
+      // THE ELEMENT'S OWN LABEL ORIGIN WHERE IT HAS ONE. A Wardley map stores each mark's label
+      // offset in the document - in pixels, which is a property of the format that ADP
+      // reproduces rather than corrects - and the inline editor has always opened at exactly
+      // this point. A label that drew somewhere else would put the editor over text that is
+      // not there.
+      const at = declaration.offset ?? { x: 0, y: 0 };
+      // The baseline, not the box top: `labelAt` is where the EDITOR opens - the top-left of
+      // the text it replaces - and a drawn line sits four below that, the same four every other
+      // placement here adds.
+      return element.labelAt !== undefined
+        ? { x: element.labelAt.x + at.x, y: element.labelAt.y + 4 + at.y, anchor: "start" }
+        : { x: bounds.x + bounds.width + 6 + at.x, y: centreY + 4 + at.y, anchor: "start" };
+    }
     case "inset":
     case "inside":
     default: {
@@ -188,7 +208,7 @@ export function layoutLabels(
 
     const lines = entries.map((entry) => entry.text);
 
-    const base = baselineOf(declaration, bounds);
+    const base = baselineOf(declaration, bounds, source.element);
     const stackStart = numberOf(declaration.stack?.start, source, 0);
     const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
     const stack = declaration.stack;

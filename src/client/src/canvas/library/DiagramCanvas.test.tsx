@@ -507,16 +507,20 @@ describe("DiagramCanvas", () => {
   });
 
   it("a declared background draws behind the elements, and a declared extent is what fit shows", () => {
+    // THE BACKDROP IS DATA NOW. This test held a module-supplied `render` until task 14, which
+    // was the third function-valued escape hatch; wardley-map was its only user and it went
+    // with that migration. The declared form says the same thing as a value.
     const definition = definitionOf({
       extent: { x: 0, y: 0, width: 1000, height: 500 },
-      background: { background: "axis", render: (view) => <line data-testid="axis" x1={view.x} y1={0} x2={view.x + view.width} y2={0} /> },
+      background: { className: "axis-chrome", axes: [{ orientation: "horizontal", className: "axis" }] },
     });
     const { container } = renderCanvas({}, definition);
 
     const svg = container.querySelector("svg.library-canvas-surface")!;
     expect(svg.getAttribute("viewBox")).toBe("0 0 1000 500");
     const background = container.querySelector('[data-testid="canvas-background"]')!;
-    expect(background.querySelector('[data-testid="axis"]')).not.toBeNull();
+    expect(background.classList.contains("axis-chrome")).toBe(true);
+    expect(background.querySelector("line.axis")).not.toBeNull();
     // Behind the elements: the background group precedes every element in document order.
     expect(background.compareDocumentPosition(elementOn(container, "a")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
