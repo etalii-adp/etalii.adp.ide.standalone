@@ -48,16 +48,18 @@ indicator glyphs cannot be produced by opening a file we ship. `tests.md`'s shap
 covers this by folding and annotating a node in the session and undoing both afterwards. If that
 becomes tiresome, the fix is a third example that has them — not a looser check.
 
-## These files are shipped twice, and only one copy is tested
+## These files are shipped twice, and for a long time only one copy was tested
 
 The same maps live under both `src/examples/diagrams/mindmap/` (the showcase, which is what a
 reader opens) and `src/diagrams/mindmap/examples/` (the module's own copy). Where a module has
-example tests at all they read the **module** copy; nothing reads the showcase. So the showcase
-can drift, and it has: two nodes reading
-`sdfsdf` were saved into `mindmap.mm` from the running app and committed, and stayed until
-somebody opened the map and looked at it.
+example tests at all they read the **module** copy — so the showcase, the tree a user actually
+sees, was read by nothing, while being the tree the running application writes to. It drifted:
+two nodes reading `sdfsdf` were saved into `mindmap.mm` from the running app and committed, and
+stayed until somebody opened the map and looked at it.
 
-The two copies are not required to be byte-identical — a presentation choice made in the app and
-saved is a legitimate divergence, and the causal loop examples carry one on purpose — so a byte
-guard here would fail on correct edits. What catches this instead is a person opening the
-shipped example, which is what the `tests.md` step exists for.
+`ShippedExamplesTests` now sweeps both trees for placeholder text. It does **not** compare the
+two copies, and must not: they are not required to be byte-identical — a presentation choice
+made in the app and saved is a legitimate divergence, and the causal loop examples carry one on
+purpose — so a byte guard here would fail on correct edits. What the sweep still cannot see is
+a name that is real words in the wrong place, and that needs a person opening the diagram,
+which is what the `tests.md` step exists for.

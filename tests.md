@@ -2621,9 +2621,9 @@ One diagram per shape family, because a family is what a mistake would be common
 
 **Nothing was testing the showcase.** Where a module has example tests at all they read the
 module's own copy under `src/diagrams/<module>/examples/`; the copy a reader actually opens,
-under `src/examples/`, was read by no test in the repository. It is also the copy the running
-application writes to, so anything typed into a diagram and saved lands there and is committed
-by whoever runs `git add` next.
+under `src/examples/`, was read by no test in the repository until `ShippedExamplesTests`. It is
+also the copy the running application writes to, so anything typed into a diagram and saved
+lands there and is committed by whoever runs `git add` next.
 
 That is not hypothetical. Two examples were carrying keyboard mash when this entry was written:
 two nodes named `sdfsdf` under "Frustum tests" in the mindmap, and a link labelled `"sdfsdf"` in
@@ -2632,12 +2632,18 @@ author. Both had been committed for weeks, and both were found by opening the di
 reading it.
 
 **Half of this is now automated, and the split is the point.** `ShippedExamplesTests` sweeps the
-101 documents ADP itself writes (`.mm`, `.cld`, `.owm`, `.adp`) for placeholder text, and was
-seen to fail against both real instances before it was trusted. Its scope stops at those
-extensions deliberately: the same sweep over every shipped file returned 451 hits and nearly all
-were correct - `www` in a path, `SSS` in a log pattern, `foo` throughout the **vendored** Ansible
+196 documents ADP itself writes (`.mm`, `.cld`, `.owm`, `.adp`, `.tml`) across all sixteen
+example folders - the showcase and every module's and editor's own copy - and was seen to fail
+against both real instances before it was trusted. Its scope stops at those extensions
+deliberately: the same sweep over every shipped file returned 451 hits and nearly all were
+correct - `www` in a path, `SSS` in a log pattern, `foo` throughout the **vendored** Ansible
 playbooks, which are upstream data nobody here may edit. The rest needs a person, and that is
 what the steps below are.
+
+**This was found, specified, fixed, and regressed**, which is why it is a guard and not a third
+sweep. The archived `small-refinements` specification measured the mindmap's `sdfsdf` in its own
+requirements document, Requirement 2 forbade it in all three trees, task 2.2 rewrote the maps
+with real content in `e6b7407b` - and `24a3ca56` put two of those nodes straight back.
 
 - **Preconditions**: backend + client running; `src/examples` open as a project.
 - **Steps**: open every diagram under `src/examples/diagrams/`, one per folder, and **read the
