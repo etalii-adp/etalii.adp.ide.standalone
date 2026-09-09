@@ -101,7 +101,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
 
 ## Group 4 — The guard, the record, the proof
 
-- [ ] 15. The conformance guard
+- [x] 15. The conformance guard
   - Files: `src/client/src/canvas/library/declarativeModules.test.ts` (new)
   - Walks every module client, collects every offender, fails once naming all of them with file and rule. Fails a render function, a shortcut key list, a synthesised key event, raw SVG, or a function-valued binding.
   - **Keyed by artifact, per file owning the property**, so `databricks`' three wrappers over one inner canvas cannot misreport.
@@ -110,18 +110,18 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - Its limit stated in its own doc-comment: it reads text, so a renderer under an unrecognisable name goes unseen — it catches the copy, which is how this actually happens.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 16. `BUILT_IN_SHAPES`' comment made true
+- [x] 16. `BUILT_IN_SHAPES`' comment made true
   - Files: `definition/diagramDefinition.ts`
   - Its comment describes a guard and a toolbox that derive from it; both are imagined. Task 15 creates the guard, so that half becomes true; the toolbox half is corrected or removed rather than left as a second imagined consumer.
   - _Requirements: 7.6_
 
-- [ ] 17. Re-measure, and the manual check
+- [x] 17. Re-measure, and the manual check
   - Files: implementation log, `tests.md`
   - **Re-run the line attribution** and record the new shares against the approved table — declarative 9%, permitted 7%, imperative 59% — so the outcome is a number rather than a claim.
   - A `tests.md` entry covering one diagram per shape family in a real browser, because typography moving from stylesheets into declared properties is a visible-outcome change.
   - _Requirements: 9.6, 8.3, 8.4_
 
-- [ ] 18. Gate and merge
+- [x] 18. Gate and merge
   - Four gates zero on the merged tree; ports reverted; the coverage diff re-run against the finished code.
   - _Requirements: 8.1_
 
