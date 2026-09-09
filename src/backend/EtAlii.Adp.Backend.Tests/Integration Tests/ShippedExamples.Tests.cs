@@ -5,7 +5,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Backend.Tests;
 
 /// <summary>
-/// The diagram documents under <c>src/examples/</c> carry no placeholder junk.
+/// The shipped example documents carry no placeholder junk.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,6 +21,16 @@ namespace EtAlii.Adp.Backend.Tests;
 /// labelled <c>"sdfsdf"</c> in the on-call causal loop, on the very link whose readme
 /// celebrates the tool correcting the author. Both had been committed for weeks, and both were
 /// found by opening the diagram and reading it, because nothing else was looking.
+/// </para>
+/// <para>
+/// <b>This is an approved acceptance criterion, not a preference.</b> The archived
+/// <c>small-refinements</c> specification, Requirement 2, says no shipped example under any
+/// <c>src/diagrams/*/examples/</c>, <c>src/editors/*/examples/</c> or <c>src/examples/</c>
+/// shall contain placeholder or keyboard-mash text. Its own requirements document listed the
+/// mindmap's <c>sdfsdf</c> as the measured current state; task 2.2 rewrote the maps with real
+/// content in <c>e6b7407b</c>; and <c>24a3ca56</c> put two of those nodes straight back. So
+/// this was found, specified, fixed, and regressed - which is the whole argument for a guard
+/// rather than another sweep.
 /// </para>
 /// <para>
 /// <b>The scope is the documents ADP itself writes</b>, by extension, and that boundary is the
@@ -40,7 +50,7 @@ namespace EtAlii.Adp.Backend.Tests;
 public partial class ShippedExamplesTests
 {
     /// <summary>The document extensions ADP reads and writes as its own, lower-case.</summary>
-    private static readonly string[] AuthoredExtensions = [".mm", ".cld", ".owm", ".adp"];
+    private static readonly string[] AuthoredExtensions = [".mm", ".cld", ".owm", ".adp", ".tml"];
 
     private static string RepositoryRoot { get; } = Locate();
 
@@ -58,15 +68,44 @@ public partial class ShippedExamplesTests
         throw new InvalidOperationException("The repository root (src/diagrams beside src/examples) was not found above the test binary.");
     }
 
-    private static string[] AuthoredDocuments()
+    /// <summary>
+    /// Every example folder the shipped corpus lives in: the showcase, and each module's and
+    /// editor's own copy.
+    /// </summary>
+    /// <remarks>
+    /// The showcase was the tree that had rotted and is why this guard exists, but scoping the
+    /// walk to it would enforce half of an acceptance criterion that names all three - and the
+    /// module copies are where a fix gets propagated FROM, so junk sitting there is junk
+    /// waiting to be copied into the showcase by somebody following the propagation rule.
+    /// </remarks>
+    private static string[] ExampleRoots()
     {
-        var root = IoPath.Combine(RepositoryRoot, "src", "examples", "diagrams");
-        return Directory
-            .EnumerateFiles(root, "*", SearchOption.AllDirectories)
-            .Where(file => AuthoredExtensions.Contains(IoPath.GetExtension(file).ToLowerInvariant()))
-            .Order(StringComparer.Ordinal)
-            .ToArray();
+        var roots = new List<string>();
+
+        foreach (var family in new[] { "diagrams", "editors" })
+        {
+            var container = IoPath.Combine(RepositoryRoot, "src", family);
+            if (!Directory.Exists(container))
+            {
+                continue;
+            }
+
+            roots.AddRange(Directory
+                .EnumerateDirectories(container)
+                .Select(module => IoPath.Combine(module, "examples"))
+                .Where(Directory.Exists));
+        }
+
+        roots.Add(IoPath.Combine(RepositoryRoot, "src", "examples"));
+        return [.. roots];
     }
+
+    private static string[] AuthoredDocuments() =>
+        [.. ExampleRoots()
+            .SelectMany(root => Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+            .Where(file => AuthoredExtensions.Contains(IoPath.GetExtension(file).ToLowerInvariant()))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.Ordinal)];
 
     [Fact]
     public void TheSweepActuallyReachesTheDocuments()
@@ -78,12 +117,19 @@ public partial class ShippedExamplesTests
         var documents = AuthoredDocuments();
 
         Assert.True(
-            documents.Length >= 60,
-            $"Only {documents.Length} authored diagram documents were found under src/examples/diagrams; the walk has stopped reaching them.");
+            documents.Length >= 150,
+            $"Only {documents.Length} authored documents were found across {ExampleRoots().Length} example folders; the walk has stopped reaching them.");
+
+        // One from the showcase and one from a module's own copy, because the walk gained the
+        // second tree after the first was already covered - a floor alone would not notice
+        // either half disappearing.
+        Assert.Contains(
+            documents,
+            file => file.EndsWith(IoPath.Combine("src", "examples", "diagrams", "mindmap", "example 1", "mindmap.mm"), StringComparison.Ordinal));
 
         Assert.Contains(
             documents,
-            file => file.EndsWith(IoPath.Combine("mindmap", "example 1", "mindmap.mm"), StringComparison.Ordinal));
+            file => file.EndsWith(IoPath.Combine("src", "diagrams", "mindmap", "examples", "example 1", "mindmap.mm"), StringComparison.Ordinal));
     }
 
     [Fact]
@@ -119,17 +165,28 @@ public partial class ShippedExamplesTests
     }
 
     /// <summary>
-    /// Keyboard mash, the placeholder words, a short fragment typed twice, and the name the
-    /// application gives a fresh element.
+    /// Keyboard mash, the placeholder words, a short fragment typed twice, <c>Test 33</c>, and
+    /// the name the application gives a fresh element.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Word-boundary anchored throughout, so <c>bar</c> does not fire on <c>toolbar</c> and
     /// <c>foo</c> does not fire on <c>food</c>. A legitimate example that genuinely needs one
     /// of these words is a real possibility and the answer is an exemption carrying its reason,
     /// the way the client's unstyled-class guard does it - not deleting the rule.
+    /// </para>
+    /// <para>
+    /// <b>One rule is deliberately absent, and this paragraph is here so it is not "fixed"
+    /// back in.</b> The acceptance criterion this guard enforces names <c>AAA</c> among the
+    /// junk to catch, and a repeated-single-letter rule is the obvious way to write it. It
+    /// cannot be used: <c>www</c> matches it, and <c>www</c> appears in a real URI on 30 lines
+    /// across the RDF and OWL examples, every one of them correct. The repeated-FRAGMENT rule
+    /// below still catches <c>AAAA</c> and every longer run; a bare three-letter <c>AAA</c> is
+    /// the price, and it is cheaper than a guard nobody trusts.
+    /// </para>
     /// </remarks>
     [GeneratedRegex(
-        @"\b(?:asdf\w*|sdfsdf\w*|qwerty\w*|hjkl\w*|zxcv\w*|lorem\w*|foo|bar|baz|blah|xxx+|todo|tbd|fixme|(?<fragment>\w{2,4})\k<fragment>|New (?:Element|Node|Item|Diagram))\b",
+        @"\b(?:asdf\w*|sdfsdf\w*|qwerty\w*|hjkl\w*|zxcv\w*|lorem\w*|foo|bar|baz|blah|xxx+|todo|tbd|fixme|Test\s*\d+|(?<fragment>\w{2,4})\k<fragment>|New (?:Element|Node|Item|Diagram))\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex PlaceholderExpression();
 }
