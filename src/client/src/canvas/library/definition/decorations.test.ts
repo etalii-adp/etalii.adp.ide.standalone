@@ -227,3 +227,57 @@ describe("decorations — the collection form", () => {
     expect(new Set(resolved.map((decoration) => decoration.index)).size).toBe(resolved.length);
   });
 });
+
+/**
+ * WHERE A DECORATION'S NUMBERS ARE MEASURED FROM, which has two right answers.
+ *
+ * A fixed ornament - a status dot at the card's top-right - states a displacement from the
+ * centre, and every decoration written before this read that way. A bound `bounds.*` resolves
+ * to a CANVAS coordinate, and adding the centre to it draws the ornament a whole card away.
+ * Both of azure-pipeline's marks did exactly that, on screen, while their tests passed: jsdom
+ * is asked for the attribute, and the attribute was a number either way. So the default stays
+ * centre-relative and a declaration says when its numbers already are absolute.
+ *
+ * The bounds here are deliberately OFF-CENTRE. Against the symmetric box the rest of this file
+ * uses, the centre is (0, 0) and both readings print the same thing - which is precisely the
+ * shape of check that cannot fail.
+ */
+describe("decorations - anchor says whether the numbers are already absolute", () => {
+  const offCentre = { x: 10, y: 30, width: 100, height: 40 };
+  const centre = { x: 60, y: 50 };
+
+  it("measures from the centre by default", () => {
+    const out = resolveDecorations([{ glyph: "circle", from: { x: 10, y: -20 }, radius: 4 }], source({}), offCentre);
+
+    expect(out[0]!.from).toEqual({ x: centre.x + 10, y: centre.y - 20 });
+  });
+
+  it("takes a canvas-anchored point as it stands", () => {
+    const out = resolveDecorations([{ glyph: "circle", anchor: "canvas", from: { x: 10, y: -20 }, radius: 4 }], source({}), offCentre);
+
+    expect(out[0]!.from).toEqual({ x: 10, y: -20 });
+  });
+
+  it("carries the anchor through to the second point and the text", () => {
+    // `to` and `textAt` are measured from `from`, and `from` under a canvas anchor is absolute -
+    // so a decoration stating all three must not pick the centre back up halfway through.
+    const out = resolveDecorations(
+      [
+        {
+          glyph: "line",
+          anchor: "canvas",
+          from: { x: 0, y: 0 },
+          to: { x: 30, y: 0 },
+          text: { template: "x" },
+          textAt: { x: 30, y: 8 },
+        },
+      ],
+      source({}),
+      offCentre,
+    );
+
+    expect(out[0]!.from).toEqual({ x: 0, y: 0 });
+    expect(out[0]!.to).toEqual({ x: 30, y: 0 });
+    expect(out[0]!.textAt).toEqual({ x: 30, y: 8 });
+  });
+});

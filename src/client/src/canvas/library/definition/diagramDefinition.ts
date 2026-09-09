@@ -265,6 +265,20 @@ export type DecorationGlyph = "line" | "path" | "circle" | "rect" | "marker";
 export interface DecorationDeclaration {
   glyph: DecorationGlyph;
   /**
+   * What the coordinates below are measured from. Defaults to the element's CENTRE.
+   *
+   * <b>Found in a browser, not by a test.</b> A fixed ornament - a stub's line, a badge two
+   * pixels above the box - is naturally written as an offset from the centre, and that is what
+   * every one of these meant when they were only ever fixed numbers. A BOUND coordinate is not:
+   * `{ path: "bounds.right" }` resolves to a canvas position, and adding the centre to it puts
+   * the ornament twice as far out as it belongs. Azure-pipeline's problem mark sat a whole card
+   * away from its card, and every module test passed, because a test that reads the glyph's
+   * class and text never asks where it is.
+   *
+   * `canvas` says the numbers are already absolute, which is what reading `bounds` gives.
+   */
+  anchor?: "centre" | "canvas";
+  /**
    * A collection path: one decoration per entry, its own paths rooted at the ITEM, laid out
    * along {@link step} from {@link from}.
    *

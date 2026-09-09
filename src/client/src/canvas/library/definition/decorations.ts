@@ -82,12 +82,16 @@ function pointOf(
   point: { x: DeclaredNumber; y: DeclaredNumber } | undefined,
   source: BindingSource,
   centre: { x: number; y: number },
+  anchor: "centre" | "canvas" = "centre",
 ): { x: number; y: number } {
   if (!point) {
     return centre;
   }
 
-  return { x: centre.x + numberOf(point.x, source, 0), y: centre.y + numberOf(point.y, source, 0) };
+  // Centre-relative by default - what a fixed ornament means - and absolute when the
+  // declaration says its numbers already are, which is what a bound `bounds.*` resolves to.
+  const origin = anchor === "canvas" ? { x: 0, y: 0 } : centre;
+  return { x: origin.x + numberOf(point.x, source, 0), y: origin.y + numberOf(point.y, source, 0) };
 }
 
 /**
@@ -120,18 +124,18 @@ export function resolveDecorations(
       return;
     }
 
-    const from = pointOf(declaration.from, source, centre);
+    const from = pointOf(declaration.from, source, centre, declaration.anchor);
     resolved.push({
       glyph: declaration.glyph,
       from,
-      to: pointOf(declaration.to, source, from),
+      to: pointOf(declaration.to, source, from, declaration.anchor),
       radius: numberOf(declaration.radius, source, 0),
       width: numberOf(declaration.width, source, 0),
       height: numberOf(declaration.height, source, 0),
       d: declaration.d ? (resolveOne(declaration.d, source) ?? undefined) : undefined,
       marker: declaration.marker,
       text: declaration.text ? (resolveOne(declaration.text, source) ?? undefined) : undefined,
-      textAt: pointOf(declaration.textAt, source, from),
+      textAt: pointOf(declaration.textAt, source, from, declaration.anchor),
       textAnchor: declaration.textAnchor ?? "start",
       typography: declaration.typography,
       // Bound, so a problem mark can be coloured by a severity the library has never heard of.
@@ -167,7 +171,7 @@ function resolveEach(
   into: ResolvedDecoration[],
 ): void {
   const items = itemsOf(declaration.each!, source);
-  const origin = pointOf(declaration.from, source, centre);
+  const origin = pointOf(declaration.from, source, centre, declaration.anchor);
   const step = declaration.step ?? { x: 0, y: 0 };
 
   items.forEach((item, entry) => {
