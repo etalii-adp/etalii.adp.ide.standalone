@@ -1493,6 +1493,7 @@ export function DiagramCanvas({
             elementTypes={elementTypes}
             attachmentPoint={attachmentPoint}
             adjustValue={adjustValue}
+            dragValue={dragValue}
             selected={isSelected("connection", connection.id)}
             press={gesture.press({ kind: "connection", connection })}
             adjustPress={(from) => gesture.press({ kind: "adjust", connection, from })}
@@ -1854,6 +1855,7 @@ function LibraryConnection({
   elementTypes,
   attachmentPoint,
   adjustValue,
+  dragValue,
   selected,
   press,
   adjustPress,
@@ -1865,6 +1867,7 @@ function LibraryConnection({
   elementTypes: Map<string, ElementTypeDefinition>;
   attachmentPoint: (element: DiagramModelElement, anchor: string | undefined, towards: Point) => Point;
   adjustValue: GestureValue<AdjustDragPreview>;
+  dragValue: GestureValue<ElementDragOffset>;
   selected: boolean;
   press: PointerPressWiring;
   adjustPress: (from: Point) => PointerPressWiring;
@@ -1877,20 +1880,35 @@ function LibraryConnection({
     const value = adjustValue.get();
     return value !== null && value.connectionId === connection.id ? value : null;
   });
+  // A CONNECTION FOLLOWS THE ELEMENT BEING DRAGGED, so the picture during the drag is the
+  // picture after it. The element itself has always moved live; its connections stayed pinned
+  // to where it used to be and jumped on release, which is the one moment a user cannot judge
+  // the result they are choosing.
+  //
+  // The same seam as the adjust preview directly above, and the same cost: only a connection
+  // with an end ON the dragged element subscribes to anything, and only that connection
+  // re-renders per frame. A diagram of a thousand connections re-renders the two that moved.
+  const liveDrag = useSyncExternalStore(dragValue.subscribe, () => {
+    const value = dragValue.get();
+    if (value === null) {
+      return null;
+    }
+    return value.id === connection.sourceId || value.id === connection.targetId ? value : null;
+  });
 
   if (relation === undefined) {
     return null; // an undeclared relation type has nothing to route; the validator rejects it upstream
   }
 
-  const ends = connectionEnds(connection, elementsById, elementTypes, attachmentPoint);
+  const ends = connectionEnds(connection, elementsById, elementTypes, attachmentPoint, liveDrag);
   if (ends === null) {
     return null; // a dangling end is the module's model bug to notice; there is nothing to draw
   }
 
   const [from, to] = ends;
   const waypoints = liveAdjust !== null ? [liveAdjust.waypoint] : connection.waypoints ?? [];
-  const source = elementsById.get(connection.sourceId);
-  const target = elementsById.get(connection.targetId);
+  const source = draggedInto(elementsById.get(connection.sourceId), liveDrag);
+  const target = draggedInto(elementsById.get(connection.targetId), liveDrag);
   const routeEnds =
     source !== undefined && target !== undefined
       ? { source: elementBounds(source, elementTypes.get(source.type)), target: elementBounds(target, elementTypes.get(target.type)) }
@@ -2537,14 +2555,30 @@ export function routePath(
   }
 }
 
+/**
+ * The element as the drag currently has it, or unchanged when this drag is not about it.
+ *
+ * One place, because BOTH ends need it and for different reasons: the moved end's own
+ * attachment point, and the other end's `towards` - which aims at the moved element's centre,
+ * so an end that stayed put still has to re-aim while its partner travels.
+ */
+function draggedInto(element: DiagramModelElement | undefined, drag: ElementDragOffset | null): DiagramModelElement | undefined {
+  if (element === undefined || drag === null || drag.id !== element.id) {
+    return element;
+  }
+
+  return { ...element, x: element.x + drag.dx, y: element.y + drag.dy };
+}
+
 function connectionEnds(
   connection: DiagramModelConnection,
   elementsById: Map<string, DiagramModelElement>,
   elementTypes: Map<string, ElementTypeDefinition>,
   attachmentPoint: (element: DiagramModelElement, anchor: string | undefined, towards: Point) => Point,
+  drag: ElementDragOffset | null = null,
 ): [Point, Point] | null {
-  const source = elementsById.get(connection.sourceId);
-  const target = elementsById.get(connection.targetId);
+  const source = draggedInto(elementsById.get(connection.sourceId), drag);
+  const target = draggedInto(elementsById.get(connection.targetId), drag);
   if (source === undefined || target === undefined) {
     return null;
   }
