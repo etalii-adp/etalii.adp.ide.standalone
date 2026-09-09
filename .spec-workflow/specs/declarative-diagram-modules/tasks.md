@@ -92,7 +92,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - The stubs, badges and annotations task 3 was specified against.
   - _Requirements: 9.3, 9.4, 8.1_
 
-- [ ] 14. `wardley-map`, last — and the last escape hatch closes with it
+- [x] 14. `wardley-map`, last — and the last escape hatch closes with it
   - The background's proof: twenty-one of its twenty-four raw-SVG lines are axes and stage bands, and its shapes are a symbol and a dot. Last because a vocabulary that expresses it expresses the rest, and because failing here early would stall the twelve that do not need it.
   - **`DiagramBackgroundRef` is removed with this migration.** It is the third function-valued escape hatch, found at task 4, and `wardley-map` is its **only** user — verified: `sparql` declares no background at all, and its `sparql-region` is a custom *shape*, not a backdrop. Keeping it as a union until this task is correct, because removing a contract an unmigrated module still uses would break it; once wardley declares its background as data, nothing reaches it and Requirement 2.9 is satisfied for all three hatches.
   - _Requirements: 9.3, 9.4, 8.1_
