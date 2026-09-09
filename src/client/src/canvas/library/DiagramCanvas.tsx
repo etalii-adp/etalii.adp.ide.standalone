@@ -670,7 +670,7 @@ export function DiagramCanvas({
           // for the gesture's life - no layout read per pointer frame (Requirement 1.3).
           const frame = (dragFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(dragValue)]));
           const dragScale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
-          const at = clampToDragBounds(definition.dragBounds, target.element, dx * dragScale, dy * dragScale);
+          const at = dragLanding(definition, target.element, dx * dragScale, dy * dragScale);
           frame.move({ id: target.element.id, dx: at.x - target.element.x, dy: at.y - target.element.y });
           break;
         }
@@ -755,7 +755,7 @@ export function DiagramCanvas({
           raise({
             kind: "element-moved",
             elementId: target.element.id,
-            position: clampToDragBounds(definition.dragBounds, target.element, dx * dragScale, dy * dragScale),
+            position: dragLanding(definition, target.element, dx * dragScale, dy * dragScale),
           });
           break;
         }
@@ -2702,6 +2702,52 @@ function clampToDragBounds(
     x: Math.min(bounds.x + bounds.width, Math.max(bounds.x, x)),
     y: Math.min(bounds.y + bounds.height, Math.max(bounds.y, y)),
   };
+}
+
+/**
+ * A value on the declared step, rounding halves AWAY FROM ZERO.
+ *
+ * `Math.round` is wrong here and wrong in only half the canvas, which is why this is spelled
+ * out rather than borrowed: it sends -0.5 to -0, so a drag one half-step above the origin lands
+ * a row low while the identical drag below the origin lands correctly. The two modules that
+ * snap, both of their backends, and the binding vocabulary's `round: "nearest"` all already say
+ * away-from-zero; this is the same rule, owned once.
+ */
+export function snapToStep(value: number, step: number | undefined): number {
+  if (step === undefined || !(step > 0)) {
+    return value;
+  }
+
+  const exact = value / step;
+  const rounded = exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
+  const snapped = rounded * step;
+  // NEGATIVE ZERO IS A REAL VALUE HERE and it must not escape: a small upward drag rounds to
+  // `-0`, which serialises into the document as "-0" and compares unequal to 0 under Object.is
+  // - so a position that IS the origin reads as a change, and a test asserting 0 fails against
+  // correct arithmetic. Found by the guard below doing exactly that.
+  return snapped === 0 ? 0 : snapped;
+}
+
+/**
+ * Where a drag would put an element: clamped to any declared bounds, then snapped to any
+ * declared step.
+ *
+ * ONE FUNCTION BECAUSE THERE ARE TWO CALLERS AND THEY MUST AGREE - the per-frame preview and
+ * the release. Snapping only the release would show the user one position and record another;
+ * snapping only the preview would show a truth the drop then discards. The user asked for the
+ * snap to be visible during the drag, which only works if both ends compute it the same way.
+ *
+ * Clamp first, then snap: a bound is a hard limit and a step is a preference, so a snap that
+ * pushed an element back over a boundary would break the stronger of the two rules.
+ */
+function dragLanding(
+  definition: { dragBounds?: import("./definition/diagramDefinition").ShapeBounds; snap?: import("./definition/diagramDefinition").SnapDeclaration },
+  element: DiagramModelElement,
+  dx: number,
+  dy: number,
+): Point {
+  const clamped = clampToDragBounds(definition.dragBounds, element, dx, dy);
+  return { x: clamped.x, y: snapToStep(clamped.y, definition.snap?.y?.step) };
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {

@@ -152,6 +152,10 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
       emptyRelease: "complete",
     },
   ],
+  // The rows this diagram has always had, said to the library instead of computed twice.
+  // The away-from-zero rounding that makes a drag above the origin land right lives there
+  // now, in one place, rather than in a `nearestRow` this module and its backend each kept.
+  snap: { y: { step: ROW_HEIGHT } },
   layout: { modes: ["manual"] },
   dragging: "enabled",
 });

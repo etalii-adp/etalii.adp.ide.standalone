@@ -37,7 +37,7 @@ const definition: DiagramDefinition = {
     {
       id: "node",
       shape: "box",
-      size: { width: 40, height: 20 },
+      sizing: "model",
       anchors: { kind: "edge" },
     },
   ],

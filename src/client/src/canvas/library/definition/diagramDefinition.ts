@@ -897,6 +897,39 @@ export type DraggingPolicy = "enabled" | "disabled";
 export type DiagramBackground = BackgroundDeclaration;
 
 /** The whole statement of what a diagram type allows (Requirement 4.1). */
+/**
+ * Where a dragged element is allowed to come to rest, per axis.
+ *
+ * <b>This names a rule the tree already agreed on in five places rather than inventing one.</b>
+ * `TimelineCanvas`'s and `DependencyGraphCanvas`'s `nearestRow` are byte-identical bodies
+ * differing only in which height they close over; `TimelineRows.ToNearestRow` and
+ * `DependencyGraphRows.ToNearestRow` are the same arithmetic on the backend; and the binding
+ * vocabulary's `round: "nearest"` is the same rule a third time. The library owns it now, so a
+ * sixth copy is never written.
+ *
+ * <b>Halves round AWAY FROM ZERO, and that is a correctness obligation rather than a
+ * preference.</b> `Math.round` sends −0.5 to −0, which puts a drag one row out ABOVE the origin
+ * and nowhere else — a rounding rule that is right in the common half of the canvas and wrong
+ * in the other is worse than no rounding at all. The binding vocabulary's own comment records
+ * the same finding; this is the drag-time half of it.
+ *
+ * <b>Per axis, and not a grid.</b> Both modules that snap do so on y only: the dependency graph
+ * leaves x free, and the timeline maps x to SECONDS, which is a domain mapping rather than a
+ * step. `x` is accepted so a module that one day steps columns has somewhere to say it, and is
+ * deliberately not implemented until one does — a two-axis grid would model something neither
+ * module has.
+ */
+export interface SnapDeclaration {
+  /** The vertical step, in canvas units - a timeline or dependency-graph row height. */
+  y?: { step: number };
+  /**
+   * Accepted and NOT YET APPLIED, so a module cannot quietly come to depend on a behaviour
+   * nothing implements. Declaring it is currently a no-op; the day a module needs it, this
+   * comment is the note saying the decision was deferred rather than missed.
+   */
+  x?: { step: number };
+}
+
 export interface DiagramDefinition {
   elementTypes: readonly ElementTypeDefinition[];
   relationTypes: readonly RelationTypeDefinition[];
@@ -909,6 +942,8 @@ export interface DiagramDefinition {
    * definitional, not derived (Requirement 9.2).
    */
   extent?: ShapeBounds;
+  /** Where a dragged element is allowed to come to rest. See {@link SnapDeclaration}. */
+  snap?: SnapDeclaration;
   /** What a drag would land on, drawn while it is in flight. See {@link DropTargetDeclaration}. */
   dropTarget?: DropTargetDeclaration;
   background?: DiagramBackground;

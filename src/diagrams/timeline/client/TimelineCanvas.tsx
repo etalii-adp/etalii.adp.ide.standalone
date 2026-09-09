@@ -278,6 +278,10 @@ const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
     { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
     { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
   ],
+  // The rows this diagram has always had, said to the library instead of computed twice.
+  // The away-from-zero rounding that makes a drag above the origin land right lives there
+  // now, in one place, rather than in a `nearestRow` this module and its backend each kept.
+  snap: { y: { step: ROW_HEIGHT } },
   layout: { modes: ["manual"] },
   dragging: "enabled",
 });
