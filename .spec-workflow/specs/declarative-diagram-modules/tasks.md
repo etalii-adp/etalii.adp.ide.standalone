@@ -88,7 +88,7 @@ One worktree for the whole specification (`.claude/worktrees/ddm`, per CLAUDE.md
   - Seven element types between them and the richest label needs in the tree; `owl-card` is the shape task 2 was specified against, so this is where that specification is tested against the thing it was drawn from.
   - _Requirements: 9.3, 9.4, 8.1_
 
-- [ ] 13. The decoration cases: `ansible-structure`, `helm-charts`, `causal-loop`, `sparql`, `databricks`
+- [x] 13. The decoration cases: `ansible-structure`, `helm-charts`, `causal-loop`, `sparql`, `databricks`
   - The stubs, badges and annotations task 3 was specified against.
   - _Requirements: 9.3, 9.4, 8.1_
 
