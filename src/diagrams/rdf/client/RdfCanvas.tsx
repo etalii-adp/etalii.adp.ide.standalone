@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
@@ -32,10 +32,14 @@ export function nodeHeightOf(node: RdfNode): number {
     + FOOTER_PADDING;
 }
 
-/** The Delete key as the backend shortcut it has always travelled as. */
-function deleteShortcut(): ContextShortcut {
-  return { key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut;
-}
+
+/**
+ * Which key the backend knows each declared action by.
+ *
+ * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
+ * in one place, rather than a keystroke built at each call site.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = { rename: "F2", delete: "Delete" };
 
 /** An element as the library carries it here: the model element plus the card it draws. */
 type CardElement = DiagramModelElement & { card: RdfNode };
@@ -161,6 +165,15 @@ const RDF_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       },
     },
   ],
+  // WHAT THIS READING OFFERS, AND WHAT INVOKES IT. F2 was a hand-written key list in this
+  // canvas and the delete was a keystroke it built by hand to describe a gesture the library
+  // had already handed it. Declared, the library derives the key set and dispatches an action
+  // id; the backend still holds the key-to-action table, which is why the handler says which
+  // shortcut each action travels as.
+  actions: [
+    { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+    { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+  ],
   layout: { modes: ["manual"] },
   dragging: "enabled",
 });
@@ -241,6 +254,13 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   };
 
   const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key !== undefined && targetId !== undefined) {
+        runShortcut(contextShortcutOf(key), targetId);
+      }
+    },
     onSelectionChanged: ({ selection: next }) =>
       select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
     onElementMoved: ({ elementId, position }) => {
@@ -266,8 +286,6 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
     // Deletion stays the backend's: the key travels as data against the selection, exactly
     // the shortcut the old keyboard path sent - the backend owns the key-to-action table.
-    onElementDeleted: ({ elementId }) => runShortcut(deleteShortcut(), elementId),
-    onConnectionDeleted: ({ connectionId }) => runShortcut(deleteShortcut(), connectionId),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -285,18 +303,6 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     ready: !loading && !failed && viewport !== null,
   });
 
-  /** F2 travels to the backend as data; Delete is the library's event, handled above. */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-    const shortcut = structuralShortcutFor(event, ["F2"]);
-    if (!shortcut) {
-      return;
-    }
-    event.preventDefault();
-    runShortcut(shortcut, selectedId);
-  };
 
   if (failed) {
     return (
@@ -307,7 +313,7 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   }
 
   return (
-    <div className="rdf-canvas canvas-host" role="application" aria-label="RDF graph" onKeyDown={onKeyDown}>
+    <div className="rdf-canvas canvas-host" role="application" aria-label="RDF graph">
       <DiagramCanvas
         definition={RDF_DEFINITION}
         model={diagramModel}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
@@ -62,6 +62,14 @@ const waitsForRoute: CustomRouteRef = {
  * Stages paint beneath the connections so the arrows between their jobs stay visible; the
  * one relation is render-only, its implicit/broken stylings carried per connection.
  */
+/**
+ * Which key the backend knows each declared action by.
+ *
+ * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
+ * in one place, rather than a keystroke built at each call site.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2" };
+
 /** Which class each box kind carries - what the renderer chose with a nested ternary. */
 const BOX_CLASS = { job: "pipeline-job", template: "pipeline-template", step: "pipeline-step" } as const;
 
@@ -215,6 +223,12 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       },
     },
   ],
+  // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The key list was hand-written in this canvas
+  // and the delete was a keystroke it built to describe a gesture the library had already
+  // handed it. Declared, the library derives the key set and dispatches an action id.
+  actions: [
+    { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+  ],
   layout: { modes: ["manual"] },
   dragging: "disabled",
 });
@@ -310,6 +324,13 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   }, [selectedId, model.nodes]);
 
   const events: DiagramEventHandlers = {
+    // The declared action, answered as the shortcut the backend has always known it by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key !== undefined && targetId !== undefined) {
+        void executeShortcut(contextShortcutOf(key), elementSourceOf(targetId));
+      }
+    },
     onSelectionChanged: ({ selection: next }) => {
       // A press on an arrow deselects, as it always did: an edge was never a selectable
       // element here, and the old canvas let such a press fall through to the background.
@@ -332,23 +353,6 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
     ready: !loading && !failed && viewport !== null,
   });
 
-  /**
-   * F2 on the selected element, forwarded as data through the same seam every other canvas
-   * uses: the backend maps the key to its action, so no key-to-action table lives here.
-   */
-  const onKeyDown = async (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
-    await executeShortcut(shortcut, elementSourceOf(selectedId));
-  };
 
   if (failed) {
     return (
@@ -361,7 +365,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   }
 
   return (
-    <div className="pipeline-canvas" data-testid="pipeline-canvas" onKeyDown={onKeyDown}>
+    <div className="pipeline-canvas" data-testid="pipeline-canvas">
       {loading ? (
         <div className="pipeline-canvas-loading" role="status">
           Loading…

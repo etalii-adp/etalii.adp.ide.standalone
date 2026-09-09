@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { forwardBezierPath, horizontalBezierPath } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
@@ -181,6 +181,14 @@ const DRAG_HINT: LabelDeclaration = {
 };
 
 /**
+ * Which key the backend knows each declared action by.
+ *
+ * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
+ * in one place, rather than a keystroke built at each call site.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2", "insert": "Insert", "add-right": "Tab", "add-below": "Enter", "delete": "Delete" };
+
+/**
  * What a timeline allows, stated once: periods that drag and resize, moments that drag,
  * either connecting to either from its begin or end anchor, with one bezier relation whose
  * empty release is itself a gesture - the create-and-relate the notation offers.
@@ -259,6 +267,16 @@ const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       },
       emptyRelease: "complete",
     },
+  ],
+  // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The key list was hand-written in this canvas
+  // and the delete was a keystroke it built to describe a gesture the library had already
+  // handed it. Declared, the library derives the key set and dispatches an action id.
+  actions: [
+    { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+    { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+    { id: "add-right", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
+    { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+    { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
   ],
   layout: { modes: ["manual"] },
   dragging: "enabled",
@@ -366,6 +384,13 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     sourceAnchor === "begin" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
 
   const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key !== undefined && targetId !== undefined) {
+        runShortcut(contextShortcutOf(key), targetId);
+      }
+    },
     onSelectionChanged: ({ selection: next }) =>
       select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
     onElementMoved: ({ elementId, position }) => {
@@ -414,8 +439,6 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     },
     onElementDropped: ({ elementType, position }) =>
       runAction(elementType, newPlacementId(toSeconds(position.x), nearestRow(toModuleY(position.y)))),
-    onElementDeleted: ({ elementId }) => runShortcut(deleteShortcut(), elementId),
-    onConnectionDeleted: ({ connectionId }) => runShortcut(deleteShortcut(), connectionId),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -436,23 +459,6 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
 
-  /**
-   * Structural keys travel to the backend as data - the backend holds the key-to-action
-   * table. Delete arrives through the library's deletion events above; the rest bubble here.
-   */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2", "Insert", "Tab", "Enter"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
-    runShortcut(shortcut, selectedId);
-  };
 
   if (failed) {
     return (
@@ -476,7 +482,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   };
 
   return (
-    <div ref={hostRef} className="timeline-canvas canvas-host" role="application" aria-label="Timeline" onKeyDown={onKeyDown} onContextMenu={onContextMenu}>
+    <div ref={hostRef} className="timeline-canvas canvas-host" role="application" aria-label="Timeline" onContextMenu={onContextMenu}>
       <DiagramCanvas
         definition={TIMELINE_DEFINITION}
         model={diagramModel}
@@ -501,7 +507,3 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   );
 }
 
-/** The Delete key as the backend shortcut it has always travelled as. */
-function deleteShortcut(): ContextShortcut {
-  return { key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut;
-}
