@@ -831,7 +831,11 @@ describe("WardleyCanvas selection", () => {
     const { container } = renderCanvas(withOneComponent());
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".wardley-surface") as SVGSVGElement, { key: "F2" });
+    // ON THE LIBRARY'S OWN SURFACE, which is where the keyboard lives now: F2 was a
+    // hand-written key list in this canvas and is a declared action, so the library holds focus
+    // and dispatches. A key fired at the host div reaches nothing, which is the change rather
+    // than a regression.
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "F2" });
 
     // Assert.
     expect(executeShortcut).toHaveBeenCalledTimes(1);
@@ -845,7 +849,7 @@ describe("WardleyCanvas selection", () => {
     const { container } = renderCanvas(withOneComponent());
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".wardley-surface") as SVGSVGElement, { key: "F2" });
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "F2" });
 
     // Assert.
     expect(executeShortcut).not.toHaveBeenCalled();

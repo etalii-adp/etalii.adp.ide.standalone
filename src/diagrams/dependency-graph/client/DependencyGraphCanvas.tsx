@@ -8,7 +8,7 @@ import {
   type ConnectorBox,
 } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
@@ -107,6 +107,18 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
           className: "dependency-graph-label canvas-node-label",
         },
       ],
+      // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The four keys were a hand-written list in
+      // this canvas and the delete was a keystroke it built by hand to describe a gesture the
+      // library had already handed it. Declared, the library derives the key set and dispatches
+      // an action id; the backend still holds the key-to-action table, which is why the handler
+      // below says which shortcut each action travels as.
+      actions: [
+        { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+        { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-right", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+        { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+      ],
       anchors: {
         kind: "sides",
         fractions: [
@@ -149,6 +161,20 @@ function nearestRow(y: number): number {
   const exact = y / ROW_HEIGHT;
   return exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
 }
+
+/**
+ * Which key the backend knows each declared action by.
+ *
+ * The library dispatches an id; the backend's context table is keyed by keystroke. One map, in
+ * one place, rather than a keystroke built at each call site.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = {
+  rename: "F2",
+  insert: "Insert",
+  "add-right": "Tab",
+  "add-below": "Enter",
+  delete: "Delete",
+};
 
 /** The placement id a gesture carries when it lands on empty canvas: `new:{x},{row}`. */
 function newPlacementId(x: number, row: number): string {
@@ -235,6 +261,15 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     sourceAnchor === "left" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
 
   const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key === undefined || targetId === undefined) {
+        return;
+      }
+
+      runShortcut(contextShortcutOf(key), targetId);
+    },
     onSelectionChanged: ({ selection: next }) =>
       select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
     onElementMoved: ({ elementId, position }) => {
@@ -264,10 +299,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     // A toolbox drop names a placement: the coordinate and row under the pointer.
     onElementDropped: ({ elementType, position }) =>
       runAction(elementType, newPlacementId(position.x, nearestRow(position.y))),
-    onElementDeleted: ({ elementId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
-    onConnectionDeleted: ({ connectionId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, connectionId),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -283,26 +314,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     ready: !loading && !failed && viewport !== null,
   });
 
-  /**
-   * Structural keys travel to the backend as data - the backend holds the key-to-action
-   * table. Tab and Enter are prevented from their browser defaults when a node is selected,
-   * because here they mean "add to the right" and "add below". Delete is the library's own
-   * event, handled above.
-   */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2", "Insert", "Tab", "Enter"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
-    runShortcut(shortcut, selectedId);
-  };
-
   if (failed) {
     return (
       <div className="dependency-graph-canvas canvas-host dependency-graph-canvas-message canvas-host-message">
@@ -316,7 +327,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
       className="dependency-graph-canvas canvas-host"
       role="application"
       aria-label="Dependency graph"
-      onKeyDown={onKeyDown}
     >
       <DiagramCanvas
         definition={DEPENDENCY_GRAPH_DEFINITION}

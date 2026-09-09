@@ -69,7 +69,19 @@ export type BuiltInShape =
   /** A ring inside the ellipse - owl's `doubled` and wardley's submap mark (rows 18, 27, 28). */
   | "double-ellipse";
 
-/** Every built-in shape, enumerable - what a guard walks and a toolbox derives icons from. */
+/**
+ * Every built-in shape, enumerable - <b>what the conformance guard walks</b>.
+ *
+ * The guard is `declarativeModules.test.ts`, and it reads this list to check that every shape a
+ * module NAMES is one the library has: `shape: "rounded-rect"` type-checks nowhere, reads as an
+ * ordinary string in a `.tsx` file, and at runtime falls through the switch and draws nothing.
+ *
+ * <b>This comment used to describe two consumers and have none.</b> It claimed a guard walked
+ * this list and a toolbox derived icons from it; the constant had exactly one reference, its own
+ * definition. The guard now exists, so that half is true. The toolbox half is gone rather than
+ * rewritten - there is no toolbox that derives anything from this, and a comment describing a
+ * second imagined consumer is how the first one came to be believed.
+ */
 export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
   "none",
   "box",

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
@@ -45,6 +45,14 @@ export interface DatabricksCanvasConfig {
    */
   interceptAction?: (actionId: string) => boolean;
 }
+
+/**
+ * Which key the backend knows each declared action by.
+ *
+ * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
+ * in one place, rather than a keystroke built at each call site.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2", "delete": "Delete" };
 
 /** An element as the library carries it here: the model element plus what it draws. */
 type NodeElement = DiagramModelElement & { node: DatabricksNode; simulated: string | undefined };
@@ -235,6 +243,13 @@ function definitionFor(connectable: boolean): DiagramDefinition {
         },
       },
     ],
+    // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The key list was hand-written in this canvas
+    // and the delete was a keystroke it built to describe a gesture the library had already
+    // handed it. Declared, the library derives the key set and dispatches an action id.
+    actions: [
+      { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+      { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+    ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
   });
@@ -362,6 +377,13 @@ export function DatabricksCanvas({
   };
 
   const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key !== undefined && targetId !== undefined) {
+        runShortcut(contextShortcutOf(key), targetId);
+      }
+    },
     onSelectionChanged: ({ selection: next }) => {
       // Edges are not selectable in this family (recorded pending elsewhere): a press on a
       // connection is ignored, exactly as it fell on nothing before the migration.
@@ -392,10 +414,6 @@ export function DatabricksCanvas({
       runAction("databricks.connect", `rel:${sourceElementId}->${targetElementId}`),
     // A toolbox drop names a placement - `new:{x},{y}` under the pointer (Requirement 9).
     onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
-    onElementDeleted: ({ elementId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
-    onConnectionDeleted: ({ connectionId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, connectionId),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -411,20 +429,6 @@ export function DatabricksCanvas({
     ready: !loading && !failed && viewport !== null,
   });
 
-  /** F2 travels to the backend as data; Delete is the library's event, handled above. */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
-    runShortcut(shortcut, selectedId);
-  };
 
   if (failed) {
     return (
@@ -435,7 +439,7 @@ export function DatabricksCanvas({
   }
 
   return (
-    <div className="databricks-canvas canvas-host" role="application" aria-label={ariaLabel} onKeyDown={onKeyDown}>
+    <div className="databricks-canvas canvas-host" role="application" aria-label={ariaLabel}>
       <DiagramCanvas
         definition={connectable ? CONNECTABLE_DEFINITION : RENDER_ONLY_DEFINITION}
         model={diagramModel}

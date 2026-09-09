@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
@@ -53,6 +53,14 @@ export function nodeSizeOf(node: OwlNode): { width: number; height: number } {
 
   return { width: SHAPE_WIDTH, height: SHAPE_HEIGHT };
 }
+
+/**
+ * Which key the backend knows each declared action by.
+ *
+ * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
+ * in one place, rather than a keystroke built at each call site.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = { rename: "F2", delete: "Delete" };
 
 /** An element as the library carries it here: the model element plus what it draws. */
 type OwlElement = DiagramModelElement & { node: OwlNode; doubled: boolean };
@@ -363,6 +371,15 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
     edgeType("assertion", { arrow: true, labelled: true }),
     edgeType("expression", { arrow: false }),
   ],
+  // WHAT THIS READING OFFERS, AND WHAT INVOKES IT. F2 was a hand-written key list in this
+  // canvas and the delete was a keystroke it built by hand to describe a gesture the library
+  // had already handed it. Declared, the library derives the key set and dispatches an action
+  // id; the backend still holds the key-to-action table, which is why the handler says which
+  // shortcut each action travels as.
+  actions: [
+    { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+    { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+  ],
   layout: { modes: ["manual"] },
   dragging: "enabled",
 });
@@ -451,6 +468,13 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   };
 
   const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key !== undefined && targetId !== undefined) {
+        runShortcut(contextShortcutOf(key), targetId);
+      }
+    },
     onSelectionChanged: ({ selection: next }) =>
       select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
     onElementMoved: ({ elementId, position }) => {
@@ -472,10 +496,6 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       runAction("owl.subclass", `rel:${sourceElementId}->${targetElementId}`),
     // A toolbox drop names a placement - `new:{x},{y}` under the pointer.
     onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
-    onElementDeleted: ({ elementId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
-    onConnectionDeleted: ({ connectionId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, connectionId),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -491,18 +511,6 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     ready: !loading && !failed && viewport !== null,
   });
 
-  /** F2 travels to the backend as data; Delete is the library's event, handled above. */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-    const shortcut = structuralShortcutFor(event, ["F2"]);
-    if (!shortcut) {
-      return;
-    }
-    event.preventDefault();
-    runShortcut(shortcut, selectedId);
-  };
 
   if (failed) {
     return (
@@ -513,7 +521,7 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   }
 
   return (
-    <div className="owl-canvas canvas-host" role="application" aria-label="OWL ontology" onKeyDown={onKeyDown}>
+    <div className="owl-canvas canvas-host" role="application" aria-label="OWL ontology">
       <DiagramCanvas
         definition={OWL_DEFINITION}
         model={diagramModel}

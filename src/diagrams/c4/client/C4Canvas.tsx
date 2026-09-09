@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
@@ -32,6 +32,14 @@ export interface C4CanvasProps {
 type C4NodeElement = DiagramModelElement & { node: C4Node };
 type C4BoundaryElement = DiagramModelElement & { boundary: C4BoundaryBox };
 
+
+/**
+ * Which key the backend knows each declared action by.
+ *
+ * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
+ * in one place, rather than a keystroke built at each call site.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2", "insert": "Insert", "delete": "Delete" };
 
 /**
  * What a C4 view allows, stated once: element cards that drag, rename their NAME line in
@@ -115,6 +123,14 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         allowSelf: false,
       },
     },
+  ],
+  // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The key list was hand-written in this canvas
+  // and the delete was a keystroke it built to describe a gesture the library had already
+  // handed it. Declared, the library derives the key set and dispatches an action id.
+  actions: [
+    { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+    { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+    { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
   ],
   layout: { modes: ["manual"] },
   dragging: "enabled",
@@ -204,6 +220,13 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   };
 
   const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key !== undefined && targetId !== undefined) {
+        runShortcut(contextShortcutOf(key), targetId);
+      }
+    },
     onSelectionChanged: ({ selection: next }) => {
       // A press on a boundary was always a press on the background - the frame never had a
       // hit surface of its own - so it deselects rather than selecting the inert box.
@@ -233,10 +256,6 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       void executeAction(elementType, target !== undefined ? elementSourceOf(target.id) : undefined);
     },
     // Delete travels as the backend shortcut it always was, raised by the library's key path.
-    onElementDeleted: ({ elementId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
-    onConnectionDeleted: ({ connectionId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, connectionId),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -252,18 +271,6 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     ready: !loading && !failed && viewport !== null,
   });
 
-  /** F2 and Insert travel to the backend as data; Delete is the library's event, handled above. */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-    const shortcut = structuralShortcutFor(event, ["F2", "Insert"]);
-    if (!shortcut) {
-      return;
-    }
-    event.preventDefault();
-    runShortcut(shortcut, selectedId);
-  };
 
   if (failed) {
     return (
@@ -276,7 +283,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   }
 
   return (
-    <div className="c4-canvas" data-testid="c4-canvas" onKeyDown={onKeyDown}>
+    <div className="c4-canvas" data-testid="c4-canvas">
       {loading ? (
         <div className="c4-canvas-loading" role="status">
           Loading…

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
-import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
@@ -57,6 +57,20 @@ function dropTargetAt(model: MindmapModel, draggedId: string, point: ShapePoint)
   }
   return undefined;
 }
+
+/**
+ * Which key the backend knows each declared action by.
+ *
+ * `add-child` is Insert here even though Tab invokes it too: the alias that used to live in the
+ * key list was always a key-to-key mapping, and this is the same statement made once.
+ */
+const BACKEND_KEYS: Readonly<Record<string, string>> = {
+  "add-child": "Insert",
+  "add-sibling": "Enter",
+  rename: "F2",
+  fold: " ",
+  delete: "Delete",
+};
 
 /** Whether `candidateId` sits inside the branch rooted at `rootId` - itself included. */
 function isInSubtree(model: MindmapModel, candidateId: string, rootId: string): boolean {
@@ -132,6 +146,27 @@ function definitionOf(): DiagramDefinition {
           allowSelf: false,
         },
       },
+    ],
+    // WHAT A MIND MAP OFFERS, AND WHAT INVOKES IT. Five keys were a hand-written list in this
+    // canvas - the longest of the four spellings the tree carried - and the delete was a
+    // keystroke it built to describe a gesture the library had already handed it.
+    //
+    // TAB AND INSERT ARE ONE ACTION WITH TWO KEYS, which is what an alias always meant: Tab is
+    // the XMind convention for "add child" and the backend knows that action as Insert. Two
+    // invocations of one declared id says it directly, where the alias said it sideways.
+    actions: [
+      {
+        id: "add-child",
+        invokedBy: [
+          { kind: "shortcut", key: "Insert" },
+          { kind: "shortcut", key: "Tab" },
+        ],
+        appliesTo: [{ kind: "element" }],
+      },
+      { id: "add-sibling", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+      { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+      { id: "fold", invokedBy: [{ kind: "shortcut", key: " " }], appliesTo: [{ kind: "element" }] },
+      { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
     ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
@@ -215,6 +250,13 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   };
 
   const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key !== undefined && targetId !== undefined) {
+        runShortcut(contextShortcutOf(key), targetId);
+      }
+    },
     onSelectionChanged: ({ selection: next }) => {
       if (next.length === 0 || next[0].kind === "connection") {
         // A press on empty canvas deselects; a press on a branch line means the same - the
@@ -246,9 +288,6 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         void executeAction(elementType, elementSourceOf(target.id));
       }
     },
-    // Delete travels as the backend shortcut it always was, raised by the library's key path.
-    onElementDeleted: ({ elementId }) =>
-      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -264,24 +303,6 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     ready: !loading && !failed && viewport !== null,
   });
 
-  /**
-   * The structural keys, forwarded as data against the selected node - the backend holds the
-   * key-to-action table. Tab is the XMind convention for "add child"; the backend's child
-   * action carries Insert, so the alias resolves here - a key-to-key mapping, never a
-   * key-to-action one. Delete is absent: the library raises it as its deletion event above.
-   */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedNodeId || isTextTarget(event.target)) {
-      return;
-    }
-    const shortcut = structuralShortcutFor(event, ["Insert", "Enter", "F2", " ", "Tab"], { Tab: "Insert" });
-    if (!shortcut) {
-      return;
-    }
-    event.preventDefault();
-    runShortcut(shortcut, selectedNodeId);
-  };
-
   if (failed) {
     return (
       <div className="mindmap-canvas" data-testid="mindmap-canvas">
@@ -293,7 +314,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   }
 
   return (
-    <div className="mindmap-canvas" data-testid="mindmap-canvas" onKeyDown={onKeyDown}>
+    <div className="mindmap-canvas" data-testid="mindmap-canvas">
       {loading ? (
         <div className="mindmap-canvas-loading" role="status">
           Loading…
