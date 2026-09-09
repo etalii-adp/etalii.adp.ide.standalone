@@ -278,3 +278,41 @@ describe("labels — a stack that starts where the card says (rows 16, 19, 20)",
     expect(out.map((line) => line.y)).toEqual([-50]);
   });
 });
+
+/**
+ * ALIGNMENT AND OFFSET ARE ORTHOGONAL, and this is the guard that says so.
+ *
+ * They were conflated: an `offset` suppressed the `align` entirely, so a declaration stating
+ * both got its y and lost its x. Azure-pipeline's stage name states both, and drew CENTRED over
+ * a card whose name has sat at the top left since the module was written. Sixty-eight of that
+ * module's tests passed against it, because not one of them asks where the name is - which is
+ * what made this a browser finding rather than a red suite.
+ */
+describe("labels - an offset moves the line down, it does not un-align it", () => {
+  it("keeps a declared alignment when the same declaration also states an offset", () => {
+    const declaration: LabelDeclaration = {
+      text: { path: "payload.name" },
+      align: "start",
+      insetX: 12,
+      anchorTo: "top",
+      offset: { x: 0, y: 18 },
+    };
+    const out = layoutLabels([declaration], source({ name: "Build" }), bounds)[0]!;
+
+    // x from the ALIGNMENT - the left edge plus its inset, not the centre the offset gives.
+    expect(out.x).toBe(bounds.x + 12);
+    expect(out.anchor).toBe("start");
+    // y from the OFFSET, measured from the top edge as `anchorTo` says. Both, not either.
+    expect(out.y).toBe(bounds.y + 18);
+  });
+
+  it("still centres a line that states an offset and no alignment", () => {
+    // The other half of the claim: nothing changes for a declaration that never asked to be
+    // aligned, which is every offset label written before `align` existed.
+    const out = layoutLabels([{ text: { path: "payload.name" }, anchorTo: "top", offset: { x: 0, y: 18 } }], source({ name: "Build" }), bounds)[0]!;
+
+    expect(out.x).toBe(0);
+    expect(out.anchor).toBe("middle");
+    expect(out.y).toBe(bounds.y + 18);
+  });
+});

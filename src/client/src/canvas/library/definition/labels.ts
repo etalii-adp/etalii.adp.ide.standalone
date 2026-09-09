@@ -84,10 +84,11 @@ function baselineOf(
   element: { labelAt?: { x: number; y: number } },
 ): { x: number; y: number; anchor: "start" | "middle" | "end" } {
   const placed = placementOf(declaration, bounds, element);
-  // A declared alignment overrides the placement's own, and moves the x to the edge it names:
-  // an `end` label sits at the box's right edge, which is what shacl's badges and cardinalities
-  // do (sufficiency row 20) and what a vertical slot fraction cannot say.
-  if (declaration.align === undefined || declaration.offset !== undefined) {
+  // ALIGNMENT SETS X, AND AN OFFSET SETS Y. They were conflated - an offset suppressed the
+  // alignment entirely - so azure-pipeline's stage name, which states both, drew CENTRED over
+  // a card whose name has sat at the top left since the module was written. Found in a browser;
+  // every one of its sixty-eight tests passed, because none of them asks where the name is.
+  if (declaration.align === undefined) {
     return placed;
   }
 

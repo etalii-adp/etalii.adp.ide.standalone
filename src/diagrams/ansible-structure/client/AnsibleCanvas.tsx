@@ -113,6 +113,8 @@ const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       decorations: [
         {
           glyph: "line",
+          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+          anchor: "canvas",
           from: { x: { path: "bounds.left" }, y: { path: "bounds.centreY" } },
           to: { x: { path: "bounds.right" }, y: { path: "bounds.centreY" } },
           className: "ansible-edge-line",

@@ -200,6 +200,8 @@ function definitionOf(scale: MapScale): DiagramDefinition {
           {
             // The inertia bar: the wall movement would meet, drawn where it stands.
             glyph: "line",
+            // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+            anchor: "canvas",
             from: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.top", number: { plus: -6 } } },
             to: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.bottom", number: { plus: 6 } } },
             className: "wardley-inertia",
@@ -246,6 +248,8 @@ function definitionOf(scale: MapScale): DiagramDefinition {
           {
             // The inertia bar: the wall movement would meet, drawn where it stands.
             glyph: "line",
+            // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+            anchor: "canvas",
             from: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.top", number: { plus: -6 } } },
             to: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.bottom", number: { plus: 6 } } },
             className: "wardley-inertia",
@@ -292,6 +296,8 @@ function definitionOf(scale: MapScale): DiagramDefinition {
           {
             // The inertia bar: the wall movement would meet, drawn where it stands.
             glyph: "line",
+            // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+            anchor: "canvas",
             from: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.top", number: { plus: -6 } } },
             to: { x: { path: "bounds.right", number: { plus: 4 } }, y: { path: "bounds.bottom", number: { plus: 6 } } },
             className: "wardley-inertia",

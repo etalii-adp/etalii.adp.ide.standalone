@@ -122,6 +122,8 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
           // a fixed list of declarations cannot say "as many as there are".
           glyph: "marker",
           each: { path: "payload.indicators" },
+          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+          anchor: "canvas",
           from: { x: { path: "bounds.right", number: { plus: -12 } }, y: { path: "bounds.top", number: { plus: 20 } } },
           step: { x: -16, y: 0 },
           text: { path: "glyph" },
@@ -135,6 +137,8 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
           // model still says what a problem IS. That boundary is deliberate - the problems
           // service is not this canvas's to own.
           glyph: "marker",
+          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+          anchor: "canvas",
           from: { x: { path: "bounds.right", number: { plus: -12 } }, y: { path: "bounds.bottom", number: { plus: -12 } } },
           text: { path: "payload.problemGlyph" },
           tooltip: { path: "payload.problemTitle" },
@@ -182,6 +186,8 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
           // a fixed list of declarations cannot say "as many as there are".
           glyph: "marker",
           each: { path: "payload.indicators" },
+          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+          anchor: "canvas",
           from: { x: { path: "bounds.right", number: { plus: -8 } }, y: { path: "bounds.top", number: { plus: 16 } } },
           step: { x: -16, y: 0 },
           text: { path: "glyph" },
@@ -195,6 +201,8 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
           // model still says what a problem IS. That boundary is deliberate - the problems
           // service is not this canvas's to own.
           glyph: "marker",
+          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+          anchor: "canvas",
           from: { x: { path: "bounds.right", number: { plus: -8 } }, y: { path: "bounds.bottom", number: { plus: -6 } } },
           text: { path: "payload.problemGlyph" },
           tooltip: { path: "payload.problemTitle" },

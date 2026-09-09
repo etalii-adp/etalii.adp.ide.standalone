@@ -87,6 +87,8 @@ const SPARQL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         {
           // The mark that says "this leaves the query", without consulting the header.
           glyph: "marker",
+          // Canvas units: these read `bounds`, which resolves to a position rather than an offset.
+          anchor: "canvas",
           from: { x: { path: "bounds.left", number: { plus: 8 } }, y: { path: "bounds.top", number: { plus: 16 } } },
           text: { template: "→" },
           className: "sparql-projection-mark",
