@@ -2577,4 +2577,42 @@ One diagram per shape family, because a family is what a mistake would be common
   whose document pushes the label to the left of the dot.
   Nothing may draw in black-on-black or vanish: an unstyled class renders with the SVG defaults,
   which is what the migration's class plumbing could get wrong without any test noticing.
-- **Result**: pending.
+- **Result**: run 2026-09-09 against `d86f84ca` in `.claude/worktrees/ddm`, backend 5091 /
+  client 5191, signed in with the developer session, browsing the backend's port. **Two defects
+  found, both fixed and re-checked in the running app at `e5937de8`**; everything else drew as
+  it did before.
+  - **A stage name drew centred.** `align` sets x and `offset` sets y - orthogonal - but an
+    offset suppressed the alignment, so azure-pipeline's name, which states both, sat in the
+    middle of a card whose name has been at the top left since the module was written. After
+    the fix: `x="12"`, `text-anchor="start"`.
+  - **Ornaments drew a card away.** A decoration's coordinates are centre-relative, which is
+    what a fixed ornament means; a bound `bounds.*` is already a canvas position, so the centre
+    was added twice. `anchor: "canvas"` says which, and five modules that read `bounds` now say
+    it. After the fix: Ghost's problem mark at (208, 196) and Left's at (808, 76), on their own
+    cards.
+  - Verified as expected: dependency-graph's declared classes on the rect, and
+    `dependency-graph-selected` only while selected; the C4 card's three lines 22/38/58 from
+    the top on cards of differing height, with its bound fill `#08427b`; an owl-time card whose
+    rows start below the badge line (label 4936, badges 4956, rows 4974/4990/5006/5022); the
+    causal-loop arc's `marker-end`, its `causal-loop-reinforcing` badge and a pill whose
+    `rx` is half its height; the Wardley map's four bands, both axes and `scaleWithView` measured
+    across a zoom (view x1.5625, band width unchanged at 110.56, band label 20px -> 31.25px);
+    and a mind map's centred text with all three corner glyphs - `•` notes, `↗` link, `⊕`
+    folded - together on one node, its drop ring and dashed branch preview during a drag
+    (`mindmap-drag-preview`, `mindmap-node-drop-target-ring`, `mindmap-edge-preview`).
+  - F2 opened over the text it replaces every time: over a C4 name line and an Azure stage
+    name, over the WHOLE box on a databricks task (editor box exactly the shape rect), and at
+    a Wardley mark's own label offset - `annotations-and-labels.owm`'s Kettle, whose document
+    pushes its label 57 units LEFT of the dot, opened its editor at that same x.
+  - Nothing drew black-on-black: on each family's representative element the computed fill
+    and stroke were read rather than eyeballed, and each came back a theme colour.
+  - **Not covered by the corpus**: no vendored `.mm` has a folded branch or a note, so those
+    two glyphs were produced by folding and annotating a node in the session and undoing both
+    afterwards. The document was never saved.
+  - **Instrument note, so the next run does not read it as a defect**: the browser tool cannot
+    deliver a space keydown - it arrives as `key: ""` - so mindmap's declared `fold` shortcut
+    looks inert when pressed. It is not: the same action off the context menu folds, and F2
+    proves the declared-shortcut path. Exercise a space-keyed action through its menu entry.
+  - **Left standing**: a box shape whose module declares its labels separately still emits one
+    empty `<text>` inside the shape group (`BoxElement` always writes one). It paints nothing
+    and is not a defect - recorded because it is otherwise re-discovered every pass.
