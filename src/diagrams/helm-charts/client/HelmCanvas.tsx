@@ -1,14 +1,11 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { edgePointOf, forwardBezierPath, straightPath } from "@client/canvas/connectors";
+import { forwardBezierPath } from "@client/canvas/connectors";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
   CustomRouteRef,
-  CustomShapeRef,
-  CustomShapeState,
   DiagramDefinition,
   ShapeBounds,
   ShapePoint,
@@ -47,83 +44,8 @@ type StubElement = DiagramModelElement & {
   stubClass: string;
 };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/**
- * One box. Its kind is a CSS class rather than an inline style, so every colour and shape
- * stays in the stylesheet. The double-click and the right-click ride the shape, because
- * this canvas has no menu of its own.
- */
-const nodeShape: CustomShapeRef = {
-  customShape: "helm-node",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as NodeElement;
-    const node = element.node;
-    const classes = [
-      "helm-node",
-      `helm-node-${kindClass(node.payload.kind)}`,
-      state?.selected ? "helm-node-selected" : "",
-      node.payload.unreadable ? "helm-node-unreadable" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
 
-    return (
-      <BoxElement
-        className={classes}
-        data-kind={kindClass(node.payload.kind)}
-        x={element.x - node.payload.width / 2}
-        y={element.y - node.payload.height / 2}
-        width={node.payload.width}
-        height={node.payload.height}
-        label={node.payload.name}
-        boxClassName="helm-node-box"
-        labelClassName="helm-node-label"
-        role="button"
-        tabIndex={0}
-        aria-label={`${kindLabel(node.payload.kind)} ${node.payload.name}`}
-        onDoubleClick={element.activate}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          element.contextSelect();
-        }}
-      >
-        <title>{`${kindLabel(node.payload.kind)} ${node.payload.name}`}</title>
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/**
- * An open end draws as a stub from its source: a reader has to be able to see that something
- * names what is not there (R5.2, R5.6).
- */
-const stubShape: CustomShapeRef = {
-  customShape: "helm-stub",
-  render: (raw) => {
-    const element = raw as StubElement;
-    return (
-      <g className={element.stubClass} data-edge-id={element.id}>
-        <path
-          className="helm-edge-line"
-          d={straightPath(element.from, { x: element.from.x + STUB_LENGTH, y: element.from.y })}
-        />
-        <text className="helm-edge-label" x={element.from.x + 8} y={element.from.y - 6}>
-          {element.text}
-        </text>
-      </g>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
 
 /**
  * One relationship, exactly as before: out of the source's right side and into the target's
@@ -146,8 +68,66 @@ const helmRoute: CustomRouteRef = {
  */
 const HELM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
-    { id: "node", shape: nodeShape, anchors: { kind: "edge" }, sizing: "model", deletable: false },
-    { id: "stub", shape: stubShape, anchors: { kind: "edge" }, sizing: "model", draggable: false, deletable: false },
+    {
+      id: "node",
+      shape: "box",
+      classNames: [
+        { className: "helm-node" },
+        { className: { template: "helm-node-{payload.kindClass}" } },
+        { className: "helm-node-unreadable", when: { path: "payload.unreadable", is: "true" } },
+        { className: "helm-node-selected", when: { path: "state.selected", is: "true" } },
+        { className: "helm-node-box", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.name" },
+          truncate: true,
+          className: "helm-node-label",
+        },
+      ],
+      tooltip: { template: "{payload.title}" },
+      data: { kind: { path: "payload.kindClass" } },
+      accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
+      actions: [
+        // What `onDoubleClick` and `onContextMenu` did on the rendered element.
+        { id: "helm.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
+        { id: "helm.context-menu", invokedBy: [{ kind: "gesture", gesture: "context-menu" }], appliesTo: [{ kind: "element" }] },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+      deletable: false,
+    },
+    {
+      id: "stub",
+      // AN ELEMENT THAT IS ONLY AN ORNAMENT: a short rule out of the source with the
+      // target's own words beside it, for a dependency this document names and does not
+      // resolve. `none` is the shape that made this declarable at all.
+      shape: "none",
+      classNames: [{ className: { path: "payload.stubClass" }, on: "element" }],
+      decorations: [
+        {
+          glyph: "line",
+          from: { x: { path: "bounds.left" }, y: { path: "bounds.centreY" } },
+          to: { x: { path: "bounds.right" }, y: { path: "bounds.centreY" } },
+          className: "helm-edge-line",
+        },
+      ],
+      labels: [
+        {
+          text: { path: "payload.text" },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          className: "helm-edge-label",
+        },
+      ],
+      data: { "edge-id": { path: "element.id" } },
+      anchors: { kind: "edge" },
+      sizing: "model",
+      draggable: false,
+      deletable: false,
+    },
   ],
   relationTypes: [
     {
@@ -231,6 +211,10 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
           from,
           text: `${wire.label}${wire.kind === HelmEdgeKind.RESOLVES ? " (unvendored)" : " (not defined here)"}`,
           stubClass: `helm-edge helm-edge-${edgeClass(wire.kind)} helm-edge-open`,
+          payload: {
+            text: `${wire.label}${wire.kind === HelmEdgeKind.RESOLVES ? " (unvendored)" : " (not defined here)"}`,
+            stubClass: `helm-edge helm-edge-${edgeClass(wire.kind)} helm-edge-open`,
+          },
         } as StubElement);
         continue;
       }
@@ -254,6 +238,13 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
         width: node.payload.width,
         height: node.payload.height,
         label: node.payload.name,
+        // What the declaration reads.
+        payload: {
+          name: node.payload.name,
+          kindClass: kindClass(node.payload.kind),
+          unreadable: node.payload.unreadable,
+          title: `${kindLabel(node.payload.kind)} ${node.payload.name}`,
+        },
         node,
         activate: () => activate(node),
         contextSelect: () => select(elementSelectionOf(entryId, path, node.id, ContextSelectionAction.CONTEXT_MENU)),
@@ -274,6 +265,26 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
   }, [selectedId, model.elements]);
 
   const events: DiagramEventHandlers = {
+    // The two gestures the rendered element used to answer itself. Same behaviour,
+    // reached by action id: this module still decides what "activate" means.
+    onActionInvoked: ({ actionId, targetId }) => {
+      if (targetId === undefined) {
+        return;
+      }
+
+      const node = model.elements.get(targetId);
+      if (actionId === "helm.activate") {
+        if (node !== undefined) {
+          activate(node);
+        }
+
+        return;
+      }
+
+      if (actionId === "helm.context-menu") {
+        select(elementSelectionOf(entryId, path, targetId, ContextSelectionAction.CONTEXT_MENU));
+      }
+    },
     // A background press never deselected here, so only an element selection is forwarded.
     onSelectionChanged: ({ selection: next }) => {
       const element = next.find((item) => item.kind === "element");

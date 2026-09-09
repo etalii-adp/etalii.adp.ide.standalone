@@ -1,19 +1,13 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
   CustomRouteRef,
-  CustomShapeRef,
-  CustomShapeState,
   DiagramDefinition,
   ShapeBounds,
-  ShapePoint,
 } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
@@ -56,91 +50,8 @@ export interface DatabricksCanvasConfig {
 type NodeElement = DiagramModelElement & { node: DatabricksNode; simulated: string | undefined };
 type FrameBoxElement = DiagramModelElement & { frame: DatabricksFrame };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/** One node: kind, unresolved and simulation stylings ride its classes; badges its footer. */
-const nodeShape: CustomShapeRef = {
-  customShape: "databricks-node",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as NodeElement;
-    const node = element.node;
-    const classes = ["databricks-node canvas-element", `databricks-node-${node.kind}`];
-    if (node.unresolved) {
-      classes.push("databricks-node-missing");
-    }
 
-    if (element.simulated) {
-      classes.push(`databricks-sim-${element.simulated}`);
-    }
-
-    if (state?.selected) {
-      classes.push("databricks-selected");
-    }
-
-    if (state?.connectTarget) {
-      classes.push("databricks-connect-target canvas-connect-target");
-    }
-
-    return (
-      <BoxElement
-        className={classes.join(" ")}
-        x={element.x - NODE_WIDTH / 2}
-        y={element.y - NODE_HEIGHT / 2}
-        width={NODE_WIDTH}
-        height={NODE_HEIGHT}
-        label={node.label}
-        boxClassName="databricks-node-box canvas-node"
-        labelClassName="databricks-label canvas-node-label"
-        labelY={NODE_HEIGHT / 2 - 4}
-      >
-        {node.badges.length > 0 ? (
-          <text className="databricks-badges" x={8} y={NODE_HEIGHT - 8}>
-            {node.badges.join(" · ")}
-          </text>
-        ) : null}
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/** A target frame: the dashed enclosure with its mode/default/override badges. */
-const frameShape: CustomShapeRef = {
-  customShape: "databricks-frame",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as FrameBoxElement;
-    const frame = element.frame;
-    const badges = [frame.mode, frame.isDefault ? "default" : "", overrides(frame.overrideCount)]
-      .filter((badge) => badge.length > 0)
-      .join(" · ");
-
-    return (
-      <FrameElement
-        className={`databricks-frame${state?.selected ? " databricks-selected" : ""}`}
-        x={element.x}
-        y={element.y}
-        width={FRAME_WIDTH}
-        height={FRAME_HEIGHT}
-        label={frame.label}
-        labelClassName="databricks-frame-label"
-      >
-        {badges ? (
-          <text className="databricks-badges" x={-FRAME_WIDTH / 2 + 12} y={-FRAME_HEIGHT / 2 + 18}>
-            {badges}
-          </text>
-        ) : null}
-      </FrameElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
 
 /**
  * A dependency or flow edge, exactly as FixedBezierConnection drew it: out of the source's
@@ -169,8 +80,41 @@ function definitionFor(connectable: boolean): DiagramDefinition {
     elementTypes: [
       {
         id: "task",
-        shape: nodeShape,
-        label: { placement: "inside", editable: true },
+        shape: "box",
+        classNames: [
+          { className: "databricks-node canvas-element", on: "element" },
+          { className: { template: "databricks-node-{payload.kind}" }, on: "element" },
+          { className: "databricks-node-missing", on: "element", when: { path: "payload.unresolved", is: "true" } },
+          { className: { template: "databricks-sim-{payload.simulated}" }, on: "element", when: { path: "payload.simulated", is: "present" } },
+          { className: "databricks-selected", on: "element", when: { path: "state.selected", is: "true" } },
+          { className: "databricks-connect-target canvas-connect-target", on: "element", when: { path: "state.connectTarget", is: "true" } },
+          { className: "databricks-node-box canvas-node", on: "shape" },
+        ],
+        labels: [
+          {
+            text: { path: "payload.label" },
+            anchorTo: "top",
+            offset: { x: 0, y: NODE_HEIGHT / 2 - 4 },
+            editable: true,
+            // The editor covers the whole box, as `placement: "inside"` did: this label sits
+            // low in the box to leave room for the badge strip, but it is still the element's
+            // one name and renaming it is renaming the task.
+            editorBox: { top: 0, height: NODE_HEIGHT },
+            truncate: true,
+            className: "databricks-label canvas-node-label",
+          },
+          {
+            // The badge strip, joined - one line rather than a stack, which is how the notation
+            // shows it and why a collection binding may name its separator.
+            text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+            when: { path: "payload.badges", is: "non-empty" },
+            anchorTo: "top",
+            offset: { x: 0, y: NODE_HEIGHT - 8 },
+            align: "start",
+            insetX: 8,
+            className: "databricks-badges",
+          },
+        ],
         anchors: connectable
           ? {
             kind: "sides",
@@ -182,8 +126,76 @@ function definitionFor(connectable: boolean): DiagramDefinition {
           : { kind: "edge" },
         sizing: "model",
       },
-      { id: "node", shape: nodeShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model" },
-      { id: "frame", shape: frameShape, anchors: { kind: "edge" }, sizing: "model" },
+      {
+        id: "node",
+        shape: "box",
+        classNames: [
+          { className: "databricks-node canvas-element", on: "element" },
+          { className: { template: "databricks-node-{payload.kind}" }, on: "element" },
+          { className: "databricks-node-missing", on: "element", when: { path: "payload.unresolved", is: "true" } },
+          { className: { template: "databricks-sim-{payload.simulated}" }, on: "element", when: { path: "payload.simulated", is: "present" } },
+          { className: "databricks-selected", on: "element", when: { path: "state.selected", is: "true" } },
+          { className: "databricks-connect-target canvas-connect-target", on: "element", when: { path: "state.connectTarget", is: "true" } },
+          { className: "databricks-node-box canvas-node", on: "shape" },
+        ],
+        labels: [
+          {
+            text: { path: "payload.label" },
+            anchorTo: "top",
+            offset: { x: 0, y: NODE_HEIGHT / 2 - 4 },
+            editable: true,
+            // The editor covers the whole box, as `placement: "inside"` did: this label sits
+            // low in the box to leave room for the badge strip, but it is still the element's
+            // one name and renaming it is renaming the task.
+            editorBox: { top: 0, height: NODE_HEIGHT },
+            truncate: true,
+            className: "databricks-label canvas-node-label",
+          },
+          {
+            // The badge strip, joined - one line rather than a stack, which is how the notation
+            // shows it and why a collection binding may name its separator.
+            text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+            when: { path: "payload.badges", is: "non-empty" },
+            anchorTo: "top",
+            offset: { x: 0, y: NODE_HEIGHT - 8 },
+            align: "start",
+            insetX: 8,
+            className: "databricks-badges",
+          },
+        ],
+        anchors: { kind: "edge" },
+        sizing: "model",
+      },
+      {
+        id: "frame",
+        shape: "frame",
+        classNames: [
+          { className: "databricks-frame", on: "element" },
+          { className: "databricks-selected", on: "element", when: { path: "state.selected", is: "true" } },
+        ],
+        labels: [
+          { text: { path: "payload.label" }, placement: "above", className: "databricks-frame-label" },
+          {
+            // `mode · default · 2 overrides`, with the parts that do not apply left out and no
+            // separator left behind - which is the whole of a parts binding's justification.
+            text: {
+              parts: [
+                { path: "payload.mode" },
+                { template: "default", when: { path: "payload.isDefault", is: "true" } },
+                { path: "payload.overrides", when: { path: "payload.overrides", is: "non-empty" } },
+              ],
+              join: " · ",
+            },
+            anchorTo: "top",
+            offset: { x: 0, y: 18 },
+            align: "start",
+            insetX: 12,
+            className: "databricks-badges",
+          },
+        ],
+        anchors: { kind: "edge" },
+        sizing: "model",
+      },
     ],
     relationTypes: [
       {
@@ -272,6 +284,12 @@ export function DatabricksCanvas({
       width: FRAME_WIDTH,
       height: FRAME_HEIGHT,
       label: frame.label,
+      payload: {
+        label: frame.label,
+        mode: frame.mode,
+        isDefault: frame.isDefault,
+        overrides: overrides(frame.overrideCount),
+      },
       frame,
     }));
     const nodes = [...model.nodes.values()].map((node): NodeElement => ({
@@ -283,6 +301,13 @@ export function DatabricksCanvas({
       width: NODE_WIDTH,
       height: NODE_HEIGHT,
       label: node.label,
+      payload: {
+        label: node.label,
+        kind: node.kind,
+        unresolved: node.unresolved,
+        badges: node.badges.map((text) => ({ text })),
+        ...(simulation.states.get(node.id) !== undefined ? { simulated: simulation.states.get(node.id) } : {}),
+      },
       node,
       simulated: simulation.states.get(node.id),
     }));

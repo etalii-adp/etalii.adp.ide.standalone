@@ -1261,6 +1261,15 @@ export function DiagramCanvas({
               : asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, text);
           }
 
+          // A PLAIN CENTRED LABEL OPENS OVER THE ELEMENT, which is what `placement: "inside"`
+          // meant and what a single-label type wants: the editor is the box. A label that
+          // states an offset or an editor box is one line of a composite card, and opens over
+          // that line instead. Derived from the typography, a plain label produced a 20px
+          // editor over a 56px box, which databricks' own test caught.
+          if (declared.offset === undefined && declared.editorBox === undefined) {
+            return centredLabelPlacement({ x: element.x, y: element.y, width: bounds.width, height: bounds.height }, text);
+          }
+
           const lines = layoutLabels([declared], sourceOf(element), bounds);
           const line = lines.find((candidate) => candidate.editable);
           if (line === undefined) {
@@ -1992,7 +2001,12 @@ function declaredDecorations(type: ElementTypeDefinition, bounds: ConnectorBox, 
   return resolved.map((decoration) => (
     <g
       key={decoration.index}
-      className={decoration.className}
+      // THE GROUP CARRIES THE LIBRARY'S CLASS AND THE ORNAMENT CARRIES THE MODULE'S. A module
+      // names the thing it drew - `.causal-loop-marker` is a path with a `d`, and its own test
+      // asks that path for it - so putting the module's name on the container as well would
+      // make `querySelector` find the wrapper first and answer null. The group keeps what makes
+      // it a group: no pointer events, the aria state, and the arrowhead a line may carry.
+      className="library-decoration"
       {...dataAttributesOf(decoration.data)}
       role={decoration.role}
       aria-label={decoration.accessibleName}
@@ -2007,7 +2021,7 @@ function declaredDecorations(type: ElementTypeDefinition, bounds: ConnectorBox, 
       {decorationGlyph(decoration)}
       {decoration.text !== undefined ? (
         <text
-          className="library-decoration-text"
+          className={["library-decoration-text", decoration.className].filter(Boolean).join(" ")}
           x={decoration.textAt.x}
           y={decoration.textAt.y}
           textAnchor={decoration.textAnchor}
@@ -2025,18 +2039,27 @@ function declaredDecorations(type: ElementTypeDefinition, bounds: ConnectorBox, 
   ));
 }
 
-/** One glyph of the closed set. A `marker` with no name draws nothing but its text. */
+/**
+ * One glyph of the closed set. A `marker` with no name draws nothing but its text.
+ *
+ * <b>The declared class rides the GLYPH as well as its group.</b> A selector for an ornament
+ * should find the drawn thing rather than only its container - causal-loop's own test asks the
+ * marker for its `d`, which is a question a `<g>` cannot answer. Both carry it, because the
+ * group is also what a stylesheet reaches for when it wants the text with it.
+ */
 function decorationGlyph(decoration: ResolvedDecoration): ReactNode {
+  const className = decoration.className;
   switch (decoration.glyph) {
     case "line":
-      return <line x1={decoration.from.x} y1={decoration.from.y} x2={decoration.to.x} y2={decoration.to.y} />;
+      return <line className={className} x1={decoration.from.x} y1={decoration.from.y} x2={decoration.to.x} y2={decoration.to.y} />;
     case "path":
-      return decoration.d !== undefined ? <path d={decoration.d} /> : null;
+      return decoration.d !== undefined ? <path className={className} d={decoration.d} /> : null;
     case "circle":
-      return <circle cx={decoration.from.x} cy={decoration.from.y} r={decoration.radius} />;
+      return <circle className={className} cx={decoration.from.x} cy={decoration.from.y} r={decoration.radius} />;
     case "rect":
       return (
         <rect
+          className={className}
           x={decoration.from.x}
           y={decoration.from.y}
           width={decoration.width}

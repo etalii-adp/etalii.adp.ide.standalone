@@ -1,14 +1,11 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { edgePointOf, forwardBezierPath, straightPath } from "@client/canvas/connectors";
+import { forwardBezierPath } from "@client/canvas/connectors";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
   CustomRouteRef,
-  CustomShapeRef,
-  CustomShapeState,
   DiagramDefinition,
   ShapeBounds,
   ShapePoint,
@@ -50,91 +47,8 @@ type StubElement = DiagramModelElement & {
   stubClass: string;
 };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/**
- * One box. Its kind and its play slot are CSS classes rather than inline styles, so every
- * colour and every shape stays in the stylesheet. The double-click and the right-click ride
- * the shape, because this canvas has no menu of its own - a right-click is a selection with
- * the gesture named, and the shell answers it.
- */
-const nodeShape: CustomShapeRef = {
-  customShape: "ansible-node",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as NodeElement;
-    const node = element.node;
-    const slot = paletteSlotOf(node, PALETTE_SLOTS);
-    const classes = [
-      "ansible-node",
-      `ansible-node-${kindClass(node.payload.kind)}`,
-      slot >= 0 ? `ansible-play-${slot}` : "ansible-play-none",
-      state?.selected ? "ansible-node-selected" : "",
-      node.payload.hollow ? "ansible-node-hollow" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
 
-    return (
-      <BoxElement
-        className={classes}
-        data-kind={kindClass(node.payload.kind)}
-        x={element.x - node.payload.width / 2}
-        y={element.y - node.payload.height / 2}
-        width={node.payload.width}
-        height={node.payload.height}
-        label={node.payload.name}
-        boxClassName="ansible-node-box"
-        labelClassName="ansible-node-label"
-        role="button"
-        tabIndex={0}
-        aria-label={`${kindLabel(node.payload.kind)} ${node.payload.name}`}
-        onDoubleClick={element.activate}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          element.contextSelect();
-        }}
-      >
-        {node.payload.hosts ? (
-          <title>{`${kindLabel(node.payload.kind)} ${node.payload.name} — hosts: ${node.payload.hosts}`}</title>
-        ) : (
-          <title>{`${kindLabel(node.payload.kind)} ${node.payload.name}`}</title>
-        )}
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/**
- * An edge whose target is missing or unknowable has no second box to reach. It is drawn as a
- * stub from its source rather than not drawn at all: a reader has to be able to see that a
- * playbook names something that is not there.
- */
-const stubShape: CustomShapeRef = {
-  customShape: "ansible-stub",
-  render: (raw) => {
-    const element = raw as StubElement;
-    return (
-      <g className={element.stubClass} data-edge-id={element.id}>
-        <path
-          className="ansible-edge-line canvas-connection-line"
-          d={straightPath(element.from, { x: element.from.x + STUB_LENGTH, y: element.from.y })}
-        />
-        <text className="ansible-edge-label" x={element.from.x + 8} y={element.from.y - 6}>
-          {element.text}
-        </text>
-      </g>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
 
 /**
  * One relationship, exactly as before: out of the source's right side, into the target's left
@@ -158,8 +72,68 @@ const ansibleRoute: CustomRouteRef = {
  */
 const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
-    { id: "node", shape: nodeShape, anchors: { kind: "edge" }, sizing: "model", deletable: false },
-    { id: "stub", shape: stubShape, anchors: { kind: "edge" }, sizing: "model", draggable: false, deletable: false },
+    {
+      id: "node",
+      shape: "box",
+      classNames: [
+        { className: "ansible-node" },
+        { className: { template: "ansible-node-{payload.kindClass}" } },
+        { className: { template: "ansible-play-{payload.playSlot}" }, when: { path: "payload.playSlot", is: "present" } },
+        { className: "ansible-play-none", when: { path: "payload.playSlot", is: "absent" } },
+        { className: "ansible-node-hollow", when: { path: "payload.hollow", is: "true" } },
+        { className: "ansible-node-selected", when: { path: "state.selected", is: "true" } },
+        { className: "ansible-node-box", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.name" },
+          truncate: true,
+          className: "ansible-node-label",
+        },
+      ],
+      tooltip: { template: "{payload.title}" },
+      data: { kind: { path: "payload.kindClass" } },
+      accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
+      actions: [
+        // What `onDoubleClick` and `onContextMenu` did on the rendered element.
+        { id: "ansible.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
+        { id: "ansible.context-menu", invokedBy: [{ kind: "gesture", gesture: "context-menu" }], appliesTo: [{ kind: "element" }] },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+      deletable: false,
+    },
+    {
+      id: "stub",
+      // AN ELEMENT THAT IS ONLY AN ORNAMENT: a short rule out of the source with the
+      // target's own words beside it, for a dependency this document names and does not
+      // resolve. `none` is the shape that made this declarable at all.
+      shape: "none",
+      classNames: [{ className: { path: "payload.stubClass" }, on: "element" }],
+      decorations: [
+        {
+          glyph: "line",
+          from: { x: { path: "bounds.left" }, y: { path: "bounds.centreY" } },
+          to: { x: { path: "bounds.right" }, y: { path: "bounds.centreY" } },
+          className: "ansible-edge-line",
+        },
+      ],
+      labels: [
+        {
+          text: { path: "payload.text" },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          className: "ansible-edge-label",
+        },
+      ],
+      data: { "edge-id": { path: "element.id" } },
+      anchors: { kind: "edge" },
+      sizing: "model",
+      draggable: false,
+      deletable: false,
+    },
   ],
   relationTypes: [
     {
@@ -244,6 +218,10 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
           from,
           text: `${wire.targetAsWritten}${edge.payload.unresolvable ? " (expression)" : " (missing)"}`,
           stubClass: `ansible-edge ansible-edge-${edgeClass(wire.kind)} ansible-edge-unresolved`,
+          payload: {
+            text: `${wire.targetAsWritten}${edge.payload.unresolvable ? " (expression)" : " (missing)"}`,
+            stubClass: `ansible-edge ansible-edge-${edgeClass(wire.kind)} ansible-edge-unresolved`,
+          },
         } as StubElement);
         continue;
       }
@@ -267,6 +245,17 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
         width: node.payload.width,
         height: node.payload.height,
         label: node.payload.name,
+        // What the declaration reads. The palette slot is `playIndex % PALETTE_SLOTS`, which a
+        // binding now computes; it is carried here as the index the module already holds.
+        payload: {
+          name: node.payload.name,
+          kindClass: kindClass(node.payload.kind),
+          hollow: node.payload.hollow,
+          title: node.payload.hosts
+            ? `${kindLabel(node.payload.kind)} ${node.payload.name} — hosts: ${node.payload.hosts}`
+            : `${kindLabel(node.payload.kind)} ${node.payload.name}`,
+          ...(paletteSlotOf(node, PALETTE_SLOTS) >= 0 ? { playSlot: paletteSlotOf(node, PALETTE_SLOTS) } : {}),
+        },
         node,
         activate: () => activate(node),
         contextSelect: () => {
@@ -290,6 +279,27 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   }, [selectedId, model.elements]);
 
   const events: DiagramEventHandlers = {
+    // The two gestures the rendered element used to answer itself. Same behaviour,
+    // reached by action id: this module still decides what "activate" means.
+    onActionInvoked: ({ actionId, targetId }) => {
+      if (targetId === undefined) {
+        return;
+      }
+
+      const node = model.elements.get(targetId);
+      if (actionId === "ansible.activate") {
+        if (node !== undefined) {
+          activate(node);
+        }
+
+        return;
+      }
+
+      if (actionId === "ansible.context-menu") {
+        setFocusedId(targetId);
+        select(elementSelectionOf(entryId, path, targetId, ContextSelectionAction.CONTEXT_MENU));
+      }
+    },
     // A background press never deselected here, so only an element selection is forwarded.
     onSelectionChanged: ({ selection: next }) => {
       const element = next.find((item) => item.kind === "element");

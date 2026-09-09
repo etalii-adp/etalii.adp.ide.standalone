@@ -1,11 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 
 import { ArcBow, arcBetween, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { CustomShapeRef, CustomShapeState, DiagramDefinition, RelationTypeDefinition, RouteEnds, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, RelationTypeDefinition, RouteEnds, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
@@ -51,17 +50,6 @@ function toArcBox(bounds: ShapeBounds): ArcBox {
   return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
 }
 
-/** The arc's own edge answer, for the connector geometry the library asks per attachment. */
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centreX = bounds.x + bounds.width / 2;
-  const centreY = bounds.y + bounds.height / 2;
-  const dx = towards.x - centreX;
-  const dy = towards.y - centreY;
-  const scaleX = dx !== 0 ? bounds.width / 2 / Math.abs(dx) : Number.POSITIVE_INFINITY;
-  const scaleY = dy !== 0 ? bounds.height / 2 / Math.abs(dy) : Number.POSITIVE_INFINITY;
-  const scale = Math.min(scaleX, scaleY, 1);
-  return { x: centreX + dx * scale, y: centreY + dy * scale };
-}
 
 /**
  * How far this link bows, and to which side.
@@ -140,6 +128,22 @@ function linkAdornment(route: { ends?: RouteEnds }, rawConnection: unknown) {
 }
 
 /**
+ * A near-complete circle with a gap for its arrowhead - the loop marker the notation draws at
+ * the centre of a feedback loop. Two arcs rather than one, because a single SVG elliptical arc
+ * cannot exceed a half turn without the large-arc flag.
+ */
+function loopMarkerPath(centreX: number, centreY: number, radius: number, clockwise: boolean): string {
+  const sweep = clockwise ? 1 : 0;
+  const start = -Math.PI / 2;
+  const end = start + (clockwise ? 1 : -1) * Math.PI * 1.7;
+  const middle = (start + end) / 2;
+
+  const at = (angle: number) => `${(centreX + radius * Math.cos(angle)).toFixed(2)} ${(centreY + radius * Math.sin(angle)).toFixed(2)}`;
+
+  return `M ${at(start)} A ${radius} ${radius} 0 0 ${sweep} ${at(middle)} A ${radius} ${radius} 0 0 ${sweep} ${at(end)}`;
+}
+
+/**
  * One weight step's relation type, in each bow direction: the weight steps keep the stylesheet's
  * classes as they are, and the direction is a type of its own because a route is declared by the
  * definition rather than computed per connection - the same reason the weight steps are three
@@ -174,22 +178,6 @@ function polarityWord(computed: LoopPolarityProto): string {
 }
 
 /**
- * A near-complete circle with a gap for its arrowhead - the loop marker the notation draws at
- * the centre of a feedback loop. Two arcs rather than one, because a single SVG elliptical arc
- * cannot exceed a half turn without the large-arc flag.
- */
-function loopMarkerPath(centreX: number, centreY: number, radius: number, clockwise: boolean): string {
-  const sweep = clockwise ? 1 : 0;
-  const start = -Math.PI / 2;
-  const end = start + (clockwise ? 1 : -1) * Math.PI * 1.7;
-  const middle = (start + end) / 2;
-
-  const at = (angle: number) => `${(centreX + radius * Math.cos(angle)).toFixed(2)} ${(centreY + radius * Math.sin(angle)).toFixed(2)}`;
-
-  return `M ${at(start)} A ${radius} ${radius} 0 0 ${sweep} ${at(middle)} A ${radius} ${radius} 0 0 ${sweep} ${at(end)}`;
-}
-
-/**
  * What a causal loop diagram allows, stated once: pill variables that drag and select, links
  * as chord-bowed arcs with polarity and delay adornment (self-loops included), and loop
  * badges that select but never move - the identifier's marker and caption drawn at the
@@ -197,63 +185,55 @@ function loopMarkerPath(centreX: number, centreY: number, radius: number, clockw
  * Arrange stays a backend action.
  */
 function definitionOf(): DiagramDefinition {
-  const variableShape: CustomShapeRef = {
-    customShape: "causal-loop-variable",
-    render: (raw, state?: CustomShapeState) => {
-      const element = raw as VariableElement;
-      const { width, height } = element.variable.payload;
-      return (
-        <BoxElement
-          className={`canvas-element causal-loop-variable${state?.selected ? " canvas-selected" : ""}`}
-          x={element.x - width / 2}
-          y={element.y - height / 2}
-          width={width}
-          height={height}
-          rx={height / 2}
-          label={element.variable.payload.display}
-          boxClassName="canvas-node"
-          labelClassName="canvas-node-label"
-          labelX={width / 2}
-        />
-      );
-    },
-    edgePoint: boxEdgePoint,
-  };
-
-  const loopShape: CustomShapeRef = {
-    customShape: "causal-loop-badge",
-    render: (raw, state?: CustomShapeState) => {
-      const element = raw as LoopElement;
-      const loop = element.loop;
-      return (
-        <g className={`causal-loop-loop${loop.payload.disagrees ? " causal-loop-disagrees" : ""}${state?.selected ? " canvas-selected" : ""}`}>
-          {/* The sweep follows the polarity: reinforcing clockwise, balancing anticlockwise -
-              how the reference tools distinguish them before anyone reads the letter. */}
-          <path
-            className="causal-loop-marker"
-            d={loopMarkerPath(element.x, element.y - 15, 13, loop.payload.computed === LoopPolarityProto.REINFORCING)}
-            markerEnd="url(#library-arrow)"
-          />
-          <text
-            className={`causal-loop-badge causal-loop-${polarityWord(loop.payload.computed)}`}
-            x={element.x}
-            y={element.y}
-            textAnchor="middle"
-          >
-            {loopCaption(loop)}
-          </text>
-        </g>
-      );
-    },
-    edgePoint: boxEdgePoint,
-  };
-
   return assertValidDiagramDefinition({
     elementTypes: [
       // The label is the visible name and the one editable thing: renaming edits it in place,
       // centred over the pill. "inside" opens the editor at the element's centre.
-      { id: "variable", shape: variableShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "inside", editable: true } },
-      { id: "loop", shape: loopShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
+      {
+        id: "variable",
+        // A pill: a box whose corner radius is half its height, which is what `rx={height / 2}`
+        // said in the renderer and what the built-in says by name.
+        shape: "pill",
+        classNames: [
+          { className: "canvas-element causal-loop-variable", on: "element" },
+          { className: "canvas-selected", on: "element", when: { path: "state.selected", is: "true" } },
+          { className: "canvas-node", on: "shape" },
+        ],
+        labels: [{ text: { path: "payload.display" }, editable: true, className: "canvas-node-label" }],
+        anchors: { kind: "edge" },
+        sizing: "model",
+      },
+      {
+        id: "loop",
+        // A BADGE WITH NO BODY: the polarity sweep and its caption, and nothing else. `none` is
+        // what made this an element type rather than a renderer.
+        shape: "none",
+        classNames: [
+          { className: "causal-loop-loop", on: "element" },
+          { className: "causal-loop-disagrees", on: "element", when: { path: "payload.disagrees", is: "true" } },
+          { className: "canvas-selected", on: "element", when: { path: "state.selected", is: "true" } },
+        ],
+        decorations: [
+          {
+            // The sweep follows the polarity: reinforcing clockwise, balancing anticlockwise -
+            // how the reference tools distinguish them before anyone reads the letter. Two
+            // declarations with a condition, not one function with a boolean argument.
+            glyph: "path",
+            d: { path: "payload.markerPath" },
+            markerEnd: "arrow",
+            className: "causal-loop-marker",
+          },
+        ],
+        labels: [
+          {
+            text: { path: "payload.caption" },
+            className: { template: "causal-loop-badge causal-loop-{payload.polarityWord}" },
+          },
+        ],
+        anchors: { kind: "edge" },
+        sizing: "model",
+        draggable: false,
+      },
     ],
     relationTypes: [
       linkRelation("light", false),
@@ -311,6 +291,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
       width: variable.payload.width,
       height: variable.payload.height,
       label: variable.payload.display,
+      payload: { display: variable.payload.display },
       variable,
     }));
     const loops = [...model.loops.values()].map((loop): LoopElement => ({
@@ -321,6 +302,14 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
       // The badge and its marker together, roughly: enough box for a press to land on.
       width: 60,
       height: 48,
+      // What the declaration reads. The sweep's path is DATA the module computes - a string a
+      // binding reads - which is the distinction `d` was written as a binding for.
+      payload: {
+        caption: loopCaption(loop),
+        polarityWord: polarityWord(loop.payload.computed),
+        disagrees: loop.payload.disagrees,
+        markerPath: loopMarkerPath(loop.x, loop.y - 15, 13, loop.payload.computed === LoopPolarityProto.REINFORCING),
+      },
       loop,
     }));
     const links = [...model.links.values()].flatMap((link) =>
