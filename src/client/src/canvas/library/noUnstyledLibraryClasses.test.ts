@@ -75,8 +75,13 @@ describe("no unstyled library classes", () => {
     "library-open-arrow",
     "library-circle",
     "library-diamond",
-    "library-connect-target",
-    "library-connect-forbidden",
+    // `library-connect-target` and `library-connect-forbidden` USED TO SIT HERE, and they were
+    // the only two entries on this list with no reason written beside them - which is what an
+    // exemption looks like when it is really an unfixed defect. Neither was painted anywhere:
+    // the library computed the connect verdict every frame, put the class on, and nothing
+    // showed. They are styled now, so the list is shorter and this guard covers them like any
+    // other class. An entry here has to be able to say WHERE it is painted; if it cannot, it
+    // belongs in the stylesheet rather than on this list.
     "library-layout-switcher",
     "library-layout-active",
   ]);

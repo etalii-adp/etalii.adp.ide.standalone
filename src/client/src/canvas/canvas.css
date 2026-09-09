@@ -236,6 +236,42 @@
   cursor: crosshair;
 }
 
+/*
+ * WHETHER THE CONNECTION BEING DRAGGED WOULD BE ACCEPTED, said on the element it would land on.
+ *
+ * The library has always worked this out - `connectVerdict` asks the definition on every frame,
+ * checking the relation's permitted target types, `allowSelf`, and both cardinality caps - and
+ * has always put `library-connect-target` on the element that answered yes and
+ * `library-connect-forbidden` on one that answered no. NOTHING PAINTED EITHER. So the verdict
+ * was computed per frame and thrown away, and only the four modules that additionally declare
+ * `canvas-connect-target` for themselves showed anything at all; every other canvas let you
+ * drag a connection with no sign it would be accepted until you released.
+ *
+ * A GLOW ON THE GROUP RATHER THAN A STROKE ON THE SHAPE, and the reason is not taste. A
+ * declared element paints itself through an inline `style` - `paint.stroke` is set whenever the
+ * type or the document names a stroke - and an inline style beats a stylesheet. A `stroke` rule
+ * here would therefore light up the elements that happen to declare no stroke and silently skip
+ * the ones that do, which is worse than no highlight: the absence would read as "this target is
+ * refused" on exactly the elements whose notation is richest. A filter on the enclosing group
+ * cannot be overridden by a child's inline paint, and it works the same for a box, a span, a
+ * circle, a symbol and a frame - so no shape family is left out and no module opts in.
+ *
+ * At most one element carries this at a time - the one under the pointer mid-drag - so the
+ * filter's cost is bounded no matter how large the diagram is.
+ */
+
+
+.library-connect-target {
+  filter: drop-shadow(0 0 3px var(--color-primary, limegreen));
+}
+
+/* Refused, and said in the same breath rather than by staying silent: the pointer is over a
+ * target the definition will not accept, which a user needs to be able to tell from empty
+ * canvas. Same colour as the refused connect preview, so the line and its target agree. */
+.library-connect-forbidden {
+  filter: drop-shadow(0 0 3px var(--color-danger, #dc2626));
+}
+
 /* A line, not a region: `fill: none` is what stops the wedge. */
 .library-connect-preview {
   fill: none;
