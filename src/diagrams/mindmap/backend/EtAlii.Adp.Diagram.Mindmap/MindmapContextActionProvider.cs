@@ -110,13 +110,20 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
         switch (actionId)
         {
+            // ADD, THEN EDIT IN PLACE. Both of these used to open a dialog asking for a name
+            // before the node existed, which asks the user to name a thing they cannot see.
+            // The node is created at once under a name read off the siblings it is joining,
+            // and the prompt that follows is an inline editor over the node itself - the same
+            // gesture as any other rename, on something already on screen.
+            //
+            // The rename action id is what the value commits under; without it the commit runs
+            // THIS action again and adds a second node. The service re-points the interaction
+            // at the new node, so the rename lands on it rather than on its parent.
             case AddChildActionId:
-                return Result(new ContextExecutionRequiresInput(
-                    new ContextInputRequest("Add child", "mdi-subdirectory-arrow-right", "Text", "", "Add")));
+                return AddThenEditAsync(target, node.Children, isChild: true, cancellationToken);
 
             case AddSiblingActionId when !node.IsRoot:
-                return Result(new ContextExecutionRequiresInput(
-                    new ContextInputRequest("Add sibling", "mdi-plus", "Text", "", "Add")));
+                return AddThenEditAsync(target, node.Parent?.Children ?? [], isChild: false, cancellationToken);
 
             case RenameActionId:
                 // The one prompt here whose value IS the text on screen, so it carries the
@@ -209,6 +216,44 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         var segments = projectRelative.Split('/', StringSplitOptions.RemoveEmptyEntries);
         var stored = MindmapLinks.ToMapRelative(target.ResolvedFullPath, segments, target.RootPath);
         return new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, stored);
+    }
+
+    /// <summary>
+    /// Adds a node named from the siblings it joins, then asks for its label in place.
+    /// </summary>
+    /// <remarks>
+    /// The name is a starting point rather than a decision: the inline editor opens on it
+    /// immediately, so the usual path replaces it before anybody reads it. It still has to be a
+    /// GOOD starting point, because cancelling the rename leaves it - which is why it follows
+    /// the siblings' own pattern rather than being a fixed placeholder.
+    /// </remarks>
+    private async ValueTask<ContextExecutionResult> AddThenEditAsync(
+        ContextTarget target,
+        IReadOnlyList<MindmapNode> siblings,
+        bool isChild,
+        CancellationToken cancellationToken)
+    {
+        var node = Resolve(target, out _);
+        if (node is null)
+        {
+            return new ContextExecutionFailed(NodeGone);
+        }
+
+        var newId = MindmapDocument.NewId();
+        var name = SiblingNaming.NextName(siblings.Select(sibling => sibling.Text));
+        var body = target.ResolvedFullPath;
+        ICommand command = isChild
+            ? new AddChildNodeCommand(body, node.Id, newId, name)
+            : new AddSiblingNodeCommand(body, node.Id, newId, name);
+
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return new ContextExecutionFailed(result.Error);
+        }
+
+        return new ContextExecutionRequiresInput(new ContextInputRequest(
+            "Rename node", "mdi-pencil-outline", "Text", name, "Rename", newId, RenameActionId));
     }
 
     private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
