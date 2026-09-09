@@ -1,6 +1,4 @@
 import { useMemo, useState } from "react";
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -9,7 +7,7 @@ import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panel
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
-import type { DiagramDefinition, CustomShapeRef } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import type { DiagramEventHandlers, DiagramSelection, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
@@ -43,57 +41,6 @@ function deleteShortcut(): ContextShortcut {
 type CardElement = DiagramModelElement & { card: RdfNode };
 
 /**
- * The resource card as a first-class custom shape: title, type badges, one line per literal
- * row - content only this module understands, rendered by it, while hit-testing, anchoring
- * and connecting stay the library's (diagram-library Requirement 2.1). The card is the proof
- * that a custom shape is a citizen, not a decorated box.
- */
-const cardShape: CustomShapeRef = {
-  customShape: "resource-card",
-  render: (raw) => {
-    const element = raw as CardElement;
-    const node = element.card;
-    const height = nodeHeightOf(node);
-    const left = element.x - NODE_WIDTH / 2;
-    const top = element.y - height / 2;
-    const rowsStart = HEADER_HEIGHT + (node.typeBadges.length > 0 ? BADGES_HEIGHT : 0);
-
-    return (
-      <BoxElement
-        className={`rdf-node canvas-element${node.blank ? " rdf-node-blank" : ""}`}
-        x={left}
-        y={top}
-        width={NODE_WIDTH}
-        height={height}
-        label={node.display}
-        boxClassName="rdf-node-box canvas-node"
-        labelClassName="rdf-label canvas-node-label"
-        labelY={HEADER_HEIGHT / 2 + 5}
-      >
-        {node.typeBadges.length > 0 ? (
-          <text className="rdf-badges" x={8} y={HEADER_HEIGHT - 6 + BADGES_HEIGHT}>
-            {node.typeBadges.join(" · ")}
-          </text>
-        ) : null}
-        {node.rows.map((row, index) => (
-          <text key={`${row.predicate}-${index}`} className="rdf-row" x={8} y={rowsStart + (index + 1) * ROW_HEIGHT - 4}>
-            {`${row.predicate}: ${row.value}${row.annotation ? ` ${row.annotation}` : ""}`}
-          </text>
-        ))}
-      </BoxElement>
-    );
-  },
-  edgePoint: (bounds, towards) => {
-    const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-    return edgePointOf(
-      { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-      towards.x - centre.x,
-      towards.y - centre.y,
-    );
-  },
-};
-
-/**
  * What an RDF data graph allows, stated once: resource cards that drag and connect from
  * their side anchors, blank cards that connect to but never from (the identity boundary
  * starts at the gesture - a blank offers no anchors), and one straight, arrowed,
@@ -104,7 +51,47 @@ const RDF_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
     {
       id: "resource",
-      shape: cardShape,
+      shape: "box",
+      // THE CARD THE COLLECTION BINDING WAS DESIGNED FOR. A header, a badge line when the
+      // resource wears types, and ONE LINE PER LITERAL ROW - which is the case a fixed set of
+      // named slots cannot reach, and the reason `labels` binds to a collection at all.
+      classNames: [
+        // On the SHAPE rather than the element group: the module's tests read these as
+        // descendants of the element, which is where the renderer put them.
+        { className: "rdf-node canvas-element" },
+        { className: "rdf-node-blank", when: { path: "payload.blank", is: "true" } },
+        { className: "rdf-node-box canvas-node", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.display" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT / 2 + 5 },
+          truncate: true,
+          className: "rdf-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.typeBadges", each: { path: "text" }, join: " · " },
+          when: { path: "payload.typeBadges", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT - 6 + BADGES_HEIGHT },
+          align: "start",
+          insetX: 8,
+          className: "rdf-badges",
+        },
+        {
+          text: { path: "payload.rows", each: { template: "{predicate}: {value} {annotation}" } },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          // Where the rows begin depends on whether this card wears badges - which the module
+          // already computes to size the card, and which a fixed start would get wrong by one
+          // row on every card that has them.
+          stack: { lineHeight: ROW_HEIGHT, start: { path: "payload.rowsStart" } },
+          className: "rdf-row",
+        },
+      ],
       anchors: {
         kind: "sides",
         fractions: [
@@ -114,7 +101,52 @@ const RDF_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       },
       sizing: "model",
     },
-    { id: "blank", shape: cardShape, anchors: { kind: "edge" }, sizing: "model" },
+    {
+      id: "blank",
+      shape: "box",
+      // THE CARD THE COLLECTION BINDING WAS DESIGNED FOR. A header, a badge line when the
+      // resource wears types, and ONE LINE PER LITERAL ROW - which is the case a fixed set of
+      // named slots cannot reach, and the reason `labels` binds to a collection at all.
+      classNames: [
+        // On the SHAPE rather than the element group: the module's tests read these as
+        // descendants of the element, which is where the renderer put them.
+        { className: "rdf-node canvas-element" },
+        { className: "rdf-node-blank", when: { path: "payload.blank", is: "true" } },
+        { className: "rdf-node-box canvas-node", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.display" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT / 2 + 5 },
+          truncate: true,
+          className: "rdf-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.typeBadges", each: { path: "text" }, join: " · " },
+          when: { path: "payload.typeBadges", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT - 6 + BADGES_HEIGHT },
+          align: "start",
+          insetX: 8,
+          className: "rdf-badges",
+        },
+        {
+          text: { path: "payload.rows", each: { template: "{predicate}: {value} {annotation}" } },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          // Where the rows begin depends on whether this card wears badges - which the module
+          // already computes to size the card, and which a fixed start would get wrong by one
+          // row on every card that has them.
+          stack: { lineHeight: ROW_HEIGHT, start: { path: "payload.rowsStart" } },
+          className: "rdf-row",
+        },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
   ],
   relationTypes: [
     {
@@ -161,6 +193,15 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
       width: NODE_WIDTH,
       height: nodeHeightOf(node),
       label: node.display,
+      // What the declaration reads. `rowsStart` is the same number `nodeHeightOf` already uses
+      // to size the card: where the rows begin, below the badges when there are any.
+      payload: {
+        display: node.display,
+        blank: node.blank,
+        typeBadges: node.typeBadges.map((text) => ({ text })),
+        rows: node.rows,
+        rowsStart: HEADER_HEIGHT + (node.typeBadges.length > 0 ? BADGES_HEIGHT : 0) + ROW_HEIGHT - 4,
+      },
       card: node,
     }));
     const connections = [...model.edges.values()].map((edge) => ({

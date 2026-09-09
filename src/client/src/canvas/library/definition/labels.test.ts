@@ -240,3 +240,41 @@ describe("labels — an offset measured from an edge (sufficiency row 5)", () =>
     expect(out[0]!.y).toBe(40 - 6);
   });
 });
+
+describe("labels — a stack that starts where the card says (rows 16, 19, 20)", () => {
+  it("begins the rows below the badge line on a card that has one, and at the header on a card that does not", () => {
+    // THE RDF FAMILY'S CARD, and the reason a stack's start is bindable. An owl card's rows
+    // begin below its badges when it wears any; a fixed start puts every badged card one row
+    // out - and silently, because the rows are still there, just overlapping the badges.
+    //
+    // A sabotage found this hole: `start: 0` left all forty-one rdf tests green.
+    const declaration: LabelDeclaration = {
+      text: { path: "payload.rows", each: { path: "text" } },
+      anchorTo: "top",
+      offset: { x: 0, y: 0 },
+      stack: { lineHeight: 16, start: { path: "payload.rowsStart" } },
+    };
+    const bounds = { x: -110, y: -50, width: 220, height: 100 };
+    const rows = [{ text: "a: 1" }, { text: "b: 2" }];
+
+    const badged = layoutLabels([declaration], source({ rows, rowsStart: 42 }), bounds);
+    const bare = layoutLabels([declaration], source({ rows, rowsStart: 26 }), bounds);
+
+    expect(badged.map((line) => line.y)).toEqual([-50 + 42, -50 + 42 + 16]);
+    expect(bare.map((line) => line.y)).toEqual([-50 + 26, -50 + 26 + 16]);
+  });
+
+  it("falls back to no offset when the card names no start, rather than dropping the rows", () => {
+    const declaration: LabelDeclaration = {
+      text: { path: "payload.rows", each: { path: "text" } },
+      anchorTo: "top",
+      offset: { x: 0, y: 0 },
+      stack: { lineHeight: 16, start: { path: "payload.missing" } },
+    };
+    const bounds = { x: -110, y: -50, width: 220, height: 100 };
+
+    const out = layoutLabels([declaration], source({ rows: [{ text: "a" }] }), bounds);
+
+    expect(out.map((line) => line.y)).toEqual([-50]);
+  });
+});

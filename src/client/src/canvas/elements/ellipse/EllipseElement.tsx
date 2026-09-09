@@ -45,9 +45,18 @@ export function EllipseElement({
       {doubled ? (
         <ellipse className={innerClassName} rx={Math.max(radiusX - 4, 1)} ry={Math.max(radiusY - 4, 1)} />
       ) : null}
-      <text className={labelClassName} textAnchor="middle" dominantBaseline="central">
-        {text || " "}
-      </text>
+      {/*
+        NO TEXT NODE AT ALL when there is nothing to say. The empty-string placeholder dates
+        from when every shape drew its own single label; a type that declares `labels` passes
+        an empty one and draws its lines as siblings, so the placeholder became a blank `<text>`
+        sitting BEFORE the real ones - which is what a reader, and `querySelector("text")`,
+        finds first.
+      */}
+      {text === "" ? null : (
+        <text className={labelClassName} textAnchor="middle" dominantBaseline="central">
+          {text}
+        </text>
+      )}
       {children}
     </g>
   );

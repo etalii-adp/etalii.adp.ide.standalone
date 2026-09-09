@@ -345,8 +345,16 @@ export type LabelSlot = "header" | "body" | "footer";
 export interface LabelStack {
   /** Distance between consecutive lines, replacing the hand-written `(index + 1) * ROW_HEIGHT`. */
   lineHeight: number;
-  /** Where the first line sits relative to the slot's own baseline. */
-  start?: number;
+  /**
+   * Where the first line sits relative to the slot's own baseline.
+   *
+   * <b>Bindable, because the RDF family's cards decide it from their own contents</b>: an
+   * `owl-card`'s rows begin below its badge line when it has badges and at the header when it
+   * does not, and a SHACL shape's rows begin below however many targets it declares. Both are
+   * numbers the module already computes to lay itself out; a fixed start would put every card
+   * with a badge line one row out, silently.
+   */
+  start?: DeclaredNumber;
 }
 
 /** One declared label. A single-label module writes one of these, which is why migration is mechanical. */
@@ -383,8 +391,12 @@ export interface LabelDeclaration {
   when?: Condition;
   /** The `<title>` every card renderer writes by hand. */
   tooltip?: Binding;
-  /** Extra classes for the drawn text, so colour stays in the stylesheet where a token is not enough. */
-  className?: string;
+  /**
+   * Extra classes for the drawn text, so colour stays in the stylesheet where a token is not
+   * enough. For a collection, a bound class is resolved against the ENTRY - a SHACL row carries
+   * `shacl-row-sparql` or not depending on what that row is.
+   */
+  className?: string | Binding;
   /**
    * Which end of the text sits at its position. Defaults to the placement's own alignment.
    *
@@ -423,7 +435,8 @@ export interface LabelColumn {
   /** Horizontal inset from the box's left edge, or from its right when aligned `end`. */
   insetX: number;
   align?: "start" | "middle" | "end";
-  className?: string;
+  /** Bound classes resolve against the entry, as the line's own do. */
+  className?: string | Binding;
   truncate?: boolean;
 }
 
@@ -548,8 +561,13 @@ export interface ClassDeclaration {
    * find nothing.
    *
    * Defaults to `shape`, which is where a class most often bites.
+   *
+   * `shape-inner` is the second part of a shape that has one - the ring inside a
+   * `double-ellipse`. OWL's notation names it separately (`owl-shape` outside,
+   * `owl-shape-inner` within), and the library must not invent that name by suffixing: a class
+   * a module did not write is a class its stylesheet does not have.
    */
-  on?: "element" | "shape";
+  on?: "element" | "shape" | "shape-inner";
 }
 
 /** Paint read from the model. Theme token names, exactly as {@link ElementStyle} takes them. */
