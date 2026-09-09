@@ -962,12 +962,16 @@ describe("declared decorations", () => {
     const { container } = renderCanvas({}, decorated(), decoratedModel());
 
     expect(screen.getByText("db_servers")).toBeTruthy();
-    expect(container.querySelector("g.stub line")).toBeTruthy();
+    // The module's class names the DRAWN line, not the group around it: a selector for an
+    // ornament should find the thing with the geometry on it. The group carries the library's
+    // own class, which is what makes it a group rather than a second kind of element.
+    expect(container.querySelector("line.stub")).toBeTruthy();
+    expect(container.querySelector("g.library-decoration line.stub")).toBeTruthy();
   });
 
   it("takes no pointer events, so an ornament is never a second kind of element", () => {
     const { container } = renderCanvas({}, decorated(), decoratedModel());
-    const group = container.querySelector("g.stub") as SVGGElement;
+    const group = container.querySelector("g.library-decoration") as SVGGElement;
 
     expect(group.style.pointerEvents).toBe("none");
     expect(group.getAttribute("aria-hidden")).toBe("true");

@@ -1,14 +1,9 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
-  CustomShapeRef,
-  CustomShapeState,
   DiagramDefinition,
   ShapeBounds,
   ShapePoint,
@@ -35,104 +30,9 @@ type NodeElement = DiagramModelElement & { node: SparqlNode };
 type RegionElement = DiagramModelElement & { region: SparqlRegion };
 type AnnotationElement = DiagramModelElement & { annotation: SparqlAnnotation };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/** A pattern node: the box with its kind class, the projection mark, and the type annotation. */
-const nodeShape: CustomShapeRef = {
-  customShape: "sparql-node",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as NodeElement;
-    const node = element.node;
-    const classes = ["sparql-node canvas-element", `sparql-node-${node.kind}`];
-    if (node.projected) {
-      classes.push("sparql-node-projected");
-    }
 
-    if (state?.selected) {
-      classes.push("sparql-selected");
-    }
 
-    return (
-      <BoxElement
-        className={classes.join(" ")}
-        x={element.x - NODE_WIDTH / 2}
-        y={element.y - NODE_HEIGHT / 2}
-        width={NODE_WIDTH}
-        height={NODE_HEIGHT}
-        label={node.display}
-        boxClassName="sparql-node-box canvas-node"
-        labelClassName="sparql-label canvas-node-label"
-        labelY={NODE_HEIGHT / 2 + 2}
-      >
-        {node.projected ? (
-          // The mark that says "this leaves the query", without consulting the header.
-          <text className="sparql-projection-mark" x={8} y={16}>
-            →
-          </text>
-        ) : null}
-        {node.annotation ? (
-          <text className="sparql-node-annotation" x={8} y={NODE_HEIGHT - 10}>
-            {node.annotation}
-          </text>
-        ) : null}
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/** A group construct as a labelled containment frame, styled by its kind. */
-const regionShape: CustomShapeRef = {
-  customShape: "sparql-region",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as RegionElement;
-    const region = element.region;
-    const classes = ["sparql-region", `sparql-region-${region.kind}`, "canvas-element"];
-    if (state?.selected) {
-      classes.push("sparql-selected");
-    }
-
-    return (
-      <FrameElement
-        className={classes.join(" ")}
-        x={element.x}
-        y={element.y}
-        width={region.width}
-        height={region.height}
-        label={region.label}
-        labelClassName="sparql-region-label canvas-hint"
-      />
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/** A FILTER/BIND/VALUES badge: its text exactly as written, floating by its anchor. */
-const annotationShape: CustomShapeRef = {
-  customShape: "sparql-annotation",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as AnnotationElement;
-    const annotation = element.annotation;
-    const classes = ["sparql-annotation", `sparql-annotation-${annotation.kind}`, "canvas-hint"];
-    if (state?.selected) {
-      classes.push("sparql-selected");
-    }
-
-    return (
-      <text className={classes.join(" ")} x={element.x} y={element.y}>
-        {annotation.text}
-      </text>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
 
 /**
  * What a query diagram allows, stated once: nodes and regions that drag and select,
@@ -143,9 +43,73 @@ const annotationShape: CustomShapeRef = {
  */
 const SPARQL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
-    { id: "region", shape: regionShape, anchors: { kind: "edge" }, sizing: "model" },
-    { id: "node", shape: nodeShape, anchors: { kind: "edge" }, sizing: "model" },
-    { id: "annotation", shape: annotationShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
+    {
+      id: "region",
+      shape: "frame",
+      classNames: [
+        { className: "sparql-region canvas-element", on: "element" },
+        { className: { template: "sparql-region-{payload.kind}" }, on: "element" },
+        { className: "sparql-selected", on: "element", when: { path: "state.selected", is: "true" } },
+      ],
+      labels: [{ text: { path: "payload.label" }, placement: "above", className: "sparql-region-label canvas-hint" }],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
+    {
+      id: "node",
+      shape: "box",
+      classNames: [
+        { className: "sparql-node canvas-element", on: "element" },
+        { className: { template: "sparql-node-{payload.kind}" }, on: "element" },
+        { className: "sparql-node-projected", on: "element", when: { path: "payload.projected", is: "true" } },
+        { className: "sparql-selected", on: "element", when: { path: "state.selected", is: "true" } },
+        { className: "sparql-node-box canvas-node", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.display" },
+          anchorTo: "top",
+          offset: { x: 0, y: NODE_HEIGHT / 2 + 2 },
+          truncate: true,
+          className: "sparql-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.annotation" },
+          when: { path: "payload.annotation", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: NODE_HEIGHT - 10 },
+          align: "start",
+          insetX: 8,
+          className: "sparql-node-annotation",
+        },
+      ],
+      decorations: [
+        {
+          // The mark that says "this leaves the query", without consulting the header.
+          glyph: "marker",
+          from: { x: { path: "bounds.left", number: { plus: 8 } }, y: { path: "bounds.top", number: { plus: 16 } } },
+          text: { template: "→" },
+          className: "sparql-projection-mark",
+          when: { path: "payload.projected", is: "true" },
+        },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
+    {
+      id: "annotation",
+      // Text and nothing else - a note beside what it annotates.
+      shape: "none",
+      classNames: [
+        { className: "sparql-annotation canvas-hint", on: "element" },
+        { className: { template: "sparql-annotation-{payload.kind}" }, on: "element" },
+        { className: "sparql-selected", on: "element", when: { path: "state.selected", is: "true" } },
+      ],
+      labels: [{ text: { path: "payload.text" } }],
+      anchors: { kind: "edge" },
+      sizing: "model",
+      draggable: false,
+    },
   ],
   relationTypes: [
     {
@@ -219,6 +183,7 @@ export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       width: region.width,
       height: region.height,
       label: region.label,
+      payload: { label: region.label, kind: region.kind },
       region,
     }));
     const nodes = [...model.nodes.values()].map((node): NodeElement => ({
@@ -229,6 +194,7 @@ export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       width: NODE_WIDTH,
       height: NODE_HEIGHT,
       label: node.display,
+      payload: { display: node.display, kind: node.kind, projected: node.projected, annotation: node.annotation },
       node,
     }));
     // Badges last, so an annotation is never painted over by what it annotates.
@@ -242,6 +208,7 @@ export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         width: ANNOTATION_WIDTH,
         height: ANNOTATION_HEIGHT,
         label: annotation.text,
+        payload: { text: annotation.text, kind: annotation.kind },
         annotation,
       };
     });

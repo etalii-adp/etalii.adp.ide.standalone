@@ -259,6 +259,17 @@ describe("CausalLoopCanvas", () => {
     expect(sweepOf(balancing)).not.toEqual(sweepOf(reinforcing));
   });
 
+  it("points the loop marker, because a sweep without a head reads as a stray curve", () => {
+    // A sabotage found this uncovered: removing the arrowhead left all forty-one tests green.
+    // The direction of travel IS the notation here - it is what tells a reader which way the
+    // loop turns before they read the letter.
+    const { container } = renderCanvas();
+    const marker = container.querySelector(".causal-loop-marker")!;
+    const group = marker.closest("g")!;
+
+    expect(marker.getAttribute("marker-end") ?? group.getAttribute("marker-end")).toContain("library-arrow");
+  });
+
   it("composes the shared canvas classes rather than private ones", () => {
     const { container } = renderCanvas();
 
