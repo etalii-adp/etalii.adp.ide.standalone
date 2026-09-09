@@ -51,7 +51,7 @@ loop R2 "Fewer hands, heavier rota" onCallLoad fatigue attrition teamSize
 # exists for.
 
 link toil -> onCallLoad +
-link automation -> toil - delayed "sdfsdf"
+link automation -> toil - delayed
 link onCallLoad -> automation - "no time to fix the thing that has no time"
 
 loop R3 "Too busy to stop being busy" onCallLoad automation toil

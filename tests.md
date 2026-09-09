@@ -2616,3 +2616,49 @@ One diagram per shape family, because a family is what a mistake would be common
   - **Left standing**: a box shape whose module declares its labels separately still emits one
     empty `<text>` inside the shape group (`BoxElement` always writes one). It paints nothing
     and is not a defect - recorded because it is otherwise re-discovered every pass.
+
+## Every shipped example says what it means to say (showcase corpus, found in the app)
+
+**Nothing was testing the showcase.** Where a module has example tests at all they read the
+module's own copy under `src/diagrams/<module>/examples/`; the copy a reader actually opens,
+under `src/examples/`, was read by no test in the repository. It is also the copy the running
+application writes to, so anything typed into a diagram and saved lands there and is committed
+by whoever runs `git add` next.
+
+That is not hypothetical. Two examples were carrying keyboard mash when this entry was written:
+two nodes named `sdfsdf` under "Frustum tests" in the mindmap, and a link labelled `"sdfsdf"` in
+the on-call causal loop - on the very link whose readme celebrates the tool correcting the
+author. Both had been committed for weeks, and both were found by opening the diagram and
+reading it.
+
+**Half of this is now automated, and the split is the point.** `ShippedExamplesTests` sweeps the
+101 documents ADP itself writes (`.mm`, `.cld`, `.owm`, `.adp`) for placeholder text, and was
+seen to fail against both real instances before it was trusted. Its scope stops at those
+extensions deliberately: the same sweep over every shipped file returned 451 hits and nearly all
+were correct - `www` in a path, `SSS` in a log pattern, `foo` throughout the **vendored** Ansible
+playbooks, which are upstream data nobody here may edit. The rest needs a person, and that is
+what the steps below are.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Steps**: open every diagram under `src/examples/diagrams/`, one per folder, and **read the
+  text in it** - node names, link labels, titles. Not "does it draw": the drawing was already
+  fine in both cases above. Then, for any file you find damaged, diff it against the module's
+  copy under `src/diagrams/<module>/examples/` and restore **only the junk hunk**; do not copy
+  the file wholesale, because the two are allowed to differ where a presentation choice was made
+  in the app and saved (the causal loop examples carry one on purpose - `flipped` on three
+  links).
+- **Expected**: every string in every shipped example is something somebody meant to write. A
+  node named after the button that made it, an empty node left over from a deletion, and a label
+  that is prose but wrong are all failures of this step - and all three are invisible to the
+  automated sweep, which is why the step exists beside it.
+- **Also expected**: each diagram type's corpus has a readme, and that readme says what the
+  corpus does **not** demonstrate. That sentence is the only warning a later reader gets that a
+  feature has no example exercising it - the mindmap's readme now records that no map we ship
+  has a folded branch, a note or an explicit position, which is why two of its three indicator
+  glyphs cannot be produced from a shipped file at all.
+- **Result**: 2026-09-09, partial and honest about which part. **The automated half ran across
+  all 101 authored documents**: two failures, both named above, both fixed by restoring the hunk
+  from the module copy, and the sweep was confirmed to find exactly those two on the unfixed tree
+  and none on the fixed one. **The human read has not been done corpus-wide** - the mindmap and
+  causal-loop examples were read in the app, the other fourteen diagram types were not. Whoever
+  runs this next starts there.
