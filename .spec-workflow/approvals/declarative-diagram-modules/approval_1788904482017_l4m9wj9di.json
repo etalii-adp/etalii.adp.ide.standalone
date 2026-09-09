@@ -3,8 +3,10 @@
   "title": "declarative-diagram-modules requirements (ruler is chrome; 2.9 made a property)",
   "filePath": ".spec-workflow/specs/declarative-diagram-modules/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-08T21:54:42.017Z",
   "category": "spec",
-  "categoryName": "declarative-diagram-modules"
+  "categoryName": "declarative-diagram-modules",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-09T13:03:04.640Z"
 }

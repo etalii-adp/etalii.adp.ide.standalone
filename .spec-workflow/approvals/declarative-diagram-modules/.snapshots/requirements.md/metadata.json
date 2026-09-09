@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/declarative-diagram-modules/requirements.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788862418664_a7jhidgxg",
       "approvalTitle": "declarative-diagram-modules requirements (revised: behaviour declared, thirteen shapes)"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-09T13:03:04.636Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788904482017_l4m9wj9di",
+      "approvalTitle": "declarative-diagram-modules requirements (ruler is chrome; 2.9 made a property)"
     }
   ]
 }

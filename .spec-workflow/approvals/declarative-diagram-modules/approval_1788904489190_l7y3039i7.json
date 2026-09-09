@@ -3,8 +3,10 @@
   "title": "declarative-diagram-modules tasks (ruler to task 7; background hatch dies at 14)",
   "filePath": ".spec-workflow/specs/declarative-diagram-modules/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-08T21:54:49.190Z",
   "category": "spec",
-  "categoryName": "declarative-diagram-modules"
+  "categoryName": "declarative-diagram-modules",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-09T13:03:06.178Z"
 }

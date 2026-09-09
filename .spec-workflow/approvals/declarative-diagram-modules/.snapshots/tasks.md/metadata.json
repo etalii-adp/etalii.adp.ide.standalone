@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/declarative-diagram-modules/tasks.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788894085963_8ptrx9i2e",
       "approvalTitle": "declarative-diagram-modules tasks"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-09T13:03:06.175Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788904489190_l7y3039i7",
+      "approvalTitle": "declarative-diagram-modules tasks (ruler to task 7; background hatch dies at 14)"
     }
   ]
 }
