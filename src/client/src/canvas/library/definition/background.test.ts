@@ -149,7 +149,7 @@ describe("background — gridlines and the empty cases", () => {
 
   it("returns nothing at all for no background", () => {
     const out = resolveBackground(undefined, source({}), extent);
-    expect(out).toEqual({ rects: [], lines: [], texts: [], circles: [] });
+    expect(out).toEqual({ rects: [], lines: [], texts: [], marks: [] });
   });
 
   it("offsets everything by the extent's own origin, so a background is not pinned to 0,0", () => {
@@ -190,10 +190,12 @@ describe("background — marks, the map's own furniture", () => {
       { x: 0.75, y: 0.2, number: "2", text: "Watch this evolve" },
     ] }), extent);
 
-    // Fractions of the extent, as every other background kind reads them.
-    expect(resolved.circles.map((circle) => [circle.cx, circle.cy])).toEqual([[250, 250], [750, 100]]);
-    expect(resolved.circles.map((circle) => circle.tooltip)).toEqual(["Consider outsourcing", "Watch this evolve"]);
-    expect(resolved.texts.map((text) => text.text)).toEqual(["1", "2"]);
+    // Fractions of the extent, as every other background kind reads them - and a mark is ONE
+    // thing: the circle and the number inside it, which is how a reader and a stylesheet meet
+    // it, and how the module's own test asks the annotation for its text.
+    expect(resolved.marks.map((mark) => [mark.circle!.cx, mark.circle!.cy])).toEqual([[250, 250], [750, 100]]);
+    expect(resolved.marks.map((mark) => mark.tooltip)).toEqual(["Consider outsourcing", "Watch this evolve"]);
+    expect(resolved.marks.map((mark) => mark.text!.text)).toEqual(["1", "2"]);
   });
 
   it("draws a caption with no glyph, which is what a map's note is", () => {
@@ -203,9 +205,10 @@ describe("background — marks, the map's own furniture", () => {
       extent,
     );
 
-    expect(resolved.circles).toEqual([]);
-    expect(resolved.lines).toEqual([]);
-    expect(resolved.texts.map((text) => text.text)).toEqual(["beware the plateau"]);
+    expect(resolved.marks).toHaveLength(1);
+    expect(resolved.marks[0]!.circle).toBeUndefined();
+    expect(resolved.marks[0]!.line).toBeUndefined();
+    expect(resolved.marks.map((mark) => mark.text!.text)).toEqual(["beware the plateau"]);
   });
 
   it("grows a declared label with the view, and clamps it at both ends (G19)", () => {

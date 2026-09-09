@@ -854,37 +854,21 @@ export interface LayoutDefinition {
 export type DraggingPolicy = "enabled" | "disabled";
 
 /**
- * A background the canvas draws behind every element - an axis, a grid, a labelled space
- * (the mechanism wardley's evolution axis and sparql's regions use; Requirement 9.2). The
- * renderer is handed the current view in canvas units and draws in them, so panning and
- * zooming carry the background with the elements.
- */
-export interface DiagramBackgroundRef {
-  background: string;
-  render: (view: ShapeBounds) => unknown;
-}
-
-/**
- * <b>A third function-valued escape hatch, and one Requirement 2.9 does not name.</b>
+ * The backdrop a diagram type draws beneath everything.
  *
- * Requirement 2.9 originally listed `CustomShapeRef` and `CustomRouteRef`; it now states the
- * property instead - no function-valued escape hatch reachable from a module client - because a
- * list of two admits a third silently, which is this specification's own subject appearing
- * inside its own requirements.
+ * <b>THE THIRD ESCAPE HATCH IS GONE FROM HERE, AND THAT IS WHAT MAKES REQUIREMENT 2.9 TRUE.</b>
  *
- * `DiagramBackgroundRef` is that third: a module-supplied `render` the library calls, for the
- * backdrop. <b>It has exactly one user - `wardley-map`</b>. I first reported two; sparql
- * declares no background at all, and its `sparql-region` is a custom SHAPE drawn as an element
- * rather than a backdrop. So this dies with wardley's migration at task 14, not with a second
- * module's. It stays reachable until then because removing a contract an unmigrated module
- * still uses would break it; the declared form beside it is what replaces it.
+ * `DiagramBackgroundRef` was a module-supplied `render` the library called - a function-valued
+ * escape hatch that Requirement 2.9's original wording did not name, because it listed
+ * `CustomShapeRef` and `CustomRouteRef` rather than stating the property. A list of two admits
+ * a third silently, which is this specification's own subject appearing inside its own
+ * requirements; the requirement now states the property, and this type is data.
+ *
+ * It had exactly one user, `wardley-map`, and it died with that module's migration: twenty-one
+ * of the twenty-four raw-SVG lines it drew were evolution bands and axes, and every one of them
+ * is a declaration now.
  */
-export type DiagramBackground = DiagramBackgroundRef | BackgroundDeclaration;
-
-/** Whether a background is the old callable form rather than the declared one. */
-export function isBackgroundRef(background: DiagramBackground): background is DiagramBackgroundRef {
-  return "render" in background;
-}
+export type DiagramBackground = BackgroundDeclaration;
 
 /** The whole statement of what a diagram type allows (Requirement 4.1). */
 export interface DiagramDefinition {

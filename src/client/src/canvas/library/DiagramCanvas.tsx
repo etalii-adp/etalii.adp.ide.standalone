@@ -39,7 +39,7 @@ import { layoutLabels } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
 import { actionForGesture, actionForKey } from "./definition/actions";
-import { isBackgroundRef, isCustomShape } from "./definition/diagramDefinition";
+import { isCustomShape } from "./definition/diagramDefinition";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -1458,19 +1458,27 @@ export function DiagramCanvas({
         </defs>
 
         {definition.background !== undefined && (
-          <g className="library-canvas-background" data-testid="canvas-background" pointerEvents="none" aria-hidden="true">
-            {isBackgroundRef(definition.background)
-              ? (definition.background.render({ x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h }) as ReactNode)
-              : declaredBackground(
-                  definition.background,
-                  model,
-                  { x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h },
-                  // The view over the diagram's OWN extent: the ratio a label declaring
-                  // `scaleWithView` grows by, so text keeps a readable size on screen while the
-                  // geometry it names does not. One when a diagram declares no extent, which is
-                  // every diagram whose plane is whatever its contents span.
-                  definition.extent !== undefined && definition.extent.width > 0 ? effectiveView.w / definition.extent.width : 1,
-                )}
+          <g
+            className={["library-canvas-background", definition.background.className].filter(Boolean).join(" ")}
+            data-testid="canvas-background"
+            pointerEvents="none"
+            aria-hidden="true"
+          >
+            {declaredBackground(
+              definition.background,
+              model,
+              // THE DIAGRAM'S OWN PLANE where it declares one, and the view otherwise. A
+              // backdrop's fractions describe the notation's space - a Wardley map's evolution
+              // bands are at fixed places ON THE MAP, not at fixed places on screen. Anything
+              // that must stay put as the view moves is `chrome`, which is where the timeline's
+              // ruler went for exactly this reason.
+              definition.extent ?? { x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h },
+              // The view over the diagram's OWN extent: the ratio a label declaring
+              // `scaleWithView` grows by, so text keeps a readable size on screen while the
+              // geometry it names does not. One when a diagram declares no extent, which is
+              // every diagram whose plane is whatever its contents span.
+              definition.extent !== undefined && definition.extent.width > 0 ? effectiveView.w / definition.extent.width : 1,
+            )}
           </g>
         )}
 
@@ -2109,10 +2117,28 @@ function declaredBackground(
       {resolved.lines.map((line) => (
         <line key={line.key} className={line.className} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
       ))}
-      {resolved.circles.map((circle) => (
-        <circle key={circle.key} className={circle.className} cx={circle.cx} cy={circle.cy} r={circle.r}>
-          {circle.tooltip !== undefined ? <title>{circle.tooltip}</title> : null}
-        </circle>
+      {resolved.marks.map((mark) => (
+        <g key={mark.key} className={mark.className}>
+          {mark.tooltip !== undefined ? <title>{mark.tooltip}</title> : null}
+          {mark.circle ? <circle cx={mark.circle.cx} cy={mark.circle.cy} r={mark.circle.r} /> : null}
+          {mark.line ? <line x1={mark.line.x1} y1={mark.line.y1} x2={mark.line.x2} y2={mark.line.y2} /> : null}
+          {mark.text ? (
+            <text
+              className={mark.text.className}
+              x={mark.text.x}
+              y={mark.text.y}
+              textAnchor={mark.text.anchor}
+              style={{
+                fontSize: mark.text.typography?.fontSize,
+                fontWeight: mark.text.typography?.fontWeight,
+                fontStyle: mark.text.typography?.fontStyle,
+                fill: tokenColour(mark.text.typography?.color),
+              }}
+            >
+              {mark.text.text}
+            </text>
+          ) : null}
+        </g>
       ))}
       {resolved.texts.map((text) => (
         <text
@@ -2197,6 +2223,11 @@ function sourceOf(element: DiagramModelElement, state?: CustomShapeState, bounds
             centreY: bounds.y + bounds.height / 2,
           },
   };
+}
+
+/** The mark a `symbol` draws, from the document's own word for it. */
+function symbolVariant(name: string | undefined): "circle" | "square" | "double-circle" {
+  return name === "square" || name === "double-circle" ? name : "circle";
 }
 
 /** A resolved `data-*` map as React props: `{ testid: "x" }` becomes `data-testid="x"`. */
@@ -2376,7 +2407,23 @@ function renderShapeBody(
         />
       );
     case "symbol":
-      return <SymbolElement x={element.x} y={element.y} label={label} labelX={element.x + 12} labelY={element.y - 8} markClassName={shapeClass} style={paint} />;
+      return (
+        <SymbolElement
+          x={element.x}
+          y={element.y}
+          radius={Math.max(2, Math.min(bounds.width, bounds.height) / 2)}
+          // Which mark, from the document: a Wardley anchor is a square and a submap a double
+          // ring, and the notation says which per element. Same `silhouette` a styled box takes,
+          // for the same reason - it is data about the element, not a property of its type.
+          variant={symbolVariant(resolveBound(bound?.silhouette, source))}
+          label={label}
+          labelX={element.labelAt?.x ?? element.x + 12}
+          labelY={element.labelAt?.y ?? element.y - 8}
+          markClassName={shapeClass}
+          outerClassName={declaredClassNames(type, source, "shape-inner") || undefined}
+          style={paint}
+        />
+      );
     case "diamond":
       return polygonShape(bounds, label, paint, [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]], shapeClass);
     case "hexagon":
