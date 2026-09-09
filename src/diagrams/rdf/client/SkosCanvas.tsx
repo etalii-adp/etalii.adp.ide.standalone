@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { CustomShapeRef, CustomShapeState, DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -32,107 +30,8 @@ const REGION_HEIGHT = 40;
 type ConceptElement = DiagramModelElement & { concept: SkosConcept };
 type RegionElement = DiagramModelElement & { region: SkosScheme | SkosCollection };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/**
- * A concept card as a first-class custom shape: label, notation badge, language chip, the
- * blank and label-kind stylings - while hit-testing, anchoring and connecting stay the
- * library's. Anchors carry the gesture's meaning: the TOP anchor files this concept under
- * the one it is dropped on, the SIDE anchor cross-links them.
- */
-const conceptShape: CustomShapeRef = {
-  customShape: "skos-concept",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as ConceptElement;
-    const concept = element.concept;
-    const classes = ["skos-concept canvas-element"];
-    if (concept.blank) {
-      classes.push("skos-concept-blank");
-    }
-    if (concept.labelKind === ALTERNATE) {
-      classes.push("skos-label-alternate");
-    }
-    if (concept.labelKind === IRI_FALLBACK) {
-      classes.push("skos-label-fallback");
-    }
-    if (state?.selected) {
-      classes.push("skos-selected");
-    }
-    if (state?.connectTarget) {
-      classes.push("skos-connect-target canvas-connect-target");
-    }
 
-    return (
-      <BoxElement
-        className={classes.join(" ")}
-        x={element.x - CONCEPT_WIDTH / 2}
-        y={element.y - CONCEPT_HEIGHT / 2}
-        width={CONCEPT_WIDTH}
-        height={CONCEPT_HEIGHT}
-        label={concept.label}
-        boxClassName="skos-concept-box canvas-node"
-        labelClassName="skos-concept-label canvas-node-label"
-        labelY={CONCEPT_HEIGHT / 2 + 8}
-      >
-        {concept.notation ? (
-          <text className="skos-notation" x={8} y={14}>
-            {concept.notation}
-          </text>
-        ) : null}
-        {concept.languageChip ? (
-          // A translation gap, visible but quiet: the backend decided this, so the chip
-          // cannot disagree with the label beside it.
-          <text className="skos-language-chip" x={CONCEPT_WIDTH - 8} y={14}>
-            {concept.languageTag}
-          </text>
-        ) : null}
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/** A scheme's or collection's titled region strip, with the ordered note where it applies. */
-const regionShape: CustomShapeRef = {
-  customShape: "skos-region",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as RegionElement;
-    const region = element.region;
-    const ordered = "ordered" in region && region.ordered;
-    const classes = ["skos-region canvas-element"];
-    if (state?.selected) {
-      classes.push("skos-selected");
-    }
-
-    return (
-      <BoxElement
-        className={classes.join(" ")}
-        x={element.x - REGION_WIDTH / 2}
-        y={element.y - REGION_HEIGHT / 2}
-        width={REGION_WIDTH}
-        height={REGION_HEIGHT}
-        label={"memberCount" in region ? `${region.label} (${region.memberCount})` : region.label}
-        boxClassName="skos-region-box canvas-boundary"
-        labelClassName="skos-region-label canvas-node-label"
-        labelY={REGION_HEIGHT / 2 + 5}
-      >
-        {ordered ? (
-          <text className="skos-region-kind" x={8} y={REGION_HEIGHT - 6}>
-            ordered
-          </text>
-        ) : null}
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
 
 /**
  * What a SKOS concept scheme allows, stated once: concepts that drag, select and connect -
@@ -145,7 +44,45 @@ const SKOS_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
     {
       id: "concept",
-      shape: conceptShape,
+      shape: "box",
+      classNames: [
+        { className: "skos-concept canvas-element" },
+        { className: "skos-concept-blank", when: { path: "payload.blank", is: "true" } },
+        { className: "skos-label-alternate", when: { path: "payload.labelKindAlternate", is: "true" } },
+        { className: "skos-label-fallback", when: { path: "payload.labelKindFallback", is: "true" } },
+        { className: "skos-selected", when: { path: "state.selected", is: "true" } },
+        { className: "skos-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "skos-concept-box canvas-node", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.label" },
+          anchorTo: "top",
+          offset: { x: 0, y: CONCEPT_HEIGHT / 2 + 8 },
+          truncate: true,
+          className: "skos-concept-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.notation" },
+          when: { path: "payload.notation", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: 14 },
+          align: "start",
+          insetX: 8,
+          className: "skos-notation",
+        },
+        {
+          // A translation gap, visible but quiet: the backend decided this, so the chip cannot
+          // disagree with the label beside it.
+          text: { path: "payload.languageTag" },
+          when: { path: "payload.languageChip", is: "true" },
+          anchorTo: "top",
+          offset: { x: 0, y: 14 },
+          align: "end",
+          insetX: 8,
+          className: "skos-language-chip",
+        },
+      ],
       anchors: {
         kind: "sides",
         fractions: [
@@ -155,8 +92,87 @@ const SKOS_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       },
       sizing: "model",
     },
-    { id: "blank-concept", shape: conceptShape, anchors: { kind: "edge" }, sizing: "model" },
-    { id: "region", shape: regionShape, anchors: { kind: "edge" }, sizing: "model" },
+    {
+      id: "blank-concept",
+      shape: "box",
+      classNames: [
+        { className: "skos-concept canvas-element" },
+        { className: "skos-concept-blank", when: { path: "payload.blank", is: "true" } },
+        { className: "skos-label-alternate", when: { path: "payload.labelKindAlternate", is: "true" } },
+        { className: "skos-label-fallback", when: { path: "payload.labelKindFallback", is: "true" } },
+        { className: "skos-selected", when: { path: "state.selected", is: "true" } },
+        { className: "skos-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "skos-concept-box canvas-node", on: "shape" },
+      ],
+      labels: [
+        {
+          text: { path: "payload.label" },
+          anchorTo: "top",
+          offset: { x: 0, y: CONCEPT_HEIGHT / 2 + 8 },
+          truncate: true,
+          className: "skos-concept-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.notation" },
+          when: { path: "payload.notation", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: 14 },
+          align: "start",
+          insetX: 8,
+          className: "skos-notation",
+        },
+        {
+          // A translation gap, visible but quiet: the backend decided this, so the chip cannot
+          // disagree with the label beside it.
+          text: { path: "payload.languageTag" },
+          when: { path: "payload.languageChip", is: "true" },
+          anchorTo: "top",
+          offset: { x: 0, y: 14 },
+          align: "end",
+          insetX: 8,
+          className: "skos-language-chip",
+        },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
+    {
+      id: "region",
+      shape: "box",
+      classNames: [
+        { className: "skos-region canvas-element" },
+        { className: "skos-selected", when: { path: "state.selected", is: "true" } },
+        { className: "skos-region-box canvas-boundary", on: "shape" },
+      ],
+      labels: [
+        {
+          // `label (memberCount)` for a collection, the label alone for a scheme - one line
+          // with a conditional tail, which is what parts are for.
+          text: {
+            parts: [
+              { path: "payload.label" },
+              { template: "({payload.memberCount})", when: { path: "payload.memberCount", is: "present" } },
+            ],
+            join: " ",
+          },
+          anchorTo: "top",
+          offset: { x: 0, y: REGION_HEIGHT / 2 + 5 },
+          truncate: true,
+          className: "skos-region-label canvas-node-label",
+        },
+        {
+          text: { template: "ordered" },
+          when: { path: "payload.ordered", is: "true" },
+          anchorTo: "top",
+          offset: { x: 0, y: REGION_HEIGHT - 6 },
+          align: "start",
+          insetX: 8,
+          className: "skos-region-kind",
+        },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
   ],
   relationTypes: [
     {
@@ -234,6 +250,11 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       width: REGION_WIDTH,
       height: REGION_HEIGHT,
       label: region.label,
+      payload: {
+        label: region.label,
+        ...("memberCount" in region ? { memberCount: region.memberCount } : {}),
+        ordered: "ordered" in region && region.ordered,
+      },
       region,
     }));
     const concepts = [...model.concepts.values()].map((concept): ConceptElement => ({
@@ -244,6 +265,15 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       width: CONCEPT_WIDTH,
       height: CONCEPT_HEIGHT,
       label: concept.label,
+      payload: {
+        label: concept.label,
+        blank: concept.blank,
+        notation: concept.notation,
+        languageChip: concept.languageChip,
+        languageTag: concept.languageTag,
+        labelKindAlternate: concept.labelKind === ALTERNATE,
+        labelKindFallback: concept.labelKind === IRI_FALLBACK,
+      },
       concept,
     }));
     const edges = [...model.edges.values()].map((edge) => ({

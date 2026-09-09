@@ -177,7 +177,13 @@ export interface TemplateBinding {
  */
 export interface CollectionBinding {
   path: BindingPath;
-  each: FieldBinding | TemplateBinding;
+  /**
+   * What each entry says. Parts are admitted here for the same reason they exist at all: a
+   * SHACL row reads its path, or the words "SPARQL constraint" when it is one - a choice per
+   * ENTRY, which a template cannot make and a second collection over the same list would let
+   * drift out of step.
+   */
+  each: FieldBinding | TemplateBinding | PartsBinding;
   when?: Condition;
   /**
    * Set, and the entries become ONE line joined by this - `Dataset · Table · View`.

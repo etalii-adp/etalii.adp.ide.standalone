@@ -1,14 +1,10 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
-  CustomShapeRef,
-  CustomShapeState,
   DiagramDefinition,
   ShapeBounds,
   ShapePoint,
@@ -33,94 +29,7 @@ const LINE_HEIGHT = 22;
 /** An element as the library carries it here: the model element plus what it draws. */
 type ShapeElement = DiagramModelElement & { shape: ShaclShape };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/**
- * One node shape as a card: the header names it, the badge strip states what the file states
- * - deactivated, closed, a severity - target chips say what it aims at, and one row per
- * property shape carries the path, the cardinality and the constraint summary.
- */
-const cardShape: CustomShapeRef = {
-  customShape: "shacl-card",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as ShapeElement;
-    const shape = element.shape;
-    const width = element.width ?? CARD_WIDTH;
-    const height = element.height ?? HEADER_HEIGHT;
-
-    const classes = ["shacl-shape canvas-element"];
-    if (shape.blank) {
-      classes.push("shacl-shape-blank");
-    }
-
-    if (shape.deactivated) {
-      classes.push("shacl-shape-deactivated");
-    }
-
-    if (state?.selected) {
-      classes.push("shacl-selected");
-    }
-
-    const badges = [
-      shape.deactivated ? "deactivated" : "",
-      shape.closed ? "closed" : "",
-      shape.severity,
-    ].filter((badge) => badge.length > 0);
-
-    return (
-      <BoxElement
-        className={classes.join(" ")}
-        x={element.x - width / 2}
-        y={element.y - height / 2}
-        width={width}
-        height={height}
-        label={shape.name.length > 0 ? `${shape.display} — ${shape.name}` : shape.display}
-        boxClassName="shacl-shape-box canvas-node"
-        labelClassName="shacl-label canvas-node-label"
-        labelY={HEADER_HEIGHT / 2 + 5}
-      >
-        {badges.length > 0 ? (
-          <text className="shacl-badges canvas-hint" x={CARD_WIDTH - 8} y={HEADER_HEIGHT / 2 + 5} textAnchor="end">
-            {badges.join(" · ")}
-          </text>
-        ) : null}
-
-        {shape.targets.map((target, index) => (
-          <text key={`target-${index}`} className="shacl-target" x={8} y={HEADER_HEIGHT + (index + 1) * LINE_HEIGHT - 6}>
-            {targetWords(target)}
-          </text>
-        ))}
-
-        {shape.rows.map((row, index) => {
-          const y = HEADER_HEIGHT + (shape.targets.length + index + 1) * LINE_HEIGHT - 6;
-          return (
-            <g key={`row-${index}`} className={row.sparql ? "shacl-row shacl-row-sparql" : "shacl-row"}>
-              <text className="shacl-row-path" x={8} y={y}>
-                {row.sparql ? "SPARQL constraint" : row.path}
-              </text>
-              <text className="shacl-row-cardinality canvas-hint" x={CARD_WIDTH - 8} y={y} textAnchor="end">
-                {row.cardinality}
-              </text>
-              {row.summary.length > 0 ? (
-                <text className="shacl-row-summary canvas-hint" x={110} y={y}>
-                  {row.summary}
-                </text>
-              ) : null}
-            </g>
-          );
-        })}
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
 
 /**
  * What a shapes graph draws: cards that drag and select, and references between them as
@@ -131,7 +40,78 @@ const cardShape: CustomShapeRef = {
  * kind class rather than the definition enumerating relation types it cannot know.
  */
 const SHACL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes: [{ id: "shape", shape: cardShape, anchors: { kind: "edge" }, sizing: "model" }],
+  elementTypes: [
+    {
+      id: "shape",
+      shape: "box",
+      classNames: [
+        { className: "shacl-shape canvas-element" },
+        { className: "shacl-shape-blank", when: { path: "payload.blank", is: "true" } },
+        { className: "shacl-shape-deactivated", when: { path: "payload.deactivated", is: "true" } },
+        { className: "shacl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "shacl-shape-box canvas-node", on: "shape" },
+      ],
+      labels: [
+        {
+          // `display — name` when the shape has a name of its own, `display` when it does not,
+          // with no dangling dash: parts, not a template.
+          text: { parts: [{ path: "payload.display" }, { path: "payload.name", when: { path: "payload.name", is: "non-empty" } }], join: " — " },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT / 2 + 5 },
+          truncate: true,
+          className: "shacl-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+          when: { path: "payload.badges", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT / 2 + 5 },
+          align: "end",
+          insetX: 8,
+          className: "shacl-badges canvas-hint",
+        },
+        {
+          text: { path: "payload.targets", each: { path: "words" } },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          stack: { lineHeight: LINE_HEIGHT, start: HEADER_HEIGHT + LINE_HEIGHT - 6 },
+          className: "shacl-target",
+        },
+        {
+          // THE THREE-COLUMN ROW, and the reason columns exist: a path on the left, a summary
+          // in the middle and a cardinality on the right, once per constraint. Declaring three
+          // collections over the same list would let them drift apart the moment one carried a
+          // condition - pairing row 2's cardinality with row 3's path, silently.
+          text: {
+            path: "payload.rows",
+            each: {
+              parts: [
+                { path: "path", when: { path: "sparql", is: "false" } },
+                { template: "SPARQL constraint", when: { path: "sparql", is: "true" } },
+              ],
+              join: "",
+            },
+          },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          // Below the targets, however many this shape declares - which is why a stack's start
+          // is bindable rather than a constant.
+          stack: { lineHeight: LINE_HEIGHT, start: { path: "payload.rowsStart" } },
+          className: { parts: [{ template: "shacl-row" }, { template: "shacl-row-sparql", when: { path: "sparql", is: "true" } }], join: " " },
+          columns: [
+            { text: { path: "summary" }, insetX: 110, align: "start", className: "shacl-row-summary canvas-hint" },
+            { text: { path: "cardinality" }, insetX: 8, align: "end", className: "shacl-row-cardinality canvas-hint" },
+          ],
+        },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
+  ],
   relationTypes: [
     {
       id: "reference",
@@ -185,6 +165,20 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         width: CARD_WIDTH,
         height,
         label: shape.display,
+        // What the declaration reads. `rowsStart` is the same arithmetic `shapeHeight` already
+        // does: the rows begin below however many targets this shape declares.
+        payload: {
+          display: shape.display,
+          name: shape.name,
+          blank: shape.blank,
+          deactivated: shape.deactivated,
+          badges: [shape.deactivated ? "deactivated" : "", shape.closed ? "closed" : "", shape.severity]
+            .filter((badge) => badge.length > 0)
+            .map((text) => ({ text })),
+          targets: shape.targets.map((target) => ({ words: targetWords(target) })),
+          rows: shape.rows,
+          rowsStart: HEADER_HEIGHT + (shape.targets.length + 1) * LINE_HEIGHT - 6,
+        },
         shape,
       };
     });

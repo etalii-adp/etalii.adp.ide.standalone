@@ -2204,7 +2204,11 @@ function declaredData(type: ElementTypeDefinition | undefined, source: BindingSo
 }
 
 /** The classes a type declares for one target - the shape's body, or the element's group. */
-function declaredClassNames(type: ElementTypeDefinition, source: BindingSource, on: "element" | "shape" = "shape"): string {
+function declaredClassNames(
+  type: ElementTypeDefinition,
+  source: BindingSource,
+  on: "element" | "shape" | "shape-inner" = "shape",
+): string {
   const classes: string[] = [];
   for (const declaration of type.classNames ?? []) {
     if ((declaration.on ?? "shape") !== on || !holds(declaration.when, source)) {
@@ -2304,17 +2308,17 @@ function renderShapeBody(
     }
     case "double-ellipse":
       return (
-        <g className={declared || undefined}>
-          <ellipse className="library-shape" cx={element.x} cy={element.y} rx={bounds.width / 2} ry={bounds.height / 2} style={paint} />
+        <g>
+          <ellipse className={shapeClass} cx={element.x} cy={element.y} rx={bounds.width / 2} ry={bounds.height / 2} style={paint} />
           <ellipse
-            className="library-shape library-shape-inner"
+            className={["library-shape library-shape-inner", declaredClassNames(type, source, "shape-inner")].filter(Boolean).join(" ")}
             cx={element.x}
             cy={element.y}
             rx={Math.max(1, bounds.width / 2 - 4)}
             ry={Math.max(1, bounds.height / 2 - 4)}
             style={paint}
           />
-          {centredText(element, label)}
+          {label === "" ? null : centredText(element, label)}
         </g>
       );
     case "box":

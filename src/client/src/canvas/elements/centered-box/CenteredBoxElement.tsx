@@ -34,9 +34,18 @@ export function CenteredBoxElement({
   return (
     <g transform={`translate(${x} ${y})`} {...groupProps}>
       <rect x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={rx} />
-      <text textAnchor="middle" dominantBaseline="central">
-        {text || " "}
-      </text>
+      {/*
+        NO TEXT NODE AT ALL when there is nothing to say. The empty-string placeholder dates
+        from when every shape drew its own single label; a type that declares `labels` passes
+        an empty one and draws its lines as siblings, so the placeholder became a blank `<text>`
+        sitting BEFORE the real ones - which is what a reader, and `querySelector("text")`,
+        finds first.
+      */}
+      {text === "" ? null : (
+        <text textAnchor="middle" dominantBaseline="central">
+          {text}
+        </text>
+      )}
       {indicators ? (
         <text className={indicatorsClassName} x={halfWidth - 4} y={-halfHeight + 4} textAnchor="end">
           {indicators}

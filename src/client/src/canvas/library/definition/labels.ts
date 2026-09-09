@@ -1,5 +1,5 @@
-import { holds, resolveEntries, resolveMany, resolveOneAt, type BindingSource } from "./binding";
-import type { LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
+import { holds, resolveEntries, resolveMany, resolveNumber, resolveOneAt, type Binding, type BindingSource } from "./binding";
+import type { DeclaredNumber, LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
 
 /**
  * `labels` — what an element says, declared rather than drawn.
@@ -54,6 +54,28 @@ function trimmedToWidth(text: string, width: number): string {
   }
 
   return capacity <= 1 ? "…" : `${text.slice(0, capacity - 1)}…`;
+}
+
+/** A class stated outright, or resolved against the root a line came from. */
+function classOf(className: string | Binding | undefined, root: unknown): string | undefined {
+  if (className === undefined || typeof className === "string") {
+    return className;
+  }
+
+  return resolveOneAt(className as never, root) ?? undefined;
+}
+
+/** A declared number, resolved against the element - a stack's start, which a card computes. */
+function numberOf(value: DeclaredNumber | undefined, source: BindingSource, fallback: number): number {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  return resolveNumber(value, source) ?? fallback;
 }
 
 function baselineOf(declaration: LabelDeclaration, bounds: ShapeBounds): { x: number; y: number; anchor: "start" | "middle" | "end" } {
@@ -167,11 +189,12 @@ export function layoutLabels(
     const lines = entries.map((entry) => entry.text);
 
     const base = baselineOf(declaration, bounds);
+    const stackStart = numberOf(declaration.stack?.start, source, 0);
     const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
     const stack = declaration.stack;
 
     lines.forEach((line, lineIndex) => {
-      const y = stack ? base.y + (stack.start ?? 0) + lineIndex * stack.lineHeight : base.y;
+      const y = stack ? base.y + stackStart + lineIndex * stack.lineHeight : base.y;
       for (const column of declaration.columns ?? []) {
         // The entry's OWN root: for a collection, the item this line came from.
         const text = resolveOneAt(column.text, entries[lineIndex]!.root);
@@ -189,7 +212,7 @@ export function layoutLabels(
           // Never editable: a column is a second value on somebody else's line, and an editor
           // over it would commit to a field the line does not name.
           editable: false,
-          className: column.className,
+          className: classOf(column.className, entries[lineIndex]!.root),
           declarationIndex,
           lineIndex,
         });
@@ -205,7 +228,8 @@ export function layoutLabels(
         // editable however the declaration is written. Stated here rather than trusted to the
         // author, because an editor over a computed line would commit to nothing.
         editable: (declaration.editable ?? false) && lines.length === 1,
-        className: declaration.className,
+        // Resolved against the ENTRY: a row's own class, for a collection that has one.
+        className: classOf(declaration.className, entries[lineIndex]!.root),
         tooltip,
         declarationIndex,
         lineIndex,

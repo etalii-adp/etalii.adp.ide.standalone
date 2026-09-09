@@ -1,19 +1,13 @@
 import { useMemo, useState } from "react";
 
-import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { EllipseElement } from "@client/canvas/elements/ellipse/EllipseElement";
-import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
-  CustomShapeRef,
-  CustomShapeState,
   DiagramDefinition,
   RelationTypeDefinition,
   ShapeBounds,
-  ShapePoint,
 } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
@@ -63,157 +57,8 @@ export function nodeSizeOf(node: OwlNode): { width: number; height: number } {
 /** An element as the library carries it here: the model element plus what it draws. */
 type OwlElement = DiagramModelElement & { node: OwlNode; doubled: boolean };
 
-function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  return edgePointOf(
-    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
-    towards.x - centre.x,
-    towards.y - centre.y,
-  );
-}
 
-/** Where a connector approaching from `towards` touches an ellipse whose box is `bounds`. */
-function ellipseEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
-  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  const dx = towards.x - centre.x;
-  const dy = towards.y - centre.y;
-  const rx = Math.max(bounds.width / 2, 1);
-  const ry = Math.max(bounds.height / 2, 1);
-  const scale = Math.sqrt((dx / rx) ** 2 + (dy / ry) ** 2);
-  if (scale === 0) {
-    return centre;
-  }
 
-  return { x: centre.x + dx / scale, y: centre.y + dy / scale };
-}
-
-/** The classes a node wears: its kind, its dimming, and whatever state it is in. */
-function classesFor(node: OwlNode, state?: CustomShapeState): string {
-  const classes = ["owl-node canvas-element", `owl-${node.kind}`];
-  if (node.deprecated) {
-    classes.push("owl-deprecated");
-  }
-
-  if (node.external) {
-    classes.push("owl-external");
-  }
-
-  if (node.malformed) {
-    classes.push("owl-malformed");
-  }
-
-  if (node.elided) {
-    classes.push("owl-elided");
-  }
-
-  if (state?.selected) {
-    classes.push("owl-selected");
-  }
-
-  if (state?.connectTarget) {
-    classes.push("owl-connect-target canvas-connect-target");
-  }
-
-  return classes.join(" ");
-}
-
-/** An individual's or the ontology header's card: title, type badges, then one line per row. */
-const cardShape: CustomShapeRef = {
-  customShape: "owl-card",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as OwlElement;
-    const node = element.node;
-    const width = element.width ?? CARD_WIDTH;
-    const height = element.height ?? HEADER_HEIGHT + FOOTER_PADDING;
-    const rowsStart = HEADER_HEIGHT + (node.badges.length > 0 ? BADGES_HEIGHT : 0);
-
-    return (
-      <BoxElement
-        className={classesFor(node, state)}
-        x={element.x - width / 2}
-        y={element.y - height / 2}
-        width={width}
-        height={height}
-        label={node.display}
-        boxClassName="owl-card-box canvas-node"
-        labelClassName="owl-label canvas-node-label"
-        labelY={HEADER_HEIGHT / 2 + 5}
-      >
-        {node.badges.length > 0 ? (
-          <text className="owl-badges" x={8} y={HEADER_HEIGHT - 6 + BADGES_HEIGHT}>
-            {fit(node.badges.join(" · "), width)}
-          </text>
-        ) : null}
-        {node.rows.map((row, index) => (
-          <text key={`${row.predicate}-${index}`} className="owl-row" x={8} y={rowsStart + (index + 1) * ROW_HEIGHT - 4}>
-            {fit(`${row.predicate}: ${row.value}${row.annotation ? ` ${row.annotation}` : ""}`, width)}
-          </text>
-        ))}
-        <title>{node.display}</title>
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/** A datatype rectangle: the schema half of the literal-node position (Requirement 1.1). */
-const datatypeShape: CustomShapeRef = {
-  customShape: "owl-datatype",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as OwlElement;
-    const width = element.width ?? SHAPE_WIDTH;
-    const height = element.height ?? SHAPE_HEIGHT;
-
-    return (
-      <BoxElement
-        className={classesFor(element.node, state)}
-        x={element.x - width / 2}
-        y={element.y - height / 2}
-        width={width}
-        height={height}
-        label={element.node.display}
-        boxClassName="owl-datatype-box canvas-node"
-        labelClassName="owl-label canvas-node-label"
-        labelY={height / 2 + 4}
-      >
-        <title>{element.node.display}</title>
-      </BoxElement>
-    );
-  },
-  edgePoint: boxEdgePoint,
-};
-
-/**
- * Everything round: classes, Thing anchors, and the expression shapes - whose label is the
- * Manchester form, with the elision marker when it hides depth. An equivalence doubles the
- * outline, as the notation draws it.
- */
-const roundShape: CustomShapeRef = {
-  customShape: "owl-round",
-  render: (raw, state?: CustomShapeState) => {
-    const element = raw as OwlElement;
-    const width = element.width ?? SHAPE_WIDTH;
-    const height = element.height ?? SHAPE_HEIGHT;
-
-    return (
-      <EllipseElement
-        className={classesFor(element.node, state)}
-        x={element.x}
-        y={element.y}
-        radiusX={width / 2}
-        radiusY={height / 2}
-        text={labelFor(element.node, width)}
-        doubled={element.doubled}
-        ellipseClassName="owl-shape canvas-node"
-        innerClassName="owl-shape-inner"
-        labelClassName="owl-label canvas-node-label"
-      >
-        <title>{element.node.display}</title>
-      </EllipseElement>
-    );
-  },
-  edgePoint: ellipseEdgePoint,
-};
 
 /** The node kinds a connect gesture may start from or land on: everything with an identity. */
 const CONNECTABLE = ["class", "datatype", "individual", "thing", "ontology"] as const;
@@ -266,13 +111,248 @@ function edgeType(kind: OwlEdgeKind, options: { arrow: boolean; gesture?: boolea
  */
 const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
-    { id: "class", shape: roundShape, anchors: AXIOM_ANCHORS, sizing: "model" },
-    { id: "thing", shape: roundShape, anchors: AXIOM_ANCHORS, sizing: "model" },
-    { id: "datatype", shape: datatypeShape, anchors: AXIOM_ANCHORS, sizing: "model" },
-    { id: "individual", shape: cardShape, anchors: AXIOM_ANCHORS, sizing: "model" },
-    { id: "ontology", shape: cardShape, anchors: AXIOM_ANCHORS, sizing: "model" },
-    { id: "operator", shape: roundShape, anchors: { kind: "edge" }, sizing: "model" },
-    { id: "restriction", shape: roundShape, anchors: { kind: "edge" }, sizing: "model" },
+    {
+      id: "class",
+      shape: { path: "payload.doubled", cases: { true: "double-ellipse" }, fallback: "ellipse" },
+      classNames: [
+        { className: "owl-node canvas-element" },
+        { className: { template: "owl-{payload.kind}" } },
+        { className: "owl-deprecated", when: { path: "payload.deprecated", is: "true" } },
+        { className: "owl-external", when: { path: "payload.external", is: "true" } },
+        { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
+        { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
+        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "owl-shape canvas-node", on: "shape" },
+        // The ring the notation draws inside an equivalent class - its own name, not one the
+        // library invented by suffixing.
+        { className: "owl-shape-inner", on: "shape-inner" },
+      ],
+      tooltip: { path: "payload.display" },
+      labels: [
+        {
+          // An elided expression says so in its own text, which the fold composes.
+          text: { path: "payload.roundLabel" },
+          truncate: true,
+          className: "owl-label canvas-node-label",
+        },
+      ],
+      anchors: AXIOM_ANCHORS,
+      sizing: "model",
+    },
+    {
+      id: "thing",
+      shape: { path: "payload.doubled", cases: { true: "double-ellipse" }, fallback: "ellipse" },
+      classNames: [
+        { className: "owl-node canvas-element" },
+        { className: { template: "owl-{payload.kind}" } },
+        { className: "owl-deprecated", when: { path: "payload.deprecated", is: "true" } },
+        { className: "owl-external", when: { path: "payload.external", is: "true" } },
+        { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
+        { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
+        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "owl-shape canvas-node", on: "shape" },
+        // The ring the notation draws inside an equivalent class - its own name, not one the
+        // library invented by suffixing.
+        { className: "owl-shape-inner", on: "shape-inner" },
+      ],
+      tooltip: { path: "payload.display" },
+      labels: [
+        {
+          // An elided expression says so in its own text, which the fold composes.
+          text: { path: "payload.roundLabel" },
+          truncate: true,
+          className: "owl-label canvas-node-label",
+        },
+      ],
+      anchors: AXIOM_ANCHORS,
+      sizing: "model",
+    },
+    {
+      id: "datatype",
+      shape: "box",
+      classNames: [
+        { className: "owl-node canvas-element" },
+        { className: { template: "owl-{payload.kind}" } },
+        { className: "owl-deprecated", when: { path: "payload.deprecated", is: "true" } },
+        { className: "owl-external", when: { path: "payload.external", is: "true" } },
+        { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
+        { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
+        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "owl-datatype-box canvas-node", on: "shape" },
+      ],
+      tooltip: { path: "payload.display" },
+      labels: [
+        {
+          // An elided expression says so in its own text, which the fold composes.
+          text: { path: "payload.roundLabel" },
+          truncate: true,
+          className: "owl-label canvas-node-label",
+        },
+      ],
+      anchors: AXIOM_ANCHORS,
+      sizing: "model",
+    },
+    {
+      id: "individual",
+      shape: "box",
+      classNames: [
+        { className: "owl-node canvas-element" },
+        { className: { template: "owl-{payload.kind}" } },
+        { className: "owl-deprecated", when: { path: "payload.deprecated", is: "true" } },
+        { className: "owl-external", when: { path: "payload.external", is: "true" } },
+        { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
+        { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
+        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "owl-card-box canvas-node", on: "shape" },
+      ],
+      tooltip: { path: "payload.display" },
+      labels: [
+        {
+          text: { path: "payload.display" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT / 2 + 5 },
+          truncate: true,
+          className: "owl-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+          when: { path: "payload.badges", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT - 6 + BADGES_HEIGHT },
+          align: "start",
+          insetX: 8,
+          truncate: true,
+          className: "owl-badges",
+        },
+        {
+          // ONE LINE PER ROW - the case a fixed set of named slots cannot reach, and the
+          // argument the whole label addition was made on. Where the rows begin depends on
+          // whether the card wears badges, which is why a stack's start is bindable.
+          text: { path: "payload.rows", each: { template: "{predicate}: {value} {annotation}" } },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          truncate: true,
+          stack: { lineHeight: ROW_HEIGHT, start: { path: "payload.rowsStart" } },
+          className: "owl-row",
+        },
+      ],
+      anchors: AXIOM_ANCHORS,
+      sizing: "model",
+    },
+    {
+      id: "ontology",
+      shape: "box",
+      classNames: [
+        { className: "owl-node canvas-element" },
+        { className: { template: "owl-{payload.kind}" } },
+        { className: "owl-deprecated", when: { path: "payload.deprecated", is: "true" } },
+        { className: "owl-external", when: { path: "payload.external", is: "true" } },
+        { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
+        { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
+        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "owl-card-box canvas-node", on: "shape" },
+      ],
+      tooltip: { path: "payload.display" },
+      labels: [
+        {
+          text: { path: "payload.display" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT / 2 + 5 },
+          truncate: true,
+          className: "owl-label canvas-node-label",
+        },
+        {
+          text: { path: "payload.badges", each: { path: "text" }, join: " · " },
+          when: { path: "payload.badges", is: "non-empty" },
+          anchorTo: "top",
+          offset: { x: 0, y: HEADER_HEIGHT - 6 + BADGES_HEIGHT },
+          align: "start",
+          insetX: 8,
+          truncate: true,
+          className: "owl-badges",
+        },
+        {
+          // ONE LINE PER ROW - the case a fixed set of named slots cannot reach, and the
+          // argument the whole label addition was made on. Where the rows begin depends on
+          // whether the card wears badges, which is why a stack's start is bindable.
+          text: { path: "payload.rows", each: { template: "{predicate}: {value} {annotation}" } },
+          anchorTo: "top",
+          offset: { x: 0, y: 0 },
+          align: "start",
+          insetX: 8,
+          truncate: true,
+          stack: { lineHeight: ROW_HEIGHT, start: { path: "payload.rowsStart" } },
+          className: "owl-row",
+        },
+      ],
+      anchors: AXIOM_ANCHORS,
+      sizing: "model",
+    },
+    {
+      id: "operator",
+      shape: { path: "payload.doubled", cases: { true: "double-ellipse" }, fallback: "ellipse" },
+      classNames: [
+        { className: "owl-node canvas-element" },
+        { className: { template: "owl-{payload.kind}" } },
+        { className: "owl-deprecated", when: { path: "payload.deprecated", is: "true" } },
+        { className: "owl-external", when: { path: "payload.external", is: "true" } },
+        { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
+        { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
+        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "owl-shape canvas-node", on: "shape" },
+        // The ring the notation draws inside an equivalent class - its own name, not one the
+        // library invented by suffixing.
+        { className: "owl-shape-inner", on: "shape-inner" },
+      ],
+      tooltip: { path: "payload.display" },
+      labels: [
+        {
+          // An elided expression says so in its own text, which the fold composes.
+          text: { path: "payload.roundLabel" },
+          truncate: true,
+          className: "owl-label canvas-node-label",
+        },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
+    {
+      id: "restriction",
+      shape: { path: "payload.doubled", cases: { true: "double-ellipse" }, fallback: "ellipse" },
+      classNames: [
+        { className: "owl-node canvas-element" },
+        { className: { template: "owl-{payload.kind}" } },
+        { className: "owl-deprecated", when: { path: "payload.deprecated", is: "true" } },
+        { className: "owl-external", when: { path: "payload.external", is: "true" } },
+        { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
+        { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
+        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
+        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
+        { className: "owl-shape canvas-node", on: "shape" },
+        // The ring the notation draws inside an equivalent class - its own name, not one the
+        // library invented by suffixing.
+        { className: "owl-shape-inner", on: "shape-inner" },
+      ],
+      tooltip: { path: "payload.display" },
+      labels: [
+        {
+          // An elided expression says so in its own text, which the fold composes.
+          text: { path: "payload.roundLabel" },
+          truncate: true,
+          className: "owl-label canvas-node-label",
+        },
+      ],
+      anchors: { kind: "edge" },
+      sizing: "model",
+    },
   ],
   relationTypes: [
     edgeType("subclass", { arrow: true, gesture: true }),
@@ -315,6 +395,21 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         width: size.width,
         height: size.height,
         label: node.display,
+        // What the declaration reads. `rowsStart` and `roundLabel` are numbers and strings the
+        // module already computes to lay a card out; where they are drawn is the library's.
+        payload: {
+          kind: node.kind,
+          display: node.display,
+          roundLabel: isExpression(node) && node.elided ? `${node.display} …` : node.display,
+          deprecated: node.deprecated,
+          external: node.external,
+          malformed: node.malformed,
+          elided: node.elided,
+          doubled: hasEquivalence(model, node.id),
+          badges: node.badges.map((text) => ({ text })),
+          rows: node.rows,
+          rowsStart: HEADER_HEIGHT + (node.badges.length > 0 ? BADGES_HEIGHT : 0) + ROW_HEIGHT - 4,
+        },
         node,
         doubled: hasEquivalence(model, node.id),
       };
