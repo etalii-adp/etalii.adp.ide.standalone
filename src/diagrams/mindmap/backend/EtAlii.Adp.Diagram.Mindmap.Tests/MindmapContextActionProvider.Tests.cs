@@ -123,14 +123,16 @@ public class MindmapContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task Execute_OnlyRenameMarksItsPromptAsEditingTheLabelOnScreen()
+    public async Task Execute_EveryPromptEditingALabelSaysSo_AndNotesStillDoesNot()
     {
         // Arrange.
-        // The contrast is the point, and this provider is where it is sharpest: four actions
-        // ask for text through the identical prompt, and exactly one of them is asking for the
-        // words the user can see. Add child and add sibling ask for text that does not exist
-        // yet - there is no label to replace, because there is no node - and notes are a value
-        // about the node rather than its label (inline-rename Requirements 3.1, 2.5).
+        // THIS TEST USED TO CLAIM THE OPPOSITE, and the premise it gave was true when it was
+        // written: "add child and add sibling ask for text that does not exist yet - there is
+        // no label to replace, because there is no node". The node now exists by the time the
+        // prompt is raised, because the add runs at execute time under a name read off its
+        // siblings - so all three of these ARE editing a label on screen, and only notes is
+        // still a value about the node rather than its label (inline-rename Requirements 3.1,
+        // 2.5). The contrast the test was written for survives; the line it falls on moved.
         const string nodeId = "ID_88117422";
 
         // Act.
@@ -141,9 +143,62 @@ public class MindmapContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.Equal(nodeId, rename.Request.InlineLabelElementId);
-        Assert.Equal("", addChild.Request.InlineLabelElementId);
-        Assert.Equal("", addSibling.Request.InlineLabelElementId);
         Assert.Equal("", editNotes.Request.InlineLabelElementId);
+
+        // The two adds name the NEW node, never the one that was selected - naming the selected
+        // one would open the editor over the parent and rename it on commit.
+        Assert.NotEqual("", addChild.Request.InlineLabelElementId);
+        Assert.NotEqual(nodeId, addChild.Request.InlineLabelElementId);
+        Assert.NotEqual("", addSibling.Request.InlineLabelElementId);
+        Assert.NotEqual(nodeId, addSibling.Request.InlineLabelElementId);
+
+        // And both commit as a rename. Left as the invoked action, the commit adds a SECOND
+        // node instead of naming the first - which is the whole reason CommitActionId exists.
+        Assert.Equal(MindmapContextActionProvider.RenameActionId, addChild.Request.CommitActionId);
+        Assert.Equal(MindmapContextActionProvider.RenameActionId, addSibling.Request.CommitActionId);
+        Assert.Equal("", rename.Request.CommitActionId);
+    }
+
+    [Fact]
+    public async Task Execute_AddChild_CreatesTheNodeAtOnce_NamedFromItsSiblings()
+    {
+        // Arrange. The fixture's root has children; the new one joins them.
+        var root = _project.Document.Root!;
+        var before = root.Children.Count;
+
+        // Act.
+        var result = Assert.IsType<ContextExecutionRequiresInput>(
+            await Execute(root.Id, MindmapContextActionProvider.AddChildActionId));
+
+        // Assert. The node is in the document BEFORE anybody answers the prompt - that is what
+        // makes the prompt an inline editor over something visible rather than a dialog.
+        Assert.Equal(before + 1, root.Children.Count);
+        var added = _project.Document.Find(result.Request.InlineLabelElementId);
+        Assert.NotNull(added);
+
+        // Named, not blank, and the prompt opens on that same name so the editor is prefilled
+        // with what the node actually says.
+        Assert.False(string.IsNullOrWhiteSpace(added.Text));
+        Assert.Equal(added.Text, result.Request.InitialValue);
+
+        // Undoable as one step: the add is a command like any other, so a user who did not
+        // want it presses undo rather than deleting the node they were just given.
+        Assert.True(_project.History.CanUndo);
+    }
+
+    [Fact]
+    public async Task Execute_AddChildTwiceWithoutRenaming_DoesNotProduceTwoNodesWithOneName()
+    {
+        // The uniqueness pass, end to end: accept both defaults and the second must still be
+        // distinguishable from the first, in the tree and to anything looking one up by text.
+        var root = _project.Document.Root!;
+
+        var first = Assert.IsType<ContextExecutionRequiresInput>(await Execute(root.Id, MindmapContextActionProvider.AddChildActionId));
+        var second = Assert.IsType<ContextExecutionRequiresInput>(await Execute(root.Id, MindmapContextActionProvider.AddChildActionId));
+
+        Assert.NotEqual(
+            _project.Document.Find(first.Request.InlineLabelElementId)!.Text,
+            _project.Document.Find(second.Request.InlineLabelElementId)!.Text);
     }
 
     [Fact]

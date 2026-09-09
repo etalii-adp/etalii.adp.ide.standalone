@@ -102,12 +102,31 @@ public sealed partial class ContextService
         Projects.ProjectRootResolver.TryResolve(
             _projectStore, SessionContext.GetUserId(context), request.ProjectId, out var rootPath, out _);
 
+        // WHAT THE ANSWER WILL BE APPLIED TO, which is not always what the question was asked
+        // about. An input request may name an element whose label it edits and an action to
+        // commit under; where it does, the interaction remembers those instead.
+        //
+        // This is what lets a provider create something and then edit it in place: the add runs
+        // at execute time, and the prompt that follows belongs to the new element and to the
+        // provider's own rename. Without the re-pointing, the commit would run the add again -
+        // against the parent, adding a second child - which is exactly the shape of bug that
+        // makes "just suppress the dialog" the wrong fix.
+        //
+        // INERT FOR EVERY PROMPT THAT EXISTED BEFORE IT. Both fields default to empty, and
+        // every inline caller in the tree today passes `target.ElementId` as the element - so
+        // the re-pointing is provably a no-op for all of them rather than merely believed to be.
+        var input = (execution as ContextExecutionRequiresInput)?.Request;
+        var commitTarget = string.IsNullOrEmpty(input?.InlineLabelElementId)
+            ? target
+            : target with { ElementId = input.InlineLabelElementId };
+        var commitActionId = string.IsNullOrEmpty(input?.CommitActionId) ? owner.Action.Id : input.CommitActionId;
+
         _contextInteractionStore.Begin(new ContextInteraction
         {
             Id = interactionId,
             WatchId = request.WatchId,
-            Target = target,
-            ActionId = owner.Action.Id,
+            Target = commitTarget,
+            ActionId = commitActionId,
             Provider = owner.Provider,
             RootPath = rootPath,
         });

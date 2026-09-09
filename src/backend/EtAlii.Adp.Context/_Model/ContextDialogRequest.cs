@@ -14,13 +14,31 @@ namespace EtAlii.Adp.Context;
 /// rather than by being migrated.
 /// </para>
 /// </param>
+/// <param name="CommitActionId">
+/// The action this value commits under, when the prompt is asked by one action and applied by
+/// another. Empty, the default, means the action the user invoked - which is every prompt that
+/// existed before this field, because a prompt normally belongs to the action that raised it.
+/// <para>
+/// What it is for: <b>create the thing, then edit its label in place.</b> A provider that adds
+/// an element can dispatch the add at once, name it from its siblings, and return an input
+/// request naming the NEW element and its own rename action - so the user gets an inline editor
+/// over a node that exists instead of a dialog about a node that does not. Committing then
+/// renames rather than adding a second one, which is what happens if the invoked action is
+/// allowed to stand.
+/// </para>
+/// <para>
+/// It stays inside the backend and never reaches the wire: the client only needs to know which
+/// interaction it is answering, and the interaction is where this is remembered.
+/// </para>
+/// </param>
 public sealed record ContextInputRequest(
     string Title,
     string Icon,
     string FieldLabel,
     string InitialValue,
     string ConfirmLabel,
-    string InlineLabelElementId = "");
+    string InlineLabelElementId = "",
+    string CommitActionId = "");
 
 /// <summary>A dialog asking the user to confirm or cancel, described entirely as data.</summary>
 public sealed record ContextConfirmationRequest(

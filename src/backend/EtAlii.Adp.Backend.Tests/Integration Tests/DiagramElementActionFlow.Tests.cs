@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
@@ -119,7 +120,79 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         Assert.True(executed.Accepted, executed.Error);
         var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
-        Assert.Equal("Add child", prompt.InputDialog.Title);
+
+        // THE PROMPT IS A RENAME OF THE NEW NODE, not a question about a node that does not
+        // exist. The keystroke used to open "Add child" and ask for a name first; the node is
+        // created at once now, named from its siblings, and the prompt that follows edits its
+        // label in place. Marked as an inline label edit, which is what makes the canvas open
+        // an editor over the node instead of a dialog over the diagram.
+        Assert.Equal("Rename node", prompt.InputDialog.Title);
+        Assert.NotNull(prompt.InputDialog.InlineLabelEdit);
+        Assert.NotEqual("", prompt.InputDialog.InlineLabelEdit.ElementId.Value);
+        Assert.NotEqual("ID_1", prompt.InputDialog.InlineLabelEdit.ElementId.Value);
+    }
+
+    [Fact]
+    public async Task TheValueOfThePromptAfterAnAdd_RenamesTheNewNode_RatherThanAddingASecond()
+    {
+        // THE CENTRAL RULE, END TO END, and the only place it can be seen. A provider that
+        // creates something and then asks for its label commits under a DIFFERENT action and
+        // against a DIFFERENT element than the one invoked. Both re-pointings happen in
+        // ContextService, and neither is visible to a unit test of the provider: the provider
+        // only states what it wants, and the service is what remembers it for the commit.
+        //
+        // Left unhandled, the submit re-runs "add child" against the ORIGINAL node - so the
+        // map quietly grows a second child named after whatever was typed, and the node the
+        // user was editing keeps its generated name. That is the failure this guards.
+        using var channel = CreateChannel();
+        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var watchId = ShortGuid.NewShortGuid();
+
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
+
+        using var cts = CreateMessageTimeout();
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
+
+        await contextClient.SelectAsync(
+            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Act. Insert, then answer the editor that opens.
+        var executed = await contextClient.ExecuteActionAsync(
+            new ExecuteActionRequest
+            {
+                ProjectId = projectId,
+                WatchId = watchId,
+                Source = new ContextSource { ElementId = new ElementId { Value = "ID_1" } },
+                InteractionId = ShortGuid.NewShortGuid(),
+                Shortcut = new ContextShortcut { Key = "Insert" },
+            },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(executed.Accepted, executed.Error);
+
+        var prompt = await pendingPrompt;
+        var newNodeId = prompt.InputDialog.InlineLabelEdit.ElementId.Value;
+
+        var submitted = await contextClient.SubmitInteractionAsync(
+            new SubmitInteractionRequest { InteractionId = prompt.InteractionId, Value = "Chosen by the user", Text = "Chosen by the user" },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(submitted.Completed, submitted.Error);
+
+        var map = await File.ReadAllTextAsync(IoPath.Combine(_projectFolder, "roadmap.mm"), TestContext.Current.CancellationToken);
+        Assert.Contains($"ID=\"{newNodeId}\"", map, StringComparison.Ordinal);
+
+        // The typed text is the NEW node's, and it appears exactly once - a second occurrence
+        // would be the add having run again under the user's answer.
+        Assert.Equal(1, Regex.Matches(map, Regex.Escape("Chosen by the user")).Count);
+        var newNodeLine = map.Split('\n').Single(line => line.Contains($"ID=\"{newNodeId}\"", StringComparison.Ordinal));
+        Assert.Contains("Chosen by the user", newNodeLine, StringComparison.Ordinal);
     }
 
     [Fact]

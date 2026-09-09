@@ -135,9 +135,27 @@
 
 /* ---- Anchors ----------------------------------------------------------------------- */
 
+/*
+ * AN ANCHOR IS PART OF ITS ELEMENT, SO IT IS COLOURED LIKE ONE.
+ *
+ * All three anchor classes below used to be `--color-primary` unconditionally, so every anchor
+ * on every canvas sat green whether or not anything was selected - which reads as "this is
+ * highlighted" on an element that is not, and leaves a selected element's anchors saying
+ * nothing new. Reported against the dependency graph and the timeline; it was never those two
+ * modules' doing, and neither of them has an anchor rule of its own.
+ *
+ * The pattern is `.canvas-node`'s, deliberately and to the letter: the border colour at rest,
+ * the primary colour under `.canvas-selected` or a connect target. Copying the selector list
+ * rather than inventing one is what makes an anchor and the box it belongs to change together
+ * when the theme does.
+ *
+ * `.canvas-selected` is put on the element group by the library itself for every declared
+ * module, and `canvas-connect-target` is a class those modules declare, so these rules reach
+ * every canvas without any module opting in - which is what was asked for.
+ */
 .canvas-anchor {
   fill: var(--color-surface, #ffffff);
-  stroke: var(--color-primary, limegreen);
+  stroke: var(--color-border, #8892a6);
   stroke-width: 1.5;
   cursor: crosshair;
   pointer-events: none;
@@ -178,7 +196,7 @@
  * the anchors looking right and impossible to drag from. */
 .library-anchor {
   fill: var(--color-surface, #ffffff);
-  stroke: var(--color-primary, limegreen);
+  stroke: var(--color-border, #8892a6);
   stroke-width: 1.5;
   cursor: crosshair;
 }
@@ -186,10 +204,30 @@
 /* A span's anchors do have a hit circle behind them, so these may stay inert. */
 .library-span-anchor {
   fill: var(--color-surface, #ffffff);
-  stroke: var(--color-primary, limegreen);
+  stroke: var(--color-border, #8892a6);
   stroke-width: 1.5;
   cursor: crosshair;
   pointer-events: none;
+}
+
+/*
+ * The selected half of the three rules above, written once for all of them.
+ *
+ * Same right-hand side as `.canvas-selected .canvas-node`, so an element and its anchors light
+ * up together and a later theme change cannot move one without the other. The `stroke-width`
+ * the box gains is deliberately NOT copied: a 2.5 stroke on a five-pixel dot closes the hole
+ * in the middle and turns it into a blob.
+ */
+.canvas-selected .canvas-anchor,
+.canvas-selected .library-anchor,
+.canvas-selected .library-span-anchor,
+.canvas-connect-target .canvas-anchor,
+.canvas-connect-target .library-anchor,
+.canvas-connect-target .library-span-anchor,
+.library-connect-target .canvas-anchor,
+.library-connect-target .library-anchor,
+.library-connect-target .library-span-anchor {
+  stroke: var(--color-primary, limegreen);
 }
 
 .library-span-anchor-hit {
