@@ -2536,3 +2536,45 @@ the defect reachable and what makes it invisible to the suite.
   seconds earlier; **Validate cleared it and the error count went 3 → 2**, which is the
   evidence that it was cached rather than live. The reported "no projects ADP could resolve"
   did not reproduce at all, on this build or in any harness.
+## Every shape family still draws itself, in a browser (declarative-diagram-modules, task 17)
+
+Thirteen module canvases stopped drawing themselves and started declaring what they draw. jsdom
+sees classes, attributes and text, which is what every migration test asserts; it does not see
+a colour, a font, a silhouette or a line that ends up two pixels out. **Typography moved from a
+stylesheet into declared properties**, and a size that is right in the DOM and wrong on screen
+is exactly the kind of thing that survives 1,256 green tests.
+
+One diagram per shape family, because a family is what a mistake would be common to.
+
+- **Steps**: run the app from the implementing worktree on the Developer's reserved ports (both
+  port files changed and reverted afterwards — `src/client/vite.config.ts` and
+  `src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json`), browsing the backend's
+  port. Open each of these and look at it, then select an element, press **F2**, and press
+  **Escape**:
+  1. **span** — `src/examples/diagrams/generic/dependencies/` (the authored dependency graph)
+     and a `.slnx` through `dotnet/dependency-graph`, side by side: they are meant to be one
+     drawing with different colours.
+  2. **styled-box** — a C4 view: a person with a head above the box, a data store as a cylinder,
+     and a card with its name, type line and description.
+  3. **box with rows** — an RDF card (`rdf/wikidata/marie-curie.ttl`), an OWL ontology, a SHACL
+     shapes file and a SKOS scheme: header, badge line, and one line per row.
+  4. **centered-box** — a mind map, including a node with notes and a folded branch.
+  5. **pill and a body-less badge** — a causal loop diagram: the polarity arc with its arrowhead
+     turning the way the loop turns.
+  6. **symbol over a declared backdrop** — a Wardley map: evolution bands, both axes with their
+     end labels, an attitude region, an accelerator, a note and a numbered annotation.
+  7. **rounded-rectangle with ornaments** — an Azure pipeline: a collapsed stage's job count, the
+     status indicators along the top-right, and a problem mark where a problem is reported.
+- **Expected**: every diagram looks as it did before the migration — same colours, same shapes,
+  same text in the same places. Specifically:
+  **band and axis labels grow and shrink with zoom** on the Wardley map while the bands
+  themselves stay put (that is `scaleWithView`, and it is the one typography change that is
+  meant to be visible); **the C4 card's three lines stay pinned below its top edge** as cards of
+  different heights sit side by side; **a stage's name sits at the card's top-left, not centred**;
+  **an RDF card's rows begin below its badge line** and do not overlap it; **F2 opens the editor
+  over the text it replaces** — over the *name line* of a C4 card and an Azure stage, over the
+  whole box on a databricks task, and at the label's own offset on a Wardley mark, including one
+  whose document pushes the label to the left of the dot.
+  Nothing may draw in black-on-black or vanish: an unstyled class renders with the SVG defaults,
+  which is what the migration's class plumbing could get wrong without any test noticing.
+- **Result**: pending.
