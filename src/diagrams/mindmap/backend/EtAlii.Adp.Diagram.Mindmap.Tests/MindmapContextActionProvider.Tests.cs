@@ -163,7 +163,7 @@ public class MindmapContextActionProviderTests : IDisposable
     public async Task Execute_AddChild_CreatesTheNodeAtOnce_NamedFromItsSiblings()
     {
         // Arrange. The fixture's root has children; the new one joins them.
-        var root = _project.Document.Root!;
+        var root = _project.Document.Root;
         var before = root.Children.Count;
 
         // Act.
@@ -191,7 +191,7 @@ public class MindmapContextActionProviderTests : IDisposable
     {
         // The uniqueness pass, end to end: accept both defaults and the second must still be
         // distinguishable from the first, in the tree and to anything looking one up by text.
-        var root = _project.Document.Root!;
+        var root = _project.Document.Root;
 
         var first = Assert.IsType<ContextExecutionRequiresInput>(await Execute(root.Id, MindmapContextActionProvider.AddChildActionId));
         var second = Assert.IsType<ContextExecutionRequiresInput>(await Execute(root.Id, MindmapContextActionProvider.AddChildActionId));
