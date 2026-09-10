@@ -11,7 +11,7 @@ Read these sections of the diagram walkthrough first; they apply verbatim, with 
 - [The client](creating-a-diagram-module.md#the-client) — a `client/register.ts` found by the *same* `import.meta.glob` in [`diagramCanvases.ts`](../src/client/src/shell/panels/diagramCanvases.ts) (its pattern covers `editors/*/client/register.ts` too), matching on the editor's mime.
 - [Tests and examples](creating-a-diagram-module.md#tests-fixtures-and-examples) — xUnit v3 executable test projects, the CLAUDE.md test command, and `examples/` seeded into `src/examples/`. The two copies are not held in sync (see the linked section); what is checked in both trees is that every registration opens against the deployed catalog.
 
-The one shared piece with a family twist: an editor module's spec still comes first, and the family's own requirements live in the [`modular-text-editors`](../.spec-workflow/archive/specs/modular-text-editors/requirements.md) spec — the analogue of tech.md's diagram-type checklist.
+The one shared piece with a family twist: an editor module's spec still comes first, and the family's own requirements were written as the `modular-text-editors` specification — the analogue of tech.md's diagram-type checklist. That specification was archived and has since been removed from the working tree; its text is still in history, readable with `git show d573ad87^:.spec-workflow/archive/specs/modular-text-editors/requirements.md`.
 
 ## The definition, and what it claims
 
