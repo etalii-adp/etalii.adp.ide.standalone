@@ -157,11 +157,18 @@ describe("AnsibleCanvas", () => {
     // Assert.
     const role = container.querySelector('[data-element-id="role:nginx"] .ansible-node');
     expect(role?.getAttribute("class")).toContain("ansible-play-0");
-    // Nothing inline on the drawing: the palette lives in the stylesheet so a theme change is
-    // a CSS change. Scoped to the svg rather than the whole container, because the shared
-    // scrollbars below it position their thumbs inline - a thumb's offset is geometry, not
-    // theme, and it cannot be a class.
-    expect(container.querySelector("svg.library-canvas-surface [style]")).toBeNull();
+    // Nothing inline on the drawing but geometry: the palette lives in the stylesheet so a theme
+    // change is a CSS change. Scoped to the svg rather than the whole container, because the
+    // shared scrollbars below it position their thumbs inline - a thumb's offset is geometry, not
+    // theme, and it cannot be a class. A declared label's text-anchor is inline for the same
+    // reason: it is half of the x the layout computed, and a class rule must not re-anchor it.
+    // An allowlist rather than a list of colour properties, so a colour property nobody thought
+    // to name still fails here.
+    const geometry = new Set(["text-anchor"]);
+    const inline = Array.from(container.querySelectorAll<SVGElement>("svg.library-canvas-surface [style]"))
+      .flatMap((element) => Array.from(element.style))
+      .filter((property) => !geometry.has(property));
+    expect(inline).toEqual([]);
   });
 
 

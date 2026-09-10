@@ -40,7 +40,8 @@
   font-size: 10px;
 }
 
-/* A SPARQL constraint is drawn as an opaque row: extracted, never parsed, never run. */
-.shacl-row-sparql .shacl-row-path {
+/* A SPARQL constraint is drawn as an opaque row: extracted, never parsed, never run. Both
+   classes sit on the one text now - the row is no longer a group around it. */
+.shacl-row-path.shacl-row-sparql {
   font-style: italic;
 }

@@ -44,6 +44,43 @@ describe("labels — the single-label case, which is most modules", () => {
     expect(cut.text.endsWith("…")).toBe(true);
     expect(cut.text.length).toBeLessThan(40);
   });
+
+  it("truncates a side-aligned line or column to the room between its inset and the far edge, not to the whole box", () => {
+    // SHACL's summary column starts 110 into a 260 card. Trimmed to the whole box it kept 36
+    // characters - 252 wide by the estimate - and ran a hundred past the card's right edge. By
+    // the same 7-per-character estimate truncation uses, every cut line must end inside the box,
+    // eight short of the edge it runs towards.
+    const card = { x: 0, y: 0, width: 260, height: 80 };
+    const long = "or({ datatype xsd:string }, { class ex:Address }) and then some";
+    const rows = [{ path: long, summary: long, cardinality: long }];
+    const out = layoutLabels(
+      [
+        {
+          text: { path: "payload.rows", each: { path: "path" } },
+          align: "start",
+          insetX: 60,
+          truncate: true,
+          className: "path",
+          columns: [
+            { text: { path: "summary" }, insetX: 110, align: "start", truncate: true, className: "summary" },
+            { text: { path: "cardinality" }, insetX: 90, align: "end", truncate: true, className: "cardinality" },
+          ],
+        },
+      ],
+      source({ rows }),
+      card,
+    );
+    const byClass = (name: string) => out.find((line) => line.className === name)!;
+
+    for (const name of ["path", "summary"]) {
+      const line = byClass(name);
+      expect(line.text.endsWith("…")).toBe(true);
+      expect(line.x - card.x + line.text.length * 7).toBeLessThanOrEqual(card.width - 8);
+    }
+    const end = byClass("cardinality");
+    expect(end.text.endsWith("…")).toBe(true);
+    expect(end.x - end.text.length * 7).toBeGreaterThanOrEqual(card.x + 8);
+  });
 });
 
 describe("labels — owl-card, which is the acceptance", () => {

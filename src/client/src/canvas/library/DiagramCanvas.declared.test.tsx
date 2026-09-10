@@ -213,3 +213,53 @@ describe("edge attachment constrained to an axis (G20)", () => {
     expect(twoNodes("vertical")).toMatch(/^M 0 20 /);
   });
 });
+
+describe("a declared label's anchor reaches the screen - it is part of the geometry, not a style choice", () => {
+  // The layout computes a label's x FOR an anchor: `start` at the left inset, `middle` at the
+  // centre, `end` at the right inset. Written as an SVG presentation attribute, that anchor LOST
+  // to every stylesheet rule - an attribute sits below any author rule in the cascade, even a
+  // single class - so the library's own `.library-element-label { text-anchor: middle }` centred
+  // every start- and end-aligned line on its inset, and a module rule re-anchored the centred
+  // ones. Found in a browser on three diagram types the user reported (databricks, SHACL) and one
+  // nobody had (azure-pipeline's stage name, whose earlier fix never took visible effect). Every
+  // test before these read the ATTRIBUTE, which is exactly the half that cannot see it.
+  const anchorOf = (text: Element) => (text as SVGTextElement).style.getPropertyValue("text-anchor");
+
+  it.each(["start", "middle", "end"] as const)("carries a declared `%s` as an inline style, which no stylesheet rule outranks", (align) => {
+    const { container } = canvasOf({ labels: [{ text: { path: "payload.text" }, align, className: "a-line" }] }, { text: "Alpha" });
+
+    expect(anchorOf(container.querySelector('[data-element-id="a"] text.a-line')!)).toBe(align);
+  });
+
+  it("carries the default `middle` too, so a module rule cannot re-anchor a centred line", () => {
+    // The databricks name: centred by the layout, left-anchored by `.databricks-label`, so it
+    // STARTED at the centre and ran off the right edge. Leaving `middle` to CSS is what let it.
+    const { container } = canvasOf({ labels: [{ text: { path: "payload.text" }, className: "a-line" }] }, { text: "Alpha" });
+
+    expect(anchorOf(container.querySelector('[data-element-id="a"] text.a-line')!)).toBe("middle");
+  });
+
+  it("keeps the declared anchor against the library's own rule and a module rule that disagrees", () => {
+    // The cascade itself, as the browser resolves it: the library's rule and a module's, both
+    // present, and the computed anchor asked for - not the markup.
+    const sheet = document.createElement("style");
+    sheet.textContent = ".library-element-label { text-anchor: middle; } .a-module-label { text-anchor: start; }";
+    document.head.appendChild(sheet);
+    try {
+      const { container } = canvasOf(
+        {
+          labels: [
+            { text: { path: "payload.right" }, align: "end", className: "a-right" },
+            { text: { path: "payload.centre" }, className: "a-module-label" },
+          ],
+        },
+        { right: "Right", centre: "Centre" },
+      );
+
+      expect(getComputedStyle(container.querySelector("text.a-right")!).getPropertyValue("text-anchor")).toBe("end");
+      expect(getComputedStyle(container.querySelector("text.a-module-label")!).getPropertyValue("text-anchor")).toBe("middle");
+    } finally {
+      sheet.remove();
+    }
+  });
+});

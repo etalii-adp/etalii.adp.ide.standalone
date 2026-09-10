@@ -103,6 +103,9 @@ function definitionFor(connectable: boolean): DiagramDefinition {
             text: { path: "payload.label" },
             anchorTo: "top",
             offset: { x: 0, y: NODE_HEIGHT / 2 - 4 },
+            // Left, on the badge strip's edge, as the BoxElement drew it before the migration.
+            align: "start",
+            insetX: 8,
             editable: true,
             // The editor covers the whole box, as `placement: "inside"` did: this label sits
             // low in the box to leave room for the badge strip, but it is still the element's
@@ -151,6 +154,9 @@ function definitionFor(connectable: boolean): DiagramDefinition {
             text: { path: "payload.label" },
             anchorTo: "top",
             offset: { x: 0, y: NODE_HEIGHT / 2 - 4 },
+            // Left, on the badge strip's edge, as the BoxElement drew it before the migration.
+            align: "start",
+            insetX: 8,
             editable: true,
             // The editor covers the whole box, as `placement: "inside"` did: this label sits
             // low in the box to leave room for the badge strip, but it is still the element's

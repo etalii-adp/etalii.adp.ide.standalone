@@ -114,4 +114,22 @@ describe("the pipeline canvas", () => {
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal")).not.toBeNull();
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-vertical")).not.toBeNull();
   });
+
+  it("starts a task's name at the box's left inset, on the badge strip's edge, as before the migration", () => {
+    // The migration dropped the name's `align: "start"`: the layout centred it, and the old
+    // `.databricks-label { text-anchor: start }` rule then left-anchored text at the centre, so
+    // every long name ran out past the box's right edge. The x and its anchor are one fact -
+    // asked of the rendered text together, never of the declaration.
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    const pipeline = container.querySelector('[data-element-id="pipeline"]')!;
+    const name = pipeline.querySelector<SVGTextElement>("text.databricks-label")!;
+    const badges = pipeline.querySelector<SVGTextElement>("text.databricks-badges")!;
+    expect(name.style.getPropertyValue("text-anchor")).toBe("start");
+    // The pipeline box's left edge is at 320 in modelWith(); centred, the name would sit at 420.
+    expect(name.getAttribute("x")).toBe(String(320 + 8));
+    expect(name.getAttribute("x")).toBe(badges.getAttribute("x"));
+  });
 });

@@ -57,7 +57,7 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: () => [],
 }));
 
-const { ShaclCanvas } = await import("./ShaclCanvas");
+const { ShaclCanvas, CARD_WIDTH } = await import("./ShaclCanvas");
 
 const PERSON = "res:http://example.org/PersonShape";
 const ADDRESS = "res:http://example.org/AddressShape";
@@ -127,6 +127,33 @@ describe("ShaclCanvas", () => {
     expect(container.textContent).toContain("targets class ex:Person");
     expect(container.textContent).toContain("ex:name");
     expect(container.textContent).toContain("[1..1]");
+  });
+
+  it("keeps a row inside its card: the path wears its sized class, and a long summary is cut before the edge", () => {
+    // Two defects on one row of the W3C spec examples. The migration put `shacl-row` on the
+    // path's text but not `shacl-row-path`, the class shacl.css sizes to 11px, so every path
+    // drew at the browser's 16px. And the summary - drawn 110 in, untruncated since before the
+    // migration - ran a hundred past the card's right edge.
+    const summary = "or({ datatype xsd:string }, { class ex:Address })";
+    currentModel = modelWith({
+      shapes: new Map([
+        [PERSON, shape(PERSON, "ex:PersonAddressShape", 0, 0, {
+          rows: [{ path: "ex:address", name: "", summary, cardinality: "[0..*]", sparql: false, blank: true, severity: "" }],
+        })],
+      ]),
+    });
+
+    const { container } = renderCanvas();
+
+    const path = [...container.querySelectorAll("text.shacl-row")].find((text) => text.textContent === "ex:address")!;
+    expect(path.classList.contains("shacl-row-path")).toBe(true);
+    const drawn = container.querySelector("text.shacl-row-summary")!;
+    expect(drawn.textContent!.endsWith("…")).toBe(true);
+    expect(summary.startsWith(drawn.textContent!.slice(0, -1))).toBe(true);
+    // The path's x is the card's left edge plus its 8 inset; by truncation's own 7-per-character
+    // estimate the summary must end eight short of the right edge.
+    const left = Number(path.getAttribute("x")) - 8;
+    expect(Number(drawn.getAttribute("x")) - left + drawn.textContent!.length * 7).toBeLessThanOrEqual(CARD_WIDTH - 8);
   });
 
   it("renders an absent target exactly like a present one", () => {
