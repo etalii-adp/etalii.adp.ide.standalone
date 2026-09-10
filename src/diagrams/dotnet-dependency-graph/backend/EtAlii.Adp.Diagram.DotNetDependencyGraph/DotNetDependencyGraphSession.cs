@@ -43,6 +43,9 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> _delivered = [];
 
+    /// <summary>Guards <see cref="_delivered"/>; see <see cref="Rediff"/>.</summary>
+    private readonly Lock _deliveredGate = new();
+
     public DotNetDependencyGraphSession(
         string solutionPath,
         DependencyGraphStore store,
@@ -68,14 +71,25 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
             _watcher = new SolutionWatcher(_store.WatchedFiles(solutionPath));
             _watcher.Stale += OnSolutionStale;
         }
+
+        // A position change arrives through the history, never through the watcher - see
+        // OnHistoryChanged. Not conditional on `watch`: this is the answer to a user's own
+        // gesture, not a notice about files changing underneath the diagram.
+        if (_history is not null)
+        {
+            _history.Changed += OnHistoryChanged;
+        }
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        _delivered = _mapper.Elements(_store.GetOrLoad(_solutionPath), Stored());
-        return _delivered.Count == 0 ? [] : [new DiagramAddDelta(_delivered)];
+        lock (_deliveredGate)
+        {
+            _delivered = _mapper.Elements(_store.GetOrLoad(_solutionPath), Stored());
+            return _delivered.Count == 0 ? [] : [new DiagramAddDelta(_delivered)];
+        }
     }
 
     /// <summary>
@@ -84,12 +98,57 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// culling is a scale answer rather than a rendering one - task 13 measures this repository's
     /// own solution and decides what "too large to read" requires.
     /// </summary>
-    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
+    public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport) => Rediff(_store.GetOrLoad(_solutionPath));
+
+    /// <summary>
+    /// Renders the graph with the positions the registration holds now, and returns what differs
+    /// from what was last delivered - recording the new rendering as delivered.
+    /// </summary>
+    /// <remarks>
+    /// One place, under one lock, because three callers write <see cref="_delivered"/> from three
+    /// threads: a view update on a request, a refresh on the watcher's, and a history change on
+    /// whichever request ran the command. Unlocked, two of them interleaving could each diff
+    /// against the other's stale "before" and one push would be lost - which, for a move, is
+    /// exactly the defect this class was just fixed for. The event is raised by the caller,
+    /// OUTSIDE the lock, as <c>HistoryStack</c> does: a subscriber that re-enters cannot deadlock.
+    /// </remarks>
+    private IReadOnlyList<DiagramDelta> Rediff(DependencyGraphModel graph)
     {
-        var after = _mapper.Elements(_store.GetOrLoad(_solutionPath), Stored());
-        var deltas = _mapper.Diff(_delivered, after);
-        _delivered = after;
-        return deltas;
+        lock (_deliveredGate)
+        {
+            var after = _mapper.Elements(graph, Stored());
+            var deltas = _mapper.Diff(_delivered, after);
+            _delivered = after;
+            return deltas;
+        }
+    }
+
+    /// <summary>
+    /// A command ran, or was undone or redone, somewhere in this project - so push whatever the
+    /// stored positions now say.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is what a drag was missing.</b> A move writes the position into the registration
+    /// and nothing more; the watcher covers the solution and its projects but not the
+    /// registration, so no delta followed, and the element stayed where it was dropped FROM until
+    /// a zoom asked <see cref="UpdateView"/> for the same diff this pushes. Undo and redo of a
+    /// move had the identical gap, which is why this listens to the history rather than being a
+    /// line at the end of <see cref="MoveElementToAsync"/>: the history is the one thing that
+    /// sees all three.
+    /// <para>
+    /// The history is the PROJECT's, so this also runs when another diagram's command lands.
+    /// That costs a render against the cached graph and a diff that comes back empty - nothing is
+    /// re-parsed and nothing is pushed - which is cheaper than a second, narrower mechanism that
+    /// could miss one of the three.
+    /// </para>
+    /// </remarks>
+    private void OnHistoryChanged(object? sender, EventArgs args)
+    {
+        var deltas = Rediff(_store.GetOrLoad(_solutionPath));
+        if (deltas.Count > 0)
+        {
+            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
+        }
     }
 
     /// <summary>
@@ -150,9 +209,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
     /// </remarks>
     public void Refresh()
     {
-        var after = _mapper.Elements(_store.Reload(_solutionPath), Stored());
-        var deltas = _mapper.Diff(_delivered, after);
-        _delivered = after;
+        var deltas = Rediff(_store.Reload(_solutionPath));
 
         if (deltas.Count > 0)
         {
@@ -178,6 +235,13 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         {
             _watcher.Stale -= OnSolutionStale;
             _watcher.Dispose();
+        }
+
+        // The history outlives this session - it is the project's - so an unremoved handler would
+        // keep a closed diagram alive and re-rendering on every command anyone runs.
+        if (_history is not null)
+        {
+            _history.Changed -= OnHistoryChanged;
         }
 
         return ValueTask.CompletedTask;
