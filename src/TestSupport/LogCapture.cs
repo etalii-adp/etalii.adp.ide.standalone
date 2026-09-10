@@ -3,64 +3,105 @@ using System.Runtime.CompilerServices;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Display;
+using Xunit;
 
 namespace EtAlii.Adp;
 
 /// <summary>
-/// Collects everything written to Serilog while it is active, so a test can assert on what
-/// the code under test said.
+/// Collects what the TEST THAT STARTED IT caused to be logged, so it can assert on what the
+/// code under test said - and nothing any other test logged while it was open.
 /// </summary>
 /// <remarks>
-/// The code under test logs through <c>Log.ForContext&lt;T&gt;()</c> held in a static field,
-/// which binds to whatever <see cref="Log.Logger"/> was when that field was first touched -
-/// so the pipeline has to be in place before any of it runs. The module initializer below
-/// does that once for the whole test assembly, and each capture only decides where the
-/// events it receives are collected.
 /// <para>
-/// That single pipeline is shared, so two captures alive at once would each see the other's
-/// events, and a class logging without capturing would drop its events into someone else's
-/// capture. Every class that logs or captures therefore names <see cref="Collection"/>,
-/// which is what keeps them from running at the same time.
+/// <b>What it captures:</b> every event written while the capture is open by code running on
+/// the starting test's own flow - the test method, its constructor, the subject, every
+/// collaborator the subject calls whatever source context it logs under, and work the test
+/// awaits on the thread pool, since that carries the test's execution context with it.
+/// </para>
+/// <para>
+/// <b>What it does not:</b> events from other tests, however they overlap in time; and events
+/// logged on a thread that does NOT carry the test's execution context - a
+/// <see cref="FileSystemWatcher"/> callback, a thread started under
+/// <see cref="ExecutionContext.SuppressFlow"/>. Such an event belongs to no test, so no
+/// capture sees it. That is the class this design gives up in exchange for isolation; a test
+/// whose subject warns from such a thread cannot assert on it here.
+/// </para>
+/// <para>
+/// <b>Why it is scoped by test and not by schedule.</b> The pipeline is process-wide - the
+/// code under test binds its static <c>Log.ForContext&lt;T&gt;()</c> fields to whatever
+/// <see cref="Log.Logger"/> was when they were first touched, so the module initializer below
+/// installs one pipeline for the whole assembly before anything runs. This class used to hold
+/// ONE active capture on that shared pipeline, isolated only by every class that logs or
+/// captures naming <see cref="Collection"/>. That failed two ways. A test that logged without
+/// joining dropped its warnings into someone else's capture - eighteen of nineteen test
+/// classes in the databricks assembly never joined, because every class that exercises code
+/// which warns "logs", which is most of them, so the rule could not be kept - and
+/// <c>DatabricksDocumentStoreMissingBodyTests</c> failed its <c>Assert.Empty</c> in a full
+/// run while passing alone. And a concurrent <see cref="Start"/> REPLACED the active capture
+/// rather than joining it, so the first stopped receiving its own events and presence
+/// assertions could fail too. Both are pinned deterministically in
+/// <c>EtAlii.Adp.Tests/LogCapture.Tests.cs</c>. Scoping by the test that started the capture
+/// needs no membership anyone has to remember.
 /// </para>
 /// </remarks>
 public sealed class LogCapture : IDisposable
 {
-    /// <summary>The xUnit collection every class that logs or captures belongs to, so none of them overlap.</summary>
+    /// <summary>
+    /// An xUnit collection some classes still name. It no longer isolates anything - a capture
+    /// now collects only its own test's events whether or not its class joins - and a new
+    /// class need not name it. Kept only because existing classes do.
+    /// </summary>
     public const string Collection = "Serilog pipeline";
 
     /// <summary>Renders a message the way the host's console sink does, so what a test asserts on is what an operator reads.</summary>
     private static readonly MessageTemplateTextFormatter Formatter = new("{Message:lj}", CultureInfo.InvariantCulture);
 
     private static readonly Lock Gate = new();
-    private static LogCapture? _active;
+
+    /// <summary>Every open capture - several at once when tests run in parallel, each with its own owner.</summary>
+    private static readonly List<LogCapture> Open = [];
+
+    /// <summary>The test that started this capture, or null when it was started outside any test.</summary>
+    private readonly string? _owner;
 
     private readonly List<LogEvent> _events = [];
 
     /// <summary>
-    /// Collects one event into whichever capture is active, dropping it when none is. Called
-    /// by <see cref="LogCaptureCaptureSink"/>, which sits beside this class rather than inside
-    /// it (tech.md is no-nested-types rule) and so cannot reach the gate or the active capture
-    /// directly.
+    /// Collects one event into every open capture belonging to the test that is running where
+    /// the event was logged, dropping it when there is none. Called by
+    /// <see cref="LogCaptureCaptureSink"/>, which sits beside this class rather than inside it
+    /// (tech.md is no-nested-types rule) and so cannot reach the open captures directly.
     /// </summary>
     internal static void Receive(LogEvent logEvent)
     {
+        var test = CurrentTest();
         lock (Gate)
         {
-            _active?._events.Add(logEvent);
+            foreach (var capture in Open)
+            {
+                if (string.Equals(capture._owner, test, StringComparison.Ordinal))
+                {
+                    capture._events.Add(logEvent);
+                }
+            }
         }
     }
 
-    private LogCapture()
+    private LogCapture(string? owner)
     {
+        _owner = owner;
     }
 
-    /// <summary>Starts collecting; dispose to stop. Only one capture is active at a time.</summary>
+    /// <summary>
+    /// Starts collecting the running test's events; dispose to stop. Any number may be open at
+    /// once, and each sees only its own test.
+    /// </summary>
     public static LogCapture Start()
     {
-        var capture = new LogCapture();
+        var capture = new LogCapture(CurrentTest());
         lock (Gate)
         {
-            _active = capture;
+            Open.Add(capture);
         }
 
         return capture;
@@ -87,12 +128,15 @@ public sealed class LogCapture : IDisposable
     {
         lock (Gate)
         {
-            if (ReferenceEquals(_active, this))
-            {
-                _active = null;
-            }
+            Open.Remove(this);
         }
     }
+
+    /// <summary>
+    /// The test running on this flow - the same for its constructor and its method, which
+    /// xUnit v3 keeps in one context - or null on a flow no test started.
+    /// </summary>
+    private static string? CurrentTest() => TestContext.Current.Test?.UniqueID;
 
     private IEnumerable<string> Rendered(LogEventLevel level) =>
         Events.Where(logEvent => logEvent.Level == level).Select(Render).ToArray();
