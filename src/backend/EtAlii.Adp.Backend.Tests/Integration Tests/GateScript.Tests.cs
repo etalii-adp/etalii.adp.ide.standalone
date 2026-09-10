@@ -30,7 +30,10 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class GateScriptTests
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(5);
+    // Generous on purpose: the suite drives a few hundred git processes, which took 35 s on a quiet
+    // machine and 209 s on a slow one the same day. A timeout here fails a gate for the wrong reason;
+    // nothing in the suite waits for input, so a real hang is the unlikely case.
+    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(15);
 
     [Fact]
     public async Task SelfTestIsGreen()
