@@ -5,12 +5,13 @@
 #
 #   name   the worktree's directory name under .claude/worktrees/
 #
-# `git worktree remove` on this machine deregisters a worktree and then, on the long paths a client
-# gate leaves in node_modules, fails to delete it - leaving a directory without its .git that
-# answers every git command for the MAIN CHECKOUT until somebody deletes it by hand. Every worktree
-# that ran the client gate is one of those waiting to happen. So this deletes node_modules first,
-# by absolute path, and only then asks git to remove the worktree: the husk is never made, rather
-# than handled safely afterwards.
+# `git worktree remove` on this machine deregisters a worktree and then, on the long paths a build
+# leaves behind, fails to delete it - leaving a directory without its .git that answers every git
+# command for the MAIN CHECKOUT until somebody deletes it by hand. Every worktree that ran the gates
+# is one of those waiting to happen. So this never asks git to delete the tree: it deletes it by
+# absolute path, its .git file last, and only then prunes the registration. The husk is never made,
+# rather than handled safely afterwards. (The first version deleted node_modules and then called
+# `git worktree remove`; the long paths were also in dotnet's obj/, and it left a husk every time.)
 #
 # Refuses, before deleting anything: a copy that is not develop's; a caller whose shell is inside
 # the worktree; a directory that is not a registered worktree of its own - a husk, the main
@@ -117,22 +118,33 @@ if [ -n "$OUTSIDE" ]; then
   exit 1
 fi
 
-# --- Delete what makes git's own removal fail, then let git remove the worktree.
-while IFS= read -r modules; do
-  rm -rf "$modules"
-  if [ -e "$modules" ]; then echo "RESULT=node-modules-not-deleted ($modules)"; exit 1; fi
-done < <(find "$T" -path "$T/.git" -prune -o -type d -name node_modules -prune -print 2> /dev/null)
-REMOVE_OUT=$(git -C "$MAIN" worktree remove "$T" 2>&1)
-REMOVE_EXIT=$?
-
-# --- From here on, no git command runs in $T: if it survived, it is a husk.
-if [ -e "$T" ]; then
-  printf '%s\n' "$REMOVE_OUT"
-  echo "Left behind (listed with file tools):"
-  ls -A "$T" | head -20
-  echo "RESULT=removed-but-directory-survived (git remove exit $REMOVE_EXIT; if it was deregistered this is now a husk - look, then delete it by hand)"
+# --- Delete the working tree by absolute path, then its registration. Not `git worktree remove`:
+# --- it deregisters first and then stops at Windows' 260-character limit, and the long paths are
+# --- wherever a build put them - node_modules, and dotnet's obj/ (measured up to 265 characters,
+# --- e.g. .../obj/Debug/net10.0/<Module>.GeneratedMSBuildEditorConfig.editorconfig). The first
+# --- version deleted node_modules only, and every real retirement after it still left a husk.
+# --- rm -rf has no such limit. The .git file goes LAST, so until the tree is empty the directory
+# --- is still a worktree of its own - never a husk; a delete that stops early leaves a registered
+# --- worktree with files missing, every one of them on develop, restorable with git checkout.
+echo "Deleting $T by absolute path, its .git file last, then pruning its registration."
+while IFS= read -r entry; do
+  rm -rf "$entry"
+done < <(find "$T" -mindepth 1 -maxdepth 1 ! -name .git 2> /dev/null)
+LEFT=$(find "$T" -mindepth 1 -maxdepth 1 ! -name .git 2> /dev/null | head -10)
+if [ -n "$LEFT" ]; then
+  printf '%s\n' "$LEFT"
+  echo "RESULT=could-not-empty-worktree (still registered, still its own worktree, not a husk - something holds these files; stop what holds them and run retire.sh again)"
   exit 1
 fi
+rm -f "$T/.git"
+rmdir "$T" 2> /dev/null
+if [ -e "$T" ]; then
+  echo "Left behind (listed with file tools):"
+  ls -A "$T" | head -20
+  echo "RESULT=directory-survived (its .git is gone: run no git command in it; look, then delete it by hand)"
+  exit 1
+fi
+git -C "$MAIN" worktree prune
 while IFS= read -r line; do
   case "$line" in
     "worktree "*) if [ "$(gate_canon "${line#worktree }")" = "$T_C" ]; then echo "RESULT=still-registered"; exit 1; fi ;;
