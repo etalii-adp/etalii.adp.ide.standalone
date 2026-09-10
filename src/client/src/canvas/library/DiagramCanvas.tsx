@@ -225,6 +225,11 @@ interface ElementDragOffset {
   id: string;
   dx: number;
   dy: number;
+  /**
+   * Released, and waiting for the model to confirm where it landed - still drawn at the drop,
+   * no longer being dragged. See the release in the element case below.
+   */
+  held?: boolean;
 }
 
 /** A span resize in flight, in canvas units - the amendment's first added kind (R1.5). */
@@ -341,6 +346,25 @@ export function DiagramCanvas({
   // which is the user's "prefer the timeline drag" benchmark answered with a number.
   const dragValue = useMemo(() => createGestureValue<ElementDragOffset>(), []);
   const dragFrameRef = useRef<GestureFrame<ElementDragOffset> | null>(null);
+  /** The element held at its drop, and where the model had it before - see the release. */
+  const heldDropRef = useRef<{ id: string; fromX: number; fromY: number } | null>(null);
+
+  // THE MODEL'S ANSWER RELEASES THE HOLD. Once the element sits somewhere other than where the
+  // drag found it, the model is placing it and the held offset must go - left in place it would
+  // be applied a second time on top of the confirmed position. An element that left the model
+  // releases it too, since there is nothing left to hold.
+  useEffect(() => {
+    const held = heldDropRef.current;
+    if (held === null) {
+      return;
+    }
+
+    const element = model.elements.find((candidate) => candidate.id === held.id);
+    if (element === undefined || element.x !== held.fromX || element.y !== held.fromY) {
+      heldDropRef.current = null;
+      dragValue.clear();
+    }
+  }, [model.elements, dragValue]);
   const connectValue = useMemo(() => createGestureValue<ConnectPreview>(), []);
   const connectFrameRef = useRef<GestureFrame<ConnectPreview> | null>(null);
   const resizeValue = useMemo(() => createGestureValue<ResizeDragPreview>(), []);
@@ -668,6 +692,7 @@ export function DiagramCanvas({
           }
           // The frame begins on the first move: the rect is read here, once, and served
           // for the gesture's life - no layout read per pointer frame (Requirement 1.3).
+          heldDropRef.current = null; // a new gesture replaces any drop still awaiting its answer
           const frame = (dragFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(dragValue)]));
           const dragScale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
           const at = dragLanding(definition, target.element, dx * dragScale, dy * dragScale);
@@ -738,25 +763,48 @@ export function DiagramCanvas({
           if (!draggingEnabled(target.element)) {
             break;
           }
-          // The commit undoes the live publication and the state write below paints the
-          // final position - the same code path as before the gesture, in one React batch,
-          // so nothing flickers (design, The commit and the abandon).
           const frame = dragFrameRef.current;
           dragFrameRef.current = null;
           const dragScale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
-          frame?.commit();
           // Under an automatic layout the definition says what the drag MEANS (Requirement
           // 8.4): a reclaimed displacement raises nothing - the next layout pass takes the
           // element back - while repin-to-manual raises the move, and the module answers by
           // recording the position its manual placement will then honour.
           if (activeLayoutMode !== "manual" && (definition.layout.dragUnderAutomaticLayout ?? "repin-to-manual") === "reclaimed-displacement") {
+            frame?.commit();
             break;
           }
-          raise({
-            kind: "element-moved",
-            elementId: target.element.id,
-            position: dragLanding(definition, target.element, dx * dragScale, dy * dragScale),
-          });
+
+          const landing = dragLanding(definition, target.element, dx * dragScale, dy * dragScale);
+
+          // HOLD THE DROP UNTIL THE MODEL ANSWERS, instead of reverting at once.
+          //
+          // The release used to undo the live publication immediately, on the assumption that the
+          // module writes the new position in the same React batch - so nothing flickers. That
+          // holds for a module with local state and not for one that asks its backend and waits,
+          // which is most of them: between release and the confirming delta the element was drawn
+          // at the model's position, the OLD one. Ansible showed it as a flash back to where the
+          // drag began; dotnet-dependency-graph, whose backend also failed to confirm at all,
+          // showed it until a zoom forced a redraw. So the offset now stays - no longer a drag,
+          // still drawn - and the model's next position for this element releases it.
+          //
+          // NOT for a drop that is a PROPOSAL. A definition that declares a `dropTarget` (the
+          // mindmap) means a drop re-parents, and the element's resulting place is the layout's,
+          // not the cursor's - holding it at the cursor would be showing a position it will never
+          // have. Nor for a drop that landed where it started: there is nothing to wait for.
+          const positional = definition.dropTarget === undefined;
+          const moved = landing.x !== target.element.x || landing.y !== target.element.y;
+          if (positional && moved) {
+            frame?.cancel(); // stop the frame WITHOUT reverting what it published
+            heldDropRef.current = { id: target.element.id, fromX: target.element.x, fromY: target.element.y };
+            // Set explicitly rather than trusting the last frame: frames coalesce, and the drop
+            // must be drawn at exactly the landing the module is told about.
+            dragValue.set({ id: target.element.id, dx: landing.x - target.element.x, dy: landing.y - target.element.y, held: true });
+          } else {
+            frame?.commit();
+          }
+
+          raise({ kind: "element-moved", elementId: target.element.id, position: landing });
           break;
         }
         case "resize": {
@@ -1791,11 +1839,13 @@ function LibraryElement({
   const resizing: DiagramModelElement = resize
     ? { ...shifted, x: bounds.x + bounds.width / 2, width: bounds.width }
     : shifted;
-  const groupState = { selected, dragging: offset !== null, connectTarget: connectHighlight === "valid" };
+  // A HELD offset is drawn but is no longer a drag - it must not keep the dragging look.
+  const dragging = offset !== null && offset.held !== true;
+  const groupState = { selected, dragging, connectTarget: connectHighlight === "valid" };
   const classes = [
     "library-element",
     selected ? "canvas-selected" : "",
-    offset ? "library-element-dragging" : "",
+    dragging ? "library-element-dragging" : "",
     connectHighlight === "valid" ? "library-connect-target" : "",
     connectHighlight === "invalid" ? "library-connect-forbidden" : "",
     // The declared half that belongs to the element rather than to its body.
@@ -1820,7 +1870,7 @@ function LibraryElement({
       aria-label={accessibleName ?? undefined}
     >
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
-        {renderShape(resizing, type, bounds, { selected, dragging: offset !== null, connectTarget: connectHighlight === "valid" })}
+        {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" })}
       </ShapeErrorBoundary>
       {resizable && selected && (
         // The resize adorners a user-sized element earns when selected: each edge strip

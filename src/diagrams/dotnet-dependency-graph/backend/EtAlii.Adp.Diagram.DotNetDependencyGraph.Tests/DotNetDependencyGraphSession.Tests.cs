@@ -46,15 +46,25 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         public Task<CommandResult> ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
         {
             Executed.Add(command);
-            Changed?.Invoke(this, EventArgs.Empty);
 
             if (command is SetRegistrationLayoutCommand layout)
             {
                 RegistrationLayout.SetPosition(layout.AdpPath, layout.ElementId, new RegistrationPosition(layout.X, layout.Y));
             }
 
+            // AFTER the write, as HistoryStack.ExecuteAsync does - it raises Changed once the
+            // command has run and been recorded. This double used to raise it first, which was
+            // harmless while nothing listened and would have made a listener read the OLD file.
+            Changed?.Invoke(this, EventArgs.Empty);
             return Task.FromResult(CommandResult.Success());
         }
+
+        /// <summary>
+        /// What the real stack does after an undo or a redo has rewritten the file: say so. Lets
+        /// a test put a position back the way an inverse would and then announce it, without
+        /// this double growing a second copy of undo.
+        /// </summary>
+        public void AnnounceChange() => Changed?.Invoke(this, EventArgs.Empty);
 
         public Task<CommandResult> UndoAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(CommandResult.Success());
@@ -303,5 +313,82 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         {
             // A temp folder a virus scanner still holds is not a test failure.
         }
+    }
+
+
+    // ---- a move reaches the connection that made it -----------------------------------------
+
+    // THE DEFECT THESE GUARD. Every test above that checks a stored position does it by opening a
+    // FRESH session and reading its baseline - which proves the registration was written and says
+    // nothing about the session that is already open. That was the whole bug: the position was
+    // written, nothing was pushed, and the element stayed where it was dropped from until a zoom
+    // asked UpdateView for the diff. So each of these subscribes to the session that is open.
+
+    [Fact]
+    public async Task AMove_IsPushedToTheOpenSession_WithoutWaitingForAViewUpdate()
+    {
+        // Arrange.
+        var (solution, registration) = Seed();
+        var session = SessionFor(solution, registration, new DirectHistoryStack());
+        session.Baseline();
+        var pushed = new List<DiagramDelta>();
+        session.Changed += (_, args) => pushed.AddRange(args.Deltas);
+
+        // Act.
+        var error = await session.MoveElementToAsync("project:App/App.csproj", 321, 654, CancellationToken.None);
+
+        // Assert. Pushed, by the move itself - no UpdateView, no Refresh, no zoom.
+        Assert.Equal("", error);
+        var moved = Assert.Single(
+            pushed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
+            element => element.Id == "project:App/App.csproj");
+        Assert.Equal(321, moved.X);
+        Assert.Equal(654, moved.Y);
+    }
+
+    [Fact]
+    public async Task AnUndoneMove_IsPushedToo()
+    {
+        // The same gap had a second door: undo and redo rewrite the registration through the
+        // project's history, never through this session, so they were invisible in exactly the
+        // same way. The session listens to the history for that reason, and this is the proof.
+        var (solution, registration) = Seed();
+        var history = new DirectHistoryStack();
+        var session = SessionFor(solution, registration, history);
+        session.Baseline();
+        await session.MoveElementToAsync("project:App/App.csproj", 321, 654, CancellationToken.None);
+
+        var pushed = new List<DiagramDelta>();
+        session.Changed += (_, args) => pushed.AddRange(args.Deltas);
+
+        // Act. What an undo's inverse does to the file, then what the real stack does after it.
+        RegistrationLayout.SetPosition(registration, "project:App/App.csproj", new RegistrationPosition(10, 20));
+        history.AnnounceChange();
+
+        // Assert.
+        var restored = Assert.Single(
+            pushed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
+            element => element.Id == "project:App/App.csproj");
+        Assert.Equal(10, restored.X);
+        Assert.Equal(20, restored.Y);
+    }
+
+    [Fact]
+    public async Task AClosedSession_StopsListeningToTheProjectsHistory()
+    {
+        // The history is the PROJECT's and outlives any one diagram. A session that never let go
+        // would keep a closed diagram alive, re-rendering on every command anybody runs.
+        var (solution, registration) = Seed();
+        var history = new DirectHistoryStack();
+        var session = SessionFor(solution, registration, history);
+        session.Baseline();
+        var pushed = 0;
+        session.Changed += (_, _) => pushed++;
+
+        await session.DisposeAsync();
+        RegistrationLayout.SetPosition(registration, "project:App/App.csproj", new RegistrationPosition(77, 88));
+        history.AnnounceChange();
+
+        Assert.Equal(0, pushed);
     }
 }
