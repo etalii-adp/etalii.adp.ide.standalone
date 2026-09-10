@@ -49,6 +49,20 @@ gate_is_develops() {
   done
 }
 
+# gate_tree_matches_head <dir> - 0 when the worktree's tracked CONTENT is its HEAD's, 1 when it
+# differs, 2 when it cannot be read. Content, not `git status`: the client's pretest regenerates
+# src/client/src/generated/ with LF over a CRLF checkout, and status reports every such file as
+# modified with nothing in it changed - the shared gate's first real run, all four gates green,
+# refused on exactly that. `git diff` compares after the same normalisation git applies on commit.
+gate_tree_matches_head() {
+  git -C "$1" diff --quiet HEAD -- 2> /dev/null
+  case $? in
+    0) return 0 ;;
+    1) return 1 ;;
+    *) return 2 ;;
+  esac
+}
+
 # gate_verdict <dotnet-log> - judges the four gates. Reads NPM_INSTALL_EXIT, NPM_TEST_EXIT,
 # TC_EXIT, FMT_EXIT and DT_EXIT; sets VERDICT (green|refused), WHY, DT_TOTAL and DT_FAILED.
 #
