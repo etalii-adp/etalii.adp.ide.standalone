@@ -40,7 +40,7 @@ esac
 
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "RESULT=aborted-cannot-locate-script"; exit 3; }
 . "$HERE/gate-lib.sh" 2>/dev/null
-if ! type gate_canon gate_main_checkout gate_is_develops > /dev/null 2>&1; then
+if ! type gate_canon gate_main_checkout gate_is_develops gate_tree_matches_head > /dev/null 2>&1; then
   echo "RESULT=aborted-library-missing ($HERE/gate-lib.sh)"
   exit 3
 fi
@@ -84,11 +84,27 @@ while IFS= read -r line; do
 done < <(git -C "$MAIN" worktree list --porcelain)
 if [ "$REGISTERED" != yes ]; then echo "RESULT=not-registered ($T is not in git's worktree list)"; exit 1; fi
 
-# --- Would anything be lost?
-CHANGES=$(git -C "$T" status --porcelain) || { echo "RESULT=cannot-read-status"; exit 1; }
-if [ -n "$CHANGES" ]; then
-  printf '%s\n' "$CHANGES"
-  echo "RESULT=uncommitted-changes"
+# --- Would anything be lost? Tracked files by CONTENT, not by `git status`: a worktree that ran the
+# --- client tests has its generated files rewritten with other line endings, which status calls
+# --- modified with nothing changed - the shared gate's first bug, and this script's first real
+# --- refusal. Untracked files are a separate question and a separate answer.
+gate_tree_matches_head "$T"
+case $? in
+  0) ;;
+  1)
+    git -C "$T" diff --stat HEAD --
+    echo "RESULT=uncommitted-changes"
+    exit 1
+    ;;
+  *)
+    echo "RESULT=cannot-read-status"
+    exit 1
+    ;;
+esac
+UNTRACKED=$(git -C "$T" ls-files --others --exclude-standard) || { echo "RESULT=cannot-read-status"; exit 1; }
+if [ -n "$UNTRACKED" ]; then
+  printf '%s\n' "$UNTRACKED" | head -20
+  echo "RESULT=untracked-files (not ignored, so possibly somebody's work - move or delete them yourself, then retire)"
   exit 1
 fi
 HEAD_SHA=$(git -C "$T" rev-parse --verify -q HEAD) || { echo "RESULT=cannot-read-head"; exit 1; }

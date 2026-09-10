@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=113; else EXPECTED=103; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=116; else EXPECTED=106; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -356,10 +356,12 @@ mkrepo "$R3" || broken "cannot create the third repository"
 mkdir -p "$R3/.github/tools/gate" && cp "$HERE/gate-lib.sh" "$HERE/retire.sh" "$R3/.github/tools/gate/"
 printf 'node_modules/\nobj/\n' > "$R3/.gitignore"
 mkdir -p "$R3/src/client/pkg" && echo client > "$R3/src/client/pkg/x.txt"
+# A generated file with a CRLF checkout, as src/client/src/generated/*_pb.ts are.
+printf '*.ts text eol=crlf\n' > "$R3/.gitattributes" && printf 'export const a = 1;\n' > "$R3/src/client/gen_pb.ts"
 # A real module path from this repository: the one whose build output passed 260 characters.
 MOD="src/diagrams/diagrams-python-cloud-infrastructure/backend/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure"
 mkdir -p "$R3/$MOD" && echo '<Project />' > "$R3/$MOD/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure.csproj"
-git -C "$R3" add .github .gitignore src && git -C "$R3" commit -q -m "the tools and a workspace package" || broken "cannot commit retire.sh"
+git -C "$R3" add .github .gitignore .gitattributes src 2> /dev/null && git -C "$R3" commit -q -m "the tools and a workspace package" || broken "cannot commit retire.sh"
 RS="$R3/.github/tools/gate/retire.sh"
 WT3="$R3/.claude/worktrees"
 mkdir -p "$WT3"
@@ -387,6 +389,20 @@ new_wt dirty1 || broken "cannot build the dirty worktree"
 echo change > "$WT3/dirty1/src/client/pkg/x.txt"
 out=$(retire dirty1)
 report "1:uncommitted-changes" "$?:$(result_of "$out")" "a worktree with uncommitted work is refused"
+# retire.sh's first real use refused a clean scratch tree over exactly this: generated files the
+# client tests rewrote with LF over a CRLF checkout - modified to git status, unchanged in content.
+new_wt ph1 || broken "cannot build the line-ending worktree"
+[ "$(tr -cd '\r' < "$WT3/ph1/src/client/gen_pb.ts" | wc -c)" -gt 0 ] || broken "the generated file was not checked out CRLF"
+sleep 1
+printf 'export const a = 1;\n' > "$WT3/ph1/src/client/gen_pb.ts"
+[ -n "$(git -C "$WT3/ph1" status --porcelain 2> /dev/null)" ] || broken "status does not report the LF rewrite, so the case would test nothing"
+out=$(retire ph1)
+report "0:retired" "$?:$(result_of "$out")" "a worktree whose generated files were only rewritten with other line endings is retired"
+new_wt un1 || broken "cannot build the untracked-file worktree"
+echo "a note nobody committed" > "$WT3/un1/notes.txt"
+out=$(retire un1)
+report "1:untracked-files" "$?:$(result_of "$out")" "a worktree with an untracked, unignored file is refused"
+report yes "$([ -f "$WT3/un1/notes.txt" ] && echo yes || echo no)" "... and the file is still there"
 new_wt ahead1 || broken "cannot build the unlanded worktree"
 echo work > "$WT3/ahead1/w.txt" && git -C "$WT3/ahead1" add w.txt && git -C "$WT3/ahead1" commit -q -m "unlanded work"
 out=$(retire ahead1)
