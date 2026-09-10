@@ -75,10 +75,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         // A position change arrives through the history, never through the watcher - see
         // OnHistoryChanged. Not conditional on `watch`: this is the answer to a user's own
         // gesture, not a notice about files changing underneath the diagram.
-        if (_history is not null)
-        {
-            _history.Changed += OnHistoryChanged;
-        }
+        _history?.Changed += OnHistoryChanged;
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
@@ -239,10 +236,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
 
         // The history outlives this session - it is the project's - so an unremoved handler would
         // keep a closed diagram alive and re-rendering on every command anyone runs.
-        if (_history is not null)
-        {
-            _history.Changed -= OnHistoryChanged;
-        }
+        _history?.Changed -= OnHistoryChanged;
 
         return ValueTask.CompletedTask;
     }
