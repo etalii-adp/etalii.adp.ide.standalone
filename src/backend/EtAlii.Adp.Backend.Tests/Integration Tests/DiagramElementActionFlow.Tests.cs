@@ -190,7 +190,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         // The typed text is the NEW node's, and it appears exactly once - a second occurrence
         // would be the add having run again under the user's answer.
-        Assert.Equal(1, Regex.Matches(map, Regex.Escape("Chosen by the user")).Count);
+        Assert.Single(Regex.Matches(map, Regex.Escape("Chosen by the user")));
         var newNodeLine = map.Split('\n').Single(line => line.Contains($"ID=\"{newNodeId}\"", StringComparison.Ordinal));
         Assert.Contains("Chosen by the user", newNodeLine, StringComparison.Ordinal);
     }

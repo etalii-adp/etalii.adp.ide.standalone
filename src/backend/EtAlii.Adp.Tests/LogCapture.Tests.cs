@@ -90,8 +90,7 @@ public class LogCaptureTests
 
         // Act.
         Log.ForContext("SourceContext", "A.Collaborator").Warning("On the test's own thread {Sentinel}", sentinel);
-        await Task.Run(() =>
-            Log.ForContext("SourceContext", "Another.Collaborator").Warning("On a pooled thread the test awaited {Sentinel}", sentinel));
+        await Task.Run(() => Log.ForContext("SourceContext", "Another.Collaborator").Warning("On a pooled thread the test awaited {Sentinel}", sentinel), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(2, capture.Warnings.Count(warning => warning.Contains(sentinel, StringComparison.Ordinal)));
