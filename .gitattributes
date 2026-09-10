@@ -77,6 +77,11 @@
 # the subject rather than the content.
 src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtures/** -text
 
+# The shared gate's fixtures are real runner logs, and the CRLF dotnet writes is part of what the
+# gate's verdict is tested against: a log normalised to LF on commit would test a shape no real
+# run produces. The folder holds only such logs, so a folder rule is exact here.
+.github/tools/gate/fixtures/** -text
+
 # The databricks module's fixtures, scoped the same way and for the same reason - with one turn
 # tighter. What the by-extension rule above wants is for the guarantee to follow the format: a
 # byte-compared document type earns one `-text` line naming its extension. The databricks module
