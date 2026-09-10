@@ -12,10 +12,17 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The scope is <b>exactly the delivered list</b>, not a repository-wide crawl:
-/// <c>docs/diagrams.md</c> and the module readmes predate the documentation spec and are not
-/// retro-guarded here. Widening the net is a later decision, deliberately not smuggled into
-/// this guard.
+/// The scope is <b>exactly the listed documents</b>, not a repository-wide crawl. The module
+/// readmes predate the documentation spec and are not retro-guarded here.
+/// </para>
+/// <para>
+/// <b><c>docs/diagrams.md</c> joined the list on 2026-09-10, and HTML links with it.</b> Until
+/// then this guard read only markdown <c>[text](target)</c> links in five documents, and the
+/// catalog is an HTML table of <c>&lt;a href&gt;</c> links. When archived specifications were
+/// deleted from the tree, five documentation links went dead: this guard saw one, the markdown
+/// link in <c>creating-an-editor-module.md</c>. The other four were catalog <c>href</c>s - three
+/// of them dead for a day with the build green, because the guard checked one <i>form</i> of a
+/// link and read the absence of that form as the absence of dead links.
 /// </para>
 /// <para>
 /// Absolute URLs are ignored, not fetched - no network in tests - and in-page anchors are the
@@ -32,6 +39,7 @@ public partial class DocumentationLinksTests
         "docs/creating-a-diagram-module.md",
         "docs/creating-an-editor-module.md",
         "docs/screenshots/readme.md",
+        "docs/diagrams.md",
     ];
 
     private static string RepositoryRoot { get; } = Locate();
@@ -69,6 +77,7 @@ public partial class DocumentationLinksTests
         // Arrange.
         var dead = new List<string>();
         var checkedLinks = 0;
+        var checkedHtmlLinks = 0;
 
         foreach (var document in Documents)
         {
@@ -79,7 +88,14 @@ public partial class DocumentationLinksTests
             }
 
             var folder = IoPath.GetDirectoryName(fullPath)!;
-            foreach (Match match in LinkExpression().Matches(File.ReadAllText(fullPath)))
+            var text = File.ReadAllText(fullPath);
+
+            // Both forms a document in this tree links with: markdown targets, and the href and
+            // src attributes of HTML written inside markdown - the catalog's table is the latter.
+            var targets = LinkExpression().Matches(text).Select(match => (Html: false, Match: match))
+                .Concat(HtmlLinkExpression().Matches(text).Select(match => (Html: true, Match: match)));
+
+            foreach (var (isHtml, match) in targets)
             {
                 var target = match.Groups["target"].Value.Trim();
 
@@ -99,6 +115,11 @@ public partial class DocumentationLinksTests
                 }
 
                 checkedLinks++;
+                if (isHtml)
+                {
+                    checkedHtmlLinks++;
+                }
+
                 var resolved = IoPath.GetFullPath(IoPath.Combine(folder, file.Replace('/', IoPath.DirectorySeparatorChar)));
                 if (!File.Exists(resolved) && !Directory.Exists(resolved))
                 {
@@ -118,6 +139,13 @@ public partial class DocumentationLinksTests
             checkedLinks >= 40,
             $"Only {checkedLinks} relative links were extracted from {Documents.Length} delivered documents; LinkExpression() has stopped matching.");
 
+        // The same canary for the HTML form, separately: the markdown count alone would stay
+        // above its floor with HtmlLinkExpression() matching nothing, which is the exact
+        // blindness this pattern was added to end. The catalog carries its own relative hrefs.
+        Assert.True(
+            checkedHtmlLinks >= 5,
+            $"Only {checkedHtmlLinks} relative HTML links were extracted; HtmlLinkExpression() has stopped matching, and the catalog's links are unchecked again.");
+
         Assert.True(dead.Count == 0, "Dead documentation links:" + Environment.NewLine + string.Join(Environment.NewLine, dead));
     }
 
@@ -128,4 +156,12 @@ public partial class DocumentationLinksTests
     /// </summary>
     [GeneratedRegex(@"!?\[[^\]]*\]\((?<target>[^)\s]+)(?:\s+""[^""]*"")?\)")]
     private static partial Regex LinkExpression();
+
+    /// <summary>
+    /// An HTML link or image target written inside a markdown document: the quoted value of an
+    /// <c>href</c> or <c>src</c> attribute. Added because <c>docs/diagrams.md</c>'s catalog is an
+    /// HTML table, whose links the markdown pattern cannot see - see the remarks above.
+    /// </summary>
+    [GeneratedRegex(@"\b(?:href|src)\s*=\s*[""'](?<target>[^""']+)[""']", RegexOptions.IgnoreCase)]
+    private static partial Regex HtmlLinkExpression();
 }
