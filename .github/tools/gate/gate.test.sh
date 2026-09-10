@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=109; else EXPECTED=101; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=113; else EXPECTED=103; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -354,8 +354,11 @@ link_dir() { # <link> <target> - a directory link the way npm makes one here: a 
 R3="$W/repo3"
 mkrepo "$R3" || broken "cannot create the third repository"
 mkdir -p "$R3/.github/tools/gate" && cp "$HERE/gate-lib.sh" "$HERE/retire.sh" "$R3/.github/tools/gate/"
-echo "node_modules/" > "$R3/.gitignore"
+printf 'node_modules/\nobj/\n' > "$R3/.gitignore"
 mkdir -p "$R3/src/client/pkg" && echo client > "$R3/src/client/pkg/x.txt"
+# A real module path from this repository: the one whose build output passed 260 characters.
+MOD="src/diagrams/diagrams-python-cloud-infrastructure/backend/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure"
+mkdir -p "$R3/$MOD" && echo '<Project />' > "$R3/$MOD/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure.csproj"
 git -C "$R3" add .github .gitignore src && git -C "$R3" commit -q -m "the tools and a workspace package" || broken "cannot commit retire.sh"
 RS="$R3/.github/tools/gate/retire.sh"
 WT3="$R3/.claude/worktrees"
@@ -420,6 +423,39 @@ if [ "$MSYS" = 1 ]; then
   out=$(retire long1)
   report "0:retired" "$?:$(result_of "$out")" "retire.sh retires the same long-path tree"
   report no "$([ -e "$WT3/long1" ] && echo yes || echo no)" "... and leaves no husk"
+  # The failure that happened for real, twice, after the first version shipped: no node_modules
+  # at all, the long path in dotnet's ignored obj/ under a real module - the file a build leaves.
+  build_output() { # <worktree> - the obj/ file a dotnet build writes under that module
+    local f="$1/$MOD/obj/Debug/net10.0/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure.GeneratedMSBuildEditorConfig.editorconfig"
+    mkdir -p "$(dirname "$f")" && echo "is_global = true" > "$f" &&
+      [ "$(printf '%s' "$(cygpath -w "$f")" | wc -c)" -gt 260 ]
+  }
+  git -C "$R3" worktree add -q -b b-obj1 "$WT3/obj1" develop && build_output "$WT3/obj1" || broken "cannot build the obj/ long-path worktree past 260 characters"
+  git -C "$R3" worktree add -q -b b-obj2 "$WT3/obj2" develop && build_output "$WT3/obj2" || broken "cannot build the obj/ long-path control"
+  [ -z "$(git -C "$WT3/obj1" status --porcelain)" ] || broken "the planted obj/ output is not ignored"
+  git -C "$R3" worktree remove "$WT3/obj2" > /dev/null 2>&1
+  [ -e "$WT3/obj2" ] || broken "plain git worktree remove cleared the obj/ tree, so the case would test nothing"
+  report yes "$([ -e "$WT3/obj2" ] && [ ! -e "$WT3/obj2/.git" ] && echo yes || echo no)" "control: plain git worktree remove on a build's obj/ tree leaves a husk, as it did for real"
+  rm -rf "$WT3/obj2"
+  out=$(retire obj1)
+  report "0:retired" "$?:$(result_of "$out")" "retire.sh retires the same obj/ tree"
+  report no "$([ -e "$WT3/obj1" ] && echo yes || echo no)" "... and leaves no husk"
+  report no "$(git -C "$R3" worktree list --porcelain | grep -q '/obj1$' && echo yes || echo no)" "... and nothing is left registered"
+else
+  # A delete that stops early must leave a worktree of its own, never a husk. On Linux a directory
+  # without write permission is enough to stop rm; Windows has no equally cheap way to hold a file.
+  new_wt stuck1 || broken "cannot build the stuck worktree"
+  mkdir -p "$WT3/stuck1/src/held" && echo held > "$WT3/stuck1/src/held/f.txt" && git -C "$WT3/stuck1" add src/held/f.txt &&
+    git -C "$WT3/stuck1" commit -q -m held && git -C "$R3" merge -q --ff-only b-stuck1 || broken "cannot land the stuck worktree's commit"
+  chmod 555 "$WT3/stuck1/src/held"
+  if touch "$WT3/stuck1/src/held/probe" 2> /dev/null; then
+    chmod 755 "$WT3/stuck1/src/held"
+    broken "a read-only directory is still writable here (running as root?), so the stopped-delete case would test nothing"
+  fi
+  out=$(retire stuck1)
+  report "1:could-not-empty-worktree" "$?:$(result_of "$out")" "a delete that stops early is reported"
+  report yes "$([ -f "$WT3/stuck1/.git" ] && [ "$(git -C "$WT3/stuck1" rev-parse --show-toplevel 2> /dev/null)" = "$WT3/stuck1" ] && echo yes || echo no)" "... and leaves a worktree of its own, not a husk"
+  chmod 755 "$WT3/stuck1/src/held"
 fi
 
 echo "SELFTEST cases=$N wrong=$WRONG expected=$EXPECTED"
