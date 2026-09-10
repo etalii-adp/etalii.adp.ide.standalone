@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=90; else EXPECTED=86; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=109; else EXPECTED=101; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -342,6 +342,85 @@ git -C "$R2" switch -q develop
 out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
 report "0:landed" "$?:$(result_of "$out")" "land.sh lands the gated commit"
 report "$MERGED" "$(git -C "$R2" rev-parse develop)" "... and develop is exactly that commit"
+
+echo "== retire.sh, in a throwaway repository"
+link_dir() { # <link> <target> - a directory link the way npm makes one here: a junction on Windows
+  if [ "$MSYS" = 1 ]; then
+    MSYS_NO_PATHCONV=1 cmd /c mklink /J "$(cygpath -w "$1")" "$(cygpath -w "$2")" > /dev/null
+  else
+    ln -s "$2" "$1"
+  fi
+}
+R3="$W/repo3"
+mkrepo "$R3" || broken "cannot create the third repository"
+mkdir -p "$R3/.github/tools/gate" && cp "$HERE/gate-lib.sh" "$HERE/retire.sh" "$R3/.github/tools/gate/"
+echo "node_modules/" > "$R3/.gitignore"
+mkdir -p "$R3/src/client/pkg" && echo client > "$R3/src/client/pkg/x.txt"
+git -C "$R3" add .github .gitignore src && git -C "$R3" commit -q -m "the tools and a workspace package" || broken "cannot commit retire.sh"
+RS="$R3/.github/tools/gate/retire.sh"
+WT3="$R3/.claude/worktrees"
+mkdir -p "$WT3"
+retire() { (cd "$W" && bash "$RS" "$@" 2>&1); }
+new_wt() { # <name> - a landed worktree on its own branch; its ignored node_modules links to its own package, as npm's do
+  git -C "$R3" worktree add -q -b "b-$1" "$WT3/$1" develop && mkdir -p "$WT3/$1/src/node_modules" &&
+    link_dir "$WT3/$1/src/node_modules/pkg" "$WT3/$1/src/client/pkg"
+}
+new_wt ok1 || broken "cannot build a worktree to retire"
+[ -n "$(find "$WT3/ok1/src/node_modules" -type l)" ] || broken "the planted node_modules link is not seen as a link"
+[ -z "$(git -C "$WT3/ok1" status --porcelain)" ] || broken "the planted node_modules is not ignored"
+DEV3=$(git -C "$R3" rev-parse develop)
+
+out=$(retire)
+report "1:missing-arguments" "$?:$(result_of "$out")" "retire.sh without a name"
+out=$(retire ../ok1)
+report "1:bad-name" "$?:$(result_of "$out")" "a name that climbs out of .claude/worktrees"
+out=$(retire nothing1)
+report "1:no-such-directory" "$?:$(result_of "$out")" "a name with no directory"
+mkdir -p "$WT3/husk3/src" && echo source > "$WT3/husk3/src/f.txt"
+out=$(retire husk3)
+report "1:target-is-a-husk" "$?:$(result_of "$out")" "a husk is refused, not deleted"
+report yes "$([ -f "$WT3/husk3/src/f.txt" ] && echo yes || echo no)" "... and its files are still there"
+new_wt dirty1 || broken "cannot build the dirty worktree"
+echo change > "$WT3/dirty1/src/client/pkg/x.txt"
+out=$(retire dirty1)
+report "1:uncommitted-changes" "$?:$(result_of "$out")" "a worktree with uncommitted work is refused"
+new_wt ahead1 || broken "cannot build the unlanded worktree"
+echo work > "$WT3/ahead1/w.txt" && git -C "$WT3/ahead1" add w.txt && git -C "$WT3/ahead1" commit -q -m "unlanded work"
+out=$(retire ahead1)
+report "1:unlanded-commits" "$?:$(result_of "$out")" "a worktree with commits not on develop is refused"
+new_wt out1 || broken "cannot build the outside-link worktree"
+mkdir -p "$W/outside" && echo "must survive" > "$W/outside/sentinel.txt"
+link_dir "$WT3/out1/src/node_modules/away" "$W/outside"
+[ -f "$WT3/out1/src/node_modules/away/sentinel.txt" ] || broken "the outside link does not reach the sentinel, so it tests nothing"
+out=$(retire out1)
+report "1:link-outside" "$?:$(result_of "$out")" "a worktree with a link out of itself is refused"
+report yes "$([ -f "$W/outside/sentinel.txt" ] && [ -d "$WT3/out1" ] && echo yes || echo no)" "... and nothing was deleted, inside or out"
+out=$(cd "$WT3/ok1/src" && bash "$RS" ok1 2>&1)
+report "1:cwd-inside-target" "$?:$(result_of "$out")" "retiring the worktree your shell is in is refused"
+out=$(retire ok1)
+report "0:retired" "$?:$(result_of "$out")" "a landed, clean worktree is retired"
+report no "$([ -e "$WT3/ok1" ] && echo yes || echo no)" "... its directory is gone"
+report no "$(git -C "$R3" worktree list --porcelain | grep -q '/ok1$' && echo yes || echo no)" "... it is no longer registered"
+report yes "$(git -C "$R3" rev-parse -q --verify b-ok1 > /dev/null && echo yes || echo no)" "... and its branch was kept"
+report "$DEV3" "$(git -C "$R3" rev-parse develop)" "... and develop did not move"
+if [ "$MSYS" = 1 ]; then
+  # The failure this script exists for: node_modules nested past Windows' 260-character limit.
+  deep() { # <worktree> - bury a file past MAX_PATH inside its node_modules
+    local d="$1/src/node_modules" i=0
+    while [ "$(printf '%s' "$(cygpath -w "$d")" | wc -c)" -lt 300 ]; do d="$d/a-deeply-nested-package-$i"; i=$((i + 1)); done
+    mkdir -p "$d" && echo deep > "$d/index.js"
+  }
+  new_wt long1 && deep "$WT3/long1" || broken "cannot build the long-path worktree"
+  new_wt long2 && deep "$WT3/long2" || broken "cannot build the long-path control"
+  git -C "$R3" worktree remove "$WT3/long2" > /dev/null 2>&1
+  [ -e "$WT3/long2" ] || broken "plain git worktree remove cleared a >260-character tree, so the long-path case would test nothing"
+  report no "$(git -C "$R3" worktree list --porcelain | grep -q '/long2$' && echo yes || echo no)" "control: plain git worktree remove deregistered the long-path tree ..."
+  report yes "$([ -e "$WT3/long2" ] && echo yes || echo no)" "... and left its directory behind - a husk"
+  rm -rf "$WT3/long2"
+  out=$(retire long1)
+  report "0:retired" "$?:$(result_of "$out")" "retire.sh retires the same long-path tree"
+  report no "$([ -e "$WT3/long1" ] && echo yes || echo no)" "... and leaves no husk"
+fi
 
 echo "SELFTEST cases=$N wrong=$WRONG expected=$EXPECTED"
 if [ "$N" = "$EXPECTED" ] && [ "$WRONG" = 0 ]; then

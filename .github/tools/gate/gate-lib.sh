@@ -25,6 +25,16 @@ extract_guard() {
   printf '%s\n' "$blk"
 }
 
+# gate_canon <path> - one spelling per path, for comparisons: Windows form where cygpath exists,
+# lower case, no trailing slash. The same definition as the guard's canon() in processes.md. When
+# cygpath is missing the raw path is kept, so on Windows every comparison fails - closed - rather
+# than every path becoming the same empty string.
+gate_canon() {
+  local p
+  p=$(cygpath -m "$1" 2> /dev/null) || p=$1
+  printf '%s' "$p" | tr '[:upper:]' '[:lower:]' | sed 's:/*$::'
+}
+
 # gate_main_checkout <dir> - prints the main checkout of the repository <dir> belongs to: the
 # parent of the shared git directory, which is the same answer from the main checkout and from
 # every worktree. Fails when there is no such thing.
