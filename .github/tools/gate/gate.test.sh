@@ -17,6 +17,15 @@
 #
 # Ends in RESULT=selftest-green only when every case ran - the count must equal EXPECTED, so a
 # case that silently stops running is a failure too - and none was wrong.
+#
+# The fixtures are real dotnet logs, CRLF as dotnet writes it, from 2026-09-10 and before:
+# dotnet-green.log (Architect 1's scratch gate), dotnet-green-2.log and dotnet-red-flaky.log
+# (Developer 1: a genuine flaky failure, runner exit 2; one account name in a failure message
+# replaced, nothing else touched), dotnet-truncated-midflight.log and dotnet-invocation-error.log
+# (Developer 3: a run cut off while still listing assemblies, and dotnet's own one-line invocation
+# error - a run that tested nothing and never says "Zero tests ran"). Real logs alone would pass a
+# naive "green unless a failure is mentioned" verdict (Developer 1 measured it), so the variants
+# built from them, each differing in exactly one property, are what do the catching.
 set -u
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY
 
@@ -27,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=65; else EXPECTED=61; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=71; else EXPECTED=67; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -57,8 +66,12 @@ report() { # <want> <got> <name> [detail]
     echo "WRONG  $3 (want $1, got $2) ${4:-}"
   fi
 }
+REAL_TOP=$(git -C "$ROOT" rev-parse --show-toplevel)
 mkrepo() {
-  git init -q "$1" && git -C "$1" commit -q --allow-empty -m init && git -C "$1" config extensions.worktreeConfig true
+  # Asserted, not assumed: a git init that failed would leave a path that resolves to whatever
+  # repository contains it - the husk hazard, inside the harness.
+  git init -q "$1" && git -C "$1" commit -q --allow-empty -m init && git -C "$1" config extensions.worktreeConfig true &&
+    [ -z "$(git -C "$1" rev-parse --show-cdup)" ] && [ "$(git -C "$1" rev-parse --show-toplevel)" != "$REAL_TOP" ]
 }
 fingerprint() { # a main checkout's state: its branch, its tip, its configuration, its tracked files
   printf '%s|%s|%s|%s' "$(git -C "$1" symbolic-ref -q HEAD)" "$(git -C "$1" rev-parse HEAD)" \
@@ -95,6 +108,8 @@ mkdir -p "$WT/dangle1" && echo "gitdir: $W/nowhere" > "$WT/dangle1/.git"
 RT=$(git -C "$R" rev-parse --show-toplevel)
 [ "$(git -C "$WT/husk1" rev-parse --show-toplevel 2> /dev/null)" = "$RT" ] ||
   broken "the planted husk does not resolve to its main checkout, so it would test nothing"
+git -C "$WT/feat1" symbolic-ref -q HEAD > /dev/null || broken "the planted feature worktree is not on a branch"
+git -C "$WT/mrgd1" symbolic-ref -q HEAD > /dev/null && broken "the planted scratch tree is not detached"
 FP_R=$(fingerprint "$R")
 
 guard_on() { # <path> - PASS if the guard verifies the path, ABORT if it refuses, ERROR otherwise
@@ -153,6 +168,21 @@ for f in truncated failed3 total0 nofailedline; do
 done
 grep -q 'failed: 3' "$V/failed3.log" || broken "variant failed3 does not say failed: 3"
 tr -d '\r' < "$V/truncated.log" | grep -q 'total:' && broken "variant truncated still has its summary"
+# Developer 1's shape: cut at the summary, then an exit line appended after the runner returned.
+sed -b '/Test run summary/,$d' "$REAL" > "$V/trunc-exit.log" && printf 'GATE4_DOTNET_TEST_EXIT=0\n' >> "$V/trunc-exit.log"
+tr -d '\r' < "$V/trunc-exit.log" | grep -q 'total:' && broken "variant trunc-exit still has its summary"
+GREEN2="$FIX/dotnet-green-2.log"
+RED="$FIX/dotnet-red-flaky.log"
+MID="$FIX/dotnet-truncated-midflight.log"
+INV="$FIX/dotnet-invocation-error.log"
+for f in "$GREEN2" "$RED" "$MID" "$INV"; do
+  [ "$(tr -cd '\r' < "$f" 2> /dev/null | wc -c)" -gt 0 ] || broken "fixture $f is missing or not CRLF"
+done
+tr -d '\r' < "$GREEN2" | grep -q '^ *failed: 0$' || broken "the second green log does not say failed: 0"
+tr -d '\r' < "$RED" | grep -q '^ *failed: 1$' || broken "the red log does not say failed: 1"
+tr -d '\r' < "$MID" | grep -qE 'total:|Test run summary' && broken "the mid-flight log has a summary after all"
+grep -q 'Specify either' "$INV" || broken "the invocation-error log is not the invocation error"
+grep -q 'Zero tests ran' "$INV" && broken "the invocation-error log says Zero tests ran, so it would not test the phrase check's blind spot"
 
 verdict_of() { # <log> [NAME=value...] - the verdict with every gate at 0 unless overridden
   local log=$1 kv
@@ -179,6 +209,12 @@ report refused "$(verdict_of "$REAL" TC_EXIT=2)" "typecheck exits 2"
 report refused "$(verdict_of "$REAL" FMT_EXIT=1)" "format exits 1"
 report refused "$(verdict_of "$REAL" NPM_INSTALL_EXIT=1)" "npm install exits 1"
 report refused "$(verdict_of "")" "no log path at all"
+report refused "$(verdict_of "$V/trunc-exit.log")" "truncated at its summary with an exit line appended after"
+report green "$(verdict_of "$GREEN2")" "a second real green run, another author's: green"
+report refused "$(verdict_of "$RED" DT_EXIT=2)" "a real red run (a flaky test, runner exit 2)"
+report refused "$(verdict_of "$RED")" "... and with its exit recorded as 0 the log alone refuses"
+report refused "$(verdict_of "$MID")" "a real run cut off mid-flight, every exit 0"
+report refused "$(verdict_of "$INV")" "a real invocation error that tested nothing and never says Zero tests ran"
 
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"
