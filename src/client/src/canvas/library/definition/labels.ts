@@ -110,6 +110,15 @@ function alignedX(align: "start" | "middle" | "end", bounds: ShapeBounds, insetX
 /** How far from an edge an aligned label or column sits, when it does not say. */
 const LABEL_INSET = 8;
 
+/**
+ * The width a truncated line or column may fill: the whole box when centred, and from its inset
+ * to the far edge when aligned to a side. Trimming a side-aligned line to the whole box let a
+ * column starting 110 into a 260 card keep 252 of text, and run a hundred past the edge.
+ */
+function roomOf(align: "start" | "middle" | "end" | undefined, bounds: ShapeBounds, insetX: number = LABEL_INSET): number {
+  return align === "start" || align === "end" ? bounds.width - insetX : bounds.width;
+}
+
 function placementOf(
   declaration: LabelDeclaration,
   bounds: ShapeBounds,
@@ -225,7 +234,7 @@ export function layoutLabels(
 
         const align = column.align ?? "start";
         laidOut.push({
-          text: column.truncate ? trimmedToWidth(text, bounds.width) : text,
+          text: column.truncate ? trimmedToWidth(text, roomOf(align, bounds, column.insetX)) : text,
           x: alignedX(align, bounds, column.insetX),
           y,
           anchor: align,
@@ -240,7 +249,7 @@ export function layoutLabels(
       }
 
       laidOut.push({
-        text: declaration.truncate ? trimmedToWidth(line, bounds.width) : line,
+        text: declaration.truncate ? trimmedToWidth(line, roomOf(declaration.align, bounds, declaration.insetX)) : line,
         x: base.x,
         y,
         anchor: base.anchor,

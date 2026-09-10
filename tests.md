@@ -2668,3 +2668,94 @@ with real content in `e6b7407b` - and `24a3ca56` put two of those nodes straight
   and none on the fixed one. **The human read has not been done corpus-wide** - the mindmap and
   causal-loop examples were read in the app, the other fourteen diagram types were not. Whoever
   runs this next starts there.
+
+## Every label stays inside its element, measured rather than read (label layout, 2026-09-10)
+
+Reported by the user on three diagrams: text outside the elements on the databricks pipeline,
+and a broken text layout on the C4 and SHACL cards. **Five causes, and the first is the one every
+module shares**:
+
+1. **A declared label's anchor lost to the stylesheet.** The layout computes an x *for* an
+   anchor, and the renderer wrote that anchor as a `text-anchor` *attribute*. A presentation
+   attribute loses to every author CSS rule, and `canvas.css` says
+   `.library-element-label { text-anchor: middle }`, so every start- and end-aligned label was
+   re-centred on its own left or right inset and drew half outside its box. This is why the
+   task 17 entry above recorded the Azure stage name as fixed with `text-anchor="start"`: the
+   attribute was right, and the screen was not. Fixed in `DiagramCanvas`'s declared labels: the
+   anchor is now an inline style, and inline style outranks the stylesheet.
+2. **Databricks lost its name's alignment in the migration.** The name was declared centred, and
+   the leftover `.databricks-label { text-anchor: start }` then anchored it at the centre, so it
+   ran out of the right edge. Its `align: "start"` is restored and the rule removed.
+3. **C4 never wrapped a description**, not even before the migration. The backend sizes cards
+   for a wrapped description, but the canvas drew it as one line.
+4. **C4 drew a clamped card's type line whole.** A long technology ran past a 240 card.
+5. **SHACL lost `shacl-row-path` in the migration**, so paths drew at the browser's 16px. Its
+   combinator summaries have never been truncated. Library truncation also measured a side-aligned
+   line against the whole box rather than the space from its inset, so asking for truncation
+   would not have helped.
+
+**The split, and why this entry exists.** jsdom sees the DOM and cascades injected `<style>`
+rules, so the guards for causes 1-5 are unit tests, and each was seen to fail first:
+`DiagramCanvas.declared.test.tsx` (anchor inline, and a computed anchor through an injected
+stylesheet), `PipelineCanvas.test.tsx` and `JobCanvas.test.tsx` (one per declaration),
+`C4Canvas.test.tsx`, `ShaclCanvas.test.tsx` and `labels.test.ts`. **What jsdom cannot do is
+lay out text**: a width there is a character count times an estimate, so no unit test can say
+whether real glyphs fit. That half is the browser's, and it is this entry.
+
+- **Preconditions**: backend + client running from the worktree on your reserved ports, browsing
+  the backend's port; `src/examples` open as a project.
+- **Steps**: open each diagram below. In the browser's console, paste the function, then call
+  `measure()` on each tab:
+  ```js
+  function measure() {
+    const svg = document.querySelector("svg.library-canvas-surface");
+    const box = (el) => { const b = el.getBBox(), m = el.getCTM();
+      const p = [[b.x, b.y], [b.x + b.width, b.y + b.height]].map(([x, y]) => [m.a*x + m.c*y + m.e, m.b*x + m.d*y + m.f]);
+      return { x0: Math.min(p[0][0], p[1][0]), x1: Math.max(p[0][0], p[1][0]), y0: Math.min(p[0][1], p[1][1]), y1: Math.max(p[0][1], p[1][1]) }; };
+    const out = []; let labels = 0, mismatched = 0, overlaps = 0;
+    for (const el of svg.querySelectorAll("g.library-element")) {
+      const shapes = [...el.querySelectorAll("rect,path,polygon,ellipse,circle")].filter((s) => !s.closest("foreignObject"));
+      if (!shapes.length) continue;
+      const s = shapes.map(box).reduce((a, b) => ({ x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), y0: Math.min(a.y0, b.y0), y1: Math.max(a.y1, b.y1) }));
+      const texts = [...el.querySelectorAll("text")].filter((t) => t.textContent.trim()).map((t) => ({ t, b: box(t) }));
+      for (const { t, b } of texts) {
+        labels++;
+        const declared = t.style.getPropertyValue("text-anchor");
+        if (declared && declared !== getComputedStyle(t).textAnchor) mismatched++;
+        if (b.x0 < s.x0 - 0.5 || b.x1 > s.x1 + 0.5 || b.y0 < s.y0 - 0.5 || b.y1 > s.y1 + 0.5) out.push(`outside: ${el.dataset.elementId} "${t.textContent}"`);
+      }
+      texts.forEach((a, i) => texts.slice(i + 1).forEach((b) => {
+        if (Math.min(a.b.x1, b.b.x1) - Math.max(a.b.x0, b.b.x0) > 0.5 && Math.min(a.b.y1, b.b.y1) - Math.max(a.b.y0, b.b.y0) > 0.5) { overlaps++; out.push(`overlap: ${el.dataset.elementId} "${a.t.textContent}" / "${b.t.textContent}"`); }
+      }));
+    }
+    return `labels ${labels}, anchor mismatches ${mismatched}, overlaps ${overlaps}\n` + out.join("\n");
+  }
+  ```
+  1. `diagrams/databricks/lakehouse/databricks.pipeline.adp`
+  2. `diagrams/c4/industrial-plant/architecture/`: all five `bottling-mes*.adp` views that draw
+     elements (`mes-containers` and `plant-deployment` are the ones that failed)
+  3. `diagrams/shacl/w3c-shacl/spec-examples.adp`
+  4. `diagrams/azure-pipeline/example 1/edge-indentation.adp`, the task 17 stage name
+- **Expected**: 0 anchor mismatches, 0 overlaps, and nothing `outside` except a C4 boundary's
+  name, which is declared `placement: "above"` its dashed frame. A long C4 description wraps
+  inside its card, a long type line and a long SHACL summary end in `…`, and SHACL row paths
+  draw at 11px.
+- **Before you trust a zero**: plant one. Move a label onto its neighbour in the same card
+  (`setAttribute("x"/"y", …)`), check that `measure()` reports it, then put it back, including
+  its inline `text-anchor`, because clearing the style hands the anchor straight back to the
+  stylesheet.
+- **Result**: 2026-09-10 in `.claude/worktrees/ll3`, backend 5093 / client 5193, developer
+  session. **Before**: the pipeline's long names out of the right edge by up to 17 and every
+  badge strip out of the left by 9. 8 of 13 SHACL labels outside (paths, cardinalities,
+  targets). The Azure stage name at a computed `middle` under an attribute that said `start`,
+  and out of its card. 13 of 23 mes-containers descriptions outside, on one line each. Three
+  plant-deployment type lines 249-250 wide in 240 cards. **After**: pipeline
+  11 labels, 0 outside; SHACL 13, 0 outside, paths 11px, summary cut; C4 views 0 outside apart
+  from the two boundary names (mes-containers, order-service-components); Azure `start`
+  inline and computed. There were 0 anchor mismatches and 0 overlaps everywhere, and the planted
+  overlap was reported.
+  - **Not covered**: `bottling-mes.batch-release.adp`, the dynamic view, draws no elements at
+    all, only its title. So no text there was measured, and an empty canvas is a separate
+    question from this one.
+  - **Left standing**: a C4 name is not truncated. The backend clamps cards at 240, so a name
+    over about 34 characters at 13px would still run out. No example has one.

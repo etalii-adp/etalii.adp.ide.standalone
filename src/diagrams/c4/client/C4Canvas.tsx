@@ -42,6 +42,54 @@ type C4BoundaryElement = DiagramModelElement & { boundary: C4BoundaryBox };
 const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2", "insert": "Insert", "delete": "Delete" };
 
 /**
+ * How many characters of the card's two small lines fit across it. The type line and the
+ * description are drawn at 10px (c4.css); `C4Metrics` in the module's backend estimates 0.55 of
+ * the font size per character and pads 12 either side. The browser draws these lines nearer
+ * 0.48, so the estimate errs towards fitting. It sizes cards at 14px, not 10, so a description
+ * wrapped here always takes at most the lines the backend made the card tall for.
+ */
+function charactersAcross(width: number): number {
+  return Math.max(1, Math.floor((width - 2 * 12) / (10 * 0.55)));
+}
+
+/**
+ * The type line as drawn: whole when it fits, cut with an ellipsis when it does not. The
+ * backend clamps a card at 240 wide however long the technology is, and reserves one line.
+ */
+function typeLineFitted(typeLine: string, width: number): string {
+  const across = charactersAcross(width);
+  return typeLine.length <= across ? typeLine : `${typeLine.slice(0, across - 1)}…`;
+}
+
+/**
+ * A description broken into lines at spaces, each no wider than {@link charactersAcross}. A
+ * single word longer than a line is cut, since nothing else keeps it inside the card.
+ */
+function descriptionLines(description: string, width: number): string[] {
+  const perLine = charactersAcross(width);
+  const lines: string[] = [];
+  let current = "";
+  for (let word of description.split(/\s+/).filter((part) => part.length > 0)) {
+    if (current.length > 0 && current.length + 1 + word.length <= perLine) {
+      current = `${current} ${word}`;
+      continue;
+    }
+    if (current.length > 0) {
+      lines.push(current);
+    }
+    while (word.length > perLine) {
+      lines.push(word.slice(0, perLine));
+      word = word.slice(perLine);
+    }
+    current = word;
+  }
+  if (current.length > 0) {
+    lines.push(current);
+  }
+  return lines;
+}
+
+/**
  * What a C4 view allows, stated once: element cards that drag, rename their NAME line in
  * place and speak F2/Delete/Insert; boundaries that enclose and ignore every gesture; one
  * dashed, arrowed, labelled relationship whose editor opens with the authored description
@@ -84,10 +132,14 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
           className: "c4-node-type",
         },
         {
-          text: { path: "payload.description" },
+          // The description, on the lines the backend made the card tall enough for. It was
+          // one line, so anything longer than the card ran out of both sides - the backend
+          // sized for a wrap nobody drew. 14 apart: the description's 10px at C4Metrics' 1.4.
+          text: { path: "payload.descriptionLines", each: { path: "text" } },
           anchorTo: "top",
           offset: { x: 0, y: 58 },
-          when: { path: "payload.description", is: "non-empty" },
+          stack: { lineHeight: 14 },
+          when: { path: "payload.descriptionLines", is: "non-empty" },
           className: "c4-node-description",
         },
       ],
@@ -179,8 +231,8 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       // What the declaration reads: the document's own palette and the card's three lines.
       payload: {
         name: node.payload.name,
-        typeLine: node.payload.typeLine,
-        description: node.payload.description,
+        typeLine: typeLineFitted(node.payload.typeLine, node.payload.width),
+        descriptionLines: descriptionLines(node.payload.description, node.payload.width).map((text) => ({ text })),
         shape: node.payload.style?.shape ?? "RoundedBox",
         background: node.payload.style?.background ?? "#1168bd",
         color: node.payload.style?.color ?? "#ffffff",

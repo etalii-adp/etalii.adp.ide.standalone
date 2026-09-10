@@ -8,11 +8,6 @@
 
 /* ---- Nodes ------------------------------------------------------------------------- */
 
-/* A label sits left-aligned inside a BoxElement, unlike the centred span labels. */
-.databricks-label {
-  text-anchor: start;
-}
-
 /* A depends_on stub no task declares: present, and visibly missing (Requirement 4.5). */
 .databricks-node-missing .databricks-node-box {
   stroke-dasharray: 5 4;

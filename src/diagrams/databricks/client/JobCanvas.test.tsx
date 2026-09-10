@@ -287,6 +287,19 @@ describe("the job canvas", () => {
     expect(container.querySelector("marker#library-arrow path")!.classList.contains("canvas-arrowhead")).toBe(true);
   });
 
+  it("starts a task's name at the box's left inset, as before the migration", () => {
+    // The job's tasks are the `task` element type, a separate declaration from the pipeline's
+    // `node` one, so each canvas guards its own - PipelineCanvas.test.tsx holds the other.
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    const name = container.querySelector<SVGTextElement>('[data-element-id="task:publish"] text.databricks-label')!;
+    expect(name.style.getPropertyValue("text-anchor")).toBe("start");
+    // The publish box's left edge is at 520 in modelWith(); centred, the name would sit at 620.
+    expect(name.getAttribute("x")).toBe(String(520 + 8));
+  });
+
   it("draws the shared scrollbars, and dragging the horizontal thumb pans", () => {
     // Arrange.
     const { container } = renderCanvas();

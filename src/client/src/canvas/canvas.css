@@ -105,12 +105,14 @@
 }
 
 /*
- * A declared label's default alignment.
+ * A declared label's alignment is NOT decided here.
  *
- * The library's own rule rather than an inline attribute, so a declaration that says nothing
- * about alignment emits no `text-anchor` - which is what every shared element does today, and
- * what the modules' tests assert. An `align` that differs from this still writes the attribute,
- * where it wins over this rule.
+ * The renderer writes every declared line's anchor as an inline style, because the layout
+ * computed that line's x for that anchor and the two must not be separated. This rule used to be
+ * the default, with an `align` that differed written as a presentation attribute "where it wins
+ * over this rule" - but an attribute loses to every author rule, this one included, so it
+ * centred every start- and end-aligned line on its inset. The rule stays only for anything else
+ * that carries the class without an inline anchor; it cannot move a declared line.
  */
 .library-element-label {
   text-anchor: middle;

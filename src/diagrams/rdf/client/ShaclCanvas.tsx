@@ -109,9 +109,13 @@ const SHACL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
           // Below the targets, however many this shape declares - which is why a stack's start
           // is bindable rather than a constant.
           stack: { lineHeight: LINE_HEIGHT, start: { path: "payload.rowsStart" } },
-          className: { parts: [{ template: "shacl-row" }, { template: "shacl-row-sparql", when: { path: "sparql", is: "true" } }], join: " " },
+          // `shacl-row-path` is the class shacl.css sizes: the migration dropped it with the
+          // `<g>` the row used to be, and every path drew at the browser's 16px.
+          className: { parts: [{ template: "shacl-row shacl-row-path" }, { template: "shacl-row-sparql", when: { path: "sparql", is: "true" } }], join: " " },
           columns: [
-            { text: { path: "summary" }, insetX: 110, align: "start", className: "shacl-row-summary canvas-hint" },
+            // Cut at the card's edge: a combinator summary is as long as its operands, and drawn
+            // whole it ran out of the card (as it did before the migration, too).
+            { text: { path: "summary" }, insetX: 110, align: "start", truncate: true, className: "shacl-row-summary canvas-hint" },
             { text: { path: "cardinality" }, insetX: 8, align: "end", className: "shacl-row-cardinality canvas-hint" },
           ],
         },

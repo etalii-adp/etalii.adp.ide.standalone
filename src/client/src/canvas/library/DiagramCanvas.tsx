@@ -2193,11 +2193,19 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
       className={["library-element-label", line.className].filter(Boolean).join(" ")}
       x={line.x}
       y={line.y}
-      // Only when it differs from `library-element-label`'s own rule: an inline attribute for
-      // the default would override a module's stylesheet for no reason, and every shared
-      // element leaves the anchor to CSS today.
-      textAnchor={line.anchor === "middle" ? undefined : line.anchor}
       style={{
+        // THE ANCHOR TRAVELS WITH THE X IT WAS COMPUTED FOR, AS AN INLINE STYLE, ALWAYS. The
+        // layout places `start` at the left inset, `middle` at the centre and `end` at the right
+        // inset, so an anchor that differs from the layout's puts the text somewhere the layout
+        // never meant. This used to be a presentation ATTRIBUTE, written only when it differed
+        // from `middle`, on the belief that an attribute outranks a stylesheet - it is the other
+        // way round: an attribute loses to ANY author rule, even a single class. So the library's
+        // own `.library-element-label { text-anchor: middle }` centred every start- and end-aligned
+        // line on its inset, and a module rule (databricks' `text-anchor: start`) re-anchored the
+        // centred ones. Text ran out of its element on databricks, SHACL and azure-pipeline alike;
+        // eight modules declare start or end. An inline style outranks every class rule, which is
+        // what makes the layout's answer the one the browser draws.
+        textAnchor: line.anchor,
         fontSize: line.typography?.fontSize,
         fontWeight: line.typography?.fontWeight,
         fontStyle: line.typography?.fontStyle,

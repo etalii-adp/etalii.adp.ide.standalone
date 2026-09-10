@@ -185,6 +185,64 @@ describe("C4Canvas", () => {
     expect(container.textContent).toContain("A description.");
   });
 
+  it("wraps a description onto the lines the backend sized the card for, rather than one line out past its edges", () => {
+    // Arrange: a real description, from the industrial-plant example's container view, at the
+    // box C4Metrics.Measure gives it - clamped to 240 wide, and four description lines tall
+    // (ceil(103 x 7.7 / 216)), so 6 x 19.6 + 20 = 137.6. Drawn as one line it ran ~250 wide
+    // at the description's 10px, out of both sides of a 240 card.
+    const description = "The only thing that talks to the control network: subscribes to line tags and issues recipe downloads.";
+    currentModel = seed(node("opc", "OPC UA Gateway", 0, 0, { typeLine: "[Container: C# and OPC UA SDK]", description, width: 240, height: 137.6 }));
+
+    // Act.
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Assert.
+    const card = container.querySelector('[data-element-id="opc"]')!;
+    const nameY = Number(card.querySelector("text.c4-node-name")!.getAttribute("y"));
+    const lines = Array.from(card.querySelectorAll("text.c4-node-description"));
+    expect(lines.length).toBeGreaterThan(1);
+    // Every word, in order, and nothing else - a wrap that dropped a word would still fit.
+    expect(lines.map((line) => line.textContent).join(" ")).toBe(description);
+    // Each line fits the content width by the drawn 10px at C4Metrics' 0.55 per character,
+    // inside its 12 of padding either side.
+    for (const line of lines) {
+      expect(line.textContent!.length * 10 * 0.55).toBeLessThanOrEqual(240 - 2 * 12);
+    }
+    // Stacked downwards, and the last baseline still inside the card (its top is 22 above the
+    // name's baseline, as the declaration pins it).
+    const ys = lines.map((line) => Number(line.getAttribute("y")));
+    expect(ys).toEqual([...ys].sort((a, b) => a - b));
+    expect(new Set(ys).size).toBe(ys.length);
+    expect(ys[ys.length - 1] - (nameY - 22)).toBeLessThanOrEqual(137.6 - 4);
+  });
+
+  it("cuts a type line longer than the card, which the backend clamped to 240 and drew whole past both edges", () => {
+    // Arrange: the example's database deployment node - 52 characters, drawn 249 wide in a
+    // 240 card.
+    const typeLine = "[Deployment Node: PostgreSQL 16 on Ubuntu 24.04 LTS]";
+    currentModel = seed(node("db", "Primary", 0, 0, { typeLine, description: "", width: 240, height: 59.2 }));
+
+    // Act.
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Assert.
+    const drawn = container.querySelector('[data-element-id="db"] text.c4-node-type')!.textContent!;
+    expect(drawn.endsWith("…")).toBe(true);
+    expect(typeLine.startsWith(drawn.slice(0, -1))).toBe(true);
+    expect(drawn.length * 10 * 0.55).toBeLessThanOrEqual(240 - 2 * 12);
+  });
+
+  it("leaves a type line that fits exactly as it is", () => {
+    // The guard's other side: a cut at the library's 7-per-character estimate would have taken
+    // this 39-character line, which the browser draws 194 wide in the same 240 card.
+    const typeLine = "[Deployment Node: Kubernetes namespace]";
+    currentModel = seed(node("ns", "Namespace", 0, 0, { typeLine, description: "", width: 240, height: 59.2 }));
+
+    const { container } = render(<C4Canvas {...props} />);
+
+    expect(container.querySelector('[data-element-id="ns"] text.c4-node-type')!.textContent).toBe(typeLine);
+  });
+
   it("carries the title C4 requires on every diagram", () => {
     // Act.
     const { getByTestId } = render(<C4Canvas {...props} />);
