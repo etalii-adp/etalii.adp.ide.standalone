@@ -65,23 +65,26 @@ Two distinct hazards, and the rule for one does not cover the other.
 **The existence test every chain used is the bug.** `if [ ! -d "$SCRATCH" ]; then create; fi` passes a husk, because a husk *is* a directory. The ingredients coexisted on the day this was written: four husks under `.claude/worktrees/`, each resolving to `C:/git/EtAlii.Adp`, and scratch trees disappearing to a pruner. **Put this before the first git command that uses the path - `config --worktree` and `checkout --` run before any `reset`:**
 
 ```sh
-MAIN_TOP=$(git -C "$MAIN" rev-parse --show-toplevel)
+canon() { p=$(cygpath -m "$1" 2>/dev/null) || p=$1; printf '%s' "$p" | tr '[:upper:]' '[:lower:]' | sed 's:/*$::'; }
+MAIN_TOP=$(canon "$(git -C "$MAIN" rev-parse --show-toplevel)")
 if [ ! -e "$MRG" ]; then
   git -C "$MAIN" worktree prune
-  git -C "$MAIN" worktree add --detach "$MRG" develop || exit 3
+  git -C "$MAIN" worktree add --detach "$MRG" develop > /dev/null 2>&1 || exit 3
 fi
 MRG_TOP=$(git -C "$MRG" rev-parse --show-toplevel 2>/dev/null || true)
-if [ "$MRG_TOP" != "$(cygpath -m "$MRG" 2>/dev/null || echo "$MRG")" ]; then
+if [ -z "$MRG_TOP" ] || [ "$(canon "$MRG_TOP")" != "$(canon "$MRG")" ]; then
   echo "ABORT: $MRG resolves to '${MRG_TOP:-nothing}', not to itself"; exit 3
 fi
-if [ "$MRG_TOP" = "$MAIN_TOP" ]; then
+if [ "$(canon "$MRG_TOP")" = "$MAIN_TOP" ]; then
   echo "ABORT: $MRG is the main checkout"; exit 3
 fi
 ```
 
-**Each line answers a way the check itself could be wrong.** *Absent* is decided by `-e`, never by the query failing, so a path that exists but cannot be read aborts rather than being recreated over. **The comparison is made in one path form**: a Git Bash script writes `/c/git/...` and `--show-toplevel` returns `C:/git/...`, so a raw `=` reports every legitimate worktree as a husk - and a guard that aborts every real chain gets loosened by the next person until it passes husks. The fallback when `cygpath` is missing is the raw path, so the comparison fails closed rather than matching two empty strings. `worktree prune` stays in the recreate branch because `worktree add` refuses a path whose registry entry went stale. **Present but wrong is an abort, never an automatic delete** - a directory in a state nobody expected is where a script stops and a person looks.
+**Each line answers a way the check itself could be wrong.** *Absent* is decided by `-e`, never by the query failing, so a path that exists but cannot be read aborts rather than being recreated over. **Both sides are canonicalised - converted, lowercased, trailing slashes stripped.** A Git Bash script writes `/c/git/...` while `--show-toplevel` returns `C:/git/...`, and a comparison that normalises only one side still reports a legitimate worktree as a husk whenever the path carries a trailing slash or a different case: measured, the one-sided form was wrong in fourteen of twenty-one spellings of the seven real worktrees, while passing every husk correctly. **A guard that aborts real chains gets loosened by the next person until it passes husks**, so a false abort is not the harmless direction it looks like. `canon` falls back to the raw path when `cygpath` is missing, which makes every comparison fail and the guard abort - noisy, but closed; the natural pipeline form yields an empty string for every path instead, and two empty strings pass a husk. `worktree prune` stays in the recreate branch because `worktree add` refuses a path whose registry entry went stale. **Present but wrong is an abort, never an automatic delete** - a directory in a state nobody expected is where a script stops and a person looks.
 
-**And the main checkout is refused explicitly, because it passes everything else.** It *is* its own worktree, so it satisfies *resolves to itself*: measured, a caller that set the scratch path equal to the main checkout got *"scratch worktree verified"* and exit 0, with `reset --hard develop` as the next line. **That is the one configuration that reaches the damage *through* the guard rather than around it.** The guard as first written had been tested against a planted husk and a planted absent path and passed both - the half that proves it catches the danger. **Test the other half too: a real worktree in the script's own path form must pass, and the main checkout must abort.** Found by Developer 3; the main-checkout refusal was added after running its guard against that case.
+**And the main checkout is refused explicitly, because it passes everything else.** It *is* its own worktree, so it satisfies *resolves to itself* in any spelling: measured, a caller that set the scratch path equal to the main checkout got *"scratch worktree verified"* and exit 0, with `reset --hard develop` as the next line. **That is the one configuration that reaches the damage *through* the guard rather than around it.**
+
+**How this guard was arrived at is the argument for testing both halves.** Developer 3 found the hazard and wrote the first guard, tested against a planted husk and an absent path - the half proving it catches the danger. Cross-checking produced two guards, **and each had exactly one of the two properties**: Developer 3's corrected version canonicalised both sides but still passed the main checkout; the one first committed here refused the main checkout but compared one-sidedly. **Neither was safe to carry, and every test either author had run passed.** What exposed each was a case its author had not written: a real worktree spelled differently, and the scratch path set to the main checkout. **So verify a guard with the cases that must pass, in every spelling a caller might use, and with the one input that satisfies its condition while being the thing it exists to protect.**
 
 **Re-gate on the merged tree, not before it.** An hour's wait is long enough for `develop` to gain code an earlier run never saw - in one case a 311-line integration test and three validator changes.
 
