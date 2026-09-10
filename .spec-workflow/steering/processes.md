@@ -60,6 +60,29 @@ Two distinct hazards, and the rule for one does not cover the other.
 
 **Merge through a scratch worktree rather than waiting for a clean index.** The mechanism is the point: `git merge` builds the merge commit's tree *from the index*, which is why a foreign staged file blocks it and why its failure path is what dangles other sessions' work. **A fast-forward builds no tree from the index and does not care.** So create a scratch worktree at the develop tip, `git merge --no-ff` your branch there, run the four gates *in it* - on the actually-merged tree - then in the main checkout `git merge --ff-only` that scratch branch. The last step succeeds with foreign files staged, and leaves them staged and untouched. The resulting history is identical to merging in place, and the route never puts the main checkout in a state where git must save and restore anybody's work - so it **cannot** reproduce the incident rather than merely avoiding it. Waiting for a clean index is not a workable alternative: one staged file has sat in this checkout for over two hours.
 
+**Prove the scratch worktree is a worktree of its own, and not the main checkout, before the first git command touches it.** A half-removed worktree - directory present, `.git` gone, see *Retiring a worktree* - makes every git command resolve to the **main checkout**, and not only when run inside it: `git -C <dir>` does the same without ever entering the directory. **`git -C` answers for whichever repository contains the directory, not for the directory**, so a husk and a worktree look identical to it. A merge chain aimed at a husk therefore runs `config --worktree user.name`, `reset --hard develop` and `merge` on the shared checkout, and every one of them reports success. It would look like somebody's work vanishing.
+
+**The existence test every chain used is the bug.** `if [ ! -d "$SCRATCH" ]; then create; fi` passes a husk, because a husk *is* a directory. The ingredients coexisted on the day this was written: four husks under `.claude/worktrees/`, each resolving to `C:/git/EtAlii.Adp`, and scratch trees disappearing to a pruner. **Put this before the first git command that uses the path - `config --worktree` and `checkout --` run before any `reset`:**
+
+```sh
+MAIN_TOP=$(git -C "$MAIN" rev-parse --show-toplevel)
+if [ ! -e "$MRG" ]; then
+  git -C "$MAIN" worktree prune
+  git -C "$MAIN" worktree add --detach "$MRG" develop || exit 3
+fi
+MRG_TOP=$(git -C "$MRG" rev-parse --show-toplevel 2>/dev/null || true)
+if [ "$MRG_TOP" != "$(cygpath -m "$MRG" 2>/dev/null || echo "$MRG")" ]; then
+  echo "ABORT: $MRG resolves to '${MRG_TOP:-nothing}', not to itself"; exit 3
+fi
+if [ "$MRG_TOP" = "$MAIN_TOP" ]; then
+  echo "ABORT: $MRG is the main checkout"; exit 3
+fi
+```
+
+**Each line answers a way the check itself could be wrong.** *Absent* is decided by `-e`, never by the query failing, so a path that exists but cannot be read aborts rather than being recreated over. **The comparison is made in one path form**: a Git Bash script writes `/c/git/...` and `--show-toplevel` returns `C:/git/...`, so a raw `=` reports every legitimate worktree as a husk - and a guard that aborts every real chain gets loosened by the next person until it passes husks. The fallback when `cygpath` is missing is the raw path, so the comparison fails closed rather than matching two empty strings. `worktree prune` stays in the recreate branch because `worktree add` refuses a path whose registry entry went stale. **Present but wrong is an abort, never an automatic delete** - a directory in a state nobody expected is where a script stops and a person looks.
+
+**And the main checkout is refused explicitly, because it passes everything else.** It *is* its own worktree, so it satisfies *resolves to itself*: measured, a caller that set the scratch path equal to the main checkout got *"scratch worktree verified"* and exit 0, with `reset --hard develop` as the next line. **That is the one configuration that reaches the damage *through* the guard rather than around it.** The guard as first written had been tested against a planted husk and a planted absent path and passed both - the half that proves it catches the danger. **Test the other half too: a real worktree in the script's own path form must pass, and the main checkout must abort.** Found by Developer 3; the main-checkout refusal was added after running its guard against that case.
+
 **Re-gate on the merged tree, not before it.** An hour's wait is long enough for `develop` to gain code an earlier run never saw - in one case a 311-line integration test and three validator changes.
 
 **If it does happen, the work is recoverable and re-running anything is the wrong move.** The stash survives as a dangling commit pair: `git fsck --unreachable --no-reflogs`, find `WIP on develop` and `index on develop` at the failed merge's timestamp, then `git checkout <wip-commit> -- <path>` per file. Restore only what was present, and **never re-apply a deletion that was in flight** - re-applying somebody's half-finished delete is the one direction that destroys rather than restores.
