@@ -64,6 +64,11 @@ gate_is_develops() {
 # src/client/src/generated/ with LF over a CRLF checkout, and status reports every such file as
 # modified with nothing in it changed - the shared gate's first real run, all four gates green,
 # refused on exactly that. `git diff` compares after the same normalisation git applies on commit.
+# retire.sh's first real use then refused a clean scratch tree the same way. The shape was already
+# in the board's shared notes from 2026-09-04 (credited to Developer 1): after `buf generate` those
+# files show as modified, "line-ending churn only, not content", and `git diff --numstat` returns
+# nothing. It reached neither script because nobody asked them the question that record answers:
+# "modified" to git status and "changed" are different claims. Ask this function the second one.
 gate_tree_matches_head() {
   git -C "$1" diff --quiet HEAD -- 2> /dev/null
   case $? in
