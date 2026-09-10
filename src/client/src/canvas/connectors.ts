@@ -182,10 +182,26 @@ export function arcPath(from: Point, to: Point, bow = 0.25): string {
   return `M ${from.x} ${from.y} Q ${control.x} ${control.y} ${to.x} ${to.y}`;
 }
 
-/** A quadratic bezier with its control at the straight midpoint - a soft, single-bend curve. */
+/** How far a soft curve bows, as a fraction of its chord - visibly curved, clearly gentler than {@link arcPath}'s quarter. */
+const SOFT_BOW = 0.15;
+
+/**
+ * A soft, single-bend curve: the declared `quadratic-bezier` route.
+ *
+ * <b>It used to be a straight line under this name.</b> Its control point sat at the chord's own
+ * midpoint, and a quadratic whose control point lies on the chord IS the chord - so the route
+ * drew straight while this comment promised a curve. No module declared it, so nothing on screen
+ * was wrong; that is what made it a trap rather than a limitation. The first module to reach
+ * for it would have got a straight line and a comment insisting otherwise.
+ *
+ * It is {@link arcPath} with a gentler bow rather than a second copy of the same arithmetic, and
+ * it inherits that function's one deliberate property: it bows to the same side OF TRAVEL, so
+ * A -> B and B -> A land on opposite sides of the page and enclose a lens instead of being drawn
+ * on top of each other. The bow is proportional to the chord, so a short link and a long one
+ * read as the same curve rather than a hairpin and a near-straight.
+ */
 export function quadraticBezierPath(from: Point, to: Point): string {
-  const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
-  return `M ${from.x} ${from.y} Q ${mid.x} ${mid.y} ${to.x} ${to.y}`;
+  return arcPath(from, to, SOFT_BOW);
 }
 
 /**
