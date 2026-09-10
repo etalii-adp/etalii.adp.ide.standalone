@@ -60,7 +60,7 @@ trap finish EXIT
 
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "RESULT=aborted-cannot-locate-script"; exit 3; }
 . "$HERE/gate-lib.sh" 2>/dev/null
-if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict > /dev/null 2>&1; then
+if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head > /dev/null 2>&1; then
   echo "RESULT=aborted-library-missing ($HERE/gate-lib.sh)"
   exit 3
 fi
@@ -145,8 +145,19 @@ if [ "$VERDICT" != green ]; then echo "RESULT=gates-red ($WHY )"; exit 1; fi
 
 # --- The gates ran for minutes. Before vouching for what they judged, prove it is still the
 # --- commit that will land, in the tree that was verified, on the develop it was merged onto.
-CHANGED=$(git -C "$MRG" status --porcelain --untracked-files=no) || { echo "RESULT=cannot-read-scratch-status"; exit 1; }
-if [ -n "$CHANGED" ]; then echo "$CHANGED"; echo "RESULT=gates-changed-tracked-files"; exit 1; fi
+gate_tree_matches_head "$MRG"
+case $? in
+  0) ;;
+  1)
+    git -C "$MRG" diff --stat HEAD --
+    echo "RESULT=gates-changed-tracked-files"
+    exit 1
+    ;;
+  *)
+    echo "RESULT=cannot-read-scratch-tree"
+    exit 1
+    ;;
+esac
 if [ "$(git -C "$MRG" rev-parse HEAD 2>/dev/null)" != "$MERGED" ]; then echo "RESULT=scratch-head-moved-during-gates"; exit 1; fi
 NOW_TOP=$(git -C "$MRG" rev-parse --show-toplevel 2>/dev/null || true)
 if [ -z "$NOW_TOP" ] || [ "$NOW_TOP" != "$MRG_TOP" ]; then

@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=85; else EXPECTED=81; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=90; else EXPECTED=86; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -224,6 +224,33 @@ report refused "$(verdict_of "$RED" DT_EXIT=2)" "a real red run (a flaky test, r
 report refused "$(verdict_of "$RED")" "... and with its exit recorded as 0 the log alone refuses"
 report refused "$(verdict_of "$MID")" "a real run cut off mid-flight, every exit 0"
 report refused "$(verdict_of "$INV")" "a real invocation error that tested nothing and never says Zero tests ran"
+
+echo "== the post-gate tree check compares content, not what status reports"
+# The shared gate's first real run: four gates green, then refused, because the client's pretest
+# rewrote generated files with LF over a CRLF checkout - `git status` said modified, `git diff`
+# found nothing. Planted here exactly: same content, other line endings.
+R4="$W/repo4"
+mkrepo "$R4" || broken "cannot create the fourth repository"
+printf '* text=auto eol=crlf\n' > "$R4/.gitattributes" && printf 'line one\nline two\n' > "$R4/g.ts"
+git -C "$R4" add .gitattributes g.ts 2> /dev/null && git -C "$R4" commit -q -m generated && rm "$R4/g.ts" &&
+  git -C "$R4" checkout -q -- g.ts || broken "cannot build the generated-file repository"
+[ "$(tr -cd '\r' < "$R4/g.ts" | wc -c)" -gt 0 ] || broken "the checkout did not write CRLF, so the rewrite would change nothing"
+gate_tree_matches_head "$R4"
+report 0 "$?" "an untouched tree matches its HEAD"
+sleep 1
+printf 'line one\nline two\n' > "$R4/g.ts"
+[ -n "$(git -C "$R4" status --porcelain --untracked-files=no 2> /dev/null)" ] ||
+  broken "status does not report the LF rewrite, so the case would not reproduce the first run's refusal"
+gate_tree_matches_head "$R4"
+report 0 "$?" "a generated file rewritten with other line endings, same content, matches"
+printf 'line one\nline 2\n' > "$R4/g.ts"
+gate_tree_matches_head "$R4"
+report 1 "$?" "a real change to a tracked file does not"
+git -C "$R4" add g.ts 2> /dev/null && git -C "$R4" checkout -q -- g.ts 2> /dev/null
+gate_tree_matches_head "$R4"
+report 1 "$?" "a staged change does not either"
+gate_tree_matches_head "$W/nowhere"
+report 2 "$?" "a tree that cannot be read is its own answer, not a match"
 
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"
