@@ -142,8 +142,8 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // Arrange.
         var (solution, registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
-        var projectBefore = File.ReadAllText(Path.Combine(_root, "App", "App.csproj"));
-        var solutionBefore = File.ReadAllText(solution);
+        var projectBefore = await File.ReadAllTextAsync(Path.Combine(_root, "App", "App.csproj"), TestContext.Current.CancellationToken);
+        var solutionBefore = await File.ReadAllTextAsync(solution, TestContext.Current.CancellationToken);
 
         // Act.
         var error = await session.MoveElementToAsync("project:App/App.csproj", 120.5, 40, CancellationToken.None);
@@ -154,8 +154,8 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         Assert.Equal(120.5, stored["project:App/App.csproj"].X);
 
         // Nothing the build owns was touched.
-        Assert.Equal(projectBefore, File.ReadAllText(Path.Combine(_root, "App", "App.csproj")));
-        Assert.Equal(solutionBefore, File.ReadAllText(solution));
+        Assert.Equal(projectBefore, await File.ReadAllTextAsync(Path.Combine(_root, "App", "App.csproj"), TestContext.Current.CancellationToken));
+        Assert.Equal(solutionBefore, await File.ReadAllTextAsync(solution, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -202,13 +202,13 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
               <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
             </Project>
             """);
-        File.WriteAllText(solution, """
-            <Solution>
-              <Project Path="App/App.csproj" />
-              <Project Path="Library/Library.csproj" />
-              <Project Path="Extra/Extra.csproj" />
-            </Solution>
-            """);
+        await File.WriteAllTextAsync(solution, """
+                                               <Solution>
+                                                 <Project Path="App/App.csproj" />
+                                                 <Project Path="Library/Library.csproj" />
+                                                 <Project Path="Extra/Extra.csproj" />
+                                               </Solution>
+                                               """, TestContext.Current.CancellationToken);
         session.Refresh();
 
         // Assert.
