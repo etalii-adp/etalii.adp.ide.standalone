@@ -5,6 +5,7 @@ import {
   edgePointOf,
   horizontalBezierPath,
   midpointOf,
+  quadraticBezierPath,
   sideAnchorOf,
   straightPath,
   type ConnectorBox,
@@ -148,5 +149,80 @@ describe("midpointOf", () => {
   it("is halfway along, which is where a connector's label goes", () => {
     // Act and assert.
     expect(midpointOf({ x: 0, y: 0 }, { x: 10, y: 30 })).toEqual({ x: 5, y: 15 });
+  });
+});
+
+/**
+ * THE DECLARED `quadratic-bezier` ROUTE ACTUALLY CURVES.
+ *
+ * It did not. The control point sat at the chord's own midpoint, and a quadratic whose control
+ * point lies on the chord IS the chord: the route drew a straight line under a name promising a
+ * curve, beside a comment calling it "a soft, single-bend curve". No module declares it yet, so
+ * nothing on screen was wrong - which is precisely what made it a trap rather than a
+ * limitation: the first module to declare it would get a straight line and a comment saying
+ * otherwise, with no test anywhere to disagree.
+ *
+ * These assert the geometric property, never the exact control coordinates, so a later choice of
+ * how much the curve bows does not have to edit a guard that is about whether it bows at all.
+ */
+describe("quadraticBezierPath", () => {
+  /** The three points of `M x0 y0 Q cx cy x1 y1`. */
+  function pointsOf(path: string): { from: { x: number; y: number }; control: { x: number; y: number }; to: { x: number; y: number } } {
+    const n = [...path.matchAll(/-?\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
+    expect(n, `not a single quadratic segment: ${path}`).toHaveLength(6);
+    return { from: { x: n[0]!, y: n[1]! }, control: { x: n[2]!, y: n[3]! }, to: { x: n[4]!, y: n[5]! } };
+  }
+
+  /** How far the control point stands off the chord, as a signed perpendicular distance. */
+  function offChord(path: string): number {
+    const { from, control, to } = pointsOf(path);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy);
+    return ((control.x - from.x) * dy - (control.y - from.y) * dx) / length;
+  }
+
+  it("starts and ends exactly where it is asked to", () => {
+    // Act.
+    const { from, to } = pointsOf(quadraticBezierPath({ x: 10, y: 20 }, { x: 210, y: 120 }));
+
+    // Assert.
+    expect(from).toEqual({ x: 10, y: 20 });
+    expect(to).toEqual({ x: 210, y: 120 });
+  });
+
+  it("bends: its control point stands off the chord rather than on it", () => {
+    // THE DEFECT. A control point on the chord makes the whole segment a straight line, and the
+    // earlier version put it at the chord's midpoint - distance zero, for every input.
+    expect(Math.abs(offChord(quadraticBezierPath({ x: 0, y: 0 }, { x: 200, y: 0 })))).toBeGreaterThan(1);
+    expect(Math.abs(offChord(quadraticBezierPath({ x: 0, y: 0 }, { x: 0, y: 200 })))).toBeGreaterThan(1);
+    expect(Math.abs(offChord(quadraticBezierPath({ x: 30, y: 40 }, { x: 170, y: 190 })))).toBeGreaterThan(1);
+  });
+
+  it("bows in proportion to its length, so a long link and a short one look like the same curve", () => {
+    // A fixed offset would make a short connection a hairpin and a long one nearly straight.
+    const short = Math.abs(offChord(quadraticBezierPath({ x: 0, y: 0 }, { x: 100, y: 0 })));
+    const long = Math.abs(offChord(quadraticBezierPath({ x: 0, y: 0 }, { x: 400, y: 0 })));
+    expect(long / short).toBeCloseTo(4, 5);
+  });
+
+  it("stays soft - noticeably gentler than a causal-loop arc", () => {
+    // "Soft, single-bend" is what the route's own documentation promises. The causal loop's arc
+    // bows a quarter of the chord; this must bow clearly less, or it is that arc under another
+    // name and a module choosing between the two would be choosing nothing.
+    const chord = 200;
+    const bow = Math.abs(offChord(quadraticBezierPath({ x: 0, y: 0 }, { x: chord, y: 0 })));
+    expect(bow).toBeLessThan(chord * 0.25);
+  });
+
+  it("bows B to A to the opposite side from A to B, so a pair encloses a lens rather than overdrawing", () => {
+    // The property that makes a curved route worth having between two elements that link both
+    // ways: the two connections separate instead of being drawn on top of each other.
+    const there = offChord(quadraticBezierPath({ x: 0, y: 0 }, { x: 200, y: 0 }));
+    const back = offChord(quadraticBezierPath({ x: 200, y: 0 }, { x: 0, y: 0 }));
+    const { control: c1 } = pointsOf(quadraticBezierPath({ x: 0, y: 0 }, { x: 200, y: 0 }));
+    const { control: c2 } = pointsOf(quadraticBezierPath({ x: 200, y: 0 }, { x: 0, y: 0 }));
+    expect(Math.sign(there)).toBe(Math.sign(back)); // same side OF TRAVEL...
+    expect(Math.sign(c1.y)).toBe(-Math.sign(c2.y)); // ...which is opposite sides on the page
   });
 });
