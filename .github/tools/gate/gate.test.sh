@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=71; else EXPECTED=67; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=85; else EXPECTED=81; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -184,12 +184,14 @@ tr -d '\r' < "$MID" | grep -qE 'total:|Test run summary' && broken "the mid-flig
 grep -q 'Specify either' "$INV" || broken "the invocation-error log is not the invocation error"
 grep -q 'Zero tests ran' "$INV" && broken "the invocation-error log says Zero tests ran, so it would not test the phrase check's blind spot"
 
-verdict_of() { # <log> [NAME=value...] - the verdict with every gate at 0 unless overridden
+verdict_of() { # <log> [NAME=value | -NAME ...] - the verdict with every gate at 0; -NAME unsets
   local log=$1 kv
   shift
   (
     export NPM_INSTALL_EXIT=0 NPM_TEST_EXIT=0 TC_EXIT=0 FMT_EXIT=0 DT_EXIT=0
-    for kv in "$@"; do export "$kv"; done
+    for kv in "$@"; do
+      case "$kv" in -*) unset "${kv#-}" ;; *) export "$kv" ;; esac
+    done
     gate_verdict "$log"
     echo "$VERDICT"
   )
@@ -204,7 +206,14 @@ report refused "$(verdict_of "$V/failed3.log")" "the log says failed: 3 behind a
 report refused "$(verdict_of "$V/total0.log")" "the log says total: 0"
 report refused "$(verdict_of "$V/nofailedline.log")" "the log has no failed: line"
 report refused "$(verdict_of "$REAL" DT_EXIT=1)" "dotnet test exits 1"
-report refused "$(verdict_of "$REAL" NPM_TEST_EXIT=)" "an exit status is empty"
+# A status that was never recorded - a step that did not run, an assignment lost in a subshell, a
+# misspelled name - with a complete, green log beside it (Developer 1's case, moved from the log to
+# the variable). Every status, every way of being absent: none may be read as 0.
+for s in NPM_INSTALL_EXIT NPM_TEST_EXIT TC_EXIT FMT_EXIT DT_EXIT; do
+  report refused "$(verdict_of "$REAL" "-$s")" "$s unset, beside a green log"
+  report refused "$(verdict_of "$REAL" "$s=")" "$s empty, beside a green log"
+  report refused "$(verdict_of "$REAL" "$s=x")" "$s not a number, beside a green log"
+done
 report refused "$(verdict_of "$REAL" TC_EXIT=2)" "typecheck exits 2"
 report refused "$(verdict_of "$REAL" FMT_EXIT=1)" "format exits 1"
 report refused "$(verdict_of "$REAL" NPM_INSTALL_EXIT=1)" "npm install exits 1"
