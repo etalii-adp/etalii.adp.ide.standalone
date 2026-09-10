@@ -22,7 +22,7 @@ Full rules and reasoning: [processes.md, *Chat naming*](.spec-workflow/steering/
 
 **Anything that changes the repository's files happens in a dedicated worktree** (`.claude/worktrees/<name>/`, short name), never in the main checkout, because several sessions share its index. That is implementation, documentation fixes under `docs/`, and structural or complexity work alike — all of it goes through a branch and the four gates.
 
-**The one exception is a specification document.** Requirements, designs and tasks, and the approvals, snapshots and logs beside them, are written on `develop` in the main checkout, because the dashboard reads `.spec-workflow/` from there and nowhere else. `roles.md` draws the same line: an Architect's structural and documentation work is on a worktree, its specification writing is on development. Retire a worktree once its branch is merged and its tree is clean — but never one another session is working in, never one with uncommitted or unmerged work, and never with `--force`.
+**The one exception is a specification document.** Requirements, designs and tasks, and the approvals, snapshots and logs beside them, are written on `develop` in the main checkout, because the dashboard reads `.spec-workflow/` from there and nowhere else. `roles.md` draws the same line: an Architect's structural and documentation work is on a worktree, its specification writing is on development. Retire a worktree with `bash C:/git/EtAlii.Adp/.github/tools/gate/retire.sh <name>` once its branch is merged — never one another session is working in, and never with `--force`. It refuses uncommitted or unlanded work and removes `node_modules` first, so no husk is left.
 
 Full rules and reasoning, including the half-removed-worktree hazard: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens) and [*Retiring a worktree*](.spec-workflow/steering/processes.md#retiring-a-worktree).
 
@@ -30,7 +30,7 @@ Full rules and reasoning, including the half-removed-worktree hazard: [processes
 
 Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it.
 
-**Never merge while anything is staged, yours or anyone's.** Merge through a scratch worktree **named for your own agent number** - `.claude/worktrees/mrg<N>`, never a shared name: merge with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` **from the main checkout**, never from inside the scratch tree. **Chain the whole cycle into one command** so the window between gating and landing is seconds. **Re-gate on the merged tree, not before it.**
+**Never merge while anything is staged, yours or anyone's. Merge with the shared gate:** `bash C:/git/EtAlii.Adp/.github/tools/gate/gate.sh mrg<N> <branch> <identity> "<message>"` - your own scratch name - then run the `land.sh` line it prints, yourself, in the foreground. **Never chain the fast-forward onto the gates:** a chained ff cannot be recalled, and `--ff-only` refuses a moved develop but not an open window. Don't write your own merge chain.
 
 If a merge does strand work, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
 
