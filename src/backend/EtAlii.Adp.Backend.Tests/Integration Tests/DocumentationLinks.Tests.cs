@@ -139,14 +139,36 @@ public partial class DocumentationLinksTests
             checkedLinks >= 40,
             $"Only {checkedLinks} relative links were extracted from {Documents.Length} delivered documents; LinkExpression() has stopped matching.");
 
-        // The same canary for the HTML form, separately: the markdown count alone would stay
-        // above its floor with HtmlLinkExpression() matching nothing, which is the exact
-        // blindness this pattern was added to end. The catalog carries its own relative hrefs.
+        // The HTML form, separately: the markdown count alone would stay above its floor with
+        // HtmlLinkExpression() matching nothing, which is the exact blindness this pattern was
+        // added to end. Whether the PATTERN still matches is asked of a fixed sample in
+        // HtmlLinkExpressionReadsEveryFormTheCatalogWrites, not counted here. This floor was 5
+        // and counted the documents instead: on 2026-09-11 a correct unlink of ten catalog links
+        // to removed specifications left two, and it failed a right tree - it was answering "does
+        // the catalog still have five links", not "has the regex stopped matching". What stays
+        // is only that the catalog has a relative href at all, without which this check is vacuous.
         Assert.True(
-            checkedHtmlLinks >= 5,
-            $"Only {checkedHtmlLinks} relative HTML links were extracted; HtmlLinkExpression() has stopped matching, and the catalog's links are unchecked again.");
+            checkedHtmlLinks >= 1,
+            $"No relative HTML links were extracted from {Documents.Length} delivered documents, so the catalog's links are not being checked at all.");
 
         Assert.True(dead.Count == 0, "Dead documentation links:" + Environment.NewLine + string.Join(Environment.NewLine, dead));
+    }
+
+    [Fact]
+    public void HtmlLinkExpressionReadsEveryFormTheCatalogWrites()
+    {
+        // Arrange. A fixed sample in the catalog's own shapes, so whether the pattern matches
+        // does not depend on how many links the documents happen to carry today.
+        const string sample =
+            """<td><a href="../.spec-workflow/specs/x/requirements.md"><code>x</code></a></td>""" +
+            """<img src="screenshots/canvas.png" alt="">""" +
+            """<a href='../src/diagrams/y/examples/'>examples</a>""";
+
+        // Act.
+        var targets = HtmlLinkExpression().Matches(sample).Select(match => match.Groups["target"].Value).ToArray();
+
+        // Assert.
+        Assert.Equal(["../.spec-workflow/specs/x/requirements.md", "screenshots/canvas.png", "../src/diagrams/y/examples/"], targets);
     }
 
     /// <summary>
