@@ -47,6 +47,9 @@ Beside it, two looks are defined once each (*selected* and *would accept a conne
 - **Outbound.** The library's existing `select(...)`, which `onPress` already calls for elements, connections and the background, additionally pushes `elementSelectionOf(source.entryId, source.path, id)`, or `null` for an empty selection.
 - **The menu.** The library builds the `DiagramContextIntegration` itself: `selectionKey` from `innermostKey`, `actions` from the pushed selection, `selectForMenu` as the context-menu push, and `executeAction` against the current selection.
 - **Refusals.** A backend action run from the shared menu can be refused. The library has no refusal surface of its own, and each module's rejection display is outside this specification, so the library raises the refusal to the module as an event (`action-refused`, carrying the backend's message). Showing a backend refusal of an action is event handling for an action, which the user's rule permits.
+- **Menu entries a module runs itself.** The shared menu's entries are always the backend's action list: one source for what is offered, under which label, in which group. **Who runs an entry is declared.** An entry whose id the definition declares with `invokedBy: { kind: "menu" }` is dispatched to the module's handler as `action-invoked`, exactly as a declared shortcut or gesture is, and nothing is sent to the backend. Every other entry runs on the backend as above. The match is by id, and the declaration's `enabled` and `when` must hold. `appliesTo` is not re-checked, because the backend's list already decided where the entry is offered. This gives `menu`, which `declarative-diagram-modules` named but nothing reads, its meaning, and it adds no module-facing name. `databricks` declares its three simulated actions this way, taking their ids from the simulation engine's own list rather than retyping them. Its handler starts the simulation, so a simulated run never reaches `executeAction`, the history or a file (`databricks` Requirements 8.6 and 11.6). **Rejected:** a function-valued `interceptAction` prop, an escape hatch that could swallow any action by any rule and that the text guard would have to learn to exempt; and raising every menu entry to every module first, which changes the event contract of all sixteen for one module's need.
+- **The background menu.** The shared menu opens on elements and connections only. `causal-loop` alone also opens one on the empty canvas. Its right-click converts the pointer to canvas coordinates by hand, pushes a placement there (`new:x,y`), reads back the backend's actions for it and opens a menu itself. That is a hand-written copy of the menu piece, for the one target the library does not cover, so the library covers it. `DiagramDefinition` gains **`backgroundMenu?: boolean`**, whose default is *no background menu*, stated in words in its doc-comment. On a canvas that declares it, a background right-click converts the pointer the way a toolbox drop already is, pushes that placement through the library's own `selectForMenu`, and opens the shared menu on the backend's answer. A right-drag that drew a relation is still not a menu. `causal-loop` declares it, and its coordinate conversion, placement push and read of the pushed selection are deleted. `new:x,y` in canvas coordinates is the placement convention `causal-loop`, `databricks` and `rdf` already use for drops. On an undeclared canvas a background right-click does what it does today, which is nothing.
+- *The two bullets above were added on 2026-09-11 during implementation. Developer 1 found both: `databricks` has menu entries the backend must never run, and `causal-loop` has the only module-owned menu.*
 
 The module-facing `selection` prop, `context` prop and `events.onSelectionChanged` handler are **removed from the contract**. A module cannot hand-wire selection, because there is nothing left to wire.
 
@@ -99,12 +102,12 @@ The selection is a `DiagramSelection` array throughout. Inbound, the one pushed 
 
 | # | Component | Where | Requirements |
 | --- | --- | --- | --- |
-| 1 | `source` prop, inbound and outbound model, menu integration, `action-refused` | `DiagramCanvas` | 1.1–1.4, 3.3 |
-| 2 | `selectable` on element and relation types, default stated | `diagramDefinition.ts` | 2.1–2.4 |
+| 1 | `source` prop, inbound and outbound model, menu integration, `action-refused`, menu entries a module runs, the background menu | `DiagramCanvas` | 1.1–1.4, 3.3 |
+| 2 | `selectable` on element and relation types, and `backgroundMenu` on the definition, each default stated | `diagramDefinition.ts` | 1.3, 1.4, 2.1–2.4 |
 | 3 | The click rules and the vanished-item clear | `DiagramCanvas` | 3.1–3.4 |
 | 4 | The selected outline and the accept outline, split from one rule | `canvas.css`, `LibraryElement` | 5.1–5.3, 6.1, 6.2 |
 | 5 | The composition rule | `LibraryElement` | 5.3, 6.2 |
-| 6 | The two guards | `canvas/library` | 9.1–9.4 |
+| 6 | The two guards, and the backend half of the mounted assertion | `canvas/library`; one backend test-support project | 2.1, 2.2, 9.1–9.4 |
 | 7 | Module migrations: delete glue, private classes, private state | the sixteen canvases | 1.4, 4.1, 4.2, 5.1, 6.1 |
 | 8 | The `declarative-diagram-modules` 1.2 annotation, on its own card | that spec's requirements | 8.1, 8.2 |
 | 9 | The browser pass | `tests.md` | 10.1–10.3 |
@@ -116,6 +119,8 @@ The selection is a `DiagramSelection` array throughout. Inbound, the one pushed 
 **The mounted assertion** closes that limit. Requirement 9.2 asks that *every registered canvas* be mounted and checked. Each module already mounts its canvas in its own test harness with a mocked stream and a real model. So the design provides one shared assertion, `expectLibrarySelection(mount)`, and every module's canvas test calls it. It checks that a pushed element selection highlights that element, a pushed connection selection highlights that connection wherever its type is selectable, and a background press pushes `null`. **The text guard also asserts that every registered module's canvas test calls it**, so a module cannot join the tree unchecked.
 
 **Seen red first against today's `helm-charts`**: its background press pushes nothing and its connections are never highlighted, so it fails two of the three checks before migration and passes all three after.
+
+**The backend half.** The library pushes a pressed connection's own id and highlights what the backend answers. So the mounted assertion, whose backend is mocked, proves Requirement 2 only if **each module's context resolver resolves every connection id its canvas draws**. This design first left that implicit, and `azure-pipeline`'s resolver rejected every edge. One shared backend assertion projects each module's shipped examples, resolves every drawn connection's id through that module's resolver, and fails naming the type, the example and the id. There is **no exemption list**, so selectability stays a client declaration alone. A completeness fact discovers modules by artifact and fails one whose tests do not call the assertion. *Added on 2026-09-11 during implementation, with tasks 11 and 26.*
 
 ## Migration order
 
@@ -134,11 +139,14 @@ The selection is a `DiagramSelection` array throughout. Inbound, the one pushed 
 | Selected item removed by an edit | The library pushes `null` once; settles in one round |
 | Press on an unselectable type | Treated as a background press |
 | Menu action refused by the backend | `action-refused` is raised to the module, whose existing rejection display shows it |
+| Menu entry whose id the definition declares `menu`-invoked | Dispatched to the module's handler as `action-invoked`; nothing reaches the backend |
+| Background right-click on a canvas that does not declare `backgroundMenu` | Nothing opens, as today |
+| A module's resolver cannot name a connection its canvas draws | The backend assertion fails, naming the type, the example and the id |
 | Module still passes `selection`, `context` or `onSelectionChanged` | Removed from the contract, so typecheck fails, and the text guard names it |
 
 ## Testing Strategy
 
-- **Library unit tests** for kind resolution, selectability, each click rule, the vanished-item clear, and the composition rule. jsdom can see classes, so the flags and classes are asserted there.
+- **Library unit tests** for kind resolution, selectability, each click rule, the vanished-item clear, and the composition rule. jsdom can see classes, so the flags and classes are asserted there. Also: a menu entry declared `menu`-invoked is dispatched to the module and never executed, while an undeclared one is executed; a background right-click opens the shared menu on a canvas that declares `backgroundMenu` and does nothing on one that does not. In `databricks`, a simulated entry chosen from the shared menu plays the show and calls no `executeAction`, **seen red** against the library before the dispatch rule.
 - **Every module's canvas test** calls `expectLibrarySelection`, and the text guard enforces that it does.
 - **Requirement 11.1's bar**: tests pass unchanged, except those asserting a private selected class (citing Requirement 5) or a private connect-target class (citing Requirement 6.1). Any other test change is a behaviour change.
 - **The browser pass** (`tests.md`, all sixteen) is the only evidence for the look: the outline is legible on each diagram's fills, including backend-chosen colours; a connection's highlight runs its whole route; selected and accept are told apart when both hold; the background clears; and a drag does not select. jsdom applies no CSS, so it is not taken as evidence for any of these (Requirement 10.3).
