@@ -108,11 +108,6 @@
   pointer-events: none;
 }
 
-.dotnet-dependency-selected .dotnet-dependency-node {
-  stroke: var(--canvas-selection, #ffd166);
-  stroke-width: 2.5;
-}
-
 /*
  * A version conflict is marked on the element, which is what Requirement 3.5 asks for: the
  * difference is made visible rather than silently collapsed into one box that says nothing.
