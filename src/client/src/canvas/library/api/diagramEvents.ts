@@ -184,11 +184,27 @@ export interface LayoutModeChanged {
 }
 
 /**
- * One optional handler per event kind - the shape a module hands to the canvas. Optional,
- * because a read-only diagram legitimately answers nothing: an unhandled request is a
+ * One optional handler per event kind a MODULE answers - the shape a module hands to the canvas.
+ * Optional, because a read-only diagram legitimately answers nothing: an unhandled request is a
  * gesture the module chose to ignore, not an error.
+ *
+ * <b>`selection-changed` is not among them.</b> Selection is the library's: it reads the
+ * backend's, pushes a press's and wires the shared menu, and a module writes none of it
+ * (centralized-selection Requirement 1). So a module cannot name `onSelectionChanged` here - a
+ * handler map that tries is a type error, which is what keeps selection glue from coming back.
  */
 export type DiagramEventHandlers = {
+  [Kind in ModuleEventKind as EventName<Kind>]?: (event: Extract<DiagramEvent, { kind: Kind }>) => void;
+};
+
+/** Every event kind but the one the library keeps for itself. */
+type ModuleEventKind = Exclude<DiagramEvent["kind"], "selection-changed">;
+
+/**
+ * Every event kind's handler: the module's, plus the library's own `selection-changed`, which the
+ * canvas raises to the library's selection wrapper and to nobody else. <b>Library-internal.</b>
+ */
+export type LibraryEventHandlers = {
   [Kind in DiagramEvent["kind"] as EventName<Kind>]?: (event: Extract<DiagramEvent, { kind: Kind }>) => void;
 };
 
@@ -204,8 +220,8 @@ type PascalCase<Value extends string> = Value extends `${infer Head}-${infer Tai
  * nothing else with an event, which is what keeps "every event is a request" true by
  * construction - there is no second path on which the canvas could act on its own raise.
  */
-export function dispatchDiagramEvent(handlers: DiagramEventHandlers, event: DiagramEvent): void {
-  const name = `on${event.kind.replace(/(^|-)([a-z])/g, (_, __, letter: string) => letter.toUpperCase())}` as keyof DiagramEventHandlers;
+export function dispatchDiagramEvent(handlers: LibraryEventHandlers, event: DiagramEvent): void {
+  const name = `on${event.kind.replace(/(^|-)([a-z])/g, (_, __, letter: string) => letter.toUpperCase())}` as keyof LibraryEventHandlers;
   const handler = handlers[name] as ((raised: DiagramEvent) => void) | undefined;
   handler?.(event);
 }

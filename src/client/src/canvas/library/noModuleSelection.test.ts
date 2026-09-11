@@ -18,6 +18,9 @@ import { describe, expect, it } from "vitest";
  * - a selection pushed by hand - `elementSelectionOf` - which is where every outbound push, and
  *   causal-loop's hand-built background menu, ended;
  * - a `selection=` or `context=` prop - the old contract, wired by hand;
+ * - the library's own wiring reached past the contract - `DiagramCanvasCore`,
+ *   `LibraryEventHandlers`, `LibraryContextIntegration`, `useLibrarySelection` - which task 21
+ *   left exported for the library's tests, not for modules;
  * - a declared class bound to `state.selected` or `state.connectTarget` - a private look where
  *   the library's `canvas-selected` and `library-connect-target` are the only ones;
  * - module-held selection or focus state - a `focusedId`, or a `useState` pair named for a
@@ -93,6 +96,10 @@ const GLUE: readonly { pattern: RegExp; says: string }[] = [
   {
     pattern: /path:\s*"state\.(selected|connectTarget)"/,
     says: "declares a class bound to state.selected or state.connectTarget - canvas-selected and library-connect-target are the only looks",
+  },
+  {
+    pattern: /\b(DiagramCanvasCore|LibraryEventHandlers|LibraryContextIntegration|useLibrarySelection)\b/,
+    says: "reaches past the module contract into the library's own selection wiring - mount DiagramCanvas with source",
   },
   { pattern: /\bfocusedId\b/, says: "holds a focusedId - the library's selection is the only one" },
   {

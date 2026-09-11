@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
-import { DiagramCanvas } from "./DiagramCanvas";
+import { DiagramCanvasCore } from "./DiagramCanvas";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
-import type { DiagramEventHandlers, DiagramSelection } from "./api/diagramEvents";
+import type { DiagramSelection, LibraryEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 
@@ -38,11 +38,12 @@ const model: DiagramModel = {
   connections: [],
 };
 
-function mount(selection: DiagramSelection, events: DiagramEventHandlers = {}) {
+/** The canvas core with a controlled selection - the looks are the core's, whoever resolves the selection. */
+function mount(selection: DiagramSelection, events: LibraryEventHandlers = {}) {
   return render(
     <DiagramViewProvider>
       <DiagramToolboxProvider>
-        <DiagramCanvas definition={definition} model={model} events={events} selection={selection} />
+        <DiagramCanvasCore definition={definition} model={model} events={events} selection={selection} />
       </DiagramToolboxProvider>
     </DiagramViewProvider>,
   );

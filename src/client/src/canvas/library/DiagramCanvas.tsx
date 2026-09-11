@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, Component, type ReactNode } from "react";
 import { create } from "@bufbuild/protobuf";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
-import type { ContextActionGroup } from "@client/generated/context-contract_pb";
 import {
   arcPath,
   edgePointOf,
@@ -43,7 +42,7 @@ import { isCustomShape } from "./definition/diagramDefinition";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
-import { useLibrarySelection, type CanvasSource } from "./librarySelection";
+import { useLibrarySelection, type CanvasSource, type LibraryContextIntegration } from "./librarySelection";
 import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./ringLooks";
 import { isTextTarget } from "../interaction";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
@@ -55,6 +54,7 @@ import {
   dispatchDiagramEvent,
   type DiagramEvent,
   type DiagramEventHandlers,
+  type LibraryEventHandlers,
   type DiagramSelection,
   type SelectedItem,
 } from "./api/diagramEvents";
@@ -165,21 +165,6 @@ function shapedToPane(view: ViewBox, pane: PaneSize | null): ViewBox {
   return { x: view.x, y: view.y - (h - view.h) / 2, w: view.w, h };
 }
 
-/**
- * The module's context-channel state, handed in rather than fetched: the canvas renders the
- * backend's answers and asks through the module's own callbacks, so there is one selection
- * policy and one menu discipline in the application, not two (Requirements 7.1, 7.2).
- */
-export interface DiagramContextIntegration {
-  /** `innermostKey(selection)` - which selection the backend currently holds. */
-  selectionKey?: string;
-  /** The pushed action groups for that selection - the menu renders these, never a guess. */
-  actions: ContextActionGroup[];
-  /** Push a selection for the menu gesture (the CONTEXT_MENU action). */
-  selectForMenu: (id: string) => void;
-  executeAction: (actionId: string) => void | Promise<unknown>;
-}
-
 /** The shell's inline-edit prompt, bridged: which target edits, and the editor's callbacks. */
 export interface DiagramEditingIntegration {
   editingId: string | null;
@@ -194,24 +179,14 @@ export interface DiagramCanvasProps {
   events: DiagramEventHandlers;
   config?: DiagramRuntimeConfig;
   /**
-   * Which diagram this canvas draws - the shell's `entryId` and `path`. **Given, and none of
-   * `selection`, `context` or `events.onSelectionChanged` with it, the library owns selection**:
-   * it reads the backend's selection, pushes a press's, and wires the shared context menu itself,
-   * so the module writes no selection code at all (centralized-selection Requirement 1).
-   *
-   * A canvas still passing any of those three behaves exactly as before - the two ways coexist
-   * until every module has moved, after which the three go (that specification's task 21).
+   * Which diagram this canvas draws - the shell's `entryId` and `path`. **Given, the library owns
+   * selection**: it reads the backend's selection, pushes a press's, and wires the shared context
+   * menu itself, so the module writes no selection code at all (centralized-selection
+   * Requirement 1). There is nothing else to pass: `selection`, `context` and `onSelectionChanged`
+   * are not part of this contract, so a module cannot hand-wire selection. Omitted - a library test,
+   * a picture with no backend - the canvas highlights its own last press and tells nobody.
    */
   source?: CanvasSource;
-  /**
-   * Controlled selection - usually the backend's push, exactly as the hand-built canvases
-   * highlight `selectedElementIdOf(selection)`. Omitted, the canvas highlights its own last
-   * press; either way every press raises `selectionChanged` and nothing else decides.
-   * Superseded by {@link source}.
-   */
-  selection?: DiagramSelection;
-  /** The shared context menu's wiring, hand-built. Superseded by {@link source}. */
-  context?: DiagramContextIntegration;
   editing?: DiagramEditingIntegration;
   /**
    * The backend's toolbox entries, where the module has them. Omitted, the toolbox derives
@@ -283,14 +258,24 @@ interface ConnectPreview {
  */
 export function DiagramCanvas(props: DiagramCanvasProps) {
   // Two components rather than one with a conditional hook: the library-owned path reads the
-  // context channel, and a canvas mounted without that provider - most library tests, and any
-  // canvas that has not moved yet - must not have to supply one it does not use.
-  const owned =
-    props.source !== undefined &&
-    props.selection === undefined &&
-    props.context === undefined &&
-    props.events.onSelectionChanged === undefined;
-  return owned ? <LibraryOwnedCanvas {...props} source={props.source!} /> : <DiagramCanvasCore {...props} />;
+  // context channel, and a canvas mounted without a source - most library tests - must not have
+  // to supply a provider it does not use.
+  return props.source !== undefined ? <LibraryOwnedCanvas {...props} source={props.source} /> : <DiagramCanvasCore {...props} />;
+}
+
+/**
+ * What the canvas core takes: the module contract, plus the three things only the library itself
+ * supplies - the resolved selection, the menu's wiring, and the handler map with the library's own
+ * `selection-changed` in it. <b>Library-internal</b>: the library's selection wrapper and the
+ * library's own tests mount the core; a module mounts {@link DiagramCanvas}, and the text guard
+ * fails one that reaches for this.
+ */
+export interface DiagramCanvasCoreProps extends Omit<DiagramCanvasProps, "events" | "source"> {
+  events: LibraryEventHandlers;
+  /** The selection to draw - the backend's, resolved by the library. Omitted, the core keeps its own last press. */
+  selection?: DiagramSelection;
+  /** The shared menu's wiring. Omitted, the core offers no menu. */
+  context?: LibraryContextIntegration;
 }
 
 /** The canvas with its selection owned by the library: the one place the three props are made. */
@@ -299,7 +284,8 @@ function LibraryOwnedCanvas(props: DiagramCanvasProps & { source: CanvasSource }
   return <DiagramCanvasCore {...props} selection={selection} context={context} events={events} />;
 }
 
-function DiagramCanvasCore({
+/** The canvas itself, beneath the selection wrapper. Library-internal - see {@link DiagramCanvasCoreProps}. */
+export function DiagramCanvasCore({
   definition: statedDefinition,
   model,
   events,
@@ -311,7 +297,7 @@ function DiagramCanvasCore({
   className,
   scrollbarsClassName,
   ariaLabel,
-}: DiagramCanvasProps) {
+}: DiagramCanvasCoreProps) {
   // Memoized because two registrations key on its identity: a fresh object per render
   // would re-register the toolbox every render, and the provider's setState would render
   // again - a loop. The config object is a prop; its identity is the caller's contract.

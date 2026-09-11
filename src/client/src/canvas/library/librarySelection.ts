@@ -5,8 +5,8 @@ import { ContextSelectionAction } from "@client/generated/context_pb";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
 import { actionForMenuEntry, type ActionLookup } from "./definition/actions";
 import type { DiagramModel } from "./api/diagramModel";
-import { dispatchDiagramEvent, type DiagramEventHandlers, type DiagramSelection } from "./api/diagramEvents";
-import type { DiagramContextIntegration } from "./DiagramCanvas";
+import { dispatchDiagramEvent, type DiagramEventHandlers, type DiagramSelection, type LibraryEventHandlers } from "./api/diagramEvents";
+import type { ContextActionGroup } from "@client/generated/context-contract_pb";
 
 /**
  * Which diagram a canvas draws, as the context channel names it: the `.adp` entry and its path.
@@ -69,11 +69,26 @@ function menuLookup(selection: DiagramSelection, model: DiagramModel, definition
   };
 }
 
-/** What the library hands its own canvas in place of the three props a module used to wire. */
+/**
+ * The shared menu's wiring, as the library hands it to its own canvas: which selection the
+ * backend holds, its pushed actions, the context-menu push and the action run. <b>Library-internal.</b>
+ * Until centralized-selection task 21 a module built this by hand, as `DiagramContextIntegration`.
+ */
+export interface LibraryContextIntegration {
+  /** `innermostKey(selection)` - which selection the backend currently holds. */
+  selectionKey?: string;
+  /** The pushed action groups for that selection - the menu renders these, never a guess. */
+  actions: ContextActionGroup[];
+  /** Push a selection for the menu gesture (the CONTEXT_MENU action). */
+  selectForMenu: (id: string) => void;
+  executeAction: (actionId: string) => void | Promise<unknown>;
+}
+
+/** What the library hands its own canvas: the selection, the menu's wiring, and the handlers. */
 export interface LibrarySelection {
   selection: DiagramSelection;
-  context: DiagramContextIntegration;
-  events: DiagramEventHandlers;
+  context: LibraryContextIntegration;
+  events: LibraryEventHandlers;
 }
 
 /**
