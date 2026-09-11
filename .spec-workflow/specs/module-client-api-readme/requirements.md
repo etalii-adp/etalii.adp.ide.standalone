@@ -41,7 +41,7 @@ At least eight tests walk every module's client code and fail on a forbidden pat
 
 ### What is moving under it
 
-`centralized-selection` (requirements committed at `b6b687ee`, not yet approved) removes per-module selection wiring from every canvas: the `canvas/selection` helpers all 13 modules import, hand-written `onSelectionChanged`, the `context` prop's selection fields, and module-private selected classes. **A readme written against today's code would document a pattern that specification makes forbidden.**
+`centralized-selection` (requirements committed at `b6b687ee`; its design awaiting approval) removes per-module selection wiring from every canvas: the selection derivations all 13 modules write today, hand-written `onSelectionChanged`, the `context` prop, and module-private selected classes. **A readme written against today's code would document a pattern that specification makes forbidden.** Its author, Architect 2, has listed the module-facing names its design removes, keeps and adds; Requirement 7 records them, and follows that specification wherever its approved documents differ.
 
 ## Alignment with Product Vision
 
@@ -122,7 +122,7 @@ At least eight tests walk every module's client code and fail on a forbidden pat
 
 #### Acceptance Criteria
 
-1. WHEN selection is documented THEN the readme SHALL describe selection as `centralized-selection` leaves it — owned by the library, with unselectable types declared in the definition — and SHALL NOT present the `canvas/selection` helpers, a selection-pushing `onSelectionChanged`, or the `context` prop's selection fields as a module's to write.
+1. WHEN selection is documented THEN the readme SHALL describe selection as `centralized-selection` leaves it — owned by the library, with unselectable types declared in the definition — and SHALL NOT present deriving or pushing a selection as a module's to write. As that specification's design proposes it (pending approval on 2026-09-11), that means no module-facing entry for `elementSelectionOf`, `selectedElementIdOf`, `elementIdOfKey` and `innermostKey`, nor for `DiagramCanvas`'s `selection` and `context` props or `onSelectionChanged`. What it keeps module-facing for action handlers (`elementSourceOf`, `useContextConnection`, `useContextPrompt`) and what it adds (a declared `selectable` flag on element and relation types, a `source` prop, a refused-action event) are documented like any other aspect.
 2. WHEN this specification's implementation is scheduled THEN it SHALL NOT start until `centralized-selection`'s implementation is on `develop`, established with `git merge-base --is-ancestor`. Requirements and design may proceed before then.
 3. IF `centralized-selection`'s approved documents change what a module does about selection THEN this specification SHALL follow them.
 
