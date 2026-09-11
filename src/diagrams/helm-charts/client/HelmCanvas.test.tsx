@@ -9,6 +9,9 @@ import {
 } from "@client/generated/helm-charts_pb";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type HelmModel } from "./helmModel";
+import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 const select = vi.fn();
 const revealPath = vi.fn();
@@ -335,5 +338,39 @@ describe("HelmCanvas", () => {
     currentLoading = false;
     currentFailed = true;
     expect(renderCanvas().container.textContent).toContain("could not be opened");
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  /** Two nodes and a delivered edge between them - the edge is what helm could never select. */
+  function modelWithEdge(): HelmModel {
+    const edge = create(HelmElementPayloadSchema, {
+      name: "declares",
+      kind: HelmElementKind.EDGE,
+      edge: { sourceId: "chart", targetId: "dep:redis", kind: HelmEdgeKind.DECLARES, label: "1.0.0", openEnd: false },
+    });
+    return modelOf(
+      element("chart", "helm/chart+chart", HelmElementKind.CHART),
+      element("dep:redis", "helm/chart+dependency", HelmElementKind.DEPENDENCY, {}, 400, 0),
+      create(ElementSchema, {
+        id: { value: "e1" },
+        position: { x: 0, y: 0 },
+        type: "helm/chart+edge",
+        payload: { typeUrl: TYPE_URL, value: toBinary(HelmElementPayloadSchema, edge) },
+      }),
+    );
+  }
+
+  it("highlights a pushed node and edge, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelWithEdge();
+        currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["helm-chart.adp"], id);
+        return renderCanvas();
+      },
+      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: "chart",
+      connection: "e1",
+    });
   });
 });

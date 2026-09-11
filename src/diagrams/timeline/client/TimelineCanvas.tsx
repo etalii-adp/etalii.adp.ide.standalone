@@ -1,19 +1,18 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { forwardBezierPath, horizontalBezierPath } from "@client/canvas/connectors";
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import type { DiagramDefinition, LabelDeclaration } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import type { DiagramEventHandlers, DiagramSelection, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
 import { TimelineRuler } from "./TimelineRuler";
 import { useTimelineStream } from "./useTimelineStream";
 import type { TimelineElement, TimelineModel } from "./timelineModel";
@@ -296,16 +295,12 @@ const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  */
 export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useTimelineStream(projectId, path);
-  const { select, executeAction, executeShortcut, setProperty } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut, setProperty } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<DiagramViewport | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const surfaceWidthPx = useMeasuredWidth(hostRef);
-
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   // Frozen when the first non-empty model lands, exactly as the old canvas fitted once.
   const scaleRef = useRef<TimelineScale | null>(null);
@@ -358,13 +353,6 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the scale is frozen; only the model varies.
   }, [model, scale]);
 
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null) {
-      return [];
-    }
-    return [{ kind: model.connections.has(selectedId) ? "connection" : "element", id: selectedId }];
-  }, [selectedId, model.connections]);
-
   const runAction = (actionId: string, sourceId?: string) => {
     void (async () => {
       const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
@@ -395,8 +383,9 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) =>
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    // Selection is the library's (centralized-selection); a menu action it ran and the backend
+    // refused comes back here, for the same rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       const element = model.elements.get(elementId);
       if (element === undefined) {
@@ -491,14 +480,8 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         definition={TIMELINE_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
-        }}
         editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         ariaLabel="Timeline"
         className="timeline-surface canvas-viewport"
