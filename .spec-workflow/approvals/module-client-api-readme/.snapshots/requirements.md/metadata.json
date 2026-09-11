@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/module-client-api-readme/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-11T15:24:14.613Z",
+      "trigger": "initial",
+      "approvalId": "approval_1789140254249_u3w261ggb",
+      "approvalTitle": "module-client-api-readme requirements (docs/ readme of the diagram-module client API; complete by measurement)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-11T17:22:31.983Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789140254249_u3w261ggb",
+      "approvalTitle": "module-client-api-readme requirements (docs/ readme of the diagram-module client API; complete by measurement)"
+    }
+  ]
+}
