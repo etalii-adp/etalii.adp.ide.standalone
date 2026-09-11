@@ -12,39 +12,39 @@ One worktree for the whole specification (`.claude/worktrees/csel`, per CLAUDE.m
 
 ## Group 1 — The library, landed before any module changes
 
-- [ ] 1. `selectable` on element and relation types
+- [x] 1. `selectable` on element and relation types
   - Files: `src/client/src/canvas/library/definition/diagramDefinition.ts`, `validateDiagramDefinition.ts`, tests
   - `selectable?: boolean` on `ElementTypeDefinition` and `RelationTypeDefinition`. **The doc-comment says in words that the default is selectable**, so "not selectable" is only ever a declared value and never the absence of one.
   - _Requirements: 2.3_
 
-- [ ] 2. The selection model inside `DiagramCanvas`
+- [x] 2. The selection model inside `DiagramCanvas`
   - Files: `src/client/src/canvas/library/DiagramCanvas.tsx`, `DiagramCanvas.test.tsx`
   - A `source: { entryId, path }` prop. **Inbound**: the pushed selection is resolved against the model the library already holds — a connection if `model.connections` has it, an element if `model.elements` has it, otherwise nothing, and nothing for an unselectable type. **Outbound**: `select(...)` pushes `elementSelectionOf(...)`, or `null` for an empty selection. **The click rules**, stated once: a press selects and replaces; a background press clears; a press on an unselectable type behaves as a background press; a vanished item pushes `null` once. **A drag does not select** — `select` stays reachable only from `onPress`.
   - `DiagramSelection` arrays end to end: one pushed id becomes a one-item array, and outbound sends the single member. **Nothing of multi-select** — no Ctrl+click, marquee or wire change.
   - Active only when a canvas passes `source` and none of the old props; otherwise today's behaviour stands unchanged.
   - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 7.1, 7.2_
 
-- [ ] 3. The menu integration, owned by the library
+- [x] 3. The menu integration, owned by the library
   - Files: `DiagramCanvas.tsx`, tests
   - The library builds `selectionKey`, `actions`, `selectForMenu` and `executeAction` itself from the pushed selection. A backend refusal of a shared-menu action is raised to the module as an **`action-refused`** event carrying the backend's message, because each module keeps its own rejection display.
   - _Requirements: 1.3_
 
-- [ ] 4. Two looks, each with one class
+- [x] 4. Two looks, each with one class
   - Files: `src/client/src/canvas/canvas.css`, `DiagramCanvas.tsx` (`LibraryElement`), `noUnstyledLibraryClasses.test.ts`
   - The shared rule styling `.canvas-selected .canvas-node` and `.canvas-connect-target .canvas-node` together is **split**. *Selected*: an outline the library draws outside the shape's own boundary, independent of fill and stroke, so it is legible on backend-chosen colours. *Accept*: a dashed outline at a larger offset in its own colour token, as `library-connect-target` only. The anchors keep `1df91874`'s behaviour for *selected* and take the accept colour under a connect target. A selected connection keeps its centrally defined line treatment.
   - _Requirements: 5.2, 5.3, 6.1, 6.2_
 
-- [ ] 5. The composition rule
+- [x] 5. The composition rule
   - Files: `DiagramCanvas.tsx` (`LibraryElement`), tests
   - `{ selected, dragging, connectTarget }` stay three independent, additive flags that do not read one another. Tested: **dropped, held and selected** shows the selected outline at the held position with no dragging look; **selected and a valid drop target** shows both outlines; a drag leaves the selection unchanged.
   - _Requirements: 5.3, 6.2_
 
-- [ ] 6. The shared mounted assertion
+- [x] 6. The shared mounted assertion
   - Files: `src/client/src/canvas/library/testing/expectLibrarySelection.ts` (new), its own test
   - `expectLibrarySelection(mount)` asserts that a pushed element selection highlights that element, that a pushed connection selection highlights that connection wherever the relation type is selectable, and that a background press pushes `null`. Each module's canvas test calls it with that module's real canvas and model.
   - _Requirements: 9.2_
 
-- [ ] 7. Gate and land Group 1
+- [x] 7. Gate and land Group 1
   - Four gates green on the merged tree. **Every existing module test passes unchanged**, since no module has migrated yet and the old props still work.
   - _Requirements: 11.1, 11.2_
 
