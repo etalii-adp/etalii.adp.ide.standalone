@@ -1,0 +1,139 @@
+# Tasks Document
+
+One worktree for the whole specification (`.claude/worktrees/csel`, per CLAUDE.md's one-worktree-per-specification rule), and one Developer owning it until every task is done. Every landing goes through the shared gate: `gate.sh` on the implementer's own scratch tree, then the printed `land.sh` line run by hand in the foreground. The worktree is retired with `retire.sh`. Running the app for the browser pass happens from the worktree on the implementing Developer's reserved ports, with both port files reverted before merging.
+
+**Two design points were raised for the user's objection and approved without annotation on 2026-09-11.** They are approved, not merely unchallenged: the selected look changes mechanism, to an outline outside the shape with *accept* as a dashed outline at a larger offset; and Requirement 9.2 is met through each module's own test harness, with the text guard enforcing it.
+
+**A dependency another specification carries too.** Architect 1's `module-client-api-readme` documents the module-facing API **as this specification leaves it**, so its implementation **does not start until this specification's implementation is on develop**, checked with `git merge-base --is-ancestor`. Any rename, addition or removal of a module-facing name here is sent to it at the same time.
+
+**The order is load-bearing.** The approved design's end state removes `selection`, `context` and `onSelectionChanged` from the contract, so that typecheck refuses a module still wiring them. Removing them in the library task would break the build for all sixteen modules at once and make "each module its own landing" impossible. So the library **adds** the new mechanism while the old props still work, every module migrates in its own landing, and the old props are **removed** after the sixteenth (task 21). While both exist, the rule is simple: a canvas that passes `source` and none of the old props has its selection owned by the library, and a canvas still passing the old props behaves exactly as today.
+
+---
+
+## Group 1 — The library, landed before any module changes
+
+- [ ] 1. `selectable` on element and relation types
+  - Files: `src/client/src/canvas/library/definition/diagramDefinition.ts`, `validateDiagramDefinition.ts`, tests
+  - `selectable?: boolean` on `ElementTypeDefinition` and `RelationTypeDefinition`. **The doc-comment says in words that the default is selectable**, so "not selectable" is only ever a declared value and never the absence of one.
+  - _Requirements: 2.3_
+
+- [ ] 2. The selection model inside `DiagramCanvas`
+  - Files: `src/client/src/canvas/library/DiagramCanvas.tsx`, `DiagramCanvas.test.tsx`
+  - A `source: { entryId, path }` prop. **Inbound**: the pushed selection is resolved against the model the library already holds — a connection if `model.connections` has it, an element if `model.elements` has it, otherwise nothing, and nothing for an unselectable type. **Outbound**: `select(...)` pushes `elementSelectionOf(...)`, or `null` for an empty selection. **The click rules**, stated once: a press selects and replaces; a background press clears; a press on an unselectable type behaves as a background press; a vanished item pushes `null` once. **A drag does not select** — `select` stays reachable only from `onPress`.
+  - `DiagramSelection` arrays end to end: one pushed id becomes a one-item array, and outbound sends the single member. **Nothing of multi-select** — no Ctrl+click, marquee or wire change.
+  - Active only when a canvas passes `source` and none of the old props; otherwise today's behaviour stands unchanged.
+  - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 7.1, 7.2_
+
+- [ ] 3. The menu integration, owned by the library
+  - Files: `DiagramCanvas.tsx`, tests
+  - The library builds `selectionKey`, `actions`, `selectForMenu` and `executeAction` itself from the pushed selection. A backend refusal of a shared-menu action is raised to the module as an **`action-refused`** event carrying the backend's message, because each module keeps its own rejection display.
+  - _Requirements: 1.3_
+
+- [ ] 4. Two looks, each with one class
+  - Files: `src/client/src/canvas/canvas.css`, `DiagramCanvas.tsx` (`LibraryElement`), `noUnstyledLibraryClasses.test.ts`
+  - The shared rule styling `.canvas-selected .canvas-node` and `.canvas-connect-target .canvas-node` together is **split**. *Selected*: an outline the library draws outside the shape's own boundary, independent of fill and stroke, so it is legible on backend-chosen colours. *Accept*: a dashed outline at a larger offset in its own colour token, as `library-connect-target` only. The anchors keep `1df91874`'s behaviour for *selected* and take the accept colour under a connect target. A selected connection keeps its centrally defined line treatment.
+  - _Requirements: 5.2, 5.3, 6.1, 6.2_
+
+- [ ] 5. The composition rule
+  - Files: `DiagramCanvas.tsx` (`LibraryElement`), tests
+  - `{ selected, dragging, connectTarget }` stay three independent, additive flags that do not read one another. Tested: **dropped, held and selected** shows the selected outline at the held position with no dragging look; **selected and a valid drop target** shows both outlines; a drag leaves the selection unchanged.
+  - _Requirements: 5.3, 6.2_
+
+- [ ] 6. The shared mounted assertion
+  - Files: `src/client/src/canvas/library/testing/expectLibrarySelection.ts` (new), its own test
+  - `expectLibrarySelection(mount)` asserts that a pushed element selection highlights that element, that a pushed connection selection highlights that connection wherever the relation type is selectable, and that a background press pushes `null`. Each module's canvas test calls it with that module's real canvas and model.
+  - _Requirements: 9.2_
+
+- [ ] 7. Gate and land Group 1
+  - Four gates green on the merged tree. **Every existing module test passes unchanged**, since no module has migrated yet and the old props still work.
+  - _Requirements: 11.1, 11.2_
+
+---
+
+## Group 2 — The reference migration
+
+- [ ] 8. `timeline`
+  - It already uses only the shared look and already selects connections, so migrating it proves the central model reproduces the user's working behaviour with the least visible change. Pass `source`; delete the inbound `useMemo<DiagramSelection>`, the `onSelectionChanged` handler and the `context` prop. Its canvas test calls `expectLibrarySelection`. **Its existing tests pass unchanged**, with no exemption needed, because it declares no private class.
+  - _Requirements: 1.4, 9.2, 11.1, 11.2_
+
+---
+
+## Group 3 — The four the user named broken
+
+- [ ] 9. `helm-charts` — **the natural red first**
+  - **Before migrating**, run `expectLibrarySelection` against today's helm canvas and **record it failing two of its three checks**: the background press pushes nothing, and a connection is never highlighted. That is the guard seen red against the real defect.
+  - Then migrate: the glue goes, `helm-node-selected` goes, connections become selectable, and a background press clears. The same assertion now passes.
+  - _Requirements: 2.1, 3.2, 5.1, 9.2, 9.3, 11.1_
+
+- [ ] 10. `ansible-structure`
+  - The glue goes and `ansible-node-selected` goes. **`focusedId` is deleted**: its one consumer, Enter or Space revealing the focused node's file, becomes a **declared action** (`invokedBy` Enter and Space, applying to elements) whose handler runs against the library's selection.
+  - _Requirements: 3.2, 4.1, 5.1, 9.2, 11.1_
+
+- [ ] 11. `azure-pipeline`
+  - The glue goes. **`focusedId`, the `payload.focused` field computed from it, and `pipeline-focused` are all deleted**, so its highlight is `canvas-selected`, driven by the selection like everyone else's.
+  - _Requirements: 4.1, 4.2, 5.1, 9.2, 11.1_
+
+- [ ] 12. `dotnet-dependency-graph`
+  - The glue goes and `dotnet-dependency-selected` goes. A connection press now reaches the backend **as a connection** rather than mislabelled as an element, and is highlighted.
+  - _Requirements: 2.1, 2.2, 5.1, 9.2, 11.1_
+
+---
+
+## Group 4 — The other eleven, each its own landing
+
+Each: pass `source`, delete the glue, delete its private selected class, and call `expectLibrarySelection` from its canvas test. Existing tests pass unchanged except those asserting a removed class (Requirement 11.1), each citing the requirement that removed it.
+
+- [ ] 13. `dependency-graph` — `dependency-graph-selected`, and its private connect-target declaration
+  - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
+- [ ] 14. `causal-loop` — its redundant second declaration of `canvas-selected`
+  - _Requirements: 1.4, 5.1, 9.2, 11.1_
+- [ ] 15. `c4` — `c4-node-focused`, and **its boundary type declares `selectable: false`**, replacing the hand-written check in `onSelectionChanged`
+  - _Requirements: 1.4, 2.3, 5.1, 9.2, 11.1_
+- [ ] 16. `databricks` — `databricks-selected`, and its two private connect-target declarations
+  - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
+- [ ] 17. `rdf`, all four readings — `owl-selected`, `shacl-selected`, `skos-selected`, and the nine private connect-target declarations (seven in the OWL reading, two in SKOS)
+  - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
+- [ ] 18. `sparql` — `sparql-selected`
+  - _Requirements: 1.4, 5.1, 9.2, 11.1_
+- [ ] 19. `mindmap` — `mindmap-node-focused`; **its relation types declare `selectable: false`**, and its readme records that as a decision about the notation
+  - _Requirements: 1.4, 2.4, 5.1, 9.2, 11.1_
+- [ ] 20. `wardley-map` — `wardley-selected`; **its relation types declare `selectable: false`**, with the same readme note
+  - _Requirements: 1.4, 2.4, 5.1, 9.2, 11.1_
+
+---
+
+## Group 5 — Close the old path and prove it stays closed
+
+- [ ] 21. Remove the old props from the contract
+  - Files: `DiagramCanvas.tsx`
+  - `selection`, `context` and `events.onSelectionChanged` go, and `DiagramContextIntegration` stops being exported. **From here typecheck refuses any module wiring selection by hand**, which is the approved design's end state. Only now, because all sixteen have migrated.
+  - _Requirements: 1.4_
+
+- [ ] 22. The text guard
+  - Files: `src/client/src/canvas/library/noModuleSelection.test.ts` (new)
+  - Walks every module client and fails, naming each offender, on: a `DiagramSelection` derivation, an `onSelectionChanged` handler, a `selection=` or `context=` prop, a declared class bound to `state.selected` or `state.connectTarget`, or module-held focus state. **It also fails a registered module whose canvas test does not call `expectLibrarySelection`**, which is what makes the mounted assertion complete.
+  - Keyed per canvas file; both canary shapes, a floor on **files walked** (structure, not content, per `processes.md`) and a named member present. Its doc-comment states its limit: glue under an unrecognisable name goes unseen, and the mounted assertion closes that.
+  - **Seen red** against a planted offender in a scratch copy before acceptance.
+  - _Requirements: 9.1, 9.3, 9.4_
+
+- [ ] 23. The `declarative-diagram-modules` Requirement 1.2 annotation — **its own card**
+  - Files: `.spec-workflow/specs/declarative-diagram-modules/requirements.md` (main checkout, spec bookkeeping)
+  - A **labelled annotation only** beside 1.2 — *"superseded by `centralized-selection` Requirement 8: selection is not a module's to handle"* — with **no rewording of the approved text**. **Raised as its own dashboard card** so the user approves the moved text rather than meeting it by reading, and the Scrum master told as it is raised.
+  - _Requirements: 8.1, 8.2_
+
+- [ ] 24. The browser pass
+  - Files: `tests.md`
+  - All sixteen canvases in a real browser: select an element, select a connection where selectable, press the background, and **confirm a drag does not select**. The outline must read clearly on each diagram's fills, including backend-chosen colours; a connection's highlight must run its whole route; *selected* and *accept* must be distinguishable when both hold. **The user's oracle, recorded as such**: the four named broken behave exactly as the four named working. jsdom is not taken as evidence for any of this.
+  - _Requirements: 5.2, 10.1, 10.2, 10.3_
+
+- [ ] 25. Gate, merge, and the coverage diff against the code
+  - Four gates on the merged tree; ports reverted; the coverage diff re-run against files and strings rather than task claims.
+  - _Requirements: 11.1, 11.2_
+
+---
+
+## Requirement coverage
+
+Every acceptance criterion in the approved requirements was checked against every task claim above, mechanically, in both directions. Thirty-two criteria (4, 4, 4, 2, 3, 2, 2, 2, 4, 3 and 2 across Requirements 1 to 11), all claimed, and no claim names a criterion that does not exist.
+
+**No criterion is unclaimed, so there is no *no task can claim it* item to name.** Two criteria are **prohibitions rather than work** — 7.1 (single-selection, no multi-select mechanism) and 10.3 (jsdom is not evidence of the look). They are claimed by the tasks that must observe them (2 and 24). A claim is a promise, not proof: the post-implementation run of the diff, in task 25, traces each of the two to the code and the browser record rather than to these claims.
