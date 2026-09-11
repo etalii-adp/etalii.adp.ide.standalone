@@ -54,7 +54,9 @@ Fourteen of the sixteen canvases declare a selected class of their own beside th
 
 ### Two meanings of "highlight" already exist
 
-Besides *selected*, the library draws *would accept this connection* on the element a connection drag is over — `library-connect-target`, decided by the declared relation constraints (`397ac141`). The two already use different classes, answer different questions, and can hold at the same time.
+Besides *selected*, the library draws *would accept this connection* on the element a connection drag is over — `library-connect-target`, decided by the declared relation constraints (`397ac141`). The two answer different questions and can hold at the same time.
+
+*Added on 2026-09-11, during design, and ruled by the user the same day.* Two things were found once the look itself was read. **First, the two meanings currently look identical**: `canvas.css` styles `.canvas-selected .canvas-node` and `.canvas-connect-target .canvas-node` in one shared rule — the same stroke colour, the same width — and their anchors share one colour too. So an element that is both selected and a valid drop target cannot show both today. **Second, the drop-target highlight has drifted the way selection did**: the library applies `library-connect-target`, and four modules also declare **twelve private** `<module>-connect-target canvas-connect-target` classes of their own — seven in the OWL reading, two each in `databricks` and the SKOS reading, one in `dependency-graph`. The user ruled that the drop-target highlight joins *one way* as well.
 
 ## Alignment with Product Vision
 
@@ -120,7 +122,7 @@ Besides *selected*, the library draws *would accept this connection* on the elem
 
 #### Acceptance Criteria
 
-1. WHEN the look is centralised THEN *selected* and *would accept a connection* SHALL remain **two mechanisms** with two classes. One answers what the reader chose; the other answers what a gesture would do. Neither SHALL be drawn with the other's class.
+1. WHEN the look is centralised THEN *selected* and *would accept a connection* SHALL remain **two mechanisms, each with exactly one class and one look, both owned by the library**. One answers what the reader chose; the other answers what a gesture would do. Neither SHALL be drawn with the other's class or share its look, and **the twelve module-private connect-target declarations SHALL be removed**, with `library-connect-target` as the only drop-target class. *Amended on 2026-09-11 by user ruling; see "Two meanings of highlight already exist".*
 2. WHEN an element is both selected and a valid drop target THEN both SHALL be visible.
 
 ### Requirement 7 — Multi-selection is not specified here, and not ruled out
@@ -168,7 +170,7 @@ Besides *selected*, the library draws *would accept this connection* on the elem
 
 #### Acceptance Criteria
 
-1. WHEN a canvas is migrated THEN its existing tests SHALL pass unchanged, **except** tests asserting a module-private selected class, which change because Requirement 5 removes that class. Each such change SHALL cite Requirement 5, and any other test that must change is evidence of a behaviour change, not a test to update.
+1. WHEN a canvas is migrated THEN its existing tests SHALL pass unchanged, **except** tests asserting a module-private selected class, which change because Requirement 5 removes that class, **or a module-private connect-target class, which change because Requirement 6.1 removes that class**. Each such change SHALL cite the requirement that caused it, and any other test that must change is evidence of a behaviour change, not a test to update. *The connect-target clause was added on 2026-09-11 with Requirement 6.1's amendment.*
 2. WHEN a canvas is migrated THEN its gestures, actions, drag and connect behaviour SHALL be unchanged. This work moves where selection is decided and what it looks like, and nothing else.
 
 ## Non-Functional Requirements
