@@ -68,14 +68,9 @@
   font-size: 10px;
 }
 
-.mindmap-node-focused rect {
-  stroke: var(--color-primary);
-  stroke-width: 2.5;
-}
-
 /* The node a drag is held over - the drop's outcome, shown before the button is released.
-   After the base and focused rules: a later equal-specificity rule would swallow the
-   highlight (found by the bezier-connector manual pass). */
+   After the base rule: a later equal-specificity rule would swallow the highlight (found by
+   the bezier-connector manual pass). Selected is the library's own ring, not a rule here. */
 .mindmap-node-drop-target rect {
   stroke: var(--color-primary);
   stroke-width: 2.5;

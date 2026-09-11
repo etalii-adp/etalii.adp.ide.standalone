@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
 
-import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
@@ -108,7 +107,6 @@ function definitionOf(): DiagramDefinition {
         shape: "centered-box",
         classNames: [
           { className: "mindmap-node", on: "element" },
-          { className: "mindmap-node-focused", on: "element", when: { path: "state.selected", is: "true" } },
           { className: "mindmap-node-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
         ],
         labels: [
@@ -140,6 +138,11 @@ function definitionOf(): DiagramDefinition {
         route: "cubic-bezier",
         style: { endMarker: "none" },
         lineClassName: "mindmap-edge",
+        // A branch is a node's link to its parent, not a thing a reader picks: a press on it is
+        // a press on the background, as it has always been here. A decision about the notation,
+        // recorded in this module's readme - making branches selectable is a separate question
+        // for the user, not a side effect (centralized-selection Requirement 2.4).
+        selectable: false,
         endpoints: {
           source: { elementTypes: ["node"] },
           target: { elementTypes: ["node"], anchors: "edge" },
@@ -190,13 +193,9 @@ function definitionOf(): DiagramDefinition {
  */
 export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) {
   const { model, loading, failed, moveElement, reportView } = useMindmapStream(projectId, path);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-
-  const selectionKey = innermostKey(selection);
-  const selectedNodeId = useMemo(() => selectedElementIdOf(selection), [selection]);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -239,12 +238,6 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     return { elements, connections };
   }, [model]);
 
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(
-    () => (selectedNodeId && model.elements.has(selectedNodeId) ? [{ kind: "element", id: selectedNodeId }] : []),
-    [selectedNodeId, model.elements],
-  );
-
   const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
     void executeShortcut(shortcut, elementSourceOf(sourceId));
   };
@@ -257,16 +250,8 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) => {
-      if (next.length === 0 || next[0].kind === "connection") {
-        // A press on empty canvas deselects; a press on a branch line means the same - the
-        // old canvas gave its edges no hit surface, so a click there fell through to the
-        // background (recorded unification: the library's fat hit twin catches it first).
-        select(null);
-        return;
-      }
-      select(elementSelectionOf(entryId, path, next[0].id));
-    },
+    // Selection is the library's (centralized-selection); a press on a branch is a background
+    // press because the branch type declares `selectable: false`.
     onElementMoved: ({ elementId, position }) => {
       // A drag is a re-parenting proposal, not a position write: the drop lands on whichever
       // node sits under the released point, appended as its last child; over empty canvas the
@@ -324,14 +309,8 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
           definition={definition}
           model={diagramModel}
           events={events}
-          selection={librarySelection}
+          source={{ entryId, path }}
           toolboxItems={toolboxItems}
-          context={{
-            selectionKey: selectionKey ?? undefined,
-            actions,
-            selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-            executeAction: (actionId) => void executeAction(actionId, selectedNodeId ? elementSourceOf(selectedNodeId) : undefined),
-          }}
           editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
           className="mindmap-canvas-host"
           ariaLabel="Mind map"
