@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementIdOfKey, elementSelectionOf } from "@client/canvas/selection";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
@@ -69,7 +69,10 @@ export interface LibrarySelection {
  * selection. A connection travels under its own id, never labelled as an element.
  *
  * <b>The menu</b> - the key, the pushed actions, the context-menu push and the action run are
- * built here. A refused action comes back as `action-refused`, for the module's rejection line.
+ * built here. An entry runs against the backend's CURRENT selection, with no source of its own:
+ * the menu opens only once the pushed selection is the item it was opened on, and a source
+ * naming that same item would say nothing the backend does not already hold. A refused action
+ * comes back as `action-refused`, for the module's rejection line.
  *
  * <b>A selection that vanishes clears.</b> When the item this canvas last resolved leaves the
  * model while the pushed selection still names it - an edit, a reload - `null` is pushed once
@@ -120,7 +123,7 @@ export function useLibrarySelection(
       actions: actions ?? [],
       selectForMenu: (id) => push(id, ContextSelectionAction.CONTEXT_MENU),
       executeAction: async (actionId) => {
-        const outcome = await executeAction(actionId, selectedId !== null ? elementSourceOf(selectedId) : undefined);
+        const outcome = await executeAction(actionId);
         if (!outcome.accepted && outcome.error) {
           dispatchDiagramEvent(events, { kind: "action-refused", actionId, message: outcome.error });
         }
