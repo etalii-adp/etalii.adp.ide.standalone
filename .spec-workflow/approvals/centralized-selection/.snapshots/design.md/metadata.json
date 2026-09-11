@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/centralized-selection/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-11T14:41:43.329Z",
+      "trigger": "initial",
+      "approvalId": "approval_1789137703033_uz00bpp6a",
+      "approvalTitle": "centralized-selection design"
+    }
+  ]
+}
