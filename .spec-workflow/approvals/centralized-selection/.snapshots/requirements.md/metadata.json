@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789070345279_1dg03ltft",
       "approvalTitle": "centralized-selection requirements"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-11T14:58:06.649Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789137695592_u8f1axi49",
+      "approvalTitle": "centralized-selection requirements (amendment: drop-target joins one way)"
     }
   ]
 }
