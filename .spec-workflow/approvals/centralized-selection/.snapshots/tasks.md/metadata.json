@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-11T15:13:58.703Z",
       "trigger": "initial",
+      "approvalId": "approval_1789139638351_4snqmk2q9",
+      "approvalTitle": "centralized-selection tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-11T17:22:25.269Z",
+      "trigger": "approved",
       "approvalId": "approval_1789139638351_4snqmk2q9",
       "approvalTitle": "centralized-selection tasks"
     }
