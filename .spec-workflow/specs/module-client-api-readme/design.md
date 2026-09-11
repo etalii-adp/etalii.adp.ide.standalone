@@ -6,7 +6,7 @@ The requirements fixed what the readme must cover and how it proves it. This des
 
 One idea carries all four: **the readme is written in a shape a test can read.** Every entry declares the names it covers on one line, every example names its source on the line above it, and every internal export is on one list. So the questions "is everything covered?", "does this example still compile?" and "does this entry describe something that exists?" are answered by the test, and each answer names what is wrong.
 
-Nothing here is implemented before `centralized-selection` is on `develop` (Requirement 7.2). This design describes the surface as that specification's design proposes it; where the two differ when it lands, that specification wins (Requirement 7.3).
+Nothing here is implemented before `centralized-selection` is on `develop` (Requirement 7.2). This design describes the surface as that specification's approved design and tasks fix it (approved 2026-09-11; none of its module-facing names moved between design and tasks). Its implementation is Developer 1's: if a name moves during that migration, Developer 1 or Architect 2 tells this specification's author, and where the two differ when it lands, that specification wins (Requirement 7.3).
 
 ## Steering Document Alignment
 
@@ -186,5 +186,5 @@ Pass when    Surface ⊆ Covered, Covered ⊆ exports, Listed = Internal
 
 - Set B's size and the 60 exports outside it: a parse of the 14 library files with the TypeScript compiler's `createSourceFile`, walking type references from the four roots, at `96c4a07b`.
 - Set A's size: the import parse recorded in the requirements, at `5befeb0a`.
-- The post-selection surface: `centralized-selection`'s design, as its author listed it on 2026-09-11 (pending approval).
+- The post-selection surface: `centralized-selection`'s approved design and tasks (2026-09-11), as its author listed the module-facing names removed, kept and added, confirmed unchanged by the tasks.
 - The guard family's idiom: `src/client/src/canvas/library/noPrivateGestures.test.ts`.
