@@ -194,8 +194,73 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
             }
         }
 
+        return FindArrow(model, elementId);
+    }
+
+    /// <summary>
+    /// The arrow an id names: one the canvas draws between two stages, or between two jobs of one
+    /// stage - explicit, implicit or broken alike, because all three are drawn.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why an arrow resolves at all.</b> The canvas library pushes a pressed arrow's own id, and
+    /// the highlight follows this resolver's answer; an arrow it cannot name can never be selected
+    /// (centralized-selection Requirements 2.1, 2.2). Until then every arrow id was "Unknown
+    /// element.", and the canvas hid it by letting an arrow press fall through as a deselect.
+    /// </para>
+    /// <para>
+    /// <b>It answers as the element that WAITS</b> - the one whose <c>dependsOn</c> declares it, or
+    /// whose place in the file implies it - the way ansible-structure's edges answer as their
+    /// declaring side: that element's path, a text naming it first ("Deploy waits for Build"), no
+    /// children, and linked when that element comes from a template.
+    /// </para>
+    /// <para>
+    /// Matched through <see cref="PipelineElementMapper.EdgeId"/>, the same function that gave the
+    /// arrow its id on the wire, and never through a re-spelled format that could only agree with
+    /// it by coincidence.
+    /// </para>
+    /// </remarks>
+    private static PipelineSelectableElement? FindArrow(PipelineModel model, string elementId)
+    {
+        var stageArrow = PipelineGraphBuilder.OfStages(model).Edges
+            .FirstOrDefault(edge => string.Equals(PipelineElementMapper.EdgeId(edge), elementId, StringComparison.Ordinal));
+        if (stageArrow is not null)
+        {
+            var waiting = model.Stages.FirstOrDefault(stage => string.Equals(stage.Id, stageArrow.ToId, StringComparison.Ordinal));
+            if (waiting is null)
+            {
+                return null;
+            }
+
+            var waitedFor = model.Stages.FirstOrDefault(stage => string.Equals(stage.Id, stageArrow.FromId, StringComparison.Ordinal))?.Label;
+            return Arrow([waiting.Label], waiting.Label, waitedFor ?? stageArrow.FromName, waiting.IsFromTemplate);
+        }
+
+        foreach (var stage in model.Stages)
+        {
+            var jobArrow = PipelineGraphBuilder.OfJobs(stage).Edges
+                .FirstOrDefault(edge => string.Equals(PipelineElementMapper.EdgeId(edge), elementId, StringComparison.Ordinal));
+            if (jobArrow is null)
+            {
+                continue;
+            }
+
+            var waiting = stage.Jobs.FirstOrDefault(job => string.Equals(job.Id, jobArrow.ToId, StringComparison.Ordinal));
+            if (waiting is null)
+            {
+                return null;
+            }
+
+            var waitedFor = stage.Jobs.FirstOrDefault(job => string.Equals(job.Id, jobArrow.FromId, StringComparison.Ordinal))?.Label;
+            return Arrow([stage.Label, waiting.Label], waiting.Label, waitedFor ?? jobArrow.FromName, waiting.IsFromTemplate);
+        }
+
         return null;
     }
+
+    /// <summary>An arrow, as the element that waits: its path, "X waits for Y", and nothing inside.</summary>
+    private static PipelineSelectableElement Arrow(IReadOnlyList<string> waitingPath, string waiting, string waitedFor, bool waitingIsFromTemplate) =>
+        new(waitingPath, $"{waiting} waits for {waitedFor}", HasChildren: false, waitingIsFromTemplate);
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
         ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));

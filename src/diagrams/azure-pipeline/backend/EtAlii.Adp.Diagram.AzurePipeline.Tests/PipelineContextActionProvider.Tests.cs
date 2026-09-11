@@ -584,4 +584,26 @@ public class PipelineContextActionProviderTests : IDisposable
         var groups = await _provider.DiscoverAsync(Target(path, elementId), CancellationToken.None);
         return groups.SelectMany(group => group.Actions).Single(action => action.Id == actionId).Label;
     }
+
+    /// <summary>The id the canvas gives the Build -> Test arrow, from the module's own graph.</summary>
+    private string ArrowId(string path)
+    {
+        var model = _store.GetOrLoad(_workspace, path).Model;
+        return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge.FromId == "Build" && edge.ToId == "Test"));
+    }
+
+    [Fact]
+    public async Task ASelectedArrow_OffersNothing_AndDoesNotThrow()
+    {
+        // Arrange: an arrow is selectable now (centralized-selection 2.1), so its actions are
+        // discovered. PipelineEdits.Locate knows no arrow; the answer must be an empty menu, never
+        // an exception.
+        var path = Write();
+
+        // Act.
+        var actions = await ActionsOn(path, ArrowId(path));
+
+        // Assert.
+        Assert.Empty(actions);
+    }
 }
