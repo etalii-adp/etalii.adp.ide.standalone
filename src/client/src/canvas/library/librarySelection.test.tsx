@@ -58,7 +58,7 @@ afterEach(() => {
   channel.outcome = { accepted: true, error: "" };
 });
 
-function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?: boolean; actions?: ActionDeclaration[] } = {}): DiagramDefinition {
+function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?: boolean; actions?: ActionDeclaration[]; backgroundMenu?: boolean } = {}): DiagramDefinition {
   return {
     elementTypes: [
       { id: "service", shape: "box", anchors: { kind: "compass", positions: ["e", "w"] }, sizing: "model" },
@@ -76,6 +76,7 @@ function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?
     layout: { modes: ["manual"] },
     dragging: "enabled",
     actions: overrides.actions,
+    backgroundMenu: overrides.backgroundMenu,
   };
 }
 
@@ -407,5 +408,58 @@ describe("a menu entry the module runs itself", () => {
 
     expect(onActionInvoked).toHaveBeenCalledOnce();
     expect(channel.executed).toEqual([]);
+  });
+});
+
+describe("the background menu, where a definition declares one", () => {
+  it("asks for the menu at the point clicked, opens on the backend's answer, and runs the entry there", async () => {
+    // causal-loop's diagram menu, hand-built until now: the placement is new:x,y in canvas
+    // coordinates, the convention drops already use.
+    channel.actions = actionsOf("diagram.arrange");
+    const { container, redraw } = mount({}, definitionOf({ backgroundMenu: true }));
+
+    fireEvent.contextMenu(surfaceOf(container), { clientX: 400, clientY: 500 });
+    const pushed = channel.pushes.map(asked);
+    expect(pushed).toHaveLength(1);
+    expect(pushed[0].menu).toBe(true);
+    expect(pushed[0].id).toMatch(/^new:-?[\d.]+,-?[\d.]+$/);
+    expect(screen.queryByRole("menuitem"), "the menu opened before the backend answered for the point").toBeNull();
+
+    channel.pushed = elementSelectionOf(ENTRY, PATH, pushed[0].id!);
+    redraw(modelOf());
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Do diagram.arrange/ }));
+
+    expect(channel.executed).toEqual([{ actionId: "diagram.arrange", source: undefined }]);
+  });
+
+  it("is not there on a canvas that does not declare it - a background right-click does nothing", () => {
+    channel.actions = actionsOf("diagram.arrange");
+    const { container } = mount();
+
+    fireEvent.contextMenu(surfaceOf(container), { clientX: 400, clientY: 500 });
+
+    expect(channel.pushes).toEqual([]);
+    expect(screen.queryByRole("menuitem")).toBeNull();
+  });
+
+  it("never turns a right-click on an item into a background placement, even one the item does not answer with a menu", () => {
+    // An item whose right-click is a declared gesture only prevents the browser menu; the event
+    // still bubbles to the surface, and must not be taken for a click on empty canvas there.
+    const inspect: ActionDeclaration = { id: "service.inspect", invokedBy: [{ kind: "gesture", gesture: "context-menu" }], appliesTo: [{ kind: "element" }] };
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ backgroundMenu: true, actions: [inspect] }));
+
+    fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+
+    expect(onActionInvoked, "the declared gesture never ran, so this test cannot say anything").toHaveBeenCalledOnce();
+    expect(channel.pushes).toEqual([]);
+  });
+
+  it("leaves a right-click on an item to that item's own menu", () => {
+    const { container } = mount({}, definitionOf({ backgroundMenu: true }));
+
+    fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+
+    expect(channel.pushes.map(asked)).toEqual([{ id: "a", menu: true }]);
   });
 });

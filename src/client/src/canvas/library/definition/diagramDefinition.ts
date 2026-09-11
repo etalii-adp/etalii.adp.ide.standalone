@@ -981,6 +981,18 @@ export interface DiagramDefinition {
    */
   actions?: readonly ActionDeclaration[];
   /**
+   * Whether a right-click on the EMPTY canvas opens the shared menu for the point clicked.
+   * **Omitted means no background menu** - a background right-click then does nothing, as it
+   * always has; a canvas offers one only by declaring it (centralized-selection, design A,
+   * "The background menu").
+   *
+   * Declared, the library turns the pointer into canvas coordinates the way a toolbox drop is,
+   * pushes the placement `new:x,y` through its own context-menu selection, and opens the shared
+   * menu on the backend's answer - so the diagram's own actions (arrange, add here) are offered
+   * where the user clicked. A right-drag that drew a relation is still not a menu.
+   */
+  backgroundMenu?: boolean;
+  /**
    * Draw a relation by dragging with the RIGHT button from an element's body to another - the
    * gesture a causal loop diagram links with, where the arrows are the whole point and reaching
    * for a small anchor handle would be in the way. Left-button anchor drags still connect where a

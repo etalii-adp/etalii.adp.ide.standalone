@@ -1301,11 +1301,23 @@ function DiagramCanvasCore({
     openMenuAt(event, id);
   };
 
-  /** The surface's own right-click: only the tail of a completed draw reaches here, and it is swallowed. */
+  /**
+   * The surface's own right-click. The tail of a completed right-button draw is swallowed; on a
+   * canvas declaring `backgroundMenu`, a right-click on empty canvas opens the shared menu for the
+   * point clicked - the placement `new:x,y` in canvas coordinates, the convention drops already
+   * use - on the backend's answer, like any other target. Undeclared, it does nothing, as before.
+   */
   const onSurfaceContextMenu = (event: React.MouseEvent) => {
     if (rightConnectMovedRef.current) {
       rightConnectMovedRef.current = false;
       event.preventDefault();
+      return;
+    }
+
+    const onAnItem = (event.target as Element).closest("[data-element-id],[data-connection-id]") !== null;
+    if (definition.backgroundMenu === true && context !== undefined && !onAnItem) {
+      const at = toCanvasPoint(event.clientX, event.clientY);
+      openMenuAt(event, `new:${at.x},${at.y}`);
     }
   };
 
