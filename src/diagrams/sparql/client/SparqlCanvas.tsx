@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 
-import { elementIdOfKey, elementSelectionOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
@@ -8,12 +7,10 @@ import type {
   ShapeBounds,
   ShapePoint,
 } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useSparqlStream } from "./useSparqlStream";
 import type { SparqlAnnotation, SparqlNode, SparqlRegion } from "./sparqlModel";
 
@@ -49,7 +46,6 @@ const SPARQL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       classNames: [
         { className: "sparql-region canvas-element", on: "element" },
         { className: { template: "sparql-region-{payload.kind}" }, on: "element" },
-        { className: "sparql-selected", on: "element", when: { path: "state.selected", is: "true" } },
       ],
       labels: [{ text: { path: "payload.label" }, placement: "above", className: "sparql-region-label canvas-hint" }],
       anchors: { kind: "edge" },
@@ -62,7 +58,6 @@ const SPARQL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "sparql-node canvas-element", on: "element" },
         { className: { template: "sparql-node-{payload.kind}" }, on: "element" },
         { className: "sparql-node-projected", on: "element", when: { path: "payload.projected", is: "true" } },
-        { className: "sparql-selected", on: "element", when: { path: "state.selected", is: "true" } },
         { className: "sparql-node-box canvas-node", on: "shape" },
       ],
       labels: [
@@ -105,7 +100,6 @@ const SPARQL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       classNames: [
         { className: "sparql-annotation canvas-hint", on: "element" },
         { className: { template: "sparql-annotation-{payload.kind}" }, on: "element" },
-        { className: "sparql-selected", on: "element", when: { path: "state.selected", is: "true" } },
       ],
       labels: [{ text: { path: "payload.text" } }],
       anchors: { kind: "edge" },
@@ -167,13 +161,9 @@ function annotationAnchor(
  */
 export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useSparqlStream(projectId, path);
-  const { select } = useContextConnection();
-  const { selection, actions } = useContextSelection();
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   const diagramModel = useMemo<DiagramModel>(() => {
     // Regions first, so every frame paints behind the patterns it contains.
@@ -225,17 +215,10 @@ export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     return { elements: [...regions, ...nodes, ...annotations], connections };
   }, [model]);
 
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null) {
-      return [];
-    }
-    return [{ kind: model.edges.has(selectedId) ? "connection" : "element", id: selectedId }];
-  }, [selectedId, model.edges]);
-
   const events: DiagramEventHandlers = {
-    onSelectionChanged: ({ selection: next }) =>
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    // Selection is the library's (centralized-selection); a menu action it ran and the backend
+    // refused comes back here, for the same rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       setRejection("");
       const region = model.regions.get(elementId);
@@ -289,15 +272,7 @@ export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         definition={SPARQL_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          // The backend offers no mutating action on a query, so the menu's entries only
-          // ever closed the menu - executing stays a no-op rather than inventing an edit.
-          executeAction: () => {},
-        }}
+        source={{ entryId, path }}
         ariaLabel="SPARQL query"
         className="sparql-surface"
         scrollbarsClassName="sparql-scrollbars"

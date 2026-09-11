@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import {
   emptyModel,
   type SparqlAnnotation,
@@ -308,5 +311,22 @@ describe("SparqlCanvas", () => {
 
     // Assert.
     expect(container.textContent).toContain("could not be opened");
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed variable and triple pattern, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelWith();
+        currentLoading = false;
+        currentFailed = false;
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas();
+      },
+      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: "var:person",
+      connection: "edge:knows",
+    });
   });
 });
