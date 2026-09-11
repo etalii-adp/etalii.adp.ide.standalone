@@ -29,6 +29,8 @@ public sealed class SolutionWatcherTests : IDisposable
         var watched = Write("Solution.slnx", "<Solution />");
         using var watcher = new SolutionWatcher([watched], TimeSpan.FromMilliseconds(20));
         using var stale = new ManualResetEventSlim();
+        // ReSharper disable once AccessToDisposedClosure
+        // Reason: We are running a unit test here.
         watcher.Stale += (_, _) => stale.Set();
 
         // Act.
@@ -50,6 +52,8 @@ public sealed class SolutionWatcherTests : IDisposable
         var unrelated = Path.Combine(_root, "build.log");
         using var watcher = new SolutionWatcher([watched], TimeSpan.FromMilliseconds(20));
         using var stale = new ManualResetEventSlim();
+        // ReSharper disable once AccessToDisposedClosure
+        // Reason: We are running a unit test here.
         watcher.Stale += (_, _) => stale.Set();
 
         // Act. Written into the SAME directory the watcher is watching, which is the point:
@@ -75,7 +79,10 @@ public sealed class SolutionWatcherTests : IDisposable
         using var stale = new ManualResetEventSlim();
         watcher.Stale += (_, _) =>
         {
+            // ReSharper disable once AccessToModifiedClosure
+            // Reason: We are running a unit test here.
             Interlocked.Increment(ref reports);
+            // ReSharper disable once AccessToDisposedClosure
             stale.Set();
         };
 
@@ -101,6 +108,8 @@ public sealed class SolutionWatcherTests : IDisposable
         var watched = Write("Solution.slnx", "<Solution />");
         var watcher = new SolutionWatcher([watched], TimeSpan.FromMilliseconds(20));
         using var stale = new ManualResetEventSlim();
+        // ReSharper disable once AccessToDisposedClosure
+        // Reason: We are running a unit test here.
         watcher.Stale += (_, _) => stale.Set();
         watcher.Dispose();
 
