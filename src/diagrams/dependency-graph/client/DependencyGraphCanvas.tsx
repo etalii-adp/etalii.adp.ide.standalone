@@ -7,19 +7,18 @@ import {
   sideAnchorOf,
   type ConnectorBox,
 } from "@client/canvas/connectors";
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDependencyGraphStream } from "./useDependencyGraphStream";
 import type { DependencyGraphElement } from "./dependencyGraphModel";
@@ -93,8 +92,6 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
       classNames: [
         { className: "dependency-graph-element canvas-element" },
         { className: "dependency-graph-node canvas-node" },
-        { className: "dependency-graph-selected", when: { path: "state.selected", is: "true" } },
-        { className: "dependency-graph-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
       ],
       labels: [
         {
@@ -197,14 +194,10 @@ function newPlacementId(x: number, row: number): string {
  */
 export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useDependencyGraphStream(projectId, path);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -229,14 +222,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     }));
     return { elements, connections };
   }, [model]);
-
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null) {
-      return [];
-    }
-    return [{ kind: model.relations.has(selectedId) ? "connection" : "element", id: selectedId }];
-  }, [selectedId, model.relations]);
 
   const runAction = (actionId: string, sourceId?: string) => {
     void (async () => {
@@ -274,8 +259,9 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
 
       runShortcut(contextShortcutOf(key), targetId);
     },
-    onSelectionChanged: ({ selection: next }) =>
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    // Selection is the library's (centralized-selection); a menu action it ran and the backend
+    // refused comes back here, for the same rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       setRejection("");
       // The x is free; the y lands on the nearest row, matching DependencyGraphRows. The
@@ -336,15 +322,9 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
         definition={DEPENDENCY_GRAPH_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
         editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
-        }}
         ariaLabel="Dependency graph"
         className="dependency-graph-surface"
         scrollbarsClassName="dependency-graph-scrollbars"
