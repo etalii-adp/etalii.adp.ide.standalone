@@ -12,6 +12,7 @@
   --color-success: #15803d; /* a completed state - deeper than the limegreen accent, so the two read apart */
   --color-warning: #b45309; /* an amber caution - the truncated-view banner and kin */
   --color-diagram-potential: #166534; /* a dark green, clearly not the registered limegreen */
+  --color-accept: #0284c7; /* "this would accept the connection you are dragging" - a sky blue, deliberately unlike the limegreen of "selected", so both read at once */
   --radius: 10px;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.08);
 }
@@ -31,6 +32,7 @@
     --color-success: #4ade80; /* lighter on the dark surface, still clearly not the limegreen accent */
     --color-warning: #fbbf24; /* brighter amber, so the caution still reads on the dark surface */
     --color-diagram-potential: #3f9142; /* darker and duller than limegreen, still legible on the dark surface */
+    --color-accept: #38bdf8; /* the same sky blue, lifted for the dark surface */
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
   }
 }

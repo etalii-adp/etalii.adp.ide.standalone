@@ -98,11 +98,20 @@
   stroke-width: 1.5;
 }
 
-.canvas-selected .canvas-node,
-.canvas-connect-target .canvas-node {
-  stroke: var(--color-primary, limegreen);
-  stroke-width: 2.5;
-}
+/*
+ * "SELECTED" IS AN OUTLINE THE LIBRARY DRAWS, NOT A RECOLOURED STROKE.
+ *
+ * This rule used to recolour `.canvas-node`'s stroke under `.canvas-selected`, and the same rule
+ * served "would accept a connection" too - so the two meanings looked identical, and neither was
+ * legible where it mattered: a stroke recolour reads only where it contrasts with the fill beside
+ * it, and a declared element paints its own stroke inline, which beats any stylesheet. On c4's
+ * backend-chosen colours a selected element could look exactly like an unselected one.
+ *
+ * So the library draws each look itself, as its own shape OUTSIDE the element's boundary, where
+ * the canvas ground is behind it and no fill or inline paint can reach it (centralized-selection
+ * Requirement 5.2): `library-selected-outline` for selected, `library-accept-outline` for accept.
+ * Both are below, with the library's own classes. The element's own stroke is left alone.
+ */
 
 /*
  * A declared label's alignment is NOT decided here.
@@ -146,14 +155,12 @@
  * nothing new. Reported against the dependency graph and the timeline; it was never those two
  * modules' doing, and neither of them has an anchor rule of its own.
  *
- * The pattern is `.canvas-node`'s, deliberately and to the letter: the border colour at rest,
- * the primary colour under `.canvas-selected` or a connect target. Copying the selector list
- * rather than inventing one is what makes an anchor and the box it belongs to change together
- * when the theme does.
+ * The border colour at rest; under a look, the colour of that look's outline - selected or
+ * accept - so an anchor and the ring around its element change together when the theme does.
  *
- * `.canvas-selected` is put on the element group by the library itself for every declared
- * module, and `canvas-connect-target` is a class those modules declare, so these rules reach
- * every canvas without any module opting in - which is what was asked for.
+ * `.canvas-selected` and `library-connect-target` are both put on the element group by the
+ * library itself, for every canvas, so these rules reach every canvas without any module opting
+ * in - which is what was asked for.
  */
 .canvas-anchor {
   fill: var(--color-surface, #ffffff);
@@ -213,29 +220,57 @@
 }
 
 /*
- * The selected half of the three rules above, written once for all of them.
+ * The selected and accept halves of the three rules above, each written once for all of them.
  *
- * Same right-hand side as `.canvas-selected .canvas-node`, so an element and its anchors light
- * up together and a later theme change cannot move one without the other. The `stroke-width`
- * the box gains is deliberately NOT copied: a 2.5 stroke on a five-pixel dot closes the hole
- * in the middle and turns it into a blob.
+ * An anchor takes the colour of whichever look its element carries, so it changes with the
+ * outline around it: the selected colour under `.canvas-selected` (`1df91874`), the accept
+ * colour under `library-connect-target`. Accept comes second, so an element that is both shows
+ * its anchors as a drop target - the question the dragging user is asking at that moment. The
+ * outline's stroke width is deliberately NOT copied: a thick stroke on a five-pixel dot closes
+ * the hole in the middle and turns it into a blob.
  */
 .canvas-selected .canvas-anchor,
 .canvas-selected .library-anchor,
-.canvas-selected .library-span-anchor,
-.canvas-connect-target .canvas-anchor,
-.canvas-connect-target .library-anchor,
-.canvas-connect-target .library-span-anchor,
+.canvas-selected .library-span-anchor {
+  stroke: var(--color-primary, limegreen);
+}
+
 .library-connect-target .canvas-anchor,
 .library-connect-target .library-anchor,
 .library-connect-target .library-span-anchor {
-  stroke: var(--color-primary, limegreen);
+  stroke: var(--color-accept, #0284c7);
 }
 
 .library-span-anchor-hit {
   fill: transparent;
   stroke: none;
   cursor: crosshair;
+}
+
+/*
+ * THE TWO LOOKS, each drawn by the library as a shape of its own just outside the element.
+ *
+ * SELECTED is a solid outline at a small offset; ACCEPT is a dashed outline at a larger offset in
+ * its own colour. The offsets differ so that an element which is both - selected, and under a
+ * connection being dragged - shows both at once, one inside the other (centralized-selection
+ * Requirements 5.2, 6.1, 6.2). Neither reads another's class. The stroke stays the same width at
+ * any zoom, and neither takes the pointer: a press on the ring is a press on the canvas beneath.
+ */
+.library-selected-outline {
+  fill: none;
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.library-accept-outline {
+  fill: none;
+  stroke: var(--color-accept, #0284c7);
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 /*
@@ -249,23 +284,21 @@
  * `canvas-connect-target` for themselves showed anything at all; every other canvas let you
  * drag a connection with no sign it would be accepted until you released.
  *
- * A GLOW ON THE GROUP RATHER THAN A STROKE ON THE SHAPE, and the reason is not taste. A
- * declared element paints itself through an inline `style` - `paint.stroke` is set whenever the
- * type or the document names a stroke - and an inline style beats a stylesheet. A `stroke` rule
- * here would therefore light up the elements that happen to declare no stroke and silently skip
- * the ones that do, which is worse than no highlight: the absence would read as "this target is
- * refused" on exactly the elements whose notation is richest. A filter on the enclosing group
- * cannot be overridden by a child's inline paint, and it works the same for a box, a span, a
- * circle, a symbol and a frame - so no shape family is left out and no module opts in.
- *
- * At most one element carries this at a time - the one under the pointer mid-drag - so the
- * filter's cost is bounded no matter how large the diagram is.
+ * NOT A STROKE ON THE SHAPE, and the reason is not taste. A declared element paints itself
+ * through an inline `style` - `paint.stroke` is set whenever the type or the document names a
+ * stroke - and an inline style beats a stylesheet. A `stroke` rule would therefore light up the
+ * elements that happen to declare no stroke and silently skip the ones that do, which is worse
+ * than no highlight: the absence would read as "this target is refused" on exactly the elements
+ * whose notation is richest. Accept is drawn as `library-accept-outline`, a shape of the library's
+ * own outside the element, which no child's inline paint can reach and which works the same for
+ * a box, a span, a circle, a symbol and a frame. The refusal below is still a glow on the group,
+ * for the same reason: no child's paint can override a filter on its parent.
  */
 
 
-.library-connect-target {
-  filter: drop-shadow(0 0 3px var(--color-primary, limegreen));
-}
+/* The accepted half is `library-accept-outline` above. This rule once drew it as a glow, in the
+ * selected colour - which made accept and selected the same colour on the same element. The
+ * class stays on the group: it is what the anchors and a module's own declaration read. */
 
 /* Refused, and said in the same breath rather than by staying silent: the pointer is over a
  * target the definition will not accept, which a user needs to be able to tell from empty

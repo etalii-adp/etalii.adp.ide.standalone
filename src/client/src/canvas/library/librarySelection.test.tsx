@@ -1,0 +1,315 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { create } from "@bufbuild/protobuf";
+import { ContextActionGroupSchema, ContextActionSchema, type ContextActionGroup, type ContextSource } from "@client/generated/context-contract_pb";
+import { ContextSelectionAction, type ContextSelection } from "@client/generated/context_pb";
+import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import { DiagramCanvas } from "./DiagramCanvas";
+import { resolveSelection } from "./librarySelection";
+import type { DiagramDefinition } from "./definition/diagramDefinition";
+import type { DiagramModel } from "./api/diagramModel";
+import type { DiagramEventHandlers } from "./api/diagramEvents";
+import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
+import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+
+/**
+ * The selection a canvas owns once it passes `source` (centralized-selection tasks 2 and 3).
+ *
+ * The context channel is faked the way the module tests fake it, with one difference that is the
+ * point: `innermostKey` is the REAL one and the pushed selection is a REAL chain built by
+ * `elementSelectionOf`, so resolution runs exactly as it will against the backend.
+ */
+
+const channel = vi.hoisted(() => ({
+  pushed: null as unknown,
+  actions: [] as unknown[],
+  pushes: [] as unknown[],
+  executed: [] as { actionId: string; source?: unknown }[],
+  outcome: { accepted: true, error: "" },
+}));
+
+vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
+  return {
+    ...actual,
+    useContextConnection: () => ({
+      select: (selection: unknown) => channel.pushes.push(selection),
+      executeAction: (actionId: string, source?: unknown) => {
+        channel.executed.push({ actionId, source });
+        return Promise.resolve(channel.outcome);
+      },
+    }),
+    useContextSelection: () => ({ selection: channel.pushed, levels: [], actions: channel.actions }),
+  };
+});
+
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
+const ENTRY = new Uint8Array([1, 2, 3]);
+const PATH = ["diagrams", "system.adp"];
+
+afterEach(() => {
+  channel.pushed = null;
+  channel.actions = [];
+  channel.pushes = [];
+  channel.executed = [];
+  channel.outcome = { accepted: true, error: "" };
+});
+
+function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?: boolean } = {}): DiagramDefinition {
+  return {
+    elementTypes: [
+      { id: "service", shape: "box", anchors: { kind: "compass", positions: ["e", "w"] }, sizing: "model" },
+      { id: "boundary", shape: "box", anchors: { kind: "edge" }, sizing: "model", selectable: overrides.boundarySelectable },
+    ],
+    relationTypes: [
+      { id: "calls", route: "straight", endpoints: { source: { elementTypes: ["service"] }, target: { elementTypes: ["service"] }, allowSelf: false } },
+      {
+        id: "note",
+        route: "straight",
+        endpoints: { source: { elementTypes: ["service"] }, target: { elementTypes: ["service"] }, allowSelf: false },
+        selectable: overrides.noteSelectable,
+      },
+    ],
+    layout: { modes: ["manual"] },
+    dragging: "enabled",
+  };
+}
+
+function modelOf(withoutB = false): DiagramModel {
+  const elements = [
+    { id: "a", type: "service", x: 0, y: 0, width: 100, height: 40, label: "Alpha" },
+    { id: "b", type: "service", x: 300, y: 0, width: 100, height: 40, label: "Beta" },
+    { id: "zone", type: "boundary", x: 150, y: 300, width: 100, height: 60, label: "Zone" },
+  ];
+  return {
+    elements: withoutB ? elements.filter((element) => element.id !== "b") : elements,
+    connections: withoutB
+      ? []
+      : [
+          { id: "a->b", type: "calls", sourceId: "a", targetId: "b" },
+          { id: "b~a", type: "note", sourceId: "b", targetId: "a" },
+        ],
+  };
+}
+
+function mount(events: DiagramEventHandlers = {}, definition = definitionOf(), model = modelOf(), extra: Partial<React.ComponentProps<typeof DiagramCanvas>> = {}) {
+  const tree = (m: DiagramModel) => (
+    <DiagramViewProvider>
+      <DiagramToolboxProvider>
+        <DiagramCanvas definition={definition} model={m} events={events} source={{ entryId: ENTRY, path: PATH }} {...extra} />
+      </DiagramToolboxProvider>
+    </DiagramViewProvider>
+  );
+  const view = render(tree(model));
+  return { ...view, redraw: (m: DiagramModel) => view.rerender(tree(m)) };
+}
+
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+function press(target: Element, init: MouseEventInit = {}) {
+  fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
+  fireEvent(target, pointer("pointerup", { ...init }));
+}
+
+const elementOn = (container: HTMLElement, id: string) => container.querySelector(`[data-element-id="${id}"]`)!;
+const connectionOn = (container: HTMLElement, id: string) => container.querySelector(`[data-connection-id="${id}"]`)!;
+const surfaceOf = (container: HTMLElement) => container.querySelector("svg.library-canvas-surface")!;
+const highlighted = (container: HTMLElement) =>
+  [...container.querySelectorAll(".canvas-selected")].map((node) => node.getAttribute("data-element-id") ?? node.getAttribute("data-connection-id"));
+
+/** What a push asked for: the id it names (or null for a clear) and whether it asked for the menu. */
+function asked(push: unknown): { id: string | null; menu: boolean } {
+  if (push === null) {
+    return { id: null, menu: false };
+  }
+  const chain = push as ContextSelection;
+  const inner = chain.detail.case === "child" ? chain.detail.value : chain;
+  return { id: selectedElementIdOf(chain) ?? null, menu: inner.detail.case === "action" && inner.detail.value === ContextSelectionAction.CONTEXT_MENU };
+}
+
+describe("a pushed selection is resolved by the library", () => {
+  it("highlights the element it names", () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    const { container } = mount();
+
+    expect(highlighted(container)).toEqual(["a"]);
+  });
+
+  it("highlights the connection it names, as a connection", () => {
+    // The rule every working module wrote by hand: an id naming a connection is a connection.
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a->b");
+    const { container } = mount();
+
+    expect(highlighted(container)).toEqual(["a->b"]);
+    expect(connectionOn(container, "a->b").classList.contains("canvas-selected")).toBe(true);
+  });
+
+  it("resolves an id this model does not have to nothing", () => {
+    // Asked of the resolver, not of the drawing: an unknown id can never be DRAWN highlighted,
+    // so a canvas-level check here would pass whatever the resolver said. What a wrong answer
+    // would break is everything that reads the selection - a delete, a declared shortcut.
+    expect(resolveSelection("somewhere-else", modelOf(), definitionOf())).toEqual([]);
+    expect(resolveSelection(null, modelOf(), definitionOf())).toEqual([]);
+  });
+
+  it("highlights nothing for an item whose type is declared unselectable", () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "zone");
+    const first = mount({}, definitionOf({ boundarySelectable: false }));
+    expect(highlighted(first.container)).toEqual([]);
+    first.unmount();
+
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "b~a");
+    const second = mount({}, definitionOf({ noteSelectable: false }));
+    expect(highlighted(second.container)).toEqual([]);
+  });
+
+  it("highlights a type that says nothing about selectability - omitted means selectable", () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "zone");
+    const { container } = mount();
+
+    expect(highlighted(container)).toEqual(["zone"]);
+  });
+});
+
+describe("a press is pushed by the library", () => {
+  it("pushes an element, a connection under its own id, and null for the background", () => {
+    const { container } = mount();
+
+    press(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+    press(connectionOn(container, "a->b"));
+    press(surfaceOf(container), { clientX: 400, clientY: 500 });
+
+    expect(channel.pushes.map(asked)).toEqual([
+      { id: "a", menu: false },
+      { id: "a->b", menu: false },
+      { id: null, menu: false },
+    ]);
+  });
+
+  it("pushes a clear for a press on an unselectable element or connection, as the background does", () => {
+    const { container } = mount({}, definitionOf({ boundarySelectable: false, noteSelectable: false }));
+
+    press(elementOn(container, "zone"));
+    press(connectionOn(container, "b~a"));
+
+    expect(channel.pushes.map(asked)).toEqual([
+      { id: null, menu: false },
+      { id: null, menu: false },
+    ]);
+  });
+
+  it("pushes nothing for a drag - moving an element does not select it", () => {
+    const onElementMoved = vi.fn();
+    const { container } = mount({ onElementMoved });
+    const target = elementOn(container, "a");
+
+    fireEvent(target, pointer("pointerdown", { button: 0, clientX: 0, clientY: 0 }));
+    fireEvent(target, pointer("pointermove", { clientX: 60, clientY: 40 }));
+    fireEvent(target, pointer("pointerup", { clientX: 60, clientY: 40 }));
+
+    expect(onElementMoved, "the drag never happened, so this test cannot say anything").toHaveBeenCalledOnce();
+    expect(channel.pushes).toEqual([]);
+  });
+
+  it("still hands the module every other event it handles", () => {
+    const onElementMoved = vi.fn();
+    const { container } = mount({ onElementMoved });
+    const target = elementOn(container, "b");
+
+    fireEvent(target, pointer("pointerdown", { button: 0, clientX: 0, clientY: 0 }));
+    fireEvent(target, pointer("pointermove", { clientX: 30, clientY: 0 }));
+    fireEvent(target, pointer("pointerup", { clientX: 30, clientY: 0 }));
+
+    expect(onElementMoved).toHaveBeenCalledWith(expect.objectContaining({ kind: "element-moved", elementId: "b" }));
+  });
+});
+
+describe("a selection that vanishes", () => {
+  it("clears once when the selected item leaves the model", () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "b");
+    const { container, redraw } = mount();
+    expect(highlighted(container)).toEqual(["b"]);
+
+    redraw(modelOf(true)); // an edit removed b; the backend still names it
+    redraw(modelOf(true));
+    expect(channel.pushes.map(asked)).toEqual([{ id: null, menu: false }]);
+
+    // The clear is spent once pushed. The backend answers it; later another canvas selects a
+    // "b" of its own - which is not this canvas's to clear.
+    channel.pushed = null;
+    redraw(modelOf(true));
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "b");
+    redraw(modelOf(true));
+
+    expect(channel.pushes.map(asked)).toEqual([{ id: null, menu: false }]);
+  });
+
+  it("is not cleared when this canvas never had it - it is another canvas's, or not here yet", () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "on-another-tab");
+    const { redraw } = mount();
+
+    redraw(modelOf(true));
+    redraw(modelOf());
+
+    expect(channel.pushes).toEqual([]);
+  });
+});
+
+describe("a canvas still wiring selection itself", () => {
+  it("behaves exactly as before: the module hears the press and the library pushes nothing", () => {
+    const onSelectionChanged = vi.fn();
+    const { container } = mount({ onSelectionChanged });
+
+    press(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+
+    expect(onSelectionChanged).toHaveBeenCalledWith({ kind: "selection-changed", selection: [{ kind: "element", id: "a" }] });
+    expect(channel.pushes).toEqual([]);
+  });
+});
+
+function actionsOf(...ids: string[]): ContextActionGroup[] {
+  return [create(ContextActionGroupSchema, { actions: ids.map((id) => create(ContextActionSchema, { id, label: `Do ${id}`, available: true })) })];
+}
+
+describe("the shared context menu, owned by the library", () => {
+  it("asks for an element's menu with the context-menu gesture", () => {
+    const { container } = mount();
+
+    fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+
+    expect(channel.pushes.map(asked)).toEqual([{ id: "a", menu: true }]);
+  });
+
+  it("shows the pushed actions and runs one against the selection", async () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    channel.actions = actionsOf("service.restart");
+    const { container } = mount();
+
+    fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Do service.restart/ }));
+
+    expect(channel.executed).toHaveLength(1);
+    expect(channel.executed[0].actionId).toBe("service.restart");
+    const source = channel.executed[0].source as ContextSource;
+    expect(source.source.case === "elementId" ? source.source.value.value : null).toBe("a");
+  });
+
+  it("hands a refused action to the module as action-refused, with the backend's message", async () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    channel.actions = actionsOf("service.restart");
+    channel.outcome = { accepted: false, error: "The service is read-only." };
+    const onActionRefused = vi.fn();
+    const { container } = mount({ onActionRefused });
+
+    fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Do service.restart/ }));
+
+    await vi.waitFor(() =>
+      expect(onActionRefused).toHaveBeenCalledWith({ kind: "action-refused", actionId: "service.restart", message: "The service is read-only." }),
+    );
+  });
+});
