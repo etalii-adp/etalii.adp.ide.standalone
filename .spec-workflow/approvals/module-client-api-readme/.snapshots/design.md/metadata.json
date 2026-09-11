@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/module-client-api-readme/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-11T17:44:57.392Z",
+      "trigger": "initial",
+      "approvalId": "approval_1789148696998_xu9i4rsto",
+      "approvalTitle": "module-client-api-readme design (a readme in a shape its test can read; surface computed every run)"
+    }
+  ]
+}
