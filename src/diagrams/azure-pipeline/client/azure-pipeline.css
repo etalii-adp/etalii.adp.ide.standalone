@@ -88,12 +88,6 @@
   stroke-dasharray: 4 3;
 }
 
-.pipeline-focused .pipeline-box,
-.pipeline-focused .pipeline-stage-box {
-  stroke: var(--adp-focus, #2563eb);
-  stroke-width: 2;
-}
-
 /* An arrow: what waits for what. */
 .pipeline-edge {
   stroke: var(--adp-border-strong, #9ca3af);
