@@ -130,14 +130,17 @@ public partial class DocumentationLinksTests
 
         // Assert. Every dead link at once, each naming its source, so one run gives the whole
         // repair list.
-        // Assert, first, that the pattern found links at all. A target this misses goes
-        // unchecked rather than failing wrongly, which is deliberate and documented on
-        // LinkExpression() below. Total extraction failure is the different thing guarded
-        // here: a regex that matched nothing would leave dead empty and pass loudest
-        // exactly when it had stopped checking anything.
+        // Assert, first, that links were found at all. A target the pattern misses goes unchecked
+        // rather than failing wrongly, which is deliberate and documented on LinkExpression()
+        // below. Whether the PATTERN still matches is asked of a fixed sample in
+        // LinkExpressionReadsEveryFormTheDocumentsWrite, not counted here. This floor was 40 and
+        // counted the documents, the same shape as the HTML floor below that failed a correct
+        // tree on 2026-09-11 - it would have answered "do the documents still carry forty links"
+        // on the first large restructure. What stays is only that there is a relative link to
+        // check at all, without which the dead-link assertion is vacuous.
         Assert.True(
-            checkedLinks >= 40,
-            $"Only {checkedLinks} relative links were extracted from {Documents.Length} delivered documents; LinkExpression() has stopped matching.");
+            checkedLinks >= 1,
+            $"No relative links were extracted from {Documents.Length} delivered documents, so none are being checked at all.");
 
         // The HTML form, separately: the markdown count alone would stay above its floor with
         // HtmlLinkExpression() matching nothing, which is the exact blindness this pattern was
@@ -169,6 +172,25 @@ public partial class DocumentationLinksTests
 
         // Assert.
         Assert.Equal(["../.spec-workflow/specs/x/requirements.md", "screenshots/canvas.png", "../src/diagrams/y/examples/"], targets);
+    }
+
+    [Fact]
+    public void LinkExpressionReadsEveryFormTheDocumentsWrite()
+    {
+        // Arrange. A fixed sample in the shapes the delivered documents use - a plain link, an
+        // image, a link with a title, and one with an in-page anchor - so whether the pattern
+        // matches does not depend on how many links the documents happen to carry today.
+        const string sample =
+            "See [the readme](../readme.md). " +
+            "![a screenshot](screenshots/canvas.png) " +
+            "[the inventory](docs/dependencies.md \"Dependency inventory\") " +
+            "[the client](creating-a-diagram-module.md#the-client)";
+
+        // Act.
+        var targets = LinkExpression().Matches(sample).Select(match => match.Groups["target"].Value).ToArray();
+
+        // Assert.
+        Assert.Equal(["../readme.md", "screenshots/canvas.png", "docs/dependencies.md", "creating-a-diagram-module.md#the-client"], targets);
     }
 
     /// <summary>
