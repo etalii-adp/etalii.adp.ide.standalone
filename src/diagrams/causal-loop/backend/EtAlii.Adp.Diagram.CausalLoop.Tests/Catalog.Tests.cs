@@ -78,13 +78,22 @@ public class CatalogTests
     }
 
     /// <summary>
-    /// The row points at the specification, which is where a reader goes to find out why the
+    /// The row names the specification, which is where a reader goes to find out why the
     /// notation was adopted the way it was.
     /// </summary>
+    /// <remarks>
+    /// This asserted a link to <c>causal-loop-diagram/requirements.md</c> until 2026-09-11, when
+    /// the archived specification was removed from the tree by the user's ruling. The row now
+    /// names it and says where its text is: in history, before the commit that recorded the
+    /// removal. What the reader needs is the name, and whether a link resolves is
+    /// <c>DocumentationLinksTests</c>' question, not this one's - asserting a path here made
+    /// this a second copy of the catalog's text.
+    /// </remarks>
     [Fact]
-    public void TheRow_LinksToTheSpecification()
+    public void TheRow_NamesTheSpecification()
     {
-        // Act & assert.
-        Assert.Contains("causal-loop-diagram/requirements.md", Row(), StringComparison.Ordinal);
+        // Act & assert. The bare name, not the origin tag <c>systems/causal-loop-diagram</c>,
+        // which contains it and would satisfy a looser match on its own.
+        Assert.Contains("<code>causal-loop-diagram</code>", Row(), StringComparison.Ordinal);
     }
 }
