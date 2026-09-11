@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-10T19:59:05.654Z",
       "trigger": "initial",
+      "approvalId": "approval_1789070345279_1dg03ltft",
+      "approvalTitle": "centralized-selection requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-11T13:12:00.827Z",
+      "trigger": "approved",
       "approvalId": "approval_1789070345279_1dg03ltft",
       "approvalTitle": "centralized-selection requirements"
     }
