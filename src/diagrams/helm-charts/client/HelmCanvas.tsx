@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { forwardBezierPath } from "@client/canvas/connectors";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
@@ -10,13 +9,12 @@ import type {
   ShapeBounds,
   ShapePoint,
 } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { HelmEdgeKind, HelmElementKind } from "@client/generated/helm-charts_pb";
 import { anchorsOf, edgesOf, nodesOf, type HelmElement } from "./helmModel";
 import { useHelmStream } from "./useHelmStream";
@@ -34,7 +32,6 @@ export interface HelmCanvasProps {
 type NodeElement = DiagramModelElement & {
   node: HelmElement;
   activate: () => void;
-  contextSelect: () => void;
 };
 
 /** An open edge, drawn as a stub element: a line to nothing and the name that failed. */
@@ -75,7 +72,6 @@ const HELM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "helm-node" },
         { className: { template: "helm-node-{payload.kindClass}" } },
         { className: "helm-node-unreadable", when: { path: "payload.unreadable", is: "true" } },
-        { className: "helm-node-selected", when: { path: "state.selected", is: "true" } },
         { className: "helm-node-box", on: "shape" },
       ],
       labels: [
@@ -89,9 +85,10 @@ const HELM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       data: { kind: { path: "payload.kindClass" } },
       accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
       actions: [
-        // What `onDoubleClick` and `onContextMenu` did on the rendered element.
+        // What `onDoubleClick` did on the rendered element. The right-click that used to sit
+        // beside it pushed a context-menu selection by hand - selection glue, now the library's
+        // shared menu (centralized-selection Requirement 1.3).
         { id: "helm.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
-        { id: "helm.context-menu", invokedBy: [{ kind: "gesture", gesture: "context-menu" }], appliesTo: [{ kind: "element" }] },
       ],
       anchors: { kind: "edge" },
       sizing: "model",
@@ -167,15 +164,13 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
   // must say "offers nothing" rather than "no diagram is open".
   const toolboxItems = useToolboxItems(projectId, path);
   useRegisterDiagramToolbox(toolboxItems);
-  const { select, revealPath } = useContextConnection();
-  const { selection } = useContextSelection();
+  const { revealPath } = useContextConnection();
 
   const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const nodes = useMemo(() => nodesOf(model), [model]);
   const edges = useMemo(() => edgesOf(model), [model]);
-  const selectedId = selectedElementIdOf(selection);
 
   const activate = (element: HelmElement) => {
     const segments = element.payload.chartRelativePath;
@@ -249,22 +244,13 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
         },
         node,
         activate: () => activate(node),
-        contextSelect: () => select(elementSelectionOf(entryId, path, node.id, ContextSelectionAction.CONTEXT_MENU)),
       } as NodeElement);
     }
 
     return { elements, connections };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the closures read stable setters
     // and the same model/path the listed dependencies cover.
-  }, [model, nodes, edges, entryId, path]);
-
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (!selectedId || !model.elements.has(selectedId)) {
-      return [];
-    }
-    return [{ kind: "element", id: selectedId }];
-  }, [selectedId, model.elements]);
+  }, [model, nodes, edges, path]);
 
   const events: DiagramEventHandlers = {
     // The two gestures the rendered element used to answer itself. Same behaviour,
@@ -275,25 +261,14 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
       }
 
       const node = model.elements.get(targetId);
-      if (actionId === "helm.activate") {
-        if (node !== undefined) {
-          activate(node);
-        }
-
-        return;
-      }
-
-      if (actionId === "helm.context-menu") {
-        select(elementSelectionOf(entryId, path, targetId, ContextSelectionAction.CONTEXT_MENU));
+      if (actionId === "helm.activate" && node !== undefined) {
+        activate(node);
       }
     },
-    // A background press never deselected here, so only an element selection is forwarded.
-    onSelectionChanged: ({ selection: next }) => {
-      const element = next.find((item) => item.kind === "element");
-      if (element !== undefined && model.elements.has(element.id)) {
-        select(elementSelectionOf(entryId, path, element.id));
-      }
-    },
+    // Selection is the library's (centralized-selection): a node and an edge alike, and a
+    // background press clears - the two things this canvas never did. A menu action the
+    // backend refuses comes back here, for the rejection line.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       const node = model.elements.get(elementId);
       if (!node) {
@@ -350,7 +325,7 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
         definition={HELM_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
         ariaLabel="Helm chart anatomy"
         className="helm-canvas"

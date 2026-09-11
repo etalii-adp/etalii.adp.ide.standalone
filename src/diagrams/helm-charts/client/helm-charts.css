@@ -79,11 +79,6 @@
   user-select: none;
 }
 
-.helm-node-selected .helm-node-box {
-  stroke: var(--color-primary);
-  stroke-width: 2.5;
-}
-
 /* A node whose artifact did not parse: visibly marked, never hidden. */
 .helm-node-unreadable .helm-node-box {
   stroke: var(--color-danger);
