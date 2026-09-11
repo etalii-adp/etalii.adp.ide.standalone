@@ -35,11 +35,6 @@
   stroke-dasharray: 6 4;
 }
 
-.databricks-frame.databricks-selected rect {
-  stroke: var(--color-primary, limegreen);
-  stroke-width: 2.5;
-}
-
 .databricks-frame-label {
   fill: var(--color-text-muted, #5a6376);
   font-size: 12px;

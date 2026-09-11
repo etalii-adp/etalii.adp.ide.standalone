@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
@@ -9,17 +9,16 @@ import type {
   DiagramDefinition,
   ShapeBounds,
 } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDatabricksStream } from "./useDatabricksStream";
-import { useSimulatedRun } from "./useSimulatedRun";
+import { SIMULATED_ACTION_IDS, SIMULATED_MARKER, useSimulatedRun } from "./useSimulatedRun";
 import type { DatabricksFrame, DatabricksNode } from "./databricksModel";
 
 /** A node's drawn size, in the module's own canvas units - matching the backend layouts' spacing. */
@@ -94,8 +93,6 @@ function definitionFor(connectable: boolean): DiagramDefinition {
           { className: { template: "databricks-node-{payload.kind}" }, on: "element" },
           { className: "databricks-node-missing", on: "element", when: { path: "payload.unresolved", is: "true" } },
           { className: { template: "databricks-sim-{payload.simulated}" }, on: "element", when: { path: "payload.simulated", is: "present" } },
-          { className: "databricks-selected", on: "element", when: { path: "state.selected", is: "true" } },
-          { className: "databricks-connect-target canvas-connect-target", on: "element", when: { path: "state.connectTarget", is: "true" } },
           { className: "databricks-node-box canvas-node", on: "shape" },
         ],
         labels: [
@@ -145,8 +142,6 @@ function definitionFor(connectable: boolean): DiagramDefinition {
           { className: { template: "databricks-node-{payload.kind}" }, on: "element" },
           { className: "databricks-node-missing", on: "element", when: { path: "payload.unresolved", is: "true" } },
           { className: { template: "databricks-sim-{payload.simulated}" }, on: "element", when: { path: "payload.simulated", is: "present" } },
-          { className: "databricks-selected", on: "element", when: { path: "state.selected", is: "true" } },
-          { className: "databricks-connect-target canvas-connect-target", on: "element", when: { path: "state.connectTarget", is: "true" } },
           { className: "databricks-node-box canvas-node", on: "shape" },
         ],
         labels: [
@@ -185,7 +180,6 @@ function definitionFor(connectable: boolean): DiagramDefinition {
         shape: "frame",
         classNames: [
           { className: "databricks-frame", on: "element" },
-          { className: "databricks-selected", on: "element", when: { path: "state.selected", is: "true" } },
         ],
         labels: [
           { text: { path: "payload.label" }, placement: "above", className: "databricks-frame-label" },
@@ -255,6 +249,11 @@ function definitionFor(connectable: boolean): DiagramDefinition {
     actions: [
       { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
       { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+      // THE SIMULATED RUNS ARE THIS CANVAS'S TO RUN (Requirements 8.6, 11.6). The backend offers
+      // them in the shared menu; declared here as menu entries, the library hands them to this
+      // module's handler and sends nothing - so a simulation never reaches a command, the history
+      // or a file. The ids are the engine's own list, never retyped.
+      ...SIMULATED_ACTION_IDS.map((id) => ({ id, invokedBy: [{ kind: "menu" as const }], appliesTo: [{ kind: "element" as const }] })),
     ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
@@ -283,14 +282,10 @@ export function DatabricksCanvas({
 }: DiagramCanvasProps & DatabricksCanvasConfig) {
   const { model, loading, failed, moveElementTo, reportView } = useDatabricksStream(projectId, path);
   const simulation = useSimulatedRun(model);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -347,14 +342,6 @@ export function DatabricksCanvas({
     return { elements: [...frames, ...nodes], connections };
   }, [model, simulation.states]);
 
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null) {
-      return [];
-    }
-    return [{ kind: model.edges.has(selectedId) ? "connection" : "element", id: selectedId }];
-  }, [selectedId, model.edges]);
-
   /**
    * Runs an action, letting the interception seam play it locally first (Requirement 8.6): a
    * simulated id starts the client-side show and never reaches executeAction, the history or
@@ -385,20 +372,21 @@ export function DatabricksCanvas({
   const events: DiagramEventHandlers = {
     // The declared actions, answered as the shortcuts the backend has always known them by.
     onActionInvoked: ({ actionId, targetId }) => {
+      // A simulated entry chosen from the shared menu: the show plays here, and nothing travels.
+      if (actionId.includes(SIMULATED_MARKER)) {
+        (interceptAction ?? simulation.intercept)(actionId);
+        return;
+      }
+
       const key = BACKEND_KEYS[actionId];
       if (key !== undefined && targetId !== undefined) {
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) => {
-      // Edges are not selectable in this family (recorded pending elsewhere): a press on a
-      // connection is ignored, exactly as it fell on nothing before the migration.
-      if (next.some((item) => item.kind === "connection")) {
-        return;
-      }
-      const element = next.find((item) => item.kind === "element");
-      select(element !== undefined ? elementSelectionOf(entryId, path, element.id) : null);
-    },
+    // Selection is the library's (centralized-selection), edges included: this family's edges
+    // were pending, not exempt, and the backend has always resolved them. A menu action the
+    // backend refuses comes back here, for the rejection line.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       setRejection("");
       const isFrame = model.frames.has(elementId);
@@ -450,15 +438,9 @@ export function DatabricksCanvas({
         definition={connectable ? CONNECTABLE_DEFINITION : RENDER_ONLY_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
         editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
-        }}
         ariaLabel={ariaLabel}
         className="databricks-surface"
         scrollbarsClassName="databricks-scrollbars"
