@@ -24,6 +24,14 @@ import { join } from "node:path";
  * connect target, and would keep that guard green while the element itself went back to being
  * invisible. This asserts the narrower thing that actually matters — **each state class carries
  * a declaration of its own** — which is the half that would otherwise rot unnoticed.
+ *
+ * ## Where "visible" lives, since centralized-selection
+ *
+ * The accept look was a glow on `library-connect-target`, in the selected colour — so accept and
+ * selected looked the same, and an element that was both could not show both. It is now a ring
+ * the library draws for that state, `library-accept-outline`: dashed, further out than the
+ * selected ring, in a colour of its own (that specification's Requirements 6.1 and 6.2). So this
+ * asks the ring for its paint, and adds the claim the amendment made: accept is not selected.
  */
 describe("a connect target is visible", () => {
   const css = readFileSync(join(__dirname, "canvas.css"), "utf8");
@@ -37,10 +45,11 @@ describe("a connect target is visible", () => {
   }
 
   it("paints the element a valid drop would land on", () => {
-    const block = ownBlockOf("library-connect-target");
-    expect(block, "library-connect-target has no rule of its own in canvas.css").not.toBeNull();
-    // Something visible, and in the highlight colour rather than an arbitrary one.
-    expect(block).toMatch(/--color-primary/);
+    const block = ownBlockOf("library-accept-outline");
+    expect(block, "library-accept-outline has no rule of its own in canvas.css").not.toBeNull();
+    // Something visible: a stroke in a theme colour, on a ring that is not filled over the element.
+    expect(block).toMatch(/stroke:\s*var\(--color-/);
+    expect(block).toMatch(/fill:\s*none/);
   });
 
   it("paints a target the definition would refuse, differently", () => {
@@ -53,13 +62,26 @@ describe("a connect target is visible", () => {
     // The canary. Both assertions above would pass if a careless edit gave the refused state the
     // accepted state's colour, and the drag would then promise a drop that gets refused — the
     // one outcome worse than showing nothing at all.
-    expect(ownBlockOf("library-connect-target")).not.toEqual(ownBlockOf("library-connect-forbidden"));
+    expect(ownBlockOf("library-accept-outline")).not.toEqual(ownBlockOf("library-connect-forbidden"));
+    expect(ownBlockOf("library-accept-outline")).not.toMatch(/--color-danger/);
+  });
+
+  it("does not look like selected - a different colour, and dashed where selected is not", () => {
+    // Requirement 6.1: two meanings, two looks. Until centralized-selection both were the
+    // primary colour on the same element, so "would accept" read as "is selected".
+    const colourOf = (block: string | null) => /stroke:\s*var\(\s*(--[\w-]+)/.exec(block ?? "")?.[1];
+    const accept = ownBlockOf("library-accept-outline");
+    const selected = ownBlockOf("library-selected-outline");
+    expect(selected, "library-selected-outline has no rule of its own in canvas.css").not.toBeNull();
+    expect(colourOf(accept)).not.toBe(colourOf(selected));
+    expect(accept).toMatch(/stroke-dasharray/);
+    expect(selected).not.toMatch(/stroke-dasharray/);
   });
 
   it("is not left to the modules to declare", () => {
-    // The request was for a central fix. Four modules declare `canvas-connect-target` on their
-    // own types and that is theirs to keep, but the library's own class must carry the
-    // behaviour, or a module that declares nothing shows nothing — which was the defect.
-    expect(ownBlockOf("library-connect-target")).not.toBeNull();
+    // The request was for a central fix: the library's own ring carries the behaviour, so a
+    // module that declares nothing still shows it. The module-private `canvas-connect-target`
+    // declarations are removed as each module migrates (Requirement 6.1).
+    expect(ownBlockOf("library-accept-outline")).not.toBeNull();
   });
 });

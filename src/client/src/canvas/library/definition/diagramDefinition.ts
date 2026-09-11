@@ -699,6 +699,16 @@ export interface ElementTypeDefinition {
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
   deletable?: boolean;
   /**
+   * Whether an element of this type can be the selection. **Omitted means selectable** - every
+   * type selects unless its definition says otherwise, so "not selectable" is only ever a value
+   * somebody declared and never the absence of one (centralized-selection Requirement 2.3).
+   *
+   * `false` makes a press on the element behave exactly as a press on the background - the
+   * selection clears - and a pushed selection naming it highlights nothing. That is c4's inert
+   * boundary: a region the reader reads, not a thing the reader picks.
+   */
+  selectable?: boolean;
+  /**
    * Paints this type's elements beneath the connections: an opaque container whose members'
    * edges must stay visible over it - azure-pipeline's stage cards. Off, connections draw
    * under every element as they always have.
@@ -812,6 +822,16 @@ export interface RelationTypeDefinition {
   };
   /** Whether waypoints or control points may be dragged (Requirement 3.5). */
   adjustable?: boolean;
+  /**
+   * Whether a connection of this type can be the selection. **Omitted means selectable**, as for
+   * element types: an unselectable relation is always a recorded decision about the notation,
+   * never an omission (centralized-selection Requirements 2.3, 2.4).
+   *
+   * `false` makes a press on the line behave as a press on the background, and a pushed
+   * selection naming it highlights nothing - mindmap's and wardley-map's lines, which select
+   * nothing today by design.
+   */
+  selectable?: boolean;
   /**
    * Adornment drawn inside the connection's group, after its line - polarity signs, delay
    * strokes, anything the notation rides on a line - so the shared `.canvas-selected` cascade

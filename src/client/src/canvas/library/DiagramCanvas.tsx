@@ -43,6 +43,7 @@ import { isCustomShape } from "./definition/diagramDefinition";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
+import { useLibrarySelection, type CanvasSource } from "./librarySelection";
 import { isTextTarget } from "../interaction";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
@@ -192,11 +193,23 @@ export interface DiagramCanvasProps {
   events: DiagramEventHandlers;
   config?: DiagramRuntimeConfig;
   /**
+   * Which diagram this canvas draws - the shell's `entryId` and `path`. **Given, and none of
+   * `selection`, `context` or `events.onSelectionChanged` with it, the library owns selection**:
+   * it reads the backend's selection, pushes a press's, and wires the shared context menu itself,
+   * so the module writes no selection code at all (centralized-selection Requirement 1).
+   *
+   * A canvas still passing any of those three behaves exactly as before - the two ways coexist
+   * until every module has moved, after which the three go (that specification's task 21).
+   */
+  source?: CanvasSource;
+  /**
    * Controlled selection - usually the backend's push, exactly as the hand-built canvases
    * highlight `selectedElementIdOf(selection)`. Omitted, the canvas highlights its own last
    * press; either way every press raises `selectionChanged` and nothing else decides.
+   * Superseded by {@link source}.
    */
   selection?: DiagramSelection;
+  /** The shared context menu's wiring, hand-built. Superseded by {@link source}. */
   context?: DiagramContextIntegration;
   editing?: DiagramEditingIntegration;
   /**
@@ -267,7 +280,25 @@ interface ConnectPreview {
  * renders its candidates connectable or not as it moves, and an event is raised only for a
  * gesture the definition already allows - a module never vetoes a completed action.
  */
-export function DiagramCanvas({
+export function DiagramCanvas(props: DiagramCanvasProps) {
+  // Two components rather than one with a conditional hook: the library-owned path reads the
+  // context channel, and a canvas mounted without that provider - most library tests, and any
+  // canvas that has not moved yet - must not have to supply one it does not use.
+  const owned =
+    props.source !== undefined &&
+    props.selection === undefined &&
+    props.context === undefined &&
+    props.events.onSelectionChanged === undefined;
+  return owned ? <LibraryOwnedCanvas {...props} source={props.source!} /> : <DiagramCanvasCore {...props} />;
+}
+
+/** The canvas with its selection owned by the library: the one place the three props are made. */
+function LibraryOwnedCanvas(props: DiagramCanvasProps & { source: CanvasSource }) {
+  const { selection, context, events } = useLibrarySelection(props.source, props.model, props.definition, props.events);
+  return <DiagramCanvasCore {...props} selection={selection} context={context} events={events} />;
+}
+
+function DiagramCanvasCore({
   definition: statedDefinition,
   model,
   events,
@@ -656,19 +687,25 @@ export function DiagramCanvas({
     [elements, boundsOf],
   );
 
+  // A press on a type declared unselectable is a press on the background: the selection clears
+  // (centralized-selection Requirement 2.3). Omitted means selectable, so nothing changes for a
+  // definition that says nothing.
+  const selectableElement = (element: DiagramModelElement) => elementTypes.get(element.type)?.selectable !== false;
+  const selectableConnection = (connection: DiagramModelConnection) => relationTypes.get(connection.type)?.selectable !== false;
+
   const gesture = usePointerGesture<PressTarget>({
     onPress: (target) => {
       switch (target.kind) {
         case "element":
-          select({ kind: "element", id: target.element.id });
+          select(selectableElement(target.element) ? { kind: "element", id: target.element.id } : null);
           break;
         case "connection":
         case "adjust":
-          select({ kind: "connection", id: target.kind === "adjust" ? target.connection.id : target.connection.id });
+          select(selectableConnection(target.connection) ? { kind: "connection", id: target.connection.id } : null);
           break;
         case "anchor":
           // An unmoved press on an anchor selects its element: the anchor is part of it.
-          select({ kind: "element", id: target.element.id });
+          select(selectableElement(target.element) ? { kind: "element", id: target.element.id } : null);
           break;
         case "background":
           select(null);
@@ -1872,6 +1909,12 @@ function LibraryElement({
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
         {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" })}
       </ShapeErrorBoundary>
+      {/* THE TWO LOOKS, each the library's own ring just outside the element and each read from
+          its own flag alone (centralized-selection Requirements 5.2, 6.1, 6.2). Outside, so no
+          fill or inline stroke of the element can hide it; at different offsets, so an element
+          that is both selected and a drop target shows both. canvas.css paints them. */}
+      {selected && <OutlineRing className="library-selected-outline" bounds={bounds} offset={SELECTED_OUTLINE_OFFSET} />}
+      {connectHighlight === "valid" && <OutlineRing className="library-accept-outline" bounds={bounds} offset={ACCEPT_OUTLINE_OFFSET} />}
       {resizable && selected && (
         // The resize adorners a user-sized element earns when selected: each edge strip
         // drives the arbiter and raises element-resized on release (sizing: "user", R2.5).
@@ -1895,6 +1938,26 @@ function LibraryElement({
           />
         ))}
     </g>
+  );
+}
+
+/** How far outside an element the selected ring sits, in canvas units. */
+const SELECTED_OUTLINE_OFFSET = 4;
+
+/** How far outside the accept ring sits: further than the selected one, so both can show. */
+const ACCEPT_OUTLINE_OFFSET = 9;
+
+/** A ring around an element's bounds, `offset` units clear of them on every side. */
+function OutlineRing({ className, bounds, offset }: { className: string; bounds: { x: number; y: number; width: number; height: number }; offset: number }) {
+  return (
+    <rect
+      className={className}
+      x={bounds.x - offset}
+      y={bounds.y - offset}
+      width={bounds.width + offset * 2}
+      height={bounds.height + offset * 2}
+      rx={offset}
+    />
   );
 }
 

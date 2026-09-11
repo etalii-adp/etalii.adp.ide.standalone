@@ -27,7 +27,8 @@ export type DiagramEvent =
   | LabelCommitRequested
   | ViewChanged
   | LayoutModeChanged
-  | ActionInvoked;
+  | ActionInvoked
+  | ActionRefused;
 
 /** A toolbox item landed on the canvas at a position the definition allows (Requirement 5.3). */
 export interface ElementDropped {
@@ -158,6 +159,22 @@ export interface ActionInvoked {
   actionId: string;
   targetKind: "element" | "connection" | "canvas";
   targetId?: string;
+}
+
+/**
+ * The backend refused an action run from the shared context menu, with the message to show.
+ *
+ * <b>The one member that is not a request.</b> Where a canvas owns its selection
+ * (`DiagramCanvas`'s `source`), it also runs the shared menu's actions against the backend, so
+ * the refusal comes back to the library rather than to the module. The library has no place of
+ * its own to show it and each module already has one - its rejection line - so the library
+ * hands the message on (centralized-selection, design A). Showing a refused action is event
+ * handling for an action, which the declarative rule leaves to the module.
+ */
+export interface ActionRefused {
+  kind: "action-refused";
+  actionId: string;
+  message: string;
 }
 
 /** The user switched between the definition's allowed layout modes (Requirement 8.2). */
