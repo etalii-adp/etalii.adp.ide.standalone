@@ -12,7 +12,7 @@ import {
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type CausalLoopModel } from "./causalLoopModel";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { ContextSelectionAction, type ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 /**
@@ -560,5 +560,21 @@ describe("selection, as every canvas has it", () => {
       element: "variable:a",
       connection: "link:a|b",
     });
+  });
+});
+
+describe("the diagram's own menu, on empty canvas", () => {
+  it("asks for the diagram's menu at the point right-clicked, as a placement (backgroundMenu)", () => {
+    // The library opens it now; this canvas used to convert the pointer and push by hand.
+    const { container } = renderCanvas();
+    select.mockClear();
+
+    fireEvent.contextMenu(container.querySelector("svg.library-canvas-surface")!, { clientX: 320, clientY: 240 });
+
+    expect(select).toHaveBeenCalledTimes(1);
+    const push = select.mock.calls[0][0] as ContextSelection;
+    expect(selectedElementIdOf(push)).toMatch(/^new:-?[\d.]+,-?[\d.]+$/);
+    const inner = push.detail.case === "child" ? push.detail.value : push;
+    expect(inner.detail.case === "action" ? inner.detail.value : null).toBe(ContextSelectionAction.CONTEXT_MENU);
   });
 });

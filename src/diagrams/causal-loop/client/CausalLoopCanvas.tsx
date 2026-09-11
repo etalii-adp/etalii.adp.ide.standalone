@@ -1,20 +1,16 @@
 import { useMemo, useRef, useState } from "react";
 
 import { ArcBow, arcBetween, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
-import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, RelationTypeDefinition, RouteEnds, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { ContextMenu } from "@client/shell/context/ContextMenu";
-import { toMenuGroups } from "@client/shell/context/toMenuGroups";
-import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import {
   LoopPolarityProto,
   loopCaption,
@@ -246,6 +242,10 @@ function definitionOf(): DiagramDefinition {
     // The right-button drag draws a link, in the shared gesture layer - so a causal loop links
     // by dragging between variables, and this module keeps no gesture state of its own.
     connectOnRightDrag: true,
+    // The diagram's own menu - Arrange diagram, a new variable where the user right-clicked - on
+    // empty canvas. The library opens it for the point clicked; this canvas used to build it by
+    // hand, and was the only one that did (centralized-selection, design A, "The background menu").
+    backgroundMenu: true,
   });
 }
 
@@ -257,16 +257,12 @@ function definitionOf(): DiagramDefinition {
  */
 export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useCausalLoopStream(projectId, path);
-  const { select, executeAction } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction } = useContextConnection();
   const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  // Read for the diagram's OWN menu - a right-click on empty canvas - which the library's shared
-  // menu does not cover. Selecting an element or a link, and their menus, are the library's.
-  const selectionKey = innermostKey(selection);
   const editingId = inlineLabelElementIdOf(prompt);
 
   /** Runs a backend action, threading its source and surfacing any refusal. */
@@ -380,32 +376,6 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     ready: !loading && !failed && viewport !== null,
   });
 
-  /**
-   * The menu for the diagram itself, opened on empty canvas: with nothing selected the
-   * diagram is the subject - Arrange diagram lives there - and the point is carried as a
-   * placement id so the backend can put a new variable where the user actually right-clicked.
-   * Element and link menus are the library's, through the context integration below.
-   */
-  const surfaceMenu = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
-    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-  );
-
-  const onSurfaceContextMenu = (event: React.MouseEvent) => {
-    const target = event.target as Element;
-    if (target.closest("[data-element-id]") !== null || target.closest("[data-connection-id]") !== null) {
-      return; // an element's or a link's own menu; the library answers it
-    }
-    const svg = target.closest("svg");
-    if (svg === null || viewport === null) {
-      return;
-    }
-    const rect = svg.getBoundingClientRect();
-    const scale = viewport.width / Math.max(rect.width, 1);
-    const x = viewport.x + (event.clientX - rect.left) * scale;
-    const y = viewport.y + (event.clientY - rect.top) * scale;
-    surfaceMenu.openMenuAt(event, `new:${x},${y}`);
-  };
-
   /** The `variable:…` id of the topmost variable whose box contains a canvas point, or null. */
   const variableAtCanvas = (point: { x: number; y: number }): string | null => {
     const variables = [...model.variables.values()];
@@ -458,7 +428,6 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   return (
     <div
       className="causal-loop-frame canvas-host"
-      onContextMenu={onSurfaceContextMenu}
       onClick={onFrameClick}
     >
       {rejection !== null && (
@@ -480,16 +449,6 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
           ariaLabel="Causal loop diagram"
         />
       )}
-
-      <ContextMenu
-        open={surfaceMenu.menuPosition !== null}
-        groups={toMenuGroups(actions, (action) => {
-          surfaceMenu.closeMenu();
-          void executeAction(action.id);
-        })}
-        position={surfaceMenu.menuPosition ?? { x: 0, y: 0 }}
-        onClose={surfaceMenu.closeMenu}
-      />
     </div>
   );
 }
