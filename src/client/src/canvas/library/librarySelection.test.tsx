@@ -7,6 +7,7 @@ import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selectio
 import { DiagramCanvas } from "./DiagramCanvas";
 import { resolveSelection } from "./librarySelection";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
+import type { ActionDeclaration } from "./definition/actions";
 import type { DiagramModel } from "./api/diagramModel";
 import type { DiagramEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
@@ -57,7 +58,7 @@ afterEach(() => {
   channel.outcome = { accepted: true, error: "" };
 });
 
-function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?: boolean } = {}): DiagramDefinition {
+function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?: boolean; actions?: ActionDeclaration[] } = {}): DiagramDefinition {
   return {
     elementTypes: [
       { id: "service", shape: "box", anchors: { kind: "compass", positions: ["e", "w"] }, sizing: "model" },
@@ -74,6 +75,7 @@ function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?
     ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
+    actions: overrides.actions,
   };
 }
 
@@ -331,5 +333,79 @@ describe("the shared context menu, owned by the library", () => {
     await vi.waitFor(() =>
       expect(onActionRefused).toHaveBeenCalledWith({ kind: "action-refused", actionId: "service.restart", message: "The service is read-only." }),
     );
+  });
+});
+
+describe("a menu entry the module runs itself", () => {
+  const simulate: ActionDeclaration = { id: "service.simulate", invokedBy: [{ kind: "menu" }], appliesTo: [{ kind: "element" }] };
+
+  async function choose(container: HTMLElement, label: RegExp) {
+    fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: label }));
+  }
+
+  it("is raised to the module as action-invoked and never sent to the backend", async () => {
+    // databricks' simulated runs: the backend offers the entry, and must never run it.
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    channel.actions = actionsOf("service.simulate");
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ actions: [simulate] }));
+
+    await choose(container, /Do service.simulate/);
+
+    expect(onActionInvoked).toHaveBeenCalledWith({ kind: "action-invoked", actionId: "service.simulate", targetKind: "element", targetId: "a" });
+    expect(channel.executed).toEqual([]);
+  });
+
+  it("leaves every entry the definition does not claim to the backend", async () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    channel.actions = actionsOf("service.restart");
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ actions: [simulate] }));
+
+    await choose(container, /Do service.restart/);
+
+    expect(onActionInvoked).not.toHaveBeenCalled();
+    expect(channel.executed).toEqual([{ actionId: "service.restart", source: undefined }]);
+  });
+
+  it("claims an entry only while its declaration is enabled", async () => {
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    channel.actions = actionsOf("service.simulate");
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ actions: [{ ...simulate, enabled: false }] }));
+
+    await choose(container, /Do service.simulate/);
+
+    expect(onActionInvoked).not.toHaveBeenCalled();
+    expect(channel.executed).toEqual([{ actionId: "service.simulate", source: undefined }]);
+  });
+
+  it("is claimed only by a menu invocation - the same id bound to a key alone stays the backend's", async () => {
+    // Several modules declare a `rename` for F2; a backend menu entry of the same id must still
+    // run on the backend, or every such menu would silently stop working.
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    channel.actions = actionsOf("service.simulate");
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ actions: [{ ...simulate, invokedBy: [{ kind: "shortcut", key: "F2" }] }] }));
+
+    await choose(container, /Do service.simulate/);
+
+    expect(onActionInvoked).not.toHaveBeenCalled();
+    expect(channel.executed).toEqual([{ actionId: "service.simulate", source: undefined }]);
+  });
+
+  it("does not second-guess where the backend offered the entry - appliesTo is not checked again", async () => {
+    // The backend's list already decided the entry belongs here; a declaration aimed at
+    // connections still claims it when the backend offers it on an element.
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
+    channel.actions = actionsOf("service.simulate");
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ actions: [{ ...simulate, appliesTo: [{ kind: "connection" }] }] }));
+
+    await choose(container, /Do service.simulate/);
+
+    expect(onActionInvoked).toHaveBeenCalledOnce();
+    expect(channel.executed).toEqual([]);
   });
 });

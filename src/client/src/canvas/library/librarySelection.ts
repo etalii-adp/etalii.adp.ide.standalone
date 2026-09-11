@@ -3,6 +3,7 @@ import { elementIdOfKey, elementSelectionOf } from "@client/canvas/selection";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
+import { actionForMenuEntry, type ActionLookup } from "./definition/actions";
 import type { DiagramModel } from "./api/diagramModel";
 import { dispatchDiagramEvent, type DiagramEventHandlers, type DiagramSelection } from "./api/diagramEvents";
 import type { DiagramContextIntegration } from "./DiagramCanvas";
@@ -49,6 +50,25 @@ export function resolveSelection(id: string | null, model: DiagramModel, definit
   return [];
 }
 
+/**
+ * What a menu entry's declaration is asked against: the selected item's actions - the definition's
+ * and, for an element, its type's - and the item itself, for a `when` or `enabled` to read. The
+ * same lookup a declared shortcut gets.
+ */
+function menuLookup(selection: DiagramSelection, model: DiagramModel, definition: DiagramDefinition): ActionLookup {
+  const item = selection[0];
+  const element = item?.kind === "element" ? model.elements.find((candidate) => candidate.id === item.id) : undefined;
+  const connection = item?.kind === "connection" ? model.connections.find((candidate) => candidate.id === item.id) : undefined;
+  const type = element !== undefined ? definition.elementTypes.find((candidate) => candidate.id === element.type) : undefined;
+  return {
+    actions: [...(definition.actions ?? []), ...(type?.actions ?? [])],
+    targetKind: item === undefined ? "canvas" : item.kind,
+    targetId: item?.id,
+    typeId: element?.type ?? connection?.type,
+    source: { element: element ?? { id: item?.id ?? "", type: connection?.type ?? "", x: 0, y: 0 }, payload: element?.payload },
+  };
+}
+
 /** What the library hands its own canvas in place of the three props a module used to wire. */
 export interface LibrarySelection {
   selection: DiagramSelection;
@@ -69,7 +89,9 @@ export interface LibrarySelection {
  * selection. A connection travels under its own id, never labelled as an element.
  *
  * <b>The menu</b> - the key, the pushed actions, the context-menu push and the action run are
- * built here. An entry runs against the backend's CURRENT selection, with no source of its own:
+ * built here. An entry the definition declares `invokedBy: { kind: "menu" }` is the module's to
+ * run: it is raised as `action-invoked` and never sent (see {@link actionForMenuEntry}). Every
+ * other entry runs against the backend's CURRENT selection, with no source of its own:
  * the menu opens only once the pushed selection is the item it was opened on, and a source
  * naming that same item would say nothing the backend does not already hold. A refused action
  * comes back as `action-refused`, for the module's rejection line.
@@ -123,6 +145,12 @@ export function useLibrarySelection(
       actions: actions ?? [],
       selectForMenu: (id) => push(id, ContextSelectionAction.CONTEXT_MENU),
       executeAction: async (actionId) => {
+        const declared = actionForMenuEntry(menuLookup(selection, model, definition), actionId);
+        if (declared !== null) {
+          dispatchDiagramEvent(events, { kind: "action-invoked", ...declared });
+          return;
+        }
+
         const outcome = await executeAction(actionId);
         if (!outcome.accepted && outcome.error) {
           dispatchDiagramEvent(events, { kind: "action-refused", actionId, message: outcome.error });
