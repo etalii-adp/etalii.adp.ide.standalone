@@ -37,6 +37,13 @@ public sealed class ProblemStore : IProblemStore, IDisposable
     private readonly int _maxReported;
     private readonly ConcurrentDictionary<string, CachedProjectProblems> _entries = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Set before <see cref="Dispose"/> flushes, so a mutation arriving during or after the
+    /// shutdown schedules nothing. Volatile because the mutation arrives on whichever thread
+    /// the late work finished on, and this is the only thing that stops it.
+    /// </summary>
+    private volatile bool _disposed;
+
     public event Action<string>? Changed;
 
     public ProblemStore(
@@ -157,6 +164,11 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
     public void Dispose()
     {
+        // Closed to new schedules FIRST, then flushed: set afterwards, a mutation racing this
+        // loop could arm a timer on an entry the loop had already passed, and that timer would
+        // outlive the store with nothing to stop it.
+        _disposed = true;
+
         // A pending debounced write is a promise; keep it on the way out.
         foreach (var entry in _entries.Values)
         {
@@ -268,6 +280,19 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
     private void ScheduleWrite(CachedProjectProblems entry)
     {
+        // AFTER SHUTDOWN, NOTHING IS SCHEDULED. Dispose keeps the write that was already
+        // pending - that promise is the point of the flush - but work finishing later has
+        // nobody left to keep a promise to, and Persist creates the cache directory before
+        // writing. A timer armed here after Dispose fired into a folder whose owner had
+        // already taken it away: 3,692 directories under %TEMP%/EtAlii.Adp.IntegrationTests,
+        // each recreated to hold one cache file, and in the running application a cache write
+        // after the host has gone.
+        if (_disposed)
+        {
+            _logger.Debug("Not scheduling a problem-cache write for {RootPath}: the store is disposed", entry.RootPath);
+            return;
+        }
+
         if (_writeDelay <= TimeSpan.Zero)
         {
             Persist(entry);
