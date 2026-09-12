@@ -92,7 +92,11 @@ Each: pass `source`, delete the glue, delete its private selected class, and cal
 - [x] 15. `c4` — `c4-node-focused`, and **its boundary type declares `selectable: false`**, replacing the hand-written check in `onSelectionChanged`
   - _Requirements: 1.4, 2.3, 5.1, 9.2, 11.1_
 - [ ] 16. `databricks` — `databricks-selected`, and its two private connect-target declarations
-  - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
+  - **Its three simulated actions are declared `invokedBy: { kind: "menu" }`**, so the shared menu dispatches them to the module's handler and nothing reaches the backend, the history or a file (the approved design; `databricks` Requirements 8.6 and 11.6). Their ids come from the simulation engine's own list rather than being retyped. A test: a simulated entry chosen from the shared menu plays the show and calls no `executeAction`, **seen red first**. The backend no-ops a simulated id that reaches it anyway, so a miss would otherwise be silent.
+  - **Its edges become selectable under 2.1, with no declaration.** Today `onSelectionChanged` drops any press that includes a connection, so an edge press pushes nothing at all. `JobCanvas.test.tsx`'s "ignores a press on an edge" changes its Assert to the edge's id being pushed, naming 2.1 under the amended 11.1; its Arrange and Act stay. The backend already resolves edge ids (`DatabricksSelection.TryEdge`).
+  - **`src/client/src/canvas/label/readme.md` says this canvas has no edge selection.** That becomes false here, so it is corrected in the same change. The note that the edge relabel prompt then qualifies and should be marked is **left for the label owner**: marking it is not this specification's work.
+  - _Requirements: 1.3, 1.4, 2.1, 2.2, 5.1, 6.1, 9.2, 11.1_
+  - *The three bullets above were added on 2026-09-12 during implementation, with the approved design amendment and the amended 11.1.*
 - [x] 17. `rdf`, all four readings — `owl-selected`, `shacl-selected`, `skos-selected`, and the nine private connect-target declarations (seven in the OWL reading, two in SKOS)
   - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
 - [x] 18. `sparql` — `sparql-selected`
@@ -125,6 +129,13 @@ Each: pass `source`, delete the glue, delete its private selected class, and cal
   - **The completeness fact** walks `src/diagrams/*/backend/` and fails a module whose test project does not call the helper, **discovering modules by artifact, not by a list**. It carries both canary shapes: a floor on modules walked (structure, not content) and a named member present.
   - **Order.** Write the helper first and run it across all modules in a scratch tree. That run is the measurement, and `azure-pipeline`'s rejection is its natural red. Each offender it names is fixed in that module's task above, or here if that task has already landed. The guard lands green, after the fixes it demands.
   - _Requirements: 2.1, 2.2, 9.3_
+
+- [ ] 27. The background menu, and `causal-loop`'s follow-up — **added on 2026-09-12; a task of its own because task 14 has already landed**
+  - Files: `diagramDefinition.ts`, `validateDiagramDefinition.ts`, `DiagramCanvas.tsx`, `CausalLoopCanvas.tsx`, their tests
+  - `DiagramDefinition.backgroundMenu?: boolean`, **whose doc-comment says in words that the default is no background menu**, so a background menu is only ever a declared value. On a declaring canvas, a background right-click converts the pointer the way a toolbox drop already does, pushes that placement (`new:x,y`, canvas coordinates) through the library's own `selectForMenu`, and opens the shared menu on the backend's answer. A right-drag that drew a relation is still not a menu.
+  - `causal-loop` declares it, and **its hand-written pointer conversion, its placement push, its read of the pushed selection and its own `ContextMenu` are deleted**. It is the only module with a background menu, so nothing else changes.
+  - Tests: a declaring canvas opens the shared menu on a background right-click and an undeclared one opens nothing; `causal-loop`'s existing menu tests keep their Act and Assert, since the behaviour is the same menu from the library.
+  - _Requirements: 1.3, 1.4, 11.2_
 
 - [ ] 23. The `declarative-diagram-modules` Requirement 1.2 annotation — **its own card**
   - Files: `.spec-workflow/specs/declarative-diagram-modules/requirements.md` (main checkout, spec bookkeeping)
