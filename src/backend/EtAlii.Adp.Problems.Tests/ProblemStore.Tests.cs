@@ -418,6 +418,38 @@ public class ProblemStoreTests : IDisposable
         Assert.False(Directory.Exists(_appData), "A disposed store recreated its app-data folder.");
     }
 
+    [Fact]
+    public void TheFlushOnDispose_WritesNothing_WhenItsAppDataRootHasBeenTakenAway()
+    {
+        // MEASURED, not deduced. 17761814 closed the post-dispose SCHEDULE and the litter kept
+        // growing - 14 new leftovers during the very gate that landed it. Instrumenting Persist
+        // in a five-second run of one integration class printed the answer:
+        //
+        //   DISPOSE entries=1
+        //   PERSIST disposed=True dirExists=False root=...\EtAlii.Adp.IntegrationTests\<guid>\sample-project
+        //
+        // The write is Dispose's own flush, and the cache directory is ALREADY GONE when it runs:
+        // a WebApplicationFactory's host - and the store inside it - is disposed after the test
+        // has deleted its temp root, not before. The flush then keeps its promise by recreating a
+        // folder whose owner has left, which is how 3,694 directories accumulated.
+        //
+        // A store may create its cache directories INSIDE a root that exists - that is an
+        // ordinary first write, and %APPDATA% always exists in the running application. What it
+        // must not do is bring the root itself back from the dead.
+        var cachePath = CacheFileFor(_root);
+        using (var store = Store())
+        {
+            store.Replace(_root, [Problem("a.adp")]);
+
+            // The owner takes its folder away while a write is still pending.
+            Directory.Delete(_appData, recursive: true);
+            Assert.False(Directory.Exists(_appData));
+        } // Dispose flushes here - into nothing.
+
+        Assert.False(File.Exists(cachePath), "The flush wrote its cache into a root that had been deleted.");
+        Assert.False(Directory.Exists(_appData), "The flush recreated the app-data root its owner had taken away.");
+    }
+
     /// <summary>Where the store keeps a project's cache - the hash ProblemStore computes.</summary>
     private string CacheFileFor(string rootPath)
     {
