@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 
 import { ArcBow, arcBetween, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
-import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
+import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, RelationTypeDefinition, RouteEnds, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
@@ -196,7 +196,6 @@ function definitionOf(): DiagramDefinition {
         shape: "pill",
         classNames: [
           { className: "canvas-element causal-loop-variable", on: "element" },
-          { className: "canvas-selected", on: "element", when: { path: "state.selected", is: "true" } },
           { className: "canvas-node", on: "shape" },
         ],
         labels: [{ text: { path: "payload.display" }, editable: true, className: "canvas-node-label" }],
@@ -211,7 +210,6 @@ function definitionOf(): DiagramDefinition {
         classNames: [
           { className: "causal-loop-loop", on: "element" },
           { className: "causal-loop-disagrees", on: "element", when: { path: "payload.disagrees", is: "true" } },
-          { className: "canvas-selected", on: "element", when: { path: "state.selected", is: "true" } },
         ],
         decorations: [
           {
@@ -266,8 +264,9 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
+  // Read for the diagram's OWN menu - a right-click on empty canvas - which the library's shared
+  // menu does not cover. Selecting an element or a link, and their menus, are the library's.
   const selectionKey = innermostKey(selection);
-  const selectedId = selectedElementIdOf(selection);
   const editingId = inlineLabelElementIdOf(prompt);
 
   /** Runs a backend action, threading its source and surfacing any refusal. */
@@ -326,19 +325,10 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     return { elements: [...variables, ...loops], connections: links };
   }, [model]);
 
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (!selectedId) {
-      return [];
-    }
-    if (model.links.has(selectedId)) {
-      return [{ kind: "connection", id: selectedId }];
-    }
-    return model.variables.has(selectedId) || model.loops.has(selectedId) ? [{ kind: "element", id: selectedId }] : [];
-  }, [selectedId, model]);
-
   const events: DiagramEventHandlers = {
-    onSelectionChanged: ({ selection: next }) =>
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    // Selection is the library's (centralized-selection); a menu action it ran and the backend
+    // refused comes back here, for the rejection line.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       if (!model.variables.has(elementId)) {
         return; // a loop badge has no position of its own; the definition already refuses the drag
@@ -483,14 +473,8 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
           definition={definition}
           model={diagramModel}
           events={events}
-          selection={librarySelection}
+          source={{ entryId, path }}
           toolboxItems={toolboxItems}
-          context={{
-            selectionKey: selectionKey ?? undefined,
-            actions,
-            selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-            executeAction: (actionId) => void executeAction(actionId),
-          }}
           editing={{ editingId, onPropose, onSubmit, onCancel }}
           className="causal-loop-canvas-host"
           ariaLabel="Causal loop diagram"

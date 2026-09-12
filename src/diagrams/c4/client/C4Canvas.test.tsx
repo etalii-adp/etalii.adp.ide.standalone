@@ -12,6 +12,9 @@ import { applyDelta, emptyModel, BOUNDARY_TYPE, NODE_TYPE, RELATIONSHIP_TYPE, VI
 import { ContextPromptSchema } from "@client/generated/context_pb";
 import type { ContextPrompt } from "@client/generated/context_pb";
 import { act } from "@testing-library/react";
+import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 const select = vi.fn();
 let currentModel: C4Model = emptyModel;
@@ -890,5 +893,44 @@ describe("C4Canvas", () => {
 
     // Assert.
     expect(relationshipGroup(container, "a->b").getAttribute("class")).toContain("canvas-selected");
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null));
+
+  it("highlights a pushed element and relationship, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentSelection = id === null ? null : elementSelectionOf(props.entryId, props.path, id);
+        return render(<C4Canvas {...props} />);
+      },
+      pushedIds: () => select.mock.calls.map(([push]) => idOf(push)),
+      element: "a",
+      connection: "a->b",
+    });
+  });
+
+  it("never selects a boundary: a pushed one highlights nothing, and a press on one clears (Requirement 2.3)", () => {
+    // The inert box, declared `selectable: false` rather than refused by hand in a handler.
+    currentModel = seed(
+      node("a", "Alpha", 0, 0),
+      element("boundary:s", BOUNDARY_TYPE, toBinary(C4BoundaryPayloadSchema, create(C4BoundaryPayloadSchema, {
+        name: "Internet Banking",
+        kind: "Software System",
+        width: 400,
+        height: 300,
+      }))),
+    );
+    currentSelection = elementSelectionOf(props.entryId, props.path, "boundary:s");
+    const { container } = render(<C4Canvas {...props} />);
+    const boundary = container.querySelector('[data-element-id="boundary:s"]')!;
+    expect(boundary.classList.contains("canvas-selected")).toBe(false);
+
+    select.mockClear();
+    fireEvent(boundary, new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 }));
+    fireEvent(boundary, new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
+
+    expect(select.mock.calls.map(([push]) => idOf(push))).toEqual([null]);
   });
 });

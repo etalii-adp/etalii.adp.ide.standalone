@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
 
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextSelectionAction } from "@client/generated/context_pb";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
@@ -173,7 +172,6 @@ function definitionOf(scale: MapScale): DiagramDefinition {
           { className: "wardley-element-group", on: "element" },
           { className: { template: "wardley-kind-{payload.kind}" }, on: "element" },
           { className: "wardley-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
-          { className: "wardley-selected", on: "element", when: { path: "state.selected", is: "true" } },
           { className: "wardley-element", on: "shape" },
           { className: "wardley-element-outer", on: "shape-inner" },
         ],
@@ -221,7 +219,6 @@ function definitionOf(scale: MapScale): DiagramDefinition {
           { className: "wardley-element-group", on: "element" },
           { className: { template: "wardley-kind-{payload.kind}" }, on: "element" },
           { className: "wardley-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
-          { className: "wardley-selected", on: "element", when: { path: "state.selected", is: "true" } },
           { className: "wardley-element", on: "shape" },
           { className: "wardley-element-outer", on: "shape-inner" },
         ],
@@ -269,7 +266,6 @@ function definitionOf(scale: MapScale): DiagramDefinition {
           { className: "wardley-element-group", on: "element" },
           { className: { template: "wardley-kind-{payload.kind}" }, on: "element" },
           { className: "wardley-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
-          { className: "wardley-selected", on: "element", when: { path: "state.selected", is: "true" } },
           { className: "wardley-element", on: "shape" },
           { className: "wardley-element-outer", on: "shape-inner" },
         ],
@@ -324,6 +320,10 @@ function definitionOf(scale: MapScale): DiagramDefinition {
         anchors: { kind: "edge" },
         sizing: "model",
         draggable: false,
+        // The far end of an evolve indicator: it exists so the indicator has two ends, and is
+        // not a thing a reader picks. A press on it is a press on the background, which is what
+        // the inert dot it replaced did (centralized-selection Requirement 2.3).
+        selectable: false,
       },
     ],
     relationTypes: [
@@ -332,6 +332,10 @@ function definitionOf(scale: MapScale): DiagramDefinition {
         route: "straight",
         style: { endMarker: "none" },
         lineClassName: "wardley-link",
+        // Not selectable, by decision: a link is the value chain's dependency between two
+        // components, read rather than picked. Recorded in this module's readme; making links
+        // selectable is a separate question for the user (centralized-selection Requirement 2.4).
+        selectable: false,
         endpoints: {
           source: { elementTypes: ["component", "anchor", "submap"] },
           target: { elementTypes: ["component", "anchor", "submap"], anchors: "edge" },
@@ -343,6 +347,10 @@ function definitionOf(scale: MapScale): DiagramDefinition {
         route: "straight",
         style: { endMarker: "none" },
         lineClassName: "wardley-link wardley-link-flow",
+        // Not selectable, by decision: a link is the value chain's dependency between two
+        // components, read rather than picked. Recorded in this module's readme; making links
+        // selectable is a separate question for the user (centralized-selection Requirement 2.4).
+        selectable: false,
         endpoints: {
           source: { elementTypes: ["component", "anchor", "submap"] },
           target: { elementTypes: ["component", "anchor", "submap"], anchors: "edge" },
@@ -354,6 +362,9 @@ function definitionOf(scale: MapScale): DiagramDefinition {
         route: "straight",
         style: { endMarker: "none" },
         lineClassName: "wardley-evolve",
+        // Not selectable, by decision: the evolve indicator says where a component is heading,
+        // and belongs to the component (centralized-selection Requirement 2.4, readme).
+        selectable: false,
         endpoints: {
           source: { elementTypes: ["component", "anchor", "submap"] },
           target: { elementTypes: ["evolve-target"], anchors: "edge" },
@@ -473,14 +484,10 @@ function definitionOf(scale: MapScale): DiagramDefinition {
  */
 export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useWardleyStream(projectId, path);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -576,12 +583,6 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
     };
   }, [model, scale]);
 
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(
-    () => (selectedId === null || !model.elements.has(selectedId) ? [] : [{ kind: "element", id: selectedId }]),
-    [selectedId, model.elements],
-  );
-
   const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
     void (async () => {
       const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
@@ -599,15 +600,9 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) => {
-      // An evolve target ignores every gesture: it exists so the indicator has two ends, and
-      // a press on it neither selects nor deselects - the closest the library offers to the
-      // inert dot it replaced.
-      if (next.length > 0 && next[0].id.startsWith("evolve:")) {
-        return;
-      }
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null);
-    },
+    // Selection is the library's (centralized-selection); which types select is declared above.
+    // A menu action the backend refuses comes back here, for the rejection line.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       if (!model.elements.has(elementId)) {
         return;
@@ -657,21 +652,8 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         definition={definition}
         model={loading ? { elements: [], connections: [] } : diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          executeAction: (actionId) => {
-            void (async () => {
-              const outcome = await executeAction(actionId);
-              if (!outcome.accepted && outcome.error) {
-                setRejection(outcome.error);
-              }
-            })();
-          },
-        }}
         editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         className="wardley-surface"
         scrollbarsClassName="wardley-scrollbars"

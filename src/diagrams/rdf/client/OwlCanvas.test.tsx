@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { emptyOwlModel, type OwlModel, type OwlNode, type OwlNodeKind } from "./owlModel";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 let currentModel: OwlModel = emptyOwlModel;
 let currentLoading = false;
@@ -340,5 +343,22 @@ describe("the owl canvas", () => {
     expect(nodeSizeOf(node("thing:x", "thing", "Thing", 0, 0)).width).toBeLessThan(
       nodeSizeOf(node("res:c", "class", "C", 0, 0)).width,
     );
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed class and subclass edge, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelWith();
+        currentLoading = false;
+        currentFailed = false;
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas();
+      },
+      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: `res:${NS}Pizza`,
+      connection: "edge:subclass",
+    });
   });
 });

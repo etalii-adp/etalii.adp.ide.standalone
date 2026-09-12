@@ -11,6 +11,9 @@ import {
 } from "@client/generated/causal-loop_pb";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type CausalLoopModel } from "./causalLoopModel";
+import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 /**
  * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
@@ -545,3 +548,17 @@ const viewBoxOf = (container: HTMLElement) =>
 function sweepOf(path: string): string {
   return /A\s+[\d.]+\s+[\d.]+\s+\d+\s+\d+\s+(\d)/.exec(path)?.[1] ?? "";
 }
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed variable and link, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["feedback.adp"], id);
+        return renderCanvas();
+      },
+      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: "variable:a",
+      connection: "link:a|b",
+    });
+  });
+});

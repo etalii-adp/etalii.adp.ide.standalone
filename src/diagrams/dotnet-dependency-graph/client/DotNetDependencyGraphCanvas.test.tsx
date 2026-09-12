@@ -7,8 +7,13 @@ import {
   DependencyElementPayloadSchema,
 } from "@client/generated/dotnet-dependency-graph_pb";
 import { applyDelta, emptyModel, type DotNetDependencyGraphModel } from "./dotnetDependencyGraphModel";
+import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 const select = vi.fn();
+/** The backend's pushed selection - null for every test but the shared selection assertion. */
+let currentSelection: unknown = null;
 const revealPath = vi.fn();
 const moveElementTo = vi.fn(async (_elementId: string, _x: number, _y: number) => "");
 const reportView = vi.fn();
@@ -31,7 +36,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   return {
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select, revealPath }),
-    useContextSelection: () => ({ selection: null }),
+    useContextSelection: () => ({ selection: currentSelection }),
   };
 });
 
@@ -233,5 +238,27 @@ describe("DotNetDependencyGraphCanvas — the declared element", () => {
     const project = container.querySelector(".dotnet-dependency-element-project")!;
 
     expect(project.querySelector("title")?.textContent).toMatch(/^Project /);
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed project and reference, and clears on a background press (centralized-selection 9.2)", () => {
+    try {
+      expectLibrarySelection({
+        mountWith: (id) => {
+          currentModel = showcaseModel();
+          currentLoading = false;
+          currentFailed = false;
+          currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["PipelineToolkit.adp"], id);
+          return renderCanvas();
+        },
+        pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+        element: "project:src/Pipeline.Core/Pipeline.Core.csproj",
+        // A project reference: the kind of line this canvas used to draw as if it named an element.
+        connection: "depends:project:src/Pipeline.Storage/Pipeline.Storage.csproj->project:src/Pipeline.Core/Pipeline.Core.csproj",
+      });
+    } finally {
+      currentSelection = null;
+    }
   });
 });

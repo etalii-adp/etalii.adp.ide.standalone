@@ -1,6 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DependencyGraphModel } from "./dependencyGraphModel";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 let currentModel: DependencyGraphModel = emptyModel;
 let currentLoading = false;
@@ -821,5 +824,19 @@ describe("the dependency graph canvas", () => {
     // Assert.
     await waitFor(() => expect(submitLabel).toHaveBeenCalled());
     expect(selections).toEqual([]);
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed element and relation, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas();
+      },
+      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: "aaa",
+      connection: "ccc",
+    });
   });
 });

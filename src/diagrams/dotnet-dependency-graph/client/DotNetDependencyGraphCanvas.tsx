@@ -7,15 +7,13 @@ import {
   sideAnchorOf,
   type ConnectorBox,
 } from "@client/canvas/connectors";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
@@ -83,7 +81,6 @@ const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefini
       classNames: [
         { className: "dotnet-dependency-element canvas-element", on: "element" },
         { className: { template: "dotnet-dependency-element-{payload.kindClass}" }, on: "element" },
-        { className: "dotnet-dependency-selected", on: "element", when: { path: "state.selected", is: "true" } },
         // Collapsing LOUDLY: a package the solution's projects disagree about is marked on the
         // element, which Requirement 3.5 asks for as against the silent collapse it forbids.
         { className: "dotnet-dependency-conflict", on: "element", when: { path: "payload.hasVersionConflict", is: "true" } },
@@ -116,10 +113,10 @@ const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefini
       },
       accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
       actions: [
-        // What `onDoubleClick` and `onContextMenu` did on the rendered element. The module
-        // still decides what they mean; it no longer needs a renderer to hear them.
+        // What `onDoubleClick` did on the rendered element. The module still decides what it
+        // means. The right-click beside it pushed a context-menu selection by hand - selection
+        // glue, now the library's shared menu (centralized-selection Requirement 1.3).
         { id: "dotnet-dependency.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
-        { id: "dotnet-dependency.context-menu", invokedBy: [{ kind: "gesture", gesture: "context-menu" }], appliesTo: [{ kind: "element" }] },
       ],
       anchors: { kind: "edge", edgeSides: "horizontal" },
       sizing: "model",
@@ -173,8 +170,7 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
   // "no diagram is open".
   const toolboxItems = useToolboxItems(projectId, path);
   useRegisterDiagramToolbox(toolboxItems);
-  const { select, revealPath } = useContextConnection();
-  const { selection } = useContextSelection();
+  const { revealPath } = useContextConnection();
 
   const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
@@ -190,7 +186,6 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
     () => withoutAmbientPackages(model, showAmbient),
     [model, showAmbient],
   );
-  const selectedId = selectedElementIdOf(selection);
 
   /** Reveals the project file a node stands for. A package is not a file here, so it reveals nothing. */
   const activate = (element: DependencyElement) => {
@@ -251,21 +246,15 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
       .filter((connection) => connection !== null);
 
     return { elements, connections };
-    // `activate` and `contextSelect` close over stable callbacks; the model rebuilds when the
-    // graph does, which is what the canvas needs.
+    // The model rebuilds when the graph does, which is what the canvas needs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model, nodes, edges, entryId]);
-
-  const librarySelection = useMemo<DiagramSelection>(
-    () => (selectedId ? [{ kind: "element", id: selectedId }] : []),
-    [selectedId],
-  );
+  }, [model, nodes, edges]);
 
   const events: DiagramEventHandlers = {
-    onSelectionChanged: ({ selection: next }) => {
-      const first = next[0];
-      select(first ? elementSelectionOf(entryId, path, first.id) : null);
-    },
+    // Selection is the library's (centralized-selection). A pushed reference used to be drawn as
+    // if it named an element, so it highlighted nothing; the library looks it up in the model.
+    // A menu action the backend refuses comes back here, for the rejection line.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       void moveElementTo(elementId, position.x, position.y).then((error) => {
         if (error) {
@@ -287,10 +276,6 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
           activate(node);
         }
         return;
-      }
-
-      if (actionId === "dotnet-dependency.context-menu") {
-        select(elementSelectionOf(entryId, path, targetId, ContextSelectionAction.CONTEXT_MENU));
       }
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
@@ -368,7 +353,7 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
         definition={DOTNET_DEPENDENCY_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
         ariaLabel=".NET dependency graph"
         className="dotnet-dependency-canvas"

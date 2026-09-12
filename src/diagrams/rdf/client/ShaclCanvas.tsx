@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
@@ -9,13 +9,12 @@ import type {
   ShapeBounds,
   ShapePoint,
 } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useShaclStream } from "./useShaclStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { shapeHeight, targetWords, type ShaclShape } from "./shaclModel";
@@ -56,7 +55,6 @@ const SHACL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "shacl-shape canvas-element" },
         { className: "shacl-shape-blank", when: { path: "payload.blank", is: "true" } },
         { className: "shacl-shape-deactivated", when: { path: "payload.deactivated", is: "true" } },
-        { className: "shacl-selected", when: { path: "state.selected", is: "true" } },
         { className: "shacl-shape-box canvas-node", on: "shape" },
       ],
       labels: [
@@ -166,14 +164,11 @@ const SHACL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  */
 export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useShaclStream(projectId, path);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const elements = [...model.shapes.values()].map((shape): ShapeElement => {
@@ -213,14 +208,6 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     }));
     return { elements, connections };
   }, [model]);
-
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null) {
-      return [];
-    }
-    return [{ kind: model.edges.has(selectedId) ? "connection" : "element", id: selectedId }];
-  }, [selectedId, model.edges]);
 
   const runAction = (actionId: string, sourceId?: string) => {
     void (async () => {
@@ -264,8 +251,9 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) =>
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    // Selection is the library's (centralized-selection); a menu action it ran and the backend
+    // refused comes back here, for the same rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       setRejection("");
       const shape = model.shapes.get(elementId);
@@ -314,14 +302,8 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         definition={SHACL_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
-        }}
         ariaLabel="SHACL shapes"
         className="shacl-surface"
         scrollbarsClassName="shacl-scrollbars"

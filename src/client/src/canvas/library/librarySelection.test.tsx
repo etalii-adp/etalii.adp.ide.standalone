@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import { ContextActionGroupSchema, ContextActionSchema, type ContextActionGroup, type ContextSource } from "@client/generated/context-contract_pb";
+import { ContextActionGroupSchema, ContextActionSchema, type ContextActionGroup } from "@client/generated/context-contract_pb";
 import { ContextSelectionAction, type ContextSelection } from "@client/generated/context_pb";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "./DiagramCanvas";
@@ -284,7 +284,7 @@ describe("the shared context menu, owned by the library", () => {
     expect(channel.pushes.map(asked)).toEqual([{ id: "a", menu: true }]);
   });
 
-  it("shows the pushed actions and runs one against the selection", async () => {
+  it("shows the pushed actions and runs one against the backend's current selection", async () => {
     channel.pushed = elementSelectionOf(ENTRY, PATH, "a");
     channel.actions = actionsOf("service.restart");
     const { container } = mount();
@@ -292,10 +292,30 @@ describe("the shared context menu, owned by the library", () => {
     fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
     fireEvent.click(await screen.findByRole("menuitem", { name: /Do service.restart/ }));
 
-    expect(channel.executed).toHaveLength(1);
-    expect(channel.executed[0].actionId).toBe("service.restart");
-    const source = channel.executed[0].source as ContextSource;
-    expect(source.source.case === "elementId" ? source.source.value.value : null).toBe("a");
+    // No source of its own: the menu opened only once the backend's selection was "a", and the
+    // backend runs a sourceless action against exactly that selection (ContextService.Actions,
+    // TryResolveTargetAsync). A source naming "a" again would add nothing.
+    expect(channel.executed).toEqual([{ actionId: "service.restart", source: undefined }]);
+  });
+
+  it("offers no entry until the backend's selection names the item the menu was opened on", async () => {
+    // The property that lets an entry run with no source of its own: "the current selection"
+    // is, by the time any entry can be chosen, the item the menu was opened on. Actions pushed
+    // for some other selection are on hand, and still nothing is offered for "a" until the
+    // backend's selection names it.
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "b");
+    channel.actions = actionsOf("service.restart");
+    const { container, redraw } = mount();
+
+    fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+    expect(screen.queryByRole("menuitem"), "an entry was offered before the backend answered for this item").toBeNull();
+    expect(channel.pushes.map(asked)).toEqual([{ id: "a", menu: true }]);
+
+    channel.pushed = elementSelectionOf(ENTRY, PATH, "a"); // the backend's answer to that push
+    redraw(modelOf());
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Do service.restart/ }));
+
+    expect(channel.executed).toEqual([{ actionId: "service.restart", source: undefined }]);
   });
 
   it("hands a refused action to the module as action-refused, with the backend's message", async () => {

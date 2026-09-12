@@ -6,6 +6,9 @@ import {
   type ShaclModel,
   type ShaclShape,
 } from "./shaclModel";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 let currentModel: ShaclModel = emptyShaclModel;
 let currentLoading = false;
@@ -287,3 +290,20 @@ async function screenText(container: HTMLElement): Promise<string> {
   await Promise.resolve();
   return container.textContent ?? "";
 }
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed shape and reference, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelWith({ edges: new Map([["shacl-edge:a|node|b", { id: "shacl-edge:a|node|b", fromElementId: PERSON, toElementId: ADDRESS, kind: "node", label: "ex:address" }]]) });
+        currentLoading = false;
+        currentFailed = false;
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas();
+      },
+      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: PERSON,
+      connection: "shacl-edge:a|node|b",
+    });
+  });
+});

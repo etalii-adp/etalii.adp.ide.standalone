@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
@@ -9,13 +9,12 @@ import type {
   RelationTypeDefinition,
   ShapeBounds,
 } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useOwlStream } from "./useOwlStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isCard, isExpression, type OwlEdgeKind, type OwlModel, type OwlNode } from "./owlModel";
@@ -129,8 +128,6 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "owl-external", when: { path: "payload.external", is: "true" } },
         { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
         { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
-        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
-        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
         { className: "owl-shape canvas-node", on: "shape" },
         // The ring the notation draws inside an equivalent class - its own name, not one the
         // library invented by suffixing.
@@ -158,8 +155,6 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "owl-external", when: { path: "payload.external", is: "true" } },
         { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
         { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
-        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
-        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
         { className: "owl-shape canvas-node", on: "shape" },
         // The ring the notation draws inside an equivalent class - its own name, not one the
         // library invented by suffixing.
@@ -187,8 +182,6 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "owl-external", when: { path: "payload.external", is: "true" } },
         { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
         { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
-        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
-        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
         { className: "owl-datatype-box canvas-node", on: "shape" },
       ],
       tooltip: { path: "payload.display" },
@@ -213,8 +206,6 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "owl-external", when: { path: "payload.external", is: "true" } },
         { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
         { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
-        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
-        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
         { className: "owl-card-box canvas-node", on: "shape" },
       ],
       tooltip: { path: "payload.display" },
@@ -263,8 +254,6 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "owl-external", when: { path: "payload.external", is: "true" } },
         { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
         { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
-        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
-        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
         { className: "owl-card-box canvas-node", on: "shape" },
       ],
       tooltip: { path: "payload.display" },
@@ -313,8 +302,6 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "owl-external", when: { path: "payload.external", is: "true" } },
         { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
         { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
-        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
-        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
         { className: "owl-shape canvas-node", on: "shape" },
         // The ring the notation draws inside an equivalent class - its own name, not one the
         // library invented by suffixing.
@@ -342,8 +329,6 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "owl-external", when: { path: "payload.external", is: "true" } },
         { className: "owl-malformed", when: { path: "payload.malformed", is: "true" } },
         { className: "owl-elided", when: { path: "payload.elided", is: "true" } },
-        { className: "owl-selected", when: { path: "state.selected", is: "true" } },
-        { className: "owl-connect-target canvas-connect-target", when: { path: "state.connectTarget", is: "true" } },
         { className: "owl-shape canvas-node", on: "shape" },
         // The ring the notation draws inside an equivalent class - its own name, not one the
         // library invented by suffixing.
@@ -392,14 +377,11 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  */
 export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useOwlStream(projectId, path);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const elements = [...model.nodes.values()].map((node): OwlElement => {
@@ -441,14 +423,6 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     return { elements, connections };
   }, [model]);
 
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null) {
-      return [];
-    }
-    return [{ kind: model.edges.has(selectedId) ? "connection" : "element", id: selectedId }];
-  }, [selectedId, model.edges]);
-
   const runAction = (actionId: string, sourceId?: string) => {
     void (async () => {
       const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
@@ -475,8 +449,9 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) =>
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    // Selection is the library's (centralized-selection); a menu action it ran and the backend
+    // refused comes back here, for the same rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       setRejection("");
       const node = model.nodes.get(elementId);
@@ -526,14 +501,8 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         definition={OWL_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
-        }}
         ariaLabel="OWL ontology"
         className="owl-surface"
         scrollbarsClassName="owl-scrollbars"

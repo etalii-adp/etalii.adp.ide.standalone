@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import type { DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import type { DiagramEventHandlers, DiagramSelection, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useRdfStream } from "./useRdfStream";
 import type { RdfNode } from "./rdfModel";
@@ -188,14 +187,11 @@ const RDF_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  */
 export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useRdfStream(projectId, path);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<DiagramViewport | null>(null);
 
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const elements = [...model.nodes.values()].map((node): CardElement => ({
@@ -227,14 +223,6 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     return { elements, connections };
   }, [model]);
 
-  /** The backend's push is the selection; the canvas renders it and never decides (Requirement 7.1). */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null) {
-      return [];
-    }
-    return [{ kind: model.edges.has(selectedId) ? "connection" : "element", id: selectedId }];
-  }, [selectedId, model.edges]);
-
   const runAction = (actionId: string, sourceId?: string) => {
     void (async () => {
       const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
@@ -261,8 +249,9 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) =>
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    // Selection is the library's (centralized-selection); a menu action it ran and the backend
+    // refused comes back here, for the same rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       const node = model.nodes.get(elementId);
       if (node === undefined) {
@@ -318,14 +307,8 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         definition={RDF_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        context={{
-          selectionKey: selectionKey ?? undefined,
-          actions,
-          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
-        }}
         ariaLabel="RDF graph"
         className="rdf-surface"
       />

@@ -6,6 +6,9 @@ import { ContextPromptSchema, ContextSelectionAction } from "@client/generated/c
 import type { ContextPrompt } from "@client/generated/context_pb";
 import { MindmapNodePayloadSchema } from "@client/generated/mindmap_pb";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { InlineLabelPlacementProvider } from "@client/shell/panels/InlineLabelPlacementContext";
 import { ShellPromptHost } from "@client/shell/context/ShellPromptHost";
@@ -264,8 +267,10 @@ describe("MindmapCanvas", () => {
     const { container } = render(<MindmapCanvas {...props} />);
 
     // Act and assert, step by step.
+    // canvas-selected rather than mindmap-node-focused: centralized-selection Requirement 5.1
+    // removed the private class, and selected is the library's one look on every diagram.
     const alpha = container.querySelectorAll(".mindmap-node")[1];
-    expect(alpha.classList.contains("mindmap-node-focused")).toBe(true);
+    expect(alpha.classList.contains("canvas-selected")).toBe(true);
   });
 
   it("draws a bezier from the parent's near edge, vertically centred, to the child's near edge", () => {
@@ -309,7 +314,7 @@ describe("MindmapCanvas", () => {
     // Arrange: Alpha is the pushed selection, so its highlight is on.
     currentSelection = pushedSelection("a");
     const { container } = render(<MindmapCanvas {...props} />);
-    expect(container.querySelectorAll(".mindmap-node-focused")).toHaveLength(1);
+    expect(container.querySelectorAll(".mindmap-node.canvas-selected")).toHaveLength(1); // Requirement 5.1: the library's class
     select.mockClear();
     moveElement.mockClear();
 
@@ -856,5 +861,37 @@ describe("MindmapCanvas", () => {
     // Assert.
     expect(cancelLabel).not.toHaveBeenCalled();
     expect(container.querySelector("foreignObject.inline-label-editor")).not.toBeNull();
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null));
+
+  it("highlights a pushed node, and clears on a background press (centralized-selection 9.2)", () => {
+    // No connection: a branch is not selectable in this notation (Requirement 2.4, readme).
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root"));
+        currentFailed = false;
+        currentSelection = id === null ? null : pushedSelection(id);
+        return render(<MindmapCanvas {...props} />);
+      },
+      pushedIds: () => select.mock.calls.map(([push]) => idOf(push)),
+      element: "a",
+    });
+  });
+
+  it("never selects a branch: a press on one clears, as it always did (Requirement 2.4)", () => {
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root"));
+    currentFailed = false;
+    currentSelection = pushedSelection("a");
+    const { container } = render(<MindmapCanvas {...props} />);
+    const branch = container.querySelector('[data-connection-id="edge-a"]');
+    expect(branch, "the branch is not on the canvas, so this test cannot say anything").not.toBeNull();
+    select.mockClear();
+
+    press(branch!);
+
+    expect(select.mock.calls.map(([push]) => idOf(push))).toEqual([null]);
   });
 });

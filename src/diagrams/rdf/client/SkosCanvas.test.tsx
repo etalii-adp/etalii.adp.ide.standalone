@@ -10,6 +10,9 @@ import {
   type SkosConcept,
   type SkosModel,
 } from "./skosModel";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 let currentModel: SkosModel = emptySkosModel;
 let currentLoading = false;
@@ -254,5 +257,22 @@ describe("SkosCanvas", () => {
     const { container } = renderCanvas();
 
     expect(container.textContent).toContain("could not be opened");
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed concept and broader edge, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelWith({ edges: new Map([["h", { id: "h", fromElementId: TEA, toElementId: MILK, kind: HIERARCHY, predicate: "", assertedBothWays: false }]]) });
+        currentLoading = false;
+        currentFailed = false;
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas();
+      },
+      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: TEA,
+      connection: "h",
+    });
   });
 });

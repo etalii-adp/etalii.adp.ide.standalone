@@ -4,8 +4,6 @@
  * Lives with the module rather than in the shell's index.css: a diagram type you cannot
  * delete without also editing the shell's stylesheet is not a module. Imported by this
  * module's register.ts, so it loads exactly when the module does.
- *
- * Rule order inside this file is load-bearing - see `.c4-node-focused rect` after `.c4-node rect`.
  */
 
 /* ---- C4 diagrams ------------------------------------------------------------------- */
@@ -51,11 +49,6 @@
 .c4-node circle,
 .c4-node ellipse {
   stroke: none;
-}
-
-.c4-node-focused rect {
-  stroke: var(--color-primary);
-  stroke-width: 2.5;
 }
 
 /* An element being dragged. Semi-transparent so whatever it passes over stays readable, and

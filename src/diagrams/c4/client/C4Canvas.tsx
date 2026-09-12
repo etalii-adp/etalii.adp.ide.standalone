@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
 
-import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { C4Model, C4Node, C4BoundaryBox } from "./c4Model";
@@ -111,7 +110,6 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       },
       classNames: [
         { className: "c4-node" },
-        { className: "c4-node-focused", when: { path: "state.selected", is: "true" } },
         { className: "c4-node-dragging", when: { path: "state.dragging", is: "true" } },
       ],
       labels: [
@@ -159,6 +157,10 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       anchors: { kind: "edge" },
       sizing: "model",
       draggable: false,
+      // A boundary is read, never picked: a press on it is a press on the background, as it
+      // always was here - the frame never had a hit surface of its own. Declared rather than
+      // checked by hand in a selection handler (centralized-selection Requirement 2.3).
+      selectable: false,
     },
   ],
   relationTypes: [
@@ -197,13 +199,9 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  */
 export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useC4Stream(projectId, path);
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-
-  const selectionKey = innermostKey(selection);
-  const selectedId = useMemo(() => selectedElementIdOf(selection), [selection]);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -256,17 +254,6 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     return { elements: [...boundaries, ...nodes], connections: relationships };
   }, [model]);
 
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (!selectedId) {
-      return [];
-    }
-    if (model.relationships.has(selectedId)) {
-      return [{ kind: "connection", id: selectedId }];
-    }
-    return model.nodes.has(selectedId) ? [{ kind: "element", id: selectedId }] : [];
-  }, [selectedId, model]);
-
   const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
     void executeShortcut(shortcut, elementSourceOf(sourceId));
   };
@@ -279,15 +266,8 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
         runShortcut(contextShortcutOf(key), targetId);
       }
     },
-    onSelectionChanged: ({ selection: next }) => {
-      // A press on a boundary was always a press on the background - the frame never had a
-      // hit surface of its own - so it deselects rather than selecting the inert box.
-      if (next.length > 0 && model.boundaries.has(next[0].id)) {
-        select(null);
-        return;
-      }
-      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null);
-    },
+    // Selection is the library's (centralized-selection), and a boundary's inertness is its
+    // type's `selectable: false` above.
     onElementMoved: ({ elementId, position }) => {
       if (!model.nodes.has(elementId)) {
         return;
@@ -352,14 +332,8 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
             definition={C4_DEFINITION}
             model={diagramModel}
             events={events}
-            selection={librarySelection}
+            source={{ entryId, path }}
             toolboxItems={toolboxItems}
-            context={{
-              selectionKey: selectionKey ?? undefined,
-              actions,
-              selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-              executeAction: (actionId) => void executeAction(actionId, selectedId ? elementSourceOf(selectedId) : undefined),
-            }}
             editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
             className="c4-canvas-host"
             scrollbarsClassName="c4-scrollbars"

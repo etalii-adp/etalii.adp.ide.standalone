@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { selectedElementIdOf } from "@client/canvas/selection";
 import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { DeltaSchema } from "@client/generated/deltas_pb";
 import { ElementSchema } from "@client/generated/elements_pb";
@@ -922,5 +923,42 @@ describe("WardleyCanvas selection", () => {
     // Assert.
     await waitFor(() => expect(submitLabel).toHaveBeenCalled());
     expect(select).not.toHaveBeenCalled();
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null));
+
+  /** Two components joined by a link - the link is what this notation deliberately does not select. */
+  function linkedPair(): WardleyModel {
+    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
+    model = withElement(model, "b", "wardley/map+element", element({ name: "B" }), 0.8, 0.8);
+    const link = toBinary(WardleyLinkPayloadSchema, create(WardleyLinkPayloadSchema, { sourceId: "a", targetId: "b", isFlow: false }));
+    return applyDelta(model, addDelta("l", "wardley/map+link", link));
+  }
+
+  it("highlights a pushed component, and clears on a background press (centralized-selection 9.2)", () => {
+    // No connection: a link is not selectable in this notation (Requirement 2.4, readme).
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas(linkedPair());
+      },
+      pushedIds: () => select.mock.calls.map(([push]) => idOf(push)),
+      element: "a",
+    });
+  });
+
+  it("never selects a link: a press on one clears (Requirement 2.4)", () => {
+    currentSelectionKey = "element:a";
+    const { container } = renderCanvas(linkedPair());
+    const line = container.querySelector('[data-connection-id="l"]');
+    expect(line, "the link is not on the canvas, so this test cannot say anything").not.toBeNull();
+    select.mockClear();
+
+    fireEvent(line!, new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 }));
+    fireEvent(line!, new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
+
+    expect(select.mock.calls.map(([push]) => idOf(push))).toEqual([null]);
   });
 });

@@ -2,6 +2,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { emptyModel, type RdfModel, type RdfNode } from "./rdfModel";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 let currentModel: RdfModel = emptyModel;
 let currentLoading = false;
@@ -301,5 +304,22 @@ describe("the rdf canvas, on the library", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed resource and triple, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelWith();
+        currentLoading = false;
+        currentFailed = false;
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas();
+      },
+      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: ALICE,
+      connection: EDGE,
+    });
   });
 });

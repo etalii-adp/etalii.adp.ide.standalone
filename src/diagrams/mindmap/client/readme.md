@@ -16,9 +16,16 @@ without that, nothing here could resolve `react`.
   move; the alias is the module's side of a deliberate boundary.
 - **`mindmap.css`** is namespaced under `.mindmap-*` throughout, so nothing here can collide
   with a shell rule whatever order the bundler emits. Rule order *within* the file is
-  load-bearing: `.mindmap-node-focused rect` and `.mindmap-node-drop-target rect` must stay
-  after `.mindmap-node rect`, which is the bug recorded in `tests.md` — equal specificity, so
-  source order decides, and jsdom cannot catch it.
+  load-bearing: `.mindmap-node-drop-target rect` must stay after `.mindmap-node rect`, which is
+  the bug recorded in `tests.md` — equal specificity, so source order decides, and jsdom cannot
+  catch it. A selected node has no rule here at all: selection and its look are the canvas
+  library's, the same on every diagram.
+- **Branches are not selectable, by decision.** A branch is a node's link to its parent, not a
+  thing a reader picks, so its relation type declares `selectable: false` and a press on one is a
+  press on the background. That is a decision about the notation, not an omission; making
+  branches selectable is a separate question for the user
+  ([centralized-selection](../../../../.spec-workflow/specs/centralized-selection/requirements.md),
+  Requirement 2.4).
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
 [`mindmap-diagram`](../../../../.spec-workflow/archive/specs/mindmap-diagram/) for this diagram type's
