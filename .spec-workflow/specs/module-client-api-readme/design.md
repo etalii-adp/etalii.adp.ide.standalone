@@ -41,7 +41,7 @@ Nothing here is implemented before `centralized-selection` is on `develop` (Requ
 
 The module-facing surface is the union of two sets (Requirement 2.1), both computed by the test on every run, so the boundary moves with the code.
 
-**Set A, what modules import.** For every non-test `.ts`/`.tsx` file under `src/diagrams/*/client/`, every name imported from an `@client/...` specifier, parsed with the compiler. Excluded are a module's own generated payload types, `@client/generated/{type}_pb` where `{type}` is not a core contract. The core contracts (`deltas_pb`, `elements_pb`, `context_pb`, `context-contract_pb`, `diagrams_pb`, `problems_pb`) are shared and stay in. At `5befeb0a` this was 122 names from 42 specifiers, 15 of them module-own.
+**Set A, what modules import.** For every non-test `.ts`/`.tsx` file under `src/diagrams/*/client/`, every name imported from an `@client/...` specifier, parsed with the compiler. **A module's test files count too, for one folder: what they import from the library's shared `testing/` helpers** (amended 2026-09-12; see *The amendment* below). Excluded are a module's own generated payload types, `@client/generated/{type}_pb` where `{type}` is not a core contract. The core contracts (`deltas_pb`, `elements_pb`, `context_pb`, `context-contract_pb`, `diagrams_pb`, `problems_pb`) are shared and stay in. At `5befeb0a` this was 122 names from 42 specifiers, 15 of them module-own.
 
 **Set B, what modules supply by value.** Starting from the roots `DiagramDefinition`, `DiagramCanvasProps`, `DiagramEventHandlers` and `DiagramModel`, follow every type reference, `extends` clause and `typeof` query through the exported declarations of the surface files, syntactically. For a function or a constant, only its signature counts. **Measured for this design at `96c4a07b`: the 14 library files export 158 declarations, and the walk reaches 98 of them** — 49 in `diagramDefinition.ts`, 18 in `diagramEvents.ts`, 9 in `binding.ts`, 6 in `background.ts`, 5 in `chrome.ts`, 4 in `actions.ts`, 3 each in `DiagramCanvas.tsx` and `diagramModel.ts`, 1 in `diagramRuntimeConfig.ts`.
 
@@ -85,7 +85,7 @@ An entry answers the six questions of Requirement 3.1 in order: what it is for; 
 11. **The view report** — `useViewReport`, `viewReportOf`, `Viewport`, linking `src/client/src/diagrams/readme.md` for the mechanism.
 12. **Geometry for custom shapes and routes** — `canvas/connectors`, linking the elements and connections readmes.
 13. **Styling** — `canvas.css`, class composition, theme variables that exist in both modes.
-14. **What a module must not do** — every guard that walks module clients, what it forbids, and the shared mechanism instead (Requirement 8.1). The list starts from the eight the requirements found and adds `centralized-selection`'s text and behavioural guards when they land.
+14. **Tests a module writes, and what a module must not do** — the shared test helpers a module's canvas test is required to call, then every guard that walks module clients, what it forbids, and the shared mechanism instead (Requirement 8.1). The list starts from the eight the requirements found and adds `centralized-selection`'s text and behavioural guards when they land.
 15. **A minimal module client, end to end** — the walkthrough of Requirement 3.4.
 16. **Library-internal exports** — the list.
 
@@ -133,6 +133,26 @@ Requirement 4.3 forbids passing off an invented example as shipped code. Where n
 - **`DocumentationLinksTests`:** `docs/diagram-module-client-api.md` joins its document list (Requirement 1.4).
 - **`processes.md` *Keeping documentation true*:** the readme joins the two walkthroughs, with the note that its test enforces what the sentence asks.
 
+### The amendment: test-facing helpers are part of the surface
+
+**As first written, this design's Set A parsed non-test module files only.** A helper that only a
+module's *tests* import would therefore never enter the surface, would never be forced into the
+readme, and the completeness test would have passed green while the readme omitted something every
+module is required to call. `centralized-selection` adds exactly such a helper:
+`expectLibrarySelection(harness)`, which its text guard requires every module canvas test to call.
+**Measured on `develop` at `7546e1a8`, once ten modules had migrated: 13 module test files in 10
+modules import it, and no non-test module file imports anything from that folder at all.** So the gap
+is not a possibility - the surface as first defined saw none of it.
+
+**A completeness check that cannot see a whole class of import is complete only about the half it
+looks at.** So Set A now also counts what a module's test files import from the library's shared
+`testing/` folder - that folder and no other, because a module's tests import plenty that is not API
+(`vitest`, its own fixtures), and widening further would document the test framework.
+
+**How it was found is worth recording:** not by re-reading this design, but because Developer 1
+reported the module-facing names from an implementation already on `develop`. The cross-check between
+a specification and the implementation of the specification it depends on is what caught it.
+
 ## Data Models
 
 ### What the test computes
@@ -140,6 +160,7 @@ Requirement 4.3 forbids passing off an invented example as shipped code. Where n
 ```
 Surface      = SetA ∪ SetB
 SetA         = { name | a module client imports name from a shared @client/... specifier }
+             ∪ { name | a module client TEST imports name from @client/canvas/library/testing/... }
 SetB         = closure over type references from the four roots, within the surface files
 Internal     = exports(surface files) − Surface
 Covered      = names on the readme's **Declarations:** lines
