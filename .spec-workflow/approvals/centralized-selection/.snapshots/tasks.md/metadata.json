@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/tasks.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789139638351_4snqmk2q9",
       "approvalTitle": "centralized-selection tasks"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-12T08:17:34.630Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789150134425_5ot34aicg",
+      "approvalTitle": "Tasks amendment: task 11 makes pipeline's backend resolve its arrows (today it rejects them, so they could never highlight); new task 26 checks every module's backend names every connection it draws. Nothing else changed (0089f32e, f6396319)."
     }
   ]
 }

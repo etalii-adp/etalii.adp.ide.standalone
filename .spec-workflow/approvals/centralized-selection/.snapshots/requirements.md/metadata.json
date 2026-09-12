@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/requirements.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789137695592_u8f1axi49",
       "approvalTitle": "centralized-selection requirements (amendment: drop-target joins one way)"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-12T08:17:35.020Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789149734625_3uvyhr2v7",
+      "approvalTitle": "Amendment to R11.1 only: a test Arranged through module-held focus state (removed by 4.1) may change its Arrange, never its Act or Assert. Found by Developer 1 in ansible-structure; azure-pipeline is the same. Nothing else changed (734a0322)."
     }
   ]
 }
