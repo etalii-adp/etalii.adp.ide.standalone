@@ -3,8 +3,10 @@
   "title": "module-client-api-readme design (a readme in a shape its test can read; surface computed every run)",
   "filePath": ".spec-workflow/specs/module-client-api-readme/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-11T17:44:56.998Z",
   "category": "spec",
-  "categoryName": "module-client-api-readme"
+  "categoryName": "module-client-api-readme",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-12T08:17:16.541Z"
 }
