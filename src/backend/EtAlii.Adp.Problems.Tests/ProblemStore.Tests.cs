@@ -372,6 +372,61 @@ public class ProblemStoreTests : IDisposable
         Assert.Equal(0u, Assert.IsType<DiagramProblemFileLocation>(kept.Problem.Location).Line);
     }
 
+    [Fact]
+    public void AMutationAfterDispose_WritesNothing_RatherThanRecreatingTheFolderItWasToldToLeave()
+    {
+        // Found in the wild, by shape rather than by failure: 3,692 directories under
+        // %TEMP%/EtAlii.Adp.IntegrationTests, of which 1,083 of 1,500 sampled held exactly one
+        // EtAlii.Adp/problems/<hash>.json and NONE held the project tree its test had created.
+        // So each recursive delete had succeeded and something recreated the folder afterwards -
+        // and Persist is the only writer of that path, doing Directory.CreateDirectory first.
+        //
+        // Dispose flushing a pending write is deliberate and stays (TheSetSurvivesARestart above
+        // is its guard). What was undefended is a mutation arriving AFTER Dispose: it armed a
+        // fresh timer on a disposed store, which fired into a folder that was already gone. In a
+        // test that is litter; in the running application it is a cache write after shutdown.
+        var cachePath = CacheFileFor(_root);
+        var store = new ProblemStore(
+            _appData,
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition])),
+            new DiagramValidators([]),
+            writeDelay: TimeSpan.FromMilliseconds(50),
+            maxReported: 1000);
+
+        // Arrange: a first write, so the cache file exists and the entry is loaded, then the
+        // shutdown this store is entitled to complete.
+        store.Replace(_root, [Problem("before.adp")]);
+        store.Dispose();
+        Assert.True(File.Exists(cachePath), "Dispose must still flush the pending write.");
+
+        // Arrange, continued: the owner has taken its folder away, as a test's teardown does.
+        Directory.Delete(IoPath.GetDirectoryName(_appData)!, recursive: true);
+        Assert.False(Directory.Exists(_appData));
+
+        // Act: late work reports its verdict to a store that is already gone.
+        store.Replace(_root, [Problem("after.adp")]);
+
+        // Assert. Well past the 50ms debounce, and polled rather than slept once, so the window
+        // is generous in the direction that would let the defect through.
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(3);
+        while (DateTime.UtcNow < deadline)
+        {
+            Assert.False(File.Exists(cachePath), "A disposed store wrote its cache, recreating the folder it was told to leave.");
+            Thread.Sleep(25);
+        }
+
+        Assert.False(Directory.Exists(_appData), "A disposed store recreated its app-data folder.");
+    }
+
+    /// <summary>Where the store keeps a project's cache - the hash ProblemStore computes.</summary>
+    private string CacheFileFor(string rootPath)
+    {
+        var hash = Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(rootPath.ToUpperInvariant())))[..32];
+        return IoPath.Combine(_appData, "EtAlii.Adp", "problems", hash + ".json");
+    }
+
     // ---- a subject that is a folder rather than a file ----------------------------------
 
     [Fact]
