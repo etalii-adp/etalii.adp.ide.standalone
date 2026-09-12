@@ -352,6 +352,25 @@ public sealed class ProblemStore : IProblemStore, IDisposable
     private void Persist(CachedProjectProblems entry)
     {
         var cachePath = CacheFilePath(entry.RootPath);
+
+        // THE CACHE LIVES INSIDE SOMEBODY ELSE'S FOLDER, AND NEVER BRINGS IT BACK. Creating the
+        // `EtAlii.Adp/problems` directories inside an existing root is an ordinary first write -
+        // in the running application %APPDATA% is always there. Recreating the ROOT is a
+        // different act: it resurrects a folder whose owner has deliberately removed it. A test's
+        // host is disposed AFTER its temp root is deleted, so the flush on Dispose - keeping a
+        // promise, correctly - wrote into folders that had already gone, 3,694 of them. Measured,
+        // not deduced: `PERSIST disposed=True dirExists=False` in a five-second run of one
+        // integration class, after 17761814 had closed the post-dispose schedule and the litter
+        // carried on regardless.
+        if (!Directory.Exists(_appDataRoot))
+        {
+            _logger.Debug(
+                "Not writing the problem cache for {RootPath}: its app-data root {AppDataRoot} is gone",
+                entry.RootPath,
+                _appDataRoot);
+            return;
+        }
+
         try
         {
             Directory.CreateDirectory(IoPath.GetDirectoryName(cachePath)!);
