@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=116; else EXPECTED=106; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=133; else EXPECTED=123; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -252,6 +252,39 @@ report 1 "$?" "a staged change does not either"
 gate_tree_matches_head "$W/nowhere"
 report 2 "$?" "a tree that cannot be read is its own answer, not a match"
 
+echo "== a run's logs: its own directory, kept when refused, and never another run's"
+LP="$W/logs"
+mkdir -p "$LP"
+D1=$(gate_run_logs_dir "$LP" "20260912T100000Z-111")
+report 0 "$?" "a run gets its own log directory"
+echo green > "$D1/dotnet-test.log"
+D2=$(gate_run_logs_dir "$LP" "20260912T100500Z-222")
+report 0 "$?" "a second run gets a different one"
+report yes "$([ "$D1" != "$D2" ] && echo yes || echo no)" "... and the two are not the same directory"
+report no "$([ -e "$D2/dotnet-test.log" ] && echo yes || echo no)" "... the second cannot read the first's log (the defect the deletion once fixed)"
+gate_run_logs_dir "$LP" "20260912T100000Z-111" > /dev/null
+report 2 "$?" "a directory that already holds files is refused, never written into"
+KEPT=$(gate_keep_logs_red "$D1" "gates-red (dotnet-failed='1' )")
+report yes "$([ "$KEPT" = "$D1-red" ] && echo yes || echo no)" "a refused run's logs are kept under a -red name"
+report yes "$([ -f "$KEPT/dotnet-test.log" ] && echo yes || echo no)" "... with the logs themselves intact"
+report yes "$([ -f "$KEPT/WHAT-THIS-IS.txt" ] && grep -q "REFUSED" "$KEPT/WHAT-THIS-IS.txt" && echo yes || echo no)" "... a note inside saying what it is, for a reader who does not know the convention"
+report "$KEPT" "$(cat "$LP/last-red-run.txt" 2> /dev/null)" "... and a pointer beside it naming the newest kept run"
+report "$KEPT" "$(gate_keep_logs_red "$KEPT" again)" "keeping an already-kept directory leaves it where it is"
+# Pruning keeps the NEWEST of each kind. The timestamps are set apart deliberately: created in a
+# loop they land in the same second, "newest" becomes arbitrary, and a reversed sort order passes a
+# count-only assertion - which is exactly what a planted defect showed on 2026-09-12.
+for i in $(seq -w 1 12); do
+  mkdir -p "$LP/202609${i}T090000Z-90$i" "$LP/202609${i}T090000Z-91$i-red"
+  touch -d "2026-09-$i 09:00:00" "$LP/202609${i}T090000Z-90$i" "$LP/202609${i}T090000Z-91$i-red"
+done
+mkdir -p "$LP/somebody-investigating"
+gate_prune_logs "$LP" 10
+report 10 "$(ls -1d "$LP"/[0-9]*T[0-9]*Z-[0-9]* 2> /dev/null | grep -vc -- -red)" "pruning keeps ten plain run directories"
+report 10 "$(ls -1d "$LP"/[0-9]*T[0-9]*Z-[0-9]*-red 2> /dev/null | wc -l)" "... and ten kept-red ones"
+report yes "$([ -d "$LP/20260912T090000Z-9012" ] && [ -d "$LP/20260912T090000Z-9112-red" ] && echo yes || echo no)" "... keeps the NEWEST of each kind, not merely ten of them"
+report no "$([ -d "$LP/20260901T090000Z-9001" ] || [ -d "$LP/20260901T090000Z-9101-red" ] && echo yes || echo no)" "... and the oldest of each is the one that goes"
+report yes "$([ -d "$LP/somebody-investigating" ] && [ -f "$LP/last-red-run.txt" ] && echo yes || echo no)" "... and touches nothing that is not a run directory"
+
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"
 out=$(bash "$G" 2>&1)
@@ -313,6 +346,10 @@ MERGED=$(printf '%s\n' "$out" | sed -n 's/^MERGED=//p')
 report "$DEV0" "$(git -C "$R2" rev-parse "${MERGED:-none}^1" 2> /dev/null)" "... the merge was made onto develop's tip"
 report "$DEV0" "$(git -C "$R2" rev-parse develop)" "... develop did not move"
 report "$FP2" "$(fingerprint "$R2")" "... the main checkout is untouched (no identity, no reset)"
+KEPT2=$(printf '%s
+' "$out" | sed -n 's/^KEPT_LOGS=//p')
+report yes "$([ -n "$KEPT2" ] && [ -d "$KEPT2" ] && echo yes || echo no)" "... the refused run's logs are kept, and the run says where"
+report yes "$([ -f "$KEPT2/merge.log" ] && echo yes || echo no)" "... with that run's own logs inside them"
 report gate-selftest-identity "$(git -C "$WT2/mrgt1" config --worktree user.name)" "... the identity went into the scratch tree's own config"
 GD=$(git -C "$WT2/mrgt1" rev-parse --absolute-git-dir)
 report no "$([ -e "$GD/adp-gate.lock" ] && echo yes || echo no)" "... and the lock was released"
