@@ -41,8 +41,8 @@
 
 - [ ] 5. Entries: the definition, field by field
   - File: docs/diagram-module-client-api.md (continue)
-  - Section 5: `DiagramDefinition` and one entry per declaration group reached from it - element types and shapes, custom shapes, labels and bindings, anchors, decorations, relation types with routes, markers and constraints, custom routes, background, chrome, toolbox, layout, dragging, snap, extent, drop targets, drag bounds, actions with shortcuts and enablement, `selectable`, `backgroundMenu` if that amendment landed, and validation.
-  - Every member of every covered interface is named in its entry (Requirement 3.3).
+  - Section 5: `DiagramDefinition` and one entry per declaration group reached from it - element types and shapes, custom shapes, labels and bindings, anchors, decorations, relation types with routes, markers and constraints, custom routes, background, chrome, toolbox, layout, dragging, snap, extent, drop targets, drag bounds, actions with shortcuts and enablement, `selectable`, `backgroundMenu`, and validation.
+  - Every member of every covered interface is named in its entry (Requirement 3.3). **And name `ActionInvocation`'s `{ kind: "menu" }` deliberately**: centralized-selection gave an existing name a new meaning (a menu-invoked action reaches the module as `action-invoked` and never the backend), and a check keyed on declarations and member names cannot demand an entry for a meaning.
   - Purpose: the largest part of the surface, and the one a module writes by hand
   - _Leverage: src/client/src/canvas/library/definition/*, the modules that exercise each aspect (measured, per Requirement 2.4)_
   - _Requirements: 2.4, 3.1, 3.3, 4.1, 4.2, 4.3_
