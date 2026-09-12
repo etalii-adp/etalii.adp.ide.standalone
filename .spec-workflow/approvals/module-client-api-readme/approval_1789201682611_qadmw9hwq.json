@@ -3,8 +3,10 @@
   "title": "module-client-api-readme design amendment (test-facing helpers join the surface; one point)",
   "filePath": ".spec-workflow/specs/module-client-api-readme/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-12T08:28:02.611Z",
   "category": "spec",
-  "categoryName": "module-client-api-readme"
+  "categoryName": "module-client-api-readme",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-12T08:57:12.765Z"
 }
