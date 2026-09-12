@@ -57,6 +57,55 @@ public class TestFolderTests
     }
 
     [Fact]
+    public void AFolderThatSurvivesADeleteThatDidNotThrow_IsStillReported()
+    {
+        // THE CASE THE FIRST VERSION OF THIS REPORTING MISSED, and the one that actually produces
+        // the litter. Measured across one full run: 870 teardowns, 856 folders gone, and 14 where
+        // Directory.Delete(recursive: true) returned with NO exception and the directory was still
+        // there - exactly that run's leftover count. Trusting the non-throw, the helper returned
+        // happily and reported nothing through all 14.
+        //
+        // Provoked deterministically rather than waited for: a writer that keeps recreating the
+        // folder means every attempt's delete succeeds and every check still finds it there. In
+        // the wild the writer is a debounced cache write landing mid-delete, which happens 14
+        // times in 870 - far too rare for a guard to wait on.
+        // I first tried to provoke it for real, with a thread recreating the folder as the delete
+        // ran. It passed 3 runs in 5, caught each time by this test's own arrangement assertion
+        // rather than by a green run - and a flaky guard teaches people that red means noise. So
+        // the existence check is handed in instead: the same loop, the same report, put into the
+        // state that happens 14 times in 870 without waiting for luck.
+        var folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.TestFolderGuard", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var before = TestFolder.Failures.Count;
+        var deletes = 0;
+
+        // Act. The folder is put back before each check, so every attempt's delete succeeds
+        // without throwing and every check still finds it there - the wild case exactly, where a
+        // write lands mid-delete. (Returning true without recreating would make the second
+        // attempt's Delete throw DirectoryNotFoundException, which is an IOException, and the
+        // report would name that instead of the silent survival this guard is about.)
+        TestFolder.TryDelete(
+            folder,
+            _ =>
+            {
+                deletes++;
+                Directory.CreateDirectory(folder);
+                return true;
+            },
+            caller: @"x\FakeCaller.Tests.cs");
+
+        // Assert.
+        Assert.True(deletes >= 5, $"The loop gave up early: only {deletes} existence checks.");
+        var reported = TestFolder.Failures.Skip(before).ToArray();
+        var line = Assert.Single(reported);
+        Assert.Contains(folder, line, StringComparison.Ordinal);
+        Assert.Contains("still present, no exception", line, StringComparison.Ordinal);
+        // And it names who called, which is what turns the report file into an answer to
+        // "which classes fail?" rather than a list of GUIDs.
+        Assert.Contains("FakeCaller.Tests.cs", line, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AFolderThatDeletesCleanly_ReportsNothing()
     {
         // The must-not-catch half: a report on every deletion would drown the one that matters.

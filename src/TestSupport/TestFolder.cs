@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp;
 
@@ -40,7 +42,18 @@ internal static class TestFolder
     /// </summary>
     internal static IReadOnlyCollection<string> Failures => _failures;
 
-    public static void TryDelete(string path)
+    public static void TryDelete(string path, [CallerFilePath] string? caller = null) =>
+        TryDelete(path, Directory.Exists, caller);
+
+    /// <summary>
+    /// The loop, with the existence check handed in. <b>The seam exists because the case that
+    /// matters cannot be provoked reliably:</b> a delete that returns without throwing and leaves
+    /// the directory happens 14 times in 870 real teardowns, and a guard that recreated the
+    /// folder from another thread to force it passed 3 runs in 5 - a flaky guard teaches people
+    /// that red means noise. Handing in <c>exists</c> lets a test put the loop in exactly that
+    /// state, deterministically, through the same code the suite runs.
+    /// </summary>
+    internal static void TryDelete(string path, Func<string, bool> exists, string? caller)
     {
         Exception? last = null;
         for (var attempt = 0; attempt < 5; attempt++)
@@ -51,12 +64,24 @@ internal static class TestFolder
             }
             try
             {
-                if (!Directory.Exists(path))
+                if (!exists(path))
                 {
                     return;
                 }
                 Directory.Delete(path, recursive: true);
-                return;
+
+                // A DELETE THAT DID NOT THROW IS NOT A DELETE THAT HAPPENED. Measured across one
+                // run: 870 teardowns, 856 folders gone, and 14 where this call returned with no
+                // exception and the directory was still there - which is exactly that run's
+                // leftover count. A file written between the recursive delete's enumeration and
+                // its removal of the root leaves the root behind, and .NET does not call that an
+                // error. Checking the outcome rather than the absence of a throw is what makes
+                // those 14 visible; the first version of this reporting trusted the non-throw and
+                // therefore stayed silent through all of them.
+                if (!exists(path))
+                {
+                    return;
+                }
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
@@ -67,13 +92,17 @@ internal static class TestFolder
 
         // Still there after five attempts over 500ms. The suite stays green - that decision has
         // not changed - but the fact is now recorded rather than swallowed.
-        Report(path, last);
+        Report(path, last, caller);
     }
 
-    private static void Report(string path, Exception? last)
+    private static void Report(string path, Exception? last, string? caller)
     {
+        // The path is a GUID under %TEMP%, so it says which folder and not whose. The caller's
+        // source file is filled in by the compiler, which turns "are the failures one class or
+        // many?" into a question the report file can answer.
+        var by = caller is null ? "unknown caller" : IoPath.GetFileName(caller);
         var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} gave up deleting {path}" +
-                   $" after 5 attempts over 500ms ({last?.GetType().Name ?? "still present, no exception"})";
+                   $" after 5 attempts over 500ms ({last?.GetType().Name ?? "still present, no exception"}) from {by}";
         _failures.Enqueue(line);
         Console.Error.WriteLine("TestFolder: " + line);
         try
