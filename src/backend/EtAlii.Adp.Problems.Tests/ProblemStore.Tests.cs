@@ -450,6 +450,44 @@ public class ProblemStoreTests : IDisposable
         Assert.False(Directory.Exists(_appData), "The flush recreated the app-data root its owner had taken away.");
     }
 
+    [Fact]
+    public void ADebouncedWriteThatWakesAfterDispose_WritesNothing()
+    {
+        // MEASURED IN A FULL RUN, after two of my own hypotheses were wrong about this litter.
+        // Correlating a surviving temp folder against both sides printed the whole mechanism:
+        //
+        //   14:14:10.691 DELETE-BEGIN <guid> exists=True
+        //   14:14:10.691 PERSIST rootExists=True disposed=True appdata=<guid>
+        //   14:14:10.692 DELETE-OK   <guid> exists=True
+        //
+        // The write runs AFTER Dispose returned - Timer.Dispose() does not cancel a callback
+        // already in flight - and lands between a recursive delete's enumeration and its removal
+        // of the root, which leaves the root behind. 870 teardowns, 14 of them like this.
+        //
+        // A synthetic race probe found 0 of 200, which is why this guard calls the callback
+        // directly instead of hoping: same code the timer runs, no timing.
+        //
+        // The app-data root stays in place deliberately. Deleting it would let the root check
+        // from the commit before this one skip the write, and this guard would pass without
+        // testing anything of its own.
+        var cachePath = CacheFileFor(_root);
+        var store = Store();
+        store.Replace(_root, [Problem("a.adp")]);
+        var entry = store.EntryFor(_root);
+
+        store.Dispose();
+        Assert.True(File.Exists(cachePath), "Dispose must still flush the pending write.");
+
+        // Remove what the flush wrote, so a later write is unmistakable.
+        File.Delete(cachePath);
+
+        // Act. The callback wakes to a store that is already gone.
+        store.OnDebounceElapsed(entry);
+
+        // Assert.
+        Assert.False(File.Exists(cachePath), "A debounced write woke after Dispose and wrote anyway.");
+    }
+
     /// <summary>Where the store keeps a project's cache - the hash ProblemStore computes.</summary>
     private string CacheFileFor(string rootPath)
     {
