@@ -2759,3 +2759,84 @@ whether real glyphs fit. That half is the browser's, and it is this entry.
     question from this one.
   - **Left standing**: a C4 name is not truncated. The backend clamps cards at 240, so a name
     over about 34 characters at 13px would still run out. No example has one.
+
+## Selection and its two looks, on all sixteen canvases (centralized-selection, task 24)
+
+The user's instruction named four diagram types whose selection worked - timeline,
+dependency-graph, causal-loop and c4 - and four that did not: helm-charts,
+dotnet-dependency-graph, azure-pipeline and ansible-structure. **That comparison is the
+acceptance oracle, and it is recorded as such**: the four named broken must end up behaving
+exactly like the four named working.
+
+**Why this entry exists, and what it is the only evidence for.** Every canvas has unit tests
+that mount it and assert what selection *does* (`expectLibrarySelection`, called from each
+module's own canvas test), and a text guard that no module writes selection code
+(`noModuleSelection.test.ts`). **jsdom applies no CSS**, so no unit test can say whether the
+shared highlight is legible on a diagram's fills - including the colours a backend chooses,
+which is why the look changed from a recoloured stroke to a ring drawn outside the shape
+(Requirement 5.2) - nor whether *selected* and *would accept this connection* can be told apart
+when both are on (Requirement 6.2). Those are this entry's, and Requirement 10.3 says so.
+
+- **Preconditions**: backend + client running from the worktree on your reserved ports, browsing
+  the backend's port; `src/examples` open as a project. **The Claude window must be in front**:
+  a hidden pane reports a 0x0 viewport, stops painting, and a press then lands on nothing.
+- **Steps**: open each diagram below, and on each: press an element, press a connection where the
+  notation selects one, press empty canvas, and drag an element a short distance. Paste the
+  function and call `probe()` on each tab; then **look at the canvas** for the three things the
+  probe cannot judge.
+  ```js
+  async function probe() {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const canvas = [...document.querySelectorAll(".library-canvas")].find((c) => c.getBoundingClientRect().width > 10);
+    const at = (el) => { const b = el.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; };
+    const press = (t, x, y) => { const ev = (type, buttons) => new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x, clientY: y });
+      t.dispatchEvent(ev("pointerdown", 1)); t.dispatchEvent(ev("pointerup", 0)); };
+    const sel = () => [...canvas.querySelectorAll(".canvas-selected")].map((e) => e.dataset.elementId ?? e.dataset.connectionId);
+    const out = {};
+    const els = [...canvas.querySelectorAll("[data-element-id]")].filter((e) => e.getBoundingClientRect().width > 2);
+    const cons = [...canvas.querySelectorAll("[data-connection-id]")];
+    const el = els[Math.min(1, els.length - 1)];
+    press(document.elementFromPoint(...at(el)) ?? el, ...at(el)); await sleep(1200);
+    const ring = canvas.querySelector("rect.library-selected-outline");
+    const shape = ring?.closest("[data-element-id]")?.querySelector(".library-shape, rect:not(.library-selected-outline)");
+    out.element = { selected: sel(), ring: !!ring, stroke: ring && getComputedStyle(ring).stroke, dashed: ring ? getComputedStyle(ring).strokeDasharray !== "none" : null,
+      gapPx: ring && shape ? +(shape.getBoundingClientRect().x - ring.getBoundingClientRect().x).toFixed(1) : null };
+    if (cons.length) { const hit = cons[0].querySelector(".canvas-connection-hit") ?? cons[0]; press(hit, ...at(hit)); await sleep(1200);
+      const line = cons[0].querySelector(".canvas-connection-line");
+      out.connection = { selected: sel(), stroke: line && getComputedStyle(line).stroke }; }
+    const svg = canvas.querySelector("svg.library-canvas-surface"); const b = svg.getBoundingClientRect();
+    press(svg, b.x + 3, b.y + 3); await sleep(1200); out.afterBackground = sel();
+    const d = els[0]; const [x, y] = at(d); const ev = (type, buttons, dx) => new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x + dx, clientY: y });
+    const t = document.elementFromPoint(x, y) ?? d;
+    t.dispatchEvent(ev("pointerdown", 1, 0)); t.dispatchEvent(ev("pointermove", 1, 40)); t.dispatchEvent(ev("pointerup", 0, 40)); await sleep(1200);
+    out.afterDrag = sel();
+    return JSON.stringify(out);
+  }
+  ```
+  The sixteen, each from `src/examples/diagrams/<type>/`: `timeline`, `dependency-graph`,
+  `causal-loop`, `c4` (**the oracle's four that worked**); `helm-charts`,
+  `dotnet-dependency-graph`, `azure-pipeline`, `ansible-structure` (**the oracle's four that did
+  not**); then `databricks`, `rdf`, `owl`, `shacl`, `skos`, `sparql`, `mindmap`, `wardley-map`.
+- **Expected, from the probe**: `element.selected` names the pressed element and nothing else;
+  `element.ring` true, its stroke the primary colour, not dashed; `connection.selected` names the
+  pressed connection **and not the element pressed before it** - a press replaces; `afterBackground`
+  empty; `afterDrag` unchanged from before the drag - **a drag does not select what it moves**.
+  On `mindmap` and `wardley-map` a connection press is a background press by declaration
+  (Requirement 2.4), so `connection.selected` is empty there and nowhere else.
+- **Expected, by eye - the half no test can make**:
+  1. The ring reads clearly against that diagram's own fills, **including c4's backend-chosen
+     colours** and databricks' and azure-pipeline's cards.
+  2. A selected connection's highlight runs **the whole route**, label and adornments included,
+     not just one segment.
+  3. Drag a connection from an anchor over a legal target: the target wears the **accept** ring -
+     dashed, further out, its own colour - and if that target is also the selection, **both rings
+     show at once**, one inside the other (Requirement 6.2).
+- **Before you trust a zero**: plant one. With something selected, delete its ring in the
+  console (`document.querySelector("rect.library-selected-outline").remove()`) and check the
+  probe reports `ring: false`; then press again to bring it back. A probe that cannot see the
+  ring's absence cannot report its presence.
+- **The open question this pass settles**: the ring's offset is in canvas units, so it scales
+  with zoom - at a zoomed-out fit it sat about 1px outside the box when this was written. Judge
+  it at fit, at 100%, and zoomed in. If it does not read at fit, the remedy is a screen-constant
+  offset (pixels converted to units per render) rather than a larger constant, which would gape
+  when zoomed in.
