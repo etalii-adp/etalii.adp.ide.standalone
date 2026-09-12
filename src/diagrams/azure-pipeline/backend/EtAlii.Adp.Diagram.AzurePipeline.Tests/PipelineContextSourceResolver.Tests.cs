@@ -353,6 +353,132 @@ public class PipelineContextSourceResolverTests : IDisposable
         // Assert.
         Assert.Equal(0, reported);
     }
+    // ---- an arrow is selectable too ---------------------------------------------------------
+
+    /// <summary>
+    /// Every kind of arrow this canvas draws: an implicit stage order (Test after Build), an
+    /// explicit dependsOn (Deploy on Test), a broken one (Deploy on a stage that does not exist),
+    /// and a job-level one (Pack on Compile).
+    /// </summary>
+    private const string Arrows = """
+        stages:
+          - stage: Build
+            jobs:
+              - job: Compile
+                steps:
+                  - script: dotnet build
+              - job: Pack
+                dependsOn: Compile
+                steps:
+                  - script: dotnet pack
+          - stage: Test
+            jobs:
+              - job: Verify
+                steps:
+                  - script: dotnet test
+          - stage: Deploy
+            dependsOn:
+              - Test
+              - Nowhere
+            jobs:
+              - job: Ship
+                steps:
+                  - script: ./ship
+        """;
+
+    /// <summary>
+    /// The id of every arrow the canvas draws for this pipeline, taken from the module's own graph
+    /// and <see cref="PipelineElementMapper.EdgeId"/> - never a re-spelled format, which could only
+    /// agree with the mapper by coincidence.
+    /// </summary>
+    private IReadOnlyList<PipelineEdge> DrawnEdges(string registration)
+    {
+        var model = _store.GetOrLoad(_workspace, BodyOf(registration)).Model;
+        return
+        [
+            .. PipelineGraphBuilder.OfStages(model).Edges,
+            .. model.Stages.SelectMany(stage => PipelineGraphBuilder.OfJobs(stage).Edges),
+        ];
+    }
+
+    [Fact]
+    public async Task EveryArrowTheCanvasDraws_Resolves_ImplicitExplicitBrokenAndJobLevel()
+    {
+        // Arrange: the library pushes a pressed arrow's own id, and the highlight follows the
+        // backend's answer - so an arrow this resolver cannot name is an arrow that can never be
+        // selected (centralized-selection Requirements 2.1, 2.2).
+        var path = Write("azure-pipelines", Arrows);
+        var edges = DrawnEdges(path);
+        Assert.Contains(edges, edge => edge.IsImplicit);
+        Assert.Contains(edges, edge => edge.IsBroken);
+        Assert.Contains(edges, edge => !edge.IsImplicit && !edge.IsBroken && edge.ToId == "Deploy");
+        Assert.Contains(edges, edge => edge.ToId == "Build/Pack");
+
+        // Act & assert.
+        foreach (var edge in edges)
+        {
+            var id = PipelineElementMapper.EdgeId(edge);
+            var resolved = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, id));
+            Assert.False(resolved.Level.Target.IsContainer);
+            Assert.Equal(id, resolved.Level.Target.ElementId);
+        }
+    }
+
+    [Theory]
+    [InlineData("Test", "Deploy", new[] { "Deploy" }, "Deploy waits for Test")]
+    [InlineData("Build", "Test", new[] { "Test" }, "Test waits for Build")]
+    [InlineData("", "Deploy", new[] { "Deploy" }, "Deploy waits for Nowhere")]
+    [InlineData("Build/Compile", "Build/Pack", new[] { "Build", "Pack" }, "Pack waits for Compile")]
+    public async Task AnArrow_AnswersAsTheElementThatWaits(string fromId, string toId, string[] expectedPath, string expectedText)
+    {
+        // Arrange: an arrow is the waiting element's dependency - it is written in THAT element's
+        // dependsOn, or implied by its place - so the waiting side is what it answers as, the way
+        // ansible's edges answer as their declaring side.
+        var path = Write("azure-pipelines", Arrows);
+        var edge = DrawnEdges(path).Single(candidate => candidate.FromId == fromId && candidate.ToId == toId);
+
+        // Act.
+        var resolved = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, PipelineElementMapper.EdgeId(edge)));
+
+        // Assert.
+        Assert.Equal(expectedPath, resolved.Level.RelativePath);
+        Assert.Equal(expectedText, resolved.Level.Detail.Element.Text);
+        Assert.False(resolved.Level.Detail.Element.HasChildren);
+    }
+
+    [Fact]
+    public async Task AnArrowThatIsNotDrawn_IsStillRejected()
+    {
+        // Arrange: resolving arrows must not turn "any id shaped like an arrow" into a selection.
+        var path = Write("azure-pipelines", Arrows);
+
+        // Act.
+        var resolution = await ResolveAsync(path, "edge:Deploy->Build");
+
+        // Assert.
+        Assert.IsType<RejectedContextLevel>(resolution);
+    }
+
+    [Fact]
+    public async Task ASelectedArrow_SurvivesAnUnrelatedEdit_AndClearsWhenItGoes()
+    {
+        // Arrange: Track shares Find, so an arrow is followed the way an element is (3.3).
+        var path = Write("azure-pipelines", Arrows);
+        var edge = DrawnEdges(path).Single(candidate => candidate.FromId == "Test" && candidate.ToId == "Deploy");
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, PipelineElementMapper.EdgeId(edge))).Level;
+        var reported = new List<IReadOnlyList<string>?>();
+        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, updated => reported.Add(updated));
+
+        // Act: an edit elsewhere, then one that removes the dependency.
+        _store.Touch(_workspace, BodyOf(path));
+        await File.WriteAllTextAsync(BodyOf(path), Arrows.Replace("- Test", "", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        _store.Reload(_workspace, BodyOf(path));
+
+        // Assert.
+        Assert.Equal(2, reported.Count);
+        Assert.Equal(["Deploy"], reported[0]);
+        Assert.Null(reported[1]);
+    }
 }
 
 /// <summary>

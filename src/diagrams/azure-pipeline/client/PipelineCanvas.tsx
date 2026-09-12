@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
@@ -10,10 +10,10 @@ import type {
   ElementTypeDefinition,
   ShapeBounds,
 } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { innermostKey, useContextConnection, useContextPrompt, useContextProblems, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
@@ -83,7 +83,6 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: "pipeline-stage", on: "element" },
         { className: "pipeline-stage-expanded", on: "element", when: { path: "payload.expanded", is: "true" } },
         { className: "pipeline-stage-collapsed", on: "element", when: { path: "payload.expanded", is: "false" } },
-        { className: "pipeline-focused", on: "element", when: { path: "payload.focused", is: "true" } },
         { className: "pipeline-indeterminate", on: "element", when: { path: "payload.indeterminate", is: "true" } },
         { className: "pipeline-from-template", on: "element", when: { path: "payload.fromTemplate", is: "true" } },
         { className: "pipeline-problem", on: "element", when: { path: "payload.problemSeverity", is: "present" } },
@@ -160,7 +159,6 @@ const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       classNames: [
         { className: BOX_CLASS[id], on: "element" },
         { className: "pipeline-deployment", on: "element", when: { path: "payload.deployment", is: "true" } },
-        { className: "pipeline-focused", on: "element", when: { path: "payload.focused", is: "true" } },
         { className: "pipeline-indeterminate", on: "element", when: { path: "payload.indeterminate", is: "true" } },
         { className: "pipeline-from-template", on: "element", when: { path: "payload.fromTemplate", is: "true" } },
         { className: "pipeline-problem", on: "element", when: { path: "payload.problemSeverity", is: "present" } },
@@ -257,15 +255,12 @@ function elementTypeOf(node: PipelineNode): string {
  */
 export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps) {
   const { model, loading, failed, reportView } = usePipelineStream(projectId, path);
-  const { select, executeShortcut } = useContextConnection();
-  const { selection } = useContextSelection();
-  const selectedId = elementIdOfKey(innermostKey(selection ?? null));
+  const { executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   // Problems arrive for the whole project, so an element only wears the ones that name it and
   // this file - two pipelines may each have a stage called Build (Requirement 8.7).
   const problems = useContextProblems()?.problems ?? [];
 
-  const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
@@ -297,7 +292,6 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
           deployment: node.payload.kind === PipelineElementKindProto.PIPELINE_ELEMENT_KIND_DEPLOYMENT_JOB,
           indicators: indicatorsOf(node.payload),
           expanded: !model.collapsed.has(node.id),
-          focused: node.id === focusedId,
           ...(problem ? { problemSeverity: problem.severity, problemTitle: problem.title, problemGlyph: problem.severity === "error" ? "✖" : "⚠" } : {}),
         },
       };
@@ -321,15 +315,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
       }];
     });
     return { elements, connections };
-  }, [model, focusedId, problems, path]);
-
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (selectedId === null || !model.nodes.has(selectedId)) {
-      return [];
-    }
-    return [{ kind: "element", id: selectedId }];
-  }, [selectedId, model.nodes]);
+  }, [model, problems, path]);
 
   const events: DiagramEventHandlers = {
     // The declared action, answered as the shortcut the backend has always known it by.
@@ -339,13 +325,9 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
         void executeShortcut(contextShortcutOf(key), elementSourceOf(targetId));
       }
     },
-    onSelectionChanged: ({ selection: next }) => {
-      // A press on an arrow deselects, as it always did: an edge was never a selectable
-      // element here, and the old canvas let such a press fall through to the background.
-      const element = next.find((item) => item.kind === "element");
-      setFocusedId(element?.id);
-      select(element !== undefined ? elementSelectionOf(entryId, path, element.id) : null);
-    },
+    // Selection is the library's (centralized-selection), and so is its highlight: this canvas
+    // used to draw a private `focusedId` it set on a press, beside the backend's selection -
+    // two answers to "what is selected", with the drawing following the wrong one.
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
@@ -383,7 +365,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
           definition={PIPELINE_DEFINITION}
           model={diagramModel}
           events={events}
-          selection={librarySelection}
+          source={{ entryId, path }}
           toolboxItems={toolboxItems}
           editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
           ariaLabel={`Pipeline ${path.join("/")}`}

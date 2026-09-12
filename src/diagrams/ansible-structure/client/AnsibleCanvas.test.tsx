@@ -10,6 +10,9 @@ import {
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type AnsibleModel } from "./ansibleModel";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 const select = vi.fn();
 const revealPath = vi.fn();
@@ -434,11 +437,12 @@ describe("AnsibleCanvas", () => {
   });
 
   it("reveals a node's file from the keyboard too", () => {
-    // Arrange.
+    // Arrange. The node is the backend's selection. This used to be a click, answered by a
+    // private `focusedId` the canvas set for itself; centralized-selection Requirement 4.1
+    // deletes that state, so Enter now acts on the ONE selection there is - which in the running
+    // app is the click's own push coming back, and which this mock never sends.
+    currentSelection = elementSelectionOf(new Uint8Array(16), ["infrastructure.adp"], "role:nginx");
     const { container } = renderCanvas();
-    const role = container.querySelector('[data-element-id="role:nginx"]')!;
-    fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
-    fireEvent(role, pointer("pointerup", { clientX: 10, clientY: 10 }));
 
     // Act.
     fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Enter" });
@@ -577,5 +581,26 @@ describe("the view report", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed node and edge, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelOf(
+          element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK),
+          element("role:r", "ansible/structure+role", AnsibleElementKind.ROLE, {}, 300, 0),
+          element("edge:uses", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+            edge: { sourceId: "playbook:a.yml", targetId: "role:r", kind: AnsibleEdgeKind.USES_ROLE, directive: "roles:", dynamic: false },
+          }),
+        );
+        currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["infrastructure.adp"], id);
+        return renderCanvas();
+      },
+      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: "role:r",
+      connection: "edge:uses",
+    });
   });
 });

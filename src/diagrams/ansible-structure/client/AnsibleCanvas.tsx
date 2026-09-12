@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { forwardBezierPath } from "@client/canvas/connectors";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
@@ -10,13 +9,12 @@ import type {
   ShapeBounds,
   ShapePoint,
 } from "@client/canvas/library/definition/diagramDefinition";
-import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { ContextSelectionAction } from "@client/generated/context_pb";
 import { AnsibleEdgeKind, AnsibleElementKind } from "@client/generated/ansible-structure_pb";
 import { anchorsOf, edgesOf, nodesOf, paletteSlotOf, type AnsibleElement } from "./ansibleModel";
 import { useAnsibleStream } from "./useAnsibleStream";
@@ -37,7 +35,6 @@ export interface AnsibleCanvasProps {
 type NodeElement = DiagramModelElement & {
   node: AnsibleElement;
   activate: () => void;
-  contextSelect: () => void;
 };
 
 /** An unresolved edge, drawn as a stub element: a line to nothing and the name that failed. */
@@ -81,7 +78,6 @@ const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
         { className: { template: "ansible-play-{payload.playSlot}" }, when: { path: "payload.playSlot", is: "present" } },
         { className: "ansible-play-none", when: { path: "payload.playSlot", is: "absent" } },
         { className: "ansible-node-hollow", when: { path: "payload.hollow", is: "true" } },
-        { className: "ansible-node-selected", when: { path: "state.selected", is: "true" } },
         { className: "ansible-node-box", on: "shape" },
       ],
       labels: [
@@ -95,9 +91,20 @@ const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       data: { kind: { path: "payload.kindClass" } },
       accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
       actions: [
-        // What `onDoubleClick` and `onContextMenu` did on the rendered element.
-        { id: "ansible.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
-        { id: "ansible.context-menu", invokedBy: [{ kind: "gesture", gesture: "context-menu" }], appliesTo: [{ kind: "element" }] },
+        // The jump from a node to its file: a double-click, or Enter or Space on the SELECTED
+        // node. The keys used to read a private `focusedId` the canvas kept beside the backend's
+        // selection; declared here, they act on the library's selection, which is the only one
+        // (centralized-selection Requirement 4.1). The right-click that sat beside them pushed a
+        // context-menu selection by hand - selection glue, now the library's shared menu.
+        {
+          id: "ansible.activate",
+          invokedBy: [
+            { kind: "gesture", gesture: "activate" },
+            { kind: "shortcut", key: "Enter" },
+            { kind: "shortcut", key: " " },
+          ],
+          appliesTo: [{ kind: "element" }],
+        },
       ],
       anchors: { kind: "edge" },
       sizing: "model",
@@ -174,15 +181,12 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   // the library canvas, because the loading/empty states return before the canvas mounts.
   const toolboxItems = useToolboxItems(projectId, path);
   useRegisterDiagramToolbox(toolboxItems);
-  const { select, revealPath } = useContextConnection();
-  const { selection } = useContextSelection();
+  const { revealPath } = useContextConnection();
 
-  const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const nodes = useMemo(() => nodesOf(model), [model]);
   const edges = useMemo(() => edgesOf(model), [model]);
-  const selectedId = selectedElementIdOf(selection);
 
   const activate = (element: AnsibleElement) => {
     const segments = element.payload.projectRelativePath;
@@ -260,54 +264,21 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
         },
         node,
         activate: () => activate(node),
-        contextSelect: () => {
-          setFocusedId(node.id);
-          select(elementSelectionOf(entryId, path, node.id, ContextSelectionAction.CONTEXT_MENU));
-        },
       } as NodeElement);
     }
 
     return { elements, connections };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the closures read stable setters
     // and the same model/path the listed dependencies cover.
-  }, [model, nodes, edges, entryId, path]);
-
-  /** The backend's push is the selection; the canvas renders it and never decides. */
-  const librarySelection = useMemo<DiagramSelection>(() => {
-    if (!selectedId || !model.elements.has(selectedId)) {
-      return [];
-    }
-    return [{ kind: "element", id: selectedId }];
-  }, [selectedId, model.elements]);
+  }, [model, nodes, edges, path]);
 
   const events: DiagramEventHandlers = {
-    // The two gestures the rendered element used to answer itself. Same behaviour,
-    // reached by action id: this module still decides what "activate" means.
+    // The jump, reached by action id from the double-click and the keyboard alike: this module
+    // still decides what "activate" means. Selection is the library's (centralized-selection).
     onActionInvoked: ({ actionId, targetId }) => {
-      if (targetId === undefined) {
-        return;
-      }
-
-      const node = model.elements.get(targetId);
-      if (actionId === "ansible.activate") {
-        if (node !== undefined) {
-          activate(node);
-        }
-
-        return;
-      }
-
-      if (actionId === "ansible.context-menu") {
-        setFocusedId(targetId);
-        select(elementSelectionOf(entryId, path, targetId, ContextSelectionAction.CONTEXT_MENU));
-      }
-    },
-    // A background press never deselected here, so only an element selection is forwarded.
-    onSelectionChanged: ({ selection: next }) => {
-      const element = next.find((item) => item.kind === "element");
-      if (element !== undefined && model.elements.has(element.id)) {
-        setFocusedId(element.id);
-        select(elementSelectionOf(entryId, path, element.id));
+      const node = targetId !== undefined ? model.elements.get(targetId) : undefined;
+      if (actionId === "ansible.activate" && node !== undefined) {
+        activate(node);
       }
     },
     onElementMoved: ({ elementId, position }) => {
@@ -334,18 +305,6 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
     ready: !loading && !failed && viewport !== null,
   });
 
-  /** Enter or Space on the focused node reveals its file - the keyboard half of the jump. */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
-    const element = focusedId ? model.elements.get(focusedId) : undefined;
-    if (element) {
-      event.preventDefault();
-      activate(element);
-    }
-  };
-
   if (failed) {
     return <div className="ansible-canvas-message canvas-host canvas-host-message">This Ansible project structure diagram could not be opened.</div>;
   }
@@ -364,12 +323,12 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   }
 
   return (
-    <div className="ansible-canvas-host canvas-host" role="application" aria-label="Ansible project structure" onKeyDown={onKeyDown}>
+    <div className="ansible-canvas-host canvas-host" role="application" aria-label="Ansible project structure">
       <DiagramCanvas
         definition={ANSIBLE_DEFINITION}
         model={diagramModel}
         events={events}
-        selection={librarySelection}
+        source={{ entryId, path }}
         toolboxItems={toolboxItems}
         ariaLabel="Ansible project structure"
         className="ansible-canvas-viewport"

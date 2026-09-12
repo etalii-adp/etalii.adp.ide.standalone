@@ -697,4 +697,26 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.Empty(properties);
     }
+
+    /// <summary>The id the canvas gives the Build -> Test arrow, from the module's own graph.</summary>
+    private string ArrowId(string path)
+    {
+        var model = _store.GetOrLoad(_workspace, path).Model;
+        return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge.FromId == "Build" && edge.ToId == "Test"));
+    }
+
+    [Fact]
+    public async Task ASelectedArrow_DescribesNothing_AndDoesNotThrow()
+    {
+        // Arrange: an arrow is selectable now (centralized-selection 2.1), so the property grid is
+        // asked about one. PipelineEdits.Locate knows no arrow; the answer must be "nothing to
+        // show", never an exception that takes the grid down.
+        var path = Write();
+
+        // Act.
+        var properties = await DescribeAsync(path, ArrowId(path));
+
+        // Assert.
+        Assert.Empty(properties);
+    }
 }

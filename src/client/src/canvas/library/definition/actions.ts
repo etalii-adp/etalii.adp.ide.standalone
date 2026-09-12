@@ -209,6 +209,34 @@ export function actionForGesture(
   return null;
 }
 
+/**
+ * The declared action a shared-menu entry names, or null - which means the backend runs it.
+ *
+ * <b>The menu's entries are always the backend's list</b>: what is offered, under which label, in
+ * which group, stays single-sourced. What a definition may declare is <b>who runs</b> an entry. One
+ * whose id it declares with `invokedBy: { kind: "menu" }` goes to the module's handler as
+ * `action-invoked`, exactly as a declared shortcut or gesture does, and nothing is sent to the
+ * backend - databricks' simulated runs, which must never reach a command or a file
+ * (centralized-selection, design A).
+ *
+ * Matched by id, and the declaration's `when` and `enabled` must hold. `appliesTo` is NOT checked
+ * again: the backend's list already decided where the entry is offered, and a second opinion
+ * here could only disagree with it.
+ */
+export function actionForMenuEntry(lookup: ActionLookup, actionId: string): DispatchedAction | null {
+  for (const action of lookup.actions ?? []) {
+    if (action.id !== actionId || !action.invokedBy.some((invocation) => invocation.kind === "menu")) {
+      continue;
+    }
+
+    if (holds(action.when, lookup.source) && flagHolds(action.enabled, lookup.source)) {
+      return { actionId: action.id, targetKind: lookup.targetKind, targetId: lookup.targetId };
+    }
+  }
+
+  return null;
+}
+
 /** Whether a declared flag - an anchor's `visible` or `enabled` - currently holds. */
 export function flagOf(flag: DeclaredFlag | undefined, source: BindingSource, fallback = true): boolean {
   if (flag === undefined) {

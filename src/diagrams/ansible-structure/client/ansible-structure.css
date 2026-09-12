@@ -81,11 +81,6 @@
   stroke-width: 2;
 }
 
-.ansible-node-selected .ansible-node-box {
-  stroke: var(--color-primary);
-  stroke-width: 2.5;
-}
-
 .ansible-node:focus-visible .ansible-node-box {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;

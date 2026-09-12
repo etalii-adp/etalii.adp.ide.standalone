@@ -18,6 +18,9 @@ import {
 } from "./pipelineModel";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 
 const select = vi.fn();
 const executeShortcut = vi.fn(async () => ({ accepted: true, error: "" }));
@@ -700,5 +703,20 @@ describe("PipelineCanvas toolbox", () => {
     // Assert: the shell sees this canvas's palette, asked for this diagram's own path.
     expect(getByTestId("toolbox-probe").textContent).toBe("palette:Stage,Job");
     expect(toolboxRequests[0]).toEqual(path);
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed stage and arrow, and clears on a background press (centralized-selection 9.2)", () => {
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = applyDelta(emptyModel, add(stage("Build", "Build"), stage("Deploy", "Deploy", {}, 300, 0), edge("s-edge", "Build", "Deploy")));
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return draw();
+      },
+      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      element: "Build",
+      connection: "s-edge",
+    });
   });
 });
