@@ -60,7 +60,7 @@ trap finish EXIT
 
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "RESULT=aborted-cannot-locate-script"; exit 3; }
 . "$HERE/gate-lib.sh" 2>/dev/null
-if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head > /dev/null 2>&1; then
+if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head gate_run_logs_dir gate_keep_logs_red gate_prune_logs > /dev/null 2>&1; then
   echo "RESULT=aborted-library-missing ($HERE/gate-lib.sh)"
   exit 3
 fi
@@ -105,15 +105,23 @@ if ! git -C "$MRG" config --worktree user.name "$IDENT"; then echo "RESULT=ident
 if [ "$(git -C "$MRG" config user.name)" != "$IDENT" ]; then echo "RESULT=identity-not-effective"; exit 1; fi
 echo "IDENTITY_EFFECTIVE=$IDENT"
 
-LOGS="$GITDIR/adp-gate-logs"
-rm -rf "$LOGS"
-mkdir -p "$LOGS" || { echo "RESULT=aborted-no-log-dir"; exit 3; }
+LOG_PARENT="$GITDIR/adp-gate-logs"
+gate_prune_logs "$LOG_PARENT" 10
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+LOGS=$(gate_run_logs_dir "$LOG_PARENT" "$RUN_ID")
+case $? in
+  0) ;;
+  2) echo "RESULT=aborted-log-dir-not-empty ($LOG_PARENT/$RUN_ID already holds files - another run?)"; exit 3 ;;
+  *) echo "RESULT=aborted-no-log-dir"; exit 3 ;;
+esac
+echo "LOGS=$LOGS"
 BASE=$(git -C "$MAIN" rev-parse --verify -q develop) || { echo "RESULT=aborted-no-develop"; exit 3; }
 echo "GATED_ON_BASE=$BASE"
 git -C "$MRG" reset -q --hard "$BASE" || { echo "RESULT=reset-failed"; exit 1; }
 if ! git -C "$MRG" merge --no-ff "$BRANCH" -m "$MSG" > "$LOGS/merge.log" 2>&1; then
   cat "$LOGS/merge.log"
   git -C "$MRG" merge --abort > /dev/null 2>&1
+  echo "KEPT_LOGS=$(gate_keep_logs_red "$LOGS" "merge-conflict")"
   echo "RESULT=merge-conflict"
   exit 1
 fi
@@ -137,11 +145,14 @@ echo "FORMAT_EXIT=$FMT_EXIT"
 (cd "$MRG/src/backend" && dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
 DT_EXIT=$?
 echo "DOTNET_TEST_EXIT=$DT_EXIT"
-echo "LOGS=$LOGS"
 
 gate_verdict "$LOGS/dotnet-test.log"
 echo "DOTNET_TOTAL=${DT_TOTAL:-none} DOTNET_FAILED=${DT_FAILED:-none}"
-if [ "$VERDICT" != green ]; then echo "RESULT=gates-red ($WHY )"; exit 1; fi
+if [ "$VERDICT" != green ]; then
+  echo "KEPT_LOGS=$(gate_keep_logs_red "$LOGS" "gates-red ($WHY )")"
+  echo "RESULT=gates-red ($WHY )"
+  exit 1
+fi
 
 # --- The gates ran for minutes. Before vouching for what they judged, prove it is still the
 # --- commit that will land, in the tree that was verified, on the develop it was merged onto.
@@ -150,6 +161,7 @@ case $? in
   0) ;;
   1)
     git -C "$MRG" diff --stat HEAD --
+    echo "KEPT_LOGS=$(gate_keep_logs_red "$LOGS" "gates-changed-tracked-files")"
     echo "RESULT=gates-changed-tracked-files"
     exit 1
     ;;
