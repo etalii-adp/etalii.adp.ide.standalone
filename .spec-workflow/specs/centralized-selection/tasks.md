@@ -52,7 +52,7 @@ One worktree for the whole specification (`.claude/worktrees/csel`, per CLAUDE.m
 
 ## Group 2 — The reference migration
 
-- [ ] 8. `timeline`
+- [x] 8. `timeline`
   - It already uses only the shared look and already selects connections, so migrating it proves the central model reproduces the user's working behaviour with the least visible change. Pass `source`; delete the inbound `useMemo<DiagramSelection>`, the `onSelectionChanged` handler and the `context` prop. Its canvas test calls `expectLibrarySelection`. **Its existing tests pass unchanged**, with no exemption needed, because it declares no private class.
   - _Requirements: 1.4, 9.2, 11.1, 11.2_
 
@@ -60,7 +60,7 @@ One worktree for the whole specification (`.claude/worktrees/csel`, per CLAUDE.m
 
 ## Group 3 — The four the user named broken
 
-- [ ] 9. `helm-charts` — **the natural red first**
+- [x] 9. `helm-charts` — **the natural red first**
   - **Before migrating**, run `expectLibrarySelection` against today's helm canvas and **record it failing two of its three checks**: the background press pushes nothing, and a connection is never highlighted. That is the guard seen red against the real defect.
   - Then migrate: the glue goes, `helm-node-selected` goes, connections become selectable, and a background press clears. The same assertion now passes.
   - _Requirements: 2.1, 3.2, 5.1, 9.2, 9.3, 11.1_
@@ -75,7 +75,7 @@ One worktree for the whole specification (`.claude/worktrees/csel`, per CLAUDE.m
   - _Requirements: 2.1, 2.2, 3.3, 4.1, 4.2, 5.1, 9.2, 11.1_
   - *The backend bullet and the added claims 2.1, 2.2 and 3.3 were added on 2026-09-11 during implementation. Developer 1 found the rejection, and task 26 is how the same gap is found everywhere else.*
 
-- [ ] 12. `dotnet-dependency-graph`
+- [x] 12. `dotnet-dependency-graph`
   - The glue goes and `dotnet-dependency-selected` goes. A connection press now reaches the backend **as a connection** rather than mislabelled as an element, and is highlighted.
   - _Requirements: 2.1, 2.2, 5.1, 9.2, 11.1_
 
@@ -85,21 +85,21 @@ One worktree for the whole specification (`.claude/worktrees/csel`, per CLAUDE.m
 
 Each: pass `source`, delete the glue, delete its private selected class, and call `expectLibrarySelection` from its canvas test. Existing tests pass unchanged except those asserting a removed class (Requirement 11.1), each citing the requirement that removed it.
 
-- [ ] 13. `dependency-graph` — `dependency-graph-selected`, and its private connect-target declaration
+- [x] 13. `dependency-graph` — `dependency-graph-selected`, and its private connect-target declaration
   - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
-- [ ] 14. `causal-loop` — its redundant second declaration of `canvas-selected`
+- [x] 14. `causal-loop` — its redundant second declaration of `canvas-selected`
   - _Requirements: 1.4, 5.1, 9.2, 11.1_
-- [ ] 15. `c4` — `c4-node-focused`, and **its boundary type declares `selectable: false`**, replacing the hand-written check in `onSelectionChanged`
+- [x] 15. `c4` — `c4-node-focused`, and **its boundary type declares `selectable: false`**, replacing the hand-written check in `onSelectionChanged`
   - _Requirements: 1.4, 2.3, 5.1, 9.2, 11.1_
 - [ ] 16. `databricks` — `databricks-selected`, and its two private connect-target declarations
   - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
-- [ ] 17. `rdf`, all four readings — `owl-selected`, `shacl-selected`, `skos-selected`, and the nine private connect-target declarations (seven in the OWL reading, two in SKOS)
+- [x] 17. `rdf`, all four readings — `owl-selected`, `shacl-selected`, `skos-selected`, and the nine private connect-target declarations (seven in the OWL reading, two in SKOS)
   - _Requirements: 1.4, 5.1, 6.1, 9.2, 11.1_
-- [ ] 18. `sparql` — `sparql-selected`
+- [x] 18. `sparql` — `sparql-selected`
   - _Requirements: 1.4, 5.1, 9.2, 11.1_
-- [ ] 19. `mindmap` — `mindmap-node-focused`; **its relation types declare `selectable: false`**, and its readme records that as a decision about the notation
+- [x] 19. `mindmap` — `mindmap-node-focused`; **its relation types declare `selectable: false`**, and its readme records that as a decision about the notation
   - _Requirements: 1.4, 2.4, 5.1, 9.2, 11.1_
-- [ ] 20. `wardley-map` — `wardley-selected`; **its relation types declare `selectable: false`**, with the same readme note
+- [x] 20. `wardley-map` — `wardley-selected`; **its relation types declare `selectable: false`**, with the same readme note
   - _Requirements: 1.4, 2.4, 5.1, 9.2, 11.1_
 
 ---
