@@ -63,6 +63,11 @@ describe("no unstyled library classes", () => {
     // outer one it sits inside - the `library-shape` case exactly, and listed for that reason
     // rather than because nobody got round to a rule.
     "library-shape-inner",
+    // The two rings, selected and accept: painted by an inline style from ringLooks.ts, because
+    // a stylesheet rule for them lost to any module rule styling its shapes by descendant
+    // (`.mindmap-node rect`), and ringsSurviveModuleStyles.test.tsx holds them to that.
+    "library-selected-outline",
+    "library-accept-outline",
     "library-connection",
     "library-connection-label",
     "library-connection-line",

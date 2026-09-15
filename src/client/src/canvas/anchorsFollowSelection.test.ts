@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./library/ringLooks";
 
 /**
  * An anchor is coloured like the element it belongs to: at rest, when selected, and when it is
@@ -29,7 +30,9 @@ import { join } from "node:path";
  * a ring the library draws outside the element, `library-selected-outline`, and accept is a
  * second ring, `library-accept-outline` (that specification's Requirements 5 and 6). So the
  * anchor's selected colour is compared with the selected RING's, and its accept colour with the
- * accept ring's - the same relationship, read from where each look now lives.
+ * accept ring's - the same relationship, read from where each look now lives. The rings' paint is
+ * inline, from `ringLooks.ts`, because a canvas.css rule for them lost to module rules styling
+ * shapes by descendant (`.mindmap-node rect`); so the rings are read from there.
  */
 describe("anchors follow their element's selection", () => {
   const css = readFileSync(join(__dirname, "canvas.css"), "utf8");
@@ -54,6 +57,11 @@ describe("anchors follow their element's selection", () => {
     return /var\(\s*(--[\w-]+)/.exec(declaration[1]!)?.[1] ?? null;
   }
 
+  /** The variable a ring's inline stroke resolves to, e.g. `var(--color-primary, x)` -> `--color-primary`. */
+  function ringVariable(style: { stroke?: unknown }): string | null {
+    return /var\(\s*(--[\w-]+)/.exec(String(style.stroke ?? ""))?.[1] ?? null;
+  }
+
   const ANCHORS = [".canvas-anchor", ".library-anchor", ".library-span-anchor"] as const;
 
   it("is drawn in the same colour as an unselected box, not the highlight colour", () => {
@@ -69,7 +77,7 @@ describe("anchors follow their element's selection", () => {
   it("takes the highlight colour when its element is selected", () => {
     // The other half, and the reason the first half is safe: losing the green entirely would
     // pass the test above and fail this one.
-    const selectedRing = variableOf(blockFor(".library-selected-outline"), "stroke");
+    const selectedRing = ringVariable(SELECTED_RING_STYLE);
     expect(selectedRing).not.toBeNull();
 
     for (const anchor of ANCHORS) {
@@ -78,7 +86,7 @@ describe("anchors follow their element's selection", () => {
   });
 
   it("takes the accept colour when its element is a drop target", () => {
-    const acceptRing = variableOf(blockFor(".library-accept-outline"), "stroke");
+    const acceptRing = ringVariable(ACCEPT_RING_STYLE);
     expect(acceptRing).not.toBeNull();
 
     for (const anchor of ANCHORS) {
@@ -91,8 +99,8 @@ describe("anchors follow their element's selection", () => {
     // gave two states one colour would satisfy them and still show nothing. This is the only
     // claim here that does not depend on the other rules being right.
     const rest = variableOf(blockFor(".canvas-node"), "stroke");
-    const selected = variableOf(blockFor(".library-selected-outline"), "stroke");
-    const accept = variableOf(blockFor(".library-accept-outline"), "stroke");
+    const selected = ringVariable(SELECTED_RING_STYLE);
+    const accept = ringVariable(ACCEPT_RING_STYLE);
     expect(new Set([rest, selected, accept]).size, `rest ${rest}, selected ${selected}, accept ${accept}`).toBe(3);
   });
 });
