@@ -110,12 +110,12 @@ Each: pass `source`, delete the glue, delete its private selected class, and cal
 
 ## Group 5 — Close the old path and prove it stays closed
 
-- [ ] 21. Remove the old props from the contract
+- [x] 21. Remove the old props from the contract
   - Files: `DiagramCanvas.tsx`
   - `selection`, `context` and `events.onSelectionChanged` go, and `DiagramContextIntegration` stops being exported. **From here typecheck refuses any module wiring selection by hand**, which is the approved design's end state. Only now, because all sixteen have migrated.
   - _Requirements: 1.4_
 
-- [ ] 22. The text guard
+- [x] 22. The text guard
   - Files: `src/client/src/canvas/library/noModuleSelection.test.ts` (new)
   - Walks every module client and fails, naming each offender, on: a `DiagramSelection` derivation, an `onSelectionChanged` handler, a `selection=` or `context=` prop, a declared class bound to `state.selected` or `state.connectTarget`, or module-held focus state. **It also fails a registered module whose canvas test does not call `expectLibrarySelection`**, which is what makes the mounted assertion complete.
   - Keyed per canvas file; both canary shapes, a floor on **files walked** (structure, not content, per `processes.md`) and a named member present. Its doc-comment states its limit: glue under an unrecognisable name goes unseen, and the mounted assertion closes that.
