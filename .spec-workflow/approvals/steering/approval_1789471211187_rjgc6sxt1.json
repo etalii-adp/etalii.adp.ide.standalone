@@ -1,0 +1,10 @@
+{
+  "id": "approval_1789471211187_rjgc6sxt1",
+  "title": "tech.md - decision 11: concurrent saves take turns, not retries",
+  "filePath": ".spec-workflow/steering/tech.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-09-15T11:20:11.187Z",
+  "category": "steering",
+  "categoryName": "steering"
+}
