@@ -171,7 +171,10 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         var unexamined = opened.Where(type => !examined.Contains(type)).Order(StringComparer.Ordinal).ToList();
 
         // Assert.
+        // Both canaries, so this cannot pass by enumerating nothing: a floor on the factories seen, and a
+        // member that must be among them.
         Assert.True(opened.Count >= 16, $"the host registers only {opened.Count} session factories");
+        Assert.Contains(global::EtAlii.Adp.Diagram.Timeline.Diagram.Timeline.Origin.MimeType, opened);
         Assert.True(unexamined.Count == 0, "diagram types the host opens that no checked example opens: " + string.Join(", ", unexamined));
     }
 }
