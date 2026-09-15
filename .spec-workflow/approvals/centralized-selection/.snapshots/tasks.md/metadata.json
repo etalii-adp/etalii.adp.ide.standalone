@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/tasks.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789150134425_5ot34aicg",
       "approvalTitle": "Tasks amendment: task 11 makes pipeline's backend resolve its arrows (today it rejects them, so they could never highlight); new task 26 checks every module's backend names every connection it draws. Nothing else changed (0089f32e, f6396319)."
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-15T10:08:51.075Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789203662295_qf33lvkmi",
+      "approvalTitle": "Tasks amendment: task 16 (databricks, the one module left) carries the approved menu rule, its edges becoming selectable, and a doc line it makes false; new task 27 carries the approved background menu and causal-loop's follow-up. Coverage still 32 of 32. Nothing else changed (11b9a2f3)."
     }
   ]
 }

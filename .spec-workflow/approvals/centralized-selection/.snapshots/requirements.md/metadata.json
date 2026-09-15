@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/requirements.md",
-  "currentVersion": 4,
+  "currentVersion": 5,
   "snapshots": [
     {
       "version": 1,
@@ -33,6 +33,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789149734625_3uvyhr2v7",
       "approvalTitle": "Amendment to R11.1 only: a test Arranged through module-held focus state (removed by 4.1) may change its Arrange, never its Act or Assert. Found by Developer 1 in ansible-structure; azure-pipeline is the same. Nothing else changed (734a0322)."
+    },
+    {
+      "version": 5,
+      "filename": "snapshot-005.json",
+      "timestamp": "2026-09-15T10:08:44.305Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789203610435_tna3pu933",
+      "approvalTitle": "Requirements amendment, as you ruled: R11.1 becomes one rule (a test may change only where a named criterion changes the behaviour it pinned, citing it), replacing the case-by-case list; and the census sentence about databricks is corrected, since it was my error. Nothing else changed (6317e318)."
     }
   ]
 }
