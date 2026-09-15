@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/backend-centralization/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-15T12:24:36.394Z",
+      "trigger": "initial",
+      "approvalId": "approval_1789475076299_1pt33ft0c",
+      "approvalTitle": "backend-centralization - Requirements"
+    }
+  ]
+}
