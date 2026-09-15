@@ -9,7 +9,7 @@ import {
 } from "@client/canvas/connectors";
 import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
-import { DiagramCanvas, snapToStep } from "@client/canvas/library/DiagramCanvas";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
@@ -156,9 +156,16 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
   dragging: "enabled",
 });
 
-/** The nearest row for a module-space y - the library's snap rule, which DependencyGraphRows.ToNearestRow shares. */
+/**
+ * The nearest row for a module-space y, matching DependencyGraphRows.ToNearestRow's away-from-zero midpoint.
+ *
+ * Kept here rather than imported: the library's `snapToStep` is library-internal (module-client-api-readme's
+ * design lists it so). A dragged element's position already arrives snapped by the declaration,
+ * so for a move this only turns an exact row back into its index.
+ */
 function nearestRow(y: number): number {
-  return snapToStep(y, ROW_HEIGHT) / ROW_HEIGHT;
+  const exact = y / ROW_HEIGHT;
+  return exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
 }
 
 /**
