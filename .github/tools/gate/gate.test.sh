@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=133; else EXPECTED=123; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=146; else EXPECTED=136; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -284,6 +284,36 @@ report 10 "$(ls -1d "$LP"/[0-9]*T[0-9]*Z-[0-9]*-red 2> /dev/null | wc -l)" "... 
 report yes "$([ -d "$LP/20260912T090000Z-9012" ] && [ -d "$LP/20260912T090000Z-9112-red" ] && echo yes || echo no)" "... keeps the NEWEST of each kind, not merely ten of them"
 report no "$([ -d "$LP/20260901T090000Z-9001" ] || [ -d "$LP/20260901T090000Z-9101-red" ] && echo yes || echo no)" "... and the oldest of each is the one that goes"
 report yes "$([ -d "$LP/somebody-investigating" ] && [ -f "$LP/last-red-run.txt" ] && echo yes || echo no)" "... and touches nothing that is not a run directory"
+# A rename that cannot happen must still say where the logs are. An existing, non-empty <dir>-red
+# blocks it the same on every platform - and is the case where plain mv would have moved this run's
+# logs INSIDE the other run's directory and printed that directory as if it were this run's.
+D3=$(gate_run_logs_dir "$LP" "20260912T110000Z-333") || broken "cannot create the blocked run's directory"
+echo mine > "$D3/merge.log"
+mkdir -p "$D3-red" && echo theirs > "$D3-red/merge.log" || broken "cannot plant the blocking directory"
+KEPT3=$(gate_keep_logs_red "$D3" "gates-red (format='2' )")
+report "$D3" "$KEPT3" "a refused run whose rename is blocked still names where its logs are"
+report mine "$(cat "$KEPT3/merge.log" 2> /dev/null)" "... and they are this run's own logs, not moved into another run's directory"
+report yes "$(grep -q "rename .* FAILED" "$KEPT3/WHAT-THIS-IS.txt" 2> /dev/null && echo yes || echo no)" "... with a note saying the rename failed and pruning will treat them as plain"
+report theirs "$(cat "$D3-red/merge.log" 2> /dev/null)" "... and the other run's kept logs are untouched"
+# The older gate wrote six logs straight into the parent. Only those six names go.
+for f in merge.log npm-install.log npm-test.log typecheck.log format.log dotnet-test.log notes.txt; do echo old > "$LP/$f"; done
+gate_remove_legacy_flat_logs "$LP"
+report 0 "$(ls -1 "$LP"/merge.log "$LP"/npm-install.log "$LP"/npm-test.log "$LP"/typecheck.log "$LP"/format.log "$LP"/dotnet-test.log 2> /dev/null | wc -l | tr -d ' ')" "the six flat logs of the older gate are removed from the parent"
+report yes "$([ -f "$LP/notes.txt" ] && [ -f "$LP/last-red-run.txt" ] && [ -d "$D3-red" ] && echo yes || echo no)" "... and nothing else in the parent is"
+
+echo "== test folders a run could not delete: counted, never judged"
+UD="$W/undeleted"
+report none "$(gate_undeleted_folders "$UD")" "no report directory means nothing was reported"
+mkdir -p "$UD"
+report none "$(gate_undeleted_folders "$UD")" "an empty report directory is none too"
+echo stray > "$UD/readme.txt"
+report none "$(gate_undeleted_folders "$UD")" "a file that is not a process's .log is not a report"
+printf 'gave up deleting A\ngave up deleting B\n' > "$UD/4302.log"
+report "1 file, 2 lines" "$(gate_undeleted_folders "$UD")" "one reporting process with two folders (the regressed-guard signature)"
+printf 'gave up deleting C\r\n' > "$UD/5100.log"
+printf 'gave up deleting D' >> "$UD/5100.log"
+report "2 files, 4 lines" "$(gate_undeleted_folders "$UD")" "two processes, CRLF lines and a last line without a newline all counted"
+report none "$(gate_undeleted_folders "")" "no directory named at all is none, not an error"
 
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"
@@ -350,6 +380,7 @@ KEPT2=$(printf '%s
 ' "$out" | sed -n 's/^KEPT_LOGS=//p')
 report yes "$([ -n "$KEPT2" ] && [ -d "$KEPT2" ] && echo yes || echo no)" "... the refused run's logs are kept, and the run says where"
 report yes "$([ -f "$KEPT2/merge.log" ] && echo yes || echo no)" "... with that run's own logs inside them"
+report none "$(printf '%s\n' "$out" | sed -n 's/^UNDELETED_FOLDERS=//p')" "... and it reports the test folders it could not delete, here none"
 report gate-selftest-identity "$(git -C "$WT2/mrgt1" config --worktree user.name)" "... the identity went into the scratch tree's own config"
 GD=$(git -C "$WT2/mrgt1" rev-parse --absolute-git-dir)
 report no "$([ -e "$GD/adp-gate.lock" ] && echo yes || echo no)" "... and the lock was released"

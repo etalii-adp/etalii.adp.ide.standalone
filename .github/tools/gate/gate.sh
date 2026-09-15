@@ -60,7 +60,7 @@ trap finish EXIT
 
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "RESULT=aborted-cannot-locate-script"; exit 3; }
 . "$HERE/gate-lib.sh" 2>/dev/null
-if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head gate_run_logs_dir gate_keep_logs_red gate_prune_logs > /dev/null 2>&1; then
+if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head gate_run_logs_dir gate_keep_logs_red gate_prune_logs gate_remove_legacy_flat_logs gate_undeleted_folders > /dev/null 2>&1; then
   echo "RESULT=aborted-library-missing ($HERE/gate-lib.sh)"
   exit 3
 fi
@@ -107,6 +107,7 @@ echo "IDENTITY_EFFECTIVE=$IDENT"
 
 LOG_PARENT="$GITDIR/adp-gate-logs"
 gate_prune_logs "$LOG_PARENT" 10
+gate_remove_legacy_flat_logs "$LOG_PARENT"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 LOGS=$(gate_run_logs_dir "$LOG_PARENT" "$RUN_ID")
 case $? in
@@ -142,9 +143,13 @@ echo "TYPECHECK_EXIT=$TC_EXIT"
 (cd "$MRG/src/backend" && dotnet format style --verify-no-changes --severity info EtAlii.Adp.slnx) > "$LOGS/format.log" 2>&1
 FMT_EXIT=$?
 echo "FORMAT_EXIT=$FMT_EXIT"
-(cd "$MRG/src/backend" && dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
+# Test folders the run could not delete are reported into this run's own logs, one file per test
+# process, rather than into the machine-wide file every run and every session appends to.
+UNDELETED="$LOGS/undeleted-test-folders"
+(cd "$MRG/src/backend" && ADP_UNDELETED_FOLDERS_DIR="$UNDELETED" dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
 DT_EXIT=$?
 echo "DOTNET_TEST_EXIT=$DT_EXIT"
+echo "UNDELETED_FOLDERS=$(gate_undeleted_folders "$UNDELETED")"
 
 gate_verdict "$LOGS/dotnet-test.log"
 echo "DOTNET_TOTAL=${DT_TOTAL:-none} DOTNET_FAILED=${DT_FAILED:-none}"
