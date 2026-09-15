@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./library/ringLooks";
 
 /**
  * A drag that would be accepted says so on the element it would land on.
@@ -32,6 +33,10 @@ import { join } from "node:path";
  * the library draws for that state, `library-accept-outline`: dashed, further out than the
  * selected ring, in a colour of its own (that specification's Requirements 6.1 and 6.2). So this
  * asks the ring for its paint, and adds the claim the amendment made: accept is not selected.
+ *
+ * The rings' paint is inline, from `ringLooks.ts`, not a rule in canvas.css: a rule lost to any
+ * module rule styling its shapes by descendant (`.mindmap-node rect`). So the two rings are read
+ * from there, and the refused state, still a rule, from here.
  */
 describe("a connect target is visible", () => {
   const css = readFileSync(join(__dirname, "canvas.css"), "utf8");
@@ -45,11 +50,9 @@ describe("a connect target is visible", () => {
   }
 
   it("paints the element a valid drop would land on", () => {
-    const block = ownBlockOf("library-accept-outline");
-    expect(block, "library-accept-outline has no rule of its own in canvas.css").not.toBeNull();
     // Something visible: a stroke in a theme colour, on a ring that is not filled over the element.
-    expect(block).toMatch(/stroke:\s*var\(--color-/);
-    expect(block).toMatch(/fill:\s*none/);
+    expect(String(ACCEPT_RING_STYLE.stroke)).toMatch(/^var\(--color-/);
+    expect(ACCEPT_RING_STYLE.fill).toBe("none");
   });
 
   it("paints a target the definition would refuse, differently", () => {
@@ -62,26 +65,24 @@ describe("a connect target is visible", () => {
     // The canary. Both assertions above would pass if a careless edit gave the refused state the
     // accepted state's colour, and the drag would then promise a drop that gets refused — the
     // one outcome worse than showing nothing at all.
-    expect(ownBlockOf("library-accept-outline")).not.toEqual(ownBlockOf("library-connect-forbidden"));
-    expect(ownBlockOf("library-accept-outline")).not.toMatch(/--color-danger/);
+    expect(ownBlockOf("library-connect-forbidden")).not.toContain(String(ACCEPT_RING_STYLE.stroke));
+    expect(String(ACCEPT_RING_STYLE.stroke)).not.toMatch(/--color-danger/);
   });
 
   it("does not look like selected - a different colour, and dashed where selected is not", () => {
     // Requirement 6.1: two meanings, two looks. Until centralized-selection both were the
     // primary colour on the same element, so "would accept" read as "is selected".
-    const colourOf = (block: string | null) => /stroke:\s*var\(\s*(--[\w-]+)/.exec(block ?? "")?.[1];
-    const accept = ownBlockOf("library-accept-outline");
-    const selected = ownBlockOf("library-selected-outline");
-    expect(selected, "library-selected-outline has no rule of its own in canvas.css").not.toBeNull();
-    expect(colourOf(accept)).not.toBe(colourOf(selected));
-    expect(accept).toMatch(/stroke-dasharray/);
-    expect(selected).not.toMatch(/stroke-dasharray/);
+    const colourOf = (stroke: unknown) => /^var\(\s*(--[\w-]+)/.exec(String(stroke))?.[1];
+    expect(colourOf(SELECTED_RING_STYLE.stroke), "the selected ring names no theme colour").toBeDefined();
+    expect(colourOf(ACCEPT_RING_STYLE.stroke)).not.toBe(colourOf(SELECTED_RING_STYLE.stroke));
+    expect(ACCEPT_RING_STYLE.strokeDasharray ?? "none").not.toBe("none");
+    expect(SELECTED_RING_STYLE.strokeDasharray ?? "none").toBe("none");
   });
 
   it("is not left to the modules to declare", () => {
     // The request was for a central fix: the library's own ring carries the behaviour, so a
     // module that declares nothing still shows it. The module-private `canvas-connect-target`
     // declarations are removed as each module migrates (Requirement 6.1).
-    expect(ownBlockOf("library-accept-outline")).not.toBeNull();
+    expect(ACCEPT_RING_STYLE.stroke).toBeDefined();
   });
 });

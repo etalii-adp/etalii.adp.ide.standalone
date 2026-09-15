@@ -110,7 +110,7 @@
  * So the library draws each look itself, as its own shape OUTSIDE the element's boundary, where
  * the canvas ground is behind it and no fill or inline paint can reach it (centralized-selection
  * Requirement 5.2): `library-selected-outline` for selected, `library-accept-outline` for accept.
- * Both are below, with the library's own classes. The element's own stroke is left alone.
+ * Both are painted inline, from canvas/library/ringLooks.ts. The element's own stroke is left alone.
  */
 
 /*
@@ -248,30 +248,12 @@
 }
 
 /*
- * THE TWO LOOKS, each drawn by the library as a shape of its own just outside the element.
- *
- * SELECTED is a solid outline at a small offset; ACCEPT is a dashed outline at a larger offset in
- * its own colour. The offsets differ so that an element which is both - selected, and under a
- * connection being dragged - shows both at once, one inside the other (centralized-selection
- * Requirements 5.2, 6.1, 6.2). Neither reads another's class. The stroke stays the same width at
- * any zoom, and neither takes the pointer: a press on the ring is a press on the canvas beneath.
+ * THE TWO LOOKS, `library-selected-outline` and `library-accept-outline`, are painted INLINE by
+ * the library - see canvas/library/ringLooks.ts - and deliberately have no rule here. A rule here
+ * loses to any module rule that styles its shapes by descendant (`.mindmap-node rect`), because
+ * the ring is a rect in that group: on the mind map that drew the selected ring as an opaque box
+ * over the label. The classes stay on the rings, as names to find them by.
  */
-.library-selected-outline {
-  fill: none;
-  stroke: var(--color-primary, limegreen);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-  pointer-events: none;
-}
-
-.library-accept-outline {
-  fill: none;
-  stroke: var(--color-accept, #0284c7);
-  stroke-width: 2;
-  stroke-dasharray: 5 3;
-  vector-effect: non-scaling-stroke;
-  pointer-events: none;
-}
 
 /*
  * WHETHER THE CONNECTION BEING DRAGGED WOULD BE ACCEPTED, said on the element it would land on.

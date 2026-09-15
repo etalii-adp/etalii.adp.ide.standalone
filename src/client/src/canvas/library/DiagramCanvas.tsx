@@ -44,6 +44,7 @@ import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
 import { useLibrarySelection, type CanvasSource } from "./librarySelection";
+import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./ringLooks";
 import { isTextTarget } from "../interaction";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
@@ -1924,9 +1925,9 @@ function LibraryElement({
       {/* THE TWO LOOKS, each the library's own ring just outside the element and each read from
           its own flag alone (centralized-selection Requirements 5.2, 6.1, 6.2). Outside, so no
           fill or inline stroke of the element can hide it; at different offsets, so an element
-          that is both selected and a drop target shows both. canvas.css paints them. */}
-      {selected && <OutlineRing className="library-selected-outline" bounds={bounds} offset={SELECTED_OUTLINE_OFFSET} />}
-      {connectHighlight === "valid" && <OutlineRing className="library-accept-outline" bounds={bounds} offset={ACCEPT_OUTLINE_OFFSET} />}
+          that is both selected and a drop target shows both. ringLooks.ts paints them, inline. */}
+      {selected && <OutlineRing className="library-selected-outline" style={SELECTED_RING_STYLE} bounds={bounds} offset={SELECTED_OUTLINE_OFFSET} />}
+      {connectHighlight === "valid" && <OutlineRing className="library-accept-outline" style={ACCEPT_RING_STYLE} bounds={bounds} offset={ACCEPT_OUTLINE_OFFSET} />}
       {resizable && selected && (
         // The resize adorners a user-sized element earns when selected: each edge strip
         // drives the arbiter and raises element-resized on release (sizing: "user", R2.5).
@@ -1960,10 +1961,21 @@ const SELECTED_OUTLINE_OFFSET = 4;
 const ACCEPT_OUTLINE_OFFSET = 9;
 
 /** A ring around an element's bounds, `offset` units clear of them on every side. */
-function OutlineRing({ className, bounds, offset }: { className: string; bounds: { x: number; y: number; width: number; height: number }; offset: number }) {
+function OutlineRing({
+  className,
+  style,
+  bounds,
+  offset,
+}: {
+  className: string;
+  style: React.CSSProperties;
+  bounds: { x: number; y: number; width: number; height: number };
+  offset: number;
+}) {
   return (
     <rect
       className={className}
+      style={style}
       x={bounds.x - offset}
       y={bounds.y - offset}
       width={bounds.width + offset * 2}
