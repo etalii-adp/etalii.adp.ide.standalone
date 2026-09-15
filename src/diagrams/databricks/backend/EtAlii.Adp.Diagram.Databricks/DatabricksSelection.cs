@@ -1,4 +1,4 @@
-using IoPath = System.IO.Path;
+﻿using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Databricks;
 
@@ -137,6 +137,16 @@ internal static class DatabricksSelection
             return target.Name;
         }
 
+        if (OverrideEdgeOf(entry, elementId) is { } overrideEdge)
+        {
+            return overrideEdge;
+        }
+
+        if (FlowEdgeOf(entry, elementId) is { } flowEdge)
+        {
+            return flowEdge;
+        }
+
         if (elementId.StartsWith("cluster:", StringComparison.Ordinal))
         {
             var key = elementId["cluster:".Length..];
@@ -152,5 +162,65 @@ internal static class DatabricksSelection
         }
 
         return null;
+    }
+    /// <summary>
+    /// A bundle's override edge, <c>override:{target}/{kind}/{key}</c>, as "target → kind/key" - or null
+    /// unless that target really overrides that resource. Drawn by the bundle reading but named by nothing
+    /// here until centralized-selection task 26, so no override edge could be selected.
+    /// </summary>
+    private static string? OverrideEdgeOf(DatabricksDocumentEntry entry, string elementId)
+    {
+        if (!elementId.StartsWith("override:", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var rest = elementId["override:".Length..];
+        var targetEnd = rest.IndexOf('/', StringComparison.Ordinal);
+        if (targetEnd <= 0)
+        {
+            return null;
+        }
+
+        var targetName = rest[..targetEnd];
+        var resource = rest[(targetEnd + 1)..];
+        var target = entry.Bundle.Targets.FirstOrDefault(candidate => candidate.Name == targetName);
+        return target is not null && target.Overrides.Any(overridden => $"{overridden.Kind}/{overridden.Key}" == resource)
+            ? $"{targetName} → {resource}"
+            : null;
+    }
+
+    /// <summary>
+    /// A pipeline reading's flow edge - <c>flow:{library}->pipeline</c> or <c>flow:pipeline->target</c> -
+    /// as "from → to", or null unless the pipeline really has that library (or exists at all, for the
+    /// target edge). Named by nothing here until centralized-selection task 26.
+    /// </summary>
+    private static string? FlowEdgeOf(DatabricksDocumentEntry entry, string elementId)
+    {
+        if (!elementId.StartsWith("flow:", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var pipeline = entry.Pipelines.FirstOrDefault();
+        if (pipeline is null)
+        {
+            return null;
+        }
+
+        var name = pipeline.Name.Length > 0 ? pipeline.Name : "pipeline";
+        if (elementId == "flow:pipeline->target")
+        {
+            return $"{name} → target";
+        }
+
+        const string intoPipeline = "->pipeline";
+        if (!elementId.EndsWith(intoPipeline, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var library = elementId["flow:".Length..^intoPipeline.Length];
+        return pipeline.Libraries.Any(candidate => candidate.Path == library) ? $"{library} → {name}" : null;
     }
 }

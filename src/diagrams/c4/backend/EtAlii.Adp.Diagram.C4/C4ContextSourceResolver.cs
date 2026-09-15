@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+﻿using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
@@ -62,7 +62,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         if (element is null)
         {
             // A relationship is selectable too, and carries no name of its own.
-            var relationship = workspace.Relationships.FirstOrDefault(candidate => candidate.Id == elementId);
+            var relationship = RelationshipDrawnAs(workspace, elementId);
             return relationship is null
                 ? Rejected("Unknown element.")
                 : Resolve(watchId, rootPath, source, id, bodyPath, elementId, RelationshipDetail(workspace, relationship), [], routed.Definition.Origin);
@@ -134,6 +134,50 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         }
 
         return names;
+    }
+
+    /// <summary>
+    /// The relationship a drawn relationship id names - the model's own, or one the view ELEVATED: a
+    /// view that does not show an end draws the line to that end's nearest shown ancestor (see
+    /// <c>C4ElementMapper.RelationshipsOf</c>), so a component view draws <c>spa -> api</c> as
+    /// <c>spa->tracking@88</c>. Its id is then in no model relationship, and a lookup of the model's alone
+    /// refused every elevated line, so none could be selected (centralized-selection task 26). Returned
+    /// with the drawn ends, so the detail names what the user pressed.
+    /// </summary>
+    private static C4Relationship? RelationshipDrawnAs(C4Workspace workspace, string elementId)
+    {
+        if (workspace.Relationships.FirstOrDefault(candidate => candidate.Id == elementId) is { } exact)
+        {
+            return exact;
+        }
+
+        var at = elementId.LastIndexOf('@');
+        var arrow = elementId.IndexOf("->", StringComparison.Ordinal);
+        if (arrow <= 0 || at < arrow + 2 || !uint.TryParse(elementId[(at + 1)..], out var line))
+        {
+            return null;
+        }
+
+        var from = elementId[..arrow];
+        var to = elementId[(arrow + 2)..at];
+        var elevated = workspace.Relationships.FirstOrDefault(candidate =>
+            candidate.Line == line &&
+            IsSelfOrAncestor(workspace, from, candidate.SourceId) &&
+            IsSelfOrAncestor(workspace, to, candidate.DestinationId));
+        return elevated is null ? null : elevated with { SourceId = from, DestinationId = to };
+    }
+
+    /// <summary>Whether <paramref name="candidate"/> is <paramref name="id"/> or one of the elements it sits inside.</summary>
+    private static bool IsSelfOrAncestor(C4Workspace workspace, string candidate, string id)
+    {
+        for (var current = workspace.Find(id); current is not null; current = current.ParentId is { } parentId ? workspace.Find(parentId) : null)
+        {
+            if (string.Equals(current.Id, candidate, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ContextLevelDetail RelationshipDetail(C4Workspace workspace, C4Relationship relationship)

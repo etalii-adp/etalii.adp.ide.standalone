@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common.Wire;
+﻿using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -47,7 +47,7 @@ public sealed class DotNetContextSourceResolver : IContextSourceResolver
             return Rejected("A diagram element must be selected within its diagram.");
         }
 
-        if (_router.Route(parent.Target.ResolvedFullPath) is not DiagramRouted { Definition.Origin: var origin } ||
+        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted { Definition.Origin: var origin } routed ||
             origin != Diagram.DependencyGraph.Origin)
         {
             // Not ours. Another type's resolver answers for its own elements; saying so plainly
@@ -55,10 +55,12 @@ public sealed class DotNetContextSourceResolver : IContextSourceResolver
             return Rejected("The selected file is not a .NET dependency graph.");
         }
 
-        // The parent level's path is the SOLUTION, because this type declares its extensions and
-        // routes through a body - unlike the ansible resolver, whose parent path is a
-        // registration it must take the folder of.
-        var solutionPath = IoPath.GetFullPath(parent.Target.ResolvedFullPath);
+        // The SOLUTION is the routed body, whichever file the tab was opened at: a canvas selection
+        // nests under that file, which is the .adp registration as often as the .slnx itself. Taking
+        // the parent's path as the solution loaded the registration as one and resolved nothing
+        // (centralized-selection task 26); the router answers for both, as it does for the pipeline,
+        // C4 and ansible resolvers.
+        var solutionPath = IoPath.GetFullPath(routed.BodyPath ?? parent.Target.ResolvedFullPath);
         var graph = _store.GetOrLoad(solutionPath);
         var elementId = id.ElementId.Value;
 

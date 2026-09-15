@@ -17,6 +17,15 @@
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <!-- DrawnConnections: a module's sessions and resolvers, driven through core's own seams. -->
+    <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Not a *.Tests project, so Directory.Build.targets does not compile the teardown helper in;
+         DrawnConnections deletes its scratch copy through it like every test does. -->
+    <Compile Include="..\..\TestSupport\TestFolder.cs" Link="TestSupport\TestFolder.cs" />
   </ItemGroup>
 
 </Project>
