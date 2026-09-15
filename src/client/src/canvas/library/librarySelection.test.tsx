@@ -262,15 +262,20 @@ describe("a selection that vanishes", () => {
   });
 });
 
-describe("a canvas still wiring selection itself", () => {
-  it("behaves exactly as before: the module hears the press and the library pushes nothing", () => {
-    const onSelectionChanged = vi.fn();
-    const { container } = mount({ onSelectionChanged });
+describe("the old path is gone from the module contract (centralized-selection task 21)", () => {
+  it("refuses selection, context and onSelectionChanged - so a module cannot wire selection by hand", () => {
+    // Enforced by the compiler: if any of the three came back into DiagramCanvas's contract, its
+    // directive would have nothing to expect, and typecheck - one of the four gates - fails.
+    const refused = [
+      // @ts-expect-error selection is the library's to resolve, not a prop
+      <DiagramCanvas key="selection" definition={definitionOf()} model={modelOf()} events={{}} selection={[]} />,
+      // @ts-expect-error the shared menu is the library's to wire, not a prop
+      <DiagramCanvas key="context" definition={definitionOf()} model={modelOf()} events={{}} context={{ actions: [] }} />,
+      // @ts-expect-error a press's selection is the library's to push, not a handler
+      <DiagramCanvas key="handler" definition={definitionOf()} model={modelOf()} events={{ onSelectionChanged: () => {} }} />,
+    ];
 
-    press(elementOn(container, "a"), { clientX: 10, clientY: 10 });
-
-    expect(onSelectionChanged).toHaveBeenCalledWith({ kind: "selection-changed", selection: [{ kind: "element", id: "a" }] });
-    expect(channel.pushes).toEqual([]);
+    expect(refused).toHaveLength(3);
   });
 });
 

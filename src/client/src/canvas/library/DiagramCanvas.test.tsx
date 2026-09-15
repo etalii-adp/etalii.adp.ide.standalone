@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { DiagramCanvas } from "./DiagramCanvas";
+import { DiagramCanvas, DiagramCanvasCore } from "./DiagramCanvas";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
-import type { DiagramEventHandlers } from "./api/diagramEvents";
+import type { LibraryEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider, useDiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider, useDiagramToolbox, TOOLBOX_DRAG_TYPE } from "@client/shell/panels/DiagramToolboxContext";
 
@@ -68,11 +68,15 @@ function modelOf(): DiagramModel {
   };
 }
 
-function renderCanvas(events: DiagramEventHandlers = {}, definition = definitionOf(), model = modelOf(), extra: Partial<React.ComponentProps<typeof DiagramCanvas>> = {}) {
+/**
+ * The canvas core, beneath the library's selection wrapper: these tests drive its gestures and its
+ * controlled selection directly, which is what the core is for (centralized-selection task 21).
+ */
+function renderCanvas(events: LibraryEventHandlers = {}, definition = definitionOf(), model = modelOf(), extra: Partial<React.ComponentProps<typeof DiagramCanvasCore>> = {}) {
   return render(
     <DiagramViewProvider>
       <DiagramToolboxProvider>
-        <DiagramCanvas definition={definition} model={model} events={events} {...extra} />
+        <DiagramCanvasCore definition={definition} model={model} events={events} {...extra} />
       </DiagramToolboxProvider>
     </DiagramViewProvider>,
   );
@@ -1005,7 +1009,7 @@ describe("declared actions", () => {
     connections: [],
   });
 
-  function selectAndPress(events: DiagramEventHandlers, key: string) {
+  function selectAndPress(events: LibraryEventHandlers, key: string) {
     const { container } = renderCanvas(events, withActions(), oneElement());
     const shape = container.querySelector('[data-element-id="a"]') ?? container.querySelector("svg")!;
     press(shape as Element);

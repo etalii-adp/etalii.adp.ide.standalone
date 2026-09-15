@@ -4,6 +4,7 @@ import {
   type DiagramEvent,
   type DiagramEventHandlers,
   type DiagramSelection,
+  type LibraryEventHandlers,
 } from "./diagramEvents";
 import { effectiveDefinition, type DiagramRuntimeConfig } from "./diagramRuntimeConfig";
 import type { DiagramDefinition } from "../definition/diagramDefinition";
@@ -35,7 +36,7 @@ describe("the diagram event surface", () => {
     // and dispatching one of every event proves the name mapping (kebab kind -> onPascal
     // handler) holds for each member rather than for the ones somebody remembered.
     const seen: string[] = [];
-    const handlers: Required<DiagramEventHandlers> = {
+    const handlers: Required<LibraryEventHandlers> = {
       onElementDropped: (event) => seen.push(event.kind),
       onElementDeleted: (event) => seen.push(event.kind),
       onElementMoved: (event) => seen.push(event.kind),
@@ -62,6 +63,17 @@ describe("the diagram event surface", () => {
     expect(seen).toContain("label-commit-requested");
     // The declarative-modules member: an action reaches its handler by ID, never as a keystroke.
     expect(seen).toContain("action-invoked");
+  });
+
+  it("keeps selection-changed out of the module's handler map - selection is the library's (centralized-selection 21)", () => {
+    // Enforced by the compiler, not at run time: if selection-changed came back into the module
+    // contract, the directive below would have nothing to expect, and typecheck - a gate - fails.
+    const moduleHandlers: DiagramEventHandlers = {
+      // @ts-expect-error onSelectionChanged is not a handler a module may declare
+      onSelectionChanged: () => {},
+    };
+
+    expect(moduleHandlers).toBeDefined();
   });
 
   it("an event nobody handles is ignored, because a request may be declined by silence", () => {

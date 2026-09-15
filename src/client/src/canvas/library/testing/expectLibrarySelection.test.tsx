@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import type { ContextSelection } from "@client/generated/context_pb";
-import { DiagramCanvas } from "../DiagramCanvas";
+import { DiagramCanvas, DiagramCanvasCore } from "../DiagramCanvas";
 import type { DiagramDefinition } from "../definition/diagramDefinition";
 import type { DiagramModel } from "../api/diagramModel";
 import type { DiagramSelection } from "../api/diagramEvents";
@@ -77,14 +77,16 @@ function ownedHarness(overrides: Partial<LibrarySelectionHarness> = {}): Library
 
 /**
  * A canvas wiring selection by hand, broken the way a module was: `toSelection` is its inbound
- * mapping, `pushesClear` whether its handler answers an empty selection at all.
+ * mapping, `pushesClear` whether its handler answers an empty selection at all. Mounted on the
+ * canvas core, because since centralized-selection task 21 no module can wire selection by hand
+ * through DiagramCanvas - these reproduce the four broken variants the assertion must catch.
  */
 function handWiredHarness(toSelection: (id: string | null) => DiagramSelection, pushesClear: boolean): LibrarySelectionHarness {
   const pushes: (string | null)[] = [];
   return {
     mountWith: (id) =>
       wrap(
-        <DiagramCanvas
+        <DiagramCanvasCore
           definition={definition}
           model={model}
           selection={toSelection(id)}
