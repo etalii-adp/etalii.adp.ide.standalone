@@ -285,8 +285,14 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
         return;
       }
       // Nothing optimistic: the element stays where it was until the backend's delta says
-      // otherwise, so what is drawn is always what was recorded.
-      void moveElementTo(elementId, position.x, position.y);
+      // otherwise, so what is drawn is always what was recorded. A refused move answers with
+      // its sentence, shown like every other refusal here rather than as a silent snap-back.
+      setRejection("");
+      void moveElementTo(elementId, position.x, position.y).then((error) => {
+        if (error) {
+          setRejection(error);
+        }
+      });
     },
     onElementDropped: ({ elementType, position }) => {
       // The entry carries the backend's own action id. Dropped on an element, that element

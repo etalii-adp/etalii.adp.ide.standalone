@@ -36,7 +36,7 @@ vi.mock("./useC4Stream", () => ({
     reportView: (v: unknown) => currentReportView?.(v),
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
-      return Promise.resolve("");
+      return Promise.resolve(moveOutcome);
     },
   }),
 }));
@@ -45,6 +45,9 @@ let currentSelection: unknown = null;
 
 // What the backend answers a shortcut with; accepted unless a test says otherwise.
 let shortcutOutcome = { accepted: true, error: "" };
+
+// What the backend answers a move with: empty when recorded, its refusal sentence otherwise.
+let moveOutcome = "";
 
 vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
@@ -672,6 +675,26 @@ describe("C4Canvas", () => {
     expect(move?.elementId).toBe("a");
     expect(move.x).toBeGreaterThan(0);
     expect(move.y).toBeCloseTo(0, 5);
+  });
+
+  it("shows the backend's refusal of a move on the canvas rather than nothing", async () => {
+    // Arrange: the backend refuses to record the position. Until this was fixed the canvas
+    // discarded the answer, so a refused drag just snapped back without a word.
+    moveOutcome = "An element inside a boundary is placed by its boundary.";
+    const { container, findByText } = render(<C4Canvas {...props} />);
+    withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 150, clientY: 100 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 150, clientY: 100 }));
+
+    // Assert: the sentence shows, on the rejection line the canvas's other refusals use.
+    const line = await findByText("An element inside a boundary is placed by its boundary.");
+    expect(line.classList.contains("canvas-rejection")).toBe(true);
+
+    moveOutcome = "";
   });
 
   it("writes nothing for a wobbly click", () => {
