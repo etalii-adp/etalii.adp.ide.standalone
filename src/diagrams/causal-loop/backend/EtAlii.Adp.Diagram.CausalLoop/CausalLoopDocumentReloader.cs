@@ -18,4 +18,11 @@ public sealed class CausalLoopDocumentReloader(DiagramOrigin origin, ICausalLoop
         _ = rootPath;
         documents.Reload(bodyPath);
     }
+
+    /// <inheritdoc />
+    public void BodyDeleted(string rootPath, string bodyPath)
+    {
+        _ = rootPath;
+        documents.BodyDeleted(bodyPath);
+    }
 }

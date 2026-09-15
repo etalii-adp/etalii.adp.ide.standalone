@@ -97,23 +97,71 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     {
         return new RootFolderWatcher(
             rootPath,
-            onChange: (_, oldPath, newPath) => OnChange(oldPath, newPath),
+            onChange: OnChange,
             onError: exception => OnWatcherError(rootPath, exception),
             includeContentChanges: true);
     }
 
     /// <summary>
     /// One filesystem event. A save-by-move raises Renamed with the temp name as the old path
-    /// and the body as the new one; an in-place write raises Changed; a delete still reloads,
-    /// because a body that is gone is an empty diagram, not the last one kept alive.
+    /// and the body as the new one; an in-place write raises Changed. A body that is gone is an
+    /// empty diagram, not the last one kept alive - but a body MISSING is not yet a body gone, so
+    /// the store is told which it is by the event, not by a read.
     /// </summary>
-    private void OnChange(string? oldPath, string? newPath)
+    /// <remarks>
+    /// Measured with a watcher on a File.Replace save: the body is renamed away to
+    /// <c>&lt;body&gt;~RF&lt;hex&gt;.TMP</c>, the scratch file is renamed onto it, and the backup is
+    /// deleted - zero Deleted events for the body itself, where a real delete raises exactly one.
+    /// So a store keeps its last good document through a read that fails (the body missing for an
+    /// instant mid-publish) and empties it only on <see cref="IDiagramDocumentReloader.BodyDeleted"/>.
+    /// <para>
+    /// KNOWN LIMITS. An editor that saves by deleting the body and then creating it shows the
+    /// diagram empty between its two events; the Created heals it. A rename-away to a name that is
+    /// not File.Replace's backup - another tool's own safe-write scheme - is read as a delete and
+    /// heals the same way when the new body arrives.
+    /// </para>
+    /// </remarks>
+    private void OnChange(WatcherChangeTypes changeType, string? oldPath, string? newPath)
     {
-        ReloadIfTracked(oldPath);
+        var gone = changeType switch
+        {
+            WatcherChangeTypes.Deleted => true,
+            WatcherChangeTypes.Renamed => !IsReplaceBackup(oldPath, newPath),
+            _ => false,
+        };
+
+        if (gone && oldPath is not null && _documents.TryGetValue(oldPath, out var deleted))
+        {
+            _logger.Debug("{BodyPath} is gone after a {ChangeType}", deleted.BodyPath, changeType);
+            deleted.Reloader.BodyDeleted(deleted.RootPath, deleted.BodyPath);
+        }
+        else
+        {
+            ReloadIfTracked(oldPath);
+        }
+
         if (!string.Equals(oldPath, newPath, StringComparison.OrdinalIgnoreCase))
         {
             ReloadIfTracked(newPath);
         }
+    }
+
+    /// <summary>
+    /// Whether a rename is File.Replace moving the body aside for the instant of a save -
+    /// <c>model.dsl</c> to <c>model.dsl~RF1a2b3c.TMP</c> in the same folder - rather than the body
+    /// being renamed or moved by somebody.
+    /// </summary>
+    private static bool IsReplaceBackup(string? oldPath, string? newPath)
+    {
+        if (oldPath is null || newPath is null)
+        {
+            return false;
+        }
+
+        var name = Path.GetFileName(newPath);
+        return string.Equals(Path.GetDirectoryName(oldPath), Path.GetDirectoryName(newPath), StringComparison.OrdinalIgnoreCase)
+            && name.StartsWith(Path.GetFileName(oldPath) + "~RF", StringComparison.OrdinalIgnoreCase)
+            && name.EndsWith(".TMP", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ReloadIfTracked(string? path)
@@ -170,7 +218,19 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
             // the process.
             try
             {
-                document.Reloader.Reload(document.RootPath, document.BodyPath);
+                // The lost events may have included the body's delete, so absence is asked of the
+                // disk here, having no event to ask. KNOWN LIMIT: an overflow landing inside
+                // another program's File.Replace can find the body renamed away and empty the
+                // diagram. If the replace's rename onto the body was among the lost events too,
+                // it stays empty until the body next changes or the diagram is reopened.
+                if (File.Exists(document.BodyPath))
+                {
+                    document.Reloader.Reload(document.RootPath, document.BodyPath);
+                }
+                else
+                {
+                    document.Reloader.BodyDeleted(document.RootPath, document.BodyPath);
+                }
             }
             catch (Exception reload)
             {

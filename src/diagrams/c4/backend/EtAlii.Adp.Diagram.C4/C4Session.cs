@@ -24,6 +24,11 @@ public sealed class C4Session : IDiagramSession
 
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
+    /// <summary>The element ids this connection was last given - what a later change removes from.</summary>
+    private HashSet<string> _delivered = new(StringComparer.Ordinal);
+
+    private readonly System.Threading.Lock _deliveredGate = new();
+
     public C4Session(
         ShortGuid watchId,
         string bodyPath,
@@ -50,6 +55,7 @@ public sealed class C4Session : IDiagramSession
     public IReadOnlyList<DiagramDelta> Baseline()
     {
         var elements = Visible();
+        Delivered(elements);
         return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
@@ -73,6 +79,7 @@ public sealed class C4Session : IDiagramSession
             deltas.Add(new DiagramRemoveDelta(removed));
         }
 
+        Delivered(after);
         return deltas;
     }
 
@@ -180,12 +187,53 @@ public sealed class C4Session : IDiagramSession
 
         // Adds are upserts, so re-delivering the whole view is how a change of any shape - an
         // edit here, an edit through another view, an external save - reaches this connection.
+        //
+        // AND WHAT IS GONE IS SAID, NOT LEFT. The client folds an add as an upsert and takes an
+        // element off the canvas only on a remove delta (c4Model.ts), so re-delivering what is
+        // still there never removes what is not: an element deleted in a text editor stayed on
+        // the canvas until the diagram was reopened. And a change that deleted everything pushed
+        // nothing at all. The removals are measured against what THIS connection was last given,
+        // because by now the document no longer contains the deleted element to compare with.
         var elements = Visible();
+        var removed = Delivered(elements);
+
+        var deltas = new List<DiagramDelta>();
         if (elements.Count > 0)
         {
-            Changed?.Invoke(this, new DiagramDeltasEventArgs([new DiagramAddDelta(elements)]));
+            deltas.Add(new DiagramAddDelta(elements));
         }
 
-        _logger.Debug("Pushed {Count} elements to watch {WatchId} after {Path} changed", elements.Count, _watchId, args.Path);
+        if (removed.Count > 0)
+        {
+            deltas.Add(new DiagramRemoveDelta(removed));
+        }
+
+        if (deltas.Count > 0)
+        {
+            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
+        }
+
+        _logger.Debug(
+            "Pushed {Count} elements and {Removed} removals to watch {WatchId} after {Path} changed",
+            elements.Count,
+            removed.Count,
+            _watchId,
+            args.Path);
+    }
+
+    /// <summary>
+    /// Records <paramref name="elements"/> as what this connection now holds, and returns the ids
+    /// it held before that are no longer among them. Guarded because a document change arrives on
+    /// the watcher's thread while a baseline or a view update arrives on a request's.
+    /// </summary>
+    private IReadOnlyList<string> Delivered(IReadOnlyList<DiagramElement> elements)
+    {
+        var now = elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        lock (_deliveredGate)
+        {
+            var gone = _delivered.Where(id => !now.Contains(id)).ToArray();
+            _delivered = now;
+            return gone;
+        }
     }
 }

@@ -23,4 +23,13 @@ public interface IDiagramDocumentReloader
     /// store suppresses that itself, the way <c>PlainEditorSession</c>'s saving guard does.
     /// </summary>
     void Reload(string rootPath, string bodyPath);
+
+    /// <summary>
+    /// The body at <paramref name="bodyPath"/> was deleted, or moved to a name that is not a
+    /// save's own backup - the watcher's evidence that it is gone, not a read that failed. A store
+    /// that keeps its last good document through a failed reload needs this to tell the two apart:
+    /// a publish in flight leaves the body missing for an instant too, but raises no delete of it.
+    /// A store with no such rule gets a reload, which is what a delete always was.
+    /// </summary>
+    void BodyDeleted(string rootPath, string bodyPath) => Reload(rootPath, bodyPath);
 }
