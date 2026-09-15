@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/module-client-api-readme/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-12T11:18:46.289Z",
       "trigger": "initial",
+      "approvalId": "approval_1789211925876_dog1xuqp5",
+      "approvalTitle": "module-client-api-readme tasks (eleven items, opening with the mermaid spike; blocked on centralized-selection)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-15T10:08:53.583Z",
+      "trigger": "approved",
       "approvalId": "approval_1789211925876_dog1xuqp5",
       "approvalTitle": "module-client-api-readme tasks (eleven items, opening with the mermaid spike; blocked on centralized-selection)"
     }
