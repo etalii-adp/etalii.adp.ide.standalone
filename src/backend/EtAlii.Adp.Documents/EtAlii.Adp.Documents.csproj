@@ -17,4 +17,10 @@
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- AdpFileWriter.Save takes its replace through an internal overload, so a guard can stop a
+         save inside its replace and prove concurrent saves take turns without relying on timing. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Documents.Tests" />
+  </ItemGroup>
+
 </Project>

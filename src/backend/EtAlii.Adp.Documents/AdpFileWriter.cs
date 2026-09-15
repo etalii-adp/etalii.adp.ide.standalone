@@ -46,6 +46,14 @@ public static class AdpFileWriter
 
     private static readonly ILogger _logger = Log.ForContext(typeof(AdpFileWriter));
 
+    /// <summary>
+    /// One turn per destination, keyed by the normalised full path - see <see cref="Save(string, string)"/>.
+    /// Ignoring case on Windows, where two spellings name one file and would otherwise take two
+    /// turns and race exactly as before; case-sensitive elsewhere, where they are two files.
+    /// </summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, object> _destinationTurns =
+        new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
     public static AdpFileWriteResult Create(string folder, string fileName, string firstLine) =>
         CreateAll(folder, [(fileName, firstLine + NewLine)]);
 
@@ -75,14 +83,85 @@ public static class AdpFileWriter
     /// folder as it found it. The original exception is what surfaces; a failure to clean up
     /// never replaces it.
     /// </para>
+    /// <para>
+    /// <b>Concurrent saves to one destination take turns, and a save that waited says so.</b>
+    /// Two threads publishing one path failed 1009 of 3000 saves with <c>IOException
+    /// 0x80070497</c> (1175) <c>"Unable to remove the file to be replaced."</c> - the exception
+    /// behind a flake in <c>DiagramElementActionFlowTests</c> - and, worse, produced
+    /// <c>FileNotFoundException</c> and 1177, so a reader could briefly find the document missing
+    /// or under a backup name. Measured on 2026-09-15; readers in any sharing mode never produced
+    /// it. The turn is held across the whole save, so the destination always holds exactly one
+    /// writer's complete content. The wait is logged, by path, because in the failing test the two
+    /// saves were awaited one after the other: a second writer exists, and a silent lock would
+    /// hide it where a logged wait names it.
+    /// </para>
+    /// <para>
+    /// <b>This is not an error policy</b> in the sense above: a save still fails exactly as it did
+    /// for any other reason, and each caller still decides what a failure means. A sharing
+    /// violation (<c>0x80070020</c>) from a reader sharing only <c>Read</c> is not retried and
+    /// still fails at once - that is ADP's own file-access bug class, and a runtime retry would
+    /// be the wrong layer to meet it.
+    /// </para>
+    /// <para>
+    /// <b>Scope, stated so it is not assumed.</b> In process only: two ADP processes publishing
+    /// one file are not protected, and nothing measured requires it. <see cref="CreateAll"/> is
+    /// not covered - it creates new files and refuses to overwrite, so it does not race this way.
+    /// One turn object is kept per distinct destination saved in the process's lifetime, which is
+    /// bounded by the documents a session touches.
+    /// </para>
     /// </remarks>
     /// <exception cref="IOException">The write or the move failed.</exception>
     /// <exception cref="UnauthorizedAccessException">The write or the move was refused.</exception>
-    public static void Save(string path, string content)
+    public static void Save(string path, string content) =>
+        Save(path, content, ReplaceDestination);
+
+    /// <summary>
+    /// <see cref="Save(string, string)"/> with the replace handed in. <b>The seam lets a guard stop
+    /// a save inside its replace</b>, which is what makes the turn-taking deterministic to test:
+    /// with the first save held there, a second save to the same destination either waits and
+    /// says so or goes straight through, and no timing decides which. It also drives a failure
+    /// with a chosen HResult, so the failure record can be asserted without needing the OS to
+    /// produce one on request. The application runs the same code with the real replace.
+    /// </summary>
+    internal static void Save(string path, string content, Action<string, string> replace)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(content);
 
+        var destination = IoPath.GetFullPath(path);
+        var turn = _destinationTurns.GetOrAdd(destination, static _ => new object());
+        var taken = false;
+        try
+        {
+            // Try first, without waiting, so a wait is logged only when one really happened - and
+            // only for another save to THIS destination, which is why the turns are per path and
+            // not striped: a stripe would report contention between files nobody wrote twice.
+            Monitor.TryEnter(turn, ref taken);
+            if (!taken)
+            {
+                _logger.Warning("Waited for another save to {Path} before publishing it", destination);
+                Monitor.Enter(turn, ref taken);
+            }
+
+            // NOTHING INSIDE THIS TURN MAY CALL BACK OUT. The turn is held across the scratch
+            // write, the replace or move, and the cleanup - so the destination holds exactly one
+            // writer's complete content by construction - and nothing below can re-enter Save or
+            // wait on something that might. Adding a callback, an event or a caller-supplied
+            // action here would make a deadlock possible; the replace handed in is a test seam
+            // and must stay a file operation.
+            Publish(path, content, replace);
+        }
+        finally
+        {
+            if (taken)
+            {
+                Monitor.Exit(turn);
+            }
+        }
+    }
+
+    private static void Publish(string path, string content, Action<string, string> replace)
+    {
         var directory = IoPath.GetDirectoryName(path);
         var folder = directory is { Length: > 0 } ? directory : ".";
         var temporary = IoPath.Combine(folder, $"{TempPrefix}{Guid.NewGuid():N}{TempExtension}");
@@ -113,7 +192,7 @@ public static class AdpFileWriter
             // AdpFileWriter.SharingContract.Tests pins both directions.
             if (File.Exists(path))
             {
-                File.Replace(temporary, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                replace(temporary, path);
             }
             else
             {
@@ -122,14 +201,29 @@ public static class AdpFileWriter
                 File.Move(temporary, path);
             }
         }
-        catch
+        catch (Exception exception)
         {
+            // RECORD THE CODE, NOT ONLY THE MESSAGE. The failure behind a flake in
+            // DiagramElementActionFlowTests reached the logs five times as a type and a message
+            // and never once with its HResult, and for a day its code was unknown - until two
+            // concurrent writers reproduced it as 0x80070497. Any failure left after the turns
+            // above says what it is. The exception still propagates unchanged; logging it imposes
+            // no error policy on any caller.
+            _logger.Warning(
+                "Could not publish {Path}: {ExceptionType} {HResult} {Message}",
+                path,
+                exception.GetType().Name,
+                $"0x{exception.HResult:X8}",
+                exception.Message);
             DeleteQuietly(temporary);
             throw;
         }
 
         _logger.Debug("Published {Path}", path);
     }
+
+    private static void ReplaceDestination(string temporary, string path) =>
+        File.Replace(temporary, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
 
     /// <summary>
     /// Creates every file in <paramref name="files"/> or none of them: all are written to
