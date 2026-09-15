@@ -920,6 +920,20 @@ export type DiagramBackground = BackgroundDeclaration;
 /**
  * Where a dragged element is allowed to come to rest, per axis.
  *
+ * <b>The element's LEADING EDGE comes to rest on a line - its top for y, its left for x - and
+ * the lines lie at `origin + k × step`.</b> An edge rather than the centre because a row, and a
+ * date, is where an element BEGINS: both modules that snap draw a row's element with its top on
+ * the row and a period with its left on its begin. Snapping the centre instead put every dragged
+ * element half its own height above its row, and the drop - which the backend places by the row
+ * - moved it that half again once confirmed: the snap seen during the drag was not the snap on
+ * the drop, which is exactly what the user reported. The preview and the release both land
+ * through this one rule, so what the drag shows is what the drop sends.
+ *
+ * <b>`step` and `origin` may be bound per element</b>, for a lattice that is not the same for
+ * every element: the timeline snaps a date-only element to whole days - the start of a day,
+ * where its backend lands a date-only begin - while an element with a time of day moves freely.
+ * An axis whose step resolves to nothing, or to a non-positive number, does not snap that element.
+ *
  * <b>This names a rule the tree already agreed on in five places rather than inventing one.</b>
  * `TimelineCanvas`'s and `DependencyGraphCanvas`'s `nearestRow` are byte-identical bodies
  * differing only in which height they close over; `TimelineRows.ToNearestRow` and
@@ -933,21 +947,23 @@ export type DiagramBackground = BackgroundDeclaration;
  * in the other is worse than no rounding at all. The binding vocabulary's own comment records
  * the same finding; this is the drag-time half of it.
  *
- * <b>Per axis, and not a grid.</b> Both modules that snap do so on y only: the dependency graph
- * leaves x free, and the timeline maps x to SECONDS, which is a domain mapping rather than a
- * step. `x` is accepted so a module that one day steps columns has somewhere to say it, and is
- * deliberately not implemented until one does — a two-axis grid would model something neither
- * module has.
+ * <b>Per axis, and not a grid.</b> The dependency graph snaps y only and leaves x free; the
+ * timeline snaps rows on y and, for a date-only element, whole days on x - a per-element lattice,
+ * which a grid could not say.
  */
 export interface SnapDeclaration {
-  /** The vertical step, in canvas units - a timeline or dependency-graph row height. */
-  y?: { step: number };
-  /**
-   * Accepted and NOT YET APPLIED, so a module cannot quietly come to depend on a behaviour
-   * nothing implements. Declaring it is currently a no-op; the day a module needs it, this
-   * comment is the note saying the decision was deferred rather than missed.
-   */
-  x?: { step: number };
+  /** Rows: the element's top rests on a line - a timeline or dependency-graph row. */
+  y?: SnapAxis;
+  /** Columns: the element's left rests on a line - a timeline's whole days, for a date-only element. */
+  x?: SnapAxis;
+}
+
+/** One axis's resting lines, `origin + k × step`, in canvas units. */
+export interface SnapAxis {
+  /** The distance between lines. Bound, it may differ per element; resolving to nothing, it does not snap. */
+  step: DeclaredNumber;
+  /** Where one line lies. Omitted, a line lies at 0. */
+  origin?: DeclaredNumber;
 }
 
 export interface DiagramDefinition {

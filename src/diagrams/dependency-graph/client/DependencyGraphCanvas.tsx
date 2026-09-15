@@ -9,7 +9,7 @@ import {
 } from "@client/canvas/connectors";
 import { elementSourceOf } from "@client/canvas/selection";
 import { contextShortcutOf } from "@client/canvas/interaction";
-import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { DiagramCanvas, snapToStep } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
@@ -149,18 +149,16 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
       emptyRelease: "complete",
     },
   ],
-  // The rows this diagram has always had, said to the library instead of computed twice.
-  // The away-from-zero rounding that makes a drag above the origin land right lives there
-  // now, in one place, rather than in a `nearestRow` this module and its backend each kept.
+  // The rows this diagram has always had, said to the library so the drag shows what the drop
+  // sends: a node's top comes to rest on a row, which is where this canvas draws a row's node.
   snap: { y: { step: ROW_HEIGHT } },
   layout: { modes: ["manual"] },
   dragging: "enabled",
 });
 
-/** The nearest row for a module-space y, matching DependencyGraphRows.ToNearestRow's away-from-zero midpoint. */
+/** The nearest row for a module-space y - the library's snap rule, which DependencyGraphRows.ToNearestRow shares. */
 function nearestRow(y: number): number {
-  const exact = y / ROW_HEIGHT;
-  return exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
+  return snapToStep(y, ROW_HEIGHT) / ROW_HEIGHT;
 }
 
 /**

@@ -8,7 +8,7 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
-import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { DiagramCanvas, snapToStep } from "@client/canvas/library/DiagramCanvas";
 import type { DiagramDefinition, LabelDeclaration } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
@@ -125,10 +125,9 @@ const ROWS_PER_UNIT = 1 / ROW_HEIGHT;
 /** How far above the box the drag hint sits, matching where the shared span drew it. */
 const HINT_ABOVE = ELEMENT_HEIGHT / 2 + 8;
 
-/** The nearest row for a module-space y, matching TimelineRows.ToNearestRow's away-from-zero midpoint. */
+/** The nearest row for a module-space y - the library's snap rule, which TimelineRows.ToNearestRow shares. */
 function nearestRow(y: number): number {
-  const exact = y / ROW_HEIGHT;
-  return exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
+  return snapToStep(y, ROW_HEIGHT) / ROW_HEIGHT;
 }
 
 function formatSeconds(seconds: number, dateOnly: boolean): string {
@@ -277,10 +276,15 @@ const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
     { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
     { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
   ],
-  // The rows this diagram has always had, said to the library instead of computed twice.
-  // The away-from-zero rounding that makes a drag above the origin land right lives there
-  // now, in one place, rather than in a `nearestRow` this module and its backend each kept.
-  snap: { y: { step: ROW_HEIGHT } },
+  // Where a dragged element comes to rest, said once so the drag shows what the drop sends: an
+  // element's top on a row, and a date-only element's begin on the start of a day - where
+  // TimelineScale.ToTime lands a date-only begin. The day lattice depends on the frozen scale,
+  // so it rides each element's payload; an element with a time of day carries none and moves
+  // freely in x, as its backend keeps its seconds.
+  snap: {
+    y: { step: ROW_HEIGHT },
+    x: { step: { path: "payload.dayUnits" }, origin: { path: "payload.dayOriginUnits" } },
+  },
   layout: { modes: ["manual"] },
   dragging: "enabled",
 });
@@ -334,6 +338,9 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
           // In ROWS rather than units: the hint scales the y first and then adds this, because
           // `times` runs before `plus` and a scale constant is the module's to convert.
           originRows: scale.originY / ROW_HEIGHT,
+          // A date-only element's day lattice in canvas units: one day wide, with a line where
+          // a day starts. Absent for an element with a time of day, which does not snap in x.
+          ...(element.dateOnly ? { dayUnits: DAY / scale.secondsPerUnit, dayOriginUnits: -scale.originSeconds / scale.secondsPerUnit } : {}),
         },
       };
     });

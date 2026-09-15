@@ -246,6 +246,37 @@ describe("the dependency graph canvas", () => {
     expect(moves[0].y / ROW_HEIGHT).toBe(1);
   });
 
+  it("shows during a drag exactly where the node comes to rest once the backend confirms it", () => {
+    // THE USER'S REPORT: the snap seen while dragging was not the snap on the drop. The library
+    // snapped the node's CENTRE to whole rows, while this canvas draws a row's node with its TOP
+    // on the row - so a dragged node rested half a node above its row and dropped half a node
+    // when the confirmation arrived. What is asserted is the property itself, not a rule: the
+    // box drawn mid-drag is the box drawn after the model says what the drop sent.
+    const { container, rerender } = renderCanvas();
+    const element = container.querySelector('[data-element-id="aaa"]')!;
+    const boxOf = () => {
+      const box = container.querySelector('[data-element-id="aaa"] .library-shape')!;
+      return { x: Number(box.getAttribute("x")), y: Number(box.getAttribute("y")) };
+    };
+
+    // Down by a row and a bit, across by an odd amount: a snap on y, none on x.
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 137.5, clientY: 100 + ROW_HEIGHT + 7 }));
+    const during = boxOf();
+    fireEvent(element, pointer("pointerup", { clientX: 137.5, clientY: 100 + ROW_HEIGHT + 7 }));
+
+    expect(moves, "the drag never dropped").toHaveLength(1);
+    const sent = moves[0];
+    const before = currentModel.elements.get("aaa")!;
+    currentModel = { ...currentModel, elements: new Map([...currentModel.elements, ["aaa", { ...before, x: sent.x, y: sent.y, row: sent.y / ROW_HEIGHT }]]) };
+    rerender(<DependencyGraphCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["services.dgr"]} />);
+    const after = boxOf();
+
+    expect(sent.y, "the drop did not change row, so there was no snap to compare").toBe(ROW_HEIGHT);
+    expect(after.x).toBeCloseTo(during.x, 6);
+    expect(after.y, `drawn at ${during.y} while dragging, ${after.y} once confirmed`).toBeCloseTo(during.y, 6);
+  });
+
   it("leaves the horizontal free rather than snapping it", () => {
     // Arrange.
     // The asymmetry is the placement model: rows are a grid, x is not. Rounding x here would
