@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
-import { DiagramCanvas } from "./library/DiagramCanvas";
+import { DiagramCanvasCore } from "./library/DiagramCanvas";
 import type { DiagramDefinition } from "./library/definition/diagramDefinition";
 import type { DiagramModel } from "./library/api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
@@ -104,12 +104,12 @@ const model: DiagramModel = {
   connections: [],
 };
 
-/** Both rings as the library renders them: Beta selected, and a connect from Alpha held over it. */
+/** Both rings as the library renders them - on the canvas core, which takes a controlled selection: Beta selected, and a connect from Alpha held over it. */
 function renderedRings(): Record<Ring, Element> {
   const { container } = render(
     <DiagramViewProvider>
       <DiagramToolboxProvider>
-        <DiagramCanvas definition={definition} model={model} events={{}} selection={[{ kind: "element", id: "b" }]} />
+        <DiagramCanvasCore definition={definition} model={model} events={{}} selection={[{ kind: "element", id: "b" }]} />
       </DiagramToolboxProvider>
     </DiagramViewProvider>,
   );
