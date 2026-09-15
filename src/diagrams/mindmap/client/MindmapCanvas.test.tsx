@@ -222,6 +222,21 @@ describe("MindmapCanvas", () => {
     expect(source.source.value.value).toBe("root");
   });
 
+  it("shows the backend's refusal of a shortcut on the canvas rather than nothing", async () => {
+    // Arrange: the backend refuses the structural edit. Until this was fixed the canvas
+    // discarded the outcome, so a refusal looked like a key that did nothing.
+    currentSelection = pushedSelection("root");
+    executeShortcut.mockResolvedValueOnce({ accepted: false, error: "The root has no sibling to insert beside." });
+    const { container, findByText } = render(<MindmapCanvas {...props} />);
+
+    // Act.
+    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Insert" });
+
+    // Assert: the sentence shows, on the rejection line every other canvas uses.
+    const line = await findByText("The root has no sibling to insert beside.");
+    expect(line.classList.contains("canvas-rejection")).toBe(true);
+  });
+
   it("maps Tab to the child action's Insert key, not to an action", () => {
     // Arrange.
     currentSelection = pushedSelection("root");

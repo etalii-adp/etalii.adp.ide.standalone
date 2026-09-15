@@ -619,6 +619,22 @@ describe("PipelineCanvas", () => {
     expect((source as { source: { value: { value: string } } }).source.value.value).toBe("Build");
   });
 
+  it("shows the backend's refusal of a shortcut on the canvas rather than nothing", async () => {
+    // Arrange: the backend refuses the rename. Until this was fixed the canvas discarded the
+    // outcome, so a refusal looked like a key that did nothing.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build it")));
+    currentSelectionKey = "element:Build";
+    executeShortcut.mockResolvedValueOnce({ accepted: false, error: "A template's stage is renamed in its template." });
+    const { container, findByText } = draw();
+
+    // Act.
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "F2" });
+
+    // Assert: the sentence shows, on the rejection line every other canvas uses.
+    const line = await findByText("A template's stage is renamed in its template.");
+    expect(line.classList.contains("canvas-rejection")).toBe(true);
+  });
+
   it("forwards nothing while no element is selected", () => {
     // Arrange.
     currentModel = applyDelta(emptyModel, add(stage("Build", "Build it")));
