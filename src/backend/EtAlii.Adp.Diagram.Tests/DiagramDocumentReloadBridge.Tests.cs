@@ -31,23 +31,89 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         }
     }
 
-    /// <summary>Records every reload it is asked for, for the test to await.</summary>
+    /// <summary>Records every reload and every deletion it is told of, for the test to await.</summary>
     private sealed class RecordingReloader : IDiagramDocumentReloader
     {
         private readonly Channel<(string RootPath, string BodyPath)> _reloads = Channel.CreateUnbounded<(string, string)>();
+        private readonly Channel<string> _deletions = Channel.CreateUnbounded<string>();
 
         public DiagramOrigin Origin { get; } = new("test", "sample");
 
         public void Reload(string rootPath, string bodyPath) => _reloads.Writer.TryWrite((rootPath, bodyPath));
 
+        public void BodyDeleted(string rootPath, string bodyPath) => _deletions.Writer.TryWrite(bodyPath);
+
         public async Task<(string RootPath, string BodyPath)> NextAsync(CancellationToken cancellationToken) =>
             await _reloads.Reader.ReadAsync(cancellationToken).AsTask().WaitAsync(_arrival, cancellationToken);
+
+        public async Task<string> NextDeletionAsync(CancellationToken cancellationToken) =>
+            await _deletions.Reader.ReadAsync(cancellationToken).AsTask().WaitAsync(_arrival, cancellationToken);
 
         public async Task<bool> StaysQuietAsync(CancellationToken cancellationToken)
         {
             await Task.Delay(_silence, cancellationToken);
             return !_reloads.Reader.TryRead(out _);
         }
+
+        public async Task<bool> NoDeletionAsync(CancellationToken cancellationToken)
+        {
+            await Task.Delay(_silence, cancellationToken);
+            return !_deletions.Reader.TryRead(out _);
+        }
+    }
+
+    [Fact]
+    public async Task ATrackedBodyThatIsDeleted_IsReportedAsDeleted_NotReloaded()
+    {
+        // A body that is gone is an empty diagram - but a store keeps its last good document
+        // through a read that fails, so "gone" has to arrive as its own signal, from the watcher's
+        // Deleted event, or the deleted diagram is drawn forever.
+        var reloader = new RecordingReloader();
+        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        var bodyPath = IoPath.Combine(_root, "sample.dsl");
+        await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
+        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+
+        File.Delete(bodyPath);
+
+        Assert.Equal(bodyPath, await reloader.NextDeletionAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ATrackedBodyRenamedAway_IsReportedAsDeleted()
+    {
+        // A user renaming or moving the body leaves no body at the tracked path, exactly as a
+        // delete does - and raises Renamed, not Deleted.
+        var reloader = new RecordingReloader();
+        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        var bodyPath = IoPath.Combine(_root, "sample.dsl");
+        await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
+        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+
+        File.Move(bodyPath, IoPath.Combine(_root, "renamed.dsl"));
+
+        Assert.Equal(bodyPath, await reloader.NextDeletionAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ASaveThatReplacesTheBody_ReloadsIt_AndIsNeverReportedAsDeleted()
+    {
+        // The must-not-catch half. File.Replace renames the body away to <body>~RF<hex>.TMP for the
+        // instant of a save; read as a delete, every external save would blank the diagram.
+        var reloader = new RecordingReloader();
+        using var bridge = new DiagramDocumentReloadBridge([reloader]);
+        var bodyPath = IoPath.Combine(_root, "sample.dsl");
+        await File.WriteAllTextAsync(bodyPath, "body", TestContext.Current.CancellationToken);
+        bridge.Track(_root, bodyPath, registrationPath: null, reloader.Origin);
+
+        for (var i = 0; i < 20; i++)
+        {
+            Documents.AdpFileWriter.Save(bodyPath, $"body {i}");
+        }
+
+        var (_, reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(bodyPath, reloadedBody);
+        Assert.True(await reloader.NoDeletionAsync(TestContext.Current.CancellationToken), "A save that replaced the body was reported as its deletion.");
     }
 
     [Fact]

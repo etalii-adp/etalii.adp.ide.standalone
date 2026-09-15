@@ -49,6 +49,12 @@ public interface IC4DocumentStore
     /// </summary>
     void Reload(string path);
 
+    /// <summary>
+    /// The body was deleted - the watcher's evidence, not a read that failed - so the model ends
+    /// empty. A reload that cannot read keeps the last good model; this does not.
+    /// </summary>
+    void BodyDeleted(string path);
+
     /// <summary>Raised after a save, and after an external edit is picked up.</summary>
     event EventHandler<C4DocumentChangedEventArgs>? Changed;
 }

@@ -78,7 +78,7 @@ public static class CausalLoopSelection
     /// <summary>The id the canvas writes when a link is drawn from one variable to another.</summary>
     public static string RelationFor(string from, string to) => $"{RelationPrefix}{from}->{to}";
 
-    /// <summary>The two ends the relation id names, or null when it is not one.</summary>
+    /// <summary>The two ends the relation id names, or null when it is not one or either end is empty.</summary>
     public static (string From, string To)? RelationOf(string? elementId)
     {
         if (elementId is null || !elementId.StartsWith(RelationPrefix, StringComparison.Ordinal))
@@ -88,6 +88,9 @@ public static class CausalLoopSelection
 
         var body = elementId[RelationPrefix.Length..];
         var arrow = body.IndexOf("->", StringComparison.Ordinal);
-        return arrow > 0 ? (body[..arrow], body[(arrow + 2)..]) : null;
+
+        // Both ends, as the other modules' relation ids require: 'rel:a->' read as a link to an
+        // empty id, which the writer emitted as 'link a ->  +'.
+        return arrow > 0 && arrow + 2 < body.Length ? (body[..arrow], body[(arrow + 2)..]) : null;
     }
 }

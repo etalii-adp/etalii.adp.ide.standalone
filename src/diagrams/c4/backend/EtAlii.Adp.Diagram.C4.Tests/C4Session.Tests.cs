@@ -164,6 +164,31 @@ public class C4SessionTests : IDisposable
     }
 
     [Fact]
+    public async Task ADocumentChange_ThatDeletesAnElement_RemovesItFromTheCanvas()
+    {
+        // Arrange.
+        var body = WriteModel();
+        await using var session = Open(body, null);
+        Assert.Contains(Added(session.Baseline()), element => element.Id == "u");
+
+        IReadOnlyList<DiagramDelta>? pushed = null;
+        session.Changed += (_, args) => pushed = args.Deltas;
+
+        // Act: the person and its relationship are deleted in a text editor, and the watcher
+        // reports the change. The client folds an add as an upsert and removes only on a remove,
+        // so nothing but a remove delta takes the person off the canvas.
+        var kept = Model.Split('\n').Where(line => !line.Contains("u = person", StringComparison.Ordinal) && !line.Contains("u -> web", StringComparison.Ordinal));
+        File.WriteAllText(body, string.Join('\n', kept));
+        Assert.DoesNotContain("person", File.ReadAllText(body), StringComparison.Ordinal);
+        _documents.Reload(body);
+
+        // Assert.
+        Assert.NotNull(pushed);
+        var removed = pushed!.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds).ToArray();
+        Assert.Contains("u", removed);
+    }
+
+    [Fact]
     public async Task UpdateView_NarrowingToNothing_RemovesWhatLeft()
     {
         // Arrange.
