@@ -13,7 +13,7 @@ import type {
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useContextConnection, useContextPrompt, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt, useContextProblems, type ActionOutcome } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
@@ -262,6 +262,18 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   const problems = useContextProblems()?.problems ?? [];
 
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+  // A refusal is the backend's sentence, and it is shown on the rejection line every other canvas
+  // uses. This canvas used to discard the outcome, so a refused shortcut or drop looked like one
+  // that simply did nothing.
+  const [rejection, setRejection] = useState("");
+  const surfaceRefusal = (pending: Promise<ActionOutcome>) => {
+    setRejection("");
+    void pending.then((outcome) => {
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    });
+  };
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -322,7 +334,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
     onActionInvoked: ({ actionId, targetId }) => {
       const key = BACKEND_KEYS[actionId];
       if (key !== undefined && targetId !== undefined) {
-        void executeShortcut(contextShortcutOf(key), elementSourceOf(targetId));
+        surfaceRefusal(executeShortcut(contextShortcutOf(key), elementSourceOf(targetId)));
       }
     },
     // Selection is the library's (centralized-selection), and so is its highlight: this canvas
@@ -373,6 +385,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
           scrollbarsClassName="pipeline-scrollbars"
         />
       )}
+      {rejection ? <p className="pipeline-rejection canvas-rejection" role="status">{rejection}</p> : null}
     </div>
   );
 }
