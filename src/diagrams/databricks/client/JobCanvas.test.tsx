@@ -73,6 +73,11 @@ SVGElement.prototype.setPointerCapture ??= () => {};
 SVGElement.prototype.releasePointerCapture ??= () => {};
 
 const { JobCanvas } = await import("./JobCanvas");
+const { selectedElementIdOf } = await import("@client/canvas/selection");
+const { expectLibrarySelection } = await import("@client/canvas/library/testing/expectLibrarySelection");
+
+/** The id a push names, or null for a clear. */
+const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as never) ?? null));
 
 function task(id: string, label: string, x: number, y: number, badges: string[] = [], unresolved = false, kind = "notebook") {
   return { id, x, y, kind, label, badges, unresolved, runIf: "" };
@@ -155,9 +160,11 @@ describe("the job canvas", () => {
     expect(selections).toHaveLength(1);
   });
 
-  it("ignores a press on an edge: edges are not selectable in this family", () => {
-    // Recorded pending in the label library's readme, and a migration is not the moment it
-    // changes: the library makes connections pressable, so the module must drop the raise.
+  it("selects an edge on a press - this family's edges were pending, not exempt", () => {
+    // This used to assert that an edge press sent nothing. The label library's readme records
+    // databricks' edges as "pending, not exempt", and centralized-selection Requirement 2.1 makes
+    // a connection selectable wherever Requirement 2.4 does not exempt it - so the Assert changes,
+    // and the Arrange and Act are as they were. The backend has always resolved an edge id.
     const { container } = renderCanvas();
     const edge = container.querySelector('[data-connection-id="edge:ingest->publish"]')!;
 
@@ -165,8 +172,8 @@ describe("the job canvas", () => {
     fireEvent(edge, pointer("pointerdown", { button: 0, clientX: 300, clientY: 28 }));
     fireEvent(edge, pointer("pointerup", { clientX: 300, clientY: 28 }));
 
-    // Assert: no selection travels - not the edge, and not a deselect either.
-    expect(selections).toHaveLength(0);
+    // Assert: the edge's own id travels, as a connection's does on every canvas.
+    expect(selections.map(idOf)).toEqual(["edge:ingest->publish"]);
   });
 
   it("commits a drag as one move in raw module coordinates - the layout path, never a grid", () => {
@@ -425,5 +432,45 @@ describe("the job canvas", () => {
     // Assert.
     await waitFor(() => expect(submitLabel).toHaveBeenCalled());
     expect(selections).toEqual([]);
+  });
+});
+
+describe("selection, as every canvas has it", () => {
+  it("highlights a pushed task and edge, and clears on a background press (centralized-selection 9.2)", () => {
+    // Databricks' three readings wrap one canvas; this is where that canvas meets the assertion.
+    expectLibrarySelection({
+      mountWith: (id) => {
+        currentModel = modelWith();
+        currentLoading = false;
+        currentFailed = false;
+        currentSelectionKey = id === null ? null : `element:${id}`;
+        return renderCanvas();
+      },
+      pushedIds: () => selections.map(idOf),
+      element: "task:ingest",
+      connection: "edge:ingest->publish",
+    });
+  });
+
+  it("plays a simulated run chosen from the shared menu, and calls no executeAction (Requirements 8.6, 11.6)", async () => {
+    // The backend offers the simulated entry; the canvas declares it a menu entry it runs itself,
+    // so the library hands it over and sends nothing. A miss would be silent - the backend
+    // no-ops a simulated id that reaches it - which is why this asserts executeAction's absence.
+    currentSelectionKey = "element:task:ingest";
+    currentActions = [
+      { actions: [{ id: "databricks.simulated.run-job", label: "Run job (simulated)", icon: "", available: true, unavailableReason: "", items: [] }] },
+    ];
+    const { container } = renderCanvas();
+
+    fireEvent.contextMenu(container.querySelector('[data-element-id="task:ingest"]')!, { clientX: 100, clientY: 100 });
+    const entry = await waitFor(() => {
+      const found = [...document.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Run job (simulated)"));
+      expect(found).toBeDefined();
+      return found!;
+    });
+    fireEvent.click(entry);
+
+    expect(executed).toHaveLength(0);
+    expect(container.querySelector(".databricks-simulation-banner")!.textContent).toContain("Simulated");
   });
 });

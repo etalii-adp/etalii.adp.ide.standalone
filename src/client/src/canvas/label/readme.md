@@ -87,9 +87,10 @@ while editing the description alone.
   drawn label, and the bundle element is packed with `Key = bundle.Name`, so what looks like a
   two-value fallback (`payload.key || payload.kind`) renders the very value being renamed - the
   `|| kind` is an empty-state placeholder, not a second value. Deployment targets are frames and
-  are not renamed. **Its edges are pending, not exempt**: this canvas has no edge selection, so
-  a relabelled edge could not be reached by any gesture. When edge selection arrives, the
-  relabel prompt qualifies and should be marked.
+  are not renamed. **Its edges are pending, not exempt**: they select since
+  [centralized-selection](../../../../../.spec-workflow/specs/centralized-selection/requirements.md)
+  (Requirement 2.1), so a relabelled edge can now be reached by a gesture, and the relabel prompt
+  qualifies and should be marked.
 - **azure-pipeline** - display names, on stages, jobs, steps and templates. A stage's editor
   covers its name line above the job count; a single-line box's covers it whole. The drawn
   label falls back from the display name to the element's own identifying name, which is a

@@ -33,6 +33,20 @@ export interface SimulatedRun {
 /** The marker every simulated action id carries - the same constant the backend discovers with. */
 export const SIMULATED_MARKER = ".simulated.";
 
+/**
+ * The shows this engine plays, by the suffix of the action id that starts each. The one list: the
+ * interception below reads it, and the canvas declares these ids as menu entries it runs itself,
+ * so neither side retypes them (centralized-selection design A, "Menu entries a module runs
+ * itself").
+ */
+export const SIMULATED_SHOWS = { runJob: "run-job", deploy: "deploy", pipelineUpdate: "pipeline-update" } as const;
+
+/**
+ * The simulated action ids the backend discovers - `databricks.simulated.run-job` and the rest -
+ * built from the marker and the shows, the way DatabricksContextActionProvider names them.
+ */
+export const SIMULATED_ACTION_IDS: readonly string[] = Object.values(SIMULATED_SHOWS).map((show) => `databricks${SIMULATED_MARKER}${show}`);
+
 const DEFAULT_STEP_MS = 700;
 
 /**
@@ -95,11 +109,11 @@ export function useSimulatedRun(model: DatabricksModel, profile: SimulationProfi
 
       const current = modelRef.current;
       const active = profileRef.current;
-      if (actionId.endsWith("run-job")) {
+      if (actionId.endsWith(SIMULATED_SHOWS.runJob)) {
         play("job run", runFrames(current, active));
-      } else if (actionId.endsWith("deploy")) {
+      } else if (actionId.endsWith(SIMULATED_SHOWS.deploy)) {
         play("deploy", rippleFrames(current, (id) => id.startsWith("resource:") || id.startsWith("unknown:")));
-      } else if (actionId.endsWith("pipeline-update")) {
+      } else if (actionId.endsWith(SIMULATED_SHOWS.pipelineUpdate)) {
         play("pipeline update", rippleFrames(current, (id) =>
           id.startsWith("library:") || id === "pipeline" || id === "target"));
       } else {
