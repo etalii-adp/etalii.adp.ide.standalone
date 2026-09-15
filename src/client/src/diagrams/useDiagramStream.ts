@@ -42,9 +42,11 @@ export interface DiagramStreamResult<TModel> {
  * the returned {@link DiagramStreamResult.client}.
  *
  * The view report is no longer among them: it is shared, in `viewReport.ts` beside this file, and
- * a module builds it with `viewReportOf` on that same client. Adopting the report deliberately
- * does not require adopting this hook - three modules hand-roll their open loop and report
- * perfectly well.
+ * a module builds it with `viewReportOf` on that same client.
+ *
+ * This is the only place the stream is opened. Nine modules once hand-rolled their own open loop
+ * and drifted from this one - a clean end re-opened at once and kept the stale model - so they
+ * were moved onto it, and `diagramStreamOpensOnlyInHook.test.ts` fails if a copy reappears.
  *
  * The reconnect shape is `usePipelineStream`'s pre-extraction one, chosen per R3.3's recorded
  * comparison: `loading` returns to `true` before the retry delay (the canvas shows
