@@ -25,7 +25,9 @@ Given as selections, relayed by the Scrum master, on 2026-09-15.
 | What a failed save returns | **A result the caller must inspect**, in the shape of wardley-map's `WardleyPublishResult(Error, Warning)`. **A guard makes an ignored result a finding.** Mindmap's throwing `Save` and the seven string-returning ones are converted. |
 | Every recommendation offered | Each of the four rulings above is the option that was recommended. |
 
-**Nothing is still open in these requirements.** Two defects the scan found are proven by failing tests and are with the user as a separate question: whether to fix them now as bugs, or inside this work. **The requirements below state the correct behaviour either way** (Requirements 2.3 and 4.3), so whichever the user chooses, the criterion is the same and is satisfied by whichever change lands it.
+**Nothing is still open in these requirements.** Two defects the scan found are proven by failing tests, and **the user ruled them fixed now, as bugs, ahead of this work**. Developer 3 is fixing them. **The requirements below state the correct behaviour** (Requirements 2.3 and 4.3), so the fixes satisfy these criteria when they land, and the design cites their commits.
+
+**Fixing c4 exposed a third instance of the same class**, measured by Developer 3 on `develop` `955fb560`. An external program republishing an unchanged `.dsl` while 3000 reloads ran made 765 of those reloads install an empty workspace: a reload landing inside the other program's `File.Replace` finds the file missing. With removals pushed, that became 207 pushes that blank elements still in the file. The save lock does not help, because it orders writers, not readers. **Requirements 2.4 to 2.6 state the rule**: keep the last good document on a failed reload, but confirm that a missing file is really gone, so a deleted body still becomes an empty diagram.
 
 **Where each shared type lives is not decided here.** Placement is the user's judgement, and the design asks it with the consumer counts as cost.
 
@@ -89,10 +91,13 @@ Both tests are on branch `claude/backend-defect-probes` at `cd8516f5`.
 #### Acceptance Criteria
 
 1. WHEN a store loads, returns, forgets or reloads a document THEN it SHALL do so through one shared implementation. A module SHALL supply only how its document is parsed and what its change event carries.
-2. WHEN a file cannot be read THEN the shared implementation SHALL behave as the majority does today, opening the document as empty and logging a warning that names the path, unless the module declares that a missing or unreadable document is a state it reports. causal-loop and sparql declare it today.
+2. WHEN a document is loaded for the first time and its file cannot be read THEN the shared implementation SHALL behave as the majority does today, opening the document as empty and logging a warning that names the path, unless the module declares that a missing or unreadable document is a state it reports. causal-loop and sparql declare it today.
 3. WHEN a writable store is saving a document and a reload of the same path arrives THEN the reload SHALL be ignored. This SHALL hold for every writable store, and `CausalLoopDocumentStoreSelfWriteTests` SHALL pass, with its timeline control kept.
-4. WHEN a store is read-only (sparql) THEN it SHALL use the same lifecycle without a save.
-5. WHEN mindmap reloads THEN it MAY go on skipping documents it never loaded and raising structure-aware changes, and the design SHALL say how the shared lifecycle carries that.
+4. WHEN a reload finds the file present but unreadable THEN the store SHALL keep the last document it read successfully and log a warning naming the path. It SHALL NOT install an empty or unreadable document in its place.
+5. WHEN a reload finds the file missing THEN the store SHALL confirm the absence before acting on it. A file that reappears, as it does when another program republishes it, SHALL be read afresh. A file that stays missing SHALL become the empty or unreadable document, because a deleted body is an empty diagram, not the last one kept alive (`DiagramDocumentReloadBridge`). How absence is confirmed is the design's to state, and a timing bound, if used, SHALL be stated beside the code and logged when it decides.
+6. WHEN another program republishes an unchanged document while reloads arrive THEN no reload SHALL install an empty or unreadable document. WHEN the body is deleted and reloaded THEN the store SHALL end with the empty or unreadable document. Both SHALL be tests, each seen to fail against the behaviour it rules out: installing on the first failed read for the first, and keeping the last document forever for the second.
+7. WHEN a store is read-only (sparql) THEN it SHALL use the same lifecycle without a save.
+8. WHEN mindmap reloads THEN it MAY go on skipping documents it never loaded and raising structure-aware changes, and the design SHALL say how the shared lifecycle carries that.
 
 ### Requirement 3 — Saves return a result the caller must inspect
 
@@ -210,7 +215,7 @@ Both tests are on branch `claude/backend-defect-probes` at `cd8516f5`.
 
 ### Reliability
 
-- A save never silently loses an edit (Requirement 3), and a reload never damages a document being saved (Requirement 2.3).
+- A save never silently loses an edit (Requirement 3), and a reload never damages a document being saved, by ADP or by another program (Requirements 2.3 to 2.6).
 - A document ADP did not change comes back byte-identical in every module this touches (Requirement 1.3, Requirement 8.2).
 
 ### Verification
