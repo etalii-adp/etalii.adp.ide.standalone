@@ -7,7 +7,7 @@ The functional decomposition graph is a new diagram module at `src/diagrams/func
 - **The library half** adds six capabilities, each named for geometry or behaviour and usable by any diagram: three shapes with their outlines, height resize, wrapped labels, a multiline inline editor, a declared cycle rule, and outline attachment for polygon shapes. The sixth was found by this design rather than by the requirements (see *The one thing the requirements did not list*).
 - **The module half** is a definition, event handlers and a backend: parser, writer, store, session, validator, providers and commands, each following the shape `dependency-graph` already has.
 
-The library half depends on nothing on the board and is built first. **When the module half is built is the one question this design leaves to the user**: see *Sequencing with the two centralization specifications*.
+The library half depends on nothing on the board and is built now. **The module half is built after the shared backend and client pieces it would otherwise copy have landed**, by the user's ruling: see *Sequencing with the two centralization specifications*.
 
 Every name in this document that does not exist yet is a proposal, marked as new where it is introduced.
 
@@ -53,13 +53,11 @@ The module half would otherwise write fresh copies of exactly what `backend-cent
 
 Each copy written now is a fourteenth instance that those specifications then have to convert.
 
-**This is the one open question, for the user** (asked through the Scrum master as a selection before this card is raised):
+**The user's ruling, given as a selection via the Scrum master on 2026-09-15: build the library half now, and the module half after those shared pieces have landed.** It was the recommended option. The alternative offered was building both halves now as copies of `dependency-graph` and converting them later.
 
-- **(a) Recommended:** build the library half now, and the module half after the shared pieces it needs have landed. It writes nothing that is converted later, and the library half, the larger and riskier part, does not wait.
-- **(b)** Build both halves now, as copies of `dependency-graph`, and add FDG to both centralization specifications' conversion lists.
-- **(c)** Other.
-
-Nothing else in this design changes between (a) and (b). Only *where* the store, diff, session change handler, restore edit, gesture grammar and stream hook come from changes.
+- **So nothing below writes a fourteenth copy.** The module's store, reloader, session, diff, change handler, restore edit, YAML range, gesture grammar, stream hook and delta fold are the shared ones.
+- **The tasks document states the ordering**, naming the `backend-centralization` and `client-centralization` work each module task waits on. Those specifications have no tasks yet, so the waits are named by requirement until they do.
+- **Everything the module half needs that neither specification provides** is designed here in full: the `.fdg` format, parser, writer, rules, commands, providers, mapper, definition and examples.
 
 ## Architecture
 
@@ -178,7 +176,7 @@ connections:
 
 - **`FdgParser`** - text to `FdgModel` (elements, connections, parse problems, and each entry's line range).
 - **`FdgWriter`** - one pure function per edit: add, remove, move, resize, rename, set text, set description, connect, disconnect, and set a connection's name. Each returns the splice or a refusal sentence.
-- **`FdgDocumentStore`**, **`FdgDocumentReloader`**, **`FdgSession`**, **`FdgSessionFactory`** - lifecycle and view. Under sequencing (a) they are thin uses of `backend-centralization`'s shared lifecycle, diff and change handler. Under (b) they are copies of `dependency-graph`'s, with that module's R2.3 self-write suppression and R2.4–2.6 reload rules included from the start, since the same defects must not be recreated.
+- **`FdgDocumentStore`**, **`FdgDocumentReloader`**, **`FdgSession`**, **`FdgSessionFactory`** - lifecycle and view, as thin uses of `backend-centralization`'s shared store lifecycle (R2), save result (R3), diff (R4) and change handler (R5), with its restore edit (R6), YAML node range (R7) and gesture grammar (R11).
 - **`FdgElementMapper`** - model to library elements. It sends the type, centre, width and height, the payload `FdgElementPayload { name, text }`, and for connections `FdgConnectionPayload { name }` (new, `api/functional-decomposition-graph.proto`). **Descriptions are never sent**, so none can be drawn (Requirement 7.1).
 - **`FdgRuleSet`** and **`FdgValidator`** - Requirement 5.5, below.
 - **`FdgContextActionProvider`**, **`FdgContextPropertyProvider`**, **`FdgToolboxProvider`** and **`FdgContextSourceResolver`** - editing, properties, toolbox and selection resolution (Requirements 7 and 8).
@@ -222,7 +220,7 @@ Every edit is a context action producing a command whose inverse is a **restore-
 
 ## Client
 
-**Files**, following `dependency-graph`'s: `register.ts`, `FdgCanvas.tsx`, `fdg.css`, `useFdgStream.ts`, `fdgModel.ts` and `readme.md`. Under sequencing (a), the stream hook and model fold are `client-centralization`'s shared ones and the last two files do not exist.
+**Files**, following `dependency-graph`'s: `register.ts`, `FdgCanvas.tsx`, `fdg.css` and `readme.md`. The stream hook and delta fold are `client-centralization`'s shared ones, so the module writes neither.
 
 **The definition** (in `FdgCanvas.tsx`):
 
@@ -290,10 +288,10 @@ Five tokens in `src/client/src/index.css`, beside `--color-diagram-potential`, w
    - **Handling:** the command refuses with the failing check's sentence.
    - **User Impact:** the refusal is shown and the document is unchanged.
 4. **A save that fails** (disk, permissions).
-   - **Handling:** the store's save result carries the error (under sequencing (a), `backend-centralization` R3's result) and the edit stays in memory.
+   - **Handling:** the store's save result carries the error (`backend-centralization` R3) and the edit stays in memory.
    - **User Impact:** the refusal sentence is shown, and retrying after fixing the cause works.
 5. **The body changes or disappears on disk** while open.
-   - **Handling:** the store's reload rules, `backend-centralization` R2.3 to R2.6 (under (b), the same rules copied): its own saves are ignored, an unreadable file keeps the last good document, and a deleted body becomes empty.
+   - **Handling:** the shared store's reload rules, `backend-centralization` R2.3 to R2.6: its own saves are ignored, an unreadable file keeps the last good document, and a deleted body becomes empty.
    - **User Impact:** the canvas follows the file, without blanking during another program's save.
 
 ## Testing Strategy
