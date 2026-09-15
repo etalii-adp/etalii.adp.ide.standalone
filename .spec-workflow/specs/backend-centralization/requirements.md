@@ -1,0 +1,227 @@
+# Requirements Document
+
+## Introduction
+
+The user's request, verbatim:
+
+> Scan the codebase and find out what backend side patterns in each of the diagrams is duplicate and can be centralized. Create a specification for this.
+
+This specification is the backend half of that request. Its client half is Architect 2's `client-centralization` specification. The two were split by agreement between the authors, accepted by the Scrum master on 2026-09-15:
+
+- **This specification** owns the C# in `src/diagrams/*/backend` (module projects), and any shared C# a candidate moves into.
+- **`client-centralization`** owns the TypeScript in `src/diagrams/*/client` and `src/client`.
+- **The wire** (`src/api/*.proto`, payload shapes, delta semantics) is a seam neither changes alone. Nothing here changes it.
+- **Cross-tier agreement items** are rules computed on both sides without crossing the wire, where each side's tests only test itself, so drift is invisible to both. **Each has one owner, decided by where the rule's truth is decided and persisted; the owner writes one golden fixture that both suites read, and the other specification cites it.** Requirements 9 to 13 are the items this specification owns.
+
+### The user's rulings on what the scan left open
+
+Given as selections, relayed by the Scrum master, on 2026-09-15.
+
+| Question | The user's ruling |
+| --- | --- |
+| One-line methods that are identical across modules (`ContextSourceResolver.CanResolve`, `Rejected`, `NestingOf`; `ContextPropertyProvider.Rows`; the `DocumentReloader` forwarders) | **Excluded, and recorded as measured and declined** (below). Each is one line, and sharing it adds a base-class or default-member dependency to up to 13 modules without removing any behaviour that could drift. |
+| The azure-pipeline line document picks the other line ending on a tie | **Core's behaviour wins**, and a fixture proves that unchanged files still come back byte-identical. |
+| Sessions and mappers that resend every element on a change | **All of them move onto the shared change-detecting diff**: ansible-structure, helm-charts, azure-pipeline, c4 and causal-loop. |
+| What a failed save returns | **A result the caller must inspect**, in the shape of wardley-map's `WardleyPublishResult(Error, Warning)`. **A guard makes an ignored result a finding.** Mindmap's throwing `Save` and the seven string-returning ones are converted. |
+| Every recommendation offered | Each of the four rulings above is the option that was recommended. |
+
+**Nothing is still open in these requirements.** Two defects the scan found are proven by failing tests and are with the user as a separate question: whether to fix them now as bugs, or inside this work. **The requirements below state the correct behaviour either way** (Requirements 2.3 and 4.3), so whichever the user chooses, the criterion is the same and is satisfied by whichever change lands it.
+
+**Where each shared type lives is not decided here.** Placement is the user's judgement, and the design asks it with the consumer counts as cost.
+
+## What was measured
+
+Every method body in the 13 implemented module backends, compared after each module's own names were replaced by a placeholder, read at `develop` `eb019687`, with the cross-tier items at `fba7040a`, on 2026-09-15. **Identical bodies were candidates for the same job and different bodies candidates for drift; every verdict below was read, not inferred from the counts.** The 48 stub modules hold only `Diagram.cs` and a minimal project file, and contribute nothing.
+
+| Candidate | Copies | Verdict |
+| --- | --- | --- |
+| Private line document forks | 3: databricks, rdf, azure-pipeline | Core's `LineDocument` exists; `file-io-centralization` converted only timeline and dependency-graph. **databricks and rdf are identical to core apart from the namespace.** azure-pipeline **has drifted**: it chooses LF where core chooses CRLF when a file has equal counts of each, and it lacks core's guard against a range ending before it starts. |
+| Document store lifecycle | 10 stores | `Forget` identical in 8 of 9 (mindmap has none); `GetOrLoad` identical in 6 of 10; the read-or-open-empty opening of `Load` is the same in 7. `Reload` has 8 variants: **causal-loop does not ignore a reload of its own save** (a defect, proven below); sparql is read-only, legitimately. `Save` has 7 variants and three error contracts: a message string in seven, an exception in mindmap, a result in wardley-map. |
+| Change detection (`ElementMapper.Diff` and `Same`) | 11 implementations | Identical in 6 (databricks, dependency-graph, rdf, sparql, timeline, wardley-map); dotnet-dependency-graph computes the same adds and removes, but emits the remove before the add. **ansible-structure and helm-charts do a different job**: they resend everything, with no change detection. |
+| Document change handling (`Session.OnDocumentChanged`) | 16 sessions, 8 variants | 9 share one shape: filter on path, render, diff, raise, catch a read failure and warn. **azure-pipeline and c4 catch nothing and resend everything; c4 sends no removals** (a defect, proven below). causal-loop catches every exception. mindmap reacts to the kind of structural change, legitimately. |
+| Restore-a-file edit (`Edits.ExecuteAsync`) | 3: causal-loop, databricks, rdf | Identical. |
+| YAML node to line range (`Range`) | 3 identical: databricks, dependency-graph, timeline; azure-pipeline near | Same job. |
+| Row rounding (`ToNearestRow`) | 2: timeline, dependency-graph | Identical: away from zero. The client rounds the same rule twice more (`client-centralization`). |
+| Text width estimate | 4: ansible-structure, c4, causal-loop, mindmap | **One formula everywhere**: characters × 14 × 0.55. Padding and minimum width differ per module, as a style choice. The client estimates at 7, 8 and 5.5 pixels per character. |
+| Placement and relation gesture ids (`new:`, `rel:`) | `rel:` parser 5 copies, `new:` parser 5 | `rel:` identical in 4 (databricks, dependency-graph, rdf, timeline). **causal-loop's copy has drifted**: it accepts a relation with an empty target, `rel:a->`. `new:` comes in two legitimate shapes, `x,y` in three modules and `x,row` in two. |
+| Element and relation type strings | 12 modules | Declared per module as constants. They must equal the client's relation type ids, and nothing checks that. |
+| Which stream failures are permanent | Core services only | Decided in `DiagramService.Open`, `ContextService` and `HierarchyService` (`FailedPrecondition`, `Unimplemented`), never in a module. Not duplicated on the backend. The client has its own copy of the list, and nothing ties the two together. |
+
+### The two defects, each proven by a failing test
+
+Both tests are on branch `claude/backend-defect-probes` at `cd8516f5`.
+
+- **c4 leaves a deleted element on the canvas.** `C4SessionTests.ADocumentChange_ThatDeletesAnElement_RemovesItFromTheCanvas` deletes a person on disk and reloads, and fails: a change is pushed, but with no removal. The client folds an add as an upsert and removes an element only on a remove delta (`c4Model.ts:61`), so the element stays drawn until the canvas reconnects.
+- **causal-loop marks its own diagram unreadable while saving.** `CausalLoopDocumentStoreSelfWriteTests` saves 2000 times while reloads arrive as the watcher delivers them. It fails: 18270 of 135942 reloads damaged the document on one run and 18810 of 134732 on another, each time finding the file missing mid-publish and installing an unreadable entry. **The identical test against the timeline store, which ignores its own saves, passes; and planting that suppression in the causal-loop store made the test pass.**
+
+### Measured and declined
+
+- **The one-line methods named in the first ruling**, by the user's ruling.
+- **Not candidates, because every copy does a different job:** `ContextSourceResolver.ResolveAsync` (13 variants in 13 modules), `ContextPropertyProvider.DescribeAsync` (13 in 13), `Validator.ValidateAsync` (13 in 13), `Session.MoveElementAsync` (16 in 16), `ElementMapper.Visible` and `Elements` (11 in 11), `SessionFactory.Open` (12 variants in 16 files), `DocumentFactory.CreateEmptyDocument` (15 variants).
+- **Project boilerplate:** 48 of 69 module project files are already the minimal shape; the 13 `.DotSettings` files name each module's own folders.
+- **Edge id formats** (`edge:` with `->` in two modules, `|` in the rest): whether an element is a connection belongs to `centralized-selection` task 26.
+
+### Out of scope, owned elsewhere
+
+`backend-project-decomposition` and its post-decomposition backlog; `file-io-centralization` and the per-destination save lock (decision 11); the backend of `declarative-diagram-modules`; `centralized-selection` task 26; the `functional-decomposition-graph` backend; and everything `client-centralization` owns.
+
+## Alignment with Product Vision
+
+`structure.md` asks that a diagram type add behaviour through declared seams, not by copying its neighbour. Every candidate above is a copy that began identical and was then edited in one place: the azure-pipeline line document, causal-loop's store and its gesture parser. **A fork that has stopped being edited is harmless only until someone fixes a bug in one copy**, and this scan found two defects whose fix already exists in a sibling.
+
+## Requirements
+
+### Requirement 1 — One line document
+
+**User Story:** As a maintainer, I want every module that splices lines to use core's `LineDocument`, so that a fix to line handling reaches every module.
+
+#### Acceptance Criteria
+
+1. WHEN the work is complete THEN databricks, rdf and azure-pipeline SHALL read and splice their documents through core's `LineDocument`, and their private document and line types SHALL be deleted.
+2. WHEN a file has as many LF line endings as CRLF THEN azure-pipeline SHALL choose the ending core chooses. A fixture with equal counts SHALL show which ending a newly inserted line takes.
+3. WHEN ADP did not change a document THEN each of the three modules SHALL write it back byte-identical, proven against its existing fixture corpus and the equal-counts fixture.
+4. WHEN a range ends before it starts THEN azure-pipeline SHALL refuse it, as core does.
+
+### Requirement 2 — One document store lifecycle
+
+**User Story:** As a maintainer, I want loading, forgetting and reloading a document written once, so that a store cannot silently lack a behaviour its siblings have.
+
+#### Acceptance Criteria
+
+1. WHEN a store loads, returns, forgets or reloads a document THEN it SHALL do so through one shared implementation. A module SHALL supply only how its document is parsed and what its change event carries.
+2. WHEN a file cannot be read THEN the shared implementation SHALL behave as the majority does today, opening the document as empty and logging a warning that names the path, unless the module declares that a missing or unreadable document is a state it reports. causal-loop and sparql declare it today.
+3. WHEN a writable store is saving a document and a reload of the same path arrives THEN the reload SHALL be ignored. This SHALL hold for every writable store, and `CausalLoopDocumentStoreSelfWriteTests` SHALL pass, with its timeline control kept.
+4. WHEN a store is read-only (sparql) THEN it SHALL use the same lifecycle without a save.
+5. WHEN mindmap reloads THEN it MAY go on skipping documents it never loaded and raising structure-aware changes, and the design SHALL say how the shared lifecycle carries that.
+
+### Requirement 3 — Saves return a result the caller must inspect
+
+**User Story:** As a maintainer, I want every save to report failure the same way, and an ignored failure to be caught, so that an edit is never silently lost.
+
+#### Acceptance Criteria
+
+1. WHEN any store saves THEN it SHALL return one shared result type carrying an error and a warning, both empty on success, in the shape of `WardleyPublishResult`.
+2. WHEN the work is complete THEN mindmap's `Save` SHALL no longer throw for a failed write, and the seven string-returning stores SHALL return the result. Every caller SHALL be converted.
+3. WHEN a save's result is discarded anywhere in backend or module code THEN a guard SHALL report it as a finding. The guard SHALL be seen to fail against a planted discard before it is trusted.
+4. WHEN a save fails THEN the edit SHALL stay in memory, as it does today in the stores that already keep it.
+
+### Requirement 4 — One change-detecting diff
+
+**User Story:** As the user, I want the canvas to show exactly what the document now holds after any change, so that nothing I deleted is still drawn.
+
+#### Acceptance Criteria
+
+1. WHEN a module computes the deltas between what it last delivered and what it would deliver now THEN it SHALL use one shared diff, which adds what is new or changed and removes what is gone.
+2. WHEN the work is complete THEN ansible-structure, helm-charts, azure-pipeline, c4 and causal-loop SHALL use it in place of resending everything.
+3. WHEN an element is removed from a document by any means THEN every module's session SHALL send a remove delta for it. `C4SessionTests.ADocumentChange_ThatDeletesAnElement_RemovesItFromTheCanvas` SHALL pass.
+4. WHEN two elements are compared THEN equality SHALL mean equal position, type and payload bytes, which is the rule the six identical copies share.
+5. WHEN a diff both removes and adds THEN the order of the two deltas SHALL be one order for every module, and the design SHALL state which and why. dotnet-dependency-graph removes first today; the six identical copies add first.
+
+### Requirement 5 — One document change handler
+
+**User Story:** As a maintainer, I want a session to react to its document changing in one written way, so that a read failure is handled the same everywhere.
+
+#### Acceptance Criteria
+
+1. WHEN a session's document changes THEN the session SHALL ignore changes to other paths, render, diff against what it delivered (Requirement 4), raise the deltas if any, and on a read failure log a warning naming the path without raising.
+2. WHEN the work is complete THEN azure-pipeline, c4 and causal-loop SHALL follow Requirement 5.1. causal-loop SHALL stop catching failures other than read failures; the design SHALL state what reaches the caller instead.
+3. WHEN mindmap's document changes THEN it MAY keep reacting to the kind of structural change, and the design SHALL state which parts of Requirement 5.1 it still shares.
+
+### Requirement 6 — One restore-a-file edit
+
+**User Story:** As a maintainer, I want the undoable edit that rewrites a whole file written once.
+
+#### Acceptance Criteria
+
+1. WHEN causal-loop, databricks or rdf restores a file THEN it SHALL use one shared edit that saves the text, reloads the document and reports a failure as a failed command.
+2. WHEN another module needs the same edit THEN it SHALL be able to use it without copying.
+
+### Requirement 7 — One YAML node range
+
+**User Story:** As a maintainer, I want the rule that turns a parsed YAML node into the lines it occupies written once, so that trailing blank lines and comments are treated alike.
+
+#### Acceptance Criteria
+
+1. WHEN databricks, dependency-graph, timeline or azure-pipeline turns a YAML node into a line range THEN it SHALL use one shared function.
+2. WHEN azure-pipeline's near copy differs from the three identical copies THEN the design SHALL state the difference and which behaviour is kept. A test SHALL pin the kept behaviour on an input that tells the two apart.
+
+### Requirement 8 — Behaviour changes only where a criterion says so
+
+**User Story:** As the user, I want a refactoring to change only what I agreed it changes.
+
+#### Acceptance Criteria
+
+1. WHEN an existing test changes in this work THEN it SHALL be because it pinned behaviour that a named acceptance criterion here changes. The change SHALL name that criterion and change only what it changes.
+2. WHEN the work is complete THEN the full backend suite and every module's byte-identical fixture corpus SHALL pass.
+
+### Requirement 9 — Row rounding, shared with the client
+
+**User Story:** As the user, I want an element dropped between rows to land in the row the preview showed.
+
+#### Acceptance Criteria
+
+1. WHEN a module rounds a vertical position to a row THEN it SHALL use one shared function, rounding half away from zero, as timeline and dependency-graph do today.
+2. WHEN the rule is written THEN this work SHALL provide a golden fixture of positions and rows, including exact halves on both sides of zero and negative zero, that the backend suite reads. `client-centralization` SHALL read the same file.
+
+### Requirement 10 — The text width metric, shared with the client
+
+**User Story:** As the user, I want text to fit the box the backend sized for it.
+
+#### Acceptance Criteria
+
+1. WHEN a module estimates the width of a text THEN it SHALL use one shared metric, characters × font size × average advance, with the values ansible-structure, c4, causal-loop and mindmap share today (14 and 0.55).
+2. WHEN a module sizes a box THEN its padding, minimum and maximum SHALL stay its own declared values.
+3. WHEN the metric is written THEN this work SHALL provide a golden fixture of texts and widths that the backend suite reads and `client-centralization` reads for its fitting function.
+
+### Requirement 11 — Gesture id grammar, shared with the client
+
+**User Story:** As a maintainer, I want the ids a canvas builds for a new placement or a proposed relation parsed one way.
+
+#### Acceptance Criteria
+
+1. WHEN a module builds or parses a `new:` placement id or a `rel:` relation id THEN it SHALL use one shared grammar, with both placement shapes (`x,y` and `x,row`).
+2. WHEN a relation id has an empty source or an empty target THEN parsing SHALL refuse it, as four of the five copies do today, and causal-loop SHALL stop accepting it.
+3. WHEN the grammar is written THEN this work SHALL provide a golden fixture of ids, valid and invalid, that the backend suite reads and `client-centralization` reads for its builders.
+
+### Requirement 12 — Element and relation type strings, shared with the client
+
+**User Story:** As a maintainer, I want the type strings the backend emits and the ones the client declares proven equal.
+
+#### Acceptance Criteria
+
+1. WHEN a module declares the element and relation types it emits THEN they SHALL be listed in one golden fixture per module, produced from the backend's own constants.
+2. WHEN a backend constant changes without the fixture THEN a backend test SHALL fail. `client-centralization` SHALL read the same fixture against the client's declared type ids.
+
+### Requirement 13 — Which stream failures are permanent, shared with the client
+
+**User Story:** As the user, I want a diagram that cannot be opened to say so, not retry forever.
+
+#### Acceptance Criteria
+
+1. WHEN core refuses to open or watch a diagram THEN the status codes that mean the refusal is permanent SHALL be named in one place in core, and every refusal SHALL use a name from it.
+2. WHEN the list is written THEN this work SHALL provide a golden fixture of status codes and whether each is permanent, which the backend suite checks against that one place and `client-centralization` reads for its stream loop.
+
+## Non-Functional Requirements
+
+### Code Architecture and Modularity
+
+- A module supplies what differs, which is how its document parses and what its events carry, and never re-implements a shared step (Requirements 2, 4, 5).
+- A cross-tier rule has one owner and one fixture; neither side's copy is trusted without it (Requirements 9 to 13).
+
+### Reliability
+
+- A save never silently loses an edit (Requirement 3), and a reload never damages a document being saved (Requirement 2.3).
+- A document ADP did not change comes back byte-identical in every module this touches (Requirement 1.3, Requirement 8.2).
+
+### Verification
+
+- Every guard added here is seen to fail against a planted defect before it is trusted, and a defect criterion is seen to fail before the fix (Requirements 2.3, 3.3, 4.3).
+
+## Sources
+
+- The user's request, quoted verbatim above, and the user's rulings, given as selections via the Scrum master on 2026-09-15.
+- The scan of `src/diagrams/*/backend` at `develop` `eb019687`, and the cross-tier items at `fba7040a`, compared by normalised method body and read per candidate.
+- The failing tests on `claude/backend-defect-probes` at `cd8516f5`.
+- The split with Architect 2's `client-centralization`, and `c4Model.ts:61` for the client's delta fold.
+- `tech.md` decision 11, and the `file-io-centralization` merges `2a3c15d3` and `e6b54040` that converted timeline and dependency-graph. That specification's documents are no longer in the tree; the commits are the record.
+- `client-centralization` is in progress in Architect 2's session and not yet on `develop`; the references to it name the agreed split, not a document to read.
