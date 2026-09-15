@@ -271,6 +271,45 @@ describe("the timeline canvas, on the library", () => {
     expect(moves[0].y / ROW_HEIGHT).toBe(1);
   });
 
+  it("shows during a drag exactly where the element comes to rest once the backend confirms it", () => {
+    // THE USER'S REPORT: the snap seen while dragging was not the snap on the drop, twice over.
+    // The library snapped the element's CENTRE to whole rows while this canvas draws a row's
+    // element with its TOP on the row, so a dragged span rested half a span above its row; and
+    // x moved freely while the backend lands a date-only begin on the start of its day. What is
+    // asserted is the property itself: the box drawn mid-drag is the box drawn after the model
+    // says what the drop sent - and, for a date-only element, what was sent is a whole day, so
+    // the backend's own day rule has nothing left to change.
+    const { container, rerender } = renderCanvas();
+    const units = unitsOf(currentModel);
+    const y = units.y(0) + 18;
+    const element = elementOn(container, "aaa");
+    const boxOf = () => {
+      const box = container.querySelector('[data-element-id="aaa"] .library-shape')!;
+      return { x: Number(box.getAttribute("x")), y: Number(box.getAttribute("y")) };
+    };
+
+    // Down by a row and a bit, across by a fraction of a day.
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 200, clientY: y }));
+    fireEvent(element, pointer("pointermove", { clientX: 237, clientY: y + ROW_HEIGHT + 7 }));
+    const during = boxOf();
+    fireEvent(element, pointer("pointerup", { clientX: 237, clientY: y + ROW_HEIGHT + 7 }));
+
+    expect(moves, "the drag never dropped").toHaveLength(1);
+    const sent = moves[0];
+    expect(sent.y, "the drop did not change row, so there was no snap to compare").toBe(ROW_HEIGHT);
+    // "aaa" is date-only: a begin the backend would move to midnight is a jump nobody saw.
+    // Whole seconds first, as TimelineScale.ToTime rounds them before it takes the day.
+    expect(Math.round(sent.x) % 86400, `sent begin ${sent.x} is not a whole day`).toBe(0);
+
+    const before = currentModel.elements.get("aaa")!;
+    currentModel = { ...currentModel, elements: new Map([...currentModel.elements, ["aaa", { ...before, x: Math.round(sent.x), y: sent.y, row: sent.y / ROW_HEIGHT }]]) };
+    rerender(<TimelineCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["plan.tml"]} />);
+    const after = boxOf();
+
+    expect(after.x, `drawn at x ${during.x} while dragging, ${after.x} once confirmed`).toBeCloseTo(during.x, 3);
+    expect(after.y, `drawn at y ${during.y} while dragging, ${after.y} once confirmed`).toBeCloseTo(during.y, 6);
+  });
+
   it("abandons a drag on Escape with nothing dispatched", () => {
     const { container } = renderCanvas();
     const units = unitsOf(currentModel);

@@ -71,7 +71,7 @@ import type {
   RelationTypeDefinition,
   ShapeSelection,
 } from "./definition/diagramDefinition";
-import { holds, resolveOne, type Binding, type BindingSource } from "./definition/binding";
+import { holds, resolveNumber, resolveOne, type Binding, type BindingSource } from "./definition/binding";
 
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
@@ -733,7 +733,7 @@ function DiagramCanvasCore({
           heldDropRef.current = null; // a new gesture replaces any drop still awaiting its answer
           const frame = (dragFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(dragValue)]));
           const dragScale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
-          const at = dragLanding(definition, target.element, dx * dragScale, dy * dragScale);
+          const at = dragLanding(definition, elementTypes, target.element, dx * dragScale, dy * dragScale);
           frame.move({ id: target.element.id, dx: at.x - target.element.x, dy: at.y - target.element.y });
           break;
         }
@@ -813,7 +813,7 @@ function DiagramCanvasCore({
             break;
           }
 
-          const landing = dragLanding(definition, target.element, dx * dragScale, dy * dragScale);
+          const landing = dragLanding(definition, elementTypes, target.element, dx * dragScale, dy * dragScale);
 
           // HOLD THE DROP UNTIL THE MODEL ANSWERS, instead of reverting at once.
           //
@@ -2874,8 +2874,8 @@ export function snapToStep(value: number, step: number | undefined): number {
 }
 
 /**
- * Where a drag would put an element: clamped to any declared bounds, then snapped to any
- * declared step.
+ * Where a drag would put an element: clamped to any declared bounds, then with its leading edge
+ * snapped to any declared lattice (see `SnapDeclaration`).
  *
  * ONE FUNCTION BECAUSE THERE ARE TWO CALLERS AND THEY MUST AGREE - the per-frame preview and
  * the release. Snapping only the release would show the user one position and record another;
@@ -2887,12 +2887,52 @@ export function snapToStep(value: number, step: number | undefined): number {
  */
 function dragLanding(
   definition: { dragBounds?: import("./definition/diagramDefinition").ShapeBounds; snap?: import("./definition/diagramDefinition").SnapDeclaration },
+  elementTypes: ReadonlyMap<string, ElementTypeDefinition>,
   element: DiagramModelElement,
   dx: number,
   dy: number,
 ): Point {
   const clamped = clampToDragBounds(definition.dragBounds, element, dx, dy);
-  return { x: clamped.x, y: snapToStep(clamped.y, definition.snap?.y?.step) };
+  const snap = definition.snap;
+  if (snap === undefined) {
+    return clamped;
+  }
+
+  const { width, height } = elementBounds(element, elementTypes.get(element.type));
+  const source = sourceOf(element);
+  return {
+    x: snapLeadingEdge(clamped.x, width, snap.x, source),
+    y: snapLeadingEdge(clamped.y, height, snap.y, source),
+  };
+}
+
+/**
+ * A centre moved so the edge `extent / 2` before it rests on the axis's nearest line. The lattice
+ * is read per element, so a step bound to a field the element lacks leaves that element free.
+ */
+function snapLeadingEdge(
+  centre: number,
+  extent: number,
+  axis: import("./definition/diagramDefinition").SnapAxis | undefined,
+  source: BindingSource,
+): number {
+  if (axis === undefined) {
+    return centre;
+  }
+
+  const step = declaredNumberOf(axis.step, source);
+  if (step === null || !(step > 0)) {
+    return centre;
+  }
+
+  const origin = axis.origin === undefined ? 0 : (declaredNumberOf(axis.origin, source) ?? 0);
+  const edge = centre - extent / 2;
+  return origin + snapToStep(edge - origin, step) + extent / 2;
+}
+
+/** A declared number's value for this element: written outright, or bound - null when a binding yields none. */
+function declaredNumberOf(value: import("./definition/diagramDefinition").DeclaredNumber, source: BindingSource): number | null {
+  return typeof value === "number" ? value : resolveNumber(value, source);
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {
