@@ -223,7 +223,7 @@ public sealed class WardleyIdentities
         {
             if (File.Exists(path))
             {
-                File.Delete(path);
+                AdpFileWriter.Delete(path);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

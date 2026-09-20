@@ -106,7 +106,7 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : I
         {
             if (File.Exists(command.RegistrationPath))
             {
-                File.Delete(command.RegistrationPath);
+                AdpFileWriter.Delete(command.RegistrationPath);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

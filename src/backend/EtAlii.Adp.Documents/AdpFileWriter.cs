@@ -160,6 +160,64 @@ public static class AdpFileWriter
         }
     }
 
+    /// <summary>
+    /// Deletes a file ADP publishes, taking the SAME turn a save of that path takes, and records
+    /// that it happened. Missing already is success: the end state is what was asked for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why a delete needs the save's turn.</b> A delete interleaved with a publish of the same
+    /// path breaks the publish, and the codes it produces are the ones that cost a day: measured,
+    /// 400 replaces against a concurrent delete-and-recreate failed 305 times - 75 of them
+    /// <c>0x80070497</c>, the gate flake's own code - plus <c>0x800700B7</c>, <c>0x80070002</c>,
+    /// <c>0x80070020</c> and <c>0x80070005</c>. Sharing one turn: 400 of 400 succeeded, no failure
+    /// of any code. The lock was serialising writers against writers only, and a deleter was never
+    /// a writer to it.
+    /// </para>
+    /// <para>
+    /// <b>The record is the other half.</b> Restart Manager can only name a process still holding
+    /// the file, and a completed delete holds nothing - so a publish that lost to a delete finds
+    /// nobody to name. A line per delete, with the process and the path, is what a later failure
+    /// can be correlated against.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="IOException">The delete failed.</exception>
+    /// <exception cref="UnauthorizedAccessException">The delete was refused.</exception>
+    public static void Delete(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var destination = IoPath.GetFullPath(path);
+        var turn = _destinationTurns.GetOrAdd(destination, static _ => new object());
+        var taken = false;
+        try
+        {
+            Monitor.TryEnter(turn, ref taken);
+            if (!taken)
+            {
+                _logger.Warning("Waited for a save of {Path} before deleting it", destination);
+                Monitor.Enter(turn, ref taken);
+            }
+
+            if (!File.Exists(destination))
+            {
+                return;
+            }
+
+            File.Delete(destination);
+
+            // Information rather than Debug: this is the line a future failed publish is read
+            // against, and a record only kept at Debug is a record the gate log does not have.
+            _logger.Information("Deleted {Path} from pid {ProcessId}", destination, Environment.ProcessId);
+        }
+        finally
+        {
+            if (taken)
+            {
+                Monitor.Exit(turn);
+            }
+        }
+    }
     private static void Publish(string path, string content, Action<string, string> replace)
     {
         var directory = IoPath.GetDirectoryName(path);
@@ -216,13 +274,14 @@ public static class AdpFileWriter
             // name an actor that has already released - see FileHolders - so "no process was
             // holding it when asked" is an answer rather than the absence of one.
             _logger.Warning(
-                "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}",
+                "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}, destination: {Destination}",
                 path,
                 exception.GetType().Name,
                 $"0x{exception.HResult:X8}",
                 exception.Message,
                 Environment.ProcessId,
-                FileHolders.Describe(path));
+                FileHolders.Describe(path),
+                DestinationState.Describe(path));
             DeleteQuietly(temporary);
             throw;
         }
