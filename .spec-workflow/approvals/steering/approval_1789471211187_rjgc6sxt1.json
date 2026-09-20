@@ -3,8 +3,10 @@
   "title": "tech.md - decision 11: concurrent saves take turns, not retries",
   "filePath": ".spec-workflow/steering/tech.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-15T11:20:11.187Z",
   "category": "steering",
-  "categoryName": "steering"
+  "categoryName": "steering",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-15T11:41:50.860Z"
 }

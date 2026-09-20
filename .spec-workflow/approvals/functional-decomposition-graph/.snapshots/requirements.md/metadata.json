@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/functional-decomposition-graph/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-15T11:16:28.209Z",
       "trigger": "initial",
+      "approvalId": "approval_1789470987792_2jjx2qplq",
+      "approvalTitle": "functional-decomposition-graph - Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-15T11:39:58.873Z",
+      "trigger": "approved",
       "approvalId": "approval_1789470987792_2jjx2qplq",
       "approvalTitle": "functional-decomposition-graph - Requirements"
     }
