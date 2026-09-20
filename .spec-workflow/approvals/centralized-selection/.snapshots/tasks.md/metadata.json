@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/tasks.md",
-  "currentVersion": 4,
+  "currentVersion": 5,
   "snapshots": [
     {
       "version": 1,
@@ -33,6 +33,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789203662295_qf33lvkmi",
       "approvalTitle": "Tasks amendment: task 16 (databricks, the one module left) carries the approved menu rule, its edges becoming selectable, and a doc line it makes false; new task 27 carries the approved background menu and causal-loop's follow-up. Coverage still 32 of 32. Nothing else changed (11b9a2f3)."
+    },
+    {
+      "version": 5,
+      "filename": "snapshot-005.json",
+      "timestamp": "2026-09-15T11:41:08.009Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789470588688_wzoz67byc",
+      "approvalTitle": "Task 26 only: records a ruling made 09-12 but never written in. The backend can't tell which elements are lines, so each diagram's test names its own types (from its own code, not retyped) and the check fails on any unnamed type; the helper lives in the existing TestSupport project. Nothing else changed (9e79c97a)."
     }
   ]
 }
