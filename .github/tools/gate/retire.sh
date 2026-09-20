@@ -110,10 +110,25 @@ fi
 HEAD_SHA=$(git -C "$T" rev-parse --verify -q HEAD) || { echo "RESULT=cannot-read-head"; exit 1; }
 if ! git -C "$MAIN" merge-base --is-ancestor "$HEAD_SHA" develop; then
   # Patch-id, not ancestry: a commit that landed under a different sha is not lost work.
-  UNLANDED=$(git -C "$MAIN" cherry develop "$HEAD_SHA") || { echo "RESULT=cannot-compare-with-develop"; exit 1; }
-  if printf '%s\n' "$UNLANDED" | grep -q '^+'; then
-    printf '%s\n' "$UNLANDED" | grep '^+'
-    echo "RESULT=unlanded-commits"
+  #
+  # A rebase, a squash merge or a CONFLICT-RESOLVED cherry-pick changes the patch, so such a
+  # commit can be upstream in CONTENT while its patch id matches nothing. Measured on 2026-09-20:
+  # csel's c909ee02 landed as 1101259d through a resolved pick, and this check named it as if
+  # nobody had landed it. The refusal STAYS - from in here, that case and work nobody landed look
+  # identical, and guessing would delete somebody's only copy. What it must not do is state the
+  # stronger claim, so it names each commit WITH ITS SUBJECT and says what to check instead.
+  # No bypass flag: an override is the workaround that defeats the guard, and a branch that lands
+  # normally makes the comparison moot.
+  UNMATCHED=$(git -C "$MAIN" cherry develop "$HEAD_SHA") || { echo "RESULT=cannot-compare-with-develop"; exit 1; }
+  if printf '%s\n' "$UNMATCHED" | grep -q '^+'; then
+    printf '%s\n' "$UNMATCHED" | grep '^+' | cut -d' ' -f2 | while IFS= read -r sha; do
+      printf '+ %s\n' "$(git -C "$MAIN" log --format='%h %s' -1 "$sha" 2> /dev/null || printf '%s (subject unreadable)' "$sha")"
+    done
+    echo "No patch-id match on develop for the commits above. A rebase, a squash merge or a"
+    echo "conflict-resolved cherry-pick produces exactly this while the CONTENT is upstream, so"
+    echo "check the content on develop rather than the messages. Retiring once the branch itself"
+    echo "lands makes this comparison moot."
+    echo "RESULT=unmatched-commits"
     exit 1
   fi
 fi

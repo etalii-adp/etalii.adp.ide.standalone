@@ -104,17 +104,31 @@ gate_run_logs_dir() {
 # note inside saying what it is, points <parent>/last-red-run.txt at it, and prints the new path.
 # The note and the pointer exist so somebody who does not know this convention still finds it.
 # Idempotent: a directory already kept is left where it is.
+#
+# A rename that fails - a file in it held open, or a <dir>-red that already exists - keeps the logs
+# where they are and still prints a path, because an empty KEPT_LOGS= tells the reader the logs are
+# gone when they are not. `mv -T` because plain mv onto an existing directory moves <dir> INSIDE it,
+# which reports success and prints a path that holds another run's logs. The note says the rename
+# failed, since a directory without the -red name is pruned as a plain run after ten newer ones.
 gate_keep_logs_red() {
-  local dir=$1 why=${2:-} kept
+  local dir=$1 why=${2:-} kept renamed=yes
   case "$dir" in *-red) printf '%s\n' "$dir"; return 0 ;; esac
   [ -d "$dir" ] || return 1
   kept="$dir-red"
-  mv "$dir" "$kept" 2> /dev/null || return 1
+  if ! mv -T "$dir" "$kept" 2> /dev/null; then
+    kept=$dir
+    renamed=no
+  fi
   {
     echo "These are the logs of a gate run that was REFUSED, kept on purpose."
     echo "Run:     $(basename "$dir")"
     echo "Verdict: ${why:-refused}"
     echo "Kept at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    if [ "$renamed" = no ]; then
+      echo
+      echo "The rename to $(basename "$dir")-red FAILED, so these logs stayed under a plain run's name."
+      echo "Pruning treats them as a plain run and deletes them after ten newer runs: copy them out."
+    fi
     echo
     echo "A later gate run writes to its own directory beside this one and never touches this one."
     echo "dotnet-test.log holds the per-assembly stdout, including any server-side exception."
@@ -141,6 +155,44 @@ gate_prune_logs() {
       printf '%s\n' "$dir"
     done | tail -n "+$((keep + 1))" | while IFS= read -r dir; do rm -rf "$dir"; done
   done
+}
+
+# gate_remove_legacy_flat_logs <parent> - deletes the six log files the gate wrote directly into
+# <parent> before each run had its own directory. They are the last run of that older gate, days
+# old, and a reader who opens the parent meets them first. Only those six names are touched.
+gate_remove_legacy_flat_logs() {
+  local parent=$1 name
+  [ -d "$parent" ] || return 0
+  for name in merge.log npm-install.log npm-test.log typecheck.log format.log dotnet-test.log; do
+    rm -f "$parent/$name"
+  done
+}
+
+# gate_undeleted_folders <dir> - summarises what one run's test processes reported as test folders
+# they could not delete. TestFolder (src/TestSupport) writes one <pid>.log per reporting process into
+# the directory named by ADP_UNDELETED_FOLDERS_DIR, one line per folder, and creates nothing when it
+# has nothing to report. Prints "none", or "<n> file(s), <m> line(s)".
+#
+# It never judges. The verdict is the four gates; a report is a finding for whoever reads the run,
+# and absence is the expected answer. On a green run it says none: TestFolder's own guards report
+# into their own scratch files, so a summary of "1 file, 2 lines" on every run means that exclusion
+# has regressed. Lines are counted, never parsed - the format is written to be read - and a last
+# line without a newline still counts.
+gate_undeleted_folders() {
+  local dir=${1:-} files=0 lines=0 f n
+  if [ -n "$dir" ] && [ -d "$dir" ]; then
+    for f in "$dir"/*.log; do
+      [ -f "$f" ] || continue
+      n=$(awk 'END { print NR }' "$f")
+      files=$((files + 1))
+      lines=$((lines + n))
+    done
+  fi
+  if [ "$files" = 0 ]; then
+    printf 'none\n'
+    return 0
+  fi
+  printf '%s file%s, %s line%s\n' "$files" "$([ "$files" = 1 ] || echo s)" "$lines" "$([ "$lines" = 1 ] || echo s)"
 }
 
 # gate_verdict <dotnet-log> - judges the four gates. Reads NPM_INSTALL_EXIT, NPM_TEST_EXIT,
