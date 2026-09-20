@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=146; else EXPECTED=136; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=151; else EXPECTED=141; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -474,7 +474,8 @@ report yes "$([ -f "$WT3/un1/notes.txt" ] && echo yes || echo no)" "... and the 
 new_wt ahead1 || broken "cannot build the unlanded worktree"
 echo work > "$WT3/ahead1/w.txt" && git -C "$WT3/ahead1" add w.txt && git -C "$WT3/ahead1" commit -q -m "unlanded work"
 out=$(retire ahead1)
-report "1:unlanded-commits" "$?:$(result_of "$out")" "a worktree with commits not on develop is refused"
+report "1:unmatched-commits" "$?:$(result_of "$out")" "a worktree with commits not on develop is refused"
+report yes "$(printf '%s\n' "$out" | grep -q "unlanded work" && echo yes || echo no)" "... naming each commit with its subject, not a bare sha"
 new_wt out1 || broken "cannot build the outside-link worktree"
 mkdir -p "$W/outside" && echo "must survive" > "$W/outside/sentinel.txt"
 link_dir "$WT3/out1/src/node_modules/away" "$W/outside"
@@ -490,6 +491,30 @@ report no "$([ -e "$WT3/ok1" ] && echo yes || echo no)" "... its directory is go
 report no "$(git -C "$R3" worktree list --porcelain | grep -q '/ok1$' && echo yes || echo no)" "... it is no longer registered"
 report yes "$(git -C "$R3" rev-parse -q --verify b-ok1 > /dev/null && echo yes || echo no)" "... and its branch was kept"
 report "$DEV3" "$(git -C "$R3" rev-parse develop)" "... and develop did not move"
+
+# A conflict-resolved cherry-pick: the CONTENT is on develop, and its patch id can never match, so
+# `git cherry` reports it forever. The refusal must stay - from inside the script this is
+# indistinguishable from work nobody landed - but it must not claim the commit is unlanded.
+# Developer 1's csel case, 2026-09-20. Every precondition is asserted, because a pick that did not
+# conflict, or content that did not reach develop, would leave this case testing nothing.
+printf 'one\n' > "$R3/c.txt" && git -C "$R3" add c.txt && git -C "$R3" commit -q -m "a file both sides will touch" ||
+  broken "cannot plant the shared file"
+new_wt pick1 || broken "cannot build the cherry-picked worktree"
+printf 'one\nfrom-the-branch\n' > "$WT3/pick1/c.txt" &&
+  git -C "$WT3/pick1" commit -q -am "the work that was cherry-picked" || broken "cannot commit the branch's work"
+PICKED=$(git -C "$WT3/pick1" rev-parse HEAD)
+printf 'one\nfrom-develop\n' > "$R3/c.txt" && git -C "$R3" commit -q -am "a conflicting change on develop" ||
+  broken "cannot commit the conflicting change"
+git -C "$R3" cherry-pick "$PICKED" > /dev/null 2>&1 && broken "the planted cherry-pick did not conflict, so the case would test nothing"
+printf 'one\nfrom-the-branch\n' > "$R3/c.txt" && git -C "$R3" add c.txt &&
+  git -C "$R3" -c core.editor=true cherry-pick --continue > /dev/null 2>&1 || broken "cannot resolve the planted cherry-pick"
+[ "$(cat "$R3/c.txt")" = "$(cat "$WT3/pick1/c.txt")" ] || broken "the resolved pick did not put the branch's content on develop"
+git -C "$R3" cherry develop "$PICKED" | grep -q '^+' || broken "the resolved pick matched by patch id, so the case would test nothing"
+out=$(retire pick1)
+report "1:unmatched-commits" "$?:$(result_of "$out")" "work that landed through a conflict-resolved cherry-pick is refused, and never called unlanded"
+report yes "$(printf '%s\n' "$out" | grep -q "the work that was cherry-picked" && echo yes || echo no)" "... with the commit's subject, so a reader can check the content"
+report yes "$(printf '%s\n' "$out" | grep -q "check the content on develop" && echo yes || echo no)" "... and told to check content on develop rather than messages"
+report yes "$([ -d "$WT3/pick1" ] && echo yes || echo no)" "... and nothing was deleted"
 if [ "$MSYS" = 1 ]; then
   # The failure this script exists for: node_modules nested past Windows' 260-character limit.
   deep() { # <worktree> - bury a file past MAX_PATH inside its node_modules
