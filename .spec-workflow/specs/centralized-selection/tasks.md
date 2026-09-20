@@ -139,7 +139,7 @@ Each: pass `source`, delete the glue, delete its private selected class, and cal
   - **Order.** Write the helper first and run it across all modules in a scratch tree. That run is the measurement, and `azure-pipeline`'s rejection is its natural red. Each offender it names is fixed in that module's task above, or here if that task has already landed. The guard lands green, after the fixes it demands.
   - _Requirements: 2.1, 2.2, 9.3_
 
-- [ ] 27. The background menu, and `causal-loop`'s follow-up — **added on 2026-09-12; a task of its own because task 14 has already landed**
+- [x] 27. The background menu, and `causal-loop`'s follow-up — **added on 2026-09-12; a task of its own because task 14 has already landed**
   - Files: `diagramDefinition.ts`, `validateDiagramDefinition.ts`, `DiagramCanvas.tsx`, `CausalLoopCanvas.tsx`, their tests
   - `DiagramDefinition.backgroundMenu?: boolean`, **whose doc-comment says in words that the default is no background menu**, so a background menu is only ever a declared value. On a declaring canvas, a background right-click converts the pointer the way a toolbox drop already does, pushes that placement (`new:x,y`, canvas coordinates) through the library's own `selectForMenu`, and opens the shared menu on the backend's answer. A right-drag that drew a relation is still not a menu.
   - `causal-loop` declares it, and **its hand-written pointer conversion, its placement push, its read of the pushed selection and its own `ContextMenu` are deleted**. It is the only module with a background menu, so nothing else changes.
