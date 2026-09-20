@@ -213,6 +213,24 @@ describe("AnsibleCanvas", () => {
     expect(moveElementTo.mock.calls[0][0]).toBe("role:nginx");
   });
 
+  it("shows the backend's refusal of a move on the canvas rather than nothing", async () => {
+    // Arrange: the backend refuses to record the position. Until this was fixed the canvas
+    // discarded the answer, so a refused drag just snapped back without a word.
+    moveElementTo.mockClear();
+    moveElementTo.mockResolvedValueOnce("This node's position cannot be saved here.");
+    const { container, findByText } = renderCanvas();
+    const role = container.querySelector('[data-element-id="role:nginx"]')!;
+
+    // Act.
+    fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(role, pointer("pointermove", { clientX: 90, clientY: 70 }));
+    fireEvent(role, pointer("pointerup", { clientX: 90, clientY: 70 }));
+
+    // Assert: the sentence shows, on the rejection line every other canvas uses.
+    const line = await findByText("This node's position cannot be saved here.");
+    expect(line.classList.contains("canvas-rejection")).toBe(true);
+  });
+
   it("does not reposition on a click that barely moves", () => {
     // Arrange: a hand that shifts by a pixel while clicking must not author a position.
     moveElementTo.mockClear();
