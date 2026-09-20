@@ -209,12 +209,20 @@ public static class AdpFileWriter
             // concurrent writers reproduced it as 0x80070497. Any failure left after the turns
             // above says what it is. The exception still propagates unchanged; logging it imposes
             // no error policy on any caller.
+            // ONE RECORD, WITH WHO IN IT. The code says what happened and never who did it, and
+            // the suspects differ: 0x80070497 comes from a second replacer or from a delete of the
+            // destination, 0x80070020 from a reader sharing only Read. Asking who holds the file
+            // turns the next red gate into a name instead of another day of inference. It cannot
+            // name an actor that has already released - see FileHolders - so "no process was
+            // holding it when asked" is an answer rather than the absence of one.
             _logger.Warning(
-                "Could not publish {Path}: {ExceptionType} {HResult} {Message}",
+                "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}",
                 path,
                 exception.GetType().Name,
                 $"0x{exception.HResult:X8}",
-                exception.Message);
+                exception.Message,
+                Environment.ProcessId,
+                FileHolders.Describe(path));
             DeleteQuietly(temporary);
             throw;
         }
