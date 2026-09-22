@@ -14,6 +14,13 @@ SVGElement.prototype.releasePointerCapture ??= () => {};
 /**
  * No stylesheet in the application can repaint the library's two rings.
  *
+ * ## Its name, since task 28's amendment names the old one
+ *
+ * This was `ringsSurviveModuleStyles.test.tsx`, and centralized-selection task 28 names it by that
+ * name in its list of expected test changes. The ring it guarded no longer exists - the user
+ * replaced it with one inline highlight on 2026-09-22 - and a file named for a thing that is gone
+ * is a lie a later reader would act on, so the name moved with the subject.
+ *
  * ## The defect
  *
  * The selected and accept looks are rings the library draws INSIDE the element's group, just
