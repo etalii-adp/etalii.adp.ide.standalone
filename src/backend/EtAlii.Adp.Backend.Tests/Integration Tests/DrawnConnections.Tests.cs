@@ -13,12 +13,16 @@ using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Diagram.Sparql;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.WardleyMap;
+using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.TestSupport;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
+// `Diagram.Timeline` would read as the namespace rather than the module's Diagram class, so the class is aliased.
+using TimelineModule = EtAlii.Adp.Diagram.Timeline.Diagram;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -42,8 +46,24 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
 {
     private readonly WebApplicationFactory<Program> _factory;
 
+    private readonly string _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
+
     public DrawnConnectionsTests(WebApplicationFactory<Program> baseFactory) =>
-        _factory = baseFactory.WithWebHostBuilder(builder => builder.UseEnvironment("developer"));
+        _factory = baseFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("developer");
+            builder.ConfigureServices(services =>
+            {
+                // The problem cache lives and dies with this test rather than in the real user
+                // profile the host's AddProblems registration points at - the leak
+                // ProblemStoreIsolationTests exists to stop, and which it caught here.
+                services.RemoveAll<Problems.IProblemStore>();
+                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
+                    _appDataRoot,
+                    provider.GetRequiredService<DiagramFileRouter>(),
+                    provider.GetRequiredService<Common.DiagramValidators>()));
+            });
+        });
 
     /// <summary>
     /// Every module whose canvas the examples show, with the types its projection emits over them.
@@ -169,13 +189,13 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
 
         // Act.
         var examined = new HashSet<string>(StringComparer.Ordinal);
-        var router = services.GetRequiredService<Hierarchy.DiagramFileRouter>();
+        var router = services.GetRequiredService<DiagramFileRouter>();
         foreach (var module in Modules)
         {
             var folder = IoPath.Combine(DrawnConnections.ExamplesRoot(), "diagrams", module.ExamplesFolder);
             foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
             {
-                if (router.Route(file) is Hierarchy.DiagramRouted routed)
+                if (router.Route(file) is DiagramRouted routed)
                 {
                     examined.Add(routed.Definition.Origin.MimeType);
                 }
@@ -187,7 +207,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         // Both canaries, so this cannot pass by enumerating nothing: a floor on the factories seen, and a
         // member that must be among them.
         Assert.True(opened.Count >= 16, $"the host registers only {opened.Count} session factories");
-        Assert.Contains(global::EtAlii.Adp.Diagram.Timeline.Diagram.Timeline.Origin.MimeType, opened);
+        Assert.Contains(TimelineModule.Timeline.Origin.MimeType, opened);
         Assert.True(unexamined.Count == 0, "diagram types the host opens that no checked example opens: " + string.Join(", ", unexamined));
     }
 }
