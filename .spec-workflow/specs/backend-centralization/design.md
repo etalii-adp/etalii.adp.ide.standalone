@@ -38,7 +38,7 @@ The user ruled three defects found by the scan fixed immediately rather than ins
 
 **Both are Developer 3's to land. This design cites them; it does not carry them.**
 
-## Placement — the one question this design asks
+## Placement — ruled by the user
 
 Every shared piece below has to live somewhere, and the reference graph makes the cost of each answer measurable rather than arguable. Measured on `develop`: **61 module main projects** (13 implemented, 48 stubs). Of those, **61 reference `EtAlii.Adp.Diagram`**, **13 reference `EtAlii.Adp.Backend`**, and **6 reference `EtAlii.Adp.Documents`**.
 
@@ -48,9 +48,9 @@ Every shared piece below has to live somewhere, and the reference graph makes th
 | **(b) `EtAlii.Adp.Documents`** | **7** (the implemented modules that do not reference it yet) | Where `LineDocument`, `LineSplice`, `AdpFileWriter` and `SharedDocumentReader` already live, so the store lifecycle, the save result and the YAML range sit beside the primitives they use. The seven references are one line each. |
 | **(c) a new project** | **13**, plus a project | The cleanest boundary and the worst fit with the backlog: the user's post-decomposition list asks whether `EtAlii.Adp.Common` can be *removed*, so adding a project runs the other way. |
 
-**Recommended: (b).** The pieces are about documents, the primitives they compose are already there, and seven one-line references is a smaller cost than a reader looking in the wrong place for years. The cross-tier fixtures (R9–R13) are a separate question, answered below.
+**THE USER RULED (b), `EtAlii.Adp.Documents`**, given as a selection via the Scrum master on 2026-09-22. **The stated cost is seven new project references**, one line each, in the implemented modules that do not reference it yet. The reason recorded with the ruling: the pieces are about documents, the primitives they compose are already there, and seven one-line references is a smaller cost than a reader looking in the wrong place for years. **So every shared type below lives in `EtAlii.Adp.Documents`**, and the options are kept above rather than deleted, so a later reader meets the cost of the answer that was not taken rather than re-deriving it. The cross-tier fixtures (R9–R13) are a separate question, answered below.
 
-**Where the shared fixtures live** is the second half. They must be readable by the backend suite and by the client suite, so they belong outside both: **`src/fixtures/cross-tier/`**, one JSON file per rule (`row-rounding.json`, `text-metric.json`, `gesture-ids.json`, `element-types.json`, `permanent-statuses.json`), each carrying its cases and the rule's own statement in a `reason` field. The alternative — keeping each beside its backend owner and having the client reach across — was rejected: a client test reading `src/backend/...` inverts the dependency the whole tree is arranged to avoid.
+**Where the shared fixtures live** was mine to take rather than ask, and the user let it stand. They must be readable by the backend suite and by the client suite, so they belong outside both: **`src/fixtures/cross-tier/`**, one JSON file per rule (`row-rounding.json`, `text-metric.json`, `gesture-ids.json`, `element-types.json`, `permanent-statuses.json`), each carrying its cases and the rule's own statement in a `reason` field. The alternative — keeping each beside its backend owner and having the client reach across — was rejected: a client test reading `src/backend/...` inverts the dependency the whole tree is arranged to avoid. That reason is why it stands; it is not a preference.
 
 ## The shared pieces
 
@@ -86,7 +86,7 @@ One result type carrying an error and a warning, both empty on success — wardl
 
 One diff: what is new or changed is added, what is gone is removed, and equality means equal position, type and payload bytes. The six identical copies collapse into it. `ansible-structure` and `helm-charts` stop resending everything.
 
-- **Delta order (R4.5)** is settled here: **removals first, then additions**, which is `dotnet-dependency-graph`'s order today. The reason is the client's fold: an add is an upsert keyed on id, so removing first can never delete something the same batch just added, while the reverse order relies on the ids being disjoint — true today, and true only by accident.
+- **Delta order (R4.5)** is settled here: **removals first, then additions**, which is `dotnet-dependency-graph`'s order today. The reason is the client's fold: an add is an upsert keyed on id, so removing first can never delete something the same batch just added, while the reverse order relies on the ids being disjoint — **true today, and true ONLY BY ACCIDENT.** That sentence is the one that should stop anyone reversing this later: the order is not a style choice, and nothing in the code enforces the property the other order depends on.
 - **Proof**: each converted module's existing session tests, plus the c4 removal guard that `350b8f9e` landed, which is the case this order exists for.
 
 ### S5 — One document-change handler (R5)
