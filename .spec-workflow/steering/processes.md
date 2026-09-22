@@ -241,6 +241,30 @@ Recording *"still cannot be run"* **with the reason** is a result. Silence is no
 
 **A detector can also match *itself*, and that failure has the opposite polarity and a different tell.** A process scan for held work kept returning three PIDs, and the PIDs changed every run - because each probe's own shell wrapper carried the search pattern in its command line, so the scan was counting its own instances. Building the pattern by concatenation, so the literal never appears in the probe, returns empty. **The blind detector under-reports and its tell is a suspiciously clean zero; the self-matching detector over-reports and its tell is a count that will not sit still across runs.** Both are the instrument answering about itself rather than about the tree, so the question to ask is the same one: *what in this result is the measurement rather than the thing measured?*
 
+**An edit to a guard is invisible twice over, so read the guard and not the diff stat.** A test written
+to pin a defect is the one kind of file where a weakening passes by construction: the suite stays green,
+and a gate that never ran notices nothing either. **"The tests are green" answers identically whether
+the guard still guards anything.** So when a change touches such a test, read it and say which defect
+each part still pins.
+
+**Two instances, both from 2026-09-22, both from edits that landed on `develop` outside the gate**
+(found and measured by Developer 3, whose guards they are):
+
+- Three commits added cancellation tokens and async file calls to `C4DocumentStore.FailedReload.Tests.cs`,
+  `CausalLoopDocumentStore.SelfWrite.Tests.cs` and `TimelineDocumentStore.SelfWrite.Tests.cs`. Developer 3
+  diffed **the assertions** rather than the files: none had changed, and the guards still guarded.
+- In `AdpFileWriter.ConcurrentSaves.Tests.cs` a later edit changed `first.Wait(Patience, token)` to
+  `first.WaitAsync(...)` inside a `finally`. **`WaitAsync` returns a task and does not block; the result
+  is discarded, the method returns `void`, so there is no `CS4014` and the compiler says nothing.** The
+  assertions are untouched and the test stays green - while its isolation is gone, because a save still
+  running can write into a folder teardown is deleting.
+
+**The second instance is why "read the assertions" is not enough: the damage arrived through the
+WAITING code.** Read what the test does to reach its assertion - what it waits for, what it holds, what
+it tears down - because a guard can be hollowed out without any assertion changing.
+
+**An ungated commit and a guard edit are each survivable; together they are the case where nothing in
+the system would have told anybody.**
 ## Running the backend tests
 
 The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather than VSTest. Two consequences:
@@ -327,11 +351,20 @@ six `xUnit1051` warnings saying a test was not passing its cancellation token. T
 screen at every gate and nothing failed, so nobody read it. **A hand cleanup after a green gate means
 the gate was the wrong shape, not that people should try harder.**
 
-**So: count the pile, then make each rule either fail or be deliberately excused.** Measured on
-`develop` at `89bb5f35`, a forced full rebuild reported **8 warnings and nothing else**: 3 `xUnit1051`
-(a test's cancellation token) and 4 `xUnit1031` (a blocking wait in a test), all in two concurrency
-guards, plus one protoc `Import google/protobuf/any.proto is unused`. None was a user-visible defect;
-both analyzer rules are about how a TEST waits, so their failure mode is a hung or flaky gate.
+**So: count the pile, then make each rule either fail or be deliberately excused - and date the
+count, because a census is a timestamp and not a fact.** Measured on `develop` at `89bb5f35`, a
+forced full rebuild reported **8 warnings**: 3 `xUnit1051` (a test's cancellation token), 4
+`xUnit1031` (a blocking wait in a test) and one protoc `Import google/protobuf/any.proto is unused`.
+**Six minutes of the user's own editing later, at `f4c96823`, the same command reported 3**: the
+`xUnit1051` sites were gone and two of the four `xUnit1031` sites with them. Both counts were right
+when taken, and a plan built on the first would have fixed three sites that no longer existed.
+**Re-measure immediately before acting, and say which commit the numbers describe.** Two sessions
+counting the second one independently - by file and line, from separate builds - agreed exactly, which
+is the only reason either is trustworthy.
+
+None of the eight was a user-visible defect; both analyzer rules are about how a TEST waits, so their
+failure mode is a hung or flaky gate. Measured on
+`develop`, both times, with `--no-incremental`.
 
 **Three things that measurement taught, each of which cost a wrong answer first:**
 
