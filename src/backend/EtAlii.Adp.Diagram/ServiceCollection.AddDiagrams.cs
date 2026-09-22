@@ -39,7 +39,7 @@ public static class ServiceCollectionAddDiagramsExtension
         services.AddSingleton<EditorSessionFactories>();
         services.TryAddSingleton<IEditorDefinitionCatalog>(svc =>
             new EditorDefinitionCatalog { All = svc.GetService<IReadOnlyList<EditorDefinition>>() ?? [] });
-        services.AddSingleton<EditorResolver>(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));
+        services.AddSingleton(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));
 
         return services;
     }
