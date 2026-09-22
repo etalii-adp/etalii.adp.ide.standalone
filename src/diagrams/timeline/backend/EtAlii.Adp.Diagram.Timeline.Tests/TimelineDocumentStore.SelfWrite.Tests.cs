@@ -48,7 +48,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
                     damaged++;
                 }
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Act.
         var refused = 0;

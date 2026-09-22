@@ -216,7 +216,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
                     // A refused publish is not what this guard measures.
                 }
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         const int reloads = 3000;
         var lost = 0;

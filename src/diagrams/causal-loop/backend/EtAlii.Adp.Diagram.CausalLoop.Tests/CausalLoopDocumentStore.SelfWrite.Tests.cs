@@ -57,7 +57,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
                     first ??= $"usable={entry.IsUsable}, length={entry.Document.Text.Length} of {Text.Length}, error=\"{entry.Error}\"";
                 }
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Act.
         var refused = 0;

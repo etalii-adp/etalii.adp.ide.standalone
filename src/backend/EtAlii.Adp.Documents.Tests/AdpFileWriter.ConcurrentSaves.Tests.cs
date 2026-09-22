@@ -99,11 +99,11 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
             firstIsInside.Set();
             releaseFirst.Wait(Patience);
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }));
+        }), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience), "The first save never reached its replace.");
 
         // Act. A second save to the same destination while the first is inside.
-        var second = Task.Run(() => AdpFileWriter.Save(path, "second"));
+        var second = Task.Run(() => AdpFileWriter.Save(path, "second"), TestContext.Current.CancellationToken);
 
         // Assert, first: it waits - and says so, by path, before it gets its turn.
         Assert.True(
@@ -135,10 +135,10 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
             firstIsInside.Set();
             releaseFirst.Wait(Patience);
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }));
+        }), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience), "The first save never reached its replace.");
 
-        var second = Task.Run(() => AdpFileWriter.Save(otherSpelling, "second"));
+        var second = Task.Run(() => AdpFileWriter.Save(otherSpelling, "second"), TestContext.Current.CancellationToken);
 
         Assert.True(
             SpinWait.SpinUntil(() => logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal)), Patience),
@@ -167,7 +167,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
             firstIsInside.Set();
             releaseFirst.Wait(Patience);
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }));
+        }), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience), "The first save never reached its replace.");
 
         try
@@ -182,7 +182,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         finally
         {
             releaseFirst.Set();
-            first.Wait(Patience);
+            first.Wait(Patience, TestContext.Current.CancellationToken);
         }
     }
 }
