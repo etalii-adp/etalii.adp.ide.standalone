@@ -124,7 +124,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
             {
                 try
                 {
-                    EtAlii.Adp.Documents.AdpFileWriter.Save(path, Text);
+                    Documents.AdpFileWriter.Save(path, Text);
                     Interlocked.Increment(ref publishes);
                 }
                 catch (IOException)

@@ -27,7 +27,7 @@ public sealed class C4Session : IDiagramSession
     /// <summary>The element ids this connection was last given - what a later change removes from.</summary>
     private HashSet<string> _delivered = new(StringComparer.Ordinal);
 
-    private readonly System.Threading.Lock _deliveredGate = new();
+    private readonly Lock _deliveredGate = new();
 
     public C4Session(
         ShortGuid watchId,

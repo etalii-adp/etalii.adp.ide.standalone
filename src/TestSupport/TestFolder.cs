@@ -134,7 +134,7 @@ internal static class TestFolder
         Append(target, line);
     }
 
-    private static readonly System.Threading.Lock _reportGate = new();
+    private static readonly Lock _reportGate = new();
 
     /// <summary>Writes one report line to <paramref name="target"/>, creating its directory if needed.</summary>
     /// <remarks>
