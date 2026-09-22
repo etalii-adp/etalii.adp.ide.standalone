@@ -81,7 +81,7 @@ function arcRouteOf(flipped: boolean) {
  * notation's own adornment, drawn inside the connection's group so the shared selected
  * cascade colours them with the line they describe (the 2026-09-06 adorner styling).
  */
-function linkAdornment(route: { ends?: RouteEnds }, rawConnection: unknown) {
+function linkAdornment(route: { ends?: RouteEnds; highlighted?: boolean }, rawConnection: unknown) {
   const connection = rawConnection as LinkConnection;
   if (route.ends === undefined) {
     return null;
@@ -99,7 +99,9 @@ function linkAdornment(route: { ends?: RouteEnds }, rawConnection: unknown) {
       {connection.link.payload.delayed && (
         // The conventional delay mark: two short strokes ACROSS the link, along the curve's
         // own normal - drawn vertically they would lie along a near-vertical arc.
-        <g className="causal-loop-delay">
+        // Highlighted, the delay strokes take the selection colour with the line they cross: the
+        // library paints its highlight inline, so an adorner it does not draw itself must carry it.
+        <g className="causal-loop-delay" style={route.highlighted === true ? { stroke: "var(--color-selected, #7c3aed)" } : undefined}>
           <line
             x1={pointAlong(arc, 0.44).x - arc.apexNormal.x * 8}
             y1={pointAlong(arc, 0.44).y - arc.apexNormal.y * 8}
@@ -115,7 +117,13 @@ function linkAdornment(route: { ends?: RouteEnds }, rawConnection: unknown) {
         </g>
       )}
       {mark !== "" && (
-        <text className="causal-loop-polarity" x={markAt.x + markNormal.x * 11} y={markAt.y + markNormal.y * 11} textAnchor="middle">
+        <text
+          className="causal-loop-polarity"
+          style={route.highlighted === true ? { fill: "var(--color-selected, #7c3aed)" } : undefined}
+          x={markAt.x + markNormal.x * 11}
+          y={markAt.y + markNormal.y * 11}
+          textAnchor="middle"
+        >
           {mark}
         </text>
       )}

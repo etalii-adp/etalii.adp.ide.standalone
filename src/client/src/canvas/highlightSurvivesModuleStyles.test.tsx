@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, render } from "@testing-library/react";
 import { DiagramCanvasCore } from "./library/DiagramCanvas";
 import type { DiagramDefinition } from "./library/definition/diagramDefinition";
 import type { DiagramModel } from "./library/api/diagramModel";
@@ -81,10 +81,23 @@ function stylesheets(root: string): string[] {
   return found;
 }
 
-const RINGS = ["library-selected-outline", "library-accept-outline"] as const;
-type Ring = (typeof RINGS)[number];
+/** What wears the highlight: the element's own shape, and its anchors. */
+const HIGHLIGHTED = ["shape", "anchor"] as const;
+type Highlighted = (typeof HIGHLIGHTED)[number];
 
 const PAINT = ["fill", "stroke", "stroke-width", "stroke-dasharray", "stroke-opacity", "fill-opacity", "opacity", "visibility", "display"] as const;
+
+/**
+ * What is compared for each part. <b>An anchor's FILL is deliberately not the highlight's business</b>:
+ * the highlight states an anchor's stroke, and a module may legitimately dress the dots its own
+ * notation draws - wardley's `.wardley-annotation circle` sets the same surface colour the anchor
+ * already has, written without its fallback. Its stroke, and whether it is shown at all, are still
+ * compared, because those are what a module could take away.
+ */
+const COMPARED: Record<string, readonly string[]> = {
+  shape: PAINT,
+  anchor: ["stroke", "stroke-width", "stroke-dasharray", "stroke-opacity", "opacity", "visibility", "display"],
+};
 
 const definition: DiagramDefinition = {
   elementTypes: [{ id: "service", shape: "box", anchors: { kind: "compass", positions: ["e", "w"] }, sizing: "model" }],
@@ -104,8 +117,8 @@ const model: DiagramModel = {
   connections: [],
 };
 
-/** Both rings as the library renders them - on the canvas core, which takes a controlled selection: Beta selected, and a connect from Alpha held over it. */
-function renderedRings(): Record<Ring, Element> {
+/** The highlighted shape and anchor as the library renders them, on a selected element. */
+function renderedHighlight(): Record<Highlighted, Element> {
   const { container } = render(
     <DiagramViewProvider>
       <DiagramToolboxProvider>
@@ -113,25 +126,22 @@ function renderedRings(): Record<Ring, Element> {
       </DiagramToolboxProvider>
     </DiagramViewProvider>,
   );
-  const anchor = container.querySelector('[data-element-id="a"] [data-anchor="e"]')!;
-  fireEvent(anchor, new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0, clientX: 50, clientY: 0 }));
-  fireEvent(anchor, new MouseEvent("pointermove", { bubbles: true, cancelable: true, clientX: 300, clientY: 0 }));
-  const rings = {} as Record<Ring, Element>;
-  for (const ring of RINGS) {
-    const found = container.querySelector(`[data-element-id="b"] rect.${ring}`);
-    expect(found, `the library drew no ${ring} on an element that should carry it`).not.toBeNull();
-    rings[ring] = found!.cloneNode(true) as Element;
-  }
+  const element = container.querySelector('[data-element-id="b"]')!;
+  const shape = [...element.querySelectorAll<SVGElement>("*")].find((node) => node.style?.stroke !== "" && !node.hasAttribute("data-anchor"));
+  const anchor = element.querySelector<SVGElement>("[data-anchor]");
+  expect(shape, "the library painted no highlight on a selected element").not.toBeUndefined();
+  expect(anchor, "the selected element drew no anchor to paint").not.toBeNull();
+  const parts = { shape: shape!.cloneNode(true) as Element, anchor: anchor!.cloneNode(true) as Element };
   cleanup();
-  return rings;
+  return parts;
 }
 
-describe("the library's rings survive every stylesheet", () => {
+describe("the library's highlight survives every stylesheet", () => {
   const root = sourceRoot();
   const files = stylesheets(root);
   const classesOf = (text: string) =>
     [...new Set([...text.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((match) => match[1]))].filter(
-      (name) => !(RINGS as readonly string[]).includes(name),
+      (name) => !name.startsWith("library-"),
     );
   // The client's own sheets are always loaded - the application always has them - and each
   // module's sheet is tried beside them, the way the application loads a module.
@@ -146,8 +156,8 @@ describe("the library's rings survive every stylesheet", () => {
     document.body.innerHTML = "";
   });
 
-  /** The ring's paint under `css`, inside a div, an svg and two groups each carrying `wrapperClasses`. */
-  function paintOf(css: string, ringElement: Element, wrapperClasses: string): Record<string, string> {
+  /** The node's paint under `css`, inside a div, an svg and two groups each carrying `wrapperClasses`. */
+  function paintOf(css: string, painted: Element, wrapperClasses: string): Record<string, string> {
     const style = document.createElement("style");
     style.textContent = css;
     document.head.appendChild(style);
@@ -160,7 +170,7 @@ describe("the library's rings survive every stylesheet", () => {
     outer.setAttribute("class", wrapperClasses);
     const inner = document.createElementNS(ns, "g");
     inner.setAttribute("class", wrapperClasses);
-    const rect = ringElement.cloneNode(true) as Element;
+    const rect = painted.cloneNode(true) as Element;
     inner.appendChild(rect);
     outer.appendChild(inner);
     svg.appendChild(outer);
@@ -178,18 +188,17 @@ describe("the library's rings survive every stylesheet", () => {
     expect(files.map((path) => relative(root, path).replaceAll("\\", "/"))).toContain("diagrams/mindmap/client/mindmap.css");
   });
 
-  it.each(RINGS)("paints %s the same inside any element, whichever stylesheet is loaded, naming each that repaints it", (ring) => {
-    const ringElement = renderedRings()[ring];
-    const bare = paintOf(clientCss, ringElement, "");
-    // The ring's paint must actually be stated, or "unchanged" would compare two defaults.
-    expect(bare.fill, `${ring} states no fill of its own`).toBe("none");
-    expect(bare.stroke, `${ring} states no stroke of its own`).toMatch(/^var\(--color-/);
+  it.each(HIGHLIGHTED)("paints a highlighted %s the same inside any element, whichever stylesheet is loaded, naming each that repaints it", (part) => {
+    const painted = renderedHighlight()[part];
+    const bare = paintOf(clientCss, painted, "");
+    // The highlight must actually be in force, or "unchanged" would compare two defaults.
+    expect(bare.stroke, `the highlighted ${part} states no stroke of its own`).toMatch(/^var\(--color-selected/);
 
     const offenders: string[] = [];
     for (const path of files) {
       const own = readFileSync(path, "utf-8");
-      const inside = paintOf(`${clientCss}\n${own}`, ringElement, classesOf(own).join(" "));
-      const changed = PAINT.filter((property) => inside[property] !== bare[property]);
+      const inside = paintOf(`${clientCss}\n${own}`, painted, classesOf(own).join(" "));
+      const changed = COMPARED[part].filter((property) => inside[property] !== bare[property]);
       if (changed.length > 0) {
         offenders.push(`${relative(root, path)}: ${changed.map((property) => `${property} ${bare[property]} -> ${inside[property]}`).join(", ")}`);
       }

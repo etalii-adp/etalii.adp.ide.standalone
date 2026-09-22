@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { DiagramCanvasCore } from "./DiagramCanvas";
+import { HIGHLIGHT_STROKE, HIGHLIGHT_STROKE_WIDTH } from "./highlight";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
 import type { DiagramSelection, LibraryEventHandlers } from "./api/diagramEvents";
@@ -11,12 +12,17 @@ SVGElement.prototype.setPointerCapture ??= () => {};
 SVGElement.prototype.releasePointerCapture ??= () => {};
 
 /**
- * The two looks and how they combine (centralized-selection tasks 4 and 5).
+ * The one look, and what carries it (centralized-selection tasks 5 and 28).
  *
- * *Selected* and *would accept a connection* are each a ring the library draws just outside the
- * element, at different offsets, each read from its own flag alone. What these can see is WHICH
- * ring is drawn and WHERE. What they cannot see is how either looks - jsdom applies no CSS - so
- * legibility on a diagram's fills, and telling the two apart, are the browser pass's to confirm
+ * <b>Selected and "would accept a connection" are the SAME look</b> since the user's ruling of
+ * 2026-09-22: colour plus a heavier line, on the element's outline and its anchors, with the fill
+ * untouched (Requirements 5.3, 5.4, 6.1, 6.2). There is no ring; an outline drawn outside the shape
+ * was the previous answer, and an element that is both selected and a drop target shows that one
+ * look once - the accepted cost being that "would accept" is not separately visible on it.
+ *
+ * <b>These read the INLINE paint</b>, because that is where the look now lives: a stylesheet rule
+ * lost to any module rule styling its own shapes, and jsdom applies no module stylesheet anyway.
+ * What the browser pass still owns is whether the colour READS on a diagram's own fills
  * (Requirement 10.3).
  */
 
@@ -56,11 +62,27 @@ function pointer(type: string, init: MouseEventInit) {
 const elementOn = (container: HTMLElement, id: string) => container.querySelector(`[data-element-id="${id}"]`)!;
 const anchorOn = (container: HTMLElement, id: string, name: string) => container.querySelector(`[data-element-id="${id}"] [data-anchor="${name}"]`)!;
 
-/** The ring of this kind on this element, as the box it draws, or null when it is not drawn. */
-function ringOf(container: HTMLElement, id: string, kind: "selected" | "accept") {
-  const ring = elementOn(container, id).querySelector(`rect.library-${kind}-outline`);
-  return ring === null ? null : { x: Number(ring.getAttribute("x")), y: Number(ring.getAttribute("y")), width: Number(ring.getAttribute("width")) };
+/**
+ * What the element's shape is painted with. The paint is inline, but WHICH node carries it depends
+ * on the built-in: a `box` spreads it onto the group it draws (SVG stroke inherits to the rect
+ * inside), while an `ellipse` or a polygon carries it on the shape itself. So this reads the first
+ * node in the element that states a stroke inline, which is the paint either way.
+ */
+function shapePaint(container: HTMLElement, id: string) {
+  const element = elementOn(container, id);
+  const painted = [...element.querySelectorAll<SVGElement>("*")].find((node) => node.style?.stroke !== undefined && node.style.stroke !== "" && !node.hasAttribute("data-anchor"));
+  const fill = [...element.querySelectorAll<SVGElement>("*")].find((node) => node.style?.fill !== undefined && node.style.fill !== "");
+  return { stroke: painted?.style.stroke ?? "", strokeWidth: painted?.style.strokeWidth ?? "", fill: fill?.style.fill ?? "" };
 }
+
+/** What an anchor of that element is painted with. */
+function anchorPaint(container: HTMLElement, id: string, name: string) {
+  const anchor = anchorOn(container, id, name) as SVGElement;
+  return { stroke: anchor.style.stroke, strokeWidth: anchor.style.strokeWidth };
+}
+
+/** Whether this element wears the highlight at all. */
+const isHighlighted = (container: HTMLElement, id: string) => shapePaint(container, id).stroke === HIGHLIGHT_STROKE;
 
 /** Starts a connect from Alpha's east anchor and holds it over Beta - accept, mid-gesture. */
 function holdConnectOverBeta(container: HTMLElement) {
@@ -69,41 +91,46 @@ function holdConnectOverBeta(container: HTMLElement) {
   fireEvent(anchor, pointer("pointermove", { clientX: 300, clientY: 0 }));
 }
 
-describe("the two looks", () => {
-  it("a selected element carries the selected ring just outside it, and no accept ring", () => {
+describe("the one look", () => {
+  it("a selected element is painted with the highlight, outline and anchors alike, and its fill is untouched", () => {
     const { container } = mount([{ kind: "element", id: "a" }]);
 
-    expect(ringOf(container, "a", "selected")).toEqual({ x: -54, y: -24, width: 108 });
-    expect(ringOf(container, "a", "accept")).toBeNull();
-    expect(ringOf(container, "b", "selected")).toBeNull();
+    const paint = shapePaint(container, "a");
+    expect(paint.stroke).toBe(HIGHLIGHT_STROKE);
+    expect(Number(paint.strokeWidth)).toBeGreaterThanOrEqual(HIGHLIGHT_STROKE_WIDTH);
+    // The fill is the notation's: what a thing IS still reads while the highlight says what is selected.
+    expect(paint.fill).toBe(shapePaint(container, "b").fill);
+    expect(anchorPaint(container, "a", "e").stroke).toBe(HIGHLIGHT_STROKE);
+    expect(isHighlighted(container, "b")).toBe(false);
   });
 
-  it("a valid drop target carries the accept ring, further out, and no selected ring", () => {
+  it("a valid drop target is painted with the SAME look, by the user's ruling that accept wins in the selection colour", () => {
     const { container } = mount([]);
 
     holdConnectOverBeta(container);
 
     expect(elementOn(container, "b").classList.contains("library-connect-target"), "the drag never reached Beta").toBe(true);
-    expect(ringOf(container, "b", "accept")).toEqual({ x: 241, y: -29, width: 118 });
-    expect(ringOf(container, "b", "selected")).toBeNull();
+    expect(shapePaint(container, "b").stroke).toBe(HIGHLIGHT_STROKE);
+    expect(anchorPaint(container, "b", "w").stroke).toBe(HIGHLIGHT_STROKE);
   });
 });
 
-describe("the looks combine without reading one another", () => {
-  it("selected and a valid drop target shows both rings, one inside the other", () => {
+describe("one look, shown once", () => {
+  it("an element both selected and a valid drop target shows that one look, and says so in both classes", () => {
+    // The reversal of the 2026-09-11 amendment, recorded: there is no second look to combine, so
+    // "would accept" is not separately visible on an element that is already selected. The two
+    // CLASSES still distinguish the states for tests and modules; the paint does not.
     const { container } = mount([{ kind: "element", id: "b" }]);
 
     holdConnectOverBeta(container);
 
-    const selected = ringOf(container, "b", "selected");
-    const accept = ringOf(container, "b", "accept");
-    expect(selected, "the selected ring gave way to the accept ring").not.toBeNull();
-    expect(accept, "the accept ring gave way to the selected ring").not.toBeNull();
-    expect(accept!.x).toBeLessThan(selected!.x);
-    expect(accept!.width).toBeGreaterThan(selected!.width);
+    const group = elementOn(container, "b");
+    expect(group.classList.contains("canvas-selected")).toBe(true);
+    expect(group.classList.contains("library-connect-target")).toBe(true);
+    expect(shapePaint(container, "b").stroke).toBe(HIGHLIGHT_STROKE);
   });
 
-  it("dragging a selected element keeps its ring and adds the dragging look", () => {
+  it("dragging a selected element keeps its highlight and adds the dragging look", () => {
     const { container } = mount([{ kind: "element", id: "a" }]);
     const target = elementOn(container, "a");
 
@@ -111,10 +138,10 @@ describe("the looks combine without reading one another", () => {
     fireEvent(target, pointer("pointermove", { clientX: 60, clientY: 40 }));
 
     expect(target.classList.contains("library-element-dragging"), "the drag never started").toBe(true);
-    expect(ringOf(container, "a", "selected")).toEqual({ x: 6, y: 16, width: 108 });
+    expect(isHighlighted(container, "a")).toBe(true);
   });
 
-  it("dropped, held and selected shows the ring at the held position, with no dragging look", () => {
+  it("dropped, held and selected keeps the highlight, with no dragging look", () => {
     // The drop is held at the landing until the model answers (c077af58), and this model never
     // does - exactly the window a backend round trip opens.
     const onElementMoved = vi.fn();
@@ -128,7 +155,7 @@ describe("the looks combine without reading one another", () => {
     expect(onElementMoved, "the drop never happened").toHaveBeenCalledOnce();
     expect(target.classList.contains("library-element-dragging")).toBe(false);
     expect(target.classList.contains("canvas-selected")).toBe(true);
-    expect(ringOf(container, "a", "selected")).toEqual({ x: 6, y: 16, width: 108 });
+    expect(isHighlighted(container, "a")).toBe(true);
   });
 
   it("a drag leaves the selection where it was", () => {
@@ -141,7 +168,7 @@ describe("the looks combine without reading one another", () => {
     fireEvent(target, pointer("pointerup", { clientX: 60, clientY: 40 }));
 
     expect(onSelectionChanged).not.toHaveBeenCalled();
-    expect(ringOf(container, "b", "selected")).not.toBeNull();
-    expect(ringOf(container, "a", "selected")).toBeNull();
+    expect(isHighlighted(container, "b")).toBe(true);
+    expect(isHighlighted(container, "a")).toBe(false);
   });
 });

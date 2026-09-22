@@ -12,13 +12,6 @@
   stroke: none;
 }
 
-.timeline-selected .timeline-moment,
-.timeline-connect-target .timeline-moment {
-  stroke: var(--color-primary, limegreen);
-  stroke-width: 2.5;
-  fill: var(--color-surface, #ffffff);
-}
-
 /* ---- Adorners ---------------------------------------------------------------------- */
 
 /* The duration-resize strips; what they resize is a time span, which only this type has. */

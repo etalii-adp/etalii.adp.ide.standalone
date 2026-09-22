@@ -99,18 +99,19 @@
 }
 
 /*
- * "SELECTED" IS AN OUTLINE THE LIBRARY DRAWS, NOT A RECOLOURED STROKE.
+ * "SELECTED" IS NOT PAINTED IN THIS FILE AT ALL - see canvas/library/highlight.ts.
  *
- * This rule used to recolour `.canvas-node`'s stroke under `.canvas-selected`, and the same rule
- * served "would accept a connection" too - so the two meanings looked identical, and neither was
- * legible where it mattered: a stroke recolour reads only where it contrasts with the fill beside
- * it, and a declared element paints its own stroke inline, which beats any stylesheet. On c4's
- * backend-chosen colours a selected element could look exactly like an unselected one.
+ * The history is worth keeping, because both previous answers were tried here. FIRST this file
+ * recoloured `.canvas-node`'s stroke under `.canvas-selected`, and the same rule served "would
+ * accept a connection", so the two meanings looked identical and neither was legible: a declared
+ * element paints its own stroke inline, which beats any stylesheet, so on c4's backend-chosen
+ * colours a selected element looked exactly like an unselected one. THEN the library drew a ring
+ * outside each element instead - which a module rule on its shapes could still repaint, and which
+ * the user replaced on 2026-09-22 with one colour on the outline, the anchors and the line.
  *
- * So the library draws each look itself, as its own shape OUTSIDE the element's boundary, where
- * the canvas ground is behind it and no fill or inline paint can reach it (centralized-selection
- * Requirement 5.2): `library-selected-outline` for selected, `library-accept-outline` for accept.
- * Both are painted inline, from canvas/library/ringLooks.ts. The element's own stroke is left alone.
+ * So the highlight is an inline paint the library writes, in one place, for elements and
+ * connections alike: colour plus a heavier line, the fill untouched, and the same look for
+ * selected and for a drop target (Requirements 5.3, 5.4, 6.1, 6.2).
  */
 
 /*
@@ -155,12 +156,9 @@
  * nothing new. Reported against the dependency graph and the timeline; it was never those two
  * modules' doing, and neither of them has an anchor rule of its own.
  *
- * The border colour at rest; under a look, the colour of that look's outline - selected or
- * accept - so an anchor and the ring around its element change together when the theme does.
- *
- * `.canvas-selected` and `library-connect-target` are both put on the element group by the
- * library itself, for every canvas, so these rules reach every canvas without any module opting
- * in - which is what was asked for.
+ * The border colour at rest. HIGHLIGHTED, an anchor is painted inline with the element it belongs
+ * to (canvas/library/highlight.ts), so the two cannot disagree and no module rule can outrank it;
+ * this rule dresses the resting state only.
  */
 .canvas-anchor {
   fill: var(--color-surface, #ffffff);
@@ -220,26 +218,11 @@
 }
 
 /*
- * The selected and accept halves of the three rules above, each written once for all of them.
- *
- * An anchor takes the colour of whichever look its element carries, so it changes with the
- * outline around it: the selected colour under `.canvas-selected` (`1df91874`), the accept
- * colour under `library-connect-target`. Accept comes second, so an element that is both shows
- * its anchors as a drop target - the question the dragging user is asking at that moment. The
- * outline's stroke width is deliberately NOT copied: a thick stroke on a five-pixel dot closes
- * the hole in the middle and turns it into a blob.
+ * AN ANCHOR'S HIGHLIGHTED COLOUR IS NOT HERE. It is painted inline, with the element it belongs
+ * to, by canvas/library/highlight.ts - one look for selected and for "would accept", in one place
+ * (centralized-selection Requirements 5.3, 5.4, 6.1). Two rules used to live here, one per
+ * meaning, and a module rule on the element's own shapes could outrank either.
  */
-.canvas-selected .canvas-anchor,
-.canvas-selected .library-anchor,
-.canvas-selected .library-span-anchor {
-  stroke: var(--color-primary, limegreen);
-}
-
-.library-connect-target .canvas-anchor,
-.library-connect-target .library-anchor,
-.library-connect-target .library-span-anchor {
-  stroke: var(--color-accept, #0284c7);
-}
 
 .library-span-anchor-hit {
   fill: transparent;
@@ -248,11 +231,11 @@
 }
 
 /*
- * THE TWO LOOKS, `library-selected-outline` and `library-accept-outline`, are painted INLINE by
- * the library - see canvas/library/ringLooks.ts - and deliberately have no rule here. A rule here
- * loses to any module rule that styles its shapes by descendant (`.mindmap-node rect`), because
- * the ring is a rect in that group: on the mind map that drew the selected ring as an opaque box
- * over the label. The classes stay on the rings, as names to find them by.
+ * THE ONE LOOK is painted inline by canvas/library/highlight.ts and deliberately has no rule here.
+ * A rule here loses to any module rule that styles its own shapes by descendant
+ * (`.mindmap-node rect`), which is how the ring this replaced came to be drawn as an opaque box
+ * over a mind-map label. `.canvas-selected` and `library-connect-target` stay on the group: they
+ * are the NAMES tests and modules read, not a look.
  */
 
 /*
@@ -266,21 +249,18 @@
  * `canvas-connect-target` for themselves showed anything at all; every other canvas let you
  * drag a connection with no sign it would be accepted until you released.
  *
- * NOT A STROKE ON THE SHAPE, and the reason is not taste. A declared element paints itself
- * through an inline `style` - `paint.stroke` is set whenever the type or the document names a
- * stroke - and an inline style beats a stylesheet. A `stroke` rule would therefore light up the
- * elements that happen to declare no stroke and silently skip the ones that do, which is worse
- * than no highlight: the absence would read as "this target is refused" on exactly the elements
- * whose notation is richest. Accept is drawn as `library-accept-outline`, a shape of the library's
- * own outside the element, which no child's inline paint can reach and which works the same for
- * a box, a span, a circle, a symbol and a frame. The refusal below is still a glow on the group,
- * for the same reason: no child's paint can override a filter on its parent.
+ * IT IS PAINTED THE WAY A SELECTION IS, by the user's ruling of 2026-09-22: a drop target wins,
+ * in the selection colour (Requirements 6.1, 6.2). The accepted half is therefore the same inline
+ * highlight the selected half uses, and `--color-accept` is gone with the second look it served.
+ * The accepted cost, recorded rather than discovered later: on an element that is ALREADY
+ * selected, "would accept" is not separately visible.
+ *
+ * NOT A STYLESHEET RULE, and the reason is not taste: a declared element paints its own stroke
+ * inline whenever its type or its document names one, so a `stroke` rule here would light up the
+ * elements that declare no stroke and silently skip the ones that do - the absence reading as
+ * "refused" on exactly the elements whose notation is richest. The refusal below stays a glow on
+ * the group, for the same reason: no child's paint can override a filter on its parent.
  */
-
-
-/* The accepted half is `library-accept-outline` above. This rule once drew it as a glow, in the
- * selected colour - which made accept and selected the same colour on the same element. The
- * class stays on the group: it is what the anchors and a module's own declaration read. */
 
 /* Refused, and said in the same breath rather than by staying silent: the pointer is over a
  * target the definition will not accept, which a user needs to be able to tell from empty
@@ -324,12 +304,6 @@
   stroke-width: 1.5;
 }
 
-.canvas-selected .canvas-connection-line,
-.canvas-selected.canvas-connection-line {
-  stroke: var(--color-primary, limegreen);
-  stroke-width: 2.5;
-}
-
 /* An invisible fat twin of the line carries the pointer - a 1.5px stroke is no target. */
 .canvas-connection-hit {
   fill: none;
@@ -345,15 +319,10 @@
   user-select: none;
 }
 
-/* A selected connection highlights whole: its label and marks as much as its line, so the
-   adorners riding on it - a polarity sign, a weight, a label - never read as belonging to
-   something else. Both shapes, because modules put canvas-selected on the connection group
-   itself or on an ancestor. */
-.canvas-selected.canvas-connection text,
-.canvas-selected .canvas-connection text,
-.canvas-connection.canvas-selected text {
-  fill: var(--color-primary, limegreen);
-}
+/* A SELECTED CONNECTION IS NOT PAINTED HERE EITHER. Its line, its label, its adorners and its
+   arrowhead all take the highlight inline, from the same one place the elements do: the whole
+   route reads as one thing, and the marker in <defs> follows through `context-stroke`, which no
+   selector on a selected connection could ever have reached. */
 
 .canvas-pending-connection {
   fill: none;

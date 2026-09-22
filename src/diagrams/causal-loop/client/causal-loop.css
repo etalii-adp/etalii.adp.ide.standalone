@@ -70,13 +70,10 @@
   stroke-width: 1.5;
 }
 
-/* Selected, the delay strokes highlight with the line they cross - an adorner left behind in
-   the base colour reads as not being part of the selected link. The polarity mark needs no
-   rule here: it is a text inside the connection group, which the shared selected-text rule
-   already colours. */
-.canvas-selected .causal-loop-delay line {
-  stroke: var(--color-primary, limegreen);
-}
+/* The delay strokes' HIGHLIGHTED colour is not here: `adorn` is handed `highlighted` and paints
+   them inline with the line they cross, because the library's highlight is an inline paint and
+   reaches only what it draws itself. An adorner left in the base colour reads as not belonging
+   to the selected link, which is the defect this used to prevent by cascade. */
 
 /* The loop badge, among the variables it runs through. */
 .causal-loop-badge {

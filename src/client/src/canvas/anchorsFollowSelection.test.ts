@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./library/ringLooks";
+import { HIGHLIGHT_STROKE } from "./library/highlight";
 
 /**
  * An anchor is coloured like the element it belongs to: at rest, when selected, and when it is
@@ -24,15 +24,15 @@ import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./library/ringLooks";
  * both sides at once and this stays green, while a colour pinned on one side only turns it
  * red. That is the property that was actually violated.
  *
- * ## What "the element's colour" is, since centralized-selection
+ * ## What "the element's colour" is, since task 28
  *
- * Selected used to be a recoloured stroke on the box, `.canvas-selected .canvas-node`. It is now
- * a ring the library draws outside the element, `library-selected-outline`, and accept is a
- * second ring, `library-accept-outline` (that specification's Requirements 5 and 6). So the
- * anchor's selected colour is compared with the selected RING's, and its accept colour with the
- * accept ring's - the same relationship, read from where each look now lives. The rings' paint is
- * inline, from `ringLooks.ts`, because a canvas.css rule for them lost to module rules styling
- * shapes by descendant (`.mindmap-node rect`); so the rings are read from there.
+ * Selected was a recoloured stroke here, then a ring the library drew outside the element. It is
+ * now ONE inline highlight - colour plus a heavier line - on the element's outline AND on its
+ * anchors, with "would accept" showing the same look (Requirements 5.3, 5.4, 6.1). So an anchor's
+ * highlighted colour is no longer a rule in this file at all: `highlight.ts` paints the anchor and
+ * the element together, which is the strongest form this relationship can take - they cannot
+ * disagree, because one expression paints both. What stays here is the RESTING relationship, which
+ * is still a cascade: an unselected anchor wears the same colour as an unselected box.
  */
 describe("anchors follow their element's selection", () => {
   const css = readFileSync(join(__dirname, "canvas.css"), "utf8");
@@ -57,9 +57,9 @@ describe("anchors follow their element's selection", () => {
     return /var\(\s*(--[\w-]+)/.exec(declaration[1]!)?.[1] ?? null;
   }
 
-  /** The variable a ring's inline stroke resolves to, e.g. `var(--color-primary, x)` -> `--color-primary`. */
-  function ringVariable(style: { stroke?: unknown }): string | null {
-    return /var\(\s*(--[\w-]+)/.exec(String(style.stroke ?? ""))?.[1] ?? null;
+  /** The variable the highlight's inline stroke resolves to, e.g. `var(--color-selected, x)`. */
+  function highlightVariable(): string | null {
+    return /var\(\s*(--[\w-]+)/.exec(HIGHLIGHT_STROKE)?.[1] ?? null;
   }
 
   const ANCHORS = [".canvas-anchor", ".library-anchor", ".library-span-anchor"] as const;
@@ -74,33 +74,34 @@ describe("anchors follow their element's selection", () => {
     }
   });
 
-  it("takes the highlight colour when its element is selected", () => {
-    // The other half, and the reason the first half is safe: losing the green entirely would
-    // pass the test above and fail this one.
-    const selectedRing = ringVariable(SELECTED_RING_STYLE);
-    expect(selectedRing).not.toBeNull();
+  it("takes the highlight colour with its element, from the one expression that paints both", () => {
+    // The other half, and the reason the first half is safe: losing the colour entirely would
+    // pass the test above and fail this one. It is no longer a cascade to check - the library
+    // paints the anchor and the element in one expression - so what is asserted is that the
+    // highlight names a theme colour, and that selectionLooks proves an anchor actually wears it.
+    expect(highlightVariable(), "the highlight names no theme colour").not.toBeNull();
+    expect(HIGHLIGHT_STROKE).toMatch(/^var\(--color-selected/);
+  });
 
+  it("has no rule of its own for the highlighted states, which is what stops the two disagreeing", () => {
+    // The defect this whole file exists for was an anchor whose colour was stated separately from
+    // its element's. A rule here would be exactly that separate statement returning.
     for (const anchor of ANCHORS) {
-      expect(variableOf(blockFor(`.canvas-selected ${anchor}`), "stroke"), `${anchor} when selected`).toBe(selectedRing);
+      expect(css, `${anchor} is painted for a selected element by a rule`).not.toMatch(new RegExp(`\.canvas-selected\s+\${anchor}`));
+      expect(css, `${anchor} is painted for a drop target by a rule`).not.toMatch(new RegExp(`\.library-connect-target\s+\${anchor}`));
     }
   });
 
-  it("takes the accept colour when its element is a drop target", () => {
-    const acceptRing = ringVariable(ACCEPT_RING_STYLE);
-    expect(acceptRing).not.toBeNull();
-
-    for (const anchor of ANCHORS) {
-      expect(variableOf(blockFor(`.library-connect-target ${anchor}`), "stroke"), `${anchor} under a drop target`).toBe(acceptRing);
-    }
-  });
-
-  it("reads the three states as different, whatever the theme calls them", () => {
+  it("reads resting and highlighted as different, whatever the theme calls them", () => {
     // The canary. The assertions above compare an anchor against a ring, so a stylesheet that
     // gave two states one colour would satisfy them and still show nothing. This is the only
     // claim here that does not depend on the other rules being right.
     const rest = variableOf(blockFor(".canvas-node"), "stroke");
-    const selected = ringVariable(SELECTED_RING_STYLE);
-    const accept = ringVariable(ACCEPT_RING_STYLE);
-    expect(new Set([rest, selected, accept]).size, `rest ${rest}, selected ${selected}, accept ${accept}`).toBe(3);
+    const highlight = highlightVariable();
+    // TWO states now, not three: the user's ruling made "would accept" the same look as selected,
+    // so the claim is that resting and highlighted differ - and that the highlight's colour is not
+    // one a diagram paints at rest (Requirement 5.5), which --color-primary was.
+    expect(new Set([rest, highlight]).size, `rest ${rest}, highlighted ${highlight}`).toBe(2);
+    expect(highlight).not.toBe("--color-primary");
   });
 });

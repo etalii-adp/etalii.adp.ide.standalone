@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./library/ringLooks";
+import { HIGHLIGHT_STROKE } from "./library/highlight";
 
 /**
  * A drag that would be accepted says so on the element it would land on.
@@ -26,17 +26,18 @@ import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./library/ringLooks";
  * invisible. This asserts the narrower thing that actually matters — **each state class carries
  * a declaration of its own** — which is the half that would otherwise rot unnoticed.
  *
- * ## Where "visible" lives, since centralized-selection
+ * ## Where "visible" lives, and the reversal of 2026-09-11
  *
- * The accept look was a glow on `library-connect-target`, in the selected colour — so accept and
- * selected looked the same, and an element that was both could not show both. It is now a ring
- * the library draws for that state, `library-accept-outline`: dashed, further out than the
- * selected ring, in a colour of its own (that specification's Requirements 6.1 and 6.2). So this
- * asks the ring for its paint, and adds the claim the amendment made: accept is not selected.
+ * This went three ways. It was a glow in the selected colour, so accept and selected were
+ * indistinguishable; then a dashed ring of its own, further out, so they were two looks that could
+ * show at once; and now, by the user's ruling of 2026-09-22, ONE look: a drop target is painted
+ * exactly the way a selection is (Requirements 6.1, 6.2). <b>That reverses the amendment this file
+ * once asserted</b>, so its claim is reversed with it: accept must look the SAME as selected, and
+ * must still be clearly different from refused.
  *
- * The rings' paint is inline, from `ringLooks.ts`, not a rule in canvas.css: a rule lost to any
- * module rule styling its shapes by descendant (`.mindmap-node rect`). So the two rings are read
- * from there, and the refused state, still a rule, from here.
+ * The highlight is an inline paint (`highlight.ts`), because a rule lost to any module rule styling
+ * its own shapes by descendant. Refused is still a filter rule here, and still read from the
+ * stylesheet.
  */
 describe("a connect target is visible", () => {
   const css = readFileSync(join(__dirname, "canvas.css"), "utf8");
@@ -50,9 +51,9 @@ describe("a connect target is visible", () => {
   }
 
   it("paints the element a valid drop would land on", () => {
-    // Something visible: a stroke in a theme colour, on a ring that is not filled over the element.
-    expect(String(ACCEPT_RING_STYLE.stroke)).toMatch(/^var\(--color-/);
-    expect(ACCEPT_RING_STYLE.fill).toBe("none");
+    // Something visible: a stroke in a theme colour. The fill is deliberately untouched now, so a
+    // notation's own colours still say what the thing IS while it is a drop target.
+    expect(HIGHLIGHT_STROKE).toMatch(/^var\(--color-/);
   });
 
   it("paints a target the definition would refuse, differently", () => {
@@ -65,24 +66,23 @@ describe("a connect target is visible", () => {
     // The canary. Both assertions above would pass if a careless edit gave the refused state the
     // accepted state's colour, and the drag would then promise a drop that gets refused — the
     // one outcome worse than showing nothing at all.
-    expect(ownBlockOf("library-connect-forbidden")).not.toContain(String(ACCEPT_RING_STYLE.stroke));
-    expect(String(ACCEPT_RING_STYLE.stroke)).not.toMatch(/--color-danger/);
+    expect(ownBlockOf("library-connect-forbidden")).not.toContain(HIGHLIGHT_STROKE);
+    expect(HIGHLIGHT_STROKE).not.toMatch(/--color-danger/);
   });
 
-  it("does not look like selected - a different colour, and dashed where selected is not", () => {
-    // Requirement 6.1: two meanings, two looks. Until centralized-selection both were the
-    // primary colour on the same element, so "would accept" read as "is selected".
-    const colourOf = (stroke: unknown) => /^var\(\s*(--[\w-]+)/.exec(String(stroke))?.[1];
-    expect(colourOf(SELECTED_RING_STYLE.stroke), "the selected ring names no theme colour").toBeDefined();
-    expect(colourOf(ACCEPT_RING_STYLE.stroke)).not.toBe(colourOf(SELECTED_RING_STYLE.stroke));
-    expect(ACCEPT_RING_STYLE.strokeDasharray ?? "none").not.toBe("none");
-    expect(SELECTED_RING_STYLE.strokeDasharray ?? "none").toBe("none");
+  it("looks EXACTLY like selected, which is the 2026-09-22 reversal, and nothing like refused", () => {
+    // The reversal, as a test: there is one look, so accept and selected cannot be told apart by
+    // paint - and the cost, that "would accept" is invisible on an already-selected element, is
+    // written in the requirements rather than left to be discovered. What must still differ is
+    // refused, which is a danger-coloured filter rather than a stroke.
+    expect(HIGHLIGHT_STROKE).toMatch(/^var\(\s*--color-selected/);
+    expect(ownBlockOf("library-connect-forbidden")).toMatch(/--color-danger/);
   });
 
   it("is not left to the modules to declare", () => {
     // The request was for a central fix: the library's own ring carries the behaviour, so a
     // module that declares nothing still shows it. The module-private `canvas-connect-target`
     // declarations are removed as each module migrates (Requirement 6.1).
-    expect(ACCEPT_RING_STYLE.stroke).toBeDefined();
+    expect(HIGHLIGHT_STROKE.length).toBeGreaterThan(0);
   });
 });
