@@ -116,6 +116,29 @@ public static class AdpFileWriter
         Save(path, content, ReplaceDestination);
 
     /// <summary>
+    /// <see cref="Save(string, string)"/> for content that is already bytes - a file whose exact
+    /// encoding is the caller's to decide, a byte-order mark above all.
+    /// </summary>
+    /// <remarks>
+    /// The string overload writes UTF-8 without a BOM, which is right for documents ADP AUTHORS
+    /// and wrong for one it merely EDITS: a text buffer round-tripping somebody else's file has
+    /// to put back the BOM it found. That is why this exists rather than the caller reaching for
+    /// its own FileStream - it takes the same per-destination turn and the same temp-then-replace
+    /// publish, so a reader never sees a half-written file and a delete cannot interleave.
+    /// </remarks>
+    /// <exception cref="IOException">The write or the move failed.</exception>
+    /// <exception cref="UnauthorizedAccessException">The write or the move was refused.</exception>
+    public static void Save(string path, byte[] content) =>
+        Save(path, content, ReplaceDestination);
+
+    /// <summary><see cref="Save(string, byte[])"/> with the replace handed in, for guards.</summary>
+    internal static void Save(string path, byte[] content, Action<string, string> replace)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        SaveCore(path, null, content, replace);
+    }
+
+    /// <summary>
     /// <see cref="Save(string, string)"/> with the replace handed in. <b>The seam lets a guard stop
     /// a save inside its replace</b>, which is what makes the turn-taking deterministic to test:
     /// with the first save held there, a second save to the same destination either waits and
@@ -125,8 +148,17 @@ public static class AdpFileWriter
     /// </summary>
     internal static void Save(string path, string content, Action<string, string> replace)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(content);
+        SaveCore(path, content, null, replace);
+    }
+
+    /// <summary>
+    /// The one turn-taking save. Text or bytes, never both: the content is carried IN rather
+    /// than fetched through a callback, because the turn below may not call back out.
+    /// </summary>
+    private static void SaveCore(string path, string? text, byte[]? bytes, Action<string, string> replace)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         var destination = IoPath.GetFullPath(path);
         var turn = _destinationTurns.GetOrAdd(destination, static _ => new object());
@@ -149,7 +181,7 @@ public static class AdpFileWriter
             // wait on something that might. Adding a callback, an event or a caller-supplied
             // action here would make a deadlock possible; the replace handed in is a test seam
             // and must stay a file operation.
-            Publish(path, content, replace);
+            Publish(path, text, bytes, replace);
         }
         finally
         {
@@ -218,7 +250,7 @@ public static class AdpFileWriter
             }
         }
     }
-    private static void Publish(string path, string content, Action<string, string> replace)
+    private static void Publish(string path, string? text, byte[]? bytes, Action<string, string> replace)
     {
         var directory = IoPath.GetDirectoryName(path);
         var folder = directory is { Length: > 0 } ? directory : ".";
@@ -226,9 +258,18 @@ public static class AdpFileWriter
 
         try
         {
-            // The same no-BOM encoding CreateAll writes: the callers this replaced either said
-            // so explicitly or took File.WriteAllText's default, which is the same thing.
-            File.WriteAllText(temporary, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            if (bytes is not null)
+            {
+                // Exactly the bytes handed in, byte-order mark and all: this caller has already
+                // decided what the file's encoding is.
+                File.WriteAllBytes(temporary, bytes);
+            }
+            else
+            {
+                // The same no-BOM encoding CreateAll writes: the callers this replaced either said
+                // so explicitly or took File.WriteAllText's default, which is the same thing.
+                File.WriteAllText(temporary, text!, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            }
 
             // Replacing the destination is the whole difference from CreateAll: here the
             // destination existing is the expected case rather than the failure.
