@@ -834,11 +834,15 @@ export interface RelationTypeDefinition {
   selectable?: boolean;
   /**
    * Adornment drawn inside the connection's group, after its line - polarity signs, delay
-   * strokes, anything the notation rides on a line - so the shared `.canvas-selected` cascade
-   * colours it with the line it describes. Handed the resolved route so it can place itself
-   * along the real geometry.
+   * strokes, anything the notation rides on a line. Handed the resolved route so it can place
+   * itself along the real geometry, and <b>whether the connection is highlighted</b>, so it takes
+   * the selected colour with the line it describes: the highlight is painted inline now, and an
+   * inline paint reaches only what the library draws itself (centralized-selection Requirement 5.3).
    */
-  adorn?: (route: { from: ShapePoint; to: ShapePoint; waypoints: readonly ShapePoint[]; ends?: RouteEnds }, connection: unknown) => unknown;
+  adorn?: (
+    route: { from: ShapePoint; to: ShapePoint; waypoints: readonly ShapePoint[]; ends?: RouteEnds; highlighted?: boolean },
+    connection: unknown,
+  ) => unknown;
   /**
    * Extra class names for the pieces, so a module's stylesheet keeps dressing what it always
    * dressed: the connection group, its visible line, and its fat hit twin.

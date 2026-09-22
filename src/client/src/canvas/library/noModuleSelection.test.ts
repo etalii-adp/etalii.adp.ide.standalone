@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -82,6 +82,30 @@ function moduleClients(root: string): { module: string; sources: string[]; tests
     });
 }
 
+/** Every stylesheet in one module's client folder - a rule can live in any of them. */
+function stylesheetsOf(root: string, module: string): string[] {
+  const client = join(root, "diagrams", module, "client");
+  if (statSync(client, { throwIfNoEntry: false })?.isDirectory() !== true) {
+    return [];
+  }
+
+  const found: string[] = [];
+  const walk = (directory: string) => {
+    for (const child of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, child.name);
+      if (child.isDirectory()) {
+        if (child.name !== "node_modules") {
+          walk(path);
+        }
+      } else if (child.name.endsWith(".css")) {
+        found.push(path);
+      }
+    }
+  };
+  walk(client);
+  return found;
+}
+
 /** The shapes selection glue has been written in, each with what an offender is told. */
 const GLUE: readonly { pattern: RegExp; says: string }[] = [
   { pattern: /\bDiagramSelection\b/, says: "derives a DiagramSelection by hand - the library resolves the pushed selection" },
@@ -150,6 +174,30 @@ describe("no module handles selection", () => {
           if (pattern.test(content)) {
             offenders.push(`${relative(root, path)}: ${says}`);
           }
+        }
+      }
+    }
+
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("finds no module stylesheet forcing a stroke or a fill with !important, which is the one way past the highlight", () => {
+    // THE LIMIT THE OTHER GUARD CANNOT COVER. The highlight is an inline paint, which beats every
+    // ordinary rule - but NOT a declaration marked `!important`. jsdom's cascade implements neither
+    // specificity nor importance, so highlightSurvivesModuleStyles could never see such a rule win;
+    // it would pass while a module quietly repainted a selected element in the browser.
+    //
+    // So this reads the text instead, which is the one thing that CAN see it. Narrow on purpose:
+    // `!important` on anything else - a display, a font - is a module's own business.
+    const forcing = /(stroke|fill)\s*:[^;{}]*!important/i;
+    const offenders: string[] = [];
+
+    for (const { module, sources } of clients) {
+      const styles = sources.map((path) => path.replace(/\.tsx?$/, ".css")).filter((path) => existsSync(path));
+      for (const path of [...new Set([...styles, ...stylesheetsOf(root, module)])]) {
+        const css = readFileSync(path, "utf-8").replace(/\/\*[\s\S]*?\*\//g, "");
+        if (forcing.test(css)) {
+          offenders.push(`${relative(root, path)}: forces a stroke or fill with !important, which would beat the library's inline highlight`);
         }
       }
     }

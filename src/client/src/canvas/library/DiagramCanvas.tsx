@@ -43,7 +43,7 @@ import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
 import { useLibrarySelection, type CanvasSource, type LibraryContextIntegration } from "./librarySelection";
-import { ACCEPT_RING_STYLE, SELECTED_RING_STYLE } from "./ringLooks";
+import { highlighted, highlightedText } from "./highlight";
 import { isTextTarget } from "../interaction";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
@@ -1878,6 +1878,9 @@ function LibraryElement({
   // A HELD offset is drawn but is no longer a drag - it must not keep the dragging look.
   const dragging = offset !== null && offset.held !== true;
   const groupState = { selected, dragging, connectTarget: connectHighlight === "valid" };
+  // ONE look for both meanings, by the user's ruling: a drop target is shown the way a selection is
+  // (Requirements 6.1, 6.2). The classes below still say WHICH it is, for tests and for modules.
+  const highlight = selected || connectHighlight === "valid";
   const classes = [
     "library-element",
     selected ? "canvas-selected" : "",
@@ -1906,14 +1909,8 @@ function LibraryElement({
       aria-label={accessibleName ?? undefined}
     >
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
-        {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" })}
+        {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" }, highlight)}
       </ShapeErrorBoundary>
-      {/* THE TWO LOOKS, each the library's own ring just outside the element and each read from
-          its own flag alone (centralized-selection Requirements 5.2, 6.1, 6.2). Outside, so no
-          fill or inline stroke of the element can hide it; at different offsets, so an element
-          that is both selected and a drop target shows both. ringLooks.ts paints them, inline. */}
-      {selected && <OutlineRing className="library-selected-outline" style={SELECTED_RING_STYLE} bounds={bounds} offset={SELECTED_OUTLINE_OFFSET} />}
-      {connectHighlight === "valid" && <OutlineRing className="library-accept-outline" style={ACCEPT_RING_STYLE} bounds={bounds} offset={ACCEPT_OUTLINE_OFFSET} />}
       {resizable && selected && (
         // The resize adorners a user-sized element earns when selected: each edge strip
         // drives the arbiter and raises element-resized on release (sizing: "user", R2.5).
@@ -1923,7 +1920,9 @@ function LibraryElement({
         </>
       )}
       {/* Anchors render always and show on hover or mid-connect, via the stylesheet - so a
-          test can press them and a user only sees them when they matter (Requirement 2.4). */}
+          test can press them and a user only sees them when they matter (Requirement 2.4).
+          Their COLOUR is painted inline with the element they belong to, so the two cannot
+          disagree and no module rule outranks it (task 28); the stylesheet dresses them at rest. */}
       {type !== undefined &&
         anchorPoints(type.anchors, bounds).map((anchor) => (
           <circle
@@ -1933,41 +1932,11 @@ function LibraryElement({
             cx={anchor.point.x}
             cy={anchor.point.y}
             r={5}
+            style={highlighted({}, highlight)}
             {...anchorPress(anchor.name, anchor.point)}
           />
         ))}
     </g>
-  );
-}
-
-/** How far outside an element the selected ring sits, in canvas units. */
-const SELECTED_OUTLINE_OFFSET = 4;
-
-/** How far outside the accept ring sits: further than the selected one, so both can show. */
-const ACCEPT_OUTLINE_OFFSET = 9;
-
-/** A ring around an element's bounds, `offset` units clear of them on every side. */
-function OutlineRing({
-  className,
-  style,
-  bounds,
-  offset,
-}: {
-  className: string;
-  style: React.CSSProperties;
-  bounds: { x: number; y: number; width: number; height: number };
-  offset: number;
-}) {
-  return (
-    <rect
-      className={className}
-      style={style}
-      x={bounds.x - offset}
-      y={bounds.y - offset}
-      width={bounds.width + offset * 2}
-      height={bounds.height + offset * 2}
-      rx={offset}
-    />
   );
 }
 
@@ -2055,19 +2024,25 @@ function LibraryConnection({
         d={d}
         markerEnd={markerRef(style.endMarker ?? "arrow")}
         markerStart={markerRef(style.startMarker ?? "none")}
-        style={{
-          stroke: tokenColour(style.stroke),
-          strokeWidth: style.strokeWidth,
-          strokeDasharray: style.dash?.join(" "),
-        }}
+        style={highlighted(
+          {
+            stroke: tokenColour(style.stroke),
+            strokeWidth: style.strokeWidth,
+            strokeDasharray: style.dash?.join(" "),
+          },
+          // The whole route, label and marker included: the marker in <defs> paints with
+          // `context-stroke`, so recolouring the line recolours its arrowhead with it - which no
+          // selector could reach, a <defs> marker being outside every selection's subtree.
+          selected,
+        )}
       />
       {label !== undefined && label !== "" && (
-        <text className="library-connection-label" x={labelAt.x} y={labelAt.y + (relation.label?.offset ?? -6)} textAnchor="middle">
+        <text className="library-connection-label" style={highlightedText(selected)} x={labelAt.x} y={labelAt.y + (relation.label?.offset ?? -6)} textAnchor="middle">
           {label}
         </text>
       )}
       {connection.title !== undefined && connection.title !== "" && <title>{connection.title}</title>}
-      {relation.adorn !== undefined && <>{relation.adorn({ from, to, waypoints, ends: routeEnds }, connection) as ReactNode}</>}
+      {relation.adorn !== undefined && <>{relation.adorn({ from, to, waypoints, ends: routeEnds, highlighted: selected }, connection) as ReactNode}</>}
       {selected && relation.adjustable === true && (
         // The one adjustment handle: dragging it raises connection-adjusted with the carried
         // waypoint; a definition that forbids adjustment never renders it (Requirement 3.5).
@@ -2117,8 +2092,9 @@ function renderShape(
   type: ElementTypeDefinition | undefined,
   bounds: ConnectorBox,
   state?: import("./definition/diagramDefinition").CustomShapeState,
+  highlight = false,
 ): ReactNode {
-  const body = renderShapeBody(element, type, bounds, state);
+  const body = renderShapeBody(element, type, bounds, state, highlight);
   if (type?.labels === undefined && type?.decorations === undefined && type?.tooltip === undefined) {
     return body;
   }
@@ -2468,6 +2444,7 @@ function renderShapeBody(
   type: ElementTypeDefinition | undefined,
   bounds: ConnectorBox,
   state?: import("./definition/diagramDefinition").CustomShapeState,
+  highlight = false,
 ): ReactNode {
   const label = type?.labels !== undefined ? "" : (element.label ?? "");
   if (type === undefined) {
@@ -2481,14 +2458,19 @@ function renderShapeBody(
   const source = sourceOf(element, state, bounds);
   const style = { ...type.style, ...element.style };
   const bound = type.boundStyle;
-  const paint = {
-    // Bound paint wins over the type's tokens for the fields it names, because it is the
-    // document speaking about this element rather than the declaration speaking about the type.
-    fill: tokenColour(resolveBound(bound?.fill, source) ?? style.fill),
-    stroke: tokenColour(resolveBound(bound?.stroke, source) ?? style.stroke),
-    strokeWidth: style.strokeWidth,
-    strokeDasharray: style.dash?.join(" "),
-  };
+  const paint = highlighted(
+    {
+      // Bound paint wins over the type's tokens for the fields it names, because it is the
+      // document speaking about this element rather than the declaration speaking about the type.
+      fill: tokenColour(resolveBound(bound?.fill, source) ?? style.fill),
+      stroke: tokenColour(resolveBound(bound?.stroke, source) ?? style.stroke),
+      strokeWidth: style.strokeWidth,
+      strokeDasharray: style.dash?.join(" "),
+    },
+    // The highlight is the LAST word on the outline and nothing else: the fill stays the
+    // notation's, so what a thing is still reads while what is selected is said in one colour.
+    highlight,
+  );
   const shape = shapeOf(type.shape, source);
   // The class hook every one of the twenty-eight sufficiency rows needed: without it a migrated
   // element draws the right geometry in the library's colours instead of its own.
