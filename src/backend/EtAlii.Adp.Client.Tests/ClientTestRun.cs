@@ -155,8 +155,35 @@ public static class ClientTestRun
         using var process = Process.Start(start) ?? throw new InvalidOperationException($"Could not start: {command}");
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-        return (process.ExitCode, (stdout.Result + Environment.NewLine + stderr.Result).Trim());
+
+        // CAPPED, because this runs inside a gate. The measured run is ~10s; a vitest that hangs -
+        // a watch flag slipping in, a test awaiting something that never happens - would otherwise
+        // hold the whole backend suite open with no output and no verdict. Ten minutes is sixty
+        // times the measurement, so it can only be reached by a hang, and it fails saying so.
+        if (!process.WaitForExit((int)Timeout.TotalMilliseconds))
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+            return (-1, $"vitest did not finish within {Timeout.TotalMinutes:0} minutes and was stopped. It had printed:{Environment.NewLine}{Read(stdout)}{Environment.NewLine}{Read(stderr)}");
+        }
+
+        return (process.ExitCode, (Read(stdout) + Environment.NewLine + Read(stderr)).Trim());
+    }
+
+    /// <summary>How long a client run may take before it is treated as hung. See <see cref="Execute"/>.</summary>
+    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(10);
+
+    /// <summary>Whatever the stream produced, without waiting on a process that is already gone.</summary>
+    private static string Read(Task<string> stream)
+    {
+        try
+        {
+            return stream.Wait(TimeSpan.FromSeconds(10)) ? stream.Result : "";
+        }
+        catch (AggregateException)
+        {
+            return "";
+        }
     }
 
     private static IReadOnlyList<ClientTestFile> Parse(string json, string root)
