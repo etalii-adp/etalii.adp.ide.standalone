@@ -31,7 +31,18 @@ public sealed class MarkdownEditorSession : IEditorSession
         if (_buffer is not null && directory is not null)
         {
             _watcher = new FileSystemWatcher(directory, Path.GetFileName(path)) { EnableRaisingEvents = true };
+
+            // EVERY EVENT A PUBLISH ACTUALLY RAISES, not just Changed. A write in place raises
+            // Changed; a temp-then-replace publish - which is what AdpFileWriter does, and now
+            // what this session's own saves do - raises Renamed as the scratch file takes the
+            // destination's name, and Created where there was nothing before. Subscribing to
+            // Changed alone meant an external save through the central writer never reached the
+            // open editor: measured as a 60-second gRPC deadline in
+            // EditorResolutionTests.ADslOpenAsDiagramAndAsTextAtOnce_BothStayTrueToTheFile, which
+            // waits for the text view to hear a save it made itself.
             _watcher.Changed += (_, _) => OnExternalChange();
+            _watcher.Created += (_, _) => OnExternalChange();
+            _watcher.Renamed += (_, _) => OnExternalChange();
         }
     }
 

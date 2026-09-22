@@ -58,6 +58,9 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
     /// <summary>Shows a stage's jobs, or hides them again.</summary>
     public const string ToggleStageActionId = "azure-pipeline.toggle-stage";
 
+    /// <summary>Opens or closes a job, showing or hiding its steps (Requirement 8.2).</summary>
+    public const string ToggleJobActionId = "azure-pipeline.toggle-job";
+
     private const string Gone = "That element is no longer in this pipeline.";
 
     private readonly IHistoryStackStore _historyStacks;
@@ -120,6 +123,18 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
                 new ContextShortcutDefinition(" ")));
         }
 
+        // A job opens to its steps the same way, and for the same reason - it is how they are
+        // ever seen - so it leads a job's edits as opening leads a stage's (Requirement 8.2).
+        if (location.Kind == PipelineElementLocationKind.Job && location.Job!.Steps.Count > 0)
+        {
+            var open = _views.For(target.WatchId, target.ResolvedFullPath).IsExpanded(location.Job!.Id);
+            edits.Insert(0, new ContextActionDefinition(
+                ToggleJobActionId,
+                open ? "Hide steps" : "Show steps",
+                open ? "mdi-unfold-less-horizontal" : "mdi-unfold-more-horizontal",
+                new ContextShortcutDefinition(" ")));
+        }
+
         if (location.Kind != PipelineElementLocationKind.Step && DependsOnDeclared(location))
         {
             // Only worth offering when there is something to clear: a stage with no dependsOn is
@@ -163,13 +178,16 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
 
         var (_, location) = found;
 
-        if (actionId == ToggleStageActionId)
+        if (actionId == ToggleStageActionId || actionId == ToggleJobActionId)
         {
             // View state, not a command: nothing is written and nothing lands on the history,
             // because which stages this connection has open is not a fact about the pipeline.
             // Toggled through the view state's announcing method, which is what makes the session
             // push the deltas - toggling a view directly would change state no client hears of.
-            _views.Toggle(target.WatchId, target.ResolvedFullPath, location.Stage.Id);
+            _views.Toggle(
+                target.WatchId,
+                target.ResolvedFullPath,
+                actionId == ToggleJobActionId ? location.Job!.Id : location.Stage.Id);
             return Result(new ContextExecutionCompleted());
         }
 
