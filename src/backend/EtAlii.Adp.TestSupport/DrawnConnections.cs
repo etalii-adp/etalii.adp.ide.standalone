@@ -137,9 +137,14 @@ public static class DrawnConnections
                 if (module.ExpandViews is { } expand)
                 {
                     // To a fixed point, because levels nest: opening the stages reveals the jobs, and
-                    // opening those reveals the steps. The cap is a hang-stopper, not a depth limit - a
-                    // hook that toggled something shut on every pass would otherwise loop for ever, and
-                    // reaching it means the module's own expansion never settles, which is a finding.
+                    // opening those reveals the steps.
+                    //
+                    // THE CAP IS WHAT MAKES THE LOOP HONEST, not a depth limit. A fixed-point loop
+                    // without one fails silently - it spins, or it stops early and the check goes green
+                    // having visited nothing. With one it NAMES what kept changing. It earned that on
+                    // its first run: the pipeline hook re-toggled stages it had already opened, so the
+                    // expansion oscillated, and this line said which module and which example rather
+                    // than leaving a green run that had checked nothing.
                     const int rounds = 10;
                     for (var round = 0; round < rounds; round++)
                     {
