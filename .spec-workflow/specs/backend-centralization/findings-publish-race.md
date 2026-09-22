@@ -15,10 +15,21 @@ Developer 3's measurements, each independently checkable from the code paths nam
 | Arrangement | Result |
 | --- | --- |
 | Two concurrent `File.Replace` calls on one destination | `0x80070497` **29 times in 800**, plus `0x20`, `0x498`, `0x499` and `FileNotFound` |
-| A concurrent DELETE of the destination while a save publishes | `0x80070497` **305 of 400** without the per-destination turn, **0 of 400** with it |
+| A concurrent DELETE-AND-RECREATE of the destination, 400 replaces (mixed-actor harness) | `0x80070497` **185**, `0x80070020` **65**, `FileNotFound` **150**, and **0 successes** |
+| A concurrent deleter, 400 replaces, with and without the per-destination turn (turn harness) | without it **305 failures** - `0x800700B7` 148, `FileNotFound` 76, `0x80070497` **75**, `0x80070005` 5, `0x80070020` 1. With it **400 of 400 succeed** and no code appears at all |
 | A reader sharing only `Read` (a raw `File.ReadAllText`) | `0x80070020` every time, **never** `0x497` |
 | A reader sharing `ReadWrite \| Delete` (`SharedDocumentReader`) | the replace succeeds |
 | A single writer, no other actor | **0 of 400** |
+
+**The delete arrangement is TWO rows because it was two harnesses, and this record said `0x80070497` "305
+of 400" until 2026-09-22.** 305 was the turn harness's total across every code it produced; `0x497` was 75 of
+them, and 185 of 400 in the other harness. **Quote 305 only for the fix - 305 failures against 0 - and 185 or
+75 for the error code.** Developer 3 measured both and caught the conflation; by then it had reached this
+table, a steering clause on its way to the gate, and two working notes - a propagation lesson queued for
+`processes.md` rather than landed there yet: correcting the source does not correct the copies, so the sweep
+is *where else does this number appear*. **Two harnesses, two distributions, one
+staged actor - which is the evidence FOR reading a staged rate as mechanism rather than frequency, not an
+inconsistency in it.**
 
 **So `0x497` means a second party that REPLACED or DELETED the destination.** Readers are excluded by measurement in both directions, which is what makes the diagnosis narrower than "a file was busy".
 
@@ -43,16 +54,39 @@ failed with *"plan.tml could not be written. The change is still here to try aga
 2. **"The query did not answer within 2 seconds" is not the same as "nobody was holding it".** The first is a
    MISSING measurement, the second is an answer - and **the two-second budget is most likely to expire exactly
    when the failure is most likely, under gate load**, so the instrument is weakest precisely where it is
-   needed. The guards can already set that budget; production still uses two seconds. That is an argument for
-   revisiting the number, or for logging the ELAPSED time beside the verdict so a reader can tell a slow query
-   from an empty one.
+   needed. **Both halves of that were answered on 2026-09-22, and not the way this record proposed**: the
+   elapsed time is now logged beside every answered query, the two-second number was deliberately LEFT ALONE,
+   and the defect turned out to be the ABANDONMENT rather than the budget. The subsection below says how.
 
 **So the reading procedure gains a third case: holders NAMED, holders EMPTY, or holders UNKNOWN - and only the
-first two are answers.**
+first two are answers.** The remedy below turns the third into two cases of its own, one of which is an answer.
+
+## The instrument's remedy, and the fourth reading it introduces
+
+**The budget was not raised. The query is no longer ABANDONED when it expires** (Developer 3, landed in
+`5efb359f`). It runs on its own thread, the failing save carries on at once, and the query logs its own line
+when it answers - repeating the path and the pid of the first, so the two join without comparing timestamps. A
+longer budget would have delayed every failing save, under exactly the load that makes the query slow, to buy
+an answer on a few.
+
+| What the failure record says | What it means |
+| --- | --- |
+| `holders: <names> (answered in <n> ms)` | an answer, with the cost of getting it |
+| `holders: no process was holding it when asked` | an answer: nobody the query could see, the already-released shape |
+| `holders could not be determined: <exception>` | no measurement - the query itself failed |
+| `holders not yet known after 2s; a later line for this path says what the query found, or none does and it never answered` | no measurement YET |
+
+**For the last one, look further down the log for a line naming the same path and pid.** Present, the service
+was merely slow and the holders are named; absent, it never answered at all. **Slow and never are different
+facts about the machine at the moment of failure, and no budget can tell them apart** - which is why the third
+occurrence's `did not answer within 2 seconds` can never be resolved either way now.
+
+**Read "not yet known" as a timestamp, not a verdict.** It says when the query had not answered, and nothing
+at all about who was holding the file.
 
 ## What is still open
 
-1. **The second actor is unnamed.** In the 2026-09-20 wardley occurrence there was **no "Waited for another save" warning anywhere in the log**, so no second writer inside this process's lock was involved — the actor was outside it. Nothing in the repository writes a diagram body outside `AdpFileWriter`, fixture folders are per-fixture GUIDs, and the lock's dictionary ignores case on Windows, all checked. **It remains unexplained.**
+1. **The second actor is unnamed.** In the 2026-09-20 wardley occurrence there was **no "Waited for another save" warning anywhere in the log**, so no second writer inside this process's lock was involved — the actor was outside it. Nothing in the repository writes a diagram body outside `AdpFileWriter`, fixture folders are per-fixture GUIDs, and the lock's dictionary ignores case on Windows, all checked. **It remains unexplained.** And the staged figures cannot narrow it: they say a replace and a delete both PRODUCE this error, never which one happened when nobody was staging anything. The third occurrence's present-with-content destination is the only fact anyone has about the wild actor rather than about a perturbation, which is why it is the counter-example the steering clause is anchored on.
 2. **Architect 1's wardley red is unexplained, and the delete fix does not close it.** `WardleyIdentities` deletes the SIDECAR, never the body, so no in-repository deleter touches `tea.owm`. Developer 3 said so in its own landing rather than letting the fix imply a cause.
 3. **A wrong inference to avoid repeating.** Architect 1 argued from the missing "Waited for another save" line that the recurrence was not the racing-writers case. That was wrong: the warning only fires for a writer inside this process's lock, so its absence says the second writer was OUTSIDE the lock — the more interesting answer, not the negative one. The general form is in `processes.md`, *Measure the thing, not something adjacent to it*.
 
