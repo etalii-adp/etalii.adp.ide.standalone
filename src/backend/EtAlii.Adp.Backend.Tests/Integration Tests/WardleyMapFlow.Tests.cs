@@ -174,7 +174,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.True(executed.Accepted, executed.Error);
 
         var prompt = await pendingPrompt;
-        var wardley = FirstLeafNamed(prompt.ChoiceDialog.Options, EtAlii.Adp.Diagram.WardleyMap.Diagram.WardleyMap.Origin.Key);
+        var wardley = FirstLeafNamed(prompt.ChoiceDialog.Options, Diagram.WardleyMap.Diagram.WardleyMap.Origin.Key);
         Assert.NotNull(wardley);
 
         // Act.

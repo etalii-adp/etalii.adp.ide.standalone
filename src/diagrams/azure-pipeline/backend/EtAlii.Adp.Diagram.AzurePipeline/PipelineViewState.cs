@@ -24,14 +24,14 @@ public sealed class PipelineViewState
     private readonly ConcurrentDictionary<(ShortGuid WatchId, string BodyPath), PipelineConnectionView> _views = new();
 
     /// <summary>
-    /// Raised when a connection opens or closes a stage, so the session holding that connection's
-    /// stream can push the matching deltas.
+    /// Raised when a connection opens or closes a stage or a job, so the session holding that
+    /// connection's stream can push the matching deltas.
     /// </summary>
     /// <remarks>
     /// The only route a change is allowed to take: state and notification stay together, so a
     /// session cannot miss one the way it would if callers toggled a view directly.
     /// </remarks>
-    public event EventHandler<PipelineStageExpandedEventArgs>? StageExpanded;
+    public event EventHandler<PipelineElementExpandedEventArgs>? ElementExpanded;
 
     /// <summary>The view for a connection on a pipeline, created on first ask.</summary>
     /// <remarks>
@@ -44,11 +44,11 @@ public sealed class PipelineViewState
         return _views.GetOrAdd((watchId, bodyPath.ToUpperInvariant()), _ => new PipelineConnectionView());
     }
 
-    /// <summary>Opens a closed stage or closes an open one, and announces it.</summary>
-    public bool Toggle(ShortGuid watchId, string bodyPath, string stageId)
+    /// <summary>Opens a closed stage or job, or closes an open one, and announces it.</summary>
+    public bool Toggle(ShortGuid watchId, string bodyPath, string elementId)
     {
-        var expanded = For(watchId, bodyPath).Toggle(stageId);
-        StageExpanded?.Invoke(this, new PipelineStageExpandedEventArgs(watchId, bodyPath, stageId, expanded));
+        var expanded = For(watchId, bodyPath).Toggle(elementId);
+        ElementExpanded?.Invoke(this, new PipelineElementExpandedEventArgs(watchId, bodyPath, elementId, expanded));
         return expanded;
     }
 

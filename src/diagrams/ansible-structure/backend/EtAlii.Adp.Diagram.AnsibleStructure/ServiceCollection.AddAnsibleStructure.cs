@@ -49,7 +49,7 @@ public static class ServiceCollectionAddAnsibleStructureExtension
         services.AddSingleton<AnsibleProjectStore>();
         services.AddSingleton<IAnsibleProjectStore>(provider => provider.GetRequiredService<AnsibleProjectStore>());
 
-        services.AddSingleton<AnsibleElementMapper>(_ => new AnsibleElementMapper());
+        services.AddSingleton(_ => new AnsibleElementMapper());
         services.AddSingleton<IDiagramSessionFactory, AnsibleSessionFactory>();
 
         // Read-only does not mean silent: the structural mistakes this type can see are exactly

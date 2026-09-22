@@ -46,6 +46,25 @@ public class PipelineSessionTests : IDisposable
                   - script: z
         """;
 
+    /// <summary>
+    /// One job whose steps are declared in an order that is neither alphabetical nor sorted by
+    /// kind, so "declared order" (Requirement 3.4) is what the assertion can be measuring.
+    /// </summary>
+    private const string StepsOutOfAlphabeticalOrder = """
+        stages:
+          - stage: Build
+            jobs:
+              - job: Compile
+                steps:
+                  - script: zebra
+                    displayName: Zebra
+                  - script: apple
+                    displayName: Apple
+                  - script: mango
+                    displayName: Mango
+              - job: Empty
+        """;
+
     private string Write(string content)
     {
         var path = IoPath.Combine(_workspace, "azure-pipelines.yml");
@@ -361,5 +380,79 @@ public class PipelineSessionTests : IDisposable
         // Assert.
         Assert.Contains("dependencies", refusal);
         Assert.Equal(TwoStages, await File.ReadAllTextAsync(IoPath.Combine(_workspace, "azure-pipelines.yml"), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ExpandingAJob_PushesItsStepsInDeclaredOrder()
+    {
+        // Arrange: the third level of Requirement 8.2 - a job in turn expandable to its steps -
+        // and Requirement 3.4, which says steps are shown in their declared order because they
+        // are a sequence and not a graph. The stage has to be open first: a job is only on the
+        // canvas at all once its stage is showing its jobs, so the levels nest.
+        var path = Write(StepsOutOfAlphabeticalOrder);
+        var watchId = ShortGuid.NewShortGuid();
+        await using var session = OpenWith(path, watchId);
+        session.Baseline();
+        _views.Toggle(watchId, path, "Build");
+        var pushed = new List<DiagramDeltasEventArgs>();
+        session.Changed += (_, args) => pushed.Add(args);
+
+        // Act.
+        _views.Toggle(watchId, path, "Build/Compile");
+
+        // Assert: its three steps arrive, and in the order the file declares them rather than
+        // any order the ids or labels would sort into.
+        var deltas = Assert.Single(pushed).Deltas;
+        var steps = AddedIds(deltas).Where(id => id.StartsWith("Build/Compile/", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(["Build/Compile/step-0", "Build/Compile/step-1", "Build/Compile/step-2"], steps);
+        Assert.Empty(RemovedIds(deltas));
+    }
+
+    [Fact]
+    public async Task CollapsingAJob_TakesExactlyItsStepsBackOff()
+    {
+        // Arrange: the assertion shape copied from the c4 fix at 350b8f9e - closing a level takes
+        // back precisely what it revealed, and leaves the level above it alone.
+        var path = Write(StepsOutOfAlphabeticalOrder);
+        var watchId = ShortGuid.NewShortGuid();
+        await using var session = OpenWith(path, watchId);
+        session.Baseline();
+        _views.Toggle(watchId, path, "Build");
+        _views.Toggle(watchId, path, "Build/Compile");
+        var pushed = new List<DiagramDeltasEventArgs>();
+        session.Changed += (_, args) => pushed.Add(args);
+
+        // Act.
+        _views.Toggle(watchId, path, "Build/Compile");
+
+        // Assert.
+        var deltas = Assert.Single(pushed).Deltas;
+        var removed = RemovedIds(deltas).ToArray();
+        Assert.Equal(
+            ["Build/Compile/step-0", "Build/Compile/step-1", "Build/Compile/step-2"],
+            removed.Where(id => id.StartsWith("Build/Compile/", StringComparison.Ordinal)).Order(StringComparer.Ordinal));
+
+        // The job itself, and its stage, stay: only what the job revealed goes back off.
+        Assert.DoesNotContain("Build/Compile", removed);
+        Assert.DoesNotContain("Build", removed);
+    }
+
+    [Fact]
+    public async Task AnUnopenedJob_CarriesNoStepsOnTheWire()
+    {
+        // Arrange: a pipeline read at three levels at once is unreadable (Requirement 8.2), so an
+        // open stage shows its jobs and nothing deeper until a job is opened too.
+        var path = Write(StepsOutOfAlphabeticalOrder);
+        var watchId = ShortGuid.NewShortGuid();
+        await using var session = OpenWith(path, watchId);
+        session.Baseline();
+        var pushed = new List<DiagramDeltasEventArgs>();
+        session.Changed += (_, args) => pushed.Add(args);
+
+        // Act.
+        _views.Toggle(watchId, path, "Build");
+
+        // Assert.
+        Assert.DoesNotContain(AddedIds(Assert.Single(pushed).Deltas), id => id.Contains("/step-", StringComparison.Ordinal));
     }
 }

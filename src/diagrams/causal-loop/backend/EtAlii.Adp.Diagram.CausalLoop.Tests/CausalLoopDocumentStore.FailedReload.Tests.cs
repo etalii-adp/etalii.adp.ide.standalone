@@ -150,7 +150,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         finally
         {
             await stop.CancelAsync();
-            await writer;//.GetAwaiter().GetResult();
+            await writer;
         }
 
         Assert.True(publishes > 0, "The arrangement failed: the external writer never published, so nothing raced.");

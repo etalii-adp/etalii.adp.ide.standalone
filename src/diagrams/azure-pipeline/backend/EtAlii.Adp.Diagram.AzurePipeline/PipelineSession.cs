@@ -62,7 +62,7 @@ public sealed class PipelineSession : IDiagramSession
         _mapper = mapper;
         _views = views;
         _documents.Changed += OnDocumentChanged;
-        _views.StageExpanded += OnStageExpanded;
+        _views.ElementExpanded += OnElementExpanded;
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
@@ -95,14 +95,14 @@ public sealed class PipelineSession : IDiagramSession
     public bool IsExpanded(string stageId) => _views.For(_watchId, _bodyPath).IsExpanded(stageId);
 
     /// <summary>
-    /// Pushes the jobs a stage has just revealed, or takes back the ones it hid
-    /// (Requirements 8.2 and 8.6).
+    /// Pushes what a stage or a job has just revealed - its jobs, or its steps - or takes back
+    /// what it hid (Requirements 8.2 and 8.6).
     /// </summary>
     /// <remarks>
     /// Only this connection's own toggles: which stages somebody has opened is a property of
     /// looking rather than of the pipeline, so nothing is written and no other viewer is told.
     /// </remarks>
-    private void OnStageExpanded(object? sender, PipelineStageExpandedEventArgs args)
+    private void OnElementExpanded(object? sender, PipelineElementExpandedEventArgs args)
     {
         if (args.WatchId != _watchId ||
             !string.Equals(args.BodyPath, _bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -117,10 +117,10 @@ public sealed class PipelineSession : IDiagramSession
         }
 
         _logger.Debug(
-            "Watch {WatchId} {Action} {StageId}, pushing {Count} deltas",
+            "Watch {WatchId} {Action} {ElementId}, pushing {Count} deltas",
             _watchId,
             args.Expanded ? "opened" : "closed",
-            args.StageId,
+            args.ElementId,
             deltas.Count);
     }
 
@@ -148,7 +148,7 @@ public sealed class PipelineSession : IDiagramSession
     public ValueTask DisposeAsync()
     {
         _documents.Changed -= OnDocumentChanged;
-        _views.StageExpanded -= OnStageExpanded;
+        _views.ElementExpanded -= OnElementExpanded;
         _views.Forget(_watchId, _bodyPath);
         return ValueTask.CompletedTask;
     }
@@ -196,7 +196,7 @@ public sealed class PipelineSession : IDiagramSession
         // A file that does not parse has an empty model, so this delivers nothing and the diagram
         // shows as unavailable - the honest answer, and it keeps a half-read pipeline from being
         // drawn as though it were the whole one.
-        var elements = entry.IsUsable ? _mapper.Visible(entry.Model, _viewport, _views.For(_watchId, _bodyPath).ExpandedStageIds) : [];
+        var elements = entry.IsUsable ? _mapper.Visible(entry.Model, _viewport, _views.For(_watchId, _bodyPath).ExpandedIds) : [];
         _delivered = elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         return elements;
     }

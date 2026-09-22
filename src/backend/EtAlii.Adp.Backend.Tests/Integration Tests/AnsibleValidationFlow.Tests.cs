@@ -46,7 +46,7 @@ public class AnsibleValidationFlowTests : IDisposable
         File.WriteAllText(IoPath.Combine(_infrastructure, "infrastructure.adp"), "ansible/structure\n");
 
         var services = new ServiceCollection();
-        services.AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(EtAlii.Adp.Diagram.AnsibleStructure.Diagram.AnsibleStructure));
+        services.AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(Diagram.AnsibleStructure.Diagram.AnsibleStructure));
         services.AddSingleton<DiagramFileRouter>();
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();
