@@ -35,7 +35,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
     {
         // Arrange.
         var path = IoPath.Combine(_workspace, "loop.cld");
-        File.WriteAllText(path, Text);
+        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore();
         _ = store.GetOrLoad(path);
 

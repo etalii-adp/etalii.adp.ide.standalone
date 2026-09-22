@@ -178,8 +178,8 @@ public class C4SessionTests : IDisposable
         // reports the change. The client folds an add as an upsert and removes only on a remove,
         // so nothing but a remove delta takes the person off the canvas.
         var kept = Model.Split('\n').Where(line => !line.Contains("u = person", StringComparison.Ordinal) && !line.Contains("u -> web", StringComparison.Ordinal));
-        File.WriteAllText(body, string.Join('\n', kept));
-        Assert.DoesNotContain("person", File.ReadAllText(body), StringComparison.Ordinal);
+        await File.WriteAllTextAsync(body, string.Join('\n', kept), TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("person", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         _documents.Reload(body);
 
         // Assert.

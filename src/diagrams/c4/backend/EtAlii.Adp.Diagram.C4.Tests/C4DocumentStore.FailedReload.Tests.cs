@@ -196,7 +196,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // blanked it. A publish either lands whole or makes the read fail, and a failed read now
         // keeps the last good model, so zero is the only passing answer rather than a lucky one.
         var body = IoPath.Combine(_root, "model.dsl");
-        File.WriteAllText(body, Model);
+        await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var store = new C4DocumentStore();
         Assert.NotEmpty(store.WorkspaceOf(body).Elements);
 
@@ -233,7 +233,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         }
         finally
         {
-            stop.Cancel();
+            await stop.CancelAsync();
             await writer;
         }
 

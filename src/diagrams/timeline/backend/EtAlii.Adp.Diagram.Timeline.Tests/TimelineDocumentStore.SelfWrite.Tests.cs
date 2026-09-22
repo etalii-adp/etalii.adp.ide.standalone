@@ -29,7 +29,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
     {
         // Arrange.
         var path = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(path, Text);
+        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new TimelineDocumentStore();
         _ = store.GetOrLoad(path);
 
