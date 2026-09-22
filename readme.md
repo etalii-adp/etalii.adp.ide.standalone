@@ -68,3 +68,4 @@ To run the repository's own gates — backend tests, style, client tests, typech
 - **[Creating a diagram module](docs/creating-a-diagram-module.md)** — the developer walkthrough for adding a new diagram type, traced against a real shipped module.
 - **[Creating an editor module](docs/creating-an-editor-module.md)** — the same for the text-editor plugin family.
 - **[Dependencies](docs/dependencies.md)** — what ADP is built on: every direct dependency with its version, the reason it is there, and its license.
+- **[The guards](docs/guards.md)** — the tests and checks that hold properties of the whole tree rather than the behaviour of one subject, each with the question it answers, so you can tell before you start whether one already covers what you are about to change.
