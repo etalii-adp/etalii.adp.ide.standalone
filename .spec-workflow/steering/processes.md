@@ -320,6 +320,61 @@ Conventions that are only written down drift. Two tools check them and they see 
 - **Treat an InspectCode finding as an `.editorconfig` finding is treated**: fix it, or decide deliberately that the rule does not fit and record that decision where the rule lives — in the `.DotSettings` file, with a note saying why. Silently ignoring findings turns the tool into noise, which is how a codebase ends up with a check nobody runs. **A finding left reported is the one option that is not available**, because a gate that always prints something is a gate nobody reads.
 - **Expect a backlog on the first full run, and do not treat it as a gate on unrelated work.** What matters is that code being written now is clean and that any backlog shrinks, not that an unrelated change is blocked by something it did not cause.
 
+**A warning nothing fails on is a finding nobody reads.** On 2026-09-22 the user cleaned up three
+classes by hand, in three commits, three minutes apart, on code agents had written that week - and
+**all four gates had passed on every one of them**. One class the build had been reporting all along:
+six `xUnit1051` warnings saying a test was not passing its cancellation token. The finding was on
+screen at every gate and nothing failed, so nobody read it. **A hand cleanup after a green gate means
+the gate was the wrong shape, not that people should try harder.**
+
+**So: count the pile, then make each rule either fail or be deliberately excused.** Measured on
+`develop` at `89bb5f35`, a forced full rebuild reported **8 warnings and nothing else**: 3 `xUnit1051`
+(a test's cancellation token) and 4 `xUnit1031` (a blocking wait in a test), all in two concurrency
+guards, plus one protoc `Import google/protobuf/any.proto is unused`. None was a user-visible defect;
+both analyzer rules are about how a TEST waits, so their failure mode is a hung or flaky gate.
+
+**Three things that measurement taught, each of which cost a wrong answer first:**
+
+- **A cached build replays no analyzer.** `dotnet build` a second time prints none of these and reads
+  as a clean tree. Count with `--no-incremental`, or in a fresh worktree.
+- **Count twice and let disagreement be the alarm.** MSBuild's own summary said 8 where a parse of the
+  log said 7. The extra one was the protoc warning, which prints as `warning : warning: ...` with no
+  rule id - invisible to a filter keyed on a rule id. **The filter was blind to a whole class, and only
+  the second count said so.**
+- **Raw lines are not sites.** Each analyzer warning is logged once per compile pass, and a file linked
+  into several projects is reported once per project: 141 raw findings for `IDE0001` were 16 sites, and
+  14 raw xUnit lines were 7. **The site count is the honest number**; quoting the raw one overstates the
+  pile by an order of magnitude.
+
+**What the two gate commands can and cannot see, measured by planting each defect:**
+
+- **`dotnet format style` sees only what `.editorconfig` raises.** A fully-qualified name a `using`
+  already resolves passed the gate with zero findings until `IDE0001`/`IDE0002` were set to `warning`;
+  then the gate exits 2 and names file, line and column.
+- **A third-party analyzer's warning fails the build only through `WarningsAsErrors`.** Setting
+  `dotnet_diagnostic.xUnit1051.severity = error` in `src/.editorconfig` left six warnings and a green
+  build, twice, including on a forced rebuild - **why is not known, and is recorded as not known.**
+  `<WarningsAsErrors>$(WarningsAsErrors);xUnit1051</WarningsAsErrors>` in `src/Directory.Build.props`
+  turns the same six into errors and exit 1.
+- **Clean the tree before raising a rule**, in its own commit, so a reviewer can see the gate was
+  raised on a tree that already passed rather than bundled with the fixes that made it pass.
+- **Where a rule's own subject is the deliberate behaviour, excuse the site and say why.** Four
+  `xUnit1031` sites block on purpose: the code under test is synchronous, and racing two calls into it
+  requires blocking. Those get a per-site suppression carrying the reason - *this test races two calls
+  into a synchronous API; blocking is the subject* - never a rewrite of the guard to satisfy the rule.
+  **A guard edited to quiet an analyzer is the hollowing-out this document warns about elsewhere.**
+
+**The client side has no equivalent, and that is worth stating rather than implying.** `npm run
+typecheck` is `tsc --noEmit`, which reports errors and exits nonzero - never warnings. `npm test` is
+vitest. There is no ESLint configuration in the repository, so no rule set exists that could
+accumulate unread findings. The `warn` lines in those logs are node's own `ExperimentalWarning` about
+`localStorage`, once per worker, and say nothing about this code. **In a fresh worktree both commands
+fail outright at `npm run generate` until `npm install` has run in `src/`** - a census that skips that
+reports zero warnings because nothing ran, which is how this one nearly went wrong.
+
+**What no analyzer here catches, so it stays guidance:** prefer the async file APIs in a test
+(`File.WriteAllTextAsync` over `File.WriteAllText`) and `CancelAsync` over `Cancel`, both with the
+test's cancellation token. `xUnit1051` covers whether a token is passed, not which API was chosen.
 ## Merges made before the identity rule
 
 **Merges made before 2026-09-04 carry the machine owner's name, `vrenken`, and were made by agents.** They are deliberately not being rewritten. Anyone auditing later should read them as agent work with a known mechanical cause, not as the user's.
