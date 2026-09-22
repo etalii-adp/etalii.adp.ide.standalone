@@ -53,17 +53,30 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("ansible-structure", new(
             [AnsibleElementMapper.EdgeType],
             [AnsibleElementMapper.PlaybookType, AnsibleElementMapper.PlayType, AnsibleElementMapper.RoleType, AnsibleElementMapper.TaskFileType, AnsibleElementMapper.InventoryType, AnsibleElementMapper.VariableFolderType])),
-        // A stage's jobs and their arrows exist only while the stage is open, so every stage is opened:
-        // without it the job graph's arrows would never be visited at all.
+        // The three levels nest: a stage's jobs and their arrows exist only while the stage is open, and
+        // a job's steps only while the job is too. So every stage and every job now drawn is opened, and
+        // the helper calls this again with what that revealed - without it the job graph's arrows and
+        // every step would never be visited at all.
         new("azure-pipeline", new(
             [PipelineElementMapper.EdgeType],
-            [PipelineElementMapper.StageType, PipelineElementMapper.JobType, PipelineElementMapper.TemplateType]),
+            [PipelineElementMapper.StageType, PipelineElementMapper.JobType, PipelineElementMapper.StepType, PipelineElementMapper.TemplateType]),
             ExpandViews: (services, view) =>
             {
                 var views = services.GetRequiredService<PipelineViewState>();
-                foreach (var stage in view.Baseline.Where(element => element.Type == PipelineElementMapper.StageType))
+                var open = views.For(view.WatchId, view.BodyPath);
+                var openable = new[] { PipelineElementMapper.StageType, PipelineElementMapper.JobType };
+                foreach (var element in view.Baseline.Where(element => openable.Contains(element.Type)))
                 {
-                    views.Toggle(view.WatchId, view.BodyPath, stage.Id);
+                    // Only what is still shut. Toggle FLIPS, so re-toggling an open stage on the next
+                    // round would close it and the expansion would oscillate rather than settle - which
+                    // is exactly what the helper's round cap reported when this hook first ran.
+                    //
+                    // One set of ids for both levels since Developer 2's job-steps change: a job's id
+                    // carries its stage's, so the view state takes either without being told which.
+                    if (!open.IsExpanded(element.Id))
+                    {
+                        views.Toggle(view.WatchId, view.BodyPath, element.Id);
+                    }
                 }
             }),
         new("c4", new(

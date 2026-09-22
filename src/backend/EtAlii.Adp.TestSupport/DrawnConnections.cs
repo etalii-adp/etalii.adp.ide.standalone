@@ -34,9 +34,14 @@ public sealed record DrawnView(ShortGuid WatchId, string BodyPath, IReadOnlyList
 /// <param name="Types">Its emitted types, by reference to its mapper's constants.</param>
 /// <param name="ExpandViews">
 /// For a module whose canvas draws more after a view change than on open - a pipeline's job-level arrows
-/// exist only inside an expanded stage - the hook that opens every such view before the diagram is read
-/// again. Omitted, the baseline is all there is. Declared per module so that a module which draws on
-/// expansion says so where it can be seen.
+/// exist only inside an expanded stage, and its steps only inside an expanded job - the hook that opens
+/// every such view. Omitted, the baseline is all there is. Declared per module so that a module which
+/// draws on expansion says so where it can be seen.
+///
+/// <b>Called repeatedly, to a fixed point</b>: it is handed what is drawn now, opens whatever of that it
+/// can, and is called again with whatever that revealed, until nothing new appears. <b>Levels nest</b> -
+/// a job exists only once its stage is open - so one pass could open the stages and never see the jobs
+/// it had just revealed, let alone their steps: the check would stay green having visited neither.
 /// </param>
 public sealed record DrawnModule(string ExamplesFolder, DrawnTypes Types, Action<IServiceProvider, DrawnView>? ExpandViews = null);
 
@@ -131,8 +136,26 @@ public static class DrawnConnections
                 var elements = AddedBy(session.Baseline());
                 if (module.ExpandViews is { } expand)
                 {
-                    expand(services, new DrawnView(watchId, bodyPath, elements));
-                    elements = AddedBy(session.Baseline());
+                    // To a fixed point, because levels nest: opening the stages reveals the jobs, and
+                    // opening those reveals the steps. The cap is a hang-stopper, not a depth limit - a
+                    // hook that toggled something shut on every pass would otherwise loop for ever, and
+                    // reaching it means the module's own expansion never settles, which is a finding.
+                    const int rounds = 10;
+                    for (var round = 0; round < rounds; round++)
+                    {
+                        var before = elements.Count;
+                        expand(services, new DrawnView(watchId, bodyPath, elements));
+                        elements = AddedBy(session.Baseline());
+                        if (elements.Count == before)
+                        {
+                            break;
+                        }
+
+                        if (round == rounds - 1)
+                        {
+                            problems.Add($"{name}: {example} kept revealing new elements after {rounds} rounds of ExpandViews, so its expansion never settled.");
+                        }
+                    }
                 }
 
                 var parents = ParentsOf(routed, router, workspace);
