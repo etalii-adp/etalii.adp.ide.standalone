@@ -192,6 +192,13 @@ So the diff's output splits in two, and **only one half is a defect**:
 
 The two look identical in the diff's output and are told apart only by reading the list. Ten unclaimed requirements on one specification were seven of the first kind and three of the second. **Saying which is which converts the diff's answer from a silence into a statement** - and a reader who meets an unexplained silence will either add three pointless task claims or conclude the diff is noisy, and both are worse than the minute it takes to write the sentence.
 
+**The acceptance criteria are the complete list of visible changes the work may make.** `centralized-selection`
+first listed, case by case, which tests were allowed to change; three tests changed in one day for three
+different reasons and **each needed its own dashboard card before implementation could land**. The user ruled
+the general form instead: *a test may change only where it pinned behaviour a named acceptance criterion
+changes; it names that criterion and changes only what the criterion changes.* An enumerated exemption list
+grows once per discovery and blocks implementation on an approval each time; the general rule is answerable
+from the approved text without amending it. **Keep both halves - name the criterion, and change only that far.**
 ## Bugs found during implementation or verification
 
 **Every bug found leaves a guard behind, so it cannot silently return.** Whether it surfaced from a failing test, a code review, or a manual pass.
@@ -265,6 +272,13 @@ it tears down - because a guard can be hollowed out without any assertion changi
 
 **An ungated commit and a guard edit are each survivable; together they are the case where nothing in
 the system would have told anybody.**
+**A guard that has already caught many instances of one mistake is not redundant, however much it looks it.**
+Developer 1's task 26 red: a new host-booting test class omitted the problem-store temp-root override and
+`ProblemStoreIsolationTests` caught it - **the twenty-third instance of the same mistake**, a leak that writes
+into the developer's real profile instead of a test root. The argument for deleting such a guard is always
+that the mistake is understood now; **the count is the argument against, and only a guard that keeps its count
+can make it.** Read this beside the seen-to-fail rule above: one says a guard must be proven, this says a
+proven guard must not be deleted because its mistake has started to look obvious.
 ## Running the backend tests
 
 The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather than VSTest. Two consequences:
@@ -561,6 +575,27 @@ Measured on 2026-09-22 over **1430 `.cs` files - 974 production, 456 test**:
 
 **Same tree, same day, different answers - and the difference is in the question, not in the diligence.**
 
+**A shared seam has TWO failure modes, and the remedy for one cannot fix the other.** *Misattribution* - the
+seam records work, and a test reads a total that somebody else's work contributed to - is fixed by a better
+ASSERTION: ask about your own subject by name, which is what `FileHolders.Query`'s counter and
+`TestFolder.Failures` both needed, and both were fixed that way. *Contention* - two tests needing DIFFERENT
+VALUES of one seam at the same moment - cannot be fixed by any assertion, because the values cannot both be
+installed; it needs serialisation, or the removal of the sharing. Developer 3 hit the second the same evening
+by adding a class that writes `FileHolders.Query` and `Budget`: five tests failed for each other's work, and
+asking by path - the remedy that had just fixed the first mode - could not have helped. **Name which mode you
+have before reaching for the remedy that worked last time.** The sequence is find, attribute, decide: the sweep
+above finds the seam, the by-name assertion fixes what a better question can fix, and this says which residue
+it cannot.
+
+**A rule that depends on vigilance is a debt with a due date.** The remedy taken there was an xUnit collection,
+which serialises the two classes - cheap now, and correct only while every future class touching the seam
+REMEMBERS to join it. One that forgets gets five tests failing for each other's work, and **it will look like
+flakiness rather than like a missed rule**, which is the expensive part. The alternative, making the seam an
+instance, cannot be forgotten because there is nothing global left to collide over, and costs every production
+call site an instance it has no use for. **Both were priced at the time of the decision rather than when
+somebody trips, and the trigger for re-opening was written into the commit: a third class with its own needs.**
+If the reminder ever fails, the answer is the instance, not a second reminder.
+
 **The same trap in a different instrument, and it is the sharpest statement of the family** (Developer 3's,
 from routing a text buffer through the shared writer): centralising the writer turned an in-place truncation
 into a temp-then-replace publish. **A write in place raises `Changed`; a publish raises `Renamed`, as the
@@ -586,6 +621,31 @@ CAN SEE.** *Which statics can a test assign?* and *which can a test change?* are
 tree; *tell me when this file changes* and *tell me when this path's contents are replaced* are different
 questions over one file. In both cases the narrower question returned a complete, reassuring, useless answer.
 
+### A proxy for the wild actor
+
+**A measured distribution describes the perturbations you were able to STAGE, not what the actor in the wild
+is doing.** Two concurrent replaces produced `0x80070497` 29 times in 800. A delete racing a publish produced
+it 185 times in 400 in one harness and 75 times in 400 in another - **the same staged actor, two
+distributions** - so a delete looked dominant either way. **Then a third occurrence in the wild showed the
+destination PRESENT with 132 bytes**, which is not the delete shape at all. The staged rate was evidence of
+MECHANISM - that a delete can produce this error - and never of FREQUENCY in the field.
+
+**And read a failure count for WHICH failure.** This clause said "305 in 400" of `0x80070497` until Developer 3
+corrected it on the way to the gate. 305 was that harness's TOTAL across every code it produced - `0x800700B7`
+148, `FileNotFound` 76, `0x80070497` 75, `0x80070005` 5, `0x80070020` 1 - and the pair that matters about it is
+305 failures without the shared turn against 0 with it. **A total is not a distribution, and a harness's
+headline number is whichever one its author was watching.** Ask which measurement a number IS before citing it
+as the rate of one outcome.
+
+**The same error reached from the opposite direction, and worth reading beside it:** eight runs plus a
+full-suite re-run of the exact commit that went red, all green, is a failure to reproduce **and not a rate**
+(Developer 2, refusing to quote it as one). One session had a number and no wild instance; the other had a
+wild instance and no number. **Both are the same mistake: taking what you could stage for what happens.**
+
+**A defect found in a test is worth looking for in the code it tests, and in the code beside that.** Developer
+3 found machine speed deciding what a guard asserted, fixed it, and did not look at the production path one
+file away - where the same two-second budget decides whether a failure record can name a holder at all, most
+easily failing under exactly the load that produces the failure.
 ### A proxy in the evidence
 
 - **Evidence lives on the branch or in a scratchpad, never only in the working tree.** The overnight cleanup
