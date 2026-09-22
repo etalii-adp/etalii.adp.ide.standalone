@@ -35,7 +35,6 @@ public class TestFolderTests
         Directory.CreateDirectory(folder);
         var held = IoPath.Combine(folder, "held.txt");
         File.WriteAllText(held, "in use");
-        var before = TestFolder.Failures.Count;
 
         try
         {
@@ -51,7 +50,7 @@ public class TestFolderTests
             }
 
             // Assert. THE REPORT IS THE BEHAVIOUR.
-            var reported = TestFolder.Failures.Skip(before).ToArray();
+            var reported = MineOnly(folder);
             var line = Assert.Single(reported);
             Assert.Contains(folder, line, StringComparison.Ordinal);
             Assert.Contains("gave up deleting", line, StringComparison.Ordinal);
@@ -87,7 +86,6 @@ public class TestFolderTests
         // state that happens 14 times in 870 without waiting for luck.
         var (root, folder, report) = Scratch();
         Directory.CreateDirectory(folder);
-        var before = TestFolder.Failures.Count;
         var deletes = 0;
 
         try
@@ -110,7 +108,7 @@ public class TestFolderTests
 
             // Assert.
             Assert.True(deletes >= 5, $"The loop gave up early: only {deletes} existence checks.");
-            var reported = TestFolder.Failures.Skip(before).ToArray();
+            var reported = MineOnly(folder);
             var line = Assert.Single(reported);
             Assert.Contains(folder, line, StringComparison.Ordinal);
             Assert.Contains("still present, no exception", line, StringComparison.Ordinal);
@@ -133,14 +131,13 @@ public class TestFolderTests
         var (root, folder, report) = Scratch();
         Directory.CreateDirectory(IoPath.Combine(folder, "nested"));
         File.WriteAllText(IoPath.Combine(folder, "nested", "a.txt"), "content");
-        var before = TestFolder.Failures.Count;
 
         try
         {
             TestFolder.TryDelete(folder, Directory.Exists, caller: null, reportTarget: report);
 
             Assert.False(Directory.Exists(folder));
-            Assert.Equal(before, TestFolder.Failures.Count);
+            Assert.Empty(MineOnly(folder));
             Assert.False(File.Exists(report), "A clean delete wrote a report line.");
         }
         finally
@@ -153,13 +150,12 @@ public class TestFolderTests
     public void AFolderThatWasNeverThere_ReportsNothing()
     {
         var (root, folder, report) = Scratch();
-        var before = TestFolder.Failures.Count;
 
         try
         {
             TestFolder.TryDelete(folder, Directory.Exists, caller: null, reportTarget: report);
 
-            Assert.Equal(before, TestFolder.Failures.Count);
+            Assert.Empty(MineOnly(folder));
             Assert.False(File.Exists(report), "A folder that was never there wrote a report line.");
         }
         finally
@@ -169,6 +165,18 @@ public class TestFolderTests
     }
 
     /// <summary>A scratch root holding the folder under test and this test's own report file.</summary>
+    /// <summary>
+    /// The reported lines about ONE folder. <b>TestFolder.Failures is static and this assembly
+    /// runs its classes in parallel</b>, so a remembered total plus Skip(before) attributes to
+    /// this test whatever a sibling enqueued in the same window - TestFolderReportTests calls
+    /// TryDelete in its own teardown, and any class whose cleanup fails writes here too. Every
+    /// line carries the folder it is about, so asking by path is both narrower and correct;
+    /// asking by count is a question no shared queue can answer. Found by Architect 1 widening
+    /// a sweep of mine from settable statics to shared mutable containers.
+    /// </summary>
+    private static string[] MineOnly(string folder) =>
+        [.. TestFolder.Failures.Where(line => line.Contains(folder, StringComparison.Ordinal))];
+
     private static (string Root, string Folder, string Report) Scratch()
     {
         var root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.TestFolderGuard", Guid.NewGuid().ToString("N"));
