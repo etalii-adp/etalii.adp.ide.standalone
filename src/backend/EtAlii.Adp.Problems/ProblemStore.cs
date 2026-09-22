@@ -162,24 +162,39 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         return roots.Order(StringComparer.OrdinalIgnoreCase).ToArray();
     }
 
+    /// <summary>
+    /// Runs inside <see cref="Dispose"/>, after the store has closed to new schedules and before
+    /// the flush loop. <b>The seam exists because the interleaving that loses a write cannot be
+    /// provoked by timing</b>: a debounce callback has to wake in exactly that gap, which a real
+    /// race obliges rarely enough to read as a flake - once in a full 5,098-test run, and never in
+    /// five runs of the project alone. Production never sets it.
+    /// </summary>
+    internal Action? BetweenClosingAndFlushing { get; set; }
+
     public void Dispose()
     {
         // Closed to new schedules FIRST, then flushed: set afterwards, a mutation racing this
         // loop could arm a timer on an entry the loop had already passed, and that timer would
         // outlive the store with nothing to stop it.
         _disposed = true;
+        BetweenClosingAndFlushing?.Invoke();
 
         // A pending debounced write is a promise; keep it on the way out.
         foreach (var entry in _entries.Values)
         {
             lock (entry.Gate)
             {
-                if (entry.WriteTimer is null)
+                entry.WriteTimer?.Dispose();
+                entry.WriteTimer = null;
+
+                // By the debt rather than by the timer: a debounce callback that woke a moment
+                // before this loop has already cleared the timer, and reading that as "nothing
+                // owed" is how the last write went missing.
+                if (!entry.WritePending)
                 {
                     continue;
                 }
-                entry.WriteTimer.Dispose();
-                entry.WriteTimer = null;
+
                 Persist(entry);
             }
         }
@@ -302,11 +317,15 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
         if (_writeDelay <= TimeSpan.Zero)
         {
+            entry.WritePending = true;
             Persist(entry);
             return;
         }
 
-        // Debounced: rapid mutations cost one write, a little later.
+        // Debounced: rapid mutations cost one write, a little later. The debt is recorded on the
+        // entry rather than implied by the timer, because the timer is cleared by whoever wakes up
+        // first and the debt has to outlive that.
+        entry.WritePending = true;
         entry.WriteTimer?.Dispose();
         entry.WriteTimer = new Timer(_ => OnDebounceElapsed(entry), null, _writeDelay, Timeout.InfiniteTimeSpan);
     }
@@ -331,13 +350,25 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         {
             entry.WriteTimer?.Dispose();
             entry.WriteTimer = null;
-            if (_disposed)
+            if (_disposed && !entry.WritePending)
             {
+                // SAYS WHAT WAS CHECKED, NOT WHAT IS HOPED. This line used to claim "the flush
+                // has already written it" on the strength of _disposed alone - which was false in
+                // exactly the interleaving that lost the write, so the one record of the defect
+                // asserted the opposite of what happened. It now reports the settled debt, which is
+                // the thing actually tested one line above.
                 _logger.Debug(
-                    "A debounced problem-cache write for {RootPath} woke after the store was disposed; the flush has already written it",
+                    "A debounced problem-cache write for {RootPath} woke after the store was disposed, with nothing left owed",
                     entry.RootPath);
                 return;
             }
+
+            // STILL OWED, EVEN IF THE STORE IS DISPOSED. Dispose sets _disposed BEFORE its flush
+            // loop reaches this entry, so "disposed" on its own never meant "already written" - and
+            // this callback used to clear the timer and return, after which the flush saw no timer
+            // and skipped the entry too. Neither wrote, and the last change was lost. Persist still
+            // refuses to recreate a root that has gone, which is what the disposed check was
+            // protecting.
             Persist(entry);
         }
     }
@@ -406,6 +437,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
             Directory.CreateDirectory(IoPath.GetDirectoryName(cachePath)!);
             var cache = new ProblemCacheFile(CacheFormatVersion, entry.RootPath, entry.Problems.Select(CachedProblem.From).ToArray());
             File.WriteAllText(cachePath, JsonSerializer.Serialize(cache, new JsonSerializerOptions { WriteIndented = true }));
+            entry.WritePending = false;
             _logger.Debug("Wrote {Count} problems for {RootPath} to {CachePath}", entry.Problems.Count, entry.RootPath, cachePath);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
