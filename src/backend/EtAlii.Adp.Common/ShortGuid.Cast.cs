@@ -10,12 +10,12 @@ namespace EtAlii.Adp.Common.Wire;
 // the closest equivalent: an explicit, discoverable conversion at the call site.
 public sealed partial class ShortGuid
 {
-    public static implicit operator ShortGuidContract(EtAlii.Adp.ShortGuid shortGuid)
+    public static implicit operator ShortGuidContract(Adp.ShortGuid shortGuid)
     {
         return new ShortGuidContract { Value = ByteString.CopyFrom(shortGuid.Guid.ToByteArray()) };
     }
-    public static implicit operator EtAlii.Adp.ShortGuid(ShortGuidContract contract)
+    public static implicit operator Adp.ShortGuid(ShortGuidContract contract)
     {
-        return new EtAlii.Adp.ShortGuid(new Guid(contract.Value.Span));
+        return new Adp.ShortGuid(new Guid(contract.Value.Span));
     }
 }

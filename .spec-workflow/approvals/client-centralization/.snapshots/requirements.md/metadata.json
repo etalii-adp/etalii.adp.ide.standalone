@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/client-centralization/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-22T16:06:56.837Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790093216368_pp1zmp7oi",
+      "approvalTitle": "client-centralization - Requirements (raised by the Scrum master for Architect 2): twelve requirements, each naming the copies it replaces, the measured drift and a structural guard; three defects cited as fixed ahead; permitted visible changes default to none (89bb5f35)."
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-22T16:15:11.928Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790093216368_pp1zmp7oi",
+      "approvalTitle": "client-centralization - Requirements (raised by the Scrum master for Architect 2): twelve requirements, each naming the copies it replaces, the measured drift and a structural guard; three defects cited as fixed ahead; permitted visible changes default to none (89bb5f35)."
+    }
+  ]
+}

@@ -114,7 +114,13 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
 
         // Then both finish, in order, and the later one's content is what remains.
         releaseFirst.Set();
+        // xUnit1031 is suppressed rather than obeyed here: the subject of this guard is
+        // AdpFileWriter.Save, which is SYNCHRONOUS, and the test has to observe two of them
+        // contending from different threads. Awaiting instead would remove the contention the
+        // test exists to measure.
+#pragma warning disable xUnit1031 // Test methods should not use blocking task operations
         Assert.True(Task.WaitAll([first, second], Patience), "The saves did not finish after the first was released.");
+#pragma warning restore xUnit1031
         Assert.Equal("second", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
@@ -146,11 +152,17 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         Assert.False(second.IsCompleted, "A different spelling of the same destination got through while the first held it.");
 
         releaseFirst.Set();
+        // xUnit1031 is suppressed rather than obeyed here: the subject of this guard is
+        // AdpFileWriter.Save, which is SYNCHRONOUS, and the test has to observe two of them
+        // contending from different threads. Awaiting instead would remove the contention the
+        // test exists to measure.
+#pragma warning disable xUnit1031 // Test methods should not use blocking task operations
         Assert.True(Task.WaitAll([first, second], Patience), "The saves did not finish after the first was released.");
+#pragma warning restore xUnit1031
     }
 
     [Fact]
-    public void SavesToDifferentDestinations_DoNotWaitForEachOther()
+    public async Task SavesToDifferentDestinations_DoNotWaitForEachOther()
     {
         // Condition 3, the must-not-catch half: serialising unrelated paths would be a slowdown
         // with a false wait logged against a file nobody else was writing.
@@ -182,7 +194,13 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         finally
         {
             releaseFirst.Set();
-            first.WaitAsync(Patience, TestContext.Current.CancellationToken);
+
+            // AWAITED, NOT MERELY ASKED FOR. WaitAsync RETURNS a task; discarding it left this
+            // test finishing while the held save was still inside its replace, free to write
+            // into a folder teardown was already deleting - and an exception in it observed by
+            // nobody. The assertions above never noticed, because they run before this block:
+            // the guard stayed green while its isolation was gone.
+            await first.WaitAsync(Patience, TestContext.Current.CancellationToken);
         }
     }
 }
