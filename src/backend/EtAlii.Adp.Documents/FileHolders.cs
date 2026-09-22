@@ -35,8 +35,13 @@ public static class FileHolders
     /// <summary>The answer when the file is held by nobody the query can see.</summary>
     public const string None = "no process was holding it when asked";
 
-    /// <summary>How long the query may take before it is abandoned and the save carries on.</summary>
-    private static readonly TimeSpan _budget = TimeSpan.FromSeconds(2);
+    /// <summary>
+    /// How long the query may take before it is abandoned and the save carries on. Settable for
+    /// guards only: the Restart Manager talks to a service, and on a loaded machine it can take
+    /// longer than a save should ever wait - which made a guard that asserts the RECORD'S CONTENT
+    /// depend on how busy the machine was. Production never sets it.
+    /// </summary>
+    internal static TimeSpan Budget { get; set; } = TimeSpan.FromSeconds(2);
 
     /// <summary>
     /// The query itself, swappable so a guard can drive the unavailable-and-slow cases. Production
@@ -63,9 +68,9 @@ public static class FileHolders
             // already failing must not wait on a diagnostic. An abandoned task is left to finish
             // on its own - it holds nothing of ours.
             var running = Task.Run(() => query(path));
-            return running.Wait(_budget)
+            return running.Wait(Budget)
                 ? running.Result
-                : $"holders could not be determined: the query did not answer within {_budget.TotalSeconds:0} seconds";
+                : $"holders could not be determined: the query did not answer within {Budget.TotalSeconds:0.##} seconds";
         }
         catch (Exception exception)
         {

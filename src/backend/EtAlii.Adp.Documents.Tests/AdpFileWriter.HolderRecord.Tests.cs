@@ -36,6 +36,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     public void Dispose()
     {
         FileHolders.Query = null;
+        FileHolders.Budget = TimeSpan.FromSeconds(2);
         TestFolder.TryDelete(_folder);
         GC.SuppressFinalize(this);
     }
@@ -48,6 +49,12 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         var path = IoPath.Combine(_folder, "tea.owm");
         File.WriteAllText(path, "before");
         var ready = IoPath.Combine(_folder, "holder.ready");
+        // The real Restart Manager talks to a service, and this guard is about what the RECORD
+        // SAYS rather than about how busy the machine is: at the production budget a loaded gate
+        // timed out the query and reddened this test for a reason it does not pin. The timeout
+        // itself is pinned by AHolderQueryThatHangs_DoesNotHoldTheSaveOpen.
+        FileHolders.Budget = TimeSpan.FromSeconds(30);
+
 
         using var holder = StartHolder(path, ready);
         try
@@ -74,6 +81,11 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         // would send the next reader hunting for a process that was never involved.
         var path = IoPath.Combine(_folder, "tea.owm");
         File.WriteAllText(path, "before");
+        // The real Restart Manager talks to a service, and this guard is about what the RECORD
+        // SAYS rather than about how busy the machine is: at the production budget a loaded gate
+        // timed out the query and reddened this test for a reason it does not pin. The timeout
+        // itself is pinned by AHolderQueryThatHangs_DoesNotHoldTheSaveOpen.
+        FileHolders.Budget = TimeSpan.FromSeconds(30);
         using var logs = LogCapture.Start();
 
         using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -115,6 +127,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         var path = IoPath.Combine(_folder, "tea.owm");
         File.WriteAllText(path, "before");
         var wild = new IOException("Unable to remove the file to be replaced.") { HResult = unchecked((int)0x80070497) };
+        FileHolders.Budget = TimeSpan.FromMilliseconds(200);
         FileHolders.Query = _ =>
         {
             Thread.Sleep(TimeSpan.FromSeconds(30));
@@ -126,7 +139,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
         clock.Stop();
 
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10), $"The save waited {clock.Elapsed.TotalSeconds:0.0}s on the holder query.");
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), $"The save waited {clock.Elapsed.TotalSeconds:0.0}s on a holder query with a 200ms budget.");
         Assert.Contains(logs.Warnings, warning => warning.Contains("did not answer", StringComparison.Ordinal));
     }
 
