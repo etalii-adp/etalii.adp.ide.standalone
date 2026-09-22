@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The client's vitest suite, reported to the .NET suite as one case per test file and one per
+    individual test. Its own project rather than a class inside another, for three reasons: the run
+    it drives is the only thing here, so `dotnet test` can include or exclude it by project; it
+    references no production code, because it drives npm rather than any assembly; and its cost -
+    one vitest run - is then attributable to one project in the log rather than hidden inside a
+    project that tests something else.
+  -->
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <!--
+      Directory.Build.targets compiles the shared LogCapture into every *.Tests project, and it is
+      written against Serilog. Every other test project gets Serilog transitively through the
+      production project it references; this one references none, so it names the package itself.
+    -->
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+</Project>
