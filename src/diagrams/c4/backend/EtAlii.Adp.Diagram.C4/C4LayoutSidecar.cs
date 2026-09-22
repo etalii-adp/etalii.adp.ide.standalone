@@ -125,7 +125,7 @@ public sealed class C4LayoutSidecar
             {
                 if (File.Exists(PathFor(bodyPath)))
                 {
-                    File.Delete(PathFor(bodyPath));
+                    AdpFileWriter.Delete(PathFor(bodyPath));
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

@@ -108,13 +108,33 @@ public class HistoryStackStoreTests
         store.Retain(path);
         var dropped = store.Get(path);
         store.Release(path);
-        await WaitUntilAsync(() => !ReferenceEquals(store.Get(path), dropped));
 
         // Assert.
         // The dropped stack was disposed - which is what stops it leaking - so using it now
         // is an error, and that error is how the test knows it was disposed.
+        //
+        // WAITS FOR THE DISPOSAL ITSELF, NOT FOR A PROXY OF IT. This used to wait until the store
+        // handed out a DIFFERENT stack and then assert disposal at once - but eviction removes the
+        // entry BEFORE it detaches and disposes the old stack, so the replacement is visible first
+        // and the window between them is real. It cost a gate red: "No exception was thrown", on a
+        // stack that was disposed a moment later.
+        await WaitUntilAsync(() => IsDisposed(dropped));
         await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
             await dropped.ExecuteAsync(new HistoryStackStoreNoop(), TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>Whether the stack refuses work because it has been disposed.</summary>
+    private static bool IsDisposed(IHistoryStack stack)
+    {
+        try
+        {
+            stack.ExecuteAsync(new HistoryStackStoreNoop(), CancellationToken.None).GetAwaiter().GetResult();
+            return false;
+        }
+        catch (ObjectDisposedException)
+        {
+            return true;
+        }
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition)

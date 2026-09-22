@@ -128,6 +128,12 @@ dotnet_style_qualification_for_event = false:warning
 dotnet_style_qualification_for_field = false:warning
 dotnet_style_qualification_for_method = false:warning
 dotnet_style_qualification_for_property = false:warning
+# A fully-qualified name where a using already resolves it, and a member access that needs no
+# qualification. Raised from their defaults so `dotnet format style --verify-no-changes` - one of the
+# four gates - REFUSES them: the user cleaned three of these by hand on 2026-09-22 after all four
+# gates passed on them, and a hand cleanup after a green gate means the gate was the wrong shape.
+dotnet_diagnostic.IDE0001.severity = warning
+dotnet_diagnostic.IDE0002.severity = warning
 
 # Language keywords vs BCL types preferences
 # Silent in Microsoft's own template: preferring 'int' over 'Int32' is treated

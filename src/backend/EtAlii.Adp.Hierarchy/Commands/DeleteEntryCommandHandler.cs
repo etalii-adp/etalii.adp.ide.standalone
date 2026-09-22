@@ -1,4 +1,5 @@
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;
 using IoPath = System.IO.Path;
@@ -82,15 +83,15 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             }
             else
             {
-                File.Delete(path);
+                AdpFileWriter.Delete(path);
                 if (sibling is not null && File.Exists(sibling))
                 {
-                    File.Delete(sibling);
+                    AdpFileWriter.Delete(sibling);
                 }
 
                 foreach (var registration in cascade)
                 {
-                    File.Delete(registration);
+                    AdpFileWriter.Delete(registration);
                 }
             }
         }

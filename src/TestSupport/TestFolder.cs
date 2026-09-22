@@ -50,8 +50,8 @@ internal static class TestFolder
     /// </summary>
     internal static string ReportFileFor(string? directory, int processId) =>
         string.IsNullOrWhiteSpace(directory)
-            ? Path.Combine(Path.GetTempPath(), "EtAlii.Adp.undeleted-test-folders.log")
-            : Path.Combine(directory, $"{processId}.log");
+            ? IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.undeleted-test-folders.log")
+            : IoPath.Combine(directory, $"{processId}.log");
 
     private static readonly ConcurrentQueue<string> _failures = new();
 
@@ -151,7 +151,7 @@ internal static class TestFolder
         {
             try
             {
-                var directory = Path.GetDirectoryName(target);
+                var directory = IoPath.GetDirectoryName(target);
                 if (!string.IsNullOrEmpty(directory))
                 {
                     Directory.CreateDirectory(directory);

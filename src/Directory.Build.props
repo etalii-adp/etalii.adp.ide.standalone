@@ -1,6 +1,12 @@
 <Project>
 
   <PropertyGroup>
+    <!-- A warning nothing fails on is a finding nobody reads: six xUnit1051 warnings sat in every
+         green gate until the user cleaned them by hand. Measured before raising: with these two at
+         error the tree still builds green, and a planted instance of each is refused. Setting
+         dotnet_diagnostic.<rule>.severity in src/.editorconfig did NOT work for these - twice, on a
+         forced rebuild - and why is not known. -->
+    <WarningsAsErrors>$(WarningsAsErrors);xUnit1031;xUnit1051</WarningsAsErrors>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
