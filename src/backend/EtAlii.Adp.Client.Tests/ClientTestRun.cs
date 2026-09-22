@@ -156,10 +156,14 @@ public static class ClientTestRun
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
 
-        // CAPPED, because this runs inside a gate. The measured run is ~10s; a vitest that hangs -
-        // a watch flag slipping in, a test awaiting something that never happens - would otherwise
-        // hold the whole backend suite open with no output and no verdict. Ten minutes is sixty
-        // times the measurement, so it can only be reached by a hang, and it fails saying so.
+        // CAPPED, because this runs inside a gate. A vitest that hangs - a watch flag slipping in, a
+        // test awaiting something that never happens - would otherwise hold the whole backend suite
+        // open with no output and no verdict, on everyone's gate.
+        //
+        // THE MEASUREMENT THE CAP IS SET AGAINST, so a later reader can re-judge it rather than
+        // guess: on 2026-09-22, 132 files and 1399 tests ran in ~10s (a single file ~2s), on this
+        // repository's developer machine. Ten minutes is sixty times that, so the cap can only be
+        // reached by a hang and never by the suite growing. Re-measure before narrowing it.
         if (!process.WaitForExit((int)Timeout.TotalMilliseconds))
         {
             process.Kill(entireProcessTree: true);
