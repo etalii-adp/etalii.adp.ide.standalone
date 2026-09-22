@@ -150,16 +150,22 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         // question to ask.
         var path = IoPath.Combine(_folder, "tea.owm");
         File.WriteAllText(path, "before");
-        var asked = 0;
-        FileHolders.Query = _ =>
+
+        // ASKED ABOUT THIS PATH, not asked at all. FileHolders.Query is a static seam and the
+        // assembly runs its classes in parallel, so a DIFFERENT class's deliberately failing
+        // save calls whatever query is installed at that moment - and a plain call count made
+        // this guard fail for somebody else's failure. Counting by path asks the question this
+        // test is actually about and cannot be answered by another test's work.
+        var asked = new System.Collections.Concurrent.ConcurrentBag<string>();
+        FileHolders.Query = asked_ =>
         {
-            Interlocked.Increment(ref asked);
+            asked.Add(asked_);
             return "asked";
         };
 
         AdpFileWriter.Save(path, "after");
 
-        Assert.Equal(0, asked);
+        Assert.DoesNotContain(path, asked);
         Assert.Equal("after", File.ReadAllText(path));
     }
 
