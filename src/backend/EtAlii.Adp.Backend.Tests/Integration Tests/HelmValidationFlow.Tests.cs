@@ -40,7 +40,7 @@ public class HelmValidationFlowTests : IDisposable
 
         var services = new ServiceCollection();
         services.AddSingleton<IDiagramDefinitionCatalog>(
-            new TestDiagramDefinitionCatalog(EtAlii.Adp.Diagram.HelmCharts.Diagram.HelmCharts));
+            new TestDiagramDefinitionCatalog(Diagram.HelmCharts.Diagram.HelmCharts));
         services.AddSingleton<DiagramFileRouter>();
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();

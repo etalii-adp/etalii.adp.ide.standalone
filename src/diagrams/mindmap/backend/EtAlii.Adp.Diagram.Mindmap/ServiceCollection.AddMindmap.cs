@@ -36,7 +36,7 @@ public static class ServiceCollectionAddMindmapExtension
         // applied - the minimum gap between elements as a fraction of a node's width, above
         // all. Read once here rather than per resolution: the metrics never change at runtime.
         var options = configuration.GetSection(MindmapOptions.SectionName).Get<MindmapOptions>() ?? new MindmapOptions();
-        services.AddSingleton<MindmapElementMapper>(_ => new MindmapElementMapper(options.ToMetrics()));
+        services.AddSingleton(_ => new MindmapElementMapper(options.ToMetrics()));
 
         services.AddSingleton<IDiagramSessionFactory, MindmapSessionFactory>();
 

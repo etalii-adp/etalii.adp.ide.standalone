@@ -74,7 +74,7 @@ public sealed class PipelineParser
     /// <summary>
     /// Reads <paramref name="document"/> into a model, without following any template it names.
     /// </summary>
-    /// <exception cref="YamlDotNet.Core.YamlException">
+    /// <exception cref="YamlException">
     /// The document is not YAML this can read. It carries the line, which is what a reader needs
     /// in order to go and fix it (Requirement 3.6).
     /// </exception>
