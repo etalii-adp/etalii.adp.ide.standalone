@@ -105,14 +105,14 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
     }
 
     [Fact]
-    public void ReloadsRacingAnExternalPublishOfTheSameDiagram_NeverLoseIt()
+    public async Task ReloadsRacingAnExternalPublishOfTheSameDiagram_NeverLoseIt()
     {
         // The measured race as a guard, in causal-loop's shape: an external writer republishes an
         // UNCHANGED diagram while the store reloads it - a text editor saving over the file. A
         // publish either lands whole or leaves the body missing for an instant; a missing body is
         // confirmed before it counts as gone, so the diagram must never be lost.
         var path = IoPath.Combine(_workspace, "loop.cld");
-        File.WriteAllText(path, Text);
+        await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
         var store = new CausalLoopDocumentStore();
         Assert.True(store.GetOrLoad(path).IsUsable);
 
@@ -149,8 +149,8 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         }
         finally
         {
-            stop.Cancel();
-            writer.GetAwaiter().GetResult();
+            await stop.CancelAsync();
+            await writer;//.GetAwaiter().GetResult();
         }
 
         Assert.True(publishes > 0, "The arrangement failed: the external writer never published, so nothing raced.");
