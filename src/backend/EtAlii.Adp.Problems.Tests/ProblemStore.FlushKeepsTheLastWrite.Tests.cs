@@ -116,7 +116,7 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
 
     private static StoredProblem Verdict() =>
         new(
-            new DiagramProblem(DiagramProblemSeverity.Error, "not a known diagram type", null),
+            new DiagramProblem(DiagramProblemSeverity.Error, "not a known diagram type", "core.unknown-type"),
             RelativePath: "services.adp",
             LastWriteTimeUtc: DateTime.UtcNow,
             Length: 42,
