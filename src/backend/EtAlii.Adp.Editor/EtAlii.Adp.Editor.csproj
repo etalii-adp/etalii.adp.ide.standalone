@@ -10,6 +10,7 @@
          EditorResolver / IEditorDefinitionCatalog), so referencing Backend from here
          would be a cycle. -->
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

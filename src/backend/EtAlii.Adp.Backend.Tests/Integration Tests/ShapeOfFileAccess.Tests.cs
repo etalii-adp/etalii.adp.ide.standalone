@@ -111,6 +111,8 @@ public partial class ShapeOfFileAccessTests
     /// </remarks>
     private const string UnguardedWrite = "writes a file in place with a raw File.WriteAll*, so a failure midway truncates it instead of leaving the original intact";
 
+    private const string RawWriteStream = "writes a file through its own FileStream, so it truncates in place and a reader can see it half-written - and at FileShare.Read a concurrent save is refused outright";
+
     private static readonly string Replacement = "SharedDocumentReader (reads), AdpFileWriter.Save (overwrites) or AdpFileWriter.Create/CreateAll (new files)";
 
     private static string RepositoryRoot { get; } = Locate();
@@ -192,6 +194,17 @@ public partial class ShapeOfFileAccessTests
             if (UnguardedWriteExpression().IsMatch(line))
             {
                 found.Add(Violation.ToString(relativePath, i + 1, UnguardedWrite, Replacement));
+            }
+
+            // A WRITE STREAM IS A WRITE, whatever it spells itself. The rule above knows one
+            // spelling - File.WriteAll* - so TextFileBuffer's own
+            // "new FileStream(path, Create, Write, Read)" matched nothing and the category read
+            // empty while a user's file was being truncated in place. Its own rule rather than
+            // the one above, because both allow-lists key on (file, rule): excusing a WriteAll*
+            // site must never quietly excuse a raw stream in the same file.
+            if (WriteStreamExpression().IsMatch(line))
+            {
+                found.Add(Violation.ToString(relativePath, i + 1, RawWriteStream, Replacement));
             }
         }
 
@@ -499,6 +512,20 @@ public partial class ShapeOfFileAccessTests
         var writeBytes = Offences("Fake/Bytes.cs", ["        File.WriteAllBytes(path, bytes);"]);
         Assert.Single(writeBytes);
         Assert.Contains("AdpFileWriter.Save", writeBytes[0], StringComparison.Ordinal);
+
+        // THE WRITE STREAM, WHICH THIS GUARD USED TO CALL FINE. The line below is verbatim what
+        // TextFileBuffer.SaveAsync did, and it sat in TheGuardDoesNotFireOnWhatIsGenuinelyFine
+        // as an asserted non-violation - so the blind spot was not merely unnoticed, it was
+        // written down and defended by a passing test. The user ruled the write a defect; the
+        // sample moves to this half, which is the only honest way to widen a rule.
+        var writeStream = Offences("Fake/Write.cs", ["            await using var stream = new FileStream(_path, FileMode.Create, FileAccess.Write, FileShare.Read);"]);
+        Assert.Single(writeStream);
+        Assert.Contains("Fake/Write.cs:1", writeStream[0], StringComparison.Ordinal);
+        Assert.Contains("AdpFileWriter.Save", writeStream[0], StringComparison.Ordinal);
+
+        var readWriteStream = Offences("Fake/Both.cs", ["        using var s = new FileStream(p, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);"]);
+        Assert.Single(readWriteStream);
+        Assert.Contains("AdpFileWriter.Save", readWriteStream[0], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -509,8 +536,10 @@ public partial class ShapeOfFileAccessTests
         Assert.Empty(Offences("Fake/Shared.cs", ["        new FileStream(p, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096);"]));
         Assert.Empty(Offences("Fake/Rename.cs", ["                File.Move(sourcePath, targetPath);"]));
         Assert.Empty(Offences("Fake/Prose.cs", ["        /// File.ReadAllText and friends open with FileShare.Read, which is why this exists."]));
-        Assert.Empty(Offences("Fake/Write.cs", ["            await using var stream = new FileStream(_path, FileMode.Create, FileAccess.Write, FileShare.Read);"]));
         Assert.Empty(Offences("Fake/Bytes.cs", ["        var bytes = SharedDocumentReader.ReadAllBytes(path);"]));
+        // A read stream is still a read stream: the write rule must not swallow the shape the
+        // read rule already judges, or every correct reader would report as a writer.
+        Assert.Empty(Offences("Fake/Reading.cs", ["        using var s = new FileStream(p, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);"]));
         // A memory stream's ToArray is not a file read, and neither is anything else whose name
         // merely ends the same way - the rule is anchored on File. for that reason.
         Assert.Empty(Offences("Fake/Memory.cs", ["        var bytes = buffer.ReadAllBytes();"]));
@@ -548,4 +577,12 @@ public partial class ShapeOfFileAccessTests
 
     [GeneratedRegex(@"new FileStream\([^)]*FileAccess\.Read\b")]
     private static partial Regex ReadStreamExpression();
+
+    /// <summary>
+    /// A FileStream opened for WRITING. Deliberately not matching <c>FileAccess.Read</c>, which
+    /// is the read rule's subject and is legitimate with the right sharing - the two shapes have
+    /// to stay distinguishable or the widened rule would report every read stream as a write.
+    /// </summary>
+    [GeneratedRegex(@"new FileStream\([^)]*FileAccess\.(Write|ReadWrite)\b")]
+    private static partial Regex WriteStreamExpression();
 }

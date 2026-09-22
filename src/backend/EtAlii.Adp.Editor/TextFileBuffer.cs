@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Editor;
 
@@ -163,15 +164,20 @@ public sealed class TextFileBuffer
 
         var rendered = Render(newContent);
         var bytes = StrictUtf8.GetBytes(rendered);
+        if (_hasBom)
+        {
+            bytes = [0xEF, 0xBB, 0xBF, .. bytes];
+        }
+
         try
         {
-            await using var stream = new FileStream(_path, FileMode.Create, FileAccess.Write, FileShare.Read);
-            if (_hasBom)
-            {
-                await stream.WriteAsync(new byte[] { 0xEF, 0xBB, 0xBF }, cancellationToken);
-            }
-
-            await stream.WriteAsync(bytes, cancellationToken);
+            // THROUGH THE CENTRAL WRITER, not a FileStream of our own. Truncating the destination
+            // in place let a reader see a half-written file, and opening it at FileShare.Read made
+            // a concurrent save fail; neither is this class's to decide. AdpFileWriter publishes
+            // through a scratch file and takes the destination's turn, so a reader sees the old
+            // file or the new one and a delete cannot interleave. The bytes overload is what keeps
+            // the byte-order mark this file arrived with.
+            await Task.Run(() => AdpFileWriter.Save(_path, bytes), cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
