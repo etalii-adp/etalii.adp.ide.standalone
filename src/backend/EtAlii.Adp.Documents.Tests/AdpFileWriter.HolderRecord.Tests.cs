@@ -27,6 +27,7 @@ namespace EtAlii.Adp.Documents.Tests;
 /// to look like a failed query.
 /// </para>
 /// </remarks>
+[Collection(FileHoldersSeam.Name)]
 public class AdpFileWriterHolderRecordTests : IDisposable
 {
     private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "adp-holder-record-" + Guid.NewGuid().ToString("N"));
@@ -140,7 +141,8 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         clock.Stop();
 
         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), $"The save waited {clock.Elapsed.TotalSeconds:0.0}s on a holder query with a 200ms budget.");
-        Assert.Contains(logs.Warnings, warning => warning.Contains("did not answer", StringComparison.Ordinal));
+        Assert.Contains(logs.Warnings, warning => warning.Contains("not yet known", StringComparison.Ordinal));
+        Assert.DoesNotContain(logs.Warnings, warning => warning.Contains(FileHolders.None, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -180,7 +182,9 @@ public class AdpFileWriterHolderRecordTests : IDisposable
 
         var described = FileHolders.Describe(path);
 
-        Assert.Equal(FileHolders.None, described);
+        Assert.Contains(FileHolders.None, described, StringComparison.Ordinal);
+        Assert.DoesNotContain("could not be determined", described, StringComparison.Ordinal);
+        Assert.Contains("answered in", described, StringComparison.Ordinal);
     }
 
     /// <summary>

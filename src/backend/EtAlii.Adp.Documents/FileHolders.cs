@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Serilog;
 
 namespace EtAlii.Adp.Documents;
 
@@ -32,14 +34,14 @@ namespace EtAlii.Adp.Documents;
 /// </remarks>
 public static class FileHolders
 {
+    private static readonly ILogger _logger = Log.ForContext(typeof(FileHolders));
+
     /// <summary>The answer when the file is held by nobody the query can see.</summary>
     public const string None = "no process was holding it when asked";
 
     /// <summary>
-    /// How long the query may take before it is abandoned and the save carries on. Settable for
-    /// guards only: the Restart Manager talks to a service, and on a loaded machine it can take
-    /// longer than a save should ever wait - which made a guard that asserts the RECORD'S CONTENT
-    /// depend on how busy the machine was. Production never sets it.
+    /// How long the failing save waits for the query before carrying on WITHOUT abandoning it.
+    /// Settable for guards only; production never sets it.
     /// </summary>
     internal static TimeSpan Budget { get; set; } = TimeSpan.FromSeconds(2);
 
@@ -54,6 +56,28 @@ public static class FileHolders
     /// never blocks longer than its budget, and never reports failure as absence: a query that
     /// could not run says so in its own words.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>AN INSTRUMENT WHOSE BUDGET EXPIRES EXACTLY WHEN THE FAILURE IS MOST LIKELY IS WEAKEST
+    /// WHERE IT IS NEEDED.</b> The Restart Manager talks to a service, so it is slowest under the
+    /// load that makes a publish fail - and a fixed budget therefore turned the third field
+    /// occurrence into "the query did not answer within 2 seconds", which is a MISSING
+    /// MEASUREMENT and not an answer. So the query is no longer abandoned when the budget
+    /// expires: the save carries on at once, and the query logs its own line when it answers.
+    /// </para>
+    /// <para>
+    /// <b>Two lines, one record.</b> The one-record rule exists so a reader is not made to
+    /// assemble a story from scattered lines, not to forbid a measurement that arrives after the
+    /// event it describes. The second line repeats the PATH and the PID of the first and says how
+    /// long it took, so the two join without a timestamp comparison.
+    /// </para>
+    /// <para>
+    /// <b>Slow and never are different answers, and no budget can tell them apart.</b> A second
+    /// line after nine seconds says the service was slow; no second line at all says it never
+    /// answered. Both are facts about the machine at the moment of a failure, and neither was
+    /// recoverable while the query was being abandoned.
+    /// </para>
+    /// </remarks>
     public static string Describe(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -62,23 +86,70 @@ public static class FileHolders
         }
 
         var query = Query ?? DefaultQuery;
+        var clock = Stopwatch.StartNew();
+        Task<string> running;
         try
         {
-            // On its own thread with a budget: RmGetList talks to a service, and a save that is
-            // already failing must not wait on a diagnostic. An abandoned task is left to finish
-            // on its own - it holds nothing of ours.
-            var running = Task.Run(() => query(path));
-            return running.Wait(Budget)
-                ? running.Result
-                : $"holders could not be determined: the query did not answer within {Budget.TotalSeconds:0.##} seconds";
+            // On its own thread: RmGetList talks to a service, and a save that is already failing
+            // must not wait on a diagnostic.
+            running = Task.Run(() => query(path));
         }
         catch (Exception exception)
         {
-            // Including whatever the platform throws when the Restart Manager is absent. The save's
-            // own failure is the news; this line is a footnote to it.
             return $"holders could not be determined: {exception.GetType().Name} {exception.Message}";
         }
+
+        try
+        {
+            if (running.Wait(Budget))
+            {
+                return $"{running.Result} (answered in {clock.ElapsedMilliseconds} ms)";
+            }
+        }
+        catch (Exception exception)
+        {
+            // The query itself threw inside the budget - including whatever the platform throws
+            // when the Restart Manager is absent. The save's own failure is the news; this is a
+            // footnote to it.
+            var reason = exception is AggregateException aggregate && aggregate.InnerException is { } inner ? inner : exception;
+            return $"holders could not be determined: {reason.GetType().Name} {reason.Message}";
+        }
+
+        AnswerLater(path, running, clock);
+        return $"holders not yet known after {Budget.TotalSeconds:0.##}s; a later line for this path says what the query found, or none does and it never answered";
     }
+
+    /// <summary>
+    /// The second half of the record: the query kept running, and says what it found whenever it
+    /// finds it. Repeats the path and the pid so a reader joins the two lines without comparing
+    /// timestamps, and reports its own elapsed time so slow is distinguishable from stuck.
+    /// </summary>
+    private static void AnswerLater(string path, Task<string> running, Stopwatch clock) =>
+        running.ContinueWith(
+            finished =>
+            {
+                if (finished.IsFaulted)
+                {
+                    var reason = finished.Exception?.InnerException ?? (Exception?)finished.Exception;
+                    _logger.Warning(
+                        "Holders of {Path}, asked from pid {ProcessId} when a publish failed, could not be determined after {Elapsed} ms: {Reason}",
+                        path,
+                        Environment.ProcessId,
+                        clock.ElapsedMilliseconds,
+                        reason is null ? "the query faulted" : $"{reason.GetType().Name} {reason.Message}");
+                    return;
+                }
+
+                _logger.Warning(
+                    "Holders of {Path}, asked from pid {ProcessId} when a publish failed, answered after {Elapsed} ms: {Holders}",
+                    path,
+                    Environment.ProcessId,
+                    clock.ElapsedMilliseconds,
+                    finished.Result);
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
     private static string DefaultQuery(string path) =>
         OperatingSystem.IsWindows()
