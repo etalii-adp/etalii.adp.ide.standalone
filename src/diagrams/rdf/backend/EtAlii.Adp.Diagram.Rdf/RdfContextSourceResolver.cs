@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common.Wire;
+﻿using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Hierarchy;
 
@@ -78,7 +78,7 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
         }
 
         var entry = _documents.GetOrLoad(bodyPath);
-        var text = RdfSelection.Describe(entry, elementId) ?? OwlSelection.Describe(entry, elementId);
+        var text = RdfSelection.Describe(entry, elementId) ?? OwlSelection.Describe(entry, elementId) ?? Shacl.ShaclSelection.Describe(entry, elementId);
         if (text is null)
         {
             return Rejected("That element is no longer in this file.");
@@ -136,7 +136,7 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
             }
 
             // Re-read rather than carrying the previous reading: a removal clears the selection.
-            var text = RdfSelection.Describe(args.Entry, elementId) ?? OwlSelection.Describe(args.Entry, elementId);
+            var text = RdfSelection.Describe(args.Entry, elementId) ?? OwlSelection.Describe(args.Entry, elementId) ?? Shacl.ShaclSelection.Describe(args.Entry, elementId);
             onChange(text is null ? null : [text]);
         }
 
