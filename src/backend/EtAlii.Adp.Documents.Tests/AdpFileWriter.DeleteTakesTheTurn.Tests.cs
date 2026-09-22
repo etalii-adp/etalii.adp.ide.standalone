@@ -43,7 +43,7 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
     }
 
     [Fact]
-    public void ADeleteWaitsForASaveOfTheSamePath_RatherThanCuttingIntoIt()
+    public async Task ADeleteWaitsForASaveOfTheSamePath_RatherThanCuttingIntoIt()
     {
         // Deterministic rather than raced: the save stops INSIDE its replace, holding the turn, and
         // the delete must still be waiting when it does. Timing decides nothing.
@@ -56,20 +56,23 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
         var saving = Task.Run(() => AdpFileWriter.Save(path, "after", replace: (temporary, destination) =>
         {
             inside.Set();
-            release.Wait(Patience);
+            release.Wait(Patience, TestContext.Current.CancellationToken);
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }));
+        }), TestContext.Current.CancellationToken);
 
-        Assert.True(inside.Wait(Patience), "The arrangement failed: the save never reached its replace.");
-        var deleting = Task.Run(() => AdpFileWriter.Delete(path));
+        Assert.True(inside.Wait(Patience, TestContext.Current.CancellationToken), "The arrangement failed: the save never reached its replace.");
+        var deleting = Task.Run(() => AdpFileWriter.Delete(path), TestContext.Current.CancellationToken);
 
-        // The delete cannot have run: the save is holding the turn, mid-replace.
-        Assert.False(deleting.Wait(TimeSpan.FromMilliseconds(500)), "The delete cut into a save of the same path.");
+        // The delete cannot have run: the save is holding the turn, mid-replace. Asked by racing
+        // it against a delay rather than by blocking on it - the assertion is the same, and a
+        // guard that blocks a test thread to measure blocking is one deadlock from silence.
+        await Task.WhenAny(deleting, Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken));
+        Assert.False(deleting.IsCompleted, "The delete cut into a save of the same path.");
 
         release.Set();
-        Assert.True(saving.Wait(Patience), "The save did not finish.");
+        await saving.WaitAsync(Patience, TestContext.Current.CancellationToken);
         Assert.Contains(logs.Warnings, warning => warning.Contains("Waited for a save of", StringComparison.Ordinal) && warning.Contains(path, StringComparison.Ordinal));
-        Assert.True(deleting.Wait(Patience), "The delete did not finish once the save released the turn.");
+        await deleting.WaitAsync(Patience, TestContext.Current.CancellationToken);
         Assert.False(File.Exists(path), "The delete was serialised but never happened.");
     }
 
