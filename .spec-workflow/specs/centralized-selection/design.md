@@ -6,7 +6,7 @@ The highlight is already drawn once. `DiagramCanvas`'s `isSelected(kind, id)` ap
 
 **The one idea that makes this generic is that kind resolution needs no module knowledge.** The four working modules agree on one inbound rule: *the selected id is a connection if it names one of the model's relations, and an element otherwise*. The library already holds both lists, as `DiagramModel.connections` and `DiagramModel.elements`. So the rule every module wrote by hand is a lookup the library can do alone.
 
-Beside it, two looks are defined once each (*selected* and *would accept a connection*), and today they are not even distinct.
+Beside it, one look is defined once and answers both *selected* and *would accept a connection*, and today neither is defined centrally at all.
 
 ## What this design decides
 
@@ -15,8 +15,8 @@ Beside it, two looks are defined once each (*selected* and *would accept a conne
 | Where the selection model lives | In `DiagramCanvas`, given the canvas's identity as a `source` prop | 1.1–1.4 |
 | How a type opts out | `selectable: false` on the element or relation type, **default selectable** | 2.3, 2.4 |
 | What a click means | Stated once in the library; a drag does not select | 3.1–3.4 |
-| What "selected" looks like | One library-drawn outline, independent of fill | 5.1–5.3 |
-| What "would accept" looks like | One distinct library-drawn look, one class | 6.1, 6.2 |
+| What "selected" looks like | One colour change on the outline, anchors and lines, with a heavier line | 5.1–5.5 |
+| What "would accept" looks like | The same look, in the same colour, shown once | 6.1, 6.2 |
 | How states combine | Three independent flags, additive | 5.3, 6.2 |
 | How it stays ready for sets | `DiagramSelection` arrays end to end | 7.1, 7.2 |
 | How compliance is asserted | A text guard plus a mounted assertion in every module's harness | 9.1–9.4 |
@@ -66,28 +66,21 @@ A press on an unselectable type behaves exactly as a press on the background. Th
 - When the model changes and the selected item is no longer in it, the library pushes `null`. This settles in one round: the backend clears, pushes an empty selection, and the inbound mapping resolves it to nothing.
 - **A drag does not select what it moves.** This is settled by the code rather than chosen here: `select` is called only from `onPress`, which fires only on an unmoved release, never from `onDragEnd`, and no module selects from its own drop handler. It is one library decision, identical on all sixteen canvases, so the four working modules cannot disagree with each other on it. It is recorded as a check in the browser pass rather than left as an assumption.
 
-### D. One look for "selected"
+### D. One highlight, one colour, painted inline
 
-`canvas-selected` becomes **the only selected class**, and its look is an **outline the library draws outside the shape's own boundary**. It does not recolour the shape's stroke, as the shared rule does today, so it is independent of the shape's fill and stroke. That is what makes it legible on colours the backend chooses, such as c4's element styles (Requirement 5.2). A selected connection keeps its centrally defined line treatment. Anchors keep `1df91874`'s behaviour of changing colour with their element when selected.
+*Replaces sections D, E and F of the approved design on 2026-09-22, by the user's instruction: "Check all diagrams for selection with duplicate highlightings. Use only one where the elements/anchors/lines change color. Apply everywhere and in a centralized fashion." The outline the library drew outside the shape is withdrawn, and with it the separate accept look.*
 
-The thirteen module-private selected declarations are deleted, and `causal-loop`'s second declaration of the shared class goes with them.
+`LibraryElement` computes **`highlighted = selected || connectTarget`** and writes the selected token and a heavier stroke width **into the inline paint it already computes** (`DiagramCanvas.tsx:2484`) for the shape, and inline on each anchor. A selected connection takes the same inline treatment on its line and on the marks that ride on it: the label, the adorners, and the arrowhead through `context-stroke`. `adorn` receives `highlighted`, so a module's own marks follow the line rather than needing a rule of their own (`causal-loop`'s delay mark is the case).
 
-### E. One distinct look for "would accept a connection"
+**Why inline, and not a stylesheet rule — two measured reasons.** A declared stroke is written as an inline style, and an inline style beats any stylesheet, so a CSS rule would light up the types that declare no stroke and silently skip the ones that do. And module stylesheets reach library-drawn shapes through descendant selectors: `.mindmap-node rect` matched the library's own ring and painted an opaque box over the label (`59f1ed3a`), with `ringsSurviveModuleStyles.test.tsx` naming `c4`, `databricks`, `mindmap` and `sparql`. Inline paint beats both. **Only a module's `!important` beats inline**, so the text guard forbids `!important` on `stroke` or `fill` in a module stylesheet.
 
-Today one CSS rule styles both states, so they are identical. The rule is split:
+**The selected colour is its own token**, which no diagram paints at rest (Requirement 5.5). `--color-primary` is currently both the selection colour and a permanent decoration on several canvases, which a colour-change look cannot survive.
 
-- *Would accept* becomes **`library-connect-target` only**. The twelve private `<module>-connect-target canvas-connect-target` declarations are deleted, as the amended Requirement 6.1 requires.
-- Its look is **deliberately unlike selection**: a dashed outline, at a larger offset than the selected outline, in its own colour token.
+**Removed:** `OutlineRing` and `ringLooks.ts`; the `.canvas-selected` anchor, line and text rules in `canvas.css`; `--color-accept`; and every module rule keyed on the selected or connect-target state.
 
-An element that is both selected and a valid drop target shows both at once, one outline inside the other (Requirement 6.2). Anchors under a connect target take the accept colour, not the selected colour.
+**How the states combine.** `{ selected, dragging, connectTarget }` stay three independent flags, and the dragging look still ends at release with the position held at the landing (`c077af58`). What changes is that **selected and connectTarget resolve to one look**: an element that is both shows it once, and a drag passing over a selected element changes nothing visible (Requirement 6.2). A refused target keeps its red indication, which answers a different question.
 
-### F. How the states combine
-
-`LibraryElement` already computes `{ selected, dragging, connectTarget }` as three independent flags, and since `c077af58` the dragging look ends at release while the position is held at the landing. **The rule is that the three are independent and additive, and none reads another.**
-
-- **Dropped, held and selected** shows the selected outline at the held position, with no dragging look.
-- **Selected and a valid drop target** shows both outlines (E).
-- **Dragging** shows its own look and does not change what is selected (C).
+**Testing.** jsdom cascades by **source order only** — it implements neither specificity nor `!important` — so a unit test can assert that the highlight is carried **inline**, and cannot confirm a cascade fix at all. The look itself is a browser criterion (Requirement 10.3), and the browser pass is where legibility on backend-chosen fills, the absence of any second highlight, and the heavier line reading as one change are settled.
 
 ### G. One source of truth
 
@@ -105,7 +98,7 @@ The selection is a `DiagramSelection` array throughout. Inbound, the one pushed 
 | 1 | `source` prop, inbound and outbound model, menu integration, `action-refused`, menu entries a module runs, the background menu | `DiagramCanvas` | 1.1–1.4, 3.3 |
 | 2 | `selectable` on element and relation types, and `backgroundMenu` on the definition, each default stated | `diagramDefinition.ts` | 1.3, 1.4, 2.1–2.4 |
 | 3 | The click rules and the vanished-item clear | `DiagramCanvas` | 3.1–3.4 |
-| 4 | The selected outline and the accept outline, split from one rule | `canvas.css`, `LibraryElement` | 5.1–5.3, 6.1, 6.2 |
+| 4 | The one highlight, painted inline on shape, anchors, lines and marks | `LibraryElement`, `canvas.css` | 5.1–5.5, 6.1, 6.2 |
 | 5 | The composition rule | `LibraryElement` | 5.3, 6.2 |
 | 6 | The two guards, and the backend half of the mounted assertion | `canvas/library`; one backend test-support project | 2.1, 2.2, 9.1–9.4 |
 | 7 | Module migrations: delete glue, private classes, private state | the sixteen canvases | 1.4, 4.1, 4.2, 5.1, 6.1 |
@@ -148,8 +141,8 @@ The selection is a `DiagramSelection` array throughout. Inbound, the one pushed 
 
 - **Library unit tests** for kind resolution, selectability, each click rule, the vanished-item clear, and the composition rule. jsdom can see classes, so the flags and classes are asserted there. Also: a menu entry declared `menu`-invoked is dispatched to the module and never executed, while an undeclared one is executed; a background right-click opens the shared menu on a canvas that declares `backgroundMenu` and does nothing on one that does not. In `databricks`, a simulated entry chosen from the shared menu plays the show and calls no `executeAction`, **seen red** against the library before the dispatch rule.
 - **Every module's canvas test** calls `expectLibrarySelection`, and the text guard enforces that it does.
-- **Requirement 11.1's bar**: tests pass unchanged, except those asserting a private selected class (citing Requirement 5) or a private connect-target class (citing Requirement 6.1). Any other test change is a behaviour change.
-- **The browser pass** (`tests.md`, all sixteen) is the only evidence for the look: the outline is legible on each diagram's fills, including backend-chosen colours; a connection's highlight runs its whole route; selected and accept are told apart when both hold; the background clears; and a drag does not select. jsdom applies no CSS, so it is not taken as evidence for any of these (Requirement 10.3).
+- **Requirement 11.1's bar**, in its general form: a test changes only where it pinned behaviour a named criterion changes, it names that criterion, and it changes only that far. The highlight amendment's own list is in the tasks document.
+- **The browser pass** (`tests.md`, all sixteen) is the only evidence for the look: the colour change is legible on each diagram's fills, including backend-chosen colours; a connection's highlight runs its whole route; **no item shows a second highlight**; the background clears; and a drag does not select. jsdom applies no CSS, so it is not taken as evidence for any of these (Requirement 10.3).
 
 ## Considered and declined
 
@@ -161,9 +154,9 @@ The selection is a `DiagramSelection` array throughout. Inbound, the one pushed 
 
 **One guard mounting all sixteen canvases directly.** It would have to fake thirteen different stream protocols. That would be the test re-implementing each module, a second copy of the data rather than a check on it. The shared assertion in each module's own harness mounts the real canvas with the real model, and the text guard makes its presence complete.
 
-**Recolouring the stroke as today's rule does.** A stroke recolour is only legible where it contrasts with the fill beside it, which fails on backend-chosen colours. An outline outside the shape does not depend on the fill.
+**An outline drawn outside the shape.** It was chosen here on 2026-09-11, because a stroke recolour is only legible where it contrasts with the fill beside it. **The user withdrew it on 2026-09-22**: the ring was a second highlight beside the recoloured anchors, which is what the instruction set out to remove. Legibility is carried instead by the colour change plus a heavier line, painted inline so no fill, inline paint or module rule can reach it, and it is proved in the browser rather than argued here.
 
 ## Deviations and notes
 
-- **Requirement 6.1 was amended on 2026-09-11 by user ruling**, during this design: the drop-target highlight joins *one way*, and the twelve private connect-target declarations go. The amendment is marked in place in the requirements and raised on its own card beside this one.
+- **Requirement 6.1 was amended twice by user ruling.** On 2026-09-11 the drop-target highlight joined *one way* and the twelve private connect-target declarations went. On **2026-09-22 that amendment was reversed**: *selected* and *would accept* share one look in one colour, and an element that is both shows it once. Both are marked in place in the requirements.
 - **Requirement 9.2's "mount every registered canvas"** is met through each module's own harness plus a completeness check, not by one test faking every stream. The reason is under *Considered and declined*.
