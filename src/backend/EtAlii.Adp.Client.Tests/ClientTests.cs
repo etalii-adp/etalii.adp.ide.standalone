@@ -20,6 +20,23 @@ namespace EtAlii.Adp.Client.Tests;
 /// from the filesystem rather than from the run - a file the run never opened is still a case, and
 /// fails for being missing rather than disappearing from the report.
 /// </para>
+/// <para>
+/// <b>Its limits, stated rather than closed.</b> These cases are a MIRROR of one run, not a pin on
+/// any test's identity.
+/// <list type="bullet">
+/// <item><description><b>A renamed test is invisible</b>: the case list is rebuilt from each run, so
+/// the old name simply stops appearing and the new one appears. The count is unchanged, so no floor
+/// fires. That is deliberate - pinning names would mean a second copy of the suite, edited on every
+/// legitimate rename - but it does mean these cases cannot tell a rename from a
+/// delete-and-add.</description></item>
+/// <item><description><b>A skipped test passes its case</b>, because the assertion is "did not fail":
+/// `it.skip` is the client suite's own statement that it should not run, and re-judging that here
+/// would be this project overruling the suite it reports.</description></item>
+/// <item><description><b>Removal IS caught</b>, by the two floors: deleting tests drops the count
+/// below <see cref="KnownTests"/>, and deleting a file drops it below <see cref="KnownTestFiles"/>
+/// or leaves the file on disk unreported.</description></item>
+/// </list>
+/// </para>
 /// </remarks>
 public class ClientTests
 {
