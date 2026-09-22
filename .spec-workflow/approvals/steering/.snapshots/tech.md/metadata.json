@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/steering/tech.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-15T11:20:11.494Z",
       "trigger": "initial",
+      "approvalId": "approval_1789471211187_rjgc6sxt1",
+      "approvalTitle": "tech.md - decision 11: concurrent saves take turns, not retries"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-15T11:41:50.854Z",
+      "trigger": "approved",
       "approvalId": "approval_1789471211187_rjgc6sxt1",
       "approvalTitle": "tech.md - decision 11: concurrent saves take turns, not retries"
     }

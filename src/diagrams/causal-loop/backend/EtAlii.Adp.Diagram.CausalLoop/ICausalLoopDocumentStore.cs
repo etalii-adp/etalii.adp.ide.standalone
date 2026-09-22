@@ -23,6 +23,12 @@ public interface ICausalLoopDocumentStore
     /// <summary>Re-reads a document something outside changed, and tells the sessions on it.</summary>
     void Reload(string path);
 
+    /// <summary>
+    /// The body was deleted - the watcher's evidence, not a read that failed - so the diagram
+    /// stops being drawn. A reload that cannot read keeps the last good document; this does not.
+    /// </summary>
+    void BodyDeleted(string path);
+
     /// <summary>Raised after a change is picked up.</summary>
     event EventHandler<CausalLoopDocumentChangedEventArgs>? Changed;
 }

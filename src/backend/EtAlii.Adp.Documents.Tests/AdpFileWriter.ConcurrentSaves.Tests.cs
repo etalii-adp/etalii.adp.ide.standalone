@@ -84,12 +84,12 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
     }
 
     [Fact]
-    public void ASaveThatWaitsForAnotherSaveToTheSameDestination_LogsTheWaitNamingThePath()
+    public async Task ASaveThatWaitsForAnotherSaveToTheSameDestination_LogsTheWaitNamingThePath()
     {
         // Arrange. The first save stops inside its replace - holding whatever serialises saves -
         // until released. Deterministic: no timing decides whether the second one contends.
         var path = IoPath.Combine(_folder, "roadmap.mm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var logs = LogCapture.Start();
         using var firstIsInside = new ManualResetEventSlim(false);
         using var releaseFirst = new ManualResetEventSlim(false);
@@ -97,13 +97,13 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         var first = Task.Run(() => AdpFileWriter.Save(path, "first", replace: (temporary, destination) =>
         {
             firstIsInside.Set();
-            releaseFirst.Wait(Patience);
+            releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }));
-        Assert.True(firstIsInside.Wait(Patience), "The first save never reached its replace.");
+        }), TestContext.Current.CancellationToken);
+        Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
 
         // Act. A second save to the same destination while the first is inside.
-        var second = Task.Run(() => AdpFileWriter.Save(path, "second"));
+        var second = Task.Run(() => AdpFileWriter.Save(path, "second"), TestContext.Current.CancellationToken);
 
         // Assert, first: it waits - and says so, by path, before it gets its turn.
         Assert.True(
@@ -115,16 +115,16 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         // Then both finish, in order, and the later one's content is what remains.
         releaseFirst.Set();
         Assert.True(Task.WaitAll([first, second], Patience), "The saves did not finish after the first was released.");
-        Assert.Equal("second", File.ReadAllText(path));
+        Assert.Equal("second", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public void TwoSpellingsOfOneDestination_ContendForTheSameTurn()
+    public async Task TwoSpellingsOfOneDestination_ContendForTheSameTurn()
     {
         // Condition 1: the key is the normalised full path, compared ignoring case on Windows. Two
         // spellings taking two locks would race exactly as before the fix.
         var path = IoPath.Combine(_folder, "roadmap.mm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         var otherSpelling = IoPath.Combine(_folder, ".", "ROADMAP.MM");
         using var logs = LogCapture.Start();
         using var firstIsInside = new ManualResetEventSlim(false);
@@ -133,12 +133,12 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         var first = Task.Run(() => AdpFileWriter.Save(path, "first", replace: (temporary, destination) =>
         {
             firstIsInside.Set();
-            releaseFirst.Wait(Patience);
+            releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }));
-        Assert.True(firstIsInside.Wait(Patience), "The first save never reached its replace.");
+        }), TestContext.Current.CancellationToken);
+        Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
 
-        var second = Task.Run(() => AdpFileWriter.Save(otherSpelling, "second"));
+        var second = Task.Run(() => AdpFileWriter.Save(otherSpelling, "second"), TestContext.Current.CancellationToken);
 
         Assert.True(
             SpinWait.SpinUntil(() => logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal)), Patience),
@@ -165,10 +165,10 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         var first = Task.Run(() => AdpFileWriter.Save(held, "first", replace: (temporary, destination) =>
         {
             firstIsInside.Set();
-            releaseFirst.Wait(Patience);
+            releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
-        }));
-        Assert.True(firstIsInside.Wait(Patience), "The first save never reached its replace.");
+        }), TestContext.Current.CancellationToken);
+        Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
 
         try
         {
@@ -182,7 +182,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         finally
         {
             releaseFirst.Set();
-            first.Wait(Patience);
+            first.WaitAsync(Patience, TestContext.Current.CancellationToken);
         }
     }
 }

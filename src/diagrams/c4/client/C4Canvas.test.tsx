@@ -36,12 +36,18 @@ vi.mock("./useC4Stream", () => ({
     reportView: (v: unknown) => currentReportView?.(v),
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
-      return Promise.resolve("");
+      return Promise.resolve(moveOutcome);
     },
   }),
 }));
 
 let currentSelection: unknown = null;
+
+// What the backend answers a shortcut with; accepted unless a test says otherwise.
+let shortcutOutcome = { accepted: true, error: "" };
+
+// What the backend answers a move with: empty when recorded, its refusal sentence otherwise.
+let moveOutcome = "";
 
 vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
@@ -54,7 +60,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
         executed.push(actionId);
         return Promise.resolve({ accepted: true, error: "" });
       },
-      executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
+      executeShortcut: () => Promise.resolve(shortcutOutcome),
     }),
     useContextSelection: () => ({ selection: currentSelection, actions: [] }),
     useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
@@ -671,6 +677,26 @@ describe("C4Canvas", () => {
     expect(move.y).toBeCloseTo(0, 5);
   });
 
+  it("shows the backend's refusal of a move on the canvas rather than nothing", async () => {
+    // Arrange: the backend refuses to record the position. Until this was fixed the canvas
+    // discarded the answer, so a refused drag just snapped back without a word.
+    moveOutcome = "An element inside a boundary is placed by its boundary.";
+    const { container, findByText } = render(<C4Canvas {...props} />);
+    withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 150, clientY: 100 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 150, clientY: 100 }));
+
+    // Assert: the sentence shows, on the rejection line the canvas's other refusals use.
+    const line = await findByText("An element inside a boundary is placed by its boundary.");
+    expect(line.classList.contains("canvas-rejection")).toBe(true);
+
+    moveOutcome = "";
+  });
+
   it("writes nothing for a wobbly click", () => {
     // Arrange.
     // A few pixels of movement while clicking is a click. Sending it would put an entry on the
@@ -932,5 +958,25 @@ describe("selection, as every canvas has it", () => {
     fireEvent(boundary, new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
 
     expect(select.mock.calls.map(([push]) => idOf(push))).toEqual([null]);
+  });
+});
+
+describe("a refused action", () => {
+  it("shows the backend's refusal on the canvas rather than nothing", async () => {
+    // Arrange: an element is selected, and the backend refuses what is asked of it. Until
+    // this was fixed the canvas discarded the outcome, so a refusal looked like a no-op.
+    currentModel = seed(node("a", "Alpha", 0, 0));
+    currentSelection = elementSelectionOf(props.entryId, props.path, "a");
+    shortcutOutcome = { accepted: false, error: "Nothing can be inserted inside a person." };
+    const { container, findByText } = render(<C4Canvas {...props} />);
+
+    // Act.
+    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Insert" });
+
+    // Assert: the sentence shows, on the rejection line every other canvas uses.
+    const line = await findByText("Nothing can be inserted inside a person.");
+    expect(line.classList.contains("canvas-rejection")).toBe(true);
+
+    shortcutOutcome = { accepted: true, error: "" };
   });
 });

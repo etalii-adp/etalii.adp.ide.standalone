@@ -7,7 +7,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt, type ActionOutcome } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
@@ -196,6 +196,18 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+  // A refusal is the backend's sentence, and it is shown on the rejection line every other canvas
+  // uses. This canvas used to discard the outcome, so a refused shortcut or drop looked like one
+  // that simply did nothing.
+  const [rejection, setRejection] = useState("");
+  const surfaceRefusal = (pending: Promise<ActionOutcome>) => {
+    setRejection("");
+    void pending.then((outcome) => {
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    });
+  };
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -239,7 +251,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   }, [model]);
 
   const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    void executeShortcut(shortcut, elementSourceOf(sourceId));
+    surfaceRefusal(executeShortcut(shortcut, elementSourceOf(sourceId)));
   };
 
   const events: DiagramEventHandlers = {
@@ -270,7 +282,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         return Math.abs(position.x - element.x) <= width / 2 && Math.abs(position.y - element.y) <= height / 2;
       });
       if (target !== undefined) {
-        void executeAction(elementType, elementSourceOf(target.id));
+        surfaceRefusal(executeAction(elementType, elementSourceOf(target.id)));
       }
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
@@ -316,6 +328,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
           ariaLabel="Mind map"
         />
       )}
+      {rejection ? <p className="mindmap-rejection canvas-rejection" role="status">{rejection}</p> : null}
     </div>
   );
 }

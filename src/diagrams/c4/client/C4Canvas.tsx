@@ -7,7 +7,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt, type ActionOutcome } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
@@ -202,6 +202,18 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   const { executeAction, executeShortcut } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+  // A refusal is the backend's sentence, and it is shown on the rejection line every other canvas
+  // uses. This canvas used to discard the outcome, so a refused shortcut or drop looked like one
+  // that simply did nothing.
+  const [rejection, setRejection] = useState("");
+  const surfaceRefusal = (pending: Promise<ActionOutcome>) => {
+    setRejection("");
+    void pending.then((outcome) => {
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    });
+  };
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -255,7 +267,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   }, [model]);
 
   const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    void executeShortcut(shortcut, elementSourceOf(sourceId));
+    surfaceRefusal(executeShortcut(shortcut, elementSourceOf(sourceId)));
   };
 
   const events: DiagramEventHandlers = {
@@ -273,8 +285,14 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
         return;
       }
       // Nothing optimistic: the element stays where it was until the backend's delta says
-      // otherwise, so what is drawn is always what was recorded.
-      void moveElementTo(elementId, position.x, position.y);
+      // otherwise, so what is drawn is always what was recorded. A refused move answers with
+      // its sentence, shown like every other refusal here rather than as a silent snap-back.
+      setRejection("");
+      void moveElementTo(elementId, position.x, position.y).then((error) => {
+        if (error) {
+          setRejection(error);
+        }
+      });
     },
     onElementDropped: ({ elementType, position }) => {
       // The entry carries the backend's own action id. Dropped on an element, that element
@@ -285,7 +303,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
         const { width, height } = node.payload;
         return Math.abs(position.x - node.x) <= width / 2 && Math.abs(position.y - node.y) <= height / 2;
       });
-      void executeAction(elementType, target !== undefined ? elementSourceOf(target.id) : undefined);
+      surfaceRefusal(executeAction(elementType, target !== undefined ? elementSourceOf(target.id) : undefined));
     },
     // Delete travels as the backend shortcut it always was, raised by the library's key path.
     onViewChanged: ({ viewport: next }) => setViewport(next),
@@ -358,6 +376,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
           )}
         </>
       )}
+      {rejection ? <p className="c4-rejection canvas-rejection" role="status">{rejection}</p> : null}
     </div>
   );
 }

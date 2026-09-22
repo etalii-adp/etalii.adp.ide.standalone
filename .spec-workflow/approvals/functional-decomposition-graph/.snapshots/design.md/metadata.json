@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/functional-decomposition-graph/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-20T17:14:45.302Z",
+      "trigger": "initial",
+      "approvalId": "approval_1789924484794_njhqtnf68",
+      "approvalTitle": "functional-decomposition-graph - Design"
+    }
+  ]
+}

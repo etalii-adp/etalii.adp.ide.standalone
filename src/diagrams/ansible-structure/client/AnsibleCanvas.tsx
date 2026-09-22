@@ -184,6 +184,9 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   const { revealPath } = useContextConnection();
 
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+  // A refused move is the backend's sentence, shown on the rejection line every other canvas
+  // uses. This canvas used to discard it, so a refused drag just snapped back without a word.
+  const [rejection, setRejection] = useState("");
 
   const nodes = useMemo(() => nodesOf(model), [model]);
   const edges = useMemo(() => edgesOf(model), [model]);
@@ -288,7 +291,12 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
       }
       // The write goes to the .adp's layout block; the change comes back through the folder's
       // own watcher, so nothing is echoed locally.
-      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
+      setRejection("");
+      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2).then((error) => {
+        if (error) {
+          setRejection(error);
+        }
+      });
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
@@ -334,6 +342,7 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
         className="ansible-canvas-viewport"
         scrollbarsClassName="ansible-scrollbars"
       />
+      {rejection ? <p className="ansible-rejection canvas-rejection" role="status">{rejection}</p> : null}
     </div>
   );
 }

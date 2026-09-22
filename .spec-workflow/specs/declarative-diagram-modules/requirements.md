@@ -99,6 +99,7 @@ The user's revision feedback, anchored on the shapes requirement: *"Not only how
 
 1. WHEN the permitted surface is stated THEN it SHALL name exactly what a module client may contain — a **declaration** of properties and values, **event handlers** for actions, **validation logic**, and the registration binding them — and SHALL name nothing else.
 2. WHEN "event handling for actions" is defined THEN it SHALL mean receiving a library event and dispatching a backend action, command or selection — **not** computing appearance, position or geometry, which is description.
+   - *Superseded in part on 2026-09-22 by `centralized-selection` Requirement 8: **selection is not a module's to handle**, so the words "or selection" above are withdrawn and the permitted per-module event handling is actions and validation. The approved sentence is left as written; this note is the change. All sixteen canvases now select through the library, and `centralized-selection`'s two guards keep them there.*
 3. WHEN "validation logic" is defined THEN it SHALL mean answering whether an operation is permitted, and SHALL NOT be read as licence for arbitrary computation under a validating name.
 4. WHEN the rule is applied THEN a module SHALL be judged by what its client contains, not by how its author described it.
 5. WHERE a module cannot comply without a change to shared code THEN that SHALL be a stop-and-report producing a **central** change, never a local exception.

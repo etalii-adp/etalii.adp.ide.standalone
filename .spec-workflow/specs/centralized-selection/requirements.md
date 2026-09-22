@@ -113,17 +113,19 @@ Besides *selected*, the library draws *would accept this connection* on the elem
 #### Acceptance Criteria
 
 1. WHEN an element or connection is selected THEN it SHALL be drawn with the shared highlight **only**, and every module-private selected class SHALL be removed — the thirteen listed above — together with `causal-loop`'s redundant second declaration of the shared class.
-2. WHEN the shared highlight is drawn THEN it SHALL be legible on any fill a diagram uses, **including colours the backend chooses**, such as c4's element styles.
-3. WHEN the shared look is defined THEN the look of a selected element and of a selected connection SHALL both be defined centrally. The anchors coloured with their element when selected (`1df91874`) are part of that look and SHALL be kept.
+2. WHEN the shared highlight is drawn THEN it SHALL be legible on any fill a diagram uses, **including colours the backend chooses**, such as c4's element styles — carried by **a colour change on the item's own outline, anchors and lines, together with a heavier line**, never by a fill change and never by a second shape drawn beside it. *Amended on 2026-09-22 by the user's instruction — "Use only one where the elements/anchors/lines change color" — which **withdraws the outline-outside-the-shape ring** this criterion was met by. Legibility is now carried by colour plus width, and it is a browser criterion (10.3).*
+3. WHEN the shared look is defined THEN it SHALL be defined centrally and **drawn once per item**: a selected element takes the selected colour on **its own outline and its anchors**, a selected connection takes it on **its line and the marks that ride on it** (arrowheads, label, adorners), and **nothing else SHALL paint** — no ring, no glow, no focus outline, no module rule. The anchors colouring with their element (`1df91874`) is kept, and together with the outline is the whole of an element's look.
+4. WHEN an item is highlighted THEN it SHALL carry **exactly one highlight**. A second simultaneous indication of the same state on the same item is a defect, whichever layer draws it. **Measured in code on 2026-09-15, to be confirmed and completed by the browser pass:** every selected element shows the library's ring *and* its recoloured anchors; a drop target shows the accept ring *and* accept-coloured anchors; `ansible-structure` adds a `:focus-visible` outline on a focused node (`ansible-structure.css:84`); `c4` keeps a private copy of the connection recolour (`c4.css:109-117`); `mindmap` draws its drop target in the selected colour (`mindmap.css:74,90,97`); and `timeline` still declares `.timeline-selected` and `.timeline-connect-target`, which nothing emits.
+5. WHEN the selected colour is chosen THEN it SHALL be **a token no diagram paints at rest**. `--color-primary` is today both "selected" and a permanent decoration — `timeline`'s moment fill, `ansible-structure`'s playbook and play outlines, the `owl` and `rdf` badges, `skos`'s notation, `sparql`'s projection mark — so under a colour-change look those read as selected.
 
-### Requirement 6 — The two meanings of highlight stay two
+### Requirement 6 — One look answers both meanings
 
-**User Story:** As a reader dragging a connection, I want to tell *selected* from *would accept this* at a glance.
+**User Story:** As a reader dragging a connection, I want one highlight on an element, not two.
 
 #### Acceptance Criteria
 
-1. WHEN the look is centralised THEN *selected* and *would accept a connection* SHALL remain **two mechanisms, each with exactly one class and one look, both owned by the library**. One answers what the reader chose; the other answers what a gesture would do. Neither SHALL be drawn with the other's class or share its look, and **the twelve module-private connect-target declarations SHALL be removed**, with `library-connect-target` as the only drop-target class. *Amended on 2026-09-11 by user ruling; see "Two meanings of highlight already exist".*
-2. WHEN an element is both selected and a valid drop target THEN both SHALL be visible.
+1. WHEN an element is a valid drop target for the connection being dragged THEN it SHALL show **the same look as selected, in the same colour**, and `library-connect-target` SHALL remain the only drop-target class, with **the twelve module-private connect-target declarations removed**. *Amended on 2026-09-22 by the user's instruction — "Drop target wins. But with same color as selection" — which **reverses this criterion's 2026-09-11 amendment**, where the two meanings stayed two mechanisms, each with its own look, neither sharing the other's.*
+2. WHEN an element is both selected and a valid drop target THEN it SHALL show **that one look, once**: a drag passing over it changes nothing visible, and when the drag leaves it remains selected. **The cost, accepted by the user in the same ruling:** on an already-selected element, *would accept this connection* is not separately visible. A refused target keeps its own red indication, which answers a different question and is not a second highlight of the selection.
 
 ### Requirement 7 — Multi-selection is not specified here, and not ruled out
 
