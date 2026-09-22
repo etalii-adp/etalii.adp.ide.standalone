@@ -3,8 +3,10 @@
   "title": "functional-decomposition-graph - Design",
   "filePath": ".spec-workflow/specs/functional-decomposition-graph/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-20T17:14:44.794Z",
   "category": "spec",
-  "categoryName": "functional-decomposition-graph"
+  "categoryName": "functional-decomposition-graph",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-22T16:14:54.658Z"
 }

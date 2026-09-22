@@ -3,8 +3,10 @@
   "title": "backend-centralization - Requirements",
   "filePath": ".spec-workflow/specs/backend-centralization/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-15T12:24:36.299Z",
   "category": "spec",
-  "categoryName": "backend-centralization"
+  "categoryName": "backend-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-22T16:15:21.852Z"
 }
