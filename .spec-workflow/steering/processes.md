@@ -505,6 +505,161 @@ The two are one error at different moments: the first measures a boundary that e
 
 **These are one idea at seven scopes** - a command, a wrapper reporting on a command, the cached input a command reads, a claim about your own work, a check written down, a hold coordinated across sessions, and the scope of a measurement - and they move together. Splitting them by which was learned first would break the argument.
 
+**Several instances of this section's shape are collected under *Measure the thing, not something adjacent to it*** - a log line attributed by adjacency, a stopped task that was not a stopped gate, and evidence that lived only in a working tree.
+
+## Measure the thing, not something adjacent to it
+
+**Everything below is one idea with ten worked cases, all measured between 2026-09-15 and 2026-09-22:**
+**an artifact answers identically whether or not it is about the thing you are asking.** A guard, a count,
+a log line or a sweep that watches a PROXY passes and fails for reasons that have nothing to do with its
+subject - and reads as sound the whole time. The instances are grouped by what the proxy stood in for.
+
+### A proxy for the subject itself
+
+Three of these in one day, all Developer 3's, all on its own guards:
+
+- **A proxy for the EVENT.** A test waited until the store handed out a DIFFERENT stack, then asserted the
+  dropped one was disposed. Eviction removes the entry BEFORE disposing, so the replacement is observable
+  first and the gap is real. It now waits for the disposal itself.
+- **A proxy for the PROPERTY - machine speed.** A test asserted that a failure record names this process,
+  but the holder query's two-second production budget expired under gate load, so the record truthfully said
+  the query had not answered. The budget is settable for guards now, and the timeout is pinned deliberately
+  elsewhere - against a query that sleeps thirty seconds, not against a busy machine.
+- **A proxy for the ACTOR - a global seam.** A test installed a counting `FileHolders.Query` and asserted the
+  count was zero. That seam is `static` and the assembly runs classes in parallel, so another class's
+  deliberately failing save incremented a counter belonging to a test that asked nothing. It now records the
+  PATHS queried and asserts its own is absent. **The collision was latent, not new**: the parallelism was
+  always there, and the branch that exposed it merely added more failing saves.
+
+**A global seam answers for whoever touched it, so a guard reading one must assert about its own subject BY
+NAME rather than about a total.** Lead with this one: the first two read as flakes, while this reads as a
+passing test until somebody adds another test to the assembly.
+
+### The sweep that looks for them is the same shape
+
+**Sweep for what can CHANGE, not for what can be ASSIGNED** (Developer 3's words, and its reasoning):
+*settable* is a property of the DECLARATION and *mutable* is a property of the THING. A sweep matching
+`static … { get; set; }` asks about declarations and cannot see a `static readonly ConcurrentQueue` that
+anyone may enqueue into - `readonly` protects the reference and says nothing about the contents.
+
+**So record how many seams were swept and BY WHAT QUESTION.** Instances named without their question read as
+an inventory, and the next reader re-runs the same narrow question and gets the same reassuring answer.
+Measured on 2026-09-22 over **1430 `.cs` files - 974 production, 456 test**:
+
+- *Which statics can a test ASSIGN?* → **two**, `FileHolders.Budget` and `FileHolders.Query`, both real seams.
+- *Which statics can a test CHANGE?* → **two more containers**: `LogCapture.Open`, safe by design because a
+  capture collects only its own test's events and its own guards pin the concurrent-`Start` case; and
+  `TestFolder.Failures`, read as a TOTAL by four sites while a sibling class wrote to it from its teardown -
+  the same shape as the `Query` collision, with lower odds and identical latency, fixed by asking by path.
+- Everything else the widened question found is a constant lookup table never written after initialisation,
+  with one exception: `CommandDispatcher.Invokers`, a production-owned cache written through `GetOrAdd`.
+  **No test reaches it TODAY - which is a candidate, not a clearance**, since that is exactly the shape that
+  was latent in `FileHolders` until a branch added a test.
+- **Four hits were false positives, all get-only expression-bodied properties** - `PipelineElementMapper`'s
+  `PayloadTypeUrl`, `TestFolder.Failures` (an exposure, not a setter) and two in `EditorFixtures` - named here
+  so a re-run is not surprised by its own noise.
+
+**Same tree, same day, different answers - and the difference is in the question, not in the diligence.**
+
+**The same trap in a different instrument, and it is the sharpest statement of the family** (Developer 3's,
+from routing a text buffer through the shared writer): centralising the writer turned an in-place truncation
+into a temp-then-replace publish. **A write in place raises `Changed`; a publish raises `Renamed`, as the
+scratch file takes the destination's name.** Two editor sessions subscribed to `Changed` alone, so a save
+stopped reaching an open editor - correct bytes, correct turn, and nobody told. The writer's own 106 tests
+stayed green throughout, because they assert what lands on disk and a watcher's question is HOW IT GOT THERE.
+
+**Why review does not catch it:** a FOLDER watcher naturally subscribes to creation and renaming, since that
+is how files arrive in a folder; a SINGLE-FILE watcher reads as *"tell me when this file changes"*, and
+`Changed` is the event whose NAME matches that sentence. **The wrong event set followed from the wrong
+reading of the question.**
+
+**The extent, read individually rather than counted, and recorded here because the branch that fixed it could
+not carry it** (its merge message is fixed when the gate starts, and discarding a green cycle to add a sentence
+would have cost the session behind it): **7 `FileSystemWatcher` constructions in production code across
+backend, diagrams and editors. 5 complete** - `RootFolderWatcher`, `TrackedProblemRoot`,
+`AnsibleWatchedFolder`, `HelmWatchedFolder` and `SolutionWatcher`, the last of which has no `Error` handler,
+**a different gap, recorded with the module it belongs to. 2 subscribing to `Changed` alone**,
+`PlainEditorSession` and `MarkdownEditorSession`, both fixed.
+
+**Paired with the sweep line above, the pattern is the section's own: THE QUESTION YOU ASK DECIDES WHAT YOU
+CAN SEE.** *Which statics can a test assign?* and *which can a test change?* are different questions over one
+tree; *tell me when this file changes* and *tell me when this path's contents are replaced* are different
+questions over one file. In both cases the narrower question returned a complete, reassuring, useless answer.
+
+### A proxy in the evidence
+
+- **Evidence lives on the branch or in a scratchpad, never only in the working tree.** The overnight cleanup
+  removed two worktrees holding finished, unlanded work; nothing was lost only because the commits were on
+  their branches, and a branch ref outlives its directory. So: commit before you stop, even mid-task; judge a
+  branch by `git log` or `merge-base`, never by whether its directory is there; and **copy a gate log out of
+  `<worktree>/.git/…/adp-gate-logs/` when it is the only copy of something**, because pruning keeps ten runs.
+- **A stopped task is not a stopped gate.** Withdrawing from a gate, stopping the background task killed the
+  OUTER shell while the gate's own `bash` went on running `dotnet format`, and would have gone on to a second
+  full suite beside another session's. After stopping one, look for the PROCESS, not the task:
+  `Get-CimInstance Win32_Process` with full command lines (Git Bash's `ps` shows none), walk up from any
+  surviving child to the gate's own shell, and kill that tree. Three checks made it safe to kill anything:
+  read the lock's `owner` file before removing a lock; establish which PHASE your run reached before
+  attributing a process to it (the run's log directory said `format.log` and no `dotnet-test.log`, so neither
+  running suite could be mine); and **say what you cannot claim** - the withdrawn run's steps did overlap
+  another gate's suite for ninety seconds, and that it went green afterwards is not evidence the overlap was
+  harmless.
+- **A check you run against your own copy is a rehearsal; the check that counts reads the copy that will be
+  used.** The gate extracts its scratch-worktree guard from **`develop`'s** `processes.md`, not from the branch
+  being gated - deliberately, so a branch cannot weaken the guard that gates it. So running the self-test in a
+  worktree before committing a change to this file proves the change is *extractable*, and only the gate's own
+  run proves the guard the gate will use is intact. Both were run for the change that added this section, and
+  they answer different questions. **The same shape as every case above: the artifact you conveniently have
+  is not always the artifact your question is about.**
+- **Write the message you want before you launch, because afterwards the only way to change it is to throw the
+  run away.** `gate.sh` creates the merge commit at line 122, BEFORE any of the four gates run, so once a run
+  is up neither the branch's commits nor the merge message can be changed without discarding the run. That is
+  not a defect - the gates must judge the exact commit that will land - but it does mean a message is an input,
+  not an afterthought. It cost a real decision: a sweep's extent was asked for mid-suite, and folding it in
+  would have spent a whole cycle with another session waiting, for a sentence already true and already
+  reported. It landed as it was, and **the count lives in this section instead** - which is why the extent
+  above names its own home.
+- **Attribution by adjacency in a log.** A line carrying no subject of its own belongs to what the writer was
+  last reporting - **the line ABOVE it**; the line below is merely next. Architect 1 read an `Exit code: 2`
+  and named the assembly below it, which had PASSED, while the one above had just failed; Developer 3 caught
+  it. The neighbours usually carry their own verdicts, so read those before attributing an orphan line. **And
+  with several assemblies running in parallel, adjacent is not even sequential**: lines interleave by
+  completion time, so only the verdict printed on a line is about that line's subject.
+
+### A proxy inside the guard
+
+- **An exact count over a window the test cannot bound asserts a property of the machine, not of the code.** A
+  watcher test wrote ten files with a 150 ms settle delay and asserted exactly one report; nothing bounded
+  those writes to that window, so an ordinary stall on a busy machine makes the watcher settle twice -
+  **behaving exactly as specified** - and the test report a failure. Either make the precondition hold by
+  construction (a settle delay far above any plausible burst) **and** stop asserting the count over that
+  window (wait for quiescence, then assert one report arrives and none after). Neither half is enough alone.
+  Recorded with its limit: eight runs and a full-suite re-run of the exact commit that went red all came back
+  green, which is **a failure to reproduce with the cause identified, not a rate** (Developer 2).
+- **A shared flag that either party may clear is not a record of who owes the work.** One field, two states it
+  cannot tell apart - done, or dropped. This is **under-determination**, the same family as *a measurement
+  consistent with two readings has told you nothing until you say which readings it excludes*.
+- **A log line may only report what THIS code path observed.** A line that speaks for another party's work
+  asserts something unobserved, and reads afterwards as confirmation of exactly the thing that did not happen:
+  a flush skipped an entry believing a debounce callback had written it, the callback returned believing the
+  flush would, and the `Debug` line said the write had happened (Developer 3).
+- **A sabotage that fails to fail is evidence about the SABOTAGE, not about the guard.** Two cases, two
+  mechanisms. A round trip through a string was meant to remove a file's byte-order mark and did not: decoding
+  `EF BB BF` yields `U+FEFF`, re-encoding returns the same bytes, and the property never left. And disabling
+  one post-delete exit changed nothing because **the next attempt's opening check tests the same condition and
+  returns first** - one site looked like the decision while two sites were it. **A subject that checks a
+  condition twice will survive the loss of either check, so a sabotage must remove the CONDITION, not one of
+  its sites.** In the result the guard reports, a sound guard and a sabotage that never bit are identical - a
+  green on the test you were perturbing. The primary tell is not in any result: **ask what the perturbation
+  CHANGED**, which is answerable by reading the code. A weaker, free second tell: read the whole run, because
+  a perturbation that reddens something you were not aiming at changed something you did not intend, while one
+  that moves nothing anywhere most often means the property never left.
+- **A planted proof needs its own control: that the refusal came from the mechanism and not from the plant.**
+  Raising two analyzer rules to errors, the planted instance made the build exit nonzero and looked like
+  proof; the plant had duplicated an attribute and the compile failed on `CS0579` **before any analyzer ran**.
+  An exit code cannot tell those apart - read what the failure says. The tell that settled it was in the same
+  log: the compiler flags showed the raised rules had reached the build, so the instrument was armed and the
+  plant was at fault. **When a planted proof fails, ask first whether the instrument was even armed.** This is
+  the mirror of *a test that passes against the defect is worse than no test*.
 ## Records that were right when written
 
 **The shape: correct when written, conclusion intact, premise moved underneath - and nothing in the artifact says which of its parts went stale.** This is not a wrong record and it is not a stale cache. It is advice that earned its place by solving a real problem, still reads as authoritative, and is now the cause of the next failure. **It is more dangerous than a bad instruction from a stranger, because it arrives pre-trusted** - and if it is your own note it arrives with the authority of a lesson you remember learning.
