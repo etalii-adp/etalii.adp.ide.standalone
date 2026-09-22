@@ -56,16 +56,16 @@ public sealed class PipelineElementMapper
     /// </remarks>
     /// <param name="model">The pipeline.</param>
     /// <param name="viewport">What the connection can see; unused, per Requirement 11.8.</param>
-    /// <param name="expandedStageIds">Which stages are showing their jobs.</param>
+    /// <param name="expandedIds">Which stages are showing their jobs, and which jobs their steps.</param>
     public IReadOnlyList<DiagramElement> Visible(
         PipelineModel model,
         DiagramViewport viewport,
-        IReadOnlySet<string>? expandedStageIds = null)
+        IReadOnlySet<string>? expandedIds = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         _ = viewport;
 
-        var expanded = expandedStageIds ?? new HashSet<string>(StringComparer.Ordinal);
+        var expanded = expandedIds ?? new HashSet<string>(StringComparer.Ordinal);
         var arrangement = PipelineLayout.ArrangePipeline(model, _metrics, expanded);
         var elements = new List<DiagramElement>();
 
@@ -91,10 +91,25 @@ public sealed class PipelineElementMapper
             foreach (var job in stage.Jobs)
             {
                 var jobPlacement = arrangement.Of(job.Id);
-                if (jobPlacement is not null)
+                if (jobPlacement is null)
                 {
-                    elements.Add(JobElement(job, stage, jobPlacement));
+                    continue;
                 }
+
+                elements.Add(JobElement(job, stage, jobPlacement));
+
+                if (!expanded.Contains(job.Id))
+                {
+                    // The third level of Requirement 8.2, and the reason it is a level at all: a
+                    // pipeline read at three levels at once is unreadable, so a job's steps wait
+                    // until the job is opened, exactly as its jobs wait on the stage.
+                    continue;
+                }
+
+                elements.AddRange(StepsOf(
+                    job,
+                    jobPlacement.X + _metrics.Padding,
+                    jobPlacement.Y + _metrics.HeaderHeight + _metrics.Padding));
             }
 
             elements.AddRange(EdgesOf(PipelineGraphBuilder.OfJobs(stage), arrangement, stage.Id));

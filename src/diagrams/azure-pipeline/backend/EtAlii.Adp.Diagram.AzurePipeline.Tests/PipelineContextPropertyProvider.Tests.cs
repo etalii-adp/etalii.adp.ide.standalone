@@ -719,4 +719,28 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.Empty(properties);
     }
+
+    [Fact]
+    public async Task AStepTheCanvasDrew_CanBeSelectedAndDescribed()
+    {
+        // Arrange: the whole path, end to end - a job is opened, the projection emits its steps,
+        // and the id it emitted resolves to the rows Requirement 13.4 promises. The step id comes
+        // from the projection rather than being written here on purpose: describing a hand-written
+        // "Build/Compile/step-0" already passed before a step was ever drawn, so it could not tell
+        // whether the canvas could reach one. This fails at "there is a step to describe" until
+        // the third level exists.
+        var path = Write();
+        var model = _store.GetOrLoad(_workspace, path).Model;
+        var mapper = new PipelineElementMapper(PipelineMetrics.Default);
+        var opened = new HashSet<string>(StringComparer.Ordinal) { "Build", "Build/Compile" };
+
+        // Act.
+        var drawn = mapper.Visible(model, new DiagramViewport(0, 0, 0, 0), opened);
+        var step = Assert.Single(drawn.Where(element => element.Type == PipelineElementMapper.StepType));
+        var properties = await DescribeAsync(path, step.Id);
+
+        // Assert: the rows the requirement names, on the element the canvas actually has.
+        Assert.Equal("Script", properties.Single(property => property.Label == "Kind").Value);
+        Assert.Contains("dotnet build", properties.Single(property => property.Id == "azure-pipeline.identifier").Value);
+    }
 }

@@ -107,22 +107,36 @@ public static class PipelineLayout
     /// </remarks>
     /// <param name="model">The pipeline.</param>
     /// <param name="metrics">The pitch to arrange at.</param>
-    /// <param name="expandedStageIds">Which stages are showing their jobs; null for none.</param>
+    /// <param name="expandedIds">Which stages are showing their jobs, and which jobs their steps;
+    /// null for none.</param>
     public static PipelineArrangement ArrangePipeline(
         PipelineModel model,
         PipelineMetrics metrics,
-        IReadOnlySet<string>? expandedStageIds = null)
+        IReadOnlySet<string>? expandedIds = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(metrics);
 
-        var expanded = expandedStageIds ?? new HashSet<string>(StringComparer.Ordinal);
+        var expanded = expandedIds ?? new HashSet<string>(StringComparer.Ordinal);
         var within = new Dictionary<string, PipelineArrangement>(StringComparer.Ordinal);
         var sizes = new Dictionary<string, PipelineSize>(StringComparer.Ordinal);
 
         foreach (var stage in model.Stages.Where(stage => expanded.Contains(stage.Id)))
         {
-            var jobs = Arrange(PipelineGraphBuilder.OfJobs(stage), metrics, fallback: metrics.Job);
+            // An open job is as tall as the steps inside it. Steps are a sequence and not a graph
+            // (Requirement 3.4), so their room is counted rather than arranged: the job only has to
+            // be big enough to hold the column the mapper draws.
+            var jobSizes = stage.Jobs
+                .Where(job => expanded.Contains(job.Id) && job.Steps.Count > 0)
+                .ToDictionary(
+                    job => job.Id,
+                    job => new PipelineSize(
+                        Math.Max(metrics.JobWidth, metrics.JobWidth + (2 * metrics.Padding)),
+                        metrics.HeaderHeight + (2 * metrics.Padding) +
+                        (job.Steps.Count * metrics.JobHeight) + ((job.Steps.Count - 1) * metrics.VerticalGap)),
+                    StringComparer.Ordinal);
+
+            var jobs = Arrange(PipelineGraphBuilder.OfJobs(stage), metrics, jobSizes, metrics.Job);
             within[stage.Id] = jobs;
             sizes[stage.Id] = new PipelineSize(
                 Math.Max(metrics.StageWidth, jobs.Size.Width + (2 * metrics.Padding)),

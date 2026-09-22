@@ -606,4 +606,31 @@ public class PipelineContextActionProviderTests : IDisposable
         // Assert.
         Assert.Empty(actions);
     }
+
+    [Fact]
+    public async Task AJobWithSteps_IsOfferedTheToggleThatShowsThem()
+    {
+        // Arrange: the third level of Requirement 8.2 - a job in turn expandable to its steps -
+        // offered the way a stage offers its jobs, because a menu entry is how it is ever reached.
+        var path = Write("stages:\n  - stage: Only\n    jobs:\n      - job: A\n        steps:\n          - script: x\n");
+
+        // Act.
+        var actions = await ActionsOn(path, "Only/A");
+
+        // Assert.
+        Assert.Contains(PipelineContextActionProvider.ToggleJobActionId, actions);
+    }
+
+    [Fact]
+    public async Task AJobWithNoSteps_IsOfferedNoToggle()
+    {
+        // Arrange: nothing inside means nothing to show, as a stage with no jobs offers none.
+        var path = Write("stages:\n  - stage: Only\n    jobs:\n      - job: A\n        steps:\n          - script: x\n      - job: Empty\n");
+
+        // Act.
+        var actions = await ActionsOn(path, "Only/Empty");
+
+        // Assert.
+        Assert.DoesNotContain(PipelineContextActionProvider.ToggleJobActionId, actions);
+    }
 }
