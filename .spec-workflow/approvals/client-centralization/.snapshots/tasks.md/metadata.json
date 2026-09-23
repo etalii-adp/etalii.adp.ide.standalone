@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/client-centralization/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T13:54:55.835Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790171695449_5pota0k2z",
+      "approvalTitle": "client-centralization - Tasks (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): 13 tasks, coverage 43 criteria / 43 claims both ways; the two browser-measured theme defects first, with their measured contrast as acceptance (04b3a933)."
+    }
+  ]
+}
