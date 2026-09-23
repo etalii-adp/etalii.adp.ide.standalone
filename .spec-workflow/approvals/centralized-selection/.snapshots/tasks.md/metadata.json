@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/tasks.md",
-  "currentVersion": 5,
+  "currentVersion": 7,
   "snapshots": [
     {
       "version": 1,
@@ -41,6 +41,22 @@
       "trigger": "approved",
       "approvalId": "approval_1789470588688_wzoz67byc",
       "approvalTitle": "Task 26 only: records a ruling made 09-12 but never written in. The backend can't tell which elements are lines, so each diagram's test names its own types (from its own code, not retyped) and the check fails on any unnamed type; the helper lives in the existing TestSupport project. Nothing else changed (9e79c97a)."
+    },
+    {
+      "version": 6,
+      "filename": "snapshot-006.json",
+      "timestamp": "2026-09-22T16:15:13.862Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790093206366_5qzor9npm",
+      "approvalTitle": "Tasks amendment (raised by the Scrum master for Architect 2): new task 28, \"One highlight, by colour\" - the inline paint, the new selected token, and the deletion of the ring, its looks file and every module rule keyed on selected or connect-target; coverage re-counted to 34 (751c4dba)."
+    },
+    {
+      "version": 7,
+      "filename": "snapshot-007.json",
+      "timestamp": "2026-09-22T16:15:16.136Z",
+      "trigger": "approved",
+      "approvalId": "approval_1789923565041_s4c6mcwqb",
+      "approvalTitle": "Task 26 only, recording what was built and measured: one test over the real backend instead of sixteen; coverage checked by example folders and diagram types, not 61 module folders; four connection kinds become selectable (SHACL, databricks override/flow, c4 elevated, dotnet from its .adp). Nothing else changed (775180a9)."
     }
   ]
 }

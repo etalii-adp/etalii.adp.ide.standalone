@@ -3,8 +3,10 @@
   "title": "Task 26 only, recording what was built and measured: one test over the real backend instead of sixteen; coverage checked by example folders and diagram types, not 61 module folders; four connection kinds become selectable (SHACL, databricks override/flow, c4 elevated, dotnet from its .adp). Nothing else changed (775180a9).",
   "filePath": ".spec-workflow/specs/centralized-selection/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-20T16:59:25.041Z",
   "category": "spec",
-  "categoryName": "centralized-selection"
+  "categoryName": "centralized-selection",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-22T16:15:16.140Z"
 }

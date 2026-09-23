@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/declarative-diagram-modules/requirements.md",
-  "currentVersion": 4,
+  "currentVersion": 5,
   "snapshots": [
     {
       "version": 1,
@@ -33,6 +33,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788904482017_l4m9wj9di",
       "approvalTitle": "declarative-diagram-modules requirements (ruler is chrome; 2.9 made a property)"
+    },
+    {
+      "version": 5,
+      "filename": "snapshot-005.json",
+      "timestamp": "2026-09-22T16:15:12.738Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790093211498_4397dfwdm",
+      "approvalTitle": "Requirements annotation (raised by the Scrum master for Architect 2): centralized-selection task 23 - 1.2's \"or selection\" licence is annotated as withdrawn, leaving the approved sentence itself intact (3ba8cf61)."
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/requirements.md",
-  "currentVersion": 5,
+  "currentVersion": 6,
   "snapshots": [
     {
       "version": 1,
@@ -41,6 +41,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789203610435_tna3pu933",
       "approvalTitle": "Requirements amendment, as you ruled: R11.1 becomes one rule (a test may change only where a named criterion changes the behaviour it pinned, citing it), replacing the case-by-case list; and the census sentence about databricks is corrected, since it was my error. Nothing else changed (6317e318)."
+    },
+    {
+      "version": 6,
+      "filename": "snapshot-006.json",
+      "timestamp": "2026-09-22T16:15:15.602Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790093195450_pxu4e3s9w",
+      "approvalTitle": "Requirements amendment (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): one highlight by colour change on element, anchors and lines, replacing the ring; 5.4 and 5.5 added; Requirement 6 reversed explicitly, superseding its 2026-09-11 amendment (1b32c428)."
     }
   ]
 }

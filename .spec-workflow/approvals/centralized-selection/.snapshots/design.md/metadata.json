@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/design.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789150647480_4l3sy7cr7",
       "approvalTitle": "Design amendment, three additions: (1) databricks' simulated menu actions are run by the module, never the backend, by declaration; (2) the library owns causal-loop's empty-canvas menu via a declared backgroundMenu; (3) the backend check behind task 26. Nothing else changed (ee038abe)."
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-22T16:15:14.492Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790093200745_wzewmrzsn",
+      "approvalTitle": "Design amendment (raised by the Scrum master for Architect 2): sections D, E and F become one inline-paint section - the colour change is painted inline because module stylesheets repaint library shapes and jsdom sees only source order; six stale ring references corrected (df83c3ad)."
     }
   ]
 }
