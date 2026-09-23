@@ -25,6 +25,22 @@
 #   mrga1 gating (owner not written yet)       a holder whose line is not on disk yet
 #   TELL_UNREADABLE=<dir>  (exit 2)            the path this reader expects does not exist
 #
+# EXIT CODES, AND WHY THE DEFAULT IS THE PERMISSIVE ONE. By default this exits 0 for a free board
+# AND for a holder, because its job is to print the board and a caller that prints must not fail.
+# That makes it fail-open in a chain: `who-is-gating.sh && git commit` runs the commit whatever the
+# board says, so every such chain ever written has been a print statement wearing a check's clothes.
+#
+#   bash who-is-gating.sh --require-free
+#
+# exits 0 ONLY for a positive GATING=none. A holder, an EXPIRED line, an unknown expiry, a lock
+# whose owner is not written yet: 1. An unreadable board: 2. An unrecognised argument: 2, refused
+# rather than ignored, because a mistyped flag that quietly selected the permissive default would be
+# this same defect one layer up.
+#
+# It still does not authorise anything. A zero from --require-free says the board was free at the
+# instant it was read; the naming is a person, because locks are per scratch worktree and so do not
+# exclude each other - two sessions can read `free` in the same second and both be correct.
+#
 # The first draft of this was `cat <glob> 2>/dev/null`, which prints the identical nothing for
 # "nobody is gating", "the directory never existed", "the writer moved", "a mistyped path" and "the
 # glob did not expand". Four of those mean you have NO INFORMATION while all five read as clear to
@@ -39,6 +55,21 @@
 #   - An `ignore-after` in the past means the line may be disregarded - not that the lock may be
 #     removed. A stale lock is a question to ask, never a licence.
 set -u
+MODE=${1:-}
+if [ $# -gt 1 ]; then
+  # A surplus argument is refused rather than ignored, for the same reason a mistyped one is: the
+  # caller believed it was asking for something, and quietly answering a different question is how
+  # the permissive default gets selected by accident.
+  echo "TELL_UNREADABLE=<expected one argument at most; got $#>"
+  exit 2
+fi
+case "$MODE" in
+  '' | --require-free) ;;
+  *)
+    echo "TELL_UNREADABLE=<unrecognised argument '$MODE'; expected --require-free or nothing>"
+    exit 2
+    ;;
+esac
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "TELL_UNREADABLE=<cannot locate this script>"; exit 2; }
 . "$HERE/gate-lib.sh" 2> /dev/null
 if ! type gate_main_checkout gate_who_is_gating > /dev/null 2>&1; then
@@ -54,4 +85,4 @@ case "$GITDIR" in
   /* | [A-Za-z]:*) ;;
   *) GITDIR="$MAIN/$GITDIR" ;;
 esac
-gate_who_is_gating "$GITDIR/worktrees"
+gate_who_is_gating "$GITDIR/worktrees" "$MODE"

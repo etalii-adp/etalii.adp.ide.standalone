@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=167; else EXPECTED=157; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=177; else EXPECTED=167; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -367,6 +367,29 @@ gate_tell_write "$TELL/mrga1/adp-gate.lock" mrga1 claude/z 9999999
 report 0 "$(gate_who_is_gating "$TELL" | grep -c "stale junk")" "a killed run leaves a line, and the next run in that tree overwrites it"
 report 0 "$(gate_tell_write "" x y z; echo $?)" "a write with no lock is a no-op, never an error - it may not red a gate"
 report 0 "$(gate_tell_write "$TELL/absent/adp-gate.lock" x y z; echo $?)" "... and neither is a write to a lock that is gone"
+
+echo "== --require-free: an exit code that means FREE, rather than one that means READ"
+# The default is fail-open BY DESIGN - it exits 0 for a holder as well as for a free board, because
+# printing the board is this tool every caller wants. Half the cases below pin that zero, so a later
+# change to either half cannot quietly turn a chain over this tool from a check back into a print.
+RF=$(mktemp -d)/worktrees
+gate_who_is_gating "$RF" --require-free > /dev/null; report 2 "$?" "--require-free on an unreadable board exits 2 - a board it cannot parse fails rather than passes"
+mkdir -p "$RF"
+gate_who_is_gating "$RF" --require-free > /dev/null; report 0 "$?" "--require-free exits 0 on a free board, which is the only state that may produce a zero"
+mkdir -p "$RF/mrgf1/adp-gate.lock"
+gate_who_is_gating "$RF" --require-free > /dev/null; report 1 "$?" "a lock whose owner is not written yet is NOT free"
+gate_who_is_gating "$RF" > /dev/null; report 0 "$?" "... while the default still exits 0 for it, which is the fail-open the flag exists for"
+gate_tell_write "$RF/mrgf1/adp-gate.lock" mrgf1 claude/rf abc1234
+gate_who_is_gating "$RF" --require-free > /dev/null; report 1 "$?" "a live holder is not free"
+gate_who_is_gating "$RF" > /dev/null; report 0 "$?" "... and the default zero for a live holder is unchanged, which is what makes every && chain over it fail-open"
+printf "mrgf1 gating claude/rf on base abc1234 started 2020-01-01T00:00:00Z ignore-after 2020-01-01T02:00:00Z\n" > "$RF/mrgf1/adp-gate.lock/owner"
+gate_who_is_gating "$RF" --require-free > /dev/null; report 1 "$?" "an EXPIRED line is not free: it prints ASK, and ASK is not a licence"
+printf "mrgf1 gating claude/rf on base abc1234 started 2020-01-01T00:00:00Z ignore-after unknown\n" > "$RF/mrgf1/adp-gate.lock/owner"
+gate_who_is_gating "$RF" --require-free > /dev/null; report 1 "$?" "an unknown expiry is not free either, for the same reason"
+# The script's own argument handling, which nothing else covers. Both refuse before the board is read,
+# so neither depends on what the real board is doing while this suite runs.
+bash "$HERE/who-is-gating.sh" --requirefree > /dev/null 2>&1; report 2 "$?" "a MISTYPED flag is refused rather than silently selecting the permissive default"
+bash "$HERE/who-is-gating.sh" --require-free extra > /dev/null 2>&1; report 2 "$?" "a surplus argument is refused too - the caller asked for something else than what would have run"
 
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"

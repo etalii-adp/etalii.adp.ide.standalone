@@ -291,8 +291,18 @@ gate_tell_write() {
 # `owner` would print GATING=none while a gate was genuinely running, which is the under-hold whose
 # cost is the unrecoverable one. Existence of the directory answers "is this tree busy", which is
 # the only thing the lock has ever truly said; content answers "on what".
+# gate_who_is_gating <worktrees-dir> [--require-free]
+#
+# Default: prints the board and returns 0 for a free board AND for a holder alike, because its
+# main caller is printing. That default is fail-open in a chain - `tell && commit` runs the commit
+# whatever the board says - which is why the flag exists rather than a change to the default.
+#
+# --require-free: returns 0 ONLY for a positive GATING=none. A holder, an EXPIRED line, an
+# unknown expiry and a lock whose owner is not written yet are all 1; an unreadable board stays 2.
+# The state that must be REACHED is what gates, rather than the state that must be avoided being
+# what aborts - so a board this reader cannot parse fails instead of passing.
 gate_who_is_gating() {
-  local dir=${1:-} lock owner found=0 scratch line ignore now
+  local dir=${1:-} mode=${2:-} lock owner found=0 scratch line ignore now
   if [ -z "$dir" ] || [ ! -d "$dir" ]; then
     printf 'TELL_UNREADABLE=%s\n' "${dir:-<no directory named>}"
     return 2
@@ -323,6 +333,13 @@ gate_who_is_gating() {
   done
   if [ "$found" = 0 ]; then
     printf 'GATING=none\n'
+    return 0
+  fi
+  # A holder of any kind reaches here, including an EXPIRED line and one whose owner is not on disk
+  # yet. Both already print ASK rather than clear, so both are 'not free': a stale lock is a question
+  # to ask and never a licence, and --require-free must not be the thing that converts it into one.
+  if [ "$mode" = --require-free ]; then
+    return 1
   fi
   return 0
 }
