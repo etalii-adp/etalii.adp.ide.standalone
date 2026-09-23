@@ -322,7 +322,7 @@ public static class AdpFileWriter
                 exception.Message,
                 Environment.ProcessId,
                 FileHolders.Describe(path),
-                DestinationState.Describe(path));
+                DestinationState.Describe(path, temporary));
             DeleteQuietly(temporary);
             throw;
         }
