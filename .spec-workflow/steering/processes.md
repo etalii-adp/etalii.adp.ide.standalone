@@ -1113,6 +1113,41 @@ plausible last line - which is the one instrument that could have said *alive*. 
 two agreeing checks, ask whether either COULD have said otherwise**; corroboration between two instruments blind
 in the same direction is not corroboration.
 
+**And an instrument can be HALF alive, which none of the six above can be.** A pane is 0x0 or it is not; an origin
+answers or it does not. **An analyser can run, parse, emit a valid report, and be blind only to the question you
+asked.** Measured on `jb inspectcode`: a correctly-parsed run reported `AccessToDisposedClosure = 0` **from a run
+carrying 327 `Cannot resolve symbol` and `Ambiguous invocation` errors.** An analyser that cannot resolve the
+method cannot decide whether a closure captures a disposed variable either - **so zero from a blind analyser is
+indistinguishable from zero from a clean one, and nothing in the output says which you have.**
+
+**Only a planted control separated them**: neutralise the three suppressions, confirm the warning appears (3),
+restore, confirm it goes (0). **And the control's own run carried ZERO resolution errors, which is how the 327
+were diagnosed as a cold-build artifact rather than a property of the tree** - the control proved the instrument
+*and* explained the earlier run, which is the argument for planting one even when you are confident of the answer.
+**So the liveness check must be specific to the FINDING you want, not to the tool running** - which is the
+canary-sensitivity condition arriving from the other end: a check sensitive to *the analyser started* would have
+passed here.
+
+**The same tool also fails open when misconfigured**, which is the ordinary member of the family: pointed at the
+wrong toolset it printed `No files to inspect were found`, **exited 0, and wrote a valid, empty report** - green
+exit, well-formed output, zero findings, indistinguishable from a clean inspection. The invocation that works
+here names the SDK and toolset explicitly (`--dotnetcoresdk`, `--toolset-path`), and **its output is SARIF JSON
+whatever the `-o` extension says**, so an XML grep over it returns 0 - a second empty instrument inside ten
+minutes. *(Developer 1's, all three.)*
+
+**Why the pair matters more than either half: two `IDE0053` findings sat on `develop` until a gate tripped over
+them and blocked every session.** `dotnet format` sees those and not ReSharper's inspections; `jb` sees
+ReSharper's and not those. **A reader who reaches for the second tool and misconfigures it is told everything is
+fine**, so both routes to noticing close at once. On the documentation half, stated as measured rather than as
+relayed: there is **no `.config/dotnet-tools.json`**, so *not installed in this repository* is literally true of a
+repo-local tool, **while the tool is installed globally** (`jetbrains.resharper.globaltools 2026.2.2`). **Both
+readings are available and only one sends the reader to the tool - that ambiguity is the defect rather than a
+falsehood**, and the sentence sits directly after an install command, which pushes the reader toward *absent*.
+
+**The limit, stated so nobody reads this as a proposal: `jb inspectcode` is NOT a missing fifth gate.** A run
+takes minutes and needs per-machine toolset flags. It answers a question `dotnet format` cannot, and that is all
+it is for. *(Developer 1's limit, offered with the finding.)*
+
 **Proof of presence is always one line** - `fetch('/favicon.ico')`, `innerWidth > 0`, *did anything else witness
 this event*, an assertion that the set being filtered is non-empty - **and it is never written by someone reading
 the failing output, because the failing output looks like success.** That is the whole difficulty: the moment you
