@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/architecture-documentation/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-23T11:25:34.931Z",
       "trigger": "initial",
+      "approvalId": "approval_1790162734818_aewvd0cs8",
+      "approvalTitle": "architecture-documentation design: two pages, one guard, and a verdict for every architecture passage in the agent files"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T11:27:44.677Z",
+      "trigger": "approved",
       "approvalId": "approval_1790162734818_aewvd0cs8",
       "approvalTitle": "architecture-documentation design: two pages, one guard, and a verdict for every architecture passage in the agent files"
     }
