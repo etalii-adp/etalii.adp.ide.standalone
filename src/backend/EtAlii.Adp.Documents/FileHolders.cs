@@ -34,7 +34,35 @@ namespace EtAlii.Adp.Documents;
 /// </remarks>
 public static class FileHolders
 {
-    private static readonly ILogger _logger = Log.ForContext(typeof(FileHolders));
+    /// <summary>
+    /// Resolved AT THE CALL SITE rather than cached in a static field, which is this repository's
+    /// usual shape and is unsafe for THIS class.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Measured:</b> Serilog's unset <c>Log.Logger</c> is a <c>SilentLogger</c>, and a
+    /// <c>private static readonly ILogger</c> evaluated at that moment IS that silent logger — for
+    /// the life of the process. Configuring <c>Log.Logger</c> afterwards changes nothing for it,
+    /// while a logger resolved after configuration logs normally: same process, same sink, one line
+    /// apart. <b>Type-initialisation order is FIRST-USE order</b>, so two classes in one assembly
+    /// can differ with nothing visible to tell them apart.
+    /// </para>
+    /// <para>
+    /// <b>It happened.</b> The fifth field occurrence of <c>0x80070497</c> produced NO record at
+    /// all — not "no process was holding it", which is an answer, but silence. The failure's own
+    /// stack placed execution inside this class's catch while its warning appeared nowhere in the
+    /// run. An instrument that is wired in some runs and not others is worse than a broken one,
+    /// because it works often enough to be trusted.
+    /// </para>
+    /// <para>
+    /// <b>What this does NOT fix:</b> 92 production classes hold a logger this way and 90 still do.
+    /// Any of them whose type initialiser runs before the host configures Serilog is mute for that
+    /// process's life, and the only symptom is the absence of lines nobody is looking for. The
+    /// tree-wide question is <b>deferred by the user, not declined</b> — the pattern remains house
+    /// style, and no session should convert files on its own initiative.
+    /// </para>
+    /// </remarks>
+    private static ILogger Logger => Log.ForContext(typeof(FileHolders));
 
     /// <summary>The answer when the file is held by nobody the query can see.</summary>
     public const string None = "no process was holding it when asked";
@@ -131,7 +159,7 @@ public static class FileHolders
                 if (finished.IsFaulted)
                 {
                     var reason = finished.Exception?.InnerException ?? (Exception?)finished.Exception;
-                    _logger.Warning(
+                    Logger.Warning(
                         "Holders of {Path}, asked from pid {ProcessId} when a publish failed, could not be determined after {Elapsed} ms: {Reason}",
                         path,
                         Environment.ProcessId,
@@ -140,7 +168,7 @@ public static class FileHolders
                     return;
                 }
 
-                _logger.Warning(
+                Logger.Warning(
                     "Holders of {Path}, asked from pid {ProcessId} when a publish failed, answered after {Elapsed} ms: {Holders}",
                     path,
                     Environment.ProcessId,

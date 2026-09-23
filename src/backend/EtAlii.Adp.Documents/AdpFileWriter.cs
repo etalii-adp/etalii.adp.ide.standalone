@@ -44,7 +44,35 @@ public static class AdpFileWriter
     /// </remarks>
     public const string NewLine = "\r\n";
 
-    private static readonly ILogger _logger = Log.ForContext(typeof(AdpFileWriter));
+    /// <summary>
+    /// Resolved AT THE CALL SITE rather than cached in a static field, which is this repository's
+    /// usual shape and is unsafe for THIS class.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Measured:</b> Serilog's unset <c>Log.Logger</c> is a <c>SilentLogger</c>, and a
+    /// <c>private static readonly ILogger</c> evaluated at that moment IS that silent logger — for
+    /// the life of the process. Configuring <c>Log.Logger</c> afterwards changes nothing for it,
+    /// while a logger resolved after configuration logs normally: same process, same sink, one line
+    /// apart. <b>Type-initialisation order is FIRST-USE order</b>, so two classes in one assembly
+    /// can differ with nothing visible to tell them apart.
+    /// </para>
+    /// <para>
+    /// <b>It happened.</b> The fifth field occurrence of <c>0x80070497</c> produced NO record at
+    /// all — not "no process was holding it", which is an answer, but silence. The failure's own
+    /// stack placed execution inside this class's catch while its warning appeared nowhere in the
+    /// run. An instrument that is wired in some runs and not others is worse than a broken one,
+    /// because it works often enough to be trusted.
+    /// </para>
+    /// <para>
+    /// <b>What this does NOT fix:</b> 92 production classes hold a logger this way and 90 still do.
+    /// Any of them whose type initialiser runs before the host configures Serilog is mute for that
+    /// process's life, and the only symptom is the absence of lines nobody is looking for. The
+    /// tree-wide question is <b>deferred by the user, not declined</b> — the pattern remains house
+    /// style, and no session should convert files on its own initiative.
+    /// </para>
+    /// </remarks>
+    private static ILogger Logger => Log.ForContext(typeof(AdpFileWriter));
 
     /// <summary>
     /// One turn per destination, keyed by the normalised full path - see <see cref="Save(string, string)"/>.
@@ -171,7 +199,7 @@ public static class AdpFileWriter
             Monitor.TryEnter(turn, ref taken);
             if (!taken)
             {
-                _logger.Warning("Waited for another save to {Path} before publishing it", destination);
+                Logger.Warning("Waited for another save to {Path} before publishing it", destination);
                 Monitor.Enter(turn, ref taken);
             }
 
@@ -227,7 +255,7 @@ public static class AdpFileWriter
             Monitor.TryEnter(turn, ref taken);
             if (!taken)
             {
-                _logger.Warning("Waited for a save of {Path} before deleting it", destination);
+                Logger.Warning("Waited for a save of {Path} before deleting it", destination);
                 Monitor.Enter(turn, ref taken);
             }
 
@@ -240,7 +268,7 @@ public static class AdpFileWriter
 
             // Information rather than Debug: this is the line a future failed publish is read
             // against, and a record only kept at Debug is a record the gate log does not have.
-            _logger.Information("Deleted {Path} from pid {ProcessId}", destination, Environment.ProcessId);
+            Logger.Information("Deleted {Path} from pid {ProcessId}", destination, Environment.ProcessId);
         }
         finally
         {
@@ -314,7 +342,7 @@ public static class AdpFileWriter
             // turns the next red gate into a name instead of another day of inference. It cannot
             // name an actor that has already released - see FileHolders - so "no process was
             // holding it when asked" is an answer rather than the absence of one.
-            _logger.Warning(
+            Logger.Warning(
                 "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}, destination: {Destination}",
                 path,
                 exception.GetType().Name,
@@ -327,7 +355,7 @@ public static class AdpFileWriter
             throw;
         }
 
-        _logger.Debug("Published {Path}", path);
+        Logger.Debug("Published {Path}", path);
     }
 
     private static void ReplaceDestination(string temporary, string path) =>
@@ -373,20 +401,20 @@ public static class AdpFileWriter
 
             // Information: files appeared in the user's project because of us, which is
             // exactly the kind of thing worth being able to point at afterwards.
-            _logger.Information("Created {FilePaths}", destinations);
+            Logger.Information("Created {FilePaths}", destinations);
             return new AdpFileCreated(destinations[0]);
         }
         catch (IOException) when (destinations.Any(destination => !moved.Contains(destination) && (File.Exists(destination) || Directory.Exists(destination))))
         {
             // Something claimed a name between the check and the move. The user is told and
             // can pick another, so this is a warning about a race, not a failure.
-            _logger.Warning("Did not create {FilePaths}: a name was taken while it was being written", destinations);
+            Logger.Warning("Did not create {FilePaths}: a name was taken while it was being written", destinations);
             RollBack(moved, temporaries);
             return new AdpFileNameTaken();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {
-            _logger.Error(ex, "Failed to create {FilePaths}", destinations);
+            Logger.Error(ex, "Failed to create {FilePaths}", destinations);
             RollBack(moved, temporaries);
             return new AdpFileWriteFailed(ex.Message);
         }
@@ -420,7 +448,7 @@ public static class AdpFileWriter
         {
             // Deliberately not rethrown; Debug so a folder slowly filling with scratch files
             // still has an explanation somewhere.
-            _logger.Debug(ex, "Could not remove the scratch file {Path}", path);
+            Logger.Debug(ex, "Could not remove the scratch file {Path}", path);
         }
     }
 }

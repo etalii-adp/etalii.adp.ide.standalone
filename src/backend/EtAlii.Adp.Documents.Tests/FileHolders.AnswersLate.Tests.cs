@@ -117,8 +117,10 @@ public class FileHoldersAnswersLateTests : IDisposable
         var path = IoPath.Combine(_folder, "tea.owm");
         FileHolders.Budget = TimeSpan.FromMilliseconds(100);
         using var stuck = new ManualResetEventSlim(false);
+        using var entered = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            entered.Set();
             stuck.Wait(Patience);
             return "never gets here in this test";
         };
@@ -126,6 +128,15 @@ public class FileHoldersAnswersLateTests : IDisposable
 
         var described = FileHolders.Describe(path);
         Assert.Contains("not yet known", described, StringComparison.Ordinal);
+
+        // MAKES "NEVER" OBSERVABLE, and is load-bearing. Without it the silence asserted below
+        // is satisfied just as well by a query that was never CALLED - a Describe that
+        // short-circuited, a seam another class overwrote, a branch that never reached the
+        // service - so the guard would pass most confidently on the day the instrument stopped
+        // running at all. "Never answered" is only a fact about a query that started.
+        Assert.True(
+            entered.Wait(Patience, TestContext.Current.CancellationToken),
+            "The holder query was never entered, so the silence asserted below says nothing about a query that never answers.");
 
         await Task.Delay(TimeSpan.FromMilliseconds(600), TestContext.Current.CancellationToken);
 
