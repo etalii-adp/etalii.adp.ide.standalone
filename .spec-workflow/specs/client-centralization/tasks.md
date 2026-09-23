@@ -12,7 +12,7 @@ One worktree for the whole specification (`.claude/worktrees/ccen`), one Develop
 
 ## Group 1 — What a user can see today
 
-- [ ] 1. `azure-pipeline` and `causal-loop` join the theme
+- [x] 1. `azure-pipeline` and `causal-loop` join the theme
   - Files: `src/diagrams/azure-pipeline/client/azure-pipeline.css`, `src/diagrams/causal-loop/client/causal-loop.css`, `src/client/src/index.css`
   - **Measured in the browser, both on develop:** azure-pipeline paints stage fill `rgb(243,244,246)` and border `rgb(209,213,219)` **in the dark theme** — the `--adp-surface-sunken: #f3f4f6` and `--adp-border: #d1d5db` fallbacks; causal-loop paints variable fill `rgb(37,37,38)` (`#252526`, the `--vscode-editorWidget-background` fallback) with a **black label on it in the light theme, contrast 1.37:1, unreadable**.
   - Map each private token to **the theme token of the same meaning** (the user's ruling): azure's **ten** `--adp-*` (18 `var()` occurrences across ten distinct names), causal-loop's five `--vscode-*`. Where the theme has no equivalent, define one rather than keep a private name — **and name it `--color-*`**, because task 2 widens `themeTokens.test.ts` to walk every custom property and a new private prefix would defeat the guard that this task's own work is meant to satisfy. *Corrected on 2026-09-23: this said **eleven**. Developer 4 counted ten while writing the guard, and a re-count confirmed ten — `accent`, `accent-subtle`, `border`, `border-strong`, `danger`, `surface`, `surface-sunken`, `text`, `text-muted`, `warning`.*
