@@ -58,6 +58,7 @@ import {
   type LibraryEventHandlers,
   type DiagramSelection,
   type SelectedItem,
+  type ResizedSide,
 } from "./api/diagramEvents";
 import { effectiveDefinition, type DiagramRuntimeConfig } from "./api/diagramRuntimeConfig";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "./api/diagramModel";
@@ -205,7 +206,7 @@ export interface DiagramCanvasProps {
 type PressTarget =
   | { kind: "element"; element: DiagramModelElement }
   | { kind: "anchor"; element: DiagramModelElement; anchor: string | undefined; at: Point }
-  | { kind: "resize"; element: DiagramModelElement; side: "left" | "right" }
+  | { kind: "resize"; element: DiagramModelElement; side: ResizedSide }
   | { kind: "connection"; connection: DiagramModelConnection }
   | { kind: "adjust"; connection: DiagramModelConnection; from: Point }
   | { kind: "background"; view: ViewBox };
@@ -222,11 +223,17 @@ interface ElementDragOffset {
   held?: boolean;
 }
 
-/** A span resize in flight, in canvas units - the amendment's first added kind (R1.5). */
+/**
+ * A resize in flight, in canvas units - the amendment's first added kind (R1.5).
+ *
+ * `delta` is along the dragged side's OWN axis: x for left and right, y for top and bottom. It
+ * was called `dx` while only the vertical edges could be dragged, which would now be a name that
+ * lies on half its uses.
+ */
 interface ResizeDragPreview {
   id: string;
-  side: "left" | "right";
-  dx: number;
+  side: ResizedSide;
+  delta: number;
 }
 
 /** A connection-adjust in flight: the waypoint under the pointer - the second added kind. */
@@ -750,7 +757,7 @@ export function DiagramCanvasCore({
         case "resize": {
           const frame = (resizeFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(resizeValue)]));
           const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
-          frame.move({ id: target.element.id, side: target.side, dx: dx * scale });
+          frame.move({ id: target.element.id, side: target.side, delta: alongSide(target.side, dx, dy) * scale });
           break;
         }
         case "adjust": {
@@ -837,7 +844,7 @@ export function DiagramCanvasCore({
           resizeFrameRef.current = null;
           const scale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
           frame?.commit();
-          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, dx * scale);
+          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, alongSide(target.side, dx, dy) * scale);
           raise({ kind: "element-resized", elementId: target.element.id, side: target.side, bounds });
           break;
         }
@@ -1487,6 +1494,7 @@ export function DiagramCanvasCore({
       dragValue={dragValue}
       resizeValue={resizeValue}
       resizable={elementTypes.get(element.type)?.sizing === "user"}
+      resizableHeight={elementTypes.get(element.type)?.sizing === "user" && elementTypes.get(element.type)?.resize === "both"}
       resizePress={(side) => gesture.press({ kind: "resize", element, side })}
       selected={isSelected("element", element.id)}
       connectValue={connectValue}
@@ -1822,6 +1830,7 @@ function LibraryElement({
   connectValue,
   resizeValue,
   resizable,
+  resizableHeight,
   resizePress,
   selected,
   press,
@@ -1835,7 +1844,8 @@ function LibraryElement({
   connectValue: GestureValue<ConnectPreview>;
   resizeValue: GestureValue<ResizeDragPreview>;
   resizable: boolean;
-  resizePress: (side: "left" | "right") => PointerPressWiring;
+  resizableHeight: boolean;
+  resizePress: (side: ResizedSide) => PointerPressWiring;
   selected: boolean;
   press: PointerPressWiring;
   anchorPress: (anchor: string | undefined, at: Point) => PointerPressWiring;
@@ -1872,9 +1882,15 @@ function LibraryElement({
   });
   const shifted: DiagramModelElement = offset ? { ...element, x: element.x + offset.dx, y: element.y + offset.dy } : element;
   const plainBounds = elementBounds(shifted, type);
-  const bounds = resize ? resizedBounds(plainBounds, resize.side, resize.dx) : plainBounds;
+  const bounds = resize ? resizedBounds(plainBounds, resize.side, resize.delta) : plainBounds;
   const resizing: DiagramModelElement = resize
-    ? { ...shifted, x: bounds.x + bounds.width / 2, width: bounds.width }
+    ? {
+      ...shifted,
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2,
+      width: bounds.width,
+      height: bounds.height,
+    }
     : shifted;
   // A HELD offset is drawn but is no longer a drag - it must not keep the dragging look.
   const dragging = offset !== null && offset.held !== true;
@@ -1918,6 +1934,14 @@ function LibraryElement({
         <>
           <rect className="library-resize-handle" data-resize="left" x={bounds.x - 3} y={bounds.y} width={6} height={bounds.height} {...resizePress("left")} />
           <rect className="library-resize-handle" data-resize="right" x={bounds.x + bounds.width - 3} y={bounds.y} width={6} height={bounds.height} {...resizePress("right")} />
+          {/* Height is a separate permission: a type says `resize: "both"` or these do not
+              exist, so every type that was width-only before stays width-only. */}
+          {resizableHeight && (
+            <>
+              <rect className="library-resize-handle" data-resize="top" x={bounds.x} y={bounds.y - 3} width={bounds.width} height={6} {...resizePress("top")} />
+              <rect className="library-resize-handle" data-resize="bottom" x={bounds.x} y={bounds.y + bounds.height - 3} width={bounds.width} height={6} {...resizePress("bottom")} />
+            </>
+          )}
         </>
       )}
       {/* Anchors render always and show on hover or mid-connect, via the stylesheet - so a
@@ -2809,13 +2833,26 @@ function connectTargetUnder(
 }
 
 /** The bounds with one edge carried by a resize drag; the far edge stays put and is never crossed. */
-function resizedBounds(bounds: ConnectorBox, side: "left" | "right", dx: number): ConnectorBox {
+function resizedBounds(bounds: ConnectorBox, side: ResizedSide, delta: number): ConnectorBox {
   if (side === "left") {
-    const left = Math.min(bounds.x + dx, bounds.x + bounds.width - 1);
+    const left = Math.min(bounds.x + delta, bounds.x + bounds.width - 1);
     return { ...bounds, x: left, width: bounds.x + bounds.width - left };
   }
-  const width = Math.max(bounds.width + dx, 1);
-  return { ...bounds, width };
+  if (side === "right") {
+    return { ...bounds, width: Math.max(bounds.width + delta, 1) };
+  }
+  // The horizontal edges, carried exactly as the vertical ones are: the far edge stays where it
+  // is and is never crossed, so a drag past it stops at one unit rather than inverting the box.
+  if (side === "top") {
+    const top = Math.min(bounds.y + delta, bounds.y + bounds.height - 1);
+    return { ...bounds, y: top, height: bounds.y + bounds.height - top };
+  }
+  return { ...bounds, height: Math.max(bounds.height + delta, 1) };
+}
+
+/** The pointer delta along the dragged side's own axis. */
+function alongSide(side: ResizedSide, dx: number, dy: number): number {
+  return side === "left" || side === "right" ? dx : dy;
 }
 
 /**

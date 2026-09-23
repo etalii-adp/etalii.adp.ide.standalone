@@ -710,6 +710,18 @@ export interface ElementTypeDefinition {
   };
   anchors: AnchorSet;
   sizing: SizingRule;
+
+  /**
+   * Which edges a `sizing: "user"` type lets the reader drag. <b>Omitted means `"width"`</b>,
+   * which is what every user-sizable type did before this existed - so a type that declares
+   * nothing is unaffected, and the timeline's spans keep exactly the two handles they had.
+   *
+   * `"both"` adds the top and bottom edges, for an element whose height is its own content
+   * rather than a shared constant - a comment sized to the text somebody wrote in it. Read only
+   * when `sizing` is `"user"`: a content-sized or model-sized element has no edge to offer,
+   * because its size is not the reader's to choose.
+   */
+  resize?: "width" | "both";
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
   draggable?: boolean;
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
