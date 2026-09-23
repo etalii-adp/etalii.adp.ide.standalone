@@ -6,7 +6,7 @@ authored**.
 
 | Folder | What is in it |
 |---|---|
-| `api/` | The wire payload a node or edge carries. Empty until a client needs one. |
+| `api/` | The wire payload a node or edge carries. |
 | `backend/` | The readers, the graph, the session and the read-only property provider. |
 | `client/` | The canvas and the registration the shell discovers. |
 | `examples/` | Shipped examples, replicated per structure.md's example-replication rule. |
