@@ -1,0 +1,12 @@
+{
+  "id": "approval_1790188380558_714d6ob12",
+  "title": "two-tab-connection-wedge - Requirements (revised: HTTP/2 needs TLS, but the dev certificate already exists)",
+  "filePath": ".spec-workflow/specs/two-tab-connection-wedge/requirements.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2026-09-23T18:33:00.558Z",
+  "category": "spec",
+  "categoryName": "two-tab-connection-wedge",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-23T19:16:52.350Z"
+}

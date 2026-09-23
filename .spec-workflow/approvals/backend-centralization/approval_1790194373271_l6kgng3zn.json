@@ -3,8 +3,10 @@
   "title": "backend-centralization tasks: 25 tasks in the design's risk order, with 5 criteria satisfied ahead and R2.9 measurably unmet at three call sites",
   "filePath": ".spec-workflow/specs/backend-centralization/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-23T20:12:53.271Z",
   "category": "spec",
-  "categoryName": "backend-centralization"
+  "categoryName": "backend-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-23T20:29:27.531Z"
 }

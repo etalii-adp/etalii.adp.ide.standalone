@@ -1,0 +1,12 @@
+{
+  "id": "approval_1790187244587_0zj2c2mvu",
+  "title": "Tasks amendment (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): task 1's count corrected to TEN --adp-* names across 18 var() occurrences, counted by Developer 4 while writing its guard; a newly defined token must join the --color-* namespace or it defeats task 2's widened walk; and task 12's mirror direction points to canvas-single-scrollbar per the Scrum master's ruling (8d84194f).",
+  "filePath": ".spec-workflow/specs/client-centralization/tasks.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2026-09-23T18:14:04.587Z",
+  "category": "spec",
+  "categoryName": "client-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-23T18:17:29.849Z"
+}
