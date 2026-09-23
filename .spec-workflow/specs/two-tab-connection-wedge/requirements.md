@@ -93,19 +93,55 @@ because I forgot the first was open - without the application silently ceasing t
 **User Story:** As a maintainer, I want the connection budget to stop being a correctness
 question, so that no future change has to re-derive how many streams fit.
 
+#### Answering the review question: HTTP/2 without a certificate
+
+The review asked whether HTTP/2 could be adopted **without a certificate**, accepting a browser
+warning as the price of starting quickly. The two halves of that question have different answers,
+and the distinction is the whole of it.
+
+**Cleartext HTTP/2 does not work, and it does not fail with a warning.** No major browser
+implements h2c - HTTP/2 over plain `http://`. The protocol exists in the RFC and non-browser
+clients can use it, but a browser never attempts it: it speaks HTTP/1.1 to an `http://` origin and
+the cap stays exactly where it is. **There is no error to click through, because there is no
+attempt.** So that path does not improve the situation at all.
+
+**What the question describes - a warning the user accepts - is an untrusted TLS certificate, and
+that works completely.** The certificate warning happens after the TLS handshake, in which ALPN
+has already negotiated HTTP/2. Clicking through yields a real h2 connection, multiplexed onto one
+socket, with the cap gone. So the intent behind the question is achievable in full.
+
+**And it is cheaper than this document first claimed.** A valid ASP.NET Core development
+certificate **already exists on this machine** - `CN=localhost`, valid to 2027-05-09, reported by
+`dotnet dev-certs https --check`. There is no certificate to obtain, purchase, or install. The
+remaining choice is only whether to trust it: `dotnet dev-certs https --trust` removes the warning
+entirely, which is **less** friction than accepting a warning per profile, and the embedded
+browser panes several sessions run would each otherwise need their own clickthrough.
+
+The earlier statement that the honest cost "includes a development certificate" was wrong and is
+withdrawn. The cost is an HTTPS endpoint in configuration and pointing the client at it.
+
 #### Acceptance Criteria
 
 1. THE application SHALL be served over TLS, so that browsers negotiate HTTP/2 and multiplex
    every request onto a single connection, at which point the per-origin connection cap does not
    apply to it.
-2. THE change SHALL cover local development as well as deployment. This repository has no HTTPS
+2. THE design SHALL NOT propose cleartext HTTP/2 as a cheaper start, because browsers do not
+   implement it and adopting it would leave the defect untouched while appearing to address it.
+3. WHERE a trusted certificate is not wanted, an untrusted one accepted by the browser SHALL be
+   understood to deliver the full fix, and SHALL be recorded as a valid staged start rather than
+   a partial one.
+4. THE change SHALL cover local development as well as deployment. This repository has no HTTPS
    configuration today - no `UseHttps`, no Kestrel `HttpProtocols`, no https `applicationUrl`, no
-   `Urls` - so the honest cost includes a development certificate and a change to how the
-   application is run locally.
-3. WHERE the application is nonetheless reached over cleartext HTTP - a deployment that
+   `Urls` - so the work is a configured endpoint and a client pointed at it, not a certificate.
+5. WHERE the application is nonetheless reached over cleartext HTTP - a deployment that
    terminates TLS elsewhere and forwards plain, or a developer overriding the URL - the defect
    SHALL be understood to return in full, and this SHALL be stated in the design rather than
    left for someone to rediscover.
+6. IF TLS is deferred THEN the only remaining lever is Requirement 3, which raises the number of
+   tabs rather than removing the limit. Serving the gRPC endpoints from a separate origin SHALL
+   NOT be adopted as a substitute: the cap is per origin, so two tabs still put six streams on
+   whichever origin carries them, and the page's own assets were never the traffic that filled
+   the pool.
 
 ### Requirement 3 - Fewer streams is robustness, and is explicitly not the fix
 
@@ -117,7 +153,7 @@ that reduction for a solution to the defect.
 1. THE three long-lived streams a tab holds SHOULD be reduced, preferably to one, because a
    smaller fixed cost is worth having independently of the protocol.
 2. THIS reduction SHALL NOT be recorded as the fix for Requirement 1. Reducing three to one buys
-   headroom of four tabs rather than removing the limit, and the arithmetic must then be
+   six tabs instead of two rather than removing the limit, and the arithmetic must then be
    re-checked against every stream anyone adds afterwards.
 3. IF Requirement 2 is deferred THEN this requirement SHALL NOT be treated as satisfying it in
    the interim without the design saying plainly how many tabs the product then supports.
