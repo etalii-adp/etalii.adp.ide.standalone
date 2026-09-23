@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/client-centralization/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T10:07:22.538Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790158041949_lx9k0uhlt",
+      "approvalTitle": "client-centralization - Design (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): twelve sections, one per approved requirement, each with its guard and ordered by cost; the two browser-confirmed theme defects recorded as Requirement 1's visible gain; three items named as out of scope (d0667c5b)."
+    }
+  ]
+}
