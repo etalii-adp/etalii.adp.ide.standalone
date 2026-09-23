@@ -19,16 +19,30 @@ import { contrastRatio, resolveToken, themeTokens, tokensRead } from "./themeCon
  * ratio a browser would compute is computable from the source, which is the only instrument
  * here that can be wrong in a way anybody notices.
  *
- * <b>Why a label's colour is ruled out structurally before any ratio is taken.</b> The tasks
- * document records the light-theme label at 1.37:1, which is pure `#000000` on the pill - and
- * SVG `fill` inherits, so a label with no rule of its own takes black from the canvas
- * `<svg>`. The route to that black was never found: the variable label declares
- * `canvas-node-label`, the library paints that `var(--color-text)`, and the badge's three
- * polarity words each have a fill. <b>But black cannot be made to pass by any choice of pill
- * colour</b> - mapping the fill to `--color-surface` puts black at 1.44:1 in the dark theme,
- * which is the defect relocated rather than removed, into the theme nobody is looking at.
- * So black is not a colour to measure here; it is a state to forbid. Every label class a
- * module declares must be painted by a rule, and only then is the ratio worth taking.
+ * <b>Why a label's colour is ruled out structurally before any ratio is taken - and the story
+ * is worth keeping, because the wrong answer here was very convincing.</b>
+ *
+ * The tasks document recorded the light-theme label at 1.37:1, which is pure `#000000` on the
+ * pill. Reading the source said `#0f172a` and 1.17:1: the label declares `canvas-node-label`,
+ * the library paints that `var(--color-text)`, and nothing sets an inline fill when the
+ * declaration names no colour. Two instruments, both working, disagreeing - so the guard was
+ * written to forbid black rather than to measure it, because <b>no choice of pill colour
+ * rescues a black label</b>: mapping the fill to `--color-surface` puts black at 1.44:1 in the
+ * dark theme, relocating the defect into the theme nobody is looking at.
+ *
+ * <b>The disagreement then resolved, and neither instrument was faulty.</b> Re-measured live
+ * and grouped by class, the canvas holds EIGHT unclassed `<text>` nodes computing
+ * `rgb(0,0,0)` - and all eight are EMPTY. They are the empty label at `DiagramCanvas.tsx:2449`,
+ * rendered for every element whose type declares `labels`. The original probe took a text node
+ * without scoping to the label's class and measured one of those. <b>The label was never
+ * black; the real figure was 1.17:1, and the defect was slightly worse than recorded.</b>
+ *
+ * So the black candidate is gone, and the assertion that forbids it stays anyway. Eight
+ * unclassed black text nodes per canvas is a live trap for anyone measuring by eye or by
+ * probe - it caught the author of the specification, and then it caught the first mounted
+ * assertion written against it. <b>A guard that catches the trap is worth more than one that
+ * catches only the fill.</b> Every label class a module declares must be painted by a rule,
+ * and only then is the ratio worth taking.
  */
 describe("module colours honour the theme", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
