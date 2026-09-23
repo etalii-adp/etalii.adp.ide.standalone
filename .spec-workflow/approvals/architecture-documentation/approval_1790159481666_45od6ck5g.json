@@ -3,8 +3,19 @@
   "title": "architecture-documentation requirements: two guarded pages for an agent audience",
   "filePath": ".spec-workflow/specs/architecture-documentation/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "needs-revision",
   "createdAt": "2026-09-23T10:31:21.666Z",
   "category": "spec",
-  "categoryName": "architecture-documentation"
+  "categoryName": "architecture-documentation",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. Add a requirement that the current agent files and rules are looked into and the new documentation is enforced. Also any duplicate information that now needs to live in the architecture documentation should be removed from them to ensure centralization and consistency.\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"Add a requirement that the current agent files and rules are looked into and the new documentation is enforced. Also any duplicate information that now needs to live in the architecture documentation should be removed from them to ensure centralization and consistency.\",\n      \"timestamp\": \"2026-09-23T10:39:05.721Z\",\n      \"id\": \"comment_1790159945721_yx1ku8rrn\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. Add a requirement that the current agent files and rules are looked into and the new documentation is enforced. Also any duplicate information that now needs to live in the architecture documentation should be removed from them to ensure centralization and consistency.\\n\\n\",\n  \"timestamp\": \"2026-09-23T10:39:07.894Z\"\n}",
+  "respondedAt": "2026-09-23T10:39:07.902Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "Add a requirement that the current agent files and rules are looked into and the new documentation is enforced. Also any duplicate information that now needs to live in the architecture documentation should be removed from them to ensure centralization and consistency.",
+      "timestamp": "2026-09-23T10:39:05.721Z",
+      "id": "comment_1790159945721_yx1ku8rrn"
+    }
+  ]
 }

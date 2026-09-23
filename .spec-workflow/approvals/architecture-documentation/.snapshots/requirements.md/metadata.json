@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/architecture-documentation/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T10:31:21.804Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790159481666_45od6ck5g",
+      "approvalTitle": "architecture-documentation requirements: two guarded pages for an agent audience"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T10:39:07.896Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1790159481666_45od6ck5g",
+      "approvalTitle": "architecture-documentation requirements: two guarded pages for an agent audience"
+    }
+  ]
+}
