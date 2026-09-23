@@ -9,11 +9,16 @@ import type { CSSProperties } from "react";
  * still say what a thing IS while the highlight says what is selected. There is no ring: an outline
  * drawn outside the shape was the previous answer and the user replaced it.
  *
- * <b>Painted INLINE, by {@link highlighted}.</b> A stylesheet rule cannot do this job: a module rule
- * styling its own shapes by descendant - `.mindmap-node rect` - outranks a single library class, and
- * jsdom's cascade is source order alone, so no unit test could tell a working rule from a losing one.
+ * <b>Painted INLINE, on the DRAWN SHAPE.</b> A stylesheet rule cannot do this job: a module rule
+ * styling its own shapes by descendant - `.mindmap-node rect` - outranks a single library class.
  * Inline paint is what both a browser and jsdom apply over every ordinary rule, so the look is
- * provable. `ringsSurviveModuleStyles.test.tsx` holds every stylesheet in the tree to it.
+ * provable; `highlightSurvivesModuleStyles.test.tsx` holds every stylesheet in the tree to it.
+ *
+ * <b>On the shape, never on a group above it.</b> That was got wrong once and shipped: the paint sat
+ * on the element's wrapping `<g>`, where it is INHERITED, and an SVG child that states its own stroke
+ * ignores an inherited one - which every node shape does, through `.canvas-node` and again through
+ * each module's own rules. Five canvases showed no highlight at all while every value the library
+ * computed was correct. Each element component therefore paints the shape it draws.
  *
  * <b>The token paints nothing at rest</b> (Requirement 5.5): `--color-primary` is also timeline's
  * moment fill, ansible's outlines, the owl and rdf badges, skos's notation and sparql's projection
