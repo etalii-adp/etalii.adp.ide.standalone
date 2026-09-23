@@ -44,6 +44,7 @@ export function StyledBoxElement({
   typeClassName,
   descriptionClassName,
   children,
+  style,
   ...groupProps
 }: StyledBoxElementProps) {
   const halfWidth = width / 2;
@@ -51,21 +52,25 @@ export function StyledBoxElement({
 
   return (
     <g transform={`translate(${x} ${y})`} {...groupProps}>
+      {/* Every drawn part takes the paint itself rather than inheriting it from this group: a rule
+          like c4's `.c4-node rect` states a stroke, and a stated stroke beats an inherited one, so a
+          highlight on the group would be computed and then ignored (task 28). */}
       {shape === "Person" ? (
         <>
           {/* The person shape: a head above the box, as the reference diagrams draw it. */}
-          <circle cx={0} cy={-halfHeight - 8} r={10} fill={background} />
-          <rect x={-halfWidth} y={-halfHeight} width={width} height={height} rx={8} fill={background} />
+          <circle style={style} cx={0} cy={-halfHeight - 8} r={10} fill={background} />
+          <rect style={style} x={-halfWidth} y={-halfHeight} width={width} height={height} rx={8} fill={background} />
         </>
       ) : shape === "Cylinder" ? (
         <>
           {/* A data store, drawn as the cylinder the notation uses for one. */}
-          <rect x={-halfWidth} y={-halfHeight + 6} width={width} height={height - 12} fill={background} />
-          <ellipse cx={0} cy={-halfHeight + 6} rx={halfWidth} ry={6} fill={background} />
-          <ellipse cx={0} cy={halfHeight - 6} rx={halfWidth} ry={6} fill={background} />
+          <rect style={style} x={-halfWidth} y={-halfHeight + 6} width={width} height={height - 12} fill={background} />
+          <ellipse style={style} cx={0} cy={-halfHeight + 6} rx={halfWidth} ry={6} fill={background} />
+          <ellipse style={style} cx={0} cy={halfHeight - 6} rx={halfWidth} ry={6} fill={background} />
         </>
       ) : (
         <rect
+          style={style}
           x={-halfWidth}
           y={-halfHeight}
           width={width}

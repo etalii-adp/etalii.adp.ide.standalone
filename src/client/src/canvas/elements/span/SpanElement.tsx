@@ -64,6 +64,7 @@ export function SpanElement({
   onResizeStart,
   onAnchorStart,
   children,
+  style,
   ...groupProps
 }: SpanElementProps) {
   const left = box.x - box.width / 2;
@@ -71,10 +72,12 @@ export function SpanElement({
 
   return (
     <g {...groupProps}>
+      {/* The paint goes on the drawn shape, never on the wrapping group: a child that states its
+          own stroke - and every node class states one - ignores an inherited one (task 28). */}
       {moment ? (
-        <path className={classes.moment} d={diamond(box.x, box.y, pointRadius)} />
+        <path className={classes.moment} style={style} d={diamond(box.x, box.y, pointRadius)} />
       ) : (
-        <rect className={classes.span} x={left} y={top} width={box.width} height={box.height} rx={6} />
+        <rect className={classes.span} style={style} x={left} y={top} width={box.width} height={box.height} rx={6} />
       )}
       <text
         className={classes.label}

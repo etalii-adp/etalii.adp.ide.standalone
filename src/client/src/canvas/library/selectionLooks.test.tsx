@@ -70,9 +70,13 @@ const anchorOn = (container: HTMLElement, id: string, name: string) => container
  */
 function shapePaint(container: HTMLElement, id: string) {
   const element = elementOn(container, id);
-  const painted = [...element.querySelectorAll<SVGElement>("*")].find((node) => node.style?.stroke !== undefined && node.style.stroke !== "" && !node.hasAttribute("data-anchor"));
-  const fill = [...element.querySelectorAll<SVGElement>("*")].find((node) => node.style?.fill !== undefined && node.style.fill !== "");
-  return { stroke: painted?.style.stroke ?? "", strokeWidth: painted?.style.strokeWidth ?? "", fill: fill?.style.fill ?? "" };
+  // The DRAWN shape, never the group above it: a paint on the group is inherited, and an SVG child
+  // that states its own stroke - every node class does - ignores it. Reading the group would call
+  // such an element highlighted while nothing about it had changed on screen (task 28).
+  const painted = [...element.querySelectorAll<SVGElement>("rect, ellipse, path, polygon")].find(
+    (node) => !node.hasAttribute("data-anchor") && !(node.getAttribute("class") ?? "").includes("library-resize-handle"),
+  );
+  return { stroke: painted?.style.stroke ?? "", strokeWidth: painted?.style.strokeWidth ?? "", fill: painted?.style.fill ?? "" };
 }
 
 /** What an anchor of that element is painted with. */

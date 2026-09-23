@@ -29,11 +29,14 @@ export function CenteredBoxElement({
   indicators,
   indicatorsClassName,
   children,
+  style,
   ...groupProps
 }: CenteredBoxElementProps) {
   return (
     <g transform={`translate(${x} ${y})`} {...groupProps}>
-      <rect x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={rx} />
+      {/* Painted here rather than on the group: an inherited stroke loses to the one this rect
+          already states through its class (task 28). */}
+      <rect style={style} x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={rx} />
       {/*
         NO TEXT NODE AT ALL when there is nothing to say. The empty-string placeholder dates
         from when every shape drew its own single label; a type that declares `labels` passes

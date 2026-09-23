@@ -35,11 +35,14 @@ export function BoxElement({
   labelX = 8,
   labelY,
   children,
+  style,
   ...groupProps
 }: BoxElementProps) {
   return (
     <g transform={`translate(${x} ${y})`} {...groupProps}>
-      <rect className={boxClassName} x={0} y={0} width={width} height={height} rx={rx} />
+      {/* The paint goes on the RECT, never on this group: a child that states its own stroke - and
+          `.canvas-node` states one for every node - ignores an inherited one (task 28). */}
+      <rect className={boxClassName} style={style} x={0} y={0} width={width} height={height} rx={rx} />
       <text className={labelClassName} x={labelX} y={labelY ?? height / 2 + 4}>
         {label}
       </text>

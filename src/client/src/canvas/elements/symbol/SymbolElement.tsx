@@ -48,16 +48,19 @@ export function SymbolElement({
   badgesClassName,
   inertiaClassName,
   children,
+  style,
   ...groupProps
 }: SymbolElementProps) {
   return (
     <g {...groupProps}>
+      {/* The paint goes on the drawn shape, never on the wrapping group: a child that states its
+          own stroke - and every node class states one - ignores an inherited one (task 28). */}
       {variant === "square" ? (
-        <rect className={markClassName} x={x - radius} y={y - radius} width={radius * 2} height={radius * 2} />
+        <rect className={markClassName} style={style} x={x - radius} y={y - radius} width={radius * 2} height={radius * 2} />
       ) : variant === "double-circle" ? (
         <g>
-          <circle className={markClassName} cx={x} cy={y} r={radius} />
-          <circle className={outerClassName} cx={x} cy={y} r={radius + 4} />
+          <circle className={markClassName} style={style} cx={x} cy={y} r={radius} />
+          <circle className={outerClassName} style={style} cx={x} cy={y} r={radius + 4} />
         </g>
       ) : (
         <circle className={markClassName} cx={x} cy={y} r={radius} />

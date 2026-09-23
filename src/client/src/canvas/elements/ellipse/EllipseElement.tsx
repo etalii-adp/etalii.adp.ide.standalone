@@ -37,11 +37,13 @@ export function EllipseElement({
   innerClassName,
   labelClassName,
   children,
+  style,
   ...groupProps
 }: EllipseElementProps) {
   return (
     <g transform={`translate(${x} ${y})`} {...groupProps}>
-      <ellipse className={ellipseClassName} rx={radiusX} ry={radiusY} />
+      {/* On the ellipse, not the group: an inherited stroke loses to the class's own (task 28). */}
+      <ellipse className={ellipseClassName} style={style} rx={radiusX} ry={radiusY} />
       {doubled ? (
         <ellipse className={innerClassName} rx={Math.max(radiusX - 4, 1)} ry={Math.max(radiusY - 4, 1)} />
       ) : null}

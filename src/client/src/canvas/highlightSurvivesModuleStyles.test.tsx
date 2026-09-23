@@ -102,7 +102,11 @@ const PAINT = ["fill", "stroke", "stroke-width", "stroke-dasharray", "stroke-opa
  * compared, because those are what a module could take away.
  */
 const COMPARED: Record<string, readonly string[]> = {
-  shape: PAINT,
+  // The highlight states a STROKE and a WIDTH; the notation keeps everything else, and a module may
+  // legitimately dress its own shapes' fill and dash - c4's boundaries are drawn dashed and unfilled
+  // by `.c4-boundary rect`, which must keep working while the element is highlighted. What no module
+  // may do is change the colour of the highlight, or hide what wears it.
+  shape: ["stroke", "stroke-width", "stroke-opacity", "opacity", "visibility", "display"],
   anchor: ["stroke", "stroke-width", "stroke-dasharray", "stroke-opacity", "opacity", "visibility", "display"],
 };
 
@@ -134,7 +138,12 @@ function renderedHighlight(): Record<Highlighted, Element> {
     </DiagramViewProvider>,
   );
   const element = container.querySelector('[data-element-id="b"]')!;
-  const shape = [...element.querySelectorAll<SVGElement>("*")].find((node) => node.style?.stroke !== "" && !node.hasAttribute("data-anchor"));
+  // THE DRAWN SHAPE, not "the first node with a stroke": the bug this file missed put the paint on
+  // the wrapping group, where a search for a stroke finds it and calls the element painted while the
+  // shape underneath is untouched. A rect, ellipse, path or polygon is what a reader actually sees.
+  const shape = [...element.querySelectorAll<SVGElement>("rect, ellipse, path, polygon")].find(
+    (node) => !node.hasAttribute("data-anchor") && !(node.getAttribute("class") ?? "").includes("library-resize-handle"),
+  );
   const anchor = element.querySelector<SVGElement>("[data-anchor]");
   expect(shape, "the library painted no highlight on a selected element").not.toBeUndefined();
   expect(anchor, "the selected element drew no anchor to paint").not.toBeNull();
@@ -193,6 +202,35 @@ describe("the library's highlight survives every stylesheet", () => {
   it("reads the whole tree - a floor on what it loaded, and a member it must hold", () => {
     expect(files.length, files.map((path) => relative(root, path)).join("\n")).toBeGreaterThanOrEqual(16);
     expect(files.map((path) => relative(root, path).replaceAll("\\", "/"))).toContain("diagrams/mindmap/client/mindmap.css");
+  });
+
+  it("puts the highlight on the DRAWN SHAPE, so a module rule that states a stroke cannot ignore it", () => {
+    // WHAT THIS FILE MISSED ONCE, and the reason it is worth a case of its own. The library computed
+    // the right paint and put it on the element's wrapping <g>, where it was INHERITED - and an SVG
+    // child that states its own stroke ignores an inherited one. Every node shape states one
+    // (`.canvas-node`, and module rules like `.mindmap-node rect`), so a selected element showed no
+    // colour change at all while every value this file compared was correct.
+    //
+    // So this asserts the COMPUTED stroke of the drawn shape, with a module stylesheet loaded -
+    // mindmap's, because its `.mindmap-node rect` rule is exactly the shape of rule that won.
+    const shape = renderedHighlight().shape;
+    const mindmap = readFileSync(join(sourceRoot(), "diagrams", "mindmap", "client", "mindmap.css"), "utf-8");
+
+    const style = document.createElement("style");
+    style.textContent = `${clientCss}
+${mindmap}`;
+    document.head.appendChild(style);
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    const group = document.createElementNS(ns, "g");
+    group.setAttribute("class", "mindmap-node");
+    const drawn = shape.cloneNode(true) as Element;
+    drawn.setAttribute("class", `${drawn.getAttribute("class") ?? ""} canvas-node`.trim());
+    group.appendChild(drawn);
+    svg.appendChild(group);
+    document.body.appendChild(svg);
+
+    expect(getComputedStyle(drawn).stroke, "the drawn shape does not compute to the highlight, so something else won").toMatch(/^var\(--color-selected/);
   });
 
   it.each(HIGHLIGHTED)("paints a highlighted %s the same inside any element, whichever stylesheet is loaded, naming each that repaints it", (part) => {
