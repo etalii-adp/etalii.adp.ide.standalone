@@ -36,7 +36,31 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=177; else EXPECTED=167; fi
+# --quick runs everything except the two throwaway-repository sections at the end, which are what
+# makes the full suite expensive: they build real repositories, worktrees, build outputs and
+# MAX_PATH probes. Quick keeps the guard refusals, the verdict parsing, the logs, the tell and the
+# argument handling - the paths the board leans on every day.
+#
+# The counts are PINNED PER MODE and were measured rather than derived: the file has 155 report
+# call sites but runs 177 cases on msys, because several sit in loops, so subtracting call sites
+# would have given a confidently wrong number.
+QUICK=0
+case "${1:-}" in
+  "") ;;
+  --quick) QUICK=1 ;;
+  *)
+    echo "RESULT=selftest-broken (unrecognised argument '$1'; expected --quick or nothing)"
+    exit 2
+    ;;
+esac
+[ $# -le 1 ] || { echo "RESULT=selftest-broken (expected one argument at most; got $#)"; exit 2; }
+# MEASURED on Git Bash: quick runs 119 of the 177 cases in 16.8 s, against 1274 s for the full suite.
+# The 119 is a measurement and the 109 is NOT: msys-gated cases sit in both the cheap and the skipped
+# regions, so the 58-case difference cannot simply be carried across. 109 assumes the same 58 are
+# skipped elsewhere, which is unverified here. A wrong pin fails LOUDLY with the true count in the
+# same line, so the first run on another platform corrects it rather than passing quietly.
+if [ "$MSYS" = 1 ]; then EXPECTED=177; EXPECTED_QUICK=119; else EXPECTED=167; EXPECTED_QUICK=109; fi
+[ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -404,6 +428,10 @@ report "1:bad-scratch-name" "$?:$(result_of "$out")" "a scratch name that is not
 out=$(bash "$G" mrga1234 some-branch some-identity "a message" 2>&1)
 report "1:bad-scratch-name" "$?:$(result_of "$out")" "a scratch name too long to stay short"
 
+# Everything from here to the summary builds throwaway repositories, and it is the whole of the
+# difference between --quick and a full run. The body below is deliberately NOT re-indented: bash
+# does not care, and re-indenting it would hide a two-line change inside a 240-line diff.
+if [ "$QUICK" != 1 ]; then
 echo "== gate.sh and land.sh end to end, in a throwaway repository"
 R2="$W/repo2"
 mkrepo "$R2" || broken "cannot create the second repository"
@@ -643,10 +671,12 @@ else
   chmod 755 "$WT3/stuck1/src/held"
 fi
 
-echo "SELFTEST cases=$N wrong=$WRONG expected=$EXPECTED"
+fi  # end of the throwaway-repository sections, skipped by --quick
+
+echo "SELFTEST cases=$N wrong=$WRONG expected=$EXPECTED mode=$([ "$QUICK" = 1 ] && echo quick || echo full)"
 if [ "$N" = "$EXPECTED" ] && [ "$WRONG" = 0 ]; then
-  echo "RESULT=selftest-green"
+  echo "RESULT=selftest-$([ "$QUICK" = 1 ] && echo quick-green || echo green)"
   exit 0
 fi
-echo "RESULT=selftest-red"
+echo "RESULT=selftest-$([ "$QUICK" = 1 ] && echo quick-red || echo red)"
 exit 1
