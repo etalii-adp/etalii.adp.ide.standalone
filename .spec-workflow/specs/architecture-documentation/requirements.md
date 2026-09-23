@@ -146,15 +146,25 @@ the architecture, so that I am never choosing between two descriptions of it and
    division for every passage it lists, because the two kinds read alike and the wrong move would put process
    guidance where nothing enforces it.
 4. WHERE a passage is found to be FALSE rather than merely duplicated, the correction SHALL land on the page and
-   the false passage SHALL be removed, and the implementation log SHALL name each one. The three checked while
-   writing these requirements are the starting list and are not assumed to be the only ones.
+   the false passage SHALL be removed, and the implementation log SHALL name each one. **Two corrections are named
+   work of this specification rather than examples of it:** `tech.md`'s claim that the client renders the canvas
+   "via a canvas/WebGL-based library (e.g. Konva or PixiJS) rather than raw SVG/DOM", and `structure.md`'s core
+   project list, which names `EtAlii.Adp.Backend.Diagrams` and its test project - neither of which exists - while
+   omitting the eleven decomposed core projects that do. The three claims checked while writing these requirements
+   are the starting list and are not assumed to be the only ones; the implementer SHALL check the rest.
 5. `CLAUDE.md` SHALL carry a short section naming both pages and saying when to read them, so that a session
    meets them before it starts re-deriving the tree. **This is the enforcement the user asked for**: the pages
    are reachable from the file every session already reads, rather than only from `readme.md`.
 6. A guard SHALL assert that every steering document and `CLAUDE.md` link resolves, so that a moved section
    cannot leave a dangling pointer where a duplicated paragraph used to be. IF `DocumentationLinks.Tests` does
    not currently cover those files THEN this specification SHALL extend it rather than write a second guard.
-7. The design SHALL state how much of `structure.md` and `tech.md` is expected to remain after the removal. IF a
+7. **An architecture claim in an agent file is a claim the guard must cover, wherever the claim lives.** The guard
+   of Requirement 5 checks the two pages; a project name, path or count left behind in `CLAUDE.md` or a steering
+   document is the same kind of statement and drifts the same way - which is how two false statements came to sit
+   in the files every session reads. So the guard SHALL assert the project names, paths and counts stated in
+   `CLAUDE.md` and the steering documents too, and the design SHALL say which statements those are. **Otherwise
+   this work moves the drift one directory over rather than ending it.**
+8. The design SHALL state how much of `structure.md` and `tech.md` is expected to remain after the removal. IF a
    steering document would be left with nothing but links THEN the implementer SHALL raise it rather than delete
    the file, because a steering document's existence is the user's decision and not an implementation detail.
 
