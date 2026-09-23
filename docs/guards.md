@@ -20,6 +20,7 @@
 | Problem-store isolation | `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ProblemStoreIsolation.Tests.cs` | Does every integration test that boots the real host replace the problem store with one on its own temp root? **Twenty-three instances caught so far** — the count is the argument against deleting it. |
 | Drawn connections | `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DrawnConnections.Tests.cs` | Does every connection any canvas draws resolve to a selection, over every module's shipped examples on the real composed host? |
 | The gate's own self-test | `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/GateScript.Tests.cs` | Does the shared gate still pass its own 151-case self-test — including that the scratch-worktree guard extracts from `processes.md` as exactly one intact block? |
+| The log capture reaches module test projects | `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/LogCaptureReachesModuleTestProjects.Tests.cs` | Is `LogCapture` still COMPILED into each test project rather than referenced from one? `src/Directory.Build.targets` compiles it into every `*.Tests` project, because its `[ModuleInitializer]` runs once per assembly and must beat that assembly's static loggers to their binding. **Referenced instead, it would initialise the support assembly, the code under test would bind to the default `Log.Logger`, and every capture would be empty while every test stayed green.** It lives in a MODULE test project deliberately: a core one cannot tell the two arrangements apart. |
 | Diagram file pair | `src/backend/EtAlii.Adp.Hierarchy.Tests/DiagramFilePair.Tests.cs` | When a diagram is a pair of files, do rename, delete and create move both, remove both, create both — or neither? |
 | Application assemblies | `src/backend/EtAlii.Adp.Tests/ApplicationAssemblies.Tests.cs` | Does the assembly walk work against the real entry assembly and real deployment manifest? |
 
@@ -47,7 +48,7 @@
 | Theme tokens | `src/client/src/themeTokens.test.ts` | Does any `var(--color-…)` name a token the theme never defines — which renders its fallback and looks fine in review? |
 | One stream opener | `src/client/src/diagrams/diagramStreamOpensOnlyInHook.test.ts` | Does anything but `useDiagramStream` open a diagram's delta stream? |
 | The library's standing guards | `src/client/src/canvas/library/libraryGuards.test.tsx` | The library's three standing guards, each **mounting rather than grepping** — a grep once reported three correct canvases as offenders — and each carrying a named-member canary so its population cannot quietly empty. |
-| Highlight survives module styles | `src/client/src/canvas/highlightSurvivesModuleStyles.test.tsx` | Can any stylesheet in the application repaint the library's two rings? |
+| Highlight survives module styles | `src/client/src/canvas/highlightSurvivesModuleStyles.test.tsx` | Can any stylesheet repaint the highlight — and **does every shape the library can draw receive it at all**? It walks the library's own `BUILT_IN_SHAPES` and renders each one selected, so **a shape added to that list and not to the switch fails on the day it is added, rather than on the day a module first declares it**. Its predecessor rendered one element type and could only see shapes some module happened to declare: **covering the modules rather than covering the code.** That is why c4 showed no highlight for a week with the guard green — `renderShapeBody` never received the paint, so there was nothing for a rendered assertion to compare, and a canvas-by-canvas human pass then recorded wardley-map as working while `symbol`'s default `circle` was bare. **Its limit, stated in the test: it asserts at least ONE drawn node wears the highlight, not all of them** — so it catches a whole case forgetting the paint, not one node of a multi-part shape. |
 | File URL paths | `src/client/src/fileUrlPaths.test.ts` | Does a file URL's pathname always begin with a slash? |
 
 ## Guards that are not tests
@@ -59,6 +60,14 @@
 | Undeleted test folders | `gate.sh`'s `UNDELETED_FOLDERS=` line | Did this run leave test folders it could not delete? **`none` on a green run; `1 file, 2 lines` means the test-support exclusion has regressed.** |
 | Who holds a gate | `for d in .git/worktrees/*/adp-gate.lock; do [ -d "$d" ] && cat "$d/owner"; done` | Which gates are running, and since when — `pid <n> since <utc> gating <branch>` per holder, nothing when none is held. **It cannot say whether the board is yours**: the lock is per scratch worktree by design, so two agents with different `mrg<N>` names are MEANT to gate at once, and serialising them is a decision somebody makes rather than a fact the tree enforces. Looking for one shared lock at `.git/adp-gate.lock` prints "free" whether or not a gate is running, which is no evidence at all. |
 | Retirement refusals | `.github/tools/gate/retire.sh` | Is this worktree safe to delete — uncommitted work, untracked files, links out of the tree, and commits with no patch match on `develop` (`unmatched-commits`, which is **not** the same as unlanded). |
+
+## What the suite cannot host, and why green says nothing about it
+
+**A harness can be structurally blind to a whole class of defect, and then being green tells you nothing about that class.** One case is measured and worth stating, because it explains a puzzle that cost an afternoon:
+
+**`LogCapture` installs a process-wide Serilog pipeline from a `[ModuleInitializer]`, compiled into every `*.Tests` project, before any static logger field can bind.** So in a test assembly `Log.Logger` is **never** the silent logger. The production defect where `private static readonly ILogger _logger = Log.ForContext<T>()` binds to `SilentLogger` and stays mute for the process's life **cannot occur in a test assembly by construction** - **no test in this suite could ever have caught it, and none ever will.**
+
+**That is a limit of the suite rather than a weakness of any test**, and it is the reason the defect was found in a gate log rather than by a red. **Before concluding that a class of defect does not exist here, ask whether the harness can host it at all.**
 
 ## What is deliberately not here
 
