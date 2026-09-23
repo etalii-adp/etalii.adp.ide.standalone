@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Documents;
 /// <remarks>
 /// Two publishes, and the difference is the move's <c>overwrite</c> flag rather than the
 /// algorithm. <see cref="Create" /> and <see cref="CreateAll" /> create something that was not
-/// there, so a name already taken is a failure they report. <see cref="Save" /> replaces what
+/// there, so a name already taken is a failure they report. <see cref="Save(string, string)" /> replaces what
 /// is there, which is what a document save is, so the same taken name is the expected case.
 /// </remarks>
 public static class AdpFileWriter

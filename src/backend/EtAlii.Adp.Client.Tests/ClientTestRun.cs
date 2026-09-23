@@ -212,7 +212,7 @@ public static class ClientTestRun
                         assertion.GetProperty("fullName").GetString() ?? "",
                         assertion.GetProperty("status").GetString() ?? "",
                         assertion.TryGetProperty("failureMessages", out var messages)
-                            ? [.. messages.EnumerateArray().Select(message => message.GetString() ?? "")]
+                            ? [.. messages.EnumerateArray().Select(message1 => message1.GetString() ?? "")]
                             : []));
                 }
             }
@@ -220,7 +220,7 @@ public static class ClientTestRun
             files.Add(new ClientTestFile(
                 path,
                 file.GetProperty("status").GetString() ?? "",
-                file.TryGetProperty("message", out var message) ? message.GetString() ?? "" : "",
+                file.TryGetProperty("message", out var message2) ? message2.GetString() ?? "" : "",
                 tests));
         }
 

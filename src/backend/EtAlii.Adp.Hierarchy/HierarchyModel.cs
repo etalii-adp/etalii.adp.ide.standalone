@@ -248,7 +248,7 @@ public sealed class HierarchyModel
 
     /// <summary>
     /// Whether a name is one of Windows' ReplaceFile backup temporaries - <c>name~RF&lt;hex&gt;.TMP</c>,
-    /// which <c>File.Replace</c> (and <see cref="AdpFileWriter.Save"/> through it) conjures beside
+    /// which <c>File.Replace</c> (and <see cref="AdpFileWriter.Save(string, string)"/> through it) conjures beside
     /// a file it rewrites in place.
     /// </summary>
     /// <remarks>
