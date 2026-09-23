@@ -342,6 +342,12 @@ report 1 "$(gate_who_is_gating "$TELL" | grep -c "on base abc1234")" "the rewrit
 # ahead or already past - green on the working path and on the fail-open one alike. So the value
 # is parsed and compared: later than `started`, or the literal `unknown`. The first draft fell
 # back to NOW when `date -d` was unavailable, which birthed every line expired.
+# The comparison below is a STRING comparison, and it is chronological only because both timestamps
+# are fixed-width UTC in one format. That is load-bearing: add a timezone offset, drop the `Z`, move
+# to local time, or move to any format with a variable-width field, and `\>` keeps returning a
+# boolean, keeps passing, and stops meaning what it says. Named here because a format change would
+# otherwise break it silently - the invariant nobody wrote down. (Developer 3, which read the guard
+# rather than trusting that it was the one it had asked for.)
 TELL_LINE=$(gate_who_is_gating "$TELL" | sed -n 1p)
 TELL_STARTED=${TELL_LINE##*started }; TELL_STARTED=${TELL_STARTED%% *}
 TELL_IGNORE=${TELL_LINE##*ignore-after }; TELL_IGNORE=${TELL_IGNORE%% *}

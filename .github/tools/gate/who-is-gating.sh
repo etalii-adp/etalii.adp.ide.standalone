@@ -14,6 +14,14 @@
 #
 #   GATING=none                                nobody holds a lock
 #   mrga1 gating <branch> on base <sha> ...    a holder, with what it would be staled by
+#
+# The BASE is the field to defend if anyone proposes shortening this line. It is what lets a reader
+# go and CHECK rather than take the tell's word: `git merge-base --is-ancestor <base> develop` says
+# whether that run is already stale, and a line saying only `somebody is gating` gives nothing to
+# test. Two independent uses on 2026-09-23 - one session read the base and found a live run three
+# commits behind develop; another used it to know which state to go and inspect when verifying that
+# develop's format gate was red. Neither the tell nor the check would have answered alone, which is
+# why this is one line rather than two commands. (Observed by Developer 3, from using it.)
 #   mrga1 gating (owner not written yet)       a holder whose line is not on disk yet
 #   TELL_UNREADABLE=<dir>  (exit 2)            the path this reader expects does not exist
 #

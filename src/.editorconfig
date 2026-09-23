@@ -86,6 +86,14 @@ ij_typescript_use_semicolon_after_statement = true
 ij_javascript_spaces_within_imports = true
 ij_typescript_spaces_within_imports = true
 
+# Generated protobuf output keeps the ending its generator writes, which is LF - see the matching
+# rule in the repository root's `.gitattributes`, where the reasoning lives. These two files must
+# agree, so the exemption is stated in both. This is the only path-scoped section here; every other
+# section selects by extension, and this one is placed after `[*.{ts,tsx,js,jsx,mjs,cjs}]` because
+# EditorConfig applies sections in order and the later one wins.
+[client/src/generated/*.ts]
+end_of_line = lf
+
 [*.css]
 indent_size = 2
 
