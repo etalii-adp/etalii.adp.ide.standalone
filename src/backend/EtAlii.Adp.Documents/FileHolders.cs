@@ -158,7 +158,7 @@ public static class FileHolders
             {
                 if (finished.IsFaulted)
                 {
-                    var reason = finished.Exception?.InnerException ?? (Exception?)finished.Exception;
+                    var reason = finished.Exception?.InnerException ?? finished.Exception;
                     Logger.Warning(
                         "Holders of {Path}, asked from pid {ProcessId} when a publish failed, could not be determined after {Elapsed} ms: {Reason}",
                         path,

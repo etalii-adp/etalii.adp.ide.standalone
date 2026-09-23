@@ -174,8 +174,8 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         // with a false wait logged against a file nobody else was writing.
         var held = IoPath.Combine(_folder, "roadmap.mm");
         var other = IoPath.Combine(_folder, "other.mm");
-        File.WriteAllText(held, "before");
-        File.WriteAllText(other, "before");
+        await File.WriteAllTextAsync(held, "before", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(other, "before", TestContext.Current.CancellationToken);
         using var logs = LogCapture.Start();
         using var firstIsInside = new ManualResetEventSlim(false);
         using var releaseFirst = new ManualResetEventSlim(false);
@@ -194,7 +194,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
             AdpFileWriter.Save(other, "unrelated");
 
             // Assert.
-            Assert.Equal("unrelated", File.ReadAllText(other));
+            Assert.Equal("unrelated", await File.ReadAllTextAsync(other, TestContext.Current.CancellationToken));
             Assert.DoesNotContain(logs.Warnings, w => w.Contains(WaitedMessage, StringComparison.Ordinal));
         }
         finally

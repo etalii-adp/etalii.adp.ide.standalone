@@ -48,7 +48,7 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
         // Deterministic rather than raced: the save stops INSIDE its replace, holding the turn, and
         // the delete must still be waiting when it does. Timing decides nothing.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var logs = LogCapture.Start();
         using var inside = new ManualResetEventSlim(false);
         using var release = new ManualResetEventSlim(false);
