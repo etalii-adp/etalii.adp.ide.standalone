@@ -786,6 +786,34 @@ wild instance and no number. **Both are the same mistake: taking what you could 
 3 found machine speed deciding what a guard asserted, fixed it, and did not look at the production path one
 file away - where the same two-second budget decides whether a failure record can name a holder at all, most
 easily failing under exactly the load that produces the failure.
+**A numeral is not a quantity until it says WHICH quantity it is - and two right numbers can contradict each
+other.** Two sessions computed the same crossover and got 39.9 / 34.5 / 27.9 against 51.9 / 46.5 / 39.9 -
+**every pair exactly 12 apart, which is the 6-unit padding at top and bottom.** One had measured the text
+region's height at crossover, the other the band height requested, and the helper subtracts the padding from
+what it is asked for. **Neither was wrong, and "39.9" meant two different things**; a reader meeting both has
+no way to tell which. It was found by recomputing rather than by accepting, which is the only way it could
+have been.
+
+**And the instrument for what a number MEANS is the document that chose it, not the code.** Asked to settle a
+height from the code, a session found the library's `DEFAULT_HEIGHT` at 40 while the diagram's shared height
+is 48: **the code alone would have answered confidently and wrongly.** It read the design document instead.
+***Measure it* is the right instinct for what a value IS and the wrong one for what it MEANS.**
+
+**Correcting the source does not correct the copies, so the sweep is *where else does this number appear?* and
+not *is the source right now?*** A conflated figure - a harness total read as this code's rate - originated in
+one session's report, was inherited by another, and **had reached two memory notes and one steering clause
+before either looked.** Each read plausibly alone; none pointed at the others. The fix was to re-grep the
+number across the whole store rather than to repair the two mentions already known, **which is the only
+version of the check that finds a copy nobody remembers making.** A quoted number is a well-formed wrong
+answer, and those invite no second look.
+
+**A verdict printed to stdout is a verdict that cannot be cited later**, which is the same idea at the
+instrument end. Today a session reported *three consecutive gates refused* and could substantiate two: the
+third run's `RESULT=` line had gone to a scrollback rather than to a log, so it could not be recovered even by
+the session that produced it. **The gate writes its exit codes to files precisely so a number outlives the
+moment** - a result that exists only in a transcript is, for every later purpose, a run that did not happen.
+*(Developer 1's formulation, from correcting the number.)*
+
 ### A proxy in the evidence
 
 - **Evidence lives on the branch or in a scratchpad, never only in the working tree.** The overnight cleanup
@@ -824,6 +852,13 @@ easily failing under exactly the load that produces the failure.
   it. The neighbours usually carry their own verdicts, so read those before attributing an orphan line. **And
   with several assemblies running in parallel, adjacent is not even sequential**: lines interleave by
   completion time, so only the verdict printed on a line is about that line's subject.
+
+**Every string in a table meant to be MATCHED against reality is read out of the artifact that produces it,
+never recalled and never invented.** A lookup table existed so that somebody holding a real log could match a
+line against it, and one row carried an invented placeholder instead of the actual constant. **It would have
+matched nothing while looking complete - which is worse than omitting the row**, because an absent row sends
+the reader to the source and a wrong one sends them away satisfied. When the four strings were finally read out
+of the code, **three were right from memory and one was not, and nothing in the table distinguished them.**
 
 ### A proxy inside the guard
 
@@ -978,6 +1013,29 @@ half an instrument**, which is worth saying because the tell is the newer half a
 itself.
 
 **And a note may never have been your reasoning at all.** The project memory store is shared: of 54 notes, 41 carry an `originSessionId` naming twelve distinct sessions. Those arrive in context before a session begins, with attribution stripped, reading as background rather than as somebody's argument - **the standing we refuse to grant a peer's message, granted automatically because it came in a file.** The mirror matters too: **correcting such a note in place leaves your reasoning under the original author's id**, so say in the note that the reasoning changed hands.
+
+**A NOTE CANNOT REPORT ITS OWN STALENESS**, so a clause is cited by reading develop's copy and never from the
+queue note that proposed it. `git show develop:<path> | grep -c '<phrase>'` answers *is it landed*; reading
+your own note answers *did I mean to land it*, which is a different question that feels identical. **A false
+citation is load-bearing: a reader who believes a clause is in steering will not queue it, and the entry then
+looks discharged from both ends.** This is not a rule about carelessness - **the property you want, *is this
+still true*, is not one the artifact can carry.**
+
+**A second face: a measurement can be stale the moment it is PARAPHRASED, even by the person who took it.** A
+grep returned 9; it was paraphrased as "nine places", told to two sessions, and repeated back as an argument.
+Attributed to the entries they sat under, the truth was **seven entries across twelve lines** - and the commit
+message then said "twelve separate sentences", which a line count does not measure either. **A count of
+matching LINES answers a different question from a count of PLACES, and the paraphrase is where the question
+changes, silently, with nothing recording that it did.**
+
+**Five instances in two days, all found by reading the tree and none by re-reading the note**: ten clauses that
+were eight, thirteen queued that were four, a branch described as next when it had landed, the nine-places
+paraphrase - and, writing the clause above, **a queue note whose own placement guidance named the wrong
+section**, which sent an insert into an unrelated parent with every assertion green. **The note that carries
+this rule was itself the fifth instance of it.** It also has a success to its name, which is the reason to
+trust the instrument rather than the recollection: a clause was nearly repaired on develop today because a
+queue note said it overclaimed, and reading develop's copy showed the overclaiming form had never landed
+there at all.
 
 ## A settled boundary
 
