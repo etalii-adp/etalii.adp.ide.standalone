@@ -15,7 +15,7 @@ One worktree for the whole specification (`.claude/worktrees/ccen`), one Develop
 - [ ] 1. `azure-pipeline` and `causal-loop` join the theme
   - Files: `src/diagrams/azure-pipeline/client/azure-pipeline.css`, `src/diagrams/causal-loop/client/causal-loop.css`, `src/client/src/index.css`
   - **Measured in the browser, both on develop:** azure-pipeline paints stage fill `rgb(243,244,246)` and border `rgb(209,213,219)` **in the dark theme** — the `--adp-surface-sunken: #f3f4f6` and `--adp-border: #d1d5db` fallbacks; causal-loop paints variable fill `rgb(37,37,38)` (`#252526`, the `--vscode-editorWidget-background` fallback) with a **black label on it in the light theme, contrast 1.37:1, unreadable**.
-  - Map each private token to **the theme token of the same meaning** (the user's ruling): azure's eleven `--adp-*`, causal-loop's five `--vscode-*`. Where the theme has no equivalent, define one rather than keep a private name.
+  - Map each private token to **the theme token of the same meaning** (the user's ruling): azure's **ten** `--adp-*` (18 `var()` occurrences across ten distinct names), causal-loop's five `--vscode-*`. Where the theme has no equivalent, define one rather than keep a private name — **and name it `--color-*`**, because task 2 widens `themeTokens.test.ts` to walk every custom property and a new private prefix would defeat the guard that this task's own work is meant to satisfy. *Corrected on 2026-09-23: this said **eleven**. Developer 4 counted ten while writing the guard, and a re-count confirmed ten — `accent`, `accent-subtle`, `border`, `border-strong`, `danger`, `surface`, `surface-sunken`, `text`, `text-muted`, `warning`.*
   - **Checked in both themes**, by resolving each token at measurement time; the light-theme label contrast on causal-loop is the acceptance number and it must clear 4.5:1.
   - _Requirements: 1.1, 1.2, 1.3, 12.1_
 
@@ -88,6 +88,7 @@ One worktree for the whole specification (`.claude/worktrees/ccen`), one Develop
   - Files: a new mounted guard; `timeline.css`'s two confirmed-dead rules
   - **Mount every canvas on its shipped examples, collect the classes actually emitted**, and fail on a stylesheet class nothing emits unless it is listed with a reason. **A text search cannot answer this**: `pipeline-problem-{payload.problemSeverity}` and `databricks-sim-{payload.simulated}` are composed at runtime from declared templates and read as dead.
   - The first run's findings are **removed rather than listed**.
+  - **The mirror direction is NOT this task's** — *a class that IS emitted and that no rule anywhere claims* belongs to `canvas-single-scrollbar`, by the Scrum master's ruling of 2026-09-23, so that neither specification claims the same guard. It is the same walk over the same two lists in the opposite direction, and it is worth knowing it exists: `library-canvas-surface` is emitted with no CSS rule at all, which left the svg `display: inline` on a text baseline and spilled ~4px of descender into the scrolling parent **on every canvas in the product**. Whoever implements this task should read that one first; one guard could serve both, and if it is written here instead, the other specification drops it rather than both carrying it.
   - _Requirements: 11.1, 11.2, 11.3_
 
 - [ ] 13. Gate, land, and check the record against the code
