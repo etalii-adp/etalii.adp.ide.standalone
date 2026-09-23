@@ -91,6 +91,19 @@ Move a diagram type's row in `docs/diagrams.md` as its state changes, with the s
 
 Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
 
+## The architecture pages
+
+Two documents say what the system is and where its code lives, so a session does not re-derive either from the tree:
+
+- **[docs/architecture.md](docs/architecture.md)** — what ADP is, the three parts and the one process, the two gRPC call legs, where a diagram lives, how a diagram type plugs in, what the canvas is, and which project owns which concern.
+- **[docs/solution-structure.md](docs/solution-structure.md)** — the folders under `src/`, the solution's project counts and how they split, the core projects by concern, a module's folder shape, namespaces, and where tests and fixtures live.
+
+**Read them when you arrive at an area you have not worked in**, and before counting or classifying anything about the solution yourself — the counting traps that produced two wrong answers in one hour are written out on the structure page.
+
+**They are descriptive, not normative.** They say what is; the rules are here and in the steering documents. Where a page and a rule disagree, the rule wins and the page is stale.
+
+**Update the page in the same change that makes one of its sentences false** — a renamed project, a moved folder, a new `src/` folder, a changed call shape. `ArchitecturePages.Tests` holds the paths, the project names, the counts and the page size, so those reddens by themselves; **it cannot tell whether a description is still true**, and that half is yours.
+
 ## Documentation refresh
 
 A change that moves a touch point named in `docs/creating-a-diagram-module.md` or `docs/creating-an-editor-module.md` updates that document in the same change; a UI change that makes a `docs/screenshots/` image misleading means retaking it.
