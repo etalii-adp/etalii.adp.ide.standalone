@@ -3,6 +3,7 @@ import { dirname, join, relative } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { DiagramCanvasCore } from "./library/DiagramCanvas";
+import { BUILT_IN_SHAPES } from "./library/definition/diagramDefinition";
 import type { DiagramDefinition } from "./library/definition/diagramDefinition";
 import type { DiagramModel } from "./library/api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
@@ -261,5 +262,52 @@ ${mindmap}`;
     }
 
     expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  // EVERY SHAPE THE LIBRARY CAN DRAW, not the shapes some module happens to declare today. The
+  // case above renders ONE element type, `shape: "box"`, so it could only ever see the paint reach
+  // a box - and `styled-box` shipped with no highlight at all, because its call in
+  // `renderShapeBody` was the one that omitted `style={paint}`. c4 is the only module declaring
+  // it, so c4 alone was unpainted; `diamond`, `hexagon` and `parallelogram` would have been the
+  // same defect the day a module first declared one.
+  //
+  // So this walks the library's own `BUILT_IN_SHAPES` and fails for each shape whose drawing does
+  // not receive the highlight. A shape added to that list and not to the switch fails here on the
+  // day it is added, rather than on the day a module first uses it.
+  it.each(BUILT_IN_SHAPES.filter((shape) => shape !== "none"))("paints a highlighted %s, whichever module does or does not declare it", (shape) => {
+    // `none` is the one exemption and it is a real one: it draws no body at all - the element is
+    // its labels and its decorations - so there is nothing to paint. Every other member must draw
+    // something that wears the highlight.
+    const { container } = render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvasCore
+            definition={{ ...definition, elementTypes: [{ ...definition.elementTypes[0], shape }] }}
+            model={model}
+            events={{}}
+            selection={[{ kind: "element", id: "b" }]}
+          />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+
+    const element = container.querySelector('[data-element-id="b"]');
+    expect(element, `a selected ${shape} rendered no element at all`).not.toBeNull();
+    const drawn = [...element!.querySelectorAll<SVGElement>("rect, ellipse, path, polygon, circle")].filter(
+      (node) => !node.hasAttribute("data-anchor") && !(node.getAttribute("class") ?? "").includes("library-resize-handle"),
+    );
+    expect(drawn.length, `a selected ${shape} drew no shape to paint`).toBeGreaterThan(0);
+
+    // AT LEAST ONE, deliberately, and the reason is worth stating: several shapes draw more than
+    // one node and not all of them are the outline - a cylinder's body and its two ellipses, a
+    // styled box's silhouette and its badge. The defect this catches is a whole case forgetting
+    // the paint, which takes every node with it, so "at least one wears it" separates the two
+    // states cleanly. It would NOT catch one node of a multi-part shape being missed.
+    const wearing = drawn.filter((node) => (node.style.stroke ?? "").startsWith("var(--color-selected"));
+    expect(
+      wearing.length,
+      `a selected ${shape} draws ${drawn.length} shape(s) and not one carries the highlight - its case in renderShapeBody is missing style={paint}`,
+    ).toBeGreaterThan(0);
+    cleanup();
   });
 });
