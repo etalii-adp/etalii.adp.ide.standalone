@@ -311,6 +311,73 @@ into the developer's real profile instead of a test root. The argument for delet
 that the mistake is understood now; **the count is the argument against, and only a guard that keeps its count
 can make it.** Read this beside the seen-to-fail rule above: one says a guard must be proven, this says a
 proven guard must not be deleted because its mistake has started to look obvious.
+### Guards that cannot fail, and the six ways it happens
+
+**Every guard below was green while the thing it existed to catch was happening.** None was vacuous in the
+usual sense - most asserted something true. **The defect is always the same shape: the guard's subject is not
+the thing that can break**, and the six cases differ in how the subject came to be wrong.
+
+**1. A guard whose subject the code under test gets to choose cannot fail.** Two guards asked *is the highlight
+applied?* and found their subject by taking **the first node carrying an inline stroke** - which was the
+wrapping `<g>`, exactly where the defect had put the paint. The paint was there, the value was right, the
+assertion was true, **and the shape on screen did not change colour**, because an SVG child that states its own
+stroke ignores an inherited one. **This is not the vacuous-test case: a vacuous test asserts nothing, while this
+one asserted something true and irrelevant.** The subject was selected by a property the defect also satisfies,
+so **the search and the assertion were the same claim made twice.** The fix is two independent moves and only
+the pair works: name the subject **structurally** (the drawn shape), and assert what it **computes** with the
+module's stylesheet loaded rather than what the library **states**. Proven by sabotage: put the paint back on
+the group and eight cases fail. **What it cost to find: nothing in the four gates - somebody opened the app and
+looked.**
+
+**2. Sabotage the call site, not only the thing it calls.** A helper learned to mark its own scratch file, and
+its first two guards called that helper **directly, passing the argument themselves**. Sabotaging the *publish*
+- one argument dropped at one call site, the regression a later reader would actually cause - **left both guards
+green**, and the failure record would have reverted to its misleading wording with every test passing. **A unit
+guard cannot see a wiring regression, and the wiring is where the reader's evidence comes from.** The third
+guard drives the real save.
+
+**3. A positive assertion cannot detect a surplus.** A planted defect rendered resize handles for every type
+that declares user sizing. The tasks document said the module's own suite would report it. **It does not:** that
+suite presses `[data-resize="right"]` and never asserts the horizontal handles are **absent**, and the right
+handle still exists when two more appear beside it. **A suite that presses a handle cannot report a handle that
+should not exist.** So **when a defect ADDS something, only an absence assertion detects it** - and a document
+must name the **detector** rather than a **companion**: *the module's suite passes unchanged* is true, worth
+keeping, and holds in both worlds, which makes it no evidence about the change.
+
+**4. A timing guard has its own load as a second subject**, and the remedy differs by what the guard asserts,
+so a flat *avoid timing in tests* would be wrong about three of these four. **Ordering** - *the delete has not
+finished while the save holds the turn* - cannot fail wrongly but can go **vacuous** if the pool never starts
+the contender, so assert the evidence that the contender **ran**; and **say in the comment that the line doing
+so is load-bearing**, or the next reader deletes it as redundant. **Latency** - *a slow diagnostic does not hold
+the save open* - needs a clock, and is safe through its **ratio**: a 100-200 ms budget against a 3-5 s
+assertion. **An async effect arriving** - *the late line appears* - should be released **deterministically**
+where possible, and where not, **report what arrived instead** on timeout, or LATE and SWAPPED are
+indistinguishable. **A race that needs load** - the concurrent-save guards - is one-directional: more load means
+more chances to catch a defect and never a false pass, so leave those alone. **And a negative asserted from a
+window cannot fail wrongly but can PASS wrongly**, which is the worse direction for a must-not guard: make
+*never* observable by asserting the thing was entered, then asserting silence.
+
+**5. At one subject a rule is a second copy of the data; at two it pays for itself.** A test that replaced a
+process-wide logging pipeline starved every capture running beside it - **seven failures in three unrelated
+classes, from a project that passed 117 of 117 alone.** The tree-wide rule was declined because **exactly two
+places assign that pipeline**, one of them correct production code: a rule with a single subject is a copy of
+the fact rather than a check on it. **So the trigger is written down instead: when a SECOND test needs to
+replace the pipeline, give it the helper rather than the freedom.** And the fix was not a test collection -
+**membership is the rule nobody keeps, measured at eighteen of nineteen classes never joining** - but a
+replacement that carries the shared sink beside its own. **The scattered signature is its own lesson: seven
+failures across three unrelated classes point everywhere except at the cause**, which is why the guard lives in
+the only class that can cause it.
+
+**6. An exact-count canary cries wolf, and this one is ours.** The gate's self-test pins its own case count so
+that a case which silently stops running reddens. **It fired twice in one afternoon as a red with nothing
+wrong** - once when thirteen cases were added, once when four more were - and the same criticism had just been
+used to remove a case count from `docs/guards.md`'s prose, **so the number was moved rather than removed.** The
+question is what the property actually is: if it is *no case was silently skipped*, **a floor plus a check that
+no two cases share a description asserts it without rotting on every addition.** If it really is *the count is
+exactly this*, it will keep crying wolf - **and a guard that cries wolf gets edited to agree rather than
+investigated**, which is how a canary becomes a formality. Changing it inside the branch that trips it would
+mix two decisions, so it is recorded here and changed on its own.
+
 ## Running the backend tests
 
 The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather than VSTest. Two consequences:
