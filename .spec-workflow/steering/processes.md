@@ -775,7 +775,18 @@ five of the seven were `w/mixed` with `git status` clean it **exited 0, printed 
 git rewrites only what it considers modified, and normalisation had already made them unmodified. **Deleting the
 seven files and then checking them out brought all seven back `w/crlf`.** So the drift that `status` cannot see
 is also the drift `checkout` will not fix, and **the repair has to destroy the drifted copies to work** - which
-is the *reports success having changed nothing* clause above, arriving in a repair rather than in a script. Whether the durable fix is a `.gitattributes` line for
+is the *reports success having changed nothing* clause above, arriving in a repair rather than in a script.
+
+**Report what each run measured rather than what git does, because the two checkouts behaved differently and
+nobody could say why.** Asked to reproduce the clean-but-drifted state, the other session wrote the file both
+half-CRLF and all-LF and **got a dirty file each time** - so `checkout` had something to rewrite and did.
+Same `.git/config` on both sides, `core.autocrlf=true`, no worktree override, same attributes. **One
+checkout's copies had normalised to the blob and the other's had not, and both states have since been
+repaired, so neither is re-examinable.** That is the honest limit. **What survives it is the read-back:**
+`git checkout -- <paths>` **exits 0 and prints nothing whether it rewrote seven files or none**, so *ask what
+it would print if your belief were false* answers "the same thing". **A repair without a read-back is not a
+repair, it is a hope** - and `git ls-files --eol` is the read-back in this case. *(The reproduction attempt,
+and that sentence, are Developer 4's.)* Whether the durable fix is a `.gitattributes` line for
 that folder or a generator that writes CRLF is **a house-policy question and not an agent's to settle** - the
 two files that state the policy must agree, so changing it for one folder is a decision, not a tidy-up.
 *(Developer 4 measured the symptom and explicitly declined to propose one over the other.)*
@@ -1080,6 +1091,43 @@ positive observation is self-proving - something was seen, so the instrument rea
 the reading a broken instrument manufactures, so only absences need the proof. **(b) The canary must be sensitive
 to the INSTRUMENT's failure and insensitive to the SUBJECT's absence.** Backwards, it either never fires, or it
 fires on every genuine finding and gets deleted as noise within the week. *(Architect 2.)*
+
+**When you relay a fact you did not read yourself, put the instruction not to trust you in the same message as
+the claim.** A relay said a card had been **rejected** and added, in the same breath, *wait for the verdict on
+disk before touching the file - my word is not the verdict*. The disk said **approved**. **The instruction is the
+only reason the error cost nothing**: the receiver had no independent reason to doubt a plausible message from a
+reliable sender, and a plan to fold four corrections into a rejection would otherwise have been built on it.
+**Three relayed statuses were wrong or early in one day** - a card announced as raised before it was, a develop
+SHA quoted from memory three commits behind, and that rejection which was an approval - **and the only one that
+cost nothing is the one where the sender told the receiver not to trust the sender.**
+
+**Why this is a clause and not *be careful with relays*: it does not depend on the receiver being suspicious**,
+and vigilance fails exactly when the relay is plausible and the sender reliable, which was true of all three.
+**The sender always knows whether they read the artefact or are repeating someone else; the receiver never
+does.** So the control belongs to the only party holding that information, and it costs one sentence. *(Architect
+2's, prompted by the relay that carried its own warning; the framing that this is cheaper than either party
+being more careful is the Scrum master's.)*
+
+**Its complement, and the harder half: notice when you have only ONE source.** The same session that refused to
+invent an explanation for a measured conflict **invented one elsewhere the same day without noticing** - *this
+stylesheet still reads that token, so the repair is one line* - carried it four hours, through three sessions and
+into a commit message, **from a test header's past tense read as present.** It was not a lapse in care; the care
+was identical. **The difference was that the conflict had two instruments and the claim had one, and nothing in
+the writing said which.** A disagreement announces itself and forces routes to be excluded; **a single unchecked
+source reads exactly like a verified one.** So refusal is what you do *after* the disagreement surfaces, by which
+time the hard part is done. **`git log -S'<symbol>' -- <file>` answers *is this still true* and *what closed it*
+in one command**, and a defect named in a comment is a historical record by construction - written at the moment
+of the fix, and nobody revisits prose that still reads correctly. **And the tell that should have bought an extra
+command rather than fewer: the claim flattered its author's own change**, making a token they were adding look
+overdue rather than new. *(Developer 4's, correcting a more flattering framing that had been offered to it -
+including by me.)*
+
+**Those two and the two above are one subject, which is worth naming rather than leaving a reader to notice: how
+a true-looking thing gets believed.** An **absence** manufactured by a dead instrument; a **conflict** that was
+two instruments measuring different populations; a **relay** nobody could audit; and a **lone source** that reads
+like a corroborated one. **Every wrong answer on 2026-09-23 came from a single source nobody crossed** - a grep, a
+probe, a note, a filter, a header - **and the ones that were caught were caught because a second instrument
+existed, not because anyone was more careful the second time.**
 
 **Its sibling is clause 7 under *Guards that cannot fail*, and the difference is worth holding.** That clause is
 about a floor set on a quantity that does not scale with the work, so the failure mode satisfies it. This one is
