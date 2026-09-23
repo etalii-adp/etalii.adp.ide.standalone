@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Four things every entry below assumes
+## Five things every entry below assumes
 
 **Signing in — a developer build does not ask.** Since `developer-sign-in-bypass`, a locally
 running developer build opens **already authenticated** and the sign-in form is never rendered:
@@ -32,6 +32,44 @@ not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` 
 **"1 more tabs" overflow button** beside `Toolbox`. That is the pane working as designed rather
 than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
 costs the time, and it is written here once rather than in each of the thirteen.
+
+**What the in-app browser pane can answer, and what it cannot.** **Seven entries below each
+rediscovered part of this**, across twelve lines between them, which is why it is here once. The
+pane has **three states, not two**, and they differ in what may be recorded from them:
+
+1. **The session is closed in the app: the pane is 0x0 and `visibilityState` is `hidden`.** Nothing
+   is trustworthy - there is no layout, so `getBoundingClientRect` is zero, `elementFromPoint` finds
+   nothing, and a synthetic press cannot be aimed. **Record nothing from this state.** It is the
+   dangerous one precisely because it looks like a clean pass: every count comes back zero and
+   nothing throws.
+2. **The session is open but the pane is not fronted: real layout, `visibilityState` still `hidden`.**
+   Geometry and computed styles ARE valid here - `getComputedStyle`, `getBBox`,
+   `getBoundingClientRect`, click-driven selection round trips and DOM updates all behave.
+   **Screenshots are not**, so a pass run here says so rather than leaving a reader to assume
+   somebody looked.
+3. **The pane is visible:** all of the above, plus screenshots.
+
+**Two cheap discriminators: `innerWidth > 0` before recording anything, and `visibilityState`
+before believing a screenshot.**
+
+**The mechanism is better than the state list, because it predicts which checks are affected:**
+`requestAnimationFrame` never fires in a hidden document - measured at 1.2s with no frame, against
+the visible tab's firing at once. Canvases repaint on an animation frame that never arrives, so
+**the question to ask of a check is *does this need a repaint*, not *is the pane visible***. A check
+wanting a canvas repaint in a hidden tab is undriveable; one wanting only a DOM change is fine.
+**And fronting does not lift it** - a second pane tab reports `hidden` even after `tabs_select`,
+because the pane has one permanently-visible document.
+
+**A fourth limit, independent of state: synthetic `PointerEvent`s do not start the canvas library's
+drag gesture.** Measured with the pane painting and `setPointerCapture(1)` throwing nothing: during
+the drag there was no transform, no dragging class, no ghost and no preview - **yet the release still
+landed the element.** So a drag's PREVIEW is unobservable by script here while its DROP is
+observable, which is the distinction to apply before claiming a drag check was run.
+
+The three states and the drag limit were measured by Architect 2 across two browser sessions; the
+animation-frame mechanism and the permanently-hidden second tab come from the 2026-09-06 pass
+recorded under *A property edit reaches a second connection*. **None of this is an application
+defect**, which is why an entry blocked by it is left unclaimed rather than failed.
 
 **One word for an outcome.** An outcome is recorded as `- **Result <date>**: **<verdict>** — ...`,
 one label, no synonyms. Ten entries here once said `**Verified <date>**` instead, and because every
