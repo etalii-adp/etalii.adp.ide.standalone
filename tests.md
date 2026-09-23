@@ -66,6 +66,41 @@ the drag there was no transform, no dragging class, no ghost and no preview - **
 landed the element.** So a drag's PREVIEW is unobservable by script here while its DROP is
 observable, which is the distinction to apply before claiming a drag check was run.
 
+**A fifth limit, and the one that decides whether a step can be driven at all: while the pane is hidden,
+clicks by COORDINATE land in the wrong place.** A press at the centre of a node measured with
+`getBoundingClientRect` was recorded by an instrumented listener as hitting the bare
+`svg.library-canvas-surface`, while `document.elementFromPoint` at that same x,y returned the node's own
+`<text>`. **The page's client coordinates and the pane's screenshot frame are not the same frame while it
+is hidden, and nothing warns you. Clicks by `ref` from `find` land correctly.** Geometry read through
+JavaScript is unaffected - `getBoundingClientRect`, `scrollHeight` and computed styles stay valid - so a
+measuring pass is safe where a pressing pass is not. **If a step presses something, press by ref and
+verify the press landed**; two lines do it:
+
+    svg.addEventListener("pointerdown", e => console.log(e.target.tagName, e.target.getAttribute("class")), true)
+
+**A sixth, and it makes a NEGATIVE result worthless: a degraded shell renders the last document perfectly
+while listening to nothing.** After a reload the shell threw `useContextConnection must be used within a
+ContextConnectionProvider` from four components at once; **the canvas went on drawing, presses produced
+events, and nothing round-tripped.** It behaves like a still image. **So `read_console_messages` before
+believing any negative is a precondition, not a debugging step** - one session nearly recorded "c4 shows
+no highlight" for a second time on a page that was simply not listening.
+
+**A seventh, cheap to hit and expensive to notice: documents open on DOUBLE-click, and they open in a tab
+BEHIND the one in front.** One session measured c4 while reading the wardley map, because the earlier
+document was still fronted; another reported four modules from one already-open tab and only noticed
+because all four rows were identical. **Select the intended tab and confirm the document before pressing
+or measuring anything.**
+
+**And an eighth, which is the mechanism behind *before recording anything* above and the reason it has to be
+read literally: an emulated viewport is cleared when a turn ends.** A sixteen-canvas pass cannot be done in
+one turn, so it is exactly the pass that silently returns to the 0x0 state - where **every pane reports
+`h: 0`, every geometry row comes back clean, and nothing throws.** So `innerWidth > 0` belongs in a
+procedure's STEPS as a per-row gate rather than in its preconditions: **a precondition is checked once, and
+this state can return mid-pass.** *(Developer 1's refinement, against a sixteen-canvas procedure of its
+own.)* One session found `innerWidth` at 0 with four panes at `h: 0` and recorded nothing from them - **only
+because it checked again rather than once**, and a procedure that says *check first* would have let it
+record four clean zeroes in good faith.
+
 The three states and the drag limit were measured by Architect 2 across two browser sessions; the
 animation-frame mechanism and the permanently-hidden second tab come from the 2026-09-06 pass
 recorded under *A property edit reaches a second connection*. **None of this is an application
