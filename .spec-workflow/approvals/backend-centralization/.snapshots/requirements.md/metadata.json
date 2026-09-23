@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/backend-centralization/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789475076299_1pt33ft0c",
       "approvalTitle": "backend-centralization - Requirements"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-23T16:24:59.397Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790167632564_sj6jawq2n",
+      "approvalTitle": "backend-centralization R2.9: a watcher of a published path must learn of a publish, a creation, a deletion and a lost-event window"
     }
   ]
 }
