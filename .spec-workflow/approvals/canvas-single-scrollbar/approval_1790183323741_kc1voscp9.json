@@ -1,0 +1,10 @@
+{
+  "id": "approval_1790183323741_kc1voscp9",
+  "title": "canvas-single-scrollbar requirements, amended: the cause reaches 15 of 16 canvases and the symptom does not, and R4 is removed because its corpus gap was refuted",
+  "filePath": ".spec-workflow/specs/canvas-single-scrollbar/requirements.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-09-23T17:08:43.741Z",
+  "category": "spec",
+  "categoryName": "canvas-single-scrollbar"
+}
