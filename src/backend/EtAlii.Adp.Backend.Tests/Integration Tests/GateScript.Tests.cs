@@ -57,10 +57,23 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class GateScriptTests
 {
-    // Generous on purpose: the suite drives a few hundred git processes, which took 35 s on a quiet
-    // machine and 209 s on a slow one the same day. A timeout here fails a gate for the wrong reason;
-    // nothing in the suite waits for input, so a real hang is the unlikely case.
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(15);
+    // A LIVENESS BOUND, NOT A PERFORMANCE BUDGET. The suite drives a few hundred git processes, and
+    // what that costs has moved a long way: 35 s on a quiet machine and 209 s on a slow one on
+    // 2026-09-22, then 1274 s - twenty-one minutes - on a QUIET machine on 2026-09-23, measured
+    // alone with nothing else running. The 15-minute ceiling set against the first two numbers was
+    // therefore being exceeded by every gate on the board, deterministically and for a reason no
+    // branch could fix, because a branch carrying the remedy must itself pass this test.
+    //
+    // Raised to 45 rather than to just above 21 for two reasons. A ceiling set at the last
+    // measurement is already too low for the next landing - the self-test is 167 cases here and a
+    // branch taking it to 177 is in hand. And a timeout doing double duty as a performance alarm
+    // stops the board every time the honest number drifts, which is what just happened.
+    //
+    // WHAT IS NOT MEASURED, stated rather than implied: the 1274 s is a QUIET-MACHINE figure. Under
+    // a full gate this test ran past 15 minutes and was killed there, so its loaded cost is unknown
+    // and 45 minutes is 2.1x an unloaded number rather than a headroom over a measured one. If this
+    // fires again, that ratio is the first thing to measure and the growth is the thing to fix.
+    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(45);
 
     [Fact]
     public async Task SelfTestIsGreen()
