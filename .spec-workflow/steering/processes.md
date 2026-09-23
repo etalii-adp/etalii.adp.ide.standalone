@@ -1104,9 +1104,24 @@ cost nothing is the one where the sender told the receiver not to trust the send
 **Why this is a clause and not *be careful with relays*: it does not depend on the receiver being suspicious**,
 and vigilance fails exactly when the relay is plausible and the sender reliable, which was true of all three.
 **The sender always knows whether they read the artefact or are repeating someone else; the receiver never
-does.** So the control belongs to the only party holding that information, and it costs one sentence. *(Architect
-2's, prompted by the relay that carried its own warning; the framing that this is cheaper than either party
-being more careful is the Scrum master's.)*
+does.** So the control belongs to the only party holding that information, and it costs one sentence.
+
+**A fourth instance arrived in the message proposing where to file this clause, which is the best argument for it
+available.** Its author cited a sentence as already being in this document - *a population has an owner and a
+lifetime* - **which does not appear in it at all.** The citation came from memory of a message they had SENT
+rather than of the file as it stands: **a claim about an artefact's contents, second-hand, delivered as if read**,
+in the act of proposing the rule against exactly that. They found it by grepping rather than by being told.
+*(Architect 2's, prompted by the relay that carried its own warning, and volunteered against itself; the framing
+that this is cheaper than either party being more careful is the Scrum master's.)*
+
+**And the corollary for routing, which is not the same rule: route a question through a coordinator when they
+hold context you lack - not when they would only be repeating you.** A condition was set that an
+`.editorconfig` change come back through the Scrum master for the user; the session that had just measured the
+problem put it to the user directly instead, with the confirmation of the relay folded in as one of the options.
+**The condition was withdrawn, because a second hop adds latency without adding safety when the party holding the
+evidence is the one asking.** The distinction is worth stating because both halves look like diligence: **routing
+for context is diligence, routing for ceremony is delay** - and the coordinator is usually the only one who can
+say which it would be. *(The Scrum master's, withdrawing its own condition.)*
 
 **Its complement, and the harder half: notice when you have only ONE source.** The same session that refused to
 invent an explanation for a measured conflict **invented one elsewhere the same day without noticing** - *this
