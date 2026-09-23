@@ -70,6 +70,7 @@ One shared implementation of `GetOrLoad`, `Forget`, `Load`'s read-or-open-empty 
 - **Read-only stores** (sparql) use the same lifecycle without a save (R2.7).
 - **mindmap keeps two differences** and they are declared rather than tolerated (R2.8): it skips documents it never loaded, and its change event names the kind of structural change. Both are expressed by the module's own event type, not by an override of the lifecycle.
 - **Deletes take the writer's turn**, as above.
+- **The shared lifecycle is where the watcher obligation (R2.9) is INTENDED to be met**, so that a module cannot get it wrong by omission - which is how two editor sessions came to hear `Changed` and not `Renamed` while the writer's own 106 tests stayed green. **As of today it is not met there: both editor sessions construct their own `FileSystemWatcher` and now subscribe correctly by themselves, and nothing in R2.9 requires the subscription to move.** So this is a direction for the shared piece rather than a property the tree currently has. Known gap recorded rather than fixed here: `SolutionWatcher` has no `Error` handler; it belongs to its own module and is in `dotnet-dependency-graph/findings.md`.
 
 ### S3 — One save result, and a guard against ignoring it (R3)
 
