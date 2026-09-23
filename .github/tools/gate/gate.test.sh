@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=164; else EXPECTED=154; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=167; else EXPECTED=157; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -338,7 +338,22 @@ gate_tell_write "$TELL/mrga1/adp-gate.lock" mrga1 claude/x pending
 report 1 "$(gate_who_is_gating "$TELL" | grep -c "gating claude/x on base pending")" "base pending is a real state, not a malformed line"
 gate_tell_write "$TELL/mrga1/adp-gate.lock" mrga1 claude/x abc1234
 report 1 "$(gate_who_is_gating "$TELL" | grep -c "on base abc1234")" "the rewrite names the base a develop commit would stale"
-report 1 "$(gate_who_is_gating "$TELL" | grep -c "ignore-after")" "the line carries its own expiry, so no reader needs to know run lengths"
+# Asserting that the FIELD IS PRESENT printed the identical 1 whether the expiry was two hours
+# ahead or already past - green on the working path and on the fail-open one alike. So the value
+# is parsed and compared: later than `started`, or the literal `unknown`. The first draft fell
+# back to NOW when `date -d` was unavailable, which birthed every line expired.
+TELL_LINE=$(gate_who_is_gating "$TELL" | sed -n 1p)
+TELL_STARTED=${TELL_LINE##*started }; TELL_STARTED=${TELL_STARTED%% *}
+TELL_IGNORE=${TELL_LINE##*ignore-after }; TELL_IGNORE=${TELL_IGNORE%% *}
+report later "$([ "$TELL_IGNORE" = unknown ] && echo unknown || { [ "$TELL_IGNORE" \> "$TELL_STARTED" ] && echo later || echo "NOT-LATER:$TELL_IGNORE"; })" "the expiry is later than the start, or says unknown - never a time already past"
+# A line already past its expiry is labelled, so the last judgement leaves the human in a hurry.
+mkdir -p "$TELL/mrgc3/adp-gate.lock"
+printf "mrgc3 gating claude/old on base aaa1111 started 2020-01-01T00:00:00Z ignore-after 2020-01-01T02:00:00Z\n" > "$TELL/mrgc3/adp-gate.lock/owner"
+report 1 "$(gate_who_is_gating "$TELL" | grep -c "(EXPIRED - ask, do not assume)")" "a line past its expiry is labelled, and labelled as ASK rather than as clear"
+printf "mrgc3 gating claude/old on base aaa1111 started 2020-01-01T00:00:00Z ignore-after unknown\n" > "$TELL/mrgc3/adp-gate.lock/owner"
+report 1 "$(gate_who_is_gating "$TELL" | grep -c "expiry unknown - treat as live")" "an uncomputable expiry reads as LIVE, because the fail-open direction is the unrecoverable one"
+report 0 "$(gate_who_is_gating "$TELL" | grep -c "EXPIRED")" "... and is never labelled expired"
+rm -rf "$TELL/mrgc3"
 mkdir -p "$TELL/mrgb2/adp-gate.lock"; gate_tell_write "$TELL/mrgb2/adp-gate.lock" mrgb2 claude/y def5678
 report 2 "$(gate_who_is_gating "$TELL" | grep -c "gating claude/")" "two scratch trees gating at once are two lines"
 printf "stale junk\n" > "$TELL/mrga1/adp-gate.lock/owner"

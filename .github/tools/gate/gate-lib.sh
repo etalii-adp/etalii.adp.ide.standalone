@@ -249,6 +249,13 @@ gate_verdict() {
 # ONE MACHINE, ONE CLOCK, UTC. The lease arithmetic rests on that and it is written rather than
 # assumed: the first thing to break if anything ever gates from another machine.
 #
+# THE FAILURE DIRECTION IS THE SAFE ONE. A shell whose `date` lacks `-d` cannot compute the expiry,
+# and the field then reads `unknown` rather than a timestamp - because the first draft fell back to
+# NOW, which birthed every line already expired and so told every reader to disregard a live gate.
+# That fallback is reached only in the environment where the primary fails, so it was not an unlikely
+# path but the only one that would ever run there. A line whose expiry could not be computed must
+# read as LIVE: over-holding is recoverable and expires by itself, an under-hold is neither.
+#
 # IT WARNS, IT NEVER AUTHORISES. An expired line says a reader may ASK about a stale lock. It never
 # licenses removing one, and it says nothing about whose turn the board is - that is a decision
 # somebody makes, not a fact a file can hold.
@@ -260,7 +267,7 @@ gate_tell_write() {
     printf '%s gating %s on base %s started %s ignore-after %s\n' \
       "$scratch" "$branch" "$base" \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-      "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ 2> /dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
+      "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ 2> /dev/null || echo unknown)"
     printf 'read it with: bash .github/tools/gate/who-is-gating.sh - it warns, it never authorises;\n'
     printf 'the board decides whose turn it is. Ignore this line after the time above.\n'
   } > "$tmp" 2> /dev/null || { rm -f "$tmp" 2> /dev/null; return 0; }
@@ -285,7 +292,7 @@ gate_tell_write() {
 # cost is the unrecoverable one. Existence of the directory answers "is this tree busy", which is
 # the only thing the lock has ever truly said; content answers "on what".
 gate_who_is_gating() {
-  local dir=${1:-} lock owner found=0 scratch
+  local dir=${1:-} lock owner found=0 scratch line ignore now
   if [ -z "$dir" ] || [ ! -d "$dir" ]; then
     printf 'TELL_UNREADABLE=%s\n' "${dir:-<no directory named>}"
     return 2
@@ -295,7 +302,19 @@ gate_who_is_gating() {
     found=1
     owner="$lock/owner"
     if [ -s "$owner" ]; then
-      sed -n '1p' "$owner" | tr -d '\r'
+      line=$(sed -n '1p' "$owner" | tr -d '\r')
+      ignore=${line##*ignore-after }
+      ignore=${ignore%% *}
+      now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      # The script does the arithmetic so a human in a hurry does not. Both labels say ASK, never
+      # clear: this warns and never authorises, and a stale lock is a question rather than a licence.
+      if [ "$ignore" = unknown ]; then
+        printf '%s (expiry unknown - treat as live)\n' "$line"
+      elif [ -n "$ignore" ] && [ "$ignore" \< "$now" ]; then
+        printf '%s (EXPIRED - ask, do not assume)\n' "$line"
+      else
+        printf '%s\n' "$line"
+      fi
     else
       scratch=${lock%/adp-gate.lock}
       scratch=${scratch##*/}
