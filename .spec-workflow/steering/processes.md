@@ -393,6 +393,15 @@ exactly this*, it will keep crying wolf - **and a guard that cries wolf gets edi
 investigated**, which is how a canary becomes a formality. Changing it inside the branch that trips it would
 mix two decisions, so it is recorded here and changed on its own.
 
+**And the counterexample belongs beside the criticism, because it arrived hours later on the same branch and it
+is the one change the pinned count is good for.** Two comment-only edits were made to the gate's own scripts -
+no behaviour, no cases - and the selftest returned `cases=167 wrong=0 expected=167`. **Had a comment
+accidentally swallowed a case, the pinned count is the ONLY thing in the run that would have said so**: every
+remaining case would still have passed, and a floor would have been satisfied too. So the criticism above is
+narrower than it first reads: **an exact count cries wolf on ADDITIONS, and earns its keep on edits that are
+not supposed to change the count at all.** A criticism carrying its own counterexample is much harder to
+misapply than one without - the version without it invites somebody to delete the count on the next red.
+
 **7. An emptiness check is satisfied by the failure mode, so floor on what SCALES with the work rather than
 on what merely exists.** A harness built to time a diagram's `UpdateView` asserted `Assert.NotEmpty(baseline)`
 to prove it was not timing an empty session. **It passed at one delta - which is also exactly what a document
@@ -1136,6 +1145,15 @@ rather than of the file as it stands: **a claim about an artefact's contents, se
 in the act of proposing the rule against exactly that. They found it by grepping rather than by being told.
 *(Architect 2's, prompted by the relay that carried its own warning, and volunteered against itself; the framing
 that this is cheaper than either party being more careful is the Scrum master's.)*
+
+**A fifth instance, and the reason it is the strongest one in the clause: it happened AFTER both parties had
+written this rule.** A miscount - *three runs today produced no citable verdict*, when only two were
+substantiable - passed from the session that made it to the coordinator, who **relayed it onward without
+checking, then relayed the correction, both inside an hour.** Neither party was careless and both had just
+authored the clause. **The artifact caught it and the authors did not**, which is the whole argument for the
+control being structural rather than attentional: a rule you wrote this morning does not protect you from a
+plausible number this afternoon. Recorded as an instance rather than as anybody's credit - **the useful fact is
+that writing the rule is not one of its remedies.**
 
 **And the corollary for routing, which is not the same rule: route a question through a coordinator when they
 hold context you lack - not when they would only be repeating you.** A condition was set that an
