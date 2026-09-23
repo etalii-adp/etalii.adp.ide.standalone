@@ -37,6 +37,18 @@ import { themeTokens, tokensRead } from "./themeContrast";
  * "resolves to a theme token, or to one this stylesheet declares itself" rather than "must be a
  * theme token": a per-kind palette is the module's business, and being undefined is not.
  *
+ * <b>The canaries below are planted strings rather than planted files, and that is why they work.</b>
+ * On its first run the local-palette canary failed: the declaration reader anchored on line start,
+ * so `.y { --mine: #0f0; }` read as declaring nothing and its own palette came back as an
+ * offender. <b>Every stylesheet in this repository puts declarations on their own lines</b> - so
+ * the tree is a sample from which the failing input shape is absent BY CONVENTION, not by luck.
+ * No amount of looking harder at the real files finds that; only a string nobody would write does.
+ * A compact or minified sheet would have had its palette reported undefined forever, and nothing
+ * in the tree would ever have said so. The same holds for the both-modes detector further down,
+ * which on its first run accused every correct palette in the tree including `ansible-structure`'s:
+ * <b>a detector whose first failure accuses the known-good is the good failure - the one to fear
+ * accuses nobody.</b>
+ *
  * Scope is deliberate and covers `src/client/src` as well as the diagram and editor modules.
  * `--color-error` was used by `index.css` itself; a guard that trusted the theme to be
  * self-consistent would have missed it. TypeScript sources are walked too, with comments
