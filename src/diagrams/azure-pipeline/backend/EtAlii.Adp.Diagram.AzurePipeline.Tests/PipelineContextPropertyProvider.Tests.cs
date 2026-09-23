@@ -736,7 +736,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Act.
         var drawn = mapper.Visible(model, new DiagramViewport(0, 0, 0, 0), opened);
-        var step = Assert.Single(drawn.Where(element => element.Type == PipelineElementMapper.StepType));
+        var step = Assert.Single(drawn, element => element.Type == PipelineElementMapper.StepType);
         var properties = await DescribeAsync(path, step.Id);
 
         // Assert: the rows the requirement names, on the element the canvas actually has.

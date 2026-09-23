@@ -88,7 +88,7 @@ public class ClientTests
 
         // Assert.
         Assert.True(reported is not null, $"{file}: vitest reported no result for this file, so nothing ran it.");
-        var failed = reported!.Tests.Where(test => test.Status == "failed").ToList();
+        var failed = reported.Tests.Where(test => test.Status == "failed").ToList();
         Assert.True(
             reported.Status != "failed" && failed.Count == 0,
             $"{file} failed ({failed.Count} of {reported.Tests.Count} tests):{Environment.NewLine}"
@@ -110,7 +110,7 @@ public class ClientTests
         // Assert.
         Assert.True(reported is not null, $"{file}: vitest reported no result for \"{fullName}\".");
         Assert.True(
-            reported!.Status != "failed",
+            reported.Status != "failed",
             $"{file} > {fullName}:{Environment.NewLine}{Indent(string.Join(Environment.NewLine, reported.FailureMessages))}");
     }
 
