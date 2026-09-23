@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/canvas-single-scrollbar/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790172195231_sg4ecz60h",
       "approvalTitle": "canvas-single-scrollbar requirements: the second bar is 4px of descender space from an inline svg, fixed by one rule in the shared stylesheet"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-23T18:17:11.441Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790183323741_kc1voscp9",
+      "approvalTitle": "canvas-single-scrollbar requirements, amended: the cause reaches 15 of 16 canvases and the symptom does not, and R4 is removed because its corpus gap was refuted"
     }
   ]
 }
