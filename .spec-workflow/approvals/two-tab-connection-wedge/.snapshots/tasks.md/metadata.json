@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/two-tab-connection-wedge/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T23:26:48.745Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790206008240_qpcf58cja",
+      "approvalTitle": "two-tab-connection-wedge - Tasks (5 tasks; coverage diff run, 14 of 22 criteria claimed, 8 unclaimable and named)"
+    }
+  ]
+}
