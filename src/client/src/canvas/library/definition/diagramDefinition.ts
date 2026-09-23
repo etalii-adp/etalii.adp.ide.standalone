@@ -66,6 +66,19 @@ export type BuiltInShape =
    * rather than a class on the same one, which is why it is a shape and not a style.
    */
   | "moment"
+  /**
+   * A squircle - |x/a|^4 + |y/b|^4 = 1 - which reads as a box with the corners taken off rather
+   * than as a rounded rectangle, and so distinguishes a kind of element at a glance.
+   */
+  | "superellipse"
+  /** Narrower at the bottom than the top, for an element that reads as narrowing down. */
+  | "trapezoid"
+  /**
+   * A rectangle closed on the right by a semicircle, so the shape points the way its relations
+   * run. Its outline, its text region and its edge point all come from
+   * {@link outlineOf} rather than from three separate ideas of where it is.
+   */
+  | "diode"
   /** A ring inside the ellipse - owl's `doubled` and wardley's submap mark (rows 18, 27, 28). */
   | "double-ellipse";
 
@@ -96,6 +109,9 @@ export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
   "hexagon",
   "pill",
   "parallelogram",
+  "superellipse",
+  "trapezoid",
+  "diode",
   "cylinder",
   "moment",
   "double-ellipse",

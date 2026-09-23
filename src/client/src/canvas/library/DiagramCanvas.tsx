@@ -39,6 +39,7 @@ import { resolveDecorations, type ResolvedDecoration } from "./definition/decora
 import { resolveBackground } from "./definition/background";
 import { actionForGesture, actionForKey } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
+import { outlineOf } from "./shapes/outline";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -2555,6 +2556,12 @@ function renderShapeBody(
           style={paint}
         />
       );
+    case "superellipse":
+    case "trapezoid":
+    case "diode":
+      // Drawn from the same outline the text region and the edge point read, which is the point
+      // of `outlineOf`: three consumers, one geometry, no way for them to disagree.
+      return outlinePolygon(bounds, shape, label, paint, shapeClass);
     case "diamond":
       return polygonShape(bounds, label, paint, [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]], shapeClass);
     case "hexagon":
@@ -2571,6 +2578,22 @@ function renderShapeBody(
         </g>
       );
   }
+}
+
+function outlinePolygon(
+  bounds: ConnectorBox,
+  shape: BuiltInShape,
+  label: string,
+  paint: React.CSSProperties,
+  className: string,
+): ReactNode {
+  const points = outlineOf(shape, bounds).map((point) => `${point.x},${point.y}`).join(" ");
+  return (
+    <g>
+      <polygon className={className} points={points} style={paint} />
+      {centredText({ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }, label)}
+    </g>
+  );
 }
 
 function polygonShape(
