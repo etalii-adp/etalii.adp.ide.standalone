@@ -661,6 +661,44 @@ rule above reaches for when it demands two independent markers rather than one. 
 printing the section boundaries afterwards and noticing the new heading's line number fell outside them** - which
 is the cheapest possible check and was not in the script.
 
+**Text proximity is not containment, so a regex over source answers *what is nearest in the file* and never
+*what contains this*.** A survey of every diagram module took **the nearest `className` above
+`<DiagramCanvas>`** as that canvas's wrapper and reported 16 of 19 modules with no wrapper height rule. It had
+picked `c4-canvas-title`, `mindmap-canvas-loading`, `helm-canvas-rejection` - **sibling status divs, because
+conditional JSX puts `{loading ? <div/> : null}` siblings BEFORE the canvas in source order.** The wrapper is
+the first `className` after the final `return (`, and the figure is **11 of 16**. The same shape caught a tree
+walk an hour later: the explorer's tree is **flat**, with depth carried in `padding-left`, so scoping a search
+to a folder's `li` found nothing while the whole-tree search kept returning the first document in the file.
+
+**Only a parse - or the DOM at runtime - answers containment.** When the same question was asked again on
+2026-09-23 for the scrollbar defect, the count came from **parsing each `<DiagramCanvas>` element's own opening
+tag**, and the answer it produced (16 canvases across 13 modules) then had to survive a second reading anyway,
+because *how many canvases exist* and *how many modules exist* are different questions that the earlier survey
+had blurred. **What saved the first one was hand-checking ONE row before believing the table** - `c4-canvas-title`
+is visibly a title - **which is why the wrong number never reached a report. A table of nineteen plausible rows
+invites belief; one hand-checked row costs a minute.**
+
+**An edit that finds nothing to change and reports success is indistinguishable from an edit that had nothing to
+do.** A script to drop four landed entries from a queue note printed **`dropped: 0`**, prepended its new record,
+wrote the file and **removed nothing** - leaving the note claiming twenty-one queued with four already landed. It
+reported success having done half the job. The cause was **mixed line endings in one file**: appends written
+through a bash heredoc were LF, edits written through python were CRLF, so splitting on `"\r\n## "` matched
+almost no heading. **A second attempt failed its own assertion, which is how the mechanism was found.** Four
+hours later, in another session, a coverage script differenced its claimed set against an **empty** set and
+printed **`UNCLAIMED: none`** - a clean pass from comparing nothing, because it looked for criteria written as
+`1.1` while the document composes them from a heading plus a list. **Both operations reported success having
+examined nothing, in sessions that had each spent that day writing clauses about exactly this - which is why the
+remedy is an assertion and not more care.**
+
+**Two rules. An edit that can find nothing to change asserts HOW MANY it changed** - `assert len(dropped) == 4`
+is the whole difference between a silent no-op and a loud one - **and a count you do not believe is worth more
+than a message saying it worked**, because `dropped: 0` was the only true signal on that run and it was printed
+beside a line claiming the record had been written. **A file edited by two different tools acquires two
+line-ending conventions, and every separator-based edit after that is a coin toss**: normalise on the way in.
+*(This clause is the EDIT end of the absence clause under* Measure the thing*, which is the INSTRUMENT end;
+`dropped: 0` and `UNCLAIMED: none` appear in both because each is a reading that examined nothing and a write
+that changed nothing at the same moment.)*
+
 ## Measure the thing, not something adjacent to it
 
 **Everything below is one idea with ten worked cases, all measured between 2026-09-15 and 2026-09-22:**
@@ -1036,6 +1074,24 @@ this rule was itself the fifth instance of it.** It also has a success to its na
 trust the instrument rather than the recollection: a clause was nearly repaired on develop today because a
 queue note said it overclaimed, and reading develop's copy showed the overclaiming form had never landed
 there at all.
+
+**An explanation's thoroughness is evidence about its HISTORY, not about its correctness - a comment's density
+maps past incidents rather than present danger.** `highlight.ts` explains at length why the selection paint is
+inline and why it sits on the drawn shape: **both were got wrong once, on screen, at a day's cost.** Four lines
+below, the doc line for the width constant was wrong in two directions at once - *when no width is stated*
+describes a fallback where the code has a **floor**, and *how much heavier* describes a delta where the value is
+**absolute** - against `Math.max(declared + 1, HIGHLIGHT_STROKE_WIDTH)`. **The one declared width it is
+accidentally right about is where its two errors cancel.**
+
+**Why it survived: the line never caused a visible failure, so nobody ever had a reason to read it against the
+code four lines below.** One session edited that file three times in a day and quoted the constant twice without
+reading the prose; another quoted it correctly in a requirement **by reading the expression** and still did not
+notice the sentence beside it. **The well-explained parts of a file are precisely the parts that once failed in
+production; the unexamined part is the part that never has.** The check is cheap and narrow: **when you touch a
+constant, read its own doc line against its own expression, in the same minute** - not the file's much-revised
+explanations, which have been read many times, but the one sentence nobody has had a reason to doubt.
+*(Architect 2's. Ruled to sit BESIDE the absence clause rather than be folded into it: that one is about what a
+clean reading proves, this one about where attention goes, and a reader could act on either without the other.)*
 
 ## A settled boundary
 
