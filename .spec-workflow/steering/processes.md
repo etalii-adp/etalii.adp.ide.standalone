@@ -431,7 +431,9 @@ re-reads once a green notification has arrived.
 **Four instances on 2026-09-23, in four sessions**: a gate notification reporting exit 0 over a log saying
 `RESULT=gates-red ( format=2 )`; a format run notified as 0 whose captured `FORMAT_EXIT` was 2; one from that
 morning; and a gate run of mine that **printed `WRAPPER_EXIT=1` and was notified as exit code 0**, because a
-`tail` of the log ran last. **The guidance against this was already written and already correct**, which is the
+`tail` of the log ran last. **Three of the four were found by somebody CHECKING another's report rather than re-reading their own** - the fourth instance above surfaced while verifying the other three, one session found its own by reading a peer's, and another found its second by correcting its first. **Nobody found their own by re-reading it**, which is a better argument for cross-checking than the count is. *(Architect 3's observation, about a set it collected.)*
+
+**The guidance against this was already written and already correct**, which is the
 argument for the remedy rather than against the rule.
 
 **So make it structurally impossible at the point of invocation: end the command with the status you captured.**
@@ -675,6 +677,24 @@ Six instances in one day, across four sessions, each caught only because somebod
 The two are one error at different moments: the first measures a boundary that exists only in a proposal, the second lets a narrow result stand for a wide assertion. **The tell in both is a claim whose scope grew after its evidence stopped**, and it is cheap to catch, because the scope of an assertion is visible in the sentence making it. Both were made in writing, an hour after the same session had recorded the neighbouring lesson in a specification - the plainest available proof that writing a rule down is not the same as it transferring.
 
 **These are one idea at seven scopes** - a command, a wrapper reporting on a command, the cached input a command reads, a claim about your own work, a check written down, a hold coordinated across sessions, and the scope of a measurement - and they move together. Splitting them by which was learned first would break the argument.
+
+**And *two instruments disagree* can itself be the wrong reading: before treating a conflict as a fact about the
+subject, check that both instruments measured the same POPULATION.** A specification recorded a label's contrast
+at **1.37:1, a black label**, from a browser measurement. The session implementing its guard read the stylesheet
+and got **1.17:1** - not black. It chased three routes to that black, **excluded all three, and reported the
+conflict unresolved rather than inventing a fourth.** For hours the board held *a source reading and a browser
+measurement disagree, and both instruments are working.* **They never disagreed.** One had measured labels; the
+other had taken an **unclassed, empty `<text>` node** of the eight every canvas renders. **The artefact of that
+mismatch was a plausible, stable, reproducible disagreement between two correct tools.**
+
+**Why this is worse than a wrong count and deserves saying separately: a wrong count announces itself as a number
+somebody can re-derive, while a false disagreement announces itself as evidence of a real conflict in the
+subject - and it RECRUITS people to explain it.** Three careful investigations went into routes to a black that
+was never there. **The check is the same one as always, asked of the pair rather than of either: did these two
+measure the same members?** *(The false-disagreement framing is the Scrum master's; the underlying catch is
+Developer 4's, which named the unclassed empty node as "how the next person will meet it" in the very message
+that reported the conflict - and the next person had been Architect 2, three hours earlier, into an approved
+specification.)*
 
 **Several instances of this section's shape are collected under *Measure the thing, not something adjacent to it*** - a log line attributed by adjacency, a stopped task that was not a stopped gate, and evidence that lived only in a working tree.
 
@@ -1161,10 +1181,20 @@ fill.
 **Recording it as checked-and-excluded is worth more than the shrug it deserves on its own**, and the
 surrounding state is why: a label measured in the browser as computed `rgb(0,0,0)` when **neither
 `--color-text` nor its fallback is black**, three source-level routes excluded by reading them rather than
-guessing, **and the route still unfound with no fourth invented to close it.** The browser instrument was
+guessing, **and the route unfound with no fourth invented to close it.** The browser instrument was
 itself suspect at the time, so the measurement's state is *unknown* rather than wrong. **An open hunt with
 three excluded routes and one honest gap is a better artifact than a closed one with a plausible answer** - and
 the excluded routes are the part that stops the next session repeating the first hour.
+
+**It resolved within hours, and the resolution is why the honest stop was not merely polite.** Re-measured by
+**grouping the text nodes by class** instead of taking one from the element's group: the labels compute
+`rgb(15,23,42)`, which is `--color-text`, and **the eight unclassed nodes compute `rgb(0,0,0)` and are all
+empty.** The original probe had taken one of those eight. **The label was never black**, there was no fourth
+route, and **the real figure is 1.17:1 against the 1.37:1 an approved specification had recorded.** So
+continuing would have been hunting something that did not exist: **stopping was CORRECT, not just candid**,
+and a session that had invented a fourth route would have found a plausible one and closed a hunt on a
+measurement of invisible nodes. **The same trap caught the specification's author and then the first mounted
+assertion written against it, inside an hour.**
 
 ## A settled boundary
 
