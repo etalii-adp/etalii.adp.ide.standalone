@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/canvas-single-scrollbar/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-23T14:03:15.501Z",
       "trigger": "initial",
+      "approvalId": "approval_1790172195231_sg4ecz60h",
+      "approvalTitle": "canvas-single-scrollbar requirements: the second bar is 4px of descender space from an inline svg, fixed by one rule in the shared stylesheet"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T16:25:18.485Z",
+      "trigger": "approved",
       "approvalId": "approval_1790172195231_sg4ecz60h",
       "approvalTitle": "canvas-single-scrollbar requirements: the second bar is 4px of descender space from an inline svg, fixed by one rule in the shared stylesheet"
     }

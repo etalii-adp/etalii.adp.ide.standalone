@@ -51,6 +51,8 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         // Act.
         var threads = Enumerable.Range(0, writers).Select(w => new Thread(() =>
         {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             go.Wait();
             for (var i = 0; i < savesEach; i++)
             {
@@ -96,8 +98,11 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
 
         var first = Task.Run(() => AdpFileWriter.Save(path, "first", replace: (temporary, destination) =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             firstIsInside.Set();
             releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
+            // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
         }), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
@@ -107,7 +112,12 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
 
         // Assert, first: it waits - and says so, by path, before it gets its turn.
         Assert.True(
-            SpinWait.SpinUntil(() => logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal)), Patience),
+            SpinWait.SpinUntil(() =>
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                // Reason: Used in a test case which is acceptable.
+                return logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal));
+            }, Patience),
             "The second save to the same destination did not log that it waited.");
         // LOAD-BEARING, and not a belt-and-braces repeat of the line above it. The log
         // assertion proves only that a line was WRITTEN: a save that logged "waited" and then
@@ -144,8 +154,11 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
 
         var first = Task.Run(() => AdpFileWriter.Save(path, "first", replace: (temporary, destination) =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             firstIsInside.Set();
             releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
+            // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
         }), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");
@@ -153,7 +166,12 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         var second = Task.Run(() => AdpFileWriter.Save(otherSpelling, "second"), TestContext.Current.CancellationToken);
 
         Assert.True(
-            SpinWait.SpinUntil(() => logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal)), Patience),
+            SpinWait.SpinUntil(() =>
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                // Reason: Used in a test case which is acceptable.
+                return logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal));
+            }, Patience),
             "A different spelling of the same destination did not wait for the save already inside it.");
         Assert.False(second.IsCompleted, "A different spelling of the same destination got through while the first held it.");
 
@@ -182,8 +200,11 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
 
         var first = Task.Run(() => AdpFileWriter.Save(held, "first", replace: (temporary, destination) =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             firstIsInside.Set();
             releaseFirst.Wait(Patience, TestContext.Current.CancellationToken);
+            // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
         }), TestContext.Current.CancellationToken);
         Assert.True(firstIsInside.Wait(Patience, TestContext.Current.CancellationToken), "The first save never reached its replace.");

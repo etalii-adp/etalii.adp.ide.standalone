@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/two-tab-connection-wedge/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T18:14:02.973Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790187242317_uk3z1rrpr",
+      "approvalTitle": "two-tab-connection-wedge - Requirements"
+    }
+  ]
+}

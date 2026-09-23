@@ -38,6 +38,8 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var reloads = 0;
         var reloader = Task.Run(() =>
         {
+            // ReSharper disable once AccessToModifiedClosure
+            // Reason: Used in a test case which is acceptable.
             while (Volatile.Read(ref saving) == 1)
             {
                 store.Reload(path);
