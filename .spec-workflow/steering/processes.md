@@ -899,6 +899,7 @@ under a correct-looking walk.
 ### An instrument that reports absence must first prove it is present
 
 **A clean result means one of two things, and they are not close: *nothing is wrong*, or *nothing happened*.**
+*(The rule and the six instances are Developer 1's; the two constraints below are Architect 2's.)*
 Six mechanisms produced the second while looking exactly like the first, all on 2026-09-23, none from
 carelessness:
 
@@ -951,6 +952,30 @@ Four instances in one night, three of them caught only because somebody voluntee
 Fix only what moved. Rewriting a whole entry because one clause went stale destroys the parts that were right, and **a wholesale "the old advice was wrong" loses the reason it was ever adopted** - which invites the next reader to rediscover the original problem and re-apply the harmful remedy. **Keep the superseded reasoning and label it superseded.**
 
 **Ship the instrument with the figure.** A count carried in prose is unfalsifiable a week later; the same count with its command and its date is re-checkable in seconds, so a reader quoting a stale number is quoting a timestamp. This is the *terminal `RESULT=` line* discipline in a different medium: **do not report a value nobody can recheck.**
+
+**And a restatement is not the fact it restates - which is a different failure from the one above, because here
+the instrument was right and available the whole time.** Two instances, 2026-09-23. **The gate tell reported
+`develop f0ad424b` while develop was at `751705d7`** - and the tell had not been consulted for that number; it
+was **retyped from memory into a message**, by the session that had built the tell. **And `highlight.ts`'s doc
+line for a constant disagrees with the expression four lines below it**, wrong in two directions at once - it
+calls a floor a fallback and an absolute width a delta, against `Math.max(declared + 1, HIGHLIGHT_STROKE_WIDTH)`
+- and the only declared width it is accidentally right about is the one where its two errors cancel. **In both
+cases a copy drifted from its original, and in both cases the check was to read the original rather than to
+trust the copy.**
+
+**The tempting lesson is the wrong one and it is expensive: this is not evidence that the instrument is
+unreliable.** The tell was correct and one command away throughout; the doc line sat four lines from the
+expression that refutes it. **What drifted was the retelling**, so the remedy is to read the original at the
+moment of quoting - not to hedge the instrument, and not to add a second instrument to check the first.
+**Applies identically to a quoted SHA, a paraphrased constant, and a requirement's cited example.**
+*(Architect 2, arguing for one entry with two instances rather than two entries - and the first instance is its
+own report of somebody else's slip, which is why the pair was visible at all.)*
+
+**A corollary about the tell specifically, from its first use in anger: the tell gave the base and `git
+merge-base` said the base was stale, and neither alone would have.** The tell without the check reads as *a gate
+is running, wait*; the check without the tell has no base to test. **A reader who has only one of the two has
+half an instrument**, which is worth saying because the tell is the newer half and the tempting one to quote by
+itself.
 
 **And a note may never have been your reasoning at all.** The project memory store is shared: of 54 notes, 41 carry an `originSessionId` naming twelve distinct sessions. Those arrive in context before a session begins, with attribution stripped, reading as background rather than as somebody's argument - **the standing we refuse to grant a peer's message, granted automatically because it came in a file.** The mirror matters too: **correcting such a note in place leaves your reasoning under the original author's id**, so say in the note that the reasoning changed hands.
 
