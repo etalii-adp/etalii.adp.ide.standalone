@@ -84,6 +84,64 @@ occurrence's `did not answer within 2 seconds` can never be resolved either way 
 **Read "not yet known" as a timestamp, not a verdict.** It says when the query had not answered, and nothing
 at all about who was holding the file.
 
+## The fifth state, 2026-09-23: the instrument is silent in some runs
+
+**Serilog's unset `Log.Logger` is `SilentLogger`, and a `private static readonly ILogger _logger =
+Log.ForContext<T>()` evaluated at that moment IS `SilentLogger` - permanently.** After the host configures
+Serilog, that early-bound static logs nothing while a logger resolved after configuration logs normally: same
+process, same sink, one line apart. **Type-initialisation order is first-use order**, so whether
+`AdpFileWriter` is touched before or after the host configures logging varies per run. Developer 1 found it,
+Developer 3 measured it.
+
+**So the instrument is wired in some runs and not others - which is worse than broken, because it works often
+enough to be trusted.**
+
+### How to tell, and it is a contradiction between two POSITIVES rather than an absence
+
+**The failure's own stack proves the catch ran, and the catch's line is missing.** In occurrence five the
+store's warning carries `ReplaceDestination` at `AdpFileWriter.cs:334`, `Publish` at `:294`, `SaveCore` at
+`:184` and `Save` at `:152`/`:116`. **Line 294 is the replace call inside `Publish`'s `try`, and `Publish`'s
+catch is an unconditional `catch (Exception)` that logs and rethrows** - so an exception raised at 334 cannot
+reach the store without passing through that catch. **The catch demonstrably executed.** In the same run
+`Could not publish` appears 0 times and `EtAlii.Adp.Documents` appears 0 times as a `SourceContext`.
+
+**That pairing holds whether or not the class would otherwise have logged**, which is what makes it decisive.
+
+**The weaker form, kept beside it as corroboration rather than proof:** occurrence four's run carries 2 lines
+from that assembly and occurrence five's carries 0. **On its own it proves nothing** - `Published {Path}` is
+DEBUG and never reaches a gate log, `Deleted {Path}` fires only on a delete through the writer, and
+`Waited for another save` only under contention, **so a quiet run is indistinguishable from a silent logger.**
+Developer 3 offered that tell first, then withdrew it for exactly this reason and supplied the pairing above.
+
+**And the bound on the decisive tell, so it is not over-applied:** it works because something ELSE logged the
+exception with a stack. **A failure nothing downstream logs leaves no pairing, and then absence really is just
+absence** - which is the general form already stated for occurrences one to three.
+
+### What each occurrence is worth now
+
+- **The fourth stands.** Its record exists, so the instrument was demonstrably wired in that run:
+  `holders: no process was holding it when asked (answered in 728 ms)` and `destination: present, 134 bytes`
+  remain good evidence.
+- **The fifth says nothing about holders.** There was no record at all - **an absent answer, not an empty one**
+  - and the pairing above is why that is a fact about the instrument rather than a guess.
+- **For one to three: an occurrence with no record cannot be distinguished from one where nobody looked.**
+  Before the instrument existed that was trivially true. **What is new is that it can now be true while the
+  instrument exists**, which is the only reason this belongs in the record rather than in a commit message.
+
+**So the reading procedure gains a fifth state, and it is not a fifth kind of answer - it is a question about
+the instrument itself:** NAMED, EMPTY, ANSWERED LATE, NEVER ANSWERED, and **INSTRUMENT SILENT**.
+
+**Being fixed, and what is not.** Three files resolve their logger at the call site - `AdpFileWriter`,
+`FileHolders` and `DestinationState`, the instrument, where silence costs most. **92 production classes use the
+pattern in total, so 89 keep it**, and it is the shape `CLAUDE.md` mandates. **The user has DEFERRED the
+tree-wide question rather than declining it: the pattern remains house style, and nobody should convert files on
+their own initiative.** After the fix the instrument speaks reliably and eighty-nine classes keep a defect whose
+only symptom is the absence of lines nobody is looking for.
+
+**Developer 3's own statement of the cost, kept because it is the honest form:** it built the instrument, it
+has been reading its answers as evidence, and for at least one occurrence the answer it would have read was
+not an answer at all.
+
 ## What is still open
 
 1. **The second actor is unnamed.** In the 2026-09-20 wardley occurrence there was **no "Waited for another save" warning anywhere in the log**, so no second writer inside this process's lock was involved — the actor was outside it. Nothing in the repository writes a diagram body outside `AdpFileWriter`, fixture folders are per-fixture GUIDs, and the lock's dictionary ignores case on Windows, all checked. **It remains unexplained.** And the staged figures cannot narrow it: they say a replace and a delete both PRODUCE this error, never which one happened when nobody was staging anything. The third occurrence's present-with-content destination is the only fact anyone has about the wild actor rather than about a perturbation, which is why it is the counter-example the steering clause is anchored on.
@@ -92,11 +150,17 @@ at all about who was holding the file.
 
 ## How to read the next occurrence
 
-1. **Copy the run's log out of the gate's log directory immediately** — pruning keeps ten runs, and a red run's directory is kept only under its `-red` name.
-2. **Read the failure record first**, not the stack: it carries the holders the query could see, this process's id, and the destination's state at the moment of failure. **An empty holder list with a GONE destination is the signature of an actor that has already released** — which the measurements say is the dominant case.
+1. **First ask whether the instrument could have spoken at all.** If the run shows the exception somewhere -
+   a store's warning carrying a stack through `AdpFileWriter` - then `Publish`'s catch ran, and a missing
+   `Could not publish` line means the static logger bound to `SilentLogger` before the host configured
+   Serilog. **That occurrence can say nothing about holders**; see the fifth state above. **If the run shows
+   nothing at all, you cannot tell whether the event happened**, and absence is just absence. Only then read
+   on.
+2. **Copy the run's log out of the gate's log directory immediately** — pruning keeps ten runs, and a red run's directory is kept only under its `-red` name.
+3. **Read the failure record first**, not the stack: it carries the holders the query could see, this process's id, and the destination's state at the moment of failure. **An empty holder list with a GONE destination is the signature of an actor that has already released** — which the measurements say is the dominant case.
    **A holder list that says the query did not answer is NOT an empty list**: it is no measurement at all,
    and the third occurrence above is one, so the destination's state is the only evidence in that case.
-3. **Check for a "Waited for another save" warning.** Present, the second writer was in-process and the lock serialised them. Absent, the actor was outside this process's lock, which is the open question above.
-4. **Do not attribute a bare `Exit code:` line to the assembly below it**; it belongs to the one above, and with assemblies running in parallel adjacency means nothing at all.
+4. **Check for a "Waited for another save" warning.** Present, the second writer was in-process and the lock serialised them. Absent, the actor was outside this process's lock, which is the open question above.
+5. **Do not attribute a bare `Exit code:` line to the assembly below it**; it belongs to the one above, and with assemblies running in parallel adjacency means nothing at all.
 
 **This file is the record; the rule each of its lessons generalises to is in `processes.md`.** A finding without its general form is an anecdote; a general form without its finding is an assertion.
