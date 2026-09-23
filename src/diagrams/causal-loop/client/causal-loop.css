@@ -35,12 +35,12 @@
 
 .causal-loop-message {
   padding: 16px;
-  color: var(--vscode-descriptionForeground, #888);
+  color: var(--color-text-muted, #64748b);
 }
 
 /* A variable is a rounded pill: the notation draws bare text, but a shape makes it a target. */
 .causal-loop-variable .canvas-node {
-  fill: var(--vscode-editorWidget-background, #252526);
+  fill: var(--color-surface, #ffffff);
 }
 
 /*
@@ -60,13 +60,13 @@
   font-size: 15px;
   font-weight: 600;
   text-anchor: middle;
-  fill: var(--vscode-editor-foreground, #ccc);
+  fill: var(--color-text, #0f172a);
   pointer-events: none;
 }
 
 /* The delay mark: two short strokes across the link. */
 .causal-loop-delay line {
-  stroke: var(--vscode-editor-foreground, #ccc);
+  stroke: var(--color-text, #0f172a);
   stroke-width: 1.5;
 }
 
@@ -83,15 +83,15 @@
 }
 
 .causal-loop-reinforcing {
-  fill: var(--vscode-charts-blue, #4daafc);
+  fill: var(--color-loop-reinforcing, #0369a1);
 }
 
 .causal-loop-balancing {
-  fill: var(--vscode-charts-orange, #d18616);
+  fill: var(--color-loop-balancing, #c2410c);
 }
 
 .causal-loop-undecidable {
-  fill: var(--vscode-descriptionForeground, #888);
+  fill: var(--color-text-muted, #64748b);
 }
 
 /*
@@ -105,7 +105,7 @@
 /* The loop marker: a curved arrow encircling the identifier at the loop's centre. */
 .causal-loop-marker {
   fill: none;
-  stroke: var(--vscode-editor-foreground, #ccc);
+  stroke: var(--color-text, #0f172a);
   stroke-width: 1.5;
   opacity: 0.55;
   pointer-events: none;
