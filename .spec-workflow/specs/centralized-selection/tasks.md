@@ -165,7 +165,7 @@ Each: pass `source`, delete the glue, delete its private selected class, and cal
   - All sixteen canvases in a real browser: select an element, select a connection where selectable, press the background, and **confirm a drag does not select**. The outline must read clearly on each diagram's fills, including backend-chosen colours; a connection's highlight must run its whole route; *selected* and *accept* must be distinguishable when both hold. **The user's oracle, recorded as such**: the four named broken behave exactly as the four named working. jsdom is not taken as evidence for any of this.
   - _Requirements: 5.2, 10.1, 10.2, 10.3_
 
-- [ ] 25. Gate, merge, and the coverage diff against the code
+- [x] 25. Gate, merge, and the coverage diff against the code
   - Four gates on the merged tree; ports reverted; the coverage diff re-run against files and strings rather than task claims.
   - _Requirements: 11.1, 11.2_
 
