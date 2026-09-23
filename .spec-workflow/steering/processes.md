@@ -126,6 +126,21 @@ does not make the board yours.
 its fast-forward anyway cannot be made worse; that is the only window, and it is worth using deliberately
 rather than waiting for a quiet board that may not come.
 
+**And the base can move from outside the board entirely, which makes a refold the ordinary outcome rather than
+an incident.** The first draft of this clause said a develop commit needs the Scrum master's gap the same way a
+gate slot does. **It cannot: on 2026-09-23 the user landed six commits in under half an hour into the middle of
+two consecutive gate runs** - both green on all four gates at 6678 tests, both refused - **and the user neither
+asks for a gap nor should have to.** A clause that implies otherwise promises a protection it cannot deliver.
+**It is one clause and not two, because the agent case and the user case differ only in whom you could ask and
+not at all in what happens**; the remedy is identical, so splitting them would imply two remedies where there is
+one. What follows is practical: **read the tell at the instant of use rather than trusting a placement** - the
+gap is scheduling, the read is the check - and **treat the refold as a cost of doing business**, which is why
+the gate reports `gates-green-but-base-stale-refold-needed` itself instead of leaving it to be discovered at the
+fast-forward. **When the cadence makes refolds routine, the answer is the user's to give and not an agent's to
+infer**: asked directly, they chose to batch landings until they stopped committing for the day. A peer offered
+the narrower reading that a fast-forward onto an unmoved base was surely still permitted, and was right to be
+refused - **that is the carve-out shape, and it is most persuasive exactly when the case looks safest.**
+
 **STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.** Same files, opposite order, and the
 discriminator is which operation comes next. The existing rule - clear the index before merging - is about the
 **merge**, which happens inside `gate.sh` at the START of a run. **Between a green gate and its fast-forward
@@ -311,11 +326,11 @@ into the developer's real profile instead of a test root. The argument for delet
 that the mistake is understood now; **the count is the argument against, and only a guard that keeps its count
 can make it.** Read this beside the seen-to-fail rule above: one says a guard must be proven, this says a
 proven guard must not be deleted because its mistake has started to look obvious.
-### Guards that cannot fail, and the six ways it happens
+### Guards that cannot fail, and the seven ways it happens
 
 **Every guard below was green while the thing it existed to catch was happening.** None was vacuous in the
 usual sense - most asserted something true. **The defect is always the same shape: the guard's subject is not
-the thing that can break**, and the six cases differ in how the subject came to be wrong.
+the thing that can break**, and the seven cases differ in how the subject came to be wrong.
 
 **1. A guard whose subject the code under test gets to choose cannot fail.** Two guards asked *is the highlight
 applied?* and found their subject by taking **the first node carrying an inline stroke** - which was the
@@ -377,6 +392,19 @@ no two cases share a description asserts it without rotting on every addition.**
 exactly this*, it will keep crying wolf - **and a guard that cries wolf gets edited to agree rather than
 investigated**, which is how a canary becomes a formality. Changing it inside the branch that trips it would
 mix two decisions, so it is recorded here and changed on its own.
+
+**7. An emptiness check is satisfied by the failure mode, so floor on what SCALES with the work rather than
+on what merely exists.** A harness built to time a diagram's `UpdateView` asserted `Assert.NotEmpty(baseline)`
+to prove it was not timing an empty session. **It passed at one delta - which is also exactly what a document
+that failed to parse produces.** The report would have read *2 ms* either way, with the same confidence and the
+same green; the run was in fact sound, but only because its author looked inside the delta rather than trusting
+that not-empty meant loaded. **The fix is the general form: the floor moved from the delta count to the ELEMENT
+count**, which a document that did not load cannot satisfy. Distinguish it from clause 1 - the defect does not
+choose the subject here - and from clause 3: the assertion is present and positive, and the surplus is not the
+problem. **What is wrong is that the quantity floored does not grow with the work**, so the smallest passing
+value and the failure mode are the same value. `docs/guards.md`'s own `KnownFloor = 25` against 35 actual paths
+is the shape done right: it floors on the quantity that scales with the document, so an emptied document fails
+while an added row needs no edit. (Developer 3, 2026-09-23, found in a measurement built for something else.)
 
 ## Running the backend tests
 
