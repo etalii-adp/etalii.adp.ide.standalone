@@ -769,7 +769,13 @@ agent must run before merging is one of them**, so every agent meets this in eve
 the pathspec rule. **A bare `git commit -a` in the shared main checkout takes all seven under somebody else's
 message** - the exact shape of the three misattributed commits already recorded above, with the aggravation that
 these files look like real work in `git status` and contain none. **Restore with `git checkout --
-src/client/src/generated/` and commit by pathspec.** Whether the durable fix is a `.gitattributes` line for
+src/client/src/generated/` WHILE THEY ARE STILL DIRTY, and know that the same command is a no-op once they are
+not.** Measured both ways on 2026-09-23: straight after the gate it repaired the bytes, and in a checkout where
+five of the seven were `w/mixed` with `git status` clean it **exited 0, printed nothing and changed nothing** -
+git rewrites only what it considers modified, and normalisation had already made them unmodified. **Deleting the
+seven files and then checking them out brought all seven back `w/crlf`.** So the drift that `status` cannot see
+is also the drift `checkout` will not fix, and **the repair has to destroy the drifted copies to work** - which
+is the *reports success having changed nothing* clause above, arriving in a repair rather than in a script. Whether the durable fix is a `.gitattributes` line for
 that folder or a generator that writes CRLF is **a house-policy question and not an agent's to settle** - the
 two files that state the policy must agree, so changing it for one folder is a decision, not a tidy-up.
 *(Developer 4 measured the symptom and explicitly declined to propose one over the other.)*
