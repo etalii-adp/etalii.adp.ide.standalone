@@ -1195,6 +1195,20 @@ in the act of proposing the rule against exactly that. They found it by grepping
 *(Architect 2's, prompted by the relay that carried its own warning, and volunteered against itself; the framing
 that this is cheaper than either party being more careful is the Scrum master's.)*
 
+**The operational form, which is cheaper than any of this: when you pass news that touches somebody else's
+AUTHORISATION, say what it does not authorise in the same sentence.** Two faults on 2026-09-23 had that exact
+shape and neither was a relay of a status - both were news. *Develop's gate is green, which is your cue* was true
+in its first half and an authorisation in its second: green was **necessary and not sufficient**, another session
+was still gating, and the coordinator names the branch. The receiver refused it on those grounds. **The instinct
+behind it is wanting to be useful with news, which is a good instinct to have and a bad one to act on
+unqualified** - and the qualification costs one clause of one sentence.
+
+**And the exposure is highest for whoever coordinates, because most of a coordinator's messages ARE relays and
+their messages carry the most authority.** The Scrum master's own count for that day was three card verdicts
+relayed from chat rather than read from disk, and one window granted on a stale reading - **a higher rate than any
+session it was relaying to.** So the role least able to check every claim it passes is the role whose unchecked
+claims cost most, which is the argument for the sender's one sentence rather than for the receiver's suspicion.
+
 **A fifth instance, and the reason it is the strongest one in the clause: it happened AFTER both parties had
 written this rule.** A miscount - *three runs today produced no citable verdict*, when only two were
 substantiable - passed from the session that made it to the coordinator, who **relayed it onward without
