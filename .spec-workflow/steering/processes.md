@@ -613,7 +613,21 @@ Rewriting the 45-odd commits was considered and rejected: history surgery in a c
 
 Six instances in one day, across four sessions, each caught only because somebody re-measured:
 
-- `git log --oneline` prints an identical line whoever authored it.
+- `git log --oneline` prints an identical line whoever authored it - **and it prints the same two rows for a
+  landing that happened once as for one that happened twice.** The house pattern commits on a branch and merges
+  `--no-ff` with the same message, so **both objects carry that message**: two rows, identical subjects, minutes
+  apart, the same insertions/deletions stat on the same file - and at the tip *between* them the defect is still
+  present, because the merge's first parent is develop's own tip and legitimately predates the fix. **That reads
+  unmistakably as a revert-and-reapply**, which on a shared checkout is the shape worth panicking about.
+  **`git log -1 --format='%P'` settles it: two parents means the second row is the merge of the first.** Measured
+  on 2026-09-23 - one parent on the branch commit, two on the merge, identical subjects on both. **And the two
+  instruments you reach for first are both silent in a way that resembles a result**: `git show --stat` prints a
+  merge's combined diff, which looks like a second identical change and *confirms* the fear, while `git patch-id`
+  returns **empty** for a merge, which reads as a failed comparison rather than as an answer. **A board taking
+  several landings an hour will meet this, looking at somebody else's work with no context for it.** *(Developer
+  4's, filed as a non-finding: it had the alarm drafted as "the fix may have landed twice" and spent three
+  commands first - which is the *notice when you have only one source* clause working rather than failing, four
+  hours after the same session watched it fail.)*
 - `git config user.name` prints the effective value without its source - so it cannot distinguish your own correctly-scoped identity from one you inherited.
 - **Three instruments answer the CR question wrongly, and each fails looking safe rather than loud.** `grep -c $'\r'` prints `0` for a file with no carriage returns **and** for a shell that never expanded the pattern - it reported a correctly-CRLF file as LF. `awk '/\r$/{n++} END {print n+0}'` prints `0` for a file that is **CRLF on every line**, because msys gawk strips the CR reading in text mode (2026-09-22); it has none of the tells that make the first suspect - no bashism, and a pattern that plainly says what it means - and a following `sed -i 's/\r*$/\r/'` then "did nothing" by the same measure, while `od -c` showed both files had been correct all along. And `od -c | grep -c '\\r'` counts **the document's own textual mentions of** `\r`: it returned 8370 on a file with **zero** CR bytes (2026-09-23), because that file is about line endings and discusses them. **`git ls-files --eol` for a tracked file, `od -c` for an untracked one, and a byte-level count of LF not preceded by CR when you need it in a script.**
 - `md5sum` over whole files reports drift when only a namespace line differs.
