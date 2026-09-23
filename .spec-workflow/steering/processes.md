@@ -1081,6 +1081,18 @@ carelessness:
   question, printed in the format of the right one.
 - **`dropped: 0`** from a filter that matched nothing, because the file it read had mixed line endings.
 
+**And TWO blind instruments agreeing reads as corroboration, which is how a careful reader talks themselves into
+the wrong answer.** A long-running script had to be checked for liveness. Its task output was empty **because the
+command ended in `| tail -3`, which emits nothing until the pipeline exits** - so a running job and a dead one
+print the same nothing. And a process check said zero **because the pattern named the script while the process is
+`bash`** - so it prints zero whether the script is running or not. **Two independent readings, both incapable of
+returning anything else, agreeing on *it died*.** The cost was real: a second copy was started, and two
+concurrent runs of a suite that builds fixture worktrees can collide and redden for a reason belonging to
+neither. **It was settled by reading the file the script was actually writing to** - 741 bytes, then 1062, with a
+plausible last line - which is the one instrument that could have said *alive*. **Before concluding absence from
+two agreeing checks, ask whether either COULD have said otherwise**; corroboration between two instruments blind
+in the same direction is not corroboration.
+
 **Proof of presence is always one line** - `fetch('/favicon.ico')`, `innerWidth > 0`, *did anything else witness
 this event*, an assertion that the set being filtered is non-empty - **and it is never written by someone reading
 the failing output, because the failing output looks like success.** That is the whole difficulty: the moment you
