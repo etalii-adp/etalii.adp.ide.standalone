@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/functional-decomposition-graph/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-22T17:28:02.920Z",
       "trigger": "initial",
+      "approvalId": "approval_1790098082641_yqnidwk6b",
+      "approvalTitle": "functional-decomposition-graph - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T10:27:28.691Z",
+      "trigger": "approved",
       "approvalId": "approval_1790098082641_yqnidwk6b",
       "approvalTitle": "functional-decomposition-graph - Tasks"
     }

@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/backend-centralization/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-22T17:28:08.404Z",
       "trigger": "initial",
+      "approvalId": "approval_1790098088150_7kp8rc93o",
+      "approvalTitle": "backend-centralization - Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T10:28:35.015Z",
+      "trigger": "approved",
       "approvalId": "approval_1790098088150_7kp8rc93o",
       "approvalTitle": "backend-centralization - Design"
     }
