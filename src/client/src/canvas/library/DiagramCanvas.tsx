@@ -2306,7 +2306,10 @@ function declaredBackground(
 
 /** The lines a type's `labels` declare, positioned and painted. */
 function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, source: BindingSource): ReactNode {
-  const lines = layoutLabels(type.labels, source, bounds);
+  // Which shape the lines sit in, for a wrapped label's text region: a custom shape supplies its
+  // own geometry and has no outline here, so it reads as a box - the bounds less the padding.
+  const shape = isCustomShape(type.shape) ? "box" : shapeOf(type.shape, source);
+  const lines = layoutLabels(type.labels, source, bounds, 1, shape);
   // A document that sets its elements' text colour sets it for their LINES, which are what a
   // reader sees. A label naming its own colour keeps it: the declaration is more specific than
   // the element's, so it wins.

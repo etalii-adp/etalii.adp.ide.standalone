@@ -401,6 +401,16 @@ export interface LabelStack {
 
 /** One declared label. A single-label module writes one of these, which is why migration is mechanical. */
 export interface LabelDeclaration {
+  /**
+   * Lay this label out as WRAPPED text inside the shape's text region rather than as one line.
+   *
+   * The region comes from `textRegionOf`, so a trapezoid's text stays off its slanted edge and a
+   * diode's off its curved end - measuring against the bounding box is what puts text outside a
+   * shape that is not a rectangle. Breaks at spaces and at explicit newlines, at the library's
+   * own character-width estimate, stacked at the typography's line height; text that does not fit
+   * ends its last visible line with an ellipsis and keeps the whole text as the label's tooltip.
+   */
+  wrap?: boolean;
   /** What it says: a field, a template, or a collection with `each`. */
   text: Binding;
   /** Relative to the shape. Defaults to `inside`, which is what a single centred label is. */
@@ -503,7 +513,6 @@ export interface LabelRule {
   insetTop?: number;
   insetHeight?: number;
   insetX?: number;
-  wrap?: boolean;
   truncate?: boolean;
   /**
    * Editable means: through the shared `InlineLabelEditor`, committing as an event, and
