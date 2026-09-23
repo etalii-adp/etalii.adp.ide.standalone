@@ -419,7 +419,37 @@ Each test project is therefore an executable (`<OutputType>Exe</OutputType>`) �
 
 **A verdict's dangerous input is missing, not wrong.** *(Developer 3's finding.)* A wrong value is compared and fails; a missing one is often never compared at all. The natural form of the rule above - `grep -q "Zero tests ran" <log> && refuse` - passes when the log is missing, because `grep` exits 2 on a missing file and the `&&` never fires. Two scripted gate chains on this board had exactly that, and in both the verdict reached green by falling through rather than by being earned. **And a chain run by hand is not exempt because a person reads the result** *(Developer 1's words)*: `grep -c "Zero tests ran"` prints `0` for an empty log exactly as for a good one, and that `0` is the number read as the good sign - a landing made by eye was protected only by a positive check its author carried in their head. A person reading output is a verdict with no refusal state. **So check it positively: require the log's `total:` above zero and `failed: 0`, so a missing or truncated log refuses rather than passing unread.** Write the verdict to start refused, with success assigned in one place behind every positive condition, and compare statuses as strings - `[ "" -ne 0 ]` is an error, and an error is false inside `if`. **Test it by deleting the log before the verdict reads it**, alongside a real log as the case that must pass.
 
-**Judge every gate by an exit code captured into a variable before any pipe.** In a pipeline `$?` is the last command's status, so `dotnet test … | tail` reports `tail`'s success and a crashed or zero-test run reads as green. A zero-test run does exit non-zero — 5 for zero tests, 8 for a filter matching nothing — so the exit code carries the information that grepping the output destroys. `.github/workflows/build.yml` embodies this: every gate step is judged by its exit code and nothing greps output.
+**Judge every gate by an exit code captured into a variable before any SUBSEQUENT COMMAND - not merely before a pipe.** In a pipeline `$?` is the last command's status, so `dotnet test … | tail` reports `tail`'s success and a crashed or zero-test run reads as green. A zero-test run does exit non-zero — 5 for zero tests, 8 for a filter matching nothing — so the exit code carries the information that grepping the output destroys. `.github/workflows/build.yml` embodies this: every gate step is judged by its exit code and nothing greps output.
+
+**A pipe is not the only way to lose the status and it is not the common one.** A trailing `; echo "EXIT=$?"`
+does identical damage and happens far more often - **precisely because it is what somebody adds in order to SEE
+the exit code.** `$?` is read while the echo is being assembled, the echo then succeeds, and **the echo's own 0
+becomes the wrapper's status.** In every instance below **the echoed value was right and the notification was
+wrong**, which is the worst possible arrangement: the correct number is sitting in the output that nobody
+re-reads once a green notification has arrived.
+
+**Four instances on 2026-09-23, in four sessions**: a gate notification reporting exit 0 over a log saying
+`RESULT=gates-red ( format=2 )`; a format run notified as 0 whose captured `FORMAT_EXIT` was 2; one from that
+morning; and a gate run of mine that **printed `WRAPPER_EXIT=1` and was notified as exit code 0**, because a
+`tail` of the log ran last. **The guidance against this was already written and already correct**, which is the
+argument for the remedy rather than against the rule.
+
+**So make it structurally impossible at the point of invocation: end the command with the status you captured.**
+
+    cmd > "$LOG" 2>&1; RC=$?; echo "EXIT=$RC"; exit $RC
+
+The notification then agrees with the log and nobody has to know the rule. **Same shape as the git-identity
+remedy: set it once where the command is written and it cannot be got wrong afterwards, which beats any rule
+depending on vigilance at the moment nobody is looking.**
+
+**And the diagnosis matters as much as the fix, because the obvious culprit was innocent.** `gate.sh` is
+correct - **every failure path exits non-zero, including the `gates-red` path, and the green path's implicit 0
+is right** - so a tooling change was drafted and correctly abandoned. **The fault is in how the runner is
+invoked, not in the runner**, and a fix applied to the script would have left every hand-written invocation
+still lying. *(Architect 3, who diagnosed it and withdrew its own proposed tooling fix.)*
+
+**A note on the short form**: CLAUDE.md's summary of this rule still says *before any pipe*. **Read it as any
+subsequent command** - the narrower wording points at the rarer cause, and that file is the user's to change.
 
 Set `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` before gating; concurrent MSBuild nodes have been diagnosed as the cause of 0xC0000005 host crashes on this machine.
 
