@@ -37,6 +37,21 @@
 # rather than ignored, because a mistyped flag that quietly selected the permissive default would be
 # this same defect one layer up.
 #
+# ROLLOUT HAZARD, AND IT BIT THE AUTHOR WITHIN THE HOUR. Every copy of this script that predates
+# this flag IGNORES ALL ARGUMENTS: it prints the board and exits 0, so `--require-free` against an
+# older copy returns the same 0 for a held board as for a free one. That is the exact fail-open the
+# flag exists to remove, arriving THROUGH the flag - a caller that adopts it early is unprotected
+# while believing it is protected, and nothing in the output says which copy answered.
+#
+# So a caller that cares proves the instrument understands the question before believing its answer:
+#
+#   bash who-is-gating.sh --probe-unsupported > /dev/null 2>&1
+#   [ $? -eq 2 ] || { echo 'this copy predates --require-free; its exit code means nothing'; exit 3; }
+#
+# A copy that refuses a nonsense argument is a copy that would also refuse a mistyped one, and a copy
+# that accepts it is one whose zero is uninformative. This is the liveness rule applied to a CLI flag:
+# an instrument reporting absence must first prove it is present.
+#
 # It still does not authorise anything. A zero from --require-free says the board was free at the
 # instant it was read; the naming is a person, because locks are per scratch worktree and so do not
 # exclude each other - two sessions can read `free` in the same second and both be correct.
