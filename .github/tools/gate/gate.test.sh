@@ -36,7 +36,7 @@ FIX="$HERE/fixtures"
 . "$HERE/gate-lib.sh"
 
 case "$(uname -s)" in MINGW* | MSYS* | CYGWIN*) MSYS=1 ;; *) MSYS=0 ;; esac
-if [ "$MSYS" = 1 ]; then EXPECTED=151; else EXPECTED=141; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=164; else EXPECTED=154; fi
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
 trap 'rm -rf "$W"' EXIT
@@ -314,6 +314,38 @@ printf 'gave up deleting C\r\n' > "$UD/5100.log"
 printf 'gave up deleting D' >> "$UD/5100.log"
 report "2 files, 4 lines" "$(gate_undeleted_folders "$UD")" "two processes, CRLF lines and a last line without a newline all counted"
 report none "$(gate_undeleted_folders "")" "no directory named at all is none, not an error"
+
+echo "== the tell: is a gate running, and on which base"
+# The reader has FOUR outputs and silence is none of them. The first draft was
+# `cat <glob> 2>/dev/null`, which prints the identical nothing for "nobody is gating", "the
+# directory never existed", "the writer moved", "a mistyped path" and "the glob did not expand" -
+# four of which mean NO INFORMATION while all five read as clear to proceed. So the cases below
+# assert the reader, not only the file: a guard over the file alone is green while the published
+# procedure is blind.
+TELL=$(mktemp -d)/worktrees
+report "TELL_UNREADABLE=$TELL" "$(gate_who_is_gating "$TELL")" "an absent tell directory is loud, not empty"
+gate_who_is_gating "$TELL" > /dev/null; report 2 "$?" "... and exits nonzero, so a caller cannot read it as clear"
+report "TELL_UNREADABLE=<no directory named>" "$(gate_who_is_gating "")" "no directory named at all is loud too"
+mkdir -p "$TELL"
+report "GATING=none" "$(gate_who_is_gating "$TELL")" "no lock anywhere says so in words"
+gate_who_is_gating "$TELL" > /dev/null; report 0 "$?" "... and exits zero, which is the only reassuring state"
+mkdir -p "$TELL/mrga1/adp-gate.lock"
+# The lock exists before its line does, and the write is deliberately best effort - so globbing
+# the owner FILE would print GATING=none while a gate was genuinely running, which is the
+# under-hold whose cost is the unrecoverable one. The reader globs the lock DIRECTORY.
+report "mrga1 gating (owner not written yet)" "$(gate_who_is_gating "$TELL")" "a lock with no line yet is still a holder"
+gate_tell_write "$TELL/mrga1/adp-gate.lock" mrga1 claude/x pending
+report 1 "$(gate_who_is_gating "$TELL" | grep -c "gating claude/x on base pending")" "base pending is a real state, not a malformed line"
+gate_tell_write "$TELL/mrga1/adp-gate.lock" mrga1 claude/x abc1234
+report 1 "$(gate_who_is_gating "$TELL" | grep -c "on base abc1234")" "the rewrite names the base a develop commit would stale"
+report 1 "$(gate_who_is_gating "$TELL" | grep -c "ignore-after")" "the line carries its own expiry, so no reader needs to know run lengths"
+mkdir -p "$TELL/mrgb2/adp-gate.lock"; gate_tell_write "$TELL/mrgb2/adp-gate.lock" mrgb2 claude/y def5678
+report 2 "$(gate_who_is_gating "$TELL" | grep -c "gating claude/")" "two scratch trees gating at once are two lines"
+printf "stale junk\n" > "$TELL/mrga1/adp-gate.lock/owner"
+gate_tell_write "$TELL/mrga1/adp-gate.lock" mrga1 claude/z 9999999
+report 0 "$(gate_who_is_gating "$TELL" | grep -c "stale junk")" "a killed run leaves a line, and the next run in that tree overwrites it"
+report 0 "$(gate_tell_write "" x y z; echo $?)" "a write with no lock is a no-op, never an error - it may not red a gate"
+report 0 "$(gate_tell_write "$TELL/absent/adp-gate.lock" x y z; echo $?)" "... and neither is a write to a lock that is gone"
 
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"
