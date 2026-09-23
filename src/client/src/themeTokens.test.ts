@@ -86,6 +86,8 @@ describe("theme colour tokens", () => {
 
   const stylesheets = () => sources([".css"]);
 
+  const DARK_SCHEME = "@media (prefers-color-scheme: dark)";
+
   /**
    * TypeScript that paints. Tests are excluded - a guard naming a deliberately undefined token
    * in a canary is not an offence - and comments are stripped, because this file and
@@ -96,6 +98,17 @@ describe("theme colour tokens", () => {
 
   function withoutComments(source: string): string {
     return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1 ");
+  }
+
+  /**
+   * The same for a stylesheet, but keeping the line structure so an offence can still name its
+   * line. <b>A comment naming a token is prose, not a usage</b> - this file's own fix quotes the
+   * names it removed, and `dotnet-dependency-graph.css` explains in a comment which phantom it
+   * closed. A guard that reads those is a guard over prose: it makes the narrative unwritable
+   * and fires on the one document most likely to be telling the truth.
+   */
+  function withoutCssComments(css: string): string {
+    return css.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\r\n]/g, " "));
   }
 
   /** The custom properties a source declares itself, in any block or mode. */
@@ -142,6 +155,13 @@ describe("theme colour tokens", () => {
     expect(undefinedTokensIn(phantom)).toEqual(["--totally-made-up"]);
     expect(undefinedTokensIn(localPalette)).toEqual([]);
     expect(undefinedTokensIn(themed)).toEqual([]);
+
+    // And the prose half: a stylesheet explaining which phantom it closed must not be
+    // reported as still using it.
+    const narrative = `/* it used to read var(--long-gone, #f00) and now does not */
+.a { color: var(--color-text); }`;
+    expect(undefinedTokensIn(withoutCssComments(narrative))).toEqual([]);
+    expect(undefinedTokensIn(narrative)).toEqual(["--long-gone"]);
   });
 
   it("defines every token any stylesheet uses", () => {
@@ -150,7 +170,7 @@ describe("theme colour tokens", () => {
 
     // Act: every var(--…) in every sheet, with or without a fallback.
     for (const sheet of stylesheets()) {
-      const css = readFileSync(sheet, "utf8");
+      const css = withoutCssComments(readFileSync(sheet, "utf8"));
       const own = declaredIn(css);
       const lines = css.split(/\r?\n/);
       lines.forEach((line, index) => {
@@ -168,6 +188,76 @@ describe("theme colour tokens", () => {
 
     // Assert.
     expect(offences).toEqual([]);
+  });
+
+  /**
+   * A colour a source declares for itself, and whether it says so twice.
+   *
+   * <b>The guard above catches an undeclared name and cannot catch a palette that forgot a
+   * mode.</b> That distinction is the whole of `dotnet-dependency-graph`'s defect: its names were
+   * undefined AND its literals were dark, so it rendered dark-looking in the light theme.
+   * Declaring them in one mode only would have satisfied the rule and moved the phantom rather
+   * than closed it - a local palette is allowed precisely because `ansible-structure` declares
+   * both, and allowing it on any weaker terms gives back what task 2 was for.
+   *
+   * Only colour-valued properties are held to this. `--font-sans` is the same stack in both
+   * modes and saying so twice would be noise.
+   */
+  function colourOnlyInOneMode(css: string): string[] {
+    const stripped = withoutCssComments(css);
+    const darkAt = stripped.indexOf(DARK_SCHEME);
+    if (darkAt === -1) {
+      const everywhere = themeTokens(stripped).light;
+      return [...everywhere].filter(([, value]) => isColour(value)).map(([name]) => name);
+    }
+
+    const light = themeTokens(stripped.slice(0, darkAt)).light;
+    // `.dark` rather than `.light`: this slice BEGINS with the media marker, so themeTokens
+    // splits it with an empty light half and everything in the dark one. Reading `.light`
+    // here returned an empty set and reported every correct two-mode palette in the tree as
+    // a one-mode offender - which is how this detector was caught being wrong.
+    const dark = themeTokens(stripped.slice(darkAt)).dark;
+
+    return [...light]
+      .filter(([name, value]) => isColour(value) && !dark.has(name))
+      .map(([name]) => name);
+  }
+
+  function isColour(value: string): boolean {
+    return /^(#|rgb|hsl|color\()/i.test(value.trim());
+  }
+
+  it("declares a local colour palette in both modes, or not at all", () => {
+    // Arrange.
+    const offences: string[] = [];
+
+    // Act: every sheet that owns colours, excluding the theme itself - index.css IS the modes.
+    for (const sheet of stylesheets().filter((file) => !file.endsWith("index.css"))) {
+      for (const name of colourOnlyInOneMode(readFileSync(sheet, "utf8"))) {
+        offences.push(
+          `${path.relative(repoSrc, sheet)} declares ${name} for one mode only, so it paints a light-theme colour on the dark surface or the reverse`,
+        );
+      }
+    }
+
+    // Assert.
+    expect(offences).toEqual([]);
+  });
+
+  it("sees a one-mode palette, and a two-mode one as fine", () => {
+    // Arrange: the distinction as text, so the assertion above is believed only once its
+    // detector has been watched failing.
+    const oneMode = `.a { --mine: #0f0; }`;
+    const bothModes = `.a { --mine: #0f0; }
+${DARK_SCHEME} {
+  .a { --mine: #7f7; }
+}`;
+    const notAColour = `.a { --stack: system-ui, sans-serif; }`;
+
+    // Act & assert.
+    expect(colourOnlyInOneMode(oneMode)).toEqual(["--mine"]);
+    expect(colourOnlyInOneMode(bothModes)).toEqual([]);
+    expect(colourOnlyInOneMode(notAColour)).toEqual([]);
   });
 
   it("defines every token the painting TypeScript uses", () => {
