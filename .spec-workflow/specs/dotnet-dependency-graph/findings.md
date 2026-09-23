@@ -29,8 +29,9 @@ Measured by Developer 2 (the sighting, the mechanism and the load runs) and Arch
 
 ## 3. What the evidence is, and what it is not
 
-- **The gate's red is the only sighting.**
+- **Two sightings now, on unrelated branches** — this section said "the only sighting" until the second arrived. The first is 2026-09-22, `mrg2`, `20260922T163002Z-25748-red`. The second is 2026-09-23, `mrg1`, `20260923T102044Z-3360-red`, on a branch changing ten files of which **every one is a `.ts` or `.tsx` under `src/client` and not one is a `.cs`**: the failing assembly's sources were byte-identical to `develop`'s. **That settles authorship without appealing to load at all**, and it is the cheaper argument of the two — it holds whatever the machine was doing, while a reproduction attempt only ever reports what it happened to do.
 - **Developer 2 could not reproduce it**: 8 runs, 3 quiet and 5 under deliberate load (suites normally taking 2–3 s took 19 s, 22 s and 1 m 13 s during it, so the contention was real), all green. Then the full suite again on **`999b6bff`, the exact merged commit whose gate went red**, under the heaviest load available: **5094 passed, 0 failed**, that test included.
+- **Developer 1 could not reproduce the second one either**, on the exact merged binary: **8 runs sequentially, 12 concurrently, and 6 against 24 busy loops on a 32-core machine — 26 green, not one red.** Recorded because the reflex on meeting a second sighting is to go and reproduce it: **34 failed attempts across two sessions, two branches and two days still is not a rate**, and a thirty-fifth would not be either. The mechanism is already established from the code path; what nobody has is a frequency, and no number of green runs will supply one.
 - **Holding the tree fixed and varying only the run is what makes this diagnosis evidence rather than a re-roll** — and it is still **not a rate**. Eight runs plus one full-suite re-run that fail to reproduce say the mechanism is timing-dependent, not how often it bites.
 - **What is solid is the code path**: nothing else in the watcher can produce a second report.
 
