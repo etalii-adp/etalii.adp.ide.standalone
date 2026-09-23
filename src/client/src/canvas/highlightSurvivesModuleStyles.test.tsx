@@ -14,13 +14,13 @@ SVGElement.prototype.releasePointerCapture ??= () => {};
 /**
  * No stylesheet in the application can repaint the library's two rings.
  *
- * ## Its name, since task 28's amendment names the old one
- *
- * This was `ringsSurviveModuleStyles.test.tsx`, and centralized-selection task 28 names it by that
- * name in its list of expected test changes. The ring it guarded no longer exists - the user
- * replaced it with one inline highlight on 2026-09-22 - and a file named for a thing that is gone
- * is a lie a later reader would act on, so the name moved with the subject.
- *
+ * ## Its name, since task 28's amendment names the old one
+ *
+ * This was `ringsSurviveModuleStyles.test.tsx`, and centralized-selection task 28 names it by that
+ * name in its list of expected test changes. The ring it guarded no longer exists - the user
+ * replaced it with one inline highlight on 2026-09-22 - and a file named for a thing that is gone
+ * is a lie a later reader would act on, so the name moved with the subject.
+ *
  * ## The defect
  *
  * The selected and accept looks are rings the library draws INSIDE the element's group, just
@@ -47,11 +47,22 @@ SVGElement.prototype.releasePointerCapture ??= () => {};
  *
  * ## Its limits
  *
- * jsdom's cascade is source order alone - no specificity, no `!important` - which is why the fix
- * it guards is inline paint: the one thing both jsdom and a browser apply over every ordinary
- * rule. So a module rule marked `!important`, which would beat inline paint in a browser, is not
- * seen here. Nor is a rule reaching the ring through an attribute selector or a pseudo-class jsdom
- * does not match (`:hover`): the wrapper carries classes only.
+ * <b>MEASURED against this repository's jsdom (25.0.1) on 2026-09-23, not assumed</b> - the claim had
+ * been repeated by several of us and nobody had run it:
+ * <list type="bullet">
+ * <item><description><b>Specificity: not implemented.</b> `.outer .inner` written first loses to
+ * `.inner` written last, and `.mindmap-node rect` loses to `.library-shape`. jsdom takes the LAST
+ * matching rule, so a browser's answer and this file's can differ whenever two rules compete on
+ * specificity alone.</description></item>
+ * <item><description><b>`!important`: not implemented.</b> A stylesheet's `!important` loses to an
+ * inline style here and would WIN in a browser - which is why `noModuleSelection` forbids
+ * `!important` on stroke or fill in a module sheet by reading the text instead.</description></item>
+ * <item><description><b>Inheritance: implemented correctly.</b> A child's own rule beats a stroke
+ * inherited from its parent, exactly as a browser does - and that is the one this file depends on,
+ * since the defect it now catches was a paint left on the wrapping group.</description></item>
+ * </list>
+ * A rule reaching the shape through an attribute selector or a pseudo-class jsdom does not match
+ * (`:hover`) is still not seen: the wrapper carries classes only.
  */
 
 /** The repository's src folder, found by walking up - the family's shared idiom. */
