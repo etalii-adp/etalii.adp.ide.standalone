@@ -34,7 +34,11 @@ public static class DestinationState
     /// One line describing <paramref name="path"/> right now. Never throws: it runs inside a
     /// failure path, and a diagnostic that fails the save it describes would be worse than silence.
     /// </summary>
-    public static string Describe(string path)
+    /// <param name="ourScratch">
+    /// The scratch file THIS publish was using, when there is one. Named so the line can tell a
+    /// reader's own publish from somebody else's - see <see cref="Siblings"/>.
+    /// </param>
+    public static string Describe(string path, string? ourScratch = null)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -48,7 +52,7 @@ public static class DestinationState
                 ? $"present, {new FileInfo(path).Length} bytes, {File.GetAttributes(path)}"
                 : "GONE";
 
-            return $"{described}; {Siblings(path)}";
+            return $"{described}; {Siblings(path, ourScratch)}";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
@@ -60,7 +64,15 @@ public static class DestinationState
     /// The scratch and backup files sitting beside the destination - somebody's publish in flight,
     /// or nobody's.
     /// </summary>
-    private static string Siblings(string path)
+    /// <remarks>
+    /// <b>OUR OWN SCRATCH FILE IS ALWAYS ONE OF THESE, AND SAYING SO IS THE POINT.</b> This runs
+    /// inside the failing publish, BEFORE that publish deletes its temporary - so exactly one
+    /// <c>~adp-*</c> file is the expected state of every failure, and a line that merely listed it
+    /// read as "another publisher was here" while describing the reader's own process. Architect 1
+    /// read the fourth field occurrence that way and reported a second publisher to itself before
+    /// catching it, which is how the phrasing was found to be at fault rather than the query.
+    /// </remarks>
+    private static string Siblings(string path, string? ourScratch)
     {
         var folder = Path.GetDirectoryName(path);
         if (folder is not { Length: > 0 } || !Directory.Exists(folder))
@@ -78,15 +90,29 @@ public static class DestinationState
             .Take(MostSiblingsWorthNaming + 1)
             .ToArray();
 
-        if (siblings.Length == 0)
+        var ours = ourScratch is { Length: > 0 } ? Path.GetFileName(ourScratch) : null;
+        var theirs = siblings
+            .Where(sibling => !string.Equals(sibling, ours, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var mine = ours is not null && siblings.Any(sibling => string.Equals(sibling, ours, StringComparison.OrdinalIgnoreCase))
+            ? $"our own {ours}"
+            : null;
+
+        if (theirs.Length == 0)
         {
-            // Said in words rather than left out: no scratch file beside a failed publish is
-            // evidence, and an absent phrase reads as an unasked question.
-            return "no publish in flight beside it";
+            // Said in words rather than left out: NOBODY ELSE publishing beside a failed publish is
+            // evidence, and an absent phrase reads as an unasked question. It only became a real
+            // negative once our own scratch file stopped being counted as somebody.
+            return mine is null
+                ? "nobody else was publishing beside it"
+                : $"nobody else was publishing beside it, only {mine}";
         }
 
-        return siblings.Length > MostSiblingsWorthNaming
-            ? $"publishes in flight beside it: {string.Join(", ", siblings.Take(MostSiblingsWorthNaming))} and more"
-            : $"publishes in flight beside it: {string.Join(", ", siblings)}";
+        var named = theirs.Length > MostSiblingsWorthNaming
+            ? $"{string.Join(", ", theirs.Take(MostSiblingsWorthNaming))} and more"
+            : string.Join(", ", theirs);
+        return mine is null
+            ? $"SOMEBODY ELSE was publishing beside it: {named}"
+            : $"SOMEBODY ELSE was publishing beside it: {named}, besides {mine}";
     }
 }
