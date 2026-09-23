@@ -32,6 +32,22 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
 /// report, so an absence means "nothing arrived, and something would have".
 /// </para>
 /// <para>
+/// <b>Which of the two is bounded, and which is merely safer.</b> TERMINATION is genuinely
+/// bounded: the test decides when writing stops, so the window it measures belongs to the
+/// watcher alone. The COLLAPSING ceiling is not - four reports over ten events still asserts
+/// that the machine did not stall for half a second four times inside one loop. That is far
+/// outside anything plausible and the planted regression clears it by a factor of five, but it
+/// is empirical rather than principled. <b>Do not lower the ceiling thinking it rests on
+/// something it does not.</b>
+/// </para>
+/// <para>
+/// <b>Ten writes produced NINETEEN reports under the planted regression</b>, which is more than
+/// one per write: FileSystemWatcher raises several events for one write - LastWrite and Size -
+/// so the burst the debounce collapses is larger than the loop suggests. That is why the
+/// ceiling discriminates better than the arithmetic implies, and why the old exact-1 was even
+/// more fragile than it looked.
+/// </para>
+/// <para>
 /// <b>Both of those changes LOOSEN what is asserted</b>, which is the hazard in this file: an
 /// over-strict assertion relaxed carelessly becomes a vacuous one, and a test reporting health it
 /// cannot vouch for is worse than the flake it replaced. The collapsing ceiling was therefore
