@@ -43,6 +43,13 @@
 # flag exists to remove, arriving THROUGH the flag - a caller that adopts it early is unprotected
 # while believing it is protected, and nothing in the output says which copy answered.
 #
+# THE AUTHOR'S OWN INSTANCE, kept here because a rule with its author's mistake attached survives a
+# reader who thinks it does not apply to them: an hour after building this flag I ran it from the
+# main checkout, read `exit 0` as THE BOARD IS FREE, and only then noticed the flag was not on
+# develop at all. The board was free - the printed GATING=none said so - but the exit code could not
+# have told me otherwise, and I had reached for the exit code precisely because I had just made it
+# mean something.
+#
 # So a caller that cares proves the instrument understands the question before believing its answer:
 #
 #   bash who-is-gating.sh --probe-unsupported > /dev/null 2>&1
