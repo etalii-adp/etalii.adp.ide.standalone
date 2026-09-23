@@ -578,3 +578,41 @@ describe("the diagram's own menu, on empty canvas", () => {
     expect(inner.detail.case === "action" ? inner.detail.value : null).toBe(ContextSelectionAction.CONTEXT_MENU);
   });
 });
+
+/**
+ * The rendered half of client-centralization task 1's contrast guard.
+ *
+ * <b>The stylesheet and the browser disagreed about this label, and the stylesheet is not the
+ * authority about what was painted.</b> `canvas.css` says `.canvas-node-label` is
+ * `var(--color-text)`; a browser measurement on develop read the computed fill as
+ * `rgb(0,0,0)` - which is neither the token nor its `#1c2333` fallback, so neither explains it.
+ * SVG `fill` inherits, so a label that ends up without that class takes black from the canvas
+ * `<svg>`, and <b>no choice of pill colour rescues a black label</b>: mapping the fill to
+ * `--color-surface` puts black at 1.44:1 in the dark theme, moving the defect rather than
+ * removing it.
+ *
+ * jsdom applies no CSS, so it cannot weigh in on the ratio - <b>but it can say whether the
+ * class the ratio depends on reaches the element</b>, which is the one route source-reading
+ * cannot rule out. `moduleThemeContrast.test.ts` asserts the class is painted from a theme
+ * token; this asserts the element actually carries it.
+ */
+describe("the variable label keeps the class its colour depends on", () => {
+  it("renders the declared label with canvas-node-label, so it cannot inherit black", () => {
+    const { container } = renderCanvas();
+
+    // A type declaring `labels` still renders the element's own empty `<text>`, which carries no
+    // class and no content. It paints nothing, so it is not the label this is about - but it is
+    // why this filters rather than asking for every `<text>`.
+    const labels = [...container.querySelectorAll('[data-element-id^="variable:"] text')].filter(
+      (text) => (text.textContent ?? "") !== "",
+    );
+    expect(labels.length, "the variables draw their labels").toBeGreaterThan(0);
+
+    for (const label of labels) {
+
+      expect([...label.classList], `"${label.textContent}" carries the class canvas.css paints`).toContain(
+        "canvas-node-label",
+      );
+    }
+  });
+});
