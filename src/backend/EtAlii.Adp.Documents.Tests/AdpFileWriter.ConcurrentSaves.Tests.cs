@@ -109,6 +109,12 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         Assert.True(
             SpinWait.SpinUntil(() => logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal)), Patience),
             "The second save to the same destination did not log that it waited.");
+        // LOAD-BEARING, and not a belt-and-braces repeat of the line above it. The log
+        // assertion proves only that a line was WRITTEN: a save that logged "waited" and then
+        // sailed straight past the turn satisfies it exactly, which is the defect this guard
+        // exists to catch. That the second save is still unfinished WHILE the first holds the
+        // destination is the only evidence here that the contention was real. Remove it and
+        // what remains measures the logging rather than the serialisation.
         Assert.False(second.IsCompleted, "The second save completed while the first still held the destination.");
         Assert.Contains(logs.Warnings, w => w.Contains(WaitedMessage, StringComparison.Ordinal) && w.Contains(IoPath.GetFileName(path), StringComparison.Ordinal));
 
