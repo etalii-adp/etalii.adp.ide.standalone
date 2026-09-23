@@ -52,6 +52,15 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </para>
 /// <para>
 /// <b>What it cannot show.</b> There is no HTTP here, so Kestrel, the grpc-web translation and the
+/// <b>And the field condition it is named for has moved under it.</b> The browser-side evidence
+/// that <c>UpdateView</c> was dispatched at all was withdrawn: what was measured as "in flight"
+/// counted QUEUED requests, and the origin appears to have stopped dispatching some 250 ms
+/// BEFORE <c>UpdateView</c> was issued - which would make its non-return a symptom rather than
+/// the first domino, with the <c>Open</c> stream the likelier trigger. That does not touch what
+/// this test measures, which is a fact about the server and true whatever the browser did. It
+/// does mean a reader should not take this file as evidence about the browser at all.
+/// </para>
+/// <para>
 /// browser's transport are all untouched - and the field symptom, "nothing on that origin completes
 /// afterwards", is defined at a layer this cannot see. A hang here would be a positive
 /// reproduction and strong; a clean run is weak, and its natural reading - "therefore the client" -
@@ -139,7 +148,11 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
             registered,
             $"The Open stream never registered a viewport for {bodyPath}, so UpdateView would have answered its guard clause and this test would have measured nothing. Open faulted: {open.Exception?.GetBaseException().Message ?? "no"}.");
 
-        // Act, part two. The call that never returned in the field, on the same connection, with
+        // Act, part two. The call that DID NOT RETURN in the field - carefully not "never
+        // returned", because whether it was ever dispatched is unestablished: the browser
+        // measurement that appeared to show it on the wire turned out to record OUTSTANDING
+        // rather than SENT, and a queued request that never leaves is not a call that failed to
+        // return. On the same connection, with
         // the stream live. Timed on a worker so a hang is REPORTED rather than hanging the suite.
         var clock = Stopwatch.StartNew();
         var update = Task.Run(
