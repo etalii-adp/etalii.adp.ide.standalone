@@ -107,6 +107,38 @@ fi
 
 **Before merging in the main checkout, read `git status` for files you did not touch.** A merge writes every path that differs between the branch point and the tip *regardless of the index*, so uncommitted churn from another session will either block the merge or tempt you into `git checkout --` on files that are not yours. Neither stash nor checkout is acceptable there — both destroy in-flight work. Apply your own files with `git checkout <branch> -- <paths>`, commit by pathspec, then verify with `git diff <branch> develop -- <your paths>` that the result matches what the merge would have produced. The branch is then not recorded as merged, which is a small honest loss of history; say so in the report.
 
+**A DEVELOP COMMIT COMPETES WITH A RUNNING GATE EXACTLY AS ANOTHER GATE DOES.** The gate takes develop's tip
+as its base and refuses to land onto a moved develop, so a commit straight to develop - a specification
+document, a findings record, anything that legitimately bypasses a worktree - **stales every run already in
+flight, and the verdict arrives only after the full backend suite has been paid for.** Three sessions hit it
+in one day: a self-staled landing, a window granted on an old reading, and six commits onto a running gate's
+base, which cost that session a third cycle.
+
+**What made it invisible: a running gate cannot be seen from develop.** The lock is per scratch worktree and
+says nothing about whose base it protects, and every rule about committing to develop is about **what** you
+commit - pathspec, identity, cards - never about **when**. So the tree now carries the answer: **`bash
+C:/git/EtAlii.Adp/.github/tools/gate/who-is-gating.sh`** prints one line per holder with the base it would be
+staled by, or `GATING=none`, or `TELL_UNREADABLE=<dir>` with a non-zero exit. **Read it immediately before the
+commit, not at the start of your turn**, and remember that **it warns and never authorises** - a clear read
+does not make the board yours.
+
+**And the one moment a develop commit is free is when your own base is already stale.** A run that will refuse
+its fast-forward anyway cannot be made worse; that is the only window, and it is worth using deliberately
+rather than waiting for a quiet board that may not come.
+
+**STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.** Same files, opposite order, and the
+discriminator is which operation comes next. The existing rule - clear the index before merging - is about the
+**merge**, which happens inside `gate.sh` at the START of a run. **Between a green gate and its fast-forward
+the situation reverses**: a fast-forward writes no commit and cannot be invalidated by ownerless files in the
+index, while committing them first DOES write a commit, which moves develop and invalidates the landing you
+were about to run. **That cost a green gate at 6660 tests its landing**, and the session did not force it -
+forcing would have discarded a commit of files belonging to nobody, **which are easier to destroy and no more
+acceptable to.**
+
+**The transferable half: the existing rule READS AS COMPLETE.** It is correct about the case it describes, so
+a reader in the other case follows it confidently into a refused landing - which is why each half here names
+the operation it is about rather than only the order.
+
 ## Git identity
 
 **Commit under a per-task identity, `agent-<N>-<task>`, set differently depending on where you are.**
@@ -720,6 +752,42 @@ easily failing under exactly the load that produces the failure.
   log: the compiler flags showed the raised rules had reached the build, so the instrument was armed and the
   plant was at fault. **When a planted proof fails, ask first whether the instrument was even armed.** This is
   the mirror of *a test that passes against the defect is worse than no test*.
+### The state you measured is a photograph, not a forecast
+
+**THE FAMILY SENTENCE for a whole day of corrections, and it is Developer 3's: the state I measured was a
+photograph, and I was treating it as the state I was acting on.** Every instance below is that idea at a
+different scale, and two of them are the Scrum master's own:
+
+- **A window granted on a lock read once**, before five commits and four card creations. The reading was
+  accurate; treating it as a forecast was the error, **and the session had been told minutes earlier that the
+  other run would refold and re-gate.**
+- **"Five of seven watchers complete"** - true of the question *did it hear a rename*, false under a criterion
+  that also required `Error`. **The count is a property of the question.**
+- **305 quoted as a rate** when it was a harness's TOTAL across five failure codes, correct where it came from
+  and wrong one line from a `0x80070497` discussion.
+- **A commit subject describing the diff it was written for and not the one it landed with**, because a message
+  file written for an earlier change was reused.
+- **And the purest, because it has no interval at all: a process tree was measured, what was seen was killed,
+  and the tree had moved before the reader finished reading its own output.**
+
+**The discipline: re-read the state immediately before the act, not at the start of your turn** - and where the
+state belongs to somebody else, ask rather than infer.
+
+**Two clauses from the process-tree instance, both earned the hard way.** *A kill orphans, it does not
+terminate*: the wrapper was killed and the script survived, the script was killed and the suite survived, the
+suite was killed and **its test host survived and was still spawning children three minutes later - and each
+kill reported success.** So the rule is not *kill the tree* but **verify by ancestry afterwards, because the
+tree you can see is the tree at the moment you looked.** And *the discriminator is ancestry, not time and not
+the command line*: a live gate spawns **the identical script from the identical path**, so a pattern match
+would have killed the running gate along with its orphans, while **an orphan cannot be a child of a live
+gate.** Time nearly works and then does not - two orphans spawned after the live run had started.
+
+**And verify by ancestry is not enough on its own: ENUMERATE by ancestry too.** The walk that fixed
+attribution was applied to a **name-filtered** candidate set, so it proved *no process of those two shapes
+remains* rather than *no orphan remains*. **A name filter decides your coverage before the walk decides your
+attribution**, and both of that day's process-hunt errors were that one thing - one in the open, one hidden
+under a correct-looking walk.
+
 ## Records that were right when written
 
 **The shape: correct when written, conclusion intact, premise moved underneath - and nothing in the artifact says which of its parts went stale.** This is not a wrong record and it is not a stale cache. It is advice that earned its place by solving a real problem, still reads as authoritative, and is now the cause of the next failure. **It is more dangerous than a bad instruction from a stranger, because it arrives pre-trusted** - and if it is your own note it arrives with the authority of a lesson you remember learning.
