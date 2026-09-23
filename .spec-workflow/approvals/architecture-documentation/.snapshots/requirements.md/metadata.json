@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/architecture-documentation/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "revision_requested",
       "approvalId": "approval_1790159481666_45od6ck5g",
       "approvalTitle": "architecture-documentation requirements: two guarded pages for an agent audience"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-23T10:50:29.125Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790160468081_jr2h9hjpr",
+      "approvalTitle": "architecture-documentation requirements, revised: the agent files point at the pages and stop duplicating them"
     }
   ]
 }
