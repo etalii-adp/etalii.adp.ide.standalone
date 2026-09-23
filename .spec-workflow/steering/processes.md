@@ -942,7 +942,18 @@ instrument end. Today a session reported *three consecutive gates refused* and c
 third run's `RESULT=` line had gone to a scrollback rather than to a log, so it could not be recovered even by
 the session that produced it. **The gate writes its exit codes to files precisely so a number outlives the
 moment** - a result that exists only in a transcript is, for every later purpose, a run that did not happen.
-*(Developer 1's formulation, from correcting the number.)*
+*(Developer 1's formulation, from correcting the number.)* **A second instance the same day: a task notification
+reporting exit 0 over a log that said `RESULT=gates-red ( format=2 )`** - the true status had been echoed and then
+overwritten by the echo's own success, so the citable record and the believed record disagreed, and the believed
+one was the one nobody could check.
+
+**A third was proposed for this clause and does not belong in it - worth recording because the proposal was mine
+and a peer repeated it back approvingly.** I reported a selftest as having *vanished without printing a verdict*.
+It had not: it ran throughout, and its output was invisible only because the command ended in `| tail -3`. **That
+is a SWALLOWED verdict, not a lost one** - the run was citable the whole time by reading the file it was writing
+to, which is how it was settled. It belongs with the two-blind-instruments paragraph and nowhere near here. **A
+clause gains nothing from a third instance that is really a different failure**, and leaving it in would have
+taught a reader that runs disappear.
 
 ### A proxy in the evidence
 
