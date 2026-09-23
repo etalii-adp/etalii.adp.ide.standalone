@@ -648,6 +648,19 @@ The two are one error at different moments: the first measures a boundary that e
 
 **Several instances of this section's shape are collected under *Measure the thing, not something adjacent to it*** - a log line attributed by adjacency, a stopped task that was not a stopped gate, and evidence that lived only in a working tree.
 
+**And the check inside a tool has the same blind spot: an assertion that its anchor EXISTS cannot tell you the
+anchor is in the wrong PLACE.** Two instances on 2026-09-23, both in anchored patch scripts written specifically to
+be safe. **A patch inserting nine numbered criteria anchored on criterion 7 where it meant 8** and produced the
+order 1 2 3 4 5 6 7 9 8: every anchor was found, every `assert text.count(old) == 1` passed, and it was caught only
+because the dry run printed the resulting sequence for a human to read. **A patch appending a clause to the end of
+one section anchored on a heading that exists exactly once and sits 340 lines ABOVE that section** - so the clause
+landed under an unrelated parent, with the assertion green and the diff the expected size. **In both cases the
+wrongness was in a relation, and only presences were asserted.** So **assert a relation: the neighbour on the far
+side, the ordering of two anchors, or the resulting sequence printed out** - the same remedy the tree-walking guard
+rule above reaches for when it demands two independent markers rather than one. **The second instance was found by
+printing the section boundaries afterwards and noticing the new heading's line number fell outside them** - which
+is the cheapest possible check and was not in the script.
+
 ## Measure the thing, not something adjacent to it
 
 **Everything below is one idea with ten worked cases, all measured between 2026-09-15 and 2026-09-22:**
@@ -882,6 +895,41 @@ attribution was applied to a **name-filtered** candidate set, so it proved *no p
 remains* rather than *no orphan remains*. **A name filter decides your coverage before the walk decides your
 attribution**, and both of that day's process-hunt errors were that one thing - one in the open, one hidden
 under a correct-looking walk.
+
+### An instrument that reports absence must first prove it is present
+
+**A clean result means one of two things, and they are not close: *nothing is wrong*, or *nothing happened*.**
+Six mechanisms produced the second while looking exactly like the first, all on 2026-09-23, none from
+carelessness:
+
+- **A silent logger.** A class held a logger bound to Serilog's default sink, so on the occurrence everyone was
+  waiting for there was **no line at all** - and a missing line reads as *it did not happen*.
+- **A degraded shell.** The client threw `useContextConnection must be used within a ContextConnectionProvider`
+  from four components, **went on drawing the last document perfectly**, produced events, and round-tripped
+  nothing. A negative measured there is worthless and looks identical to a negative that means something.
+- **A 0x0 browser pane.** Sixteen geometry rows came back clean with every pane reporting `h: 0`. **Nothing
+  throws**, which is what makes it expensive.
+- **A wedged origin.** A console with no errors, while `curl` from outside returned 200 in 4.7 ms - the page was
+  not reaching the server it appeared to be reading.
+- **`UNCLAIMED: none`** from a coverage diff whose criteria set was **empty**: the right answer to the wrong
+  question, printed in the format of the right one.
+- **`dropped: 0`** from a filter that matched nothing, because the file it read had mixed line endings.
+
+**Proof of presence is always one line** - `fetch('/favicon.ico')`, `innerWidth > 0`, *did anything else witness
+this event*, an assertion that the set being filtered is non-empty - **and it is never written by someone reading
+the failing output, because the failing output looks like success.** That is the whole difficulty: the moment you
+would want the check is the moment nothing prompts you to write it.
+
+**Two constraints on the canary, both of which it fails without.** **(a) It binds the NEGATIVE half only.** A
+positive observation is self-proving - something was seen, so the instrument reached the subject. An absence is
+the reading a broken instrument manufactures, so only absences need the proof. **(b) The canary must be sensitive
+to the INSTRUMENT's failure and insensitive to the SUBJECT's absence.** Backwards, it either never fires, or it
+fires on every genuine finding and gets deleted as noise within the week. *(Architect 2.)*
+
+**Its sibling is clause 7 under *Guards that cannot fail*, and the difference is worth holding.** That clause is
+about a floor set on a quantity that does not scale with the work, so the failure mode satisfies it. This one is
+about an instrument that never reached its subject at all. **A guard can be well-founded and still be read through
+a dead instrument**, which is why the two do not substitute for each other.
 
 ## Records that were right when written
 
