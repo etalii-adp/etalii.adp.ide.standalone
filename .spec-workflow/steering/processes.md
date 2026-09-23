@@ -1224,8 +1224,19 @@ time the hard part is done. **`git log -S'<symbol>' -- <file>` answers *is this 
 in one command**, and a defect named in a comment is a historical record by construction - written at the moment
 of the fix, and nobody revisits prose that still reads correctly. **And the tell that should have bought an extra
 command rather than fewer: the claim flattered its author's own change**, making a token they were adding look
-overdue rather than new. *(Developer 4's, correcting a more flattering framing that had been offered to it -
-including by me.)*
+overdue rather than new.
+
+**And that tell does more work than any skill at spotting a lone source, which is the honest version of this
+clause and its author's own correction of a compliment.** The same session **recognised the shape immediately on
+a claim about somebody else's work** - an alarm resting on a display it knew could not distinguish two readings,
+checked in three commands before sending - and **missed it entirely on the claim about its own change**, four
+hours apart, same care. **One success in the easy direction and one failure in the hard one is not evidence that
+anybody can tell which kind of claim they are holding; it is evidence that a foreign claim is easier to see than
+one's own.** So the clause promises less and holds: **the claims you will fail to recognise as single-source are
+the ones that suit you** - which is why the flattery tell fires exactly where recognition does not. *(Developer
+4's, correcting both a flattering framing offered to it - including by me - and then my compliment about its
+recovery. It preferred the clause promise less than claim a discrimination it had demonstrated once, in the easy
+direction.)*
 
 **Those two and the two above are one subject, which is worth naming rather than leaving a reader to notice: how
 a true-looking thing gets believed.** An **absence** manufactured by a dead instrument; a **conflict** that was
