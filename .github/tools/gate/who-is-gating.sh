@@ -25,6 +25,44 @@
 #   mrga1 gating (owner not written yet)       a holder whose line is not on disk yet
 #   TELL_UNREADABLE=<dir>  (exit 2)            the path this reader expects does not exist
 #
+# EXIT CODES, AND WHY THE DEFAULT IS THE PERMISSIVE ONE. By default this exits 0 for a free board
+# AND for a holder, because its job is to print the board and a caller that prints must not fail.
+# That makes it fail-open in a chain: `who-is-gating.sh && git commit` runs the commit whatever the
+# board says, so every such chain ever written has been a print statement wearing a check's clothes.
+#
+#   bash who-is-gating.sh --require-free
+#
+# exits 0 ONLY for a positive GATING=none. A holder, an EXPIRED line, an unknown expiry, a lock
+# whose owner is not written yet: 1. An unreadable board: 2. An unrecognised argument: 2, refused
+# rather than ignored, because a mistyped flag that quietly selected the permissive default would be
+# this same defect one layer up.
+#
+# ROLLOUT HAZARD, AND IT BIT THE AUTHOR WITHIN THE HOUR. Every copy of this script that predates
+# this flag IGNORES ALL ARGUMENTS: it prints the board and exits 0, so `--require-free` against an
+# older copy returns the same 0 for a held board as for a free one. That is the exact fail-open the
+# flag exists to remove, arriving THROUGH the flag - a caller that adopts it early is unprotected
+# while believing it is protected, and nothing in the output says which copy answered.
+#
+# THE AUTHOR'S OWN INSTANCE, kept here because a rule with its author's mistake attached survives a
+# reader who thinks it does not apply to them: an hour after building this flag I ran it from the
+# main checkout, read `exit 0` as THE BOARD IS FREE, and only then noticed the flag was not on
+# develop at all. The board was free - the printed GATING=none said so - but the exit code could not
+# have told me otherwise, and I had reached for the exit code precisely because I had just made it
+# mean something.
+#
+# So a caller that cares proves the instrument understands the question before believing its answer:
+#
+#   bash who-is-gating.sh --probe-unsupported > /dev/null 2>&1
+#   [ $? -eq 2 ] || { echo 'this copy predates --require-free; its exit code means nothing'; exit 3; }
+#
+# A copy that refuses a nonsense argument is a copy that would also refuse a mistyped one, and a copy
+# that accepts it is one whose zero is uninformative. This is the liveness rule applied to a CLI flag:
+# an instrument reporting absence must first prove it is present.
+#
+# It still does not authorise anything. A zero from --require-free says the board was free at the
+# instant it was read; the naming is a person, because locks are per scratch worktree and so do not
+# exclude each other - two sessions can read `free` in the same second and both be correct.
+#
 # The first draft of this was `cat <glob> 2>/dev/null`, which prints the identical nothing for
 # "nobody is gating", "the directory never existed", "the writer moved", "a mistyped path" and "the
 # glob did not expand". Four of those mean you have NO INFORMATION while all five read as clear to
@@ -39,6 +77,21 @@
 #   - An `ignore-after` in the past means the line may be disregarded - not that the lock may be
 #     removed. A stale lock is a question to ask, never a licence.
 set -u
+MODE=${1:-}
+if [ $# -gt 1 ]; then
+  # A surplus argument is refused rather than ignored, for the same reason a mistyped one is: the
+  # caller believed it was asking for something, and quietly answering a different question is how
+  # the permissive default gets selected by accident.
+  echo "TELL_UNREADABLE=<expected one argument at most; got $#>"
+  exit 2
+fi
+case "$MODE" in
+  '' | --require-free) ;;
+  *)
+    echo "TELL_UNREADABLE=<unrecognised argument '$MODE'; expected --require-free or nothing>"
+    exit 2
+    ;;
+esac
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "TELL_UNREADABLE=<cannot locate this script>"; exit 2; }
 . "$HERE/gate-lib.sh" 2> /dev/null
 if ! type gate_main_checkout gate_who_is_gating > /dev/null 2>&1; then
@@ -54,4 +107,4 @@ case "$GITDIR" in
   /* | [A-Za-z]:*) ;;
   *) GITDIR="$MAIN/$GITDIR" ;;
 esac
-gate_who_is_gating "$GITDIR/worktrees"
+gate_who_is_gating "$GITDIR/worktrees" "$MODE"
