@@ -63,7 +63,10 @@ export function SymbolElement({
           <circle className={outerClassName} style={style} cx={x} cy={y} r={radius + 4} />
         </g>
       ) : (
-        <circle className={markClassName} cx={x} cy={y} r={radius} />
+        // The DEFAULT variant, and the one this file got wrong: `square` and `double-circle` were
+        // painted while the plain circle - a wardley component, the commonest mark of the three -
+        // was left bare. Every branch takes the paint, so adding a fourth cannot quietly skip it.
+        <circle className={markClassName} style={style} cx={x} cy={y} r={radius} />
       )}
 
       {inertia ? (
