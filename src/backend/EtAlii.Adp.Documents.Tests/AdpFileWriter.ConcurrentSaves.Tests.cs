@@ -112,12 +112,12 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
 
         // Assert, first: it waits - and says so, by path, before it gets its turn.
         Assert.True(
-            SpinWait.SpinUntil(() =>
-            {
-                // ReSharper disable once AccessToDisposedClosure
-                // Reason: Used in a test case which is acceptable.
-                return logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal));
-            }, Patience),
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable. The suppression sits on the line
+            // above the one that closes over `logs` rather than inside a block body: `disable once`
+            // applies to the next line either way, and a block body whose only purpose is to host
+            // these two comments is what IDE0053 reports.
+            SpinWait.SpinUntil(() => logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal)), Patience),
             "The second save to the same destination did not log that it waited.");
         // LOAD-BEARING, and not a belt-and-braces repeat of the line above it. The log
         // assertion proves only that a line was WRITTEN: a save that logged "waited" and then
@@ -166,12 +166,12 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
         var second = Task.Run(() => AdpFileWriter.Save(otherSpelling, "second"), TestContext.Current.CancellationToken);
 
         Assert.True(
-            SpinWait.SpinUntil(() =>
-            {
-                // ReSharper disable once AccessToDisposedClosure
-                // Reason: Used in a test case which is acceptable.
-                return logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal));
-            }, Patience),
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable. The suppression sits on the line
+            // above the one that closes over `logs` rather than inside a block body: `disable once`
+            // applies to the next line either way, and a block body whose only purpose is to host
+            // these two comments is what IDE0053 reports.
+            SpinWait.SpinUntil(() => logs.Warnings.Any(w => w.Contains(WaitedMessage, StringComparison.Ordinal)), Patience),
             "A different spelling of the same destination did not wait for the save already inside it.");
         Assert.False(second.IsCompleted, "A different spelling of the same destination got through while the first held it.");
 
