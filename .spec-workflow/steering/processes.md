@@ -699,6 +699,31 @@ line-ending conventions, and every separator-based edit after that is a coin tos
 `dropped: 0` and `UNCLAIMED: none` appear in both because each is a reading that examined nothing and a write
 that changed nothing at the same moment.)*
 
+**`git status` clean does not mean the working tree honours the line-ending policy, because status compares
+NORMALISED content and the policy is about the bytes on disk.** Measured on the same seven files on 2026-09-23,
+by two sessions, with **different answers** - which is the finding rather than a complication. Developer 4, in a
+fresh worktree straight after `npm test`, saw all seven **modified with no content change at all**: `git diff
+--numstat` returned **no rows**, not zero-line rows, and `git diff` printed only the LF-will-be-replaced
+warning. An hour later, in the main checkout, `git status` reported **nothing dirty** while `git ls-files --eol`
+showed **five of the seven as `w/mixed`**, one `w/lf` and one `w/crlf`. **Both readings were correct. Clean and
+mixed at the same time is exactly what normalisation produces**: a file that normalises to the index's blob is
+not modified, however its own bytes are arranged.
+
+**The cause is that a MANDATORY gate is one of the generating scripts.** `npm test` in `src/client` runs
+`pretest` -> `npm run generate` -> fourteen `buf generate` invocations, and buf writes LF into a tree whose
+policy is `* text=auto eol=crlf`, with **no `.gitattributes` rule covering `src/client/src/generated/`**. The
+house note already says generating scripts are the usual culprit; **what it does not say is that the gate every
+agent must run before merging is one of them**, so every agent meets this in every fresh worktree.
+
+**The hazard is attribution, not correctness.** A pathspec-limited commit misses them, which is the point of
+the pathspec rule. **A bare `git commit -a` in the shared main checkout takes all seven under somebody else's
+message** - the exact shape of the three misattributed commits already recorded above, with the aggravation that
+these files look like real work in `git status` and contain none. **Restore with `git checkout --
+src/client/src/generated/` and commit by pathspec.** Whether the durable fix is a `.gitattributes` line for
+that folder or a generator that writes CRLF is **a house-policy question and not an agent's to settle** - the
+two files that state the policy must agree, so changing it for one folder is a decision, not a tidy-up.
+*(Developer 4 measured the symptom and explicitly declined to propose one over the other.)*
+
 ## Measure the thing, not something adjacent to it
 
 **Everything below is one idea with ten worked cases, all measured between 2026-09-15 and 2026-09-22:**
@@ -1092,6 +1117,24 @@ constant, read its own doc line against its own expression, in the same minute**
 explanations, which have been read many times, but the one sentence nobody has had a reason to doubt.
 *(Architect 2's. Ruled to sit BESIDE the absence clause rather than be folded into it: that one is about what a
 clean reading proves, this one about where attention goes, and a reader could act on either without the other.)*
+
+**A hunt's record names what was checked and EXCLUDED, not only what was found - because the most attractive
+wrong answer is what the next person will land on first.** While looking for an inherited fill, Developer 4
+found that **every declared element renders an unclassed, empty `<text>` node**: at
+`DiagramCanvas.tsx:2449`, `const label = type?.labels !== undefined ? "" : (element.label ?? "")`, so a type
+declaring its own labels still gets the element's `<text>`, classless and contentless, beside the real
+`library-element-label canvas-node-label` one. **It paints nothing and it is not a defect.** But SVG `fill`
+inherits, there is one of these inside every declared element on the board, and **it is what a mounted
+assertion hits before the selector is scoped** - which is precisely the moment somebody is hunting an inherited
+fill.
+
+**Recording it as checked-and-excluded is worth more than the shrug it deserves on its own**, and the
+surrounding state is why: a label measured in the browser as computed `rgb(0,0,0)` when **neither
+`--color-text` nor its fallback is black**, three source-level routes excluded by reading them rather than
+guessing, **and the route still unfound with no fourth invented to close it.** The browser instrument was
+itself suspect at the time, so the measurement's state is *unknown* rather than wrong. **An open hunt with
+three excluded routes and one honest gap is a better artifact than a closed one with a plausible answer** - and
+the excluded routes are the part that stops the next session repeating the first hour.
 
 ## A settled boundary
 
