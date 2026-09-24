@@ -3,8 +3,10 @@
   "title": "Design amendment, one word: the internal list says \"surface file\" where it means \"library file\", which is 157 names against 65. Applied literally, the rule lists 92 exports of canvas/connectors.ts, canvas/selection.ts, canvas/interaction.ts and the shell's context provider as \"library-internal\" - files that are in the surface only because a module imports something from each, whose other exports are shell and canvas internals rather than the diagram library's. The design's own measurement in the same paragraph counts library files only (60 then, 65 now), so the rule and the measurement describe different sets. The sentence is the wrong half: this document made the identical slip in the Set A sentence, repaired at 112e134a, and a recurrence of a diagnosed error beats a first-time error in a measurement. Retitling the section would not rescue the 157 reading - a list answering \"what does the library offer that is not for modules\" with 92 shell internals is wrong under any heading. Repair already on develop at 46533cca; this card is the disclosure, and rejecting it means reverting that commit.",
   "filePath": ".spec-workflow/specs/module-client-api-readme/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-24T18:55:00.134Z",
   "category": "spec",
-  "categoryName": "module-client-api-readme"
+  "categoryName": "module-client-api-readme",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-24T21:59:45.673Z"
 }
