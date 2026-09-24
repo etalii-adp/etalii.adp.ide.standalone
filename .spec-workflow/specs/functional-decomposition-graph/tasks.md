@@ -64,7 +64,7 @@
 
 ## The module half — each task names what it waits on
 
-- [ ] 8. Check the waits, before writing any module code
+- [x] 8. Check the waits, before writing any module code
   - File: the implementation log only
   - Establish on `develop`, by measurement rather than memory: `backend-centralization`'s shared document-store lifecycle (R2, including R2.3 self-write suppression and R2.4–2.6 the failed-reload rules), its save result (R3), its change-detecting diff (R4), its document-change handler (R5), its restore-lines edit (R6), its YAML node range (R7) and its `new:`/`rel:` gesture grammar (R11); and `client-centralization`'s shared stream hook and delta fold. For each, name the type or function that exists and the commit that landed it, or record that it does not exist yet.
   - **If a piece is missing, stop and report rather than writing a local copy**: writing one is the fourteenth instance those specifications exist to remove, and the user ruled this order deliberately.
