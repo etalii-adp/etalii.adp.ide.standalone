@@ -57,6 +57,31 @@
 # taken as a tidy-up.
 src/client/src/generated/**   text eol=lf
 
+# The `.proto` sources that output is generated FROM, for the same reason one step upstream.
+#
+# `protoc-gen-es` copies a `.proto`'s doc comments into the `*_pb.ts` it writes, byte for byte -
+# carriage return included - while writing everything else itself with LF. So under the CRLF rule
+# above, every generate run left each output of a commented `.proto` with MIXED endings: measured on
+# 2026-09-25, 19 of the 26 `*_pb.ts` in a tree were mixed (`c4_pb.ts`: 25 CRLF lines among 340 LF),
+# identically in the main checkout and a worktree, and the exemption above cannot fix that, because
+# a file git never checks out - most of `generated/` is ignored - is never converted by git at all.
+# Developer 1 found it. The only place the stray CR can be removed is its source.
+#
+# So `.proto` follows the ending of the output made from it rather than the house style. Every
+# tool that reads these files - buf, protoc and Grpc.Tools - reads LF, and none of them writes one.
+# `src/.editorconfig` carries the matching `end_of_line = lf` under `[*.proto]`.
+#
+# **An existing tree does not convert by itself.** Git rewrites a working file only when a checkout
+# changes it, and the index content of every `.proto` is identical before and after this rule, so a
+# tree that already holds CRLF protos keeps them until they are checked out again - delete them and
+# `git checkout -- '*.proto'`. A fresh worktree is LF from the start. Until a tree is converted, its
+# generate run writes the tracked `diagrams_pb.ts` back to its old bytes - a blank doc-comment line
+# regains a trailing space - and it shows as modified while containing no work. Check with
+# `git ls-files --eol`; for the ignored `*_pb.ts`, add `--others --ignored --exclude-standard`.
+#
+# The user ruled this on 2026-09-25.
+*.proto   text eol=lf
+
 # ---------------------------------------------------------------------------------------------
 # Documents whose *bytes* are the test subject rather than its input.
 #
