@@ -281,19 +281,154 @@ Source: [`src/client/src/canvas/library/examples/chrome.example.ts`](../src/clie
 
 ## The canvas
 
+**Declarations:** `DiagramCanvas`, `DiagramRuntimeConfig`, `assertValidDiagramDefinition`
+
+**What it is for.** The one component that draws a diagram. A module renders it, hands it a definition, a model and a set of handlers, and writes no rendering code of its own.
+
+**Whether a module needs it.** Always. There is no second way to draw.
+
+**Its shape.** `DiagramCanvas` takes `definition`, `model`, `events`, `config`, `source`, `editing`, `toolboxItems`, `className`, `scrollbarsClassName` and `ariaLabel`. **`DiagramCanvasProps` is declared twice in this tree** — the shell's, which is what a canvas COMPONENT receives (`projectId`, `entryId`, `path`, `editorId`, `initialLine`), and the library's, which is the props above. Both are module-facing and neither is wrong; a module uses the first to receive its arguments and the second to hand them on.
+
+**`config` is the runtime half.** `DiagramRuntimeConfig` carries `dragging`, `activeLayoutMode`, `activeTool` and `definitionOverrides`, and is applied on the next render — so a mode that forbids editing, or a phase that disables a relation type, is an edit to this object rather than a remount.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```tsx
+      <DiagramCanvas
+        definition={DEPENDENCY_GRAPH_DEFINITION}
+        model={diagramModel}
+        events={events}
+        source={{ entryId, path }}
+        toolboxItems={toolboxItems}
+        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+        ariaLabel="Dependency graph"
+        className="dependency-graph-surface"
+        scrollbarsClassName="dependency-graph-scrollbars"
+      />
+```
+
 ## Events, and how a module answers them
+
+**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`
+
+**What it is for.** **Every event is a request, never a report.** The canvas raises what a user did; the module decides what happens and sends it to the backend. Nothing is applied to the model by the library on its own.
+
+**Whether a module needs it.** Every handler is optional, and that is deliberate: a read-only diagram legitimately answers nothing, and an unhandled request is a gesture the module chose to ignore rather than an error.
+
+**Its shape.** One optional handler per event kind, named `on` plus the kind — `onElementMoved`, `onConnectionDrawn`, and so on. **`onSelectionChanged` is not among them**: a handler map that names it is a type error, which is what keeps selection glue from coming back.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```tsx
+  const events: DiagramEventHandlers = {
+    // The declared actions, answered as the shortcuts the backend has always known them by.
+    onActionInvoked: ({ actionId, targetId }) => {
+      const key = BACKEND_KEYS[actionId];
+      if (key === undefined || targetId === undefined) {
+        return;
+```
+
+**`ActionRefused` is how a refusal arrives.** The library runs the shared menu's actions against the backend, so a refusal comes back to the library rather than to the module, and is handed on as `action-refused` with the `actionId` and a `message`.
 
 ## Selection
 
+**Declarations:** `SelectedItem`, `DiagramSelection`, `CanvasSource`
+
+**What it is for.** What the user has selected — **owned by the library, not by the module**.
+
+**Whether a module needs it.** A module writes no selection code at all. It declares which types may be selected and passes `source`; the library reads the backend's selection, pushes a press's, and wires the shared context menu itself.
+
+**Its shape.** `source` is a `CanvasSource` — which diagram this canvas draws. `selectable` is a flag a module declares on an element type or a relation type. A handler that needs to know what was selected reads it from the event it is given.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```tsx
+        events={events}
+        source={{ entryId, path }}
+        toolboxItems={toolboxItems}
+```
+
+**Given no `source`, the canvas highlights its own last press and tells nobody** — which is what a library test or a picture with no backend wants.
+
+**What a module no longer writes.** Deriving a selection, pushing one, or mapping keys to element ids are all the library's now. If you are reading an older module for a pattern, that part of it is gone rather than optional — and the names that did it have no entry here on purpose, because documenting them would teach a way of working the library no longer accepts.
+
 ## The context channel
+
+**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `contextShortcutOf`, `inlineLabelElementIdOf`
+
+**What it is for.** Running an action against the backend, and answering a prompt it asks in return.
+
+**Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction` and `executeShortcut`; `useContextPrompt` gives the inline-edit prompt and its propose, submit and cancel callbacks.
+
+**Its shape.** `elementSourceOf` builds the source an action is run against. `contextShortcutOf` maps a gesture to the shortcut it travels as. `inlineLabelElementIdOf` says which element an open label prompt belongs to.
+
+**The channel resolves and never rejects.** A refusal comes back as a value — a message to show — not as a thrown error. **So a module that wraps these in a try/catch is writing a branch that cannot be reached**, and a module that ignores the returned value silently drops the reason the backend gave.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```tsx
+  const { executeAction, executeShortcut } = useContextConnection();
+  const toolboxItems = useToolboxItems(projectId, path);
+  const [rejection, setRejection] = useState("");
+  const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+```
 
 ## The toolbox
 
+**Declarations:** `useToolboxItems`, `useRegisterDiagramToolbox`
+
+**What it is for.** The palette a user drags from.
+
+**Whether a module needs it.** `useToolboxItems` is called by a module that wants the backend's entries for its diagram; omitted, the toolbox derives from the definition's element types. `useRegisterDiagramToolbox` registers the panel itself and is the shell's, not a module's.
+
+**Its shape.** `useToolboxItems(projectId, path)` returns the items to hand `DiagramCanvas` as `toolboxItems`. The canvas registers the toolbox and the view controls as a pair, by construction.
+
 ## The view report
+
+**Declarations:** `useViewReport`, `viewReportOf`, `Viewport`
+
+**What it is for.** Telling the backend which rectangle the canvas can see, so a diagram larger than the view is not delivered in full.
+
+**Whether a module needs it.** Any module whose diagrams can outgrow the viewport. Omitted, the backend sends everything.
+
+**Its shape.** `useViewReport` takes the current `view`, the `report` function from the module's stream wrapper, a `convert` that puts the rectangle in the module's OWN units, and a `ready` flag. **The library converts nothing**: a module whose y axis is in row-height units reports row-height units, because only the module knows what its coordinates mean.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```tsx
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+```
+
+**Related.** [`src/client/src/diagrams/readme.md`](../src/client/src/diagrams/readme.md) describes the mechanism — the debounce, the delta the backend computes from it, and why the report is per connection.
 
 ## Geometry for custom shapes and routes
 
+**Declarations:** `forwardBezierPath`, `ShapePoint`
+
+**What it is for.** Building a path or an anchor point when a built-in shape or route does not fit.
+
+**Whether a module needs it.** Only a module declaring a `customShape` or a `customRoute`. **These are shared primitives, and using them is legitimate** — the gesture guard deliberately does not police them, because a custom shape must build geometry from something.
+
+**Its shape.** The connectors module exports the path builders a custom route composes; a custom shape's `render` is handed `ShapeBounds` and returns an element, and its `edgePoint` answers where a connection meets it.
+
+**Related.** [`src/client/src/canvas/elements/readme.md`](../src/client/src/canvas/elements/readme.md) for element geometry and [`src/client/src/canvas/label/readme.md`](../src/client/src/canvas/label/readme.md) for label placement. Neither is restated here.
+
 ## Styling
+
+**What it is for.** Making a module's diagram look like part of the application rather than like itself.
+
+**Whether a module needs it.** Every module has a stylesheet, imported from `register.ts` beside the library's own.
+
+**Its shape.** **Classes compose**: a module's class sits beside the library's rather than replacing it — `dependency-graph-rejection canvas-rejection`, `dependency-graph-status canvas-status`. The library's class carries the behaviour and the theme; the module's carries what is specific to it.
+
+**A custom property must be defined, and must say both modes.** A `var(--x)` that resolves to nothing falls through to its fallback in BOTH themes, which reads as working until somebody switches theme. A module's own palette is declared on its canvas class and redeclared under the dark scheme; type stacks are exempt, because a font is the same in both.
+
+**The guards.** `themeTokens.test.ts` walks every custom property in the tree and requires each to resolve to a theme token or to one the same stylesheet declares, and a local palette that declares one mode fails.
 
 ## Tests a module writes, and what a module must not do
 
