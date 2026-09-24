@@ -82,6 +82,12 @@ src/client/src/generated/**   text eol=lf
 *.dsl   -text
 *.tml   -text
 *.dgr   -text
+# `.fdg` is the functional-decomposition-graph module's document. Its Requirement 2.3 is a
+# byte-identical round trip, and its fixtures include the `crlf-line-endings.fdg` /
+# `lf-line-endings.fdg` pair that collapses into one file under conversion - the exact pair the
+# comment above exists to protect. Added BEFORE the first fixture was written, because a fixture
+# committed under `text=auto` has already been normalised and the pair is already lost.
+*.fdg   -text
 # `.ttl` and `.nt` belong to the RDF family, whose round-trip requirement byte-compares them -
 # and unlike `.yml`, these extensions mean Turtle and N-Triples everywhere in the tree, so the
 # by-extension rule applies exactly as written above: the guarantee follows the format.
