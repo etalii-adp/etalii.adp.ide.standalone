@@ -86,8 +86,9 @@
   - _Requirements: 5.1, 5.5_
 
 - [ ] 11. Store, session and mapper, on the shared pieces
-  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
+  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
   - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type, centre, width and height, and the payloads `FdgElementPayload { name, text }` and `FdgConnectionPayload { name }`. **A Description is never sent.**
+  - **The module's backend `DiagramDefinition`**, in `Diagram.cs` as every module's is, whose `Build` registers the store, session and session factory. Without it FDG never reaches the diagram catalog, and task 15's example cannot register. No task in 11–19 claimed it until the user's chat ruling of 2026-09-25; Developer 1 found the gap.
   - Guard: a session over the example delivers every element at the shared height; a Description set through the property grid never appears in any delta.
   - Seen to fail against: a mapper that packs `description` into the payload — the delta assertion then finds it.
   - _Waits on: `backend-centralization` R2, R3, R4, R5_
@@ -106,6 +107,7 @@
   - The toolbox describes the five element types as data. The property grid offers a Description for all five types and every connection, a Name for the four named types, and a connection's Name. Every property change is a command (task 12).
   - Guard: each of the five types and a connection offers a Description row; a Comment offers no Name row; a property set through the grid reaches the document and undoes.
   - Seen to fail against: a provider that omits the Description for one type, which the per-type assertion then reports.
+  - _Waits on: task 12 (every property change is one of its commands)_
   - _Requirements: 7.1, 7.2, 7.3, 8.1_
 
 - [ ] 14. The client module: registration, definition, handlers
