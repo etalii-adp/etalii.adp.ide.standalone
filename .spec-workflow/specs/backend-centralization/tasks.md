@@ -87,6 +87,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 - [ ] 6. Convert the nine writable stores onto it
   - Files: the nine writable module stores - azure-pipeline, c4, causal-loop, databricks, dependency-graph, mindmap, rdf, timeline and wardley-map - and their tests. Nine, not the ten this line first said, because sparql was counted here and again as task 7's read-only store (the user's chat ruling, 2026-09-25).
   - One store at a time, each landing independently. **Each converted module's existing session tests are the proof**, plus the c4 removal guard that `350b8f9e` landed.
+  - **R2.4 and R2.5 land in the same change for each store, never R2.4 across the stores first.** `IDiagramDocumentReloader.BodyDeleted` defaults to a reload, which is right only while a failed read installs an empty document. A store given keep-last-good without forwarding `BodyDeleted` to the lifecycle keeps a deleted diagram forever (the user's chat ruling, 2026-09-25).
   - _Requirements: 2.1_
 - [ ] 7. The read-only store (sparql) uses the same lifecycle without a save path
   - Files: sparql's store and tests
