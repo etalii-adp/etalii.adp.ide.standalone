@@ -1,6 +1,6 @@
 # Tasks Document
 
-**The order is the user's ruling, given as a selection on 2026-09-15: the library half now, the module half after the shared backend and client pieces it would otherwise copy have landed.** Tasks 1 to 7 are the library half and wait on nothing. **Tasks 8 to 19 are the module half, and each names the requirement it waits on** — `backend-centralization` and `client-centralization` (**both requirements and design approved, as of 2026-09-23**; this paragraph said "design in progress" and "requirements in progress" until then). **Neither specification has tasks yet, so the waits are named by requirement**, and the first module task re-states them as a check to run rather than a memory to trust.
+**The order is the user's ruling, given as a selection on 2026-09-15: the library half now, the module half after the shared backend and client pieces it would otherwise copy have landed.** Tasks 1 to 7 are the library half and wait on nothing. **Tasks 8 to 19 are the module half, and each names the requirement it waits on** — `backend-centralization` and `client-centralization` (**both requirements and design approved, as of 2026-09-23**; this paragraph said "design in progress" and "requirements in progress" until then). **Neither specification has tasks yet, so the waits are named by requirement**, and the first module task re-states them as a check to run rather than a memory to trust. **Superseded for tasks 11, 12 and 14 by the user's chat ruling of 2026-09-25:** tasks 11 and 12 now name `backend-centralization` by *task number*, because it has tasks and a requirement read literally includes converting nine other modules. Task 14 waits on task 11 rather than on `client-centralization`, which centralizes neither the stream hook (already shared) nor the delta fold (per-module).
 
 **Every task's guard is seen to fail before it is trusted** (CLAUDE.md, *Bugs found during implementation or verification*), and each task below names the planted defect its guard must fail against. **No library declaration or test names this diagram** (Requirement 9.1, 9.6).
 
@@ -89,9 +89,9 @@
   - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
   - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type, centre, width and height, and the payloads `FdgElementPayload { name, text }` and `FdgConnectionPayload { name }`. **A Description is never sent.**
   - **The module's backend `DiagramDefinition`**, in `Diagram.cs` as every module's is, whose `Build` registers the store, session and session factory. Without it FDG never reaches the diagram catalog, and task 15's example cannot register. No task in 11–19 claimed it until the user's chat ruling of 2026-09-25; Developer 1 found the gap.
-  - Guard: a session over the example delivers every element at the shared height; a Description set through the property grid never appears in any delta.
-  - Seen to fail against: a mapper that packs `description` into the payload — the delta assertion then finds it.
-  - _Waits on: `backend-centralization` R2, R3, R4, R5_
+  - Guard: a session over the example delivers every element at the shared height; a Description set through the property grid never appears in any delta; **the backend `DiagramDefinition` is discovered into the diagram catalog**.
+  - Seen to fail against: a mapper that packs `description` into the payload — the delta assertion then finds it; and a module without the definition — discovery then finds no FDG type (the user's chat ruling of 2026-09-25).
+  - _Waits on: `backend-centralization` tasks 2 (the save result), 3 (its discard guard), 5 (the store lifecycle), 11 (the change-detecting diff) and 13 (the change handler), each checked on develop by ancestry (the user's chat ruling of 2026-09-25)_
   - _Requirements: 7.1, 3.1_
 
 - [ ] 12. The commands, each with its inverse
@@ -100,7 +100,7 @@
   - **Snap: declare nothing.** The library's snap applies as it stands when this is built (Requirement 3.3); read its semantics from `SnapDeclaration` in the code rather than restating them here, since they were in flight when the requirements were written.
   - Guard: every edit, then its undo, gives the original bytes; every refusal leaves the bytes unchanged; deleting an element with two connections restores all three on undo.
   - Seen to fail against: a connect command that trusts the client (a cycle-closing request then lands).
-  - _Waits on: `backend-centralization` R6 (the restore edit), R11 (the gesture grammar)_
+  - _Waits on: `backend-centralization` task 17's piece (the restore-lines edit, R6), task 18's piece (the YAML node range, R7, which an edit uses to find its entry's lines and which this line omitted), and task 21 (the gesture grammar, R11) (the user's chat ruling of 2026-09-25)_
   - _Requirements: 3.1, 3.2, 3.3, 6.3, 8.2, 8.3, 7.4_
 - [ ] 13. Toolbox and property providers
   - File: `.../FdgToolboxProvider.cs`, `.../FdgContextPropertyProvider.cs`, `.../FdgContextActionProvider.cs`, `.../FdgContextSourceResolver.cs` (new), tests
@@ -115,7 +115,7 @@
   - The definition the design states: five element types on the shapes of task 1, all `sizing: "user"` with `resize: "both"` on the Comment, one editable label each (the Comment's wrapped), a class per type for its fill, and no anchors on the Comment. Five relation types with `route: "cubic-bezier"`, an arrow end marker only, a midpoint editable label, endpoints and cardinality exactly as the rules table, `allowSelf: false`. `acyclic` naming the four ownership relations and **not** `shows`. Layout `manual`; the toolbox derived. Handlers turn each library event into one context action and nothing else.
   - Guard: the definition passes `validateDiagramDefinition`; `declarativeModules` passes against this module unchanged; each library event produces its one action; a connect gesture over the example highlights an allowed target, refuses a forbidden pair, refuses a second parent, refuses a cycle-closing target, and **does** offer the Shows round trip.
   - Seen to fail against: a module that answers a gesture itself rather than through an action — the `declarativeModules` guard reports it.
-  - _Waits on: `client-centralization`'s shared stream hook and delta fold_
+  - _Waits on: task 11 (the `.proto` its payload types are generated from). Not on `client-centralization`: the stream hook is already shared on develop, and the delta fold is the module's own `applyDelta`, as in the other 13 modules (the user's chat ruling of 2026-09-25)_
   - _Requirements: 1.1, 1.3, 5.2, 5.3, 6.1, 6.2, 10.1, 10.2_
 
 - [ ] 15. The field-service example
