@@ -61,7 +61,7 @@ Three conventions carry every check; nothing else in the readme is parsed.
 
 What it is for. Whether a module needs it. Its shape. The example:
 
-Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../../../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 ```
 
 - **`**Declarations:**`** — one line per entry, naming in backticks every declaration the entry covers. The union of these lines is what the readme covers.
