@@ -747,6 +747,30 @@ The two are one error at different moments: the first measures a boundary that e
 
 **These are one idea at seven scopes** - a command, a wrapper reporting on a command, the cached input a command reads, a claim about your own work, a check written down, a hold coordinated across sessions, and the scope of a measurement - and they move together. Splitting them by which was learned first would break the argument.
 
+**`DOTNET_TOTAL` IS NOT A COUNT OF BACKEND TESTS**, and the wrongness is invisible because both tiers
+arrive in one number. `EtAlii.Adp.Client.Tests` enumerates **every client `*.test.ts` and `*.test.tsx` as
+theory data** - one row per file plus one per test - so **a client-only change moves a backend total.**
+On 2026-09-24 the total fell 6687 to 6681 and **two sessions reached two comfortable explanations from
+opposite directions, both wrong**: *dead test methods went with dead code*, and *the deleted lines are in
+a `.test.tsx`, therefore npm, therefore they cannot touch `DOTNET_TOTAL`.* The second is the more
+instructive: **the reasoning was sound about the tier and wrong about the boundary**, and its author was
+confident precisely because the file extension made it obvious.
+
+**The method is the half that makes the clause usable, because the clause alone only says be careful.**
+**Six as a NUMBER invited two plausible stories and supported neither. Six as NAMES closed it in one
+diff**: `dotnet test --list-tests` at both commits, then `comm` over the sorted lists - nine gone, three
+added, every one accounted for. **It enumerates theory ROWS individually**, which is what settled it, and
+the seven that vanished were `ClientTests.EveryClientTestFile_Passes` and six
+`ClientTests.EveryClientTest_Passes` rows for one deleted client file.
+
+**And a count of `[Fact]`/`[Theory]` attributes was run, was RIGHT, and could not have found this** -
+3643 to 3644, up by one, while the total fell by six. **The check was not sloppy; it was blind to the
+thing that moved**, because the rows are data and not attributes. **A correct reading from a blind
+instrument is the hardest kind to distrust.** What made the answer safe was a separate exclusion done
+first: **54 assemblies in both runs and `skipped` identical at 44**, so *a project silently not running*
+was ruled out independently of the name diff - without which a fully-explained minus six would still
+have been consistent with it.
+
 **And *two instruments disagree* can itself be the wrong reading: before treating a conflict as a fact about the
 subject, check that both instruments measured the same POPULATION.** A specification recorded a label's contrast
 at **1.37:1, a black label**, from a browser measurement. The session implementing its guard read the stylesheet
@@ -1304,6 +1328,33 @@ two instruments measuring different populations; a **relay** nobody could audit;
 like a corroborated one. **Every wrong answer on 2026-09-23 came from a single source nobody crossed** - a grep, a
 probe, a note, a filter, a header - **and the ones that were caught were caught because a second instrument
 existed, not because anyone was more careful the second time.**
+
+**A GATE-TOOLING CHANGE IS NEVER EXERCISED BY ITS OWN GATE**, so its acceptance is the self-test plus
+**the first run after it lands** - never the landing run itself. `gate.sh` runs from the **main
+checkout**, not from the merged tree the gates judge, so a change to it takes effect only once it is on
+`develop`. **A reader who checks the introducing branch's own log for the new behaviour and does not find
+it will conclude the change is broken**, and will be wrong for a reason that is invisible from the diff.
+
+**The author is as exposed as the reader**: the session that added a `SELFTEST=` line to the gate's
+summary said in writing that it expected to read that line in the gate which introduced it, and was
+corrected by its own red run producing no such line. **So the acceptance has two halves and the second
+one happens after the landing**: confirm the new behaviour on the next gate anybody runs, and treat its
+absence THEN as the real finding.
+
+**AN OVERLOADED EXIT CODE CANNOT CARRY A PROOF.** Two conditions sharing a number is fine for a human
+reading a message and **useless for a check that must decide.** The probe below required `exit 2` from a
+script where **2 meant both *the board could not be read* and *your argument was refused*** - so on any
+unreadable board **it passed against precisely the copy it exists to detect.** Refusal now has a code of
+its own, and the rule it satisfies is the general one: **a probe requires the value that no FAILURE can
+produce**, because that is the only value whose presence proves the thing the probe is asking about.
+
+**And the reason it survived three chances to be seen is worth more than the fix: WHEN A CHECK'S CAREFUL
+USERS COMPENSATE FOR ITS WEAKNESS, THE RECORD SHOWS A PASS AND THE WEAKNESS NEVER SURFACES.** Its first
+outside adopter **did not rest on the exit code at all** - it read the message, which names the caller's
+own argument back and which an old copy cannot produce - **and it reported what it had read rather than
+that the probe had passed.** Had it written *the probe passed*, the artefact would have recorded a pass
+and the hole would still be there. **The author of a rule is the worst-placed person to notice their own
+instance of it**: the same session wrote the script, the prose and the clause, and missed it in all three.
 
 **A NEW STRICT FLAG IS NOT TRUSTWORTHY UNTIL THE COPY ANSWERING IT HAS BEEN PROVEN TO KNOW IT**, and this
 belongs here rather than with the fail-open clauses because **the defect is not that the check read the

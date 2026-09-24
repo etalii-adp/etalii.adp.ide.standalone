@@ -301,6 +301,24 @@ gate_tell_write() {
 # unknown expiry and a lock whose owner is not written yet are all 1; an unreadable board stays 2.
 # The state that must be REACHED is what gates, rather than the state that must be avoided being
 # what aborts - so a board this reader cannot parse fails instead of passing.
+# gate_selftest_report <file>
+#
+# Prints the self-test's own verdict for the gate's summary, or `absent` - never nothing. The test
+# runs inside `dotnet test` and PASSES, so xUnit emits none of its output and the gate log has never
+# carried the verdict: the mode a gate ran in was invisible exactly when everything worked.
+#
+# Absence is reported rather than skipped because a missing report means EITHER the test did not run
+# OR the write failed, and both are things a reader must be told. A summary that stayed quiet about it
+# would be the same defect this line exists to remove.
+gate_selftest_report() {
+  local file=${1:-}
+  if [ -n "$file" ] && [ -s "$file" ]; then
+    sed -n '1p' "$file" | tr -d '\r'
+  else
+    printf 'absent (the test did not run, or could not write its report)'
+  fi
+}
+
 gate_who_is_gating() {
   local dir=${1:-} mode=${2:-} lock owner found=0 scratch line ignore now
   if [ -z "$dir" ] || [ ! -d "$dir" ]; then

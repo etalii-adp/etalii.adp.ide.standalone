@@ -32,10 +32,19 @@
 #
 #   bash who-is-gating.sh --require-free
 #
-# exits 0 ONLY for a positive GATING=none. A holder, an EXPIRED line, an unknown expiry, a lock
-# whose owner is not written yet: 1. An unreadable board: 2. An unrecognised argument: 2, refused
-# rather than ignored, because a mistyped flag that quietly selected the permissive default would be
-# this same defect one layer up.
+# FOUR EXIT CODES, EACH MEANING ONE THING:
+#
+#   0  the board was read, and with --require-free it is FREE
+#   1  the board was read and is NOT free            (--require-free only)
+#   2  the board could not be read
+#   3  the argument was refused
+#
+# 3 IS THE PROBE'S REQUIRED VALUE, and the reason is the point rather than a detail: it is the only
+# code no FAILURE can produce, so it proves the copy answering parsed the argument. Do not fold it
+# back into 2. Refusal and unreadability shared 2 until 2026-09-24, and while they did, the probe
+# below passed against precisely the copy it exists to detect, on any board it could not read.
+# AN OVERLOADED EXIT CODE CANNOT CARRY A PROOF: two conditions sharing a number is fine for a human
+# reading a message and useless for a check that must decide.
 #
 # ROLLOUT HAZARD, AND IT BIT THE AUTHOR WITHIN THE HOUR. Every copy of this script that predates
 # this flag IGNORES ALL ARGUMENTS: it prints the board and exits 0, so `--require-free` against an
@@ -53,11 +62,17 @@
 # So a caller that cares proves the instrument understands the question before believing its answer:
 #
 #   bash who-is-gating.sh --probe-unsupported > /dev/null 2>&1
-#   [ $? -eq 2 ] || { echo 'this copy predates --require-free; its exit code means nothing'; exit 3; }
+#   [ $? -eq 3 ] || { echo 'this copy predates --require-free; its exit code means nothing'; exit 9; }
 #
 # A copy that refuses a nonsense argument is a copy that would also refuse a mistyped one, and a copy
 # that accepts it is one whose zero is uninformative. This is the liveness rule applied to a CLI flag:
-# an instrument reporting absence must first prove it is present.
+#
+# HOW THE HOLE IN THIS PROBE WAS FOUND, since it survived its author writing the script, the prose and
+# the clause: its first outside adopter did NOT rest on the exit code. It read the message - which
+# names the caller's own argument back, and which a copy that ignores arguments cannot produce - and
+# it reported what it had read rather than that the probe had passed. WHEN A CHECK'S CAREFUL USERS
+# COMPENSATE FOR ITS WEAKNESS, THE RECORD SHOWS A PASS AND THE WEAKNESS NEVER SURFACES. The author of
+# a rule is the worst-placed person to notice their own instance of it.# an instrument reporting absence must first prove it is present.
 #
 # It still does not authorise anything. A zero from --require-free says the board was free at the
 # instant it was read; the naming is a person, because locks are per scratch worktree and so do not
@@ -82,14 +97,14 @@ if [ $# -gt 1 ]; then
   # A surplus argument is refused rather than ignored, for the same reason a mistyped one is: the
   # caller believed it was asking for something, and quietly answering a different question is how
   # the permissive default gets selected by accident.
-  echo "TELL_UNREADABLE=<expected one argument at most; got $#>"
-  exit 2
+  echo "TELL_REFUSED=<expected one argument at most; got $#>"
+  exit 3
 fi
 case "$MODE" in
   '' | --require-free) ;;
   *)
-    echo "TELL_UNREADABLE=<unrecognised argument '$MODE'; expected --require-free or nothing>"
-    exit 2
+    echo "TELL_REFUSED=<unrecognised argument '$MODE'; expected --require-free or nothing>"
+    exit 3
     ;;
 esac
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "TELL_UNREADABLE=<cannot locate this script>"; exit 2; }
