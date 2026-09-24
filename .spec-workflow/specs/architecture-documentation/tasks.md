@@ -4,7 +4,7 @@
 
 **The coverage diff is recorded at the end of this document**, per the project's own rule that it runs before the tasks card rather than after.
 
-- [ ] 1. `docs/architecture.md` - the page, with one diagram
+- [x] 1. `docs/architecture.md` - the page, with one diagram
   - File: `docs/architecture.md` (new)
   - The eight sections the design fixes, in its order: what ADP is, the three parts and the single boundary, the two call legs, where a diagram lives, how a diagram type plugs in, what the canvas is, the subsystems named not described, and what this page is not.
   - **The canvas section states the measured truth: SVG drawn by the shared canvas library.** No Konva, no PixiJS, and it says so, because the false claim is what this page exists to end.
@@ -14,7 +14,7 @@
   - _Requirements: 1.1, 1.2, 2.2, 2.3, 2.4, 4.1, 4.2, 4.4, 6.1, 8.1, 8.2, 8.3_
   - _Prompt: Role: Technical writer who reads code | Task: Write docs/architecture.md to the design's eight sections, with one mermaid flowchart whose nodes are real projects or folders | Restrictions: at most 150 lines and one diagram; no restatement of CLAUDE.md, processes.md or the other docs pages - link them; state the canvas as SVG and do not repeat the Konva claim; every path and project name must exist | Success: a session reading only this page can say what the parts are, how they talk, where a diagram lives and what the canvas is, and the page says what it is not_
 
-- [ ] 2. `docs/solution-structure.md` - the page, with its counts and one diagram
+- [x] 2. `docs/solution-structure.md` - the page, with its counts and one diagram
   - File: `docs/solution-structure.md` (new)
   - The eight sections the design fixes, including **the relative-path trap** - the solution's project paths are relative to `src/backend/`, so core projects carry no `backend` segment.
   - **The counts, in the fixed form the guard parses:** 105 projects in the solution (27 core, 74 diagram, 4 editor; 78 production, 27 test), 121 tracked `.csproj` under `src/`, and the 16-file difference being fixture and example data of `dotnet-dependency-graph`, which reads `.csproj` files as its subject.
@@ -77,7 +77,7 @@
   - _Requirements: 4.3_
   - _Prompt: Role: Client developer | Task: Establish whether mermaid.parse can validate the two diagrams by reusing the module-client-api-readme spike, or else record a manual render check in tests.md | Restrictions: do not add the mermaid dependency in this specification | Success: the log states which route held, and a manual check names the dashboard and the repository host_
 
-- [ ] 10. The final check - run it, do not assume it
+- [x] 10. The final check - run it, do not assume it
   - File: the implementation log only
   - Re-run the coverage diff below against the finished tree, traced to files and strings rather than to a task's promise: **does the code show each criterion, not did somebody claim it.**
   - Confirm both pages are within 150 lines and 3 diagrams, that every count recomputes, and that no passage appears both on a page and in a steering file.
