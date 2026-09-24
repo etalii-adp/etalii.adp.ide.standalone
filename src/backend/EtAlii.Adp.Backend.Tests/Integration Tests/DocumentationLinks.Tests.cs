@@ -36,6 +36,14 @@ namespace EtAlii.Adp.Backend.Tests;
 public partial class DocumentationLinksTests
 {
     /// <summary>The delivered documents, repo-relative.</summary>
+    /// <remarks>
+    /// <b>The agent files are here for a reason that arrived with the architecture pages.</b> That
+    /// specification moves passages OUT of <c>tech.md</c> and <c>structure.md</c> and leaves links
+    /// in their place, so those files started carrying relative links that can go stale - and a
+    /// removal pass is exactly the operation that leaves one dangling. <c>CLAUDE.md</c>, the four
+    /// steering documents and the two pages therefore join the list the delivered documentation
+    /// already occupied.
+    /// </remarks>
     private static readonly string[] Documents =
     [
         "readme.md",
@@ -44,6 +52,13 @@ public partial class DocumentationLinksTests
         "docs/creating-an-editor-module.md",
         "docs/screenshots/readme.md",
         "docs/diagrams.md",
+        "docs/architecture.md",
+        "docs/solution-structure.md",
+        "CLAUDE.md",
+        ".spec-workflow/steering/structure.md",
+        ".spec-workflow/steering/tech.md",
+        ".spec-workflow/steering/product.md",
+        ".spec-workflow/steering/roles.md",
     ];
 
     private static string RepositoryRoot { get; } = Locate();

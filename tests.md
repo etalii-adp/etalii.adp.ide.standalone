@@ -2913,3 +2913,39 @@ when both are on (Requirement 6.2). Those are this entry's, and Requirement 10.3
   it at fit, at 100%, and zoomed in. If it does not read at fit, the remedy is a screen-constant
   offset (pixels converted to units per render) rather than a larger constant, which would gape
   when zoomed in.
+
+## Both architecture pages' mermaid renders, in both readers (architecture-documentation, task 9)
+
+**Why this is here rather than in a test.** The pages carry one mermaid block each, and nothing
+in this repository renders mermaid. `module-client-api-readme` task 1 opens with a spike for a
+mermaid-parse guard; **it has not landed** - checked 2026-09-23, no mermaid parser or renderer
+exists anywhere under `src/`. Until it does, whether a diagram *parses* can only be answered by
+a reader that draws it, and whether it is *readable* cannot be answered by a parser at all.
+Delete this entry when that spike lands and the guard covers the parse half; the by-eye half
+below stays either way.
+
+- **Preconditions**: the two pages exist - `docs/architecture.md` (one `flowchart LR`) and
+  `docs/solution-structure.md` (one `flowchart LR`). No running app is needed; this check is
+  about documents, not the product.
+- **Reader 1, the spec-workflow dashboard**: open the dashboard and view both pages through it.
+  This is the reader that matters most, because it is where a session reads documentation.
+- **Reader 2, the repository host**: view both pages on GitHub, which renders mermaid in
+  markdown natively. A block can parse in one renderer and not the other; two readers is the
+  point of the check, not redundancy.
+- **Expected, per page and per reader**:
+  1. The block renders **as a diagram**. A mermaid block that fails to parse degrades to its
+     source text rather than erroring - so a wall of `flowchart LR` source IS the failure, and
+     it is quiet.
+  2. `architecture.md` shows three nodes: the browser client, the one ASP.NET Core process, and
+     the workspace folder, with the two call legs labelled in opposite directions between the
+     first two.
+  3. `solution-structure.md` shows `src/` above **seven** children - api, backend, client,
+     diagrams, editors, examples, TestSupport. Seven, not six: an earlier count said six and
+     missed `TestSupport`.
+  4. **Readable at the dashboard's own width** (Requirement 4.4) without horizontal scrolling
+     or overlapping labels. Judge this in the dashboard at its natural width, not zoomed out
+     and not in a maximised window - the width a reader actually has is the width that counts.
+- **Before you trust a pass**: plant a failure once. Break one arrow (`-->` to `->`) in a local
+  copy, confirm the block degrades to source text in both readers, and restore it. A check that
+  has never seen the failure mode cannot report its absence - and this failure mode looks like
+  ordinary text rather than like an error.
