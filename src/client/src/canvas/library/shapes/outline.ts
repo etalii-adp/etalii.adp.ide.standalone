@@ -199,6 +199,60 @@ function inset(bounds: ShapeBounds): ShapeBounds {
   };
 }
 
+/**
+ * Where the ray from the shape's centre in direction `(dx, dy)` meets its OUTLINE - the third
+ * reader of the one outline, after the drawing and the text region.
+ *
+ * `null` for a shape with no outline here, which is the caller's signal to keep its existing
+ * rectangle geometry: `box` and `pill` must not move, and a null rather than a fallback keeps that
+ * decision at the call site instead of hiding a second answer in this function.
+ *
+ * The nearest crossing is taken, so the answer is the first boundary the ray reaches. That is
+ * correct for any outline star-shaped about its centre, which every shape here is; a concave shape
+ * added later would need the same word said about it again rather than silently inheriting this one.
+ */
+export function outlineEdgePoint(
+  shape: BuiltInShape,
+  bounds: ShapeBounds,
+  dx: number,
+  dy: number,
+): ShapePoint | null {
+  const outline = outlineOf(shape, bounds);
+  if (outline.length < 3) {
+    return null;
+  }
+
+  const centre = { x: bounds.x + (bounds.width / 2), y: bounds.y + (bounds.height / 2) };
+  if (dx === 0 && dy === 0) {
+    // No direction has no edge to find, which is `edgePointOf`'s answer for the same case.
+    return centre;
+  }
+
+  let nearest: number | null = null;
+  for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) {
+    const a = outline[i];
+    const b = outline[j];
+    const ex = b.x - a.x;
+    const ey = b.y - a.y;
+    const denominator = (dx * ey) - (dy * ex);
+    if (Math.abs(denominator) < 1e-12) {
+      // Parallel to this segment: it is either missed entirely or grazed along its length, and
+      // the crossing that matters is on one of the segments meeting it.
+      continue;
+    }
+
+    const wx = a.x - centre.x;
+    const wy = a.y - centre.y;
+    const along = ((wx * ey) - (wy * ex)) / denominator;
+    const across = ((wx * dy) - (wy * dx)) / denominator;
+    if (along >= 0 && across >= -1e-9 && across <= 1 + 1e-9 && (nearest === null || along < nearest)) {
+      nearest = along;
+    }
+  }
+
+  return nearest === null ? null : { x: centre.x + (dx * nearest), y: centre.y + (dy * nearest) };
+}
+
 /** The four corners of a rectangle, for a caller checking it against an outline. */
 export function cornersOf(bounds: ShapeBounds): readonly ShapePoint[] {
   return [

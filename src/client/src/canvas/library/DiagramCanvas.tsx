@@ -39,7 +39,7 @@ import { resolveDecorations, type ResolvedDecoration } from "./definition/decora
 import { resolveBackground } from "./definition/background";
 import { actionForGesture, actionForKey } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
-import { outlineOf } from "./shapes/outline";
+import { outlineEdgePoint, outlineOf } from "./shapes/outline";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -577,7 +577,22 @@ export function DiagramCanvasCore({
         return { x: box.x, y: towards.y >= box.y ? box.y + box.height / 2 : box.y - box.height / 2 };
       }
 
-      return edgePointOf(box, towards.x - centre.x, towards.y - centre.y);
+      const dx = towards.x - centre.x;
+      const dy = towards.y - centre.y;
+
+      // THE OUTLINE WHERE THE SHAPE HAS ONE, so an arrowhead meets the drawn edge rather than an
+      // invisible rectangle around it (Requirement 6.1). `box`, `pill` and everything else without
+      // an outline return null here and keep exactly today's geometry - which is why this asks
+      // `outlineEdgePoint` rather than branching on a list of shape names that would have to be
+      // kept in step with the one in `shapes/outline.ts`.
+      if (type !== undefined && !isCustomShape(type.shape)) {
+        const onOutline = outlineEdgePoint(shapeOf(type.shape, sourceOf(element)), bounds, dx, dy);
+        if (onOutline !== null) {
+          return onOutline;
+        }
+      }
+
+      return edgePointOf(box, dx, dy);
     },
     [elementTypes],
   );
