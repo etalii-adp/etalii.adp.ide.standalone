@@ -19,9 +19,6 @@ public class EditorSessionAdapterTests
 
         public event EventHandler<EditorContentChangedEventArgs>? Changed;
 
-        public Task<string> SaveAsync(string newContent, CancellationToken cancellationToken = default) =>
-            Task.FromResult("");
-
         public void RaiseChanged(string content) => Changed?.Invoke(this, new EditorContentChangedEventArgs(content));
 
         public ValueTask DisposeAsync()

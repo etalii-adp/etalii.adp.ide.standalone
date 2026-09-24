@@ -60,10 +60,13 @@ public class ExamplesTests
             var original = await File.ReadAllBytesAsync(source, TestContext.Current.CancellationToken);
             await File.WriteAllBytesAsync(temp, original, TestContext.Current.CancellationToken);
 
-            // Act.
+            // Act: the module's own session opens it, and what it read is written back the way
+            // every editor's save writes - the shared save command's TextFileBuffer.
             await using var session = new MarkdownEditorSession(temp);
             Assert.Equal("", session.Refusal);
-            var error = await session.SaveAsync(session.Content, TestContext.Current.CancellationToken);
+            var opened = TextFileBuffer.Open(temp);
+            Assert.NotNull(opened.Buffer);
+            var error = await opened.Buffer.SaveAsync(session.Content, TestContext.Current.CancellationToken);
 
             // Assert (Requirement 10.2: everything plain guarantees, this module guarantees).
             Assert.Equal("", error);

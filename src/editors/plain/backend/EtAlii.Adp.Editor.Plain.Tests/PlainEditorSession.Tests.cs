@@ -27,18 +27,17 @@ public class PlainEditorSessionTests : IDisposable
     }
 
     [Fact]
-    public async Task ASession_ReadsAndSavesAFile()
+    public async Task ASession_ReadsAFile()
     {
         // Arrange.
         var path = Write("a.txt", "hello\nworld\n"u8.ToArray());
-        await using var session = new PlainEditorSession(path);
 
         // Act.
-        var error = await session.SaveAsync("hello\nthere\n", TestContext.Current.CancellationToken);
+        await using var session = new PlainEditorSession(path);
 
-        // Assert.
-        Assert.Equal("", error);
-        Assert.Equal("hello\nthere\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        // Assert: reading is the session's; saving is the shared save command's, not the session's.
+        Assert.Equal("", session.Refusal);
+        Assert.Equal("hello\nworld\n", session.Content);
     }
 
     [Fact]
@@ -51,6 +50,5 @@ public class PlainEditorSessionTests : IDisposable
         // Act and assert.
         Assert.Equal("", session.Content);
         Assert.Contains("binary", session.Refusal);
-        Assert.NotEqual("", await session.SaveAsync("x", TestContext.Current.CancellationToken));
     }
 }
