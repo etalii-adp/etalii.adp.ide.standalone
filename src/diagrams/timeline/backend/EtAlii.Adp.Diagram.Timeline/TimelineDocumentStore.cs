@@ -28,11 +28,11 @@ public sealed class TimelineDocumentStore : ITimelineDocumentStore
     }
 
     /// <inheritdoc />
-    public string Save(string path)
+    public string Save(string path, TimelineDocumentEntry entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(entry);
 
-        var entry = GetOrLoad(path);
         if (!entry.IsUsable)
         {
             // Writing a document whose model is empty because it never parsed would replace a
@@ -66,6 +66,10 @@ public sealed class TimelineDocumentStore : ITimelineDocumentStore
 
         // The document's own lines are authoritative and unchanged by writing them out, but what
         // they mean has changed - so the model is rebuilt from the document rather than re-read.
+        //
+        // This also re-establishes the cache from what was just written, which repairs the case
+        // where a reload evicted the entry mid-command: the cache and the file agree afterwards
+        // either way.
         var reparsed = Parse(path, entry.Document);
         _entries[path] = reparsed;
         Changed?.Invoke(this, new TimelineDocumentChangedEventArgs(path, reparsed.Model));

@@ -33,12 +33,12 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return _entries.GetOrAdd(path, key => Load(rootPath, key));
     }
 
-    public string Save(string rootPath, string path)
+    public string Save(string rootPath, string path, PipelineDocumentEntry entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        var entry = GetOrLoad(rootPath, path);
+        ArgumentNullException.ThrowIfNull(entry);
         if (!entry.IsUsable)
         {
             // Writing a document whose model is empty because it never parsed would replace a file
@@ -73,6 +73,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         // The document's own lines are authoritative and unchanged by writing them out, but what it
         // means may have changed - so the model is rebuilt from the document rather than re-read.
         var reparsed = Parse(rootPath, path, entry.Document);
+        // Also re-establishes the cache from what was just written, which is a second job this
+        // line now does: where a reload evicted the entry mid-command, the cache and the file agree
+        // afterwards. Do not optimise it away as a redundant reassignment - that reopens half of the
+        // lost-edit window this signature closed.
         _entries[path] = reparsed;
         Changed?.Invoke(this, new PipelineDocumentChangedEventArgs(path, reparsed.Model));
         return "";

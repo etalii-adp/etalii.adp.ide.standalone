@@ -59,7 +59,7 @@ public sealed class WardleyDocumentStoreTests : IDisposable
         document.ReplaceLine(1, "title After");
 
         // Act.
-        _store.Save(path);
+        _store.Save(path, document);
 
         // Assert.
         Assert.Equal("title After\n", File.ReadAllText(path));
@@ -70,10 +70,11 @@ public sealed class WardleyDocumentStoreTests : IDisposable
     {
         // Arrange.
         var path = Write("map.owm", "title Before\n");
-        _store.GetOrLoad(path).ReplaceLine(1, "title After");
+        var document = _store.GetOrLoad(path);
+        document.ReplaceLine(1, "title After");
 
         // Act.
-        _store.Save(path);
+        _store.Save(path, document);
 
         // Assert. The temp-then-move discipline must not litter the project folder, and the
         // name it uses is one HierarchyModel already ignores.
@@ -88,8 +89,8 @@ public sealed class WardleyDocumentStoreTests : IDisposable
         var path = Write("map.owm", text);
 
         // Act.
-        _store.GetOrLoad(path);
-        _store.Save(path);
+        var document = _store.GetOrLoad(path);
+        _store.Save(path, document);
 
         // Assert.
         Assert.Equal(text, File.ReadAllText(path));
@@ -104,7 +105,7 @@ public sealed class WardleyDocumentStoreTests : IDisposable
         document.InsertLine(1, "title Created");
 
         // Act.
-        _store.Save(path);
+        _store.Save(path, document);
 
         // Assert.
         Assert.True(File.Exists(path));
@@ -118,12 +119,12 @@ public sealed class WardleyDocumentStoreTests : IDisposable
     {
         // Arrange.
         var path = Write("map.owm", "title X\n");
-        _store.GetOrLoad(path);
+        var document = _store.GetOrLoad(path);
         var raised = new List<string>();
         _store.Changed += (_, args) => raised.Add(args.Path);
 
         // Act.
-        _store.Save(path);
+        _store.Save(path, document);
 
         // Assert.
         Assert.Equal([path], raised);

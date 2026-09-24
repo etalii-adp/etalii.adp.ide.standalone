@@ -51,7 +51,7 @@ public sealed class DisconnectDependencyGraphRelationCommandHandler : ICommandHa
                 entry.Document, DependencyGraphParser.Parse(entry.Document));
         }
 
-        var error = _documents.Save(command.BodyPath);
+        var error = _documents.Save(command.BodyPath, entry);
         return Task.FromResult(error.Length == 0
             ? CommandResult.Success(inverse)
             : CommandResult.Failure(error));

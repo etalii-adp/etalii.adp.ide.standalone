@@ -55,11 +55,15 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
             .ToArray();
     }
 
-    public WardleyPublishResult Save(string path)
+    public WardleyPublishResult Save(string path, WardleyDocument document)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(document);
 
-        var document = GetOrLoad(path);
+        // This store keeps no reparsed entry to put back, and does not need one: the cache holds
+        // the very document object the caller edited, so a reload that evicted it only means the
+        // next GetOrLoad re-reads a file that now HAS the edit. What mattered was writing the
+        // caller's document rather than whatever the cache held at this moment.
         string warning;
         _selfWrites[path] = 1;
         try

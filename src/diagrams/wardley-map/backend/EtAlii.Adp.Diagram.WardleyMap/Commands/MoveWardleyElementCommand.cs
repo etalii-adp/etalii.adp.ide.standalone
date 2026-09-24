@@ -87,7 +87,7 @@ public sealed class MoveWardleyElementCommandHandler : ICommandHandler<MoveWardl
             _logger.Debug("Moved {Name} to {Visibility},{Maturity}", component.Name, clamped.Visibility, clamped.Maturity);
         }
 
-        var published = _documents.Save(command.BodyPath);
+        var published = _documents.Save(command.BodyPath, document);
         return Task.FromResult(published.Error.Length == 0
             ? CommandResult.Success( new RestoreWardleyLineCommand(command.BodyPath, line, before), published.Warning)
             : CommandResult.Failure(published.Error));
