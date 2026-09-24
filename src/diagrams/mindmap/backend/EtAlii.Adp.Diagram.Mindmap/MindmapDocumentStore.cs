@@ -47,14 +47,31 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     public MindmapDocument? Get(string bodyPath) =>
         _documents.TryGetValue(bodyPath, out var document) ? document : null;
 
-    public DocumentSaveResult Save(string bodyPath, MindmapChange change)
+    public DocumentSaveResult Save(string bodyPath, MindmapDocument document, MindmapChange change)
     {
+        ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(change);
-        if (!_documents.TryGetValue(bodyPath, out var document))
+
+        // THE DOCUMENT WRITTEN IS THE ONE THE CALLER EDITED, never one re-fetched from the cache.
+        // This signature already took a second argument and so looked as though it did that - but
+        // the argument is the change to ANNOUNCE, not the document to write, and the document was
+        // looked up here. Reload assigns _documents[bodyPath] = Load(bodyPath), so a reload landing
+        // between a command's edit and its save wrote the re-read map and returned Ok - the
+        // command's inverse then went onto the undo stack for a change the file never received,
+        // and mindmap's inverses carry state, so a subtree that was never removed gets restored.
+        // Measured in six other stores and fixed at 6c4f90d6; this store, c4 and causal-loop were
+        // missed there because their saves re-fetch by some route other than GetOrLoad.
+        //
+        // The "never loaded" refusal STAYS, and it is deliberately a membership test rather than a
+        // fetch: it asks whether this path is loaded without making the answer the thing written.
+        // Task 4 pinned this throw with a test and task 10 owns whether it should remain, so the
+        // lost-edit fix leaves that decision exactly where it was rather than settling it in
+        // passing.
+        if (!_documents.ContainsKey(bodyPath))
         {
             // Still an exception, and deliberately: saving a map this store never loaded is a
-            // programming error rather than an outcome a user can act on. R2.8's "skips documents it
-            // never loaded" is about Reload, which returns early below; task 10 owns that question.
+            // programming error rather than an outcome a user can act on. R2.8's "skips documents
+            // it never loaded" is about Reload, which returns early below.
             throw new InvalidOperationException($"No document is loaded for {bodyPath}.");
         }
 
@@ -86,6 +103,13 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         {
             _selfWrites.TryRemove(bodyPath, out _);
         }
+
+        // The document just written becomes the cached one, so the cache and the bytes on disk
+        // cannot disagree. Ordinarily this is a no-op - the caller's document IS the cached object -
+        // and it earns its place only in the raced case the argument above exists for: a reload
+        // that replaced the entry mid-edit would otherwise leave the cache holding the re-read map
+        // while the file holds the edit that was actually saved.
+        _documents[bodyPath] = document;
 
         Logger.Debug("Saved {BodyPath} after {Change}", bodyPath, change.GetType().Name);
         Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, change));

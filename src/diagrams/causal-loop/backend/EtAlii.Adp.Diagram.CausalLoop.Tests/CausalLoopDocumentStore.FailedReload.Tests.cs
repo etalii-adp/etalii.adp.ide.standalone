@@ -54,7 +54,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         Assert.True(held.IsUsable, $"The failed reload replaced the last good diagram: {held.Error}");
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(path);
+        store.Save(path, held);
 
         // Assert: the real diagram is still on disk.
         Assert.Equal(Text, File.ReadAllText(path));
@@ -172,7 +172,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
             Assert.False(store.GetOrLoad(path).IsUsable, "The arrangement failed: the first read succeeded.");
         }
 
-        var answer = store.Save(path);
+        var answer = store.Save(path, store.GetOrLoad(path));
 
         Assert.NotEqual("", answer);
         Assert.Equal(Text, File.ReadAllText(path));

@@ -57,7 +57,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         using var holder = new FileStream(bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.
-        var saved = _store.Save(bodyPath, new MindmapNodeUpdated("ID_1"));
+        var saved = _store.Save(bodyPath, document, new MindmapNodeUpdated("ID_1"));
 
         // Assert: told, rather than thrown at. Reaching this line at all is the change - before it,
         // the writer's exception left the store and this test could not be written against a result.
@@ -82,7 +82,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         var document = _store.GetOrLoad(bodyPath);
         document.SetText(document.Find("ID_1")!, "Design, renamed");
 
-        var saved = _store.Save(bodyPath, new MindmapNodeUpdated("ID_1"));
+        var saved = _store.Save(bodyPath, document, new MindmapNodeUpdated("ID_1"));
 
         Assert.False(saved.Failed);
         Assert.Equal("", saved.Error);
@@ -96,6 +96,6 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
         // document this store never loaded is a programming error rather than an outcome a user can
         // act on - there is no edit to keep and nothing to retry.
         Assert.Throws<InvalidOperationException>(
-            () => _store.Save(IoPath.Combine(_root, "never-opened.mm"), new MindmapNodeUpdated("ID_1")));
+            () => _store.Save(IoPath.Combine(_root, "never-opened.mm"), MindmapDocument.Parse(Map), new MindmapNodeUpdated("ID_1")));
     }
 }

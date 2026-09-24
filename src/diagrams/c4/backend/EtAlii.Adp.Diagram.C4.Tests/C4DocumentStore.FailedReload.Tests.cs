@@ -61,7 +61,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         Assert.NotEmpty(store.WorkspaceOf(body).Elements);
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(body);
+        store.Save(body, store.GetOrLoad(body));
 
         // Assert: the real model is still on disk.
         var onDisk = File.ReadAllText(body);
@@ -84,7 +84,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
             Assert.Empty(store.WorkspaceOf(body).Elements); // the arrangement: the first read failed
         }
 
-        var answer = store.Save(body);
+        var answer = store.Save(body, store.GetOrLoad(body));
 
         Assert.NotEqual("", answer);
         Assert.Equal(Model, File.ReadAllText(body));
@@ -181,7 +181,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var store = new C4DocumentStore();
 
         Assert.Empty(store.WorkspaceOf(body).Elements);
-        var answer = store.Save(body);
+        var answer = store.Save(body, store.GetOrLoad(body));
 
         Assert.Equal("", answer);
         Assert.True(File.Exists(body), "A new, empty model was not saved.");

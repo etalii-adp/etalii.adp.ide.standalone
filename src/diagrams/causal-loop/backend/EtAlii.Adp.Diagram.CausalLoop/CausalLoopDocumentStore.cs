@@ -30,15 +30,19 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
     }
 
     /// <inheritdoc />
-    public string Save(string path)
+    public string Save(string path, CausalLoopDocumentEntry entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(entry);
 
-        if (!_entries.TryGetValue(path, out var entry))
-        {
-            return "This causal loop diagram is not loaded, so there is nothing to save.";
-        }
-
+        // THE ENTRY WRITTEN IS THE ONE THE CALLER EDITED, never one re-fetched from the cache.
+        // Taking it as an argument is the enforcement: there is no cache read left here to get
+        // wrong. Until this signature changed, Save looked the entry up itself while Reload
+        // replaces _entries[path], so a reload landing between a command's edit and its save
+        // wrote the re-read file and returned "" for success - the command's inverse then went
+        // onto the undo stack for a change the file never received. Measured in six other stores
+        // and fixed at 6c4f90d6; this store, c4 and mindmap were missed there because their
+        // saves re-fetch through a differently named helper rather than through GetOrLoad.
         if (!entry.IsUsable)
         {
             // AN ENTRY THAT COULD NOT BE READ IS NOT A DOCUMENT TO WRITE. Its document is empty, and
@@ -66,6 +70,9 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
         }
 
         // Re-parsed from the document just written, so the model and the bytes cannot disagree.
+        // This also re-establishes the cache around the entry that was just written, which is what
+        // the removed "is not loaded" refusal used to stand in for: the caller now holds the entry,
+        // so there is no unloaded case left for the store to discover.
         var parsed = CausalLoopParser.Parse(entry.Document);
         _entries[path] = entry with { Model = parsed.Model, Problems = parsed.Problems };
         return "";
