@@ -3,8 +3,10 @@
   "title": "library-class-rule-inventory design: the guard already exists, and two approved requirements are wrong",
   "filePath": ".spec-workflow/specs/library-class-rule-inventory/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-09-24T01:13:43.569Z",
   "category": "spec",
-  "categoryName": "library-class-rule-inventory"
+  "categoryName": "library-class-rule-inventory",
+  "response": "As per chat with scrum master.",
+  "respondedAt": "2026-09-24T12:08:55.429Z"
 }
