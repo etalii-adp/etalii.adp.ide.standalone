@@ -41,7 +41,12 @@ public class DestinationStateTests : IDisposable
             throw wild;
         }));
 
-        var warning = Assert.Single(logs.Warnings);
+        // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
+        // concurrent test's warning must not redden this one. An absent line still fails.
+        var warning = Assert.Single(
+            logs.Warnings,
+            w => w.Contains(path, StringComparison.Ordinal) &&
+                 w.Contains("GONE", StringComparison.Ordinal));
         Assert.Contains("GONE", warning, StringComparison.Ordinal);
     }
 
@@ -59,7 +64,12 @@ public class DestinationStateTests : IDisposable
 
         Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
 
-        var warning = Assert.Single(logs.Warnings);
+        // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
+        // concurrent test's warning must not redden this one. An absent line still fails.
+        var warning = Assert.Single(
+            logs.Warnings,
+            w => w.Contains(path, StringComparison.Ordinal) &&
+                 w.Contains("SOMEBODY ELSE was publishing beside it", StringComparison.Ordinal));
         Assert.Contains("SOMEBODY ELSE was publishing beside it", warning, StringComparison.Ordinal);
         Assert.Contains(IoPath.GetFileName(intruder), warning, StringComparison.Ordinal);
     }
@@ -93,7 +103,12 @@ public class DestinationStateTests : IDisposable
 
         Assert.Throws<IOException>(() => AdpFileWriter.Save(path, "after", replace: (_, _) => throw wild));
 
-        var warning = Assert.Single(logs.Warnings);
+        // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
+        // concurrent test's warning must not redden this one. An absent line still fails.
+        var warning = Assert.Single(
+            logs.Warnings,
+            w => w.Contains(path, StringComparison.Ordinal) &&
+                 w.Contains("nobody else was publishing beside it, only our own", StringComparison.Ordinal));
         Assert.Contains("nobody else was publishing beside it, only our own", warning, StringComparison.Ordinal);
         Assert.DoesNotContain("SOMEBODY ELSE", warning, StringComparison.Ordinal);
     }
