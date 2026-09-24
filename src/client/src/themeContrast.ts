@@ -41,7 +41,11 @@ export function themeTokens(indexCss: string): ThemeTokens {
 
 function declarations(css: string): Map<string, string> {
   const found = new Map<string, string>();
-  for (const match of css.matchAll(/^\s*(--[A-Za-z0-9_.-]+)\s*:\s*([^;]+);/gm)) {
+  // A declaration may open a line, follow the `{` of a one-line rule, or follow a `;`. Anchoring
+  // on the line start alone read `.y { --mine: #0f0; }` as declaring nothing, which a canary
+  // caught: it is how a minified or compact stylesheet would have slipped a local palette past
+  // the guard as an undefined token.
+  for (const match of css.matchAll(/(?:^|[{;])\s*(--[A-Za-z0-9_.-]+)\s*:\s*([^;}]+)[;}]/gm)) {
     found.set(match[1], match[2].trim());
   }
 

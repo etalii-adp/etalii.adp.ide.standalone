@@ -9,6 +9,39 @@
  * something it builds.
  */
 
+/*
+ * THE MODULE'S OWN HUES, declared here because nothing outside this module has projects or
+ * packages - the Scrum master's test for a semantic name is whether a different module would
+ * want the same token for the same reason, and these fail it. The eight that pass it went to
+ * theme tokens instead (muted label, the warning trio, the note pair, both connection weights).
+ *
+ * BOTH THEMES ARE DECLARED, and that is the point rather than a nicety. These were
+ * `var(--canvas-node-fill, #3b6ea5)` and kin - names nothing defined, resolving to DARK
+ * literals in every mode, so this diagram rendered dark-looking in the LIGHT theme. Declaring
+ * only one theme's worth would move that phantom rather than close it: the guard catches an
+ * undeclared name and cannot catch a palette that forgot a mode.
+ */
+.dotnet-dependency-canvas {
+  --dependency-project-fill: #3b6ea5;      /* a project is a solid box in the canvas node colour */
+  --dependency-project-stroke: #2b537c;
+  --dependency-package-fill: #cbd5e1;      /* a package is consumed rather than built: lighter, and dashed */
+  --dependency-package-stroke: #94a3b8;
+  --dependency-node-label: #ffffff;        /* on the project's solid fill, in both modes */
+  --dependency-node-sublabel: #dbe6f2;
+}
+
+/* The same two kinds, against the dark surface: the project lifts, the package darkens so it
+   still reads as the lighter of the pair relative to its own ground rather than absolutely. */
+@media (prefers-color-scheme: dark) {
+  .dotnet-dependency-canvas {
+    --dependency-project-fill: #3b6ea5;
+    --dependency-project-stroke: #7fb0e0;
+    --dependency-package-fill: #4a5568;
+    --dependency-package-stroke: #6b7280;
+    --dependency-node-label: #ffffff;
+    --dependency-node-sublabel: #cbd5e1;
+  }
+}
 .dotnet-dependency-canvas-frame {
   position: relative;
   width: 100%;
@@ -17,7 +50,7 @@
 
 .dotnet-dependency-canvas-message {
   padding: 1rem;
-  color: var(--canvas-muted-label, #8a94a6);
+  color: var(--color-text-muted);
 }
 
 .dotnet-dependency-canvas-rejection {
@@ -28,8 +61,8 @@
   z-index: 2;
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
-  background: var(--canvas-warning-fill, #6b3b12);
-  color: var(--canvas-warning-label, #ffe6c7);
+  background: var(--color-warning-bg);
+  color: var(--color-text);
   cursor: pointer;
 }
 
@@ -50,8 +83,8 @@
   max-width: min(46rem, calc(100% - 1rem));
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
-  background: var(--canvas-note-fill, #24303d);
-  color: var(--canvas-note-label, #cfe0f0);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
 }
 
 .dotnet-dependency-canvas-filtered button {
@@ -78,8 +111,8 @@
 }
 
 .dotnet-dependency-element-project .dotnet-dependency-node {
-  fill: var(--canvas-node-fill, #3b6ea5);
-  stroke: var(--canvas-node-stroke, #2b537c);
+  fill: var(--dependency-project-fill);
+  stroke: var(--dependency-project-stroke);
 }
 
 /*
@@ -87,13 +120,13 @@
  * outside the solution entirely.
  */
 .dotnet-dependency-element-package .dotnet-dependency-node {
-  fill: var(--canvas-secondary-fill, #4a5568);
-  stroke: var(--canvas-secondary-stroke, #6b7280);
+  fill: var(--dependency-package-fill);
+  stroke: var(--dependency-package-stroke);
   stroke-dasharray: 4 3;
 }
 
 .dotnet-dependency-node-label {
-  fill: var(--canvas-node-label, #ffffff);
+  fill: var(--dependency-node-label);
   font-weight: 600;
   pointer-events: none;
 }
@@ -103,7 +136,7 @@
   versions on a package. Nudged up off the span's centre so the pair reads as one block.
 */
 .dotnet-dependency-node-subtitle {
-  fill: var(--canvas-node-sublabel, #cbd5e1);
+  fill: var(--dependency-node-sublabel);
   font-size: 0.75rem;
   pointer-events: none;
 }
@@ -113,7 +146,7 @@
  * difference is made visible rather than silently collapsed into one box that says nothing.
  */
 .dotnet-dependency-conflict .dotnet-dependency-node {
-  stroke: var(--canvas-warning-stroke, #e0a458);
+  stroke: var(--color-warning);
   stroke-width: 2.5;
   stroke-dasharray: none;
 }
@@ -122,7 +155,7 @@
 
 .dotnet-dependency-edge-line {
   fill: none;
-  stroke: var(--canvas-connection, #7f8c9b);
+  stroke: var(--color-text-muted);
   stroke-width: 1.5;
 }
 
@@ -133,5 +166,5 @@
  */
 .dotnet-dependency-edge-package .dotnet-dependency-edge-line {
   stroke-dasharray: 5 4;
-  stroke: var(--canvas-connection-muted, #5f6b7a);
+  stroke: var(--color-border);
 }
