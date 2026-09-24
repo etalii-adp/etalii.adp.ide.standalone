@@ -59,7 +59,7 @@ esac
 # regions, so the 58-case difference cannot simply be carried across. 109 assumes the same 58 are
 # skipped elsewhere, which is unverified here. A wrong pin fails LOUDLY with the true count in the
 # same line, so the first run on another platform corrects it rather than passing quietly.
-if [ "$MSYS" = 1 ]; then EXPECTED=177; EXPECTED_QUICK=119; else EXPECTED=167; EXPECTED_QUICK=109; fi
+if [ "$MSYS" = 1 ]; then EXPECTED=178; EXPECTED_QUICK=120; else EXPECTED=168; EXPECTED_QUICK=110; fi
 [ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
@@ -412,8 +412,12 @@ printf "mrgf1 gating claude/rf on base abc1234 started 2020-01-01T00:00:00Z igno
 gate_who_is_gating "$RF" --require-free > /dev/null; report 1 "$?" "an unknown expiry is not free either, for the same reason"
 # The script's own argument handling, which nothing else covers. Both refuse before the board is read,
 # so neither depends on what the real board is doing while this suite runs.
-bash "$HERE/who-is-gating.sh" --requirefree > /dev/null 2>&1; report 2 "$?" "a MISTYPED flag is refused rather than silently selecting the permissive default"
-bash "$HERE/who-is-gating.sh" --require-free extra > /dev/null 2>&1; report 2 "$?" "a surplus argument is refused too - the caller asked for something else than what would have run"
+bash "$HERE/who-is-gating.sh" --requirefree > /dev/null 2>&1; report 3 "$?" "a MISTYPED flag is refused with the refusal code, not with the unreadable one"
+bash "$HERE/who-is-gating.sh" --require-free extra > /dev/null 2>&1; report 3 "$?" "a surplus argument is refused too - the caller asked for something else than what would have run"
+# The probe requires the one code no FAILURE can produce, so refusal and unreadable must differ. They
+# shared 2 until 2026-09-24, and while they did the probe passed against exactly the copy it detects.
+REFUSED=$(bash "$HERE/who-is-gating.sh" --typo-for-the-probe > /dev/null 2>&1; echo $?)
+report distinct "$([ "$REFUSED" != 2 ] && echo distinct || echo SHARED-WITH-UNREADABLE)" "refusal does not share the unreadable code, which is what lets a probe require it"
 
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"
