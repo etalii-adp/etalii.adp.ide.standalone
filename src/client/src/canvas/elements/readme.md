@@ -23,6 +23,8 @@ shapes is a later, separate decision, and easier to take with them sitting side 
   selection adorners: resize strips on the edges and connection anchors painted over them.
   Grew in the timeline.
 
+**Seven of these folders are also built-in shapes.** A module that declares a definition names a `BuiltInShape`, and the shared canvas draws it. `box`, `centered-box`, `ellipse`, `frame`, `span`, `styled-box` and `symbol` are drawn **with the components in this folder**. Every other built-in shape is drawn by the library itself. Six of those have a polygon outline: `diamond`, `hexagon`, `parallelogram`, `trapezoid`, `superellipse` and `diode`. How that outline is drawn, where a wrapped label's text goes inside it, and where a connector meets it are in [`../library/shapes/readme.md`](../library/shapes/readme.md).
+
 Every component takes its CSS class names as props and spreads the rest of its props onto the
 wrapping `<g>`, so interaction handlers, aria roles and `data-*` attributes stay each
 module's own - and the stylesheets (and the tests that query those classes) did not have to
