@@ -229,8 +229,13 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
     //
     // So the backup-file rename is a third transition either way, and the two counts differ by the
     // instrument rather than by the file system. **A coalescing story built on two needs re-running
-    // on three.** Same defect class as the rest of this comment: a count correct about the set the
-    // instrument could see.
+    // on three.**
+    //
+    // THE GENERAL FORM, because "it is three" inherited without its filter is as wrong as "it is
+    // two" was: **A COUNT OF EVENTS IS A PROPERTY OF THE INSTRUMENT'S FILTER, NOT OF THE WRITE.**
+    // Quote a filesystem-event count with the NotifyFilter and the name filter it was taken through,
+    // or it has no denominator. Same defect class as the rest of this comment: a count correct about
+    // the set the instrument could see.
     //
     // WHAT LANDED INSTEAD IS DIAGNOSTICS AND FOUR CORRECTNESS FIXES, none of them claimed as the
     // cause: NextAddAsync now names what it discarded, a refused re-read no longer consumes the
