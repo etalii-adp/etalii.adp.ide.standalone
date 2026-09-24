@@ -24,7 +24,7 @@
   - _Requirements: 1.1, 1.2, 2.2, 3.1, 3.2, 4.1, 4.2, 4.4, 6.1, 8.1, 8.2, 8.3_
   - _Prompt: Role: Technical writer who reads code | Task: Write docs/solution-structure.md to the design's eight sections, stating every count in the form the guard parses and naming the relative-path trap | Restrictions: at most 150 lines and one diagram; every count must be recomputable from the tree; state no count the guard cannot check | Success: the page's counts all recompute, the core project list matches the solution, and a reader learns why a .csproj count is not a project count_
 
-- [ ] 3. `ArchitecturePages.Tests` - the guard, seen to fail twice
+- [x] 3. `ArchitecturePages.Tests` - the guard, seen to fail twice
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ArchitecturePages.Tests.cs` (new)
   - Modelled on `GuardInventory.Tests`: locate the repository root by walking up for `src/diagrams` beside `docs`.
   - Asserts, for both pages: every backtick-quoted repo-relative path exists; every `EtAlii.Adp.*` name is a project in `EtAlii.Adp.slnx`; **every stated count recomputes from the tree**; at most 150 lines and at most 3 fenced mermaid blocks; and a floor on parsed paths and counts so an emptied or reshaped page fails rather than passing vacuously.
@@ -33,14 +33,14 @@
   - _Requirements: 3.3, 5.1, 5.2, 5.3, 5.4, 7.1, 7.2_
   - _Prompt: Role: Backend developer with xUnit experience | Task: Write ArchitecturePages.Tests asserting paths, project names, recomputed counts, size limits and a floor for both pages | Restrictions: follow GuardInventory.Tests' shape rather than inventing one; a count the test cannot recompute is a reason to remove the count, not to skip the assertion | Success: the log records a planted wrong path and a planted wrong count each reddening the test for its own reason, with the messages quoted_
 
-- [ ] 4. Extend `DocumentationLinks.Tests` to the pages and the agent files
+- [x] 4. Extend `DocumentationLinks.Tests` to the pages and the agent files
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DocumentationLinks.Tests.cs`
   - Add both new pages to the document list, and add `CLAUDE.md`, `.spec-workflow/steering/structure.md`, `tech.md`, `product.md` and `roles.md`, so a link left dangling by the removal pass reddens.
   - **Seen to fail: a planted dangling link in a steering file.**
   - _Requirements: 5.5, 9.6_
   - _Prompt: Role: Backend developer | Task: Extend the existing documentation-links guard to the two pages and the five agent files | Restrictions: extend, do not write a second link guard; keep its markdown-and-HTML link handling | Success: a planted dangling link in a steering file reddens it, recorded in the log_
 
-- [ ] 5. The guard follows the claim into the agent files
+- [x] 5. The guard follows the claim into the agent files
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ArchitecturePages.Tests.cs`
   - The same path and project-name assertions run over `CLAUDE.md` and the four steering documents, so **a stale project name in a steering file reddens exactly as one on a page does.**
   - **Counts in those files are NOT asserted, and the REASON belongs in the task and in a comment rather than only in the rule, because the next reader will otherwise "complete" the guard and break the build:** a steering count is usually a **dated measurement** - *"measured on 2026-09-22 over 1430 `.cs` files"* - which records what was true **then**, and is still true as a record after the tree moves. **A page's count is a claim about NOW.** Only claims about now can be recomputed; **asserting the dated ones would redden the build for being honest about its own history**, and the correct response to such a red would be to delete a true sentence.
@@ -48,7 +48,7 @@
   - _Requirements: 9.7_
   - _Prompt: Role: Backend developer | Task: Extend ArchitecturePages.Tests to assert paths and project names in CLAUDE.md and the four steering documents | Restrictions: do not assert counts there; state in a comment why a dated measurement is not a claim about now | Success: a planted stale project name in tech.md reddens the guard, recorded in the log_
 
-- [ ] 6. The removal pass - what moves, what stays, what is false
+- [x] 6. The removal pass - what moves, what stays, what is false
   - File: `.spec-workflow/steering/tech.md`, `.spec-workflow/steering/structure.md`
   - Execute the design's verdict table: **five `tech.md` sections move whole, two in part, nine stay, two are named-and-linked**; `structure.md`'s *Project structure*, *Naming* and *Module boundaries* move, its principles and documentation standards stay.
   - **Correct the two false claims as part of the work:** `tech.md`'s Konva/PixiJS canvas claim, and `structure.md`'s core-project list naming `EtAlii.Adp.Backend.Diagrams` and its test project - neither exists - while omitting the eleven decomposed core projects.
@@ -57,20 +57,20 @@
   - _Requirements: 9.1, 9.2, 9.3, 9.4_
   - _Prompt: Role: Technical writer who reads code | Task: Move, correct or leave each passage exactly as the design's verdict table says, replacing moved passages with links | Restrictions: normative passages stay - a rule about how the team works is not architecture description; never leave a passage in both places; never drop a fact; check every remaining claim in both files | Success: the log lists each passage with its verdict and names every false claim found beyond the design's three_
 
-- [ ] 7. `CLAUDE.md` names the pages
+- [x] 7. `CLAUDE.md` names the pages
   - File: `CLAUDE.md`
   - A short section naming both pages and when to read them, so a session meets them before it starts re-deriving the tree.
   - **This is the enforcement the user asked for**: the pages are reachable from the file every session already reads, not only from `readme.md`.
   - _Requirements: 9.5_
   - _Prompt: Role: Technical writer | Task: Add a short section to CLAUDE.md naming docs/architecture.md and docs/solution-structure.md and when to read them | Restrictions: a pointer, not a summary - no architecture content in CLAUDE.md; keep it to a few lines | Success: a session reading CLAUDE.md learns both pages exist and what each answers_
 
-- [ ] 8. `readme.md` and `docs/guards.md`
+- [x] 8. `readme.md` and `docs/guards.md`
   - File: `readme.md`, `docs/guards.md`
   - Link both pages under *Going deeper*; add the new guard's row to `docs/guards.md` with the question it answers, per that page's instruction that a changed guard changes its row.
   - _Requirements: 5.6, 6.2_
   - _Prompt: Role: Technical writer | Task: Link both pages from readme.md and add the guard's row to docs/guards.md | Restrictions: the row's third column is the question the guard answers, not a description of it | Success: GuardInventory.Tests still passes, and the row states what the guard cannot check_
 
-- [ ] 9. Mermaid: reuse the spike, or record a manual render check
+- [x] 9. Mermaid: reuse the spike, or record a manual render check
   - File: the implementation log, and `tests.md` if the manual route is taken
   - **If `module-client-api-readme` task 1 has landed, reuse its outcome.** If it has not, validate both diagrams by rendering them in the dashboard and on the repository host, and record that as a `tests.md` entry naming both surfaces.
   - **This task adds no dependency.** Worth knowing: the only tracked mermaid block today is in `.spec-workflow/templates/design-template.md`, so nothing yet demonstrates that mermaid renders in the dashboard either.
