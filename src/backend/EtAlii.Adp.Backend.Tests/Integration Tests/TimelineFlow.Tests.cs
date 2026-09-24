@@ -32,28 +32,39 @@ namespace EtAlii.Adp.Backend.Tests;
 /// selectable while every other module's resolver is also registered, and that a drag and an
 /// undo travel the whole way - canvas coordinates in, spliced lines out, byte identity back.
 /// </remarks>
-// Known flake, not a defect in this test's subject: a watcher-versus-write race under
-// preemption spikes. Observed once under parallel-gate load (the client and backend gate halves
-// running at once) - a race between the file watch firing and a write flushing. Signature: passes
-// 3/3 in isolation, the full suite re-ran 4907/0, and it fails only under that concurrent load.
+// A RED RUN HERE IS A DATA-LOSS DEFECT, NOT A RE-RUN. Diagnosed 2026-09-24; this paragraph said
+// the opposite until then, and the condition it set for changing its own advice - "the moment it
+// fails deterministically" - has been met.
 //
-// The mechanism is sparse preemption spikes, not load level: dragCost's fix (develop 38e1ffb2)
-// probed 0/4/8/16 CPU burners and found timing flat under steady load - the failure is one
-// unlucky window at the wrong moment, which is exactly what a watcher-versus-write race needs, a
-// slow machine being neither necessary nor sufficient. See that closed case for the mechanism
-// rather than re-deriving it here.
+// The mechanism is a LOST EDIT in the document store, not a watcher-versus-write race and not
+// timing in this test. A command does GetOrLoad, splices through TimelineWriter, then calls
+// Save - and TimelineDocumentStore.Save(path) calls GetOrLoad(path) AGAIN rather than writing the
+// entry the caller spliced. Reload(path) evicts the cached entry. So a reload landing between the
+// splice and the save means the spliced object is no longer the written object: the save persists
+// the RE-READ FILE and returns success. The _selfWrites guard does not cover it, because it is
+// cleared in Save's finally before the reparse, so the notification for the store's own write can
+// arrive after the guard has gone and is then treated as external.
 //
-// Task 5 of backend-project-decomposition relocated AdpFileWriter and SharedDocumentReader into
-// EtAlii.Adp.Common, and TimelineDocumentStore uses both - so this test sits in that landing's
-// blast radius, and a reader checking the history will find the move. The move is timing-neutral:
-// which assembly a type compiles into cannot change when a FileSystemWatcher fires or when a write
-// flushes, so the relocation is not the cause. Do not re-suspect it on that basis.
+// WHAT IT COSTS, which is why this is not a flake: the command reports success, the file never
+// receives the edit, and the command's inverse goes onto the undo stack for a change that never
+// happened. Under load the symptom here is an undo that reports success and leaves the moved
+// dates in the file.
 //
-// Ownership is unknown - not backend-consistency AC2 (that requirement is about fire-and-forget
-// tasks faulting unobserved and says nothing about watchers). Left un-skipped on purpose: it
-// passes on re-run, and quarantining a test that mostly works removes coverage to silence a
-// symptom. It becomes a real defect to chase - not contention - the moment it fails
-// deterministically or survives isolation; until then a red run here is a re-run, not an afternoon.
+// The guard is TimelineDocumentStoreLostEditTests.ASaveAfterAReload_WritesTheSpliceRatherThanTheFileItJustReread,
+// which drives the same ordering by calling Reload where the notification would land: it fails in
+// under a second, every time, with no contention. Ownership IS answerable and was not unknown: the
+// document store. Six of the nine module stores share the re-fetch shape and all six also have an
+// evicting Reload, so the repair is across modules rather than here.
+//
+// STILL TRUE AND WORTH KEEPING: task 5 of backend-project-decomposition relocated AdpFileWriter
+// and SharedDocumentReader into EtAlii.Adp.Common, and TimelineDocumentStore uses both - so this
+// test sits in that landing's blast radius and a reader checking the history will find the move.
+// It is not the cause. Do not re-suspect it.
+//
+// RETIRED, AND WRONG RATHER THAN OVERTAKEN: the earlier reading of this as sparse preemption
+// spikes, citing dragCost's 0/4/8/16 CPU-burner probe. Contention is what lines the two operations
+// up, so the load observations were real - but they described the trigger and were offered as the
+// mechanism, which sent three sessions looking at timers instead of at Save's own shape.
 public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
     private const string DeveloperUsername = "admin";
