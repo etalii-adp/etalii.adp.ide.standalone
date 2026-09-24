@@ -74,7 +74,7 @@ public class C4DocumentStoreTests : IDisposable
         _store.GetOrLoad(path);
 
         // Act.
-        _store.Save(path);
+        _store.Save(path, _store.GetOrLoad(path));
 
         // Assert.
         Assert.Equal(Sample, File.ReadAllText(path));
@@ -89,7 +89,7 @@ public class C4DocumentStoreTests : IDisposable
         var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
-        _store.Save(path);
+        _store.Save(path, document);
 
         // Act and assert, step by step.
         var after = File.ReadAllText(path);
@@ -109,7 +109,7 @@ public class C4DocumentStoreTests : IDisposable
         // Act.
         C4DocumentChangedEventArgs? raised = null;
         _store.Changed += (_, args) => raised = args;
-        _store.Save(path);
+        _store.Save(path, document);
 
         // Assert.
         Assert.NotNull(raised);
@@ -125,7 +125,7 @@ public class C4DocumentStoreTests : IDisposable
         var document = _store.GetOrLoad(path);
         var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
-        _store.Save(path);
+        _store.Save(path, document);
 
         // Assert.
         Assert.Equal("Renamed", _store.WorkspaceOf(path).Find("s")!.Name);
@@ -171,7 +171,7 @@ public class C4DocumentStoreTests : IDisposable
         _store.GetOrLoad(path);
 
         // Act.
-        _store.Save(path);
+        _store.Save(path, _store.GetOrLoad(path));
 
         // Assert.
         Assert.True(File.Exists(path));

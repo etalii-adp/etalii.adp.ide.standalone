@@ -144,7 +144,7 @@
   - **jsdom is not evidence for any of these**: it applies no CSS and lays out no text.
   - _Requirements: 13.1, 13.2_
 
-- [ ] 19. Close the loop on what the library gained
+- [x] 19. Close the loop on what the library gained
   - File: the implementation log only
   - Record which of the six capabilities any other module could now adopt, and name the modules that would benefit: `wrap` for c4's hand-written description wrapping, `resize: "both"` for anything user-sized, outline attachment for `diamond`, `hexagon` and `parallelogram` once a module declares one.
   - Purpose: the declarative rule pays off only if the next module finds the capability; this is the note that makes it findable

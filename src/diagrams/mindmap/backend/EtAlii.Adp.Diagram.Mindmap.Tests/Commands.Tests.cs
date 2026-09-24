@@ -322,7 +322,7 @@ public class CommandsTests : IDisposable
     {
         // Arrange and act.
         _ = Document;
-        _documents.Save(_bodyPath, MindmapStructureChanged.Nothing);
+        _documents.Save(_bodyPath, _documents.GetOrLoad(_bodyPath), MindmapStructureChanged.Nothing);
 
         // Assert.
         Assert.Empty(Directory.GetFiles(_root, "~adp-*"));

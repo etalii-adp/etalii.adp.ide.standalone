@@ -21,16 +21,22 @@ public interface IC4DocumentStore
     C4Workspace WorkspaceOf(string path);
 
     /// <summary>
-    /// Writes the document back and tells every session on it. Refuses while the document on
-    /// disk is unparseable, so a broken file is never made worse (Requirement 3.4).
+    /// Writes <paramref name="document"/> back and tells every session on it. Refuses while the
+    /// document on disk is unparseable, so a broken file is never made worse (Requirement 3.4).
     /// </summary>
+    /// <param name="document">
+    /// The document to write - **the one the caller edited**, passed in rather than looked up
+    /// again. A save that re-fetched from the cache lost the edit whenever a reload landed
+    /// between the edit and the save, and reported success for it; the argument is what makes
+    /// that unwritable rather than merely discouraged.
+    /// </param>
     /// <returns>
     /// <c>""</c> when the document reached the disk, and a sentence the user can read when
     /// it did not. **A caller must surface it rather than drop it.** The edit survives in
     /// memory either way, so a caller that ignores this answers the user with a save that
     /// never happened - which is exactly what returning nothing at all allowed.
     /// </returns>
-    string Save(string path);
+    string Save(string path, C4Document document);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.
