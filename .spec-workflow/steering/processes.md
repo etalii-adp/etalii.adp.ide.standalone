@@ -230,6 +230,68 @@ acceptable to.**
 a reader in the other case follows it confidently into a refused landing - which is why each half here names
 the operation it is about rather than only the order.
 
+## When to land
+
+**Ruled by the user on 2026-09-24.** The section above is about HOW a change reaches `develop`; this one is
+about WHEN. The rules were in force by message the same evening, and are written here because a rule that
+lives in five sessions' transcripts is gone within the week.
+
+**Land at coherent milestones: not per task, and not per specification.** The test is one question about
+the state you leave behind - **after this lands, is `develop` consistent, and is nothing half-done
+exposed?** Two worked instances:
+
+- **`backend-centralization`'s R2.4 and R2.5 land together, per store.** Each half alone leaves that store
+  inconsistent: keeping the last good document on a failed reload without confirming that a missing file is
+  really gone would stop a deleted body from ever becoming an empty diagram.
+- **`client-centralization`'s task 3 lands only after tasks 6 and 8.** Landed first, the single refusal
+  surface would reach the registered canvases before the work it depends on, and refusals would go silent
+  where they are shown today.
+
+**A task is the wrong unit because it is the implementer's unit, not the user's**: a task can be complete and
+leave `develop` exposing a half-built behaviour. **A specification is the wrong unit because it is too big**,
+for the reasons recorded under *What was rejected* below.
+
+**Defect fixes land immediately, on their own branch, named for the defect.** A defect does not wait for a
+milestone, and a branch named for the defect is one a later reader can find from the symptom. **The one
+exception is a fix that depends on unlanded work**: it rides with that work, and the landing message says so,
+so the fix is findable in the log rather than buried under an unrelated subject.
+
+**Before asking for a slot, merge `develop` into the worktree, resolve there, and run the cheap checks** -
+build, typecheck, format, and the tests the change touches. **The full suite stays the gate's.** A local green
+never replaces it: a scoped run cannot reproduce the suite's parallelism, and this board has watched a change
+go 117 of 117 alone and fail seven in the gate. **And running the full suite twice doubles the cost on a
+machine that is memory-bound** - measured on 2026-09-24 at 6257 MB free of 64617, with a single gate run
+taking about twenty minutes. The cheap checks exist to make the gate's red rare, not to pre-empt it.
+
+**Read the tell before committing to `develop`, and hold while a naming is outstanding even if the tell says
+free.** Most of this is already written in the section above - *a develop commit competes with a running gate
+exactly as another gate does*, *read it immediately before the commit*, and *the board is serialised by a
+decision, not by a lock* - and it is cited there rather than restated here. **The one mechanism it adds: the
+lock is written when a run STARTS, not when the go is GIVEN.** Between a naming and the named session's
+launch the tell reads `GATING=none` and is correct, and the board is nonetheless taken. So a quiet tell during
+an outstanding naming is not a free board; it is the gap between a decision and its first write.
+
+### What was rejected, so it is not proposed again
+
+**Holding every branch until its whole specification is done.** Considered by the user and rejected, for
+four reasons:
+
+- **Merging `develop` in often shows nothing if nobody lands.** The practice that keeps branches mergeable
+  depends on other branches arriving; if every branch waits, every branch integrates against a `develop` that
+  has not moved, and the conflicts all arrive at once at the end.
+- **Dependent specifications would wait for every task.** `functional-decomposition-graph` would wait for
+  all 25 of `backend-centralization`'s, including tasks it does not depend on.
+- **A red after 25 tasks has no obvious culprit.** A milestone's red points at a milestone's worth of change;
+  a specification's red points at all of it.
+- **"Complete means on `develop`" would show 0 done until the end.** Task status is marked only once
+  `merge-base --is-ancestor` says the code is on `develop`, so a specification landed in one piece reads as
+  untouched for its whole life, which makes progress invisible to everyone reading the dashboard.
+
+**Batched landings** - collecting several ready branches into one landing - were offered and not chosen.
+**No reason was recorded for that choice**, and this line says so deliberately: a reader who meets a rejection
+without its reason tends to supply one, and a supplied reason is argued against later as though somebody had
+given it.
+
 ## Git identity
 
 **Commit under a per-task identity, `agent-<N>-<task>`, set differently depending on where you are.**
