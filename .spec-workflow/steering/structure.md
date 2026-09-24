@@ -12,13 +12,14 @@
     Contains the core functionalities of the backend, including the ASP.NET hosting setup.
   * EtAlii.Adp.Backend.Tests
     Contains all unit and integration tests for the code in the EtAlii.Adp.Backend project. Both are separated in distinct folders called `Unit Tests` and `Integration Tests`.
-  * EtAlii.Adp.Backend.Diagrams (Library)
+  * EtAlii.Adp.Diagram (Library)
     Contains the abstractions and interfaces that all modular diagrams need to implement, as well as all helper and factory logic.
-  * EtAlii.Adp.Backend.Diagrams.Tests
-    Contains all unit tests for the code in the EtAlii.Adp.Backend.Diagrams project.
+  * EtAlii.Adp.Diagram.Tests
+    Contains all unit tests for the code in the EtAlii.Adp.Diagram project.
   * EtAlii.Adp.Backend.Service (Executable)
     Provides the hosted setup from `EtAlii.Adp.Backend` as a executable that can be used as either a (Windows) service, console application and docker container.
     This application also contains the appsettings.json and appsettings.developer.json and can also be run as a console application. The latter is the primary way to test and debug the backend.
+  * The core has since been decomposed further, into EtAlii.Adp.Authentication, EtAlii.Adp.Common, EtAlii.Adp.Context, EtAlii.Adp.Documents, EtAlii.Adp.Editor, EtAlii.Adp.Hierarchy, EtAlii.Adp.History, EtAlii.Adp.Problems, EtAlii.Adp.Projects, EtAlii.Adp.Sessions and EtAlii.Adp.TestSupport, most with a matching `.Tests` project.
     
 * The .NET projects will have their dependencies configured correctly, i.e. the project `EtAlii.Adp.Backend` will depend on  `EtAlii.Adp` and not the other way around. Also PackageReferences will be put at the highest 'parent' project where they are used, but not deeper. But if multiple 'child' projects use the same packages their references will be put in the shared parent project,.
 * The web frontend lives in its own folder under `src/` called `client/` alongside, not inside, the .NET solution folders it talks to over gRPC.
@@ -30,7 +31,7 @@
 # Naming
 
 * The organization is 'EtAlii' (uppercase E and A). The product is 'ADP' - 'A Different Perspective'.
-* .NET namespaces/assemblies: `EtAlii.Adp.<Area>` (e.g. `EtAlii.Adp.Backend`, `EtAlii.Adp.Diagrams`). Test projects append `.Tests`.
+* .NET namespaces/assemblies: `EtAlii.Adp.<Area>` (e.g. `EtAlii.Adp.Backend`, `EtAlii.Adp.Diagram`). Test projects append `.Tests`.
 * A project's `_Model/`, `Commands/`, `History/` and `Support/` folders stay in the project's own namespace rather than taking one of their own. A caller writes `using EtAlii.Adp.Diagram.C4;` and has the model, the commands and the history. Every other folder namespaces normally. (`IDE0130` is set to `none` in `src/.editorconfig` for this, with the counts that show it is a convention.)
 * Non-.NET code (e.g. TypeScript on the frontend) mirrors the same naming intent using the language's own convention, e.g. `com.etalii.adp.<area>`.
 * Files/types: `PascalCase` for .NET types and files; the frontend follows whatever convention its framework/tooling defaults to, kept consistent within that project.
