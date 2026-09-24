@@ -91,10 +91,10 @@ public class PipelineDocumentStoreTests : IDisposable
         const string broken = "stages:\n  - stage: Build\n   jobs: [\n";
         var path = Write("broken.yml", broken);
         var store = new PipelineDocumentStore();
-        store.GetOrLoad(_workspace, path);
+        var entry = store.GetOrLoad(_workspace, path);
 
         // Act.
-        var refusal = store.Save(_workspace, path);
+        var refusal = store.Save(_workspace, path, entry);
 
         // Assert.
         Assert.NotEqual("", refusal);
@@ -112,7 +112,7 @@ public class PipelineDocumentStoreTests : IDisposable
 
         // Act.
         new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(stage), "Build it");
-        var refusal = store.Save(_workspace, path);
+        var refusal = store.Save(_workspace, path, entry);
 
         // Assert.
         Assert.Equal("", refusal);
@@ -130,7 +130,7 @@ public class PipelineDocumentStoreTests : IDisposable
         new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(entry.Model.Stages.Single()), "Build it");
 
         // Act.
-        store.Save(_workspace, path);
+        store.Save(_workspace, path, entry);
 
         // Assert.
         Assert.Equal("Build it", store.GetOrLoad(_workspace, path).Model.Stages.Single().DisplayName);
@@ -148,7 +148,7 @@ public class PipelineDocumentStoreTests : IDisposable
         store.Changed += (_, args) => announced.Add(args);
 
         // Act.
-        store.Save(_workspace, path);
+        store.Save(_workspace, path, entry);
 
         // Assert.
         var change = Assert.Single(announced);

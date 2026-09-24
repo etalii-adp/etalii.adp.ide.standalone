@@ -37,7 +37,7 @@ internal static class RdfEdits
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var error = documents.Save(bodyPath);
+        var error = documents.Save(bodyPath, entry);
         return Task.FromResult(error.Length == 0
             ? CommandResult.Success(new RestoreRdfDocumentCommand(bodyPath, before, self))
             : CommandResult.Failure(error));

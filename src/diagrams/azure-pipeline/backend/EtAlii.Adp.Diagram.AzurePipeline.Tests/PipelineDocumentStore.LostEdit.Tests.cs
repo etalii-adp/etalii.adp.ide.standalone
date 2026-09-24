@@ -61,7 +61,8 @@ public class PipelineDocumentStoreLostEditTests : IDisposable
         // Arrange: a real document of this notation, loaded and then edited in memory only.
         var path = IoPath.Combine(_root, "edge-anchors.yml");
         File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "edge-anchors.yml"), path);
-        var document = _store.GetOrLoad(_root, path).Document;
+        var entry = _store.GetOrLoad(_root, path);
+        var document = entry.Document;
         document.Insert(0, ["# lost-edit marker"]);
 
         // The edit is in memory and nowhere else yet, which is the precondition the store tests
@@ -71,7 +72,7 @@ public class PipelineDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the reload bridge does with it.
         _store.Reload(_root, path);
-        var error = _store.Save(_root, path);
+        var error = _store.Save(_root, path, entry);
 
         // Assert.
         Assert.Equal("", error);

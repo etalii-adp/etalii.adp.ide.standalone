@@ -69,7 +69,7 @@ public class TimelineDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the bridge does with it.
         store.Reload(path);
-        var error = store.Save(path);
+        var error = store.Save(path, entry);
 
         // Assert.
         Assert.Equal("", error);

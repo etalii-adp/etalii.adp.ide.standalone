@@ -267,7 +267,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // Act.
         var document = _documents.GetOrLoad(_body);
         WardleyWriter.RemoveLine(document, WardleyParser.Parse(document).Components.Single(c => c.Name == "Power").Line);
-        _documents.Save(_body);
+        _documents.Save(_body, document);
 
         // Assert.
         Assert.Null(announced);
@@ -286,7 +286,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         var document = _documents.GetOrLoad(_body);
         WardleyWriter.Rename(document, WardleyParser.Parse(document), "Power", "Mains Power");
         _documents.Rekey(_body, WardleyIdentityKind.Component, "Power", "Mains Power");
-        _documents.Save(_body);
+        _documents.Save(_body, document);
 
         // Assert.
         Assert.Equal(["Mains Power"], announced);

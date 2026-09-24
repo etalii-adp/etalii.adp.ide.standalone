@@ -76,7 +76,7 @@ internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore docu
             return Task.FromResult(CommandResult.Success());
         }
 
-        if (documents.Save(command.RootPath, command.BodyPath) is { Length: > 0 } error)
+        if (documents.Save(command.RootPath, command.BodyPath, entry) is { Length: > 0 } error)
         {
             return Task.FromResult(CommandResult.Failure(error));
         }

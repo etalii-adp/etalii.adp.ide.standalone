@@ -38,7 +38,7 @@ internal static class DatabricksEdits
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var error = documents.Save(bodyPath);
+        var error = documents.Save(bodyPath, entry);
         return Task.FromResult(error.Length == 0
             ? CommandResult.Success(new RestoreDatabricksDocumentCommand(bodyPath, before, self))
             : CommandResult.Failure(error));

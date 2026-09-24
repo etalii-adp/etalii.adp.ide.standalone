@@ -52,7 +52,7 @@ internal sealed class SetPipelineElementEnabledCommandHandler(IPipelineDocumentS
             return Task.FromResult(CommandResult.Success());
         }
 
-        var error = documents.Save(command.RootPath, command.BodyPath);
+        var error = documents.Save(command.RootPath, command.BodyPath, entry);
         return Task.FromResult(error.Length > 0
             ? CommandResult.Failure(error)
             : CommandResult.Success(new SetPipelineElementEnabledCommand(

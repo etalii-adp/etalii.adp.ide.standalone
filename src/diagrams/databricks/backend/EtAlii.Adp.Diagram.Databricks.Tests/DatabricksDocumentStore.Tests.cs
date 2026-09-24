@@ -43,10 +43,12 @@ public class DatabricksDocumentStoreTests : IDisposable
         // Arrange.
         var path = CopyFixture(name);
         var original = File.ReadAllBytes(path);
-        _store.GetOrLoad(path);
+        var entry = _store.GetOrLoad(path);
 
-        // Act.
-        var refusal = _store.Save(path);
+        // Act. Nothing is edited between the load and the save, which is what makes this test about
+        // byte identity rather than about edits surviving - see the LostEdit test beside it for the
+        // case an untouched document cannot express.
+        var refusal = _store.Save(path, entry);
 
         // Assert.
         Assert.Equal("", refusal);
@@ -74,7 +76,7 @@ public class DatabricksDocumentStoreTests : IDisposable
 
         // Act.
         var entry = _store.GetOrLoad(path);
-        var refusal = _store.Save(path);
+        var refusal = _store.Save(path, entry);
 
         // Assert.
         Assert.False(entry.IsUsable);

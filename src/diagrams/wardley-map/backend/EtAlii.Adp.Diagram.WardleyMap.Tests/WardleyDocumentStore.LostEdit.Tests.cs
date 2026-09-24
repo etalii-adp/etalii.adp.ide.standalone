@@ -72,7 +72,7 @@ public class WardleyDocumentStoreLostEditTests : IDisposable
         // Act: the notification for an EARLIER write of this same file lands now. The store's own
         // guard is already cleared, so this is exactly what the reload bridge does with it.
         _store.Reload(path);
-        var published = _store.Save(path);
+        var published = _store.Save(path, document);
 
         // Assert.
         Assert.Equal("", published.Error);
