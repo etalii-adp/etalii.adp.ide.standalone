@@ -1,0 +1,10 @@
+{
+  "id": "approval_1790281819943_ov72tg6h7",
+  "title": "design: R2.4/R2.5 are TWO OF TEN stores, not \"landed ahead\" — the old line authorised skipping group 2's largest change. BEYOND THE ASK, both strikable: (1) a note making R2.4+R2.5 conversion order a CORRECTNESS property (BodyDeleted's default silently breaks a half-converted store), (2) S2's now-false \"SolutionWatcher has no Error handler\", closed at a2318531",
+  "filePath": ".spec-workflow/specs/backend-centralization/design.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-09-24T20:30:19.943Z",
+  "category": "spec",
+  "categoryName": "backend-centralization"
+}
