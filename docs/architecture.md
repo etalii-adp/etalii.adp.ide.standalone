@@ -86,7 +86,9 @@ For how a subsystem behaves rather than which project holds it, read [`tech.md`]
 
 **Descriptive, not normative.** It says what the system *is*; it does not tell anyone what to do. The rules live in [`CLAUDE.md`](../CLAUDE.md) and the steering documents, and when this page and a rule disagree, the rule wins and this page is stale.
 
-**Refresh rule:** [`CLAUDE.md`](../CLAUDE.md) names when to read and update these pages.
+**Refresh rule:** [`CLAUDE.md`, *The architecture pages*](../CLAUDE.md#the-architecture-pages) - update the page in the same change that makes one of its sentences false, as [*Documentation refresh*](../CLAUDE.md#documentation-refresh) asks of every delivered document.
+
+**Not covered here, deliberately** (a later pass, each its own specification): per-module internals, the wire contracts and generated code, the client component tree below the canvas library, deployment and hosting, the editor family's internals, per-diagram-type behaviour, and runtime sequence diagrams.
 
 **Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that stated counts recompute, and that the page stays within its size limit.
 

@@ -103,7 +103,9 @@ Showcase documents live in `src/examples/`, not in a module's `Fixtures/`. The t
 
 **Descriptive, not normative.** It says where things are; the rules live in [`CLAUDE.md`](../CLAUDE.md) and the steering documents, and when this page disagrees with a rule, the rule wins and this page is stale.
 
-**Refresh rule:** [`CLAUDE.md`](../CLAUDE.md) names when to read and update these pages.
+**Refresh rule:** [`CLAUDE.md`, *The architecture pages*](../CLAUDE.md#the-architecture-pages) - update the page in the same change that makes one of its sentences false, as [*Documentation refresh*](../CLAUDE.md#documentation-refresh) asks of every delivered document.
+
+**Not covered here, deliberately** (a later pass, each its own specification): what is inside a module, the wire contracts and generated code, the client component tree, deployment and hosting, and the editor family's internals.
 
 **Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that every count above recomputes from the tree, and that the page stays within its size limit.
 
