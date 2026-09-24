@@ -8,7 +8,6 @@ import {
   type ConnectorBox,
 } from "@client/canvas/connectors";
 import { elementSourceOf } from "@client/canvas/selection";
-import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
@@ -18,7 +17,6 @@ import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt"
 import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDependencyGraphStream } from "./useDependencyGraphStream";
 import type { DependencyGraphElement } from "./dependencyGraphModel";
@@ -110,11 +108,11 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
       // an action id; the backend still holds the key-to-action table, which is why the handler
       // below says which shortcut each action travels as.
       actions: [
-        { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-        { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
-        { id: "add-right", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
-        { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
-        { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+        { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+        { id: "insert", backendKey: "Insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-right", backendKey: "Tab", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-below", backendKey: "Enter", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+        { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
       ],
       anchors: {
         kind: "sides",
@@ -168,19 +166,6 @@ function nearestRow(y: number): number {
   return exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
 }
 
-/**
- * Which key the backend knows each declared action by.
- *
- * The library dispatches an id; the backend's context table is keyed by keystroke. One map, in
- * one place, rather than a keystroke built at each call site.
- */
-const BACKEND_KEYS: Readonly<Record<string, string>> = {
-  rename: "F2",
-  insert: "Insert",
-  "add-right": "Tab",
-  "add-below": "Enter",
-  delete: "Delete",
-};
 
 /** The placement id a gesture carries when it lands on empty canvas: `new:{x},{row}`. */
 function newPlacementId(x: number, row: number): string {
@@ -199,7 +184,7 @@ function newPlacementId(x: number, row: number): string {
  */
 export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useDependencyGraphStream(projectId, path);
-  const { executeAction, executeShortcut } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
@@ -237,15 +222,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     })();
   };
 
-  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
-  };
-
   /**
    * The gesture's direction, decided by the anchor it lifted from: from the right, the
    * dragged node depends on the landing; from the left it arrives reversed - the landing
@@ -255,15 +231,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     sourceAnchor === "left" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
 
   const events: DiagramEventHandlers = {
-    // The declared actions, answered as the shortcuts the backend has always known them by.
-    onActionInvoked: ({ actionId, targetId }) => {
-      const key = BACKEND_KEYS[actionId];
-      if (key === undefined || targetId === undefined) {
-        return;
-      }
-
-      runShortcut(contextShortcutOf(key), targetId);
-    },
     // Selection is the library's (centralized-selection); a menu action it ran and the backend
     // refused comes back here, for the same rejection line every other refusal uses.
     onActionRefused: ({ message }) => setRejection(message),
