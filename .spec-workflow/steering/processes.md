@@ -759,6 +759,23 @@ A change that makes a document untrue fixes it in the same change. Four artefact
 
 (`docs/dependencies.md` needs no rule here — its guard is a test.)
 
+**AND THE OPPOSITE POLARITY IS THE ONE NOBODY TRIPS OVER: A SUMMARY OUTLIVING THE RULE IT SUMMARISES.** Everything
+above is about a document going FALSE, which somebody eventually meets and fixes. This is a document staying
+**TRUE AND WEAKER** - and in the more-read of the two. Nothing is wrong, so nothing prompts a second look.
+
+**`CLAUDE.md` is injected at session start; `processes.md` is opened on demand.** So a rule strengthened only in
+the reference is followed in its weaker form by every session that never opens the reference - **and the sessions
+that most need the stronger form are mid-gate, which is exactly when nobody opens a reference.**
+
+**The instance, and it is worth more than the hypothesis: a session followed `CLAUDE.md`'s narrower exit-code rule
+the same day the stronger one landed in `processes.md`, and says it would again.** That is Architect 2, which found
+the divergence by cold-reading both documents rather than by tripping over it - the only way this family can be
+found, since neither sentence is wrong.
+
+**So a strengthening lands in BOTH or it lands in neither**, and the summary carries the mechanism rather than only
+the instruction: the weaker form of the exit-code rule was not shorter, it was missing the sentence that explains
+why a pipe is not the special case.
+
 ## Implementation order
 
 Work a feature through these layers in order, finishing each — including its tests — before starting the next:
@@ -1359,8 +1376,20 @@ different scale, and two of them are the Scrum master's own:
 - **And the purest, because it has no interval at all: a process tree was measured, what was seen was killed,
   and the tree had moved before the reader finished reading its own output.**
 
-**The discipline: re-read the state immediately before the act, not at the start of your turn** - and where the
-state belongs to somebody else, ask rather than infer.
+**THE DISCIPLINE, IN THE ONLY FORM THAT SURVIVES A BUSY TURN: A STATE YOU READ BEFORE YOUR LAST TOOL CALL IS A
+MEMORY, NOT A READING** - and where the state belongs to somebody else, ask rather than infer.
+
+**That wording is Architect 2's and it replaces mine, which asked for vigilance at the worst possible moment.**
+The original said *re-read the state immediately before the act, not at the start of your turn* - true, and a
+request for attention precisely when a turn is busiest, which is when nobody has any. **The replacement names a
+condition you can recognise in your own transcript**: count the tool calls since you read the thing, and if the
+answer is more than none you are quoting yourself. **A rule that asks you to LOOK beats one that asks you to
+REMEMBER**, and it is checkable after the fact rather than only before it.
+
+**Confirmed within the hour by a session that had never read the original.** It read the gate tell, develop's tip
+and the index, launched, spent twenty minutes auditing somebody else's findings, and re-read all three
+immediately before `land.sh` - which had not moved. **Its own account is the point: it would not have known if
+they had.**
 
 **And the interval is not carelessness - it is the length of a careful message.** Three instances in one
 evening, from two sessions, every reading correct when taken. A session cold-reading this document's own new
