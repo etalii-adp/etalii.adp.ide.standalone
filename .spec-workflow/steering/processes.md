@@ -140,6 +140,20 @@ each other** - if a free slot were self-service, two sessions would read *free* 
 because the sentence without its reason invites somebody to decide the warning is enough when the board
 is obviously quiet. *(The Scrum master's.)*
 
+**And the dangerous version of this arrives as HELPFULNESS, which is why it survives people who have
+already learnt the rule.** On 2026-09-24 the holder of the board wrote that it would land and report
+*so that the next session is not waiting on a message of mine* - **which makes the go come from whoever
+FINISHED rather than from whoever is serialising.** That is self-service with an extra step, written
+three hours after the same session had nearly collided with another over exactly this, and by a session
+that had already withdrawn the same move twice that day.
+
+**The costume is the whole difficulty: a person looking out for a violation is watching for
+permission-shaped things, and a kindness is not shaped like permission.** *Saving somebody a message* and
+*granting somebody a turn* look nothing alike and are the same act. **The tell generalises past the
+board: if you are reasoning your way to the conclusion that you may proceed - or that somebody else may -
+that reasoning is the evidence that you may not.** Ask instead; it costs one message and the round trip
+you are saving was never the expensive part.
+
 **And the tell is FAIL-OPEN in a chain, which is worse than it sounds because it reads as a check.**
 `who-is-gating.sh` returns **2 only when it cannot read the board**, and **0 for a free board, for a
 holder, and for a lock whose owner is not written yet alike** - so `tell && commit` runs the commit
