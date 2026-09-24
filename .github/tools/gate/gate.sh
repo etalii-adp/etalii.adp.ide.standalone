@@ -163,6 +163,11 @@ rm -f "$SELFTEST_REPORT"
 (cd "$MRG/src/backend" && ADP_UNDELETED_FOLDERS_DIR="$UNDELETED" ADP_GATE_SELFTEST_REPORT="$SELFTEST_REPORT" dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
 DT_EXIT=$?
 echo "DOTNET_TEST_EXIT=$DT_EXIT"
+# THIS LINE CANNOT APPEAR IN THE GATE THAT INTRODUCES IT. gate.sh runs from the MAIN CHECKOUT, not
+# from the merged tree, so a change here takes effect only once it has landed - the first run to print
+# SELFTEST= is the next gate anybody starts afterwards. A reader who checks the introducing branch's own
+# log, finds no SELFTEST= line and concludes the feature is broken has been misled by the ordinary
+# behaviour of the gate rather than by a defect.
 echo "SELFTEST=$(gate_selftest_report "$SELFTEST_REPORT")"
 echo "UNDELETED_FOLDERS=$(gate_undeleted_folders "$UNDELETED")"
 

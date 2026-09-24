@@ -1329,6 +1329,18 @@ like a corroborated one. **Every wrong answer on 2026-09-23 came from a single s
 probe, a note, a filter, a header - **and the ones that were caught were caught because a second instrument
 existed, not because anyone was more careful the second time.**
 
+**A GATE-TOOLING CHANGE IS NEVER EXERCISED BY ITS OWN GATE**, so its acceptance is the self-test plus
+**the first run after it lands** - never the landing run itself. `gate.sh` runs from the **main
+checkout**, not from the merged tree the gates judge, so a change to it takes effect only once it is on
+`develop`. **A reader who checks the introducing branch's own log for the new behaviour and does not find
+it will conclude the change is broken**, and will be wrong for a reason that is invisible from the diff.
+
+**The author is as exposed as the reader**: the session that added a `SELFTEST=` line to the gate's
+summary said in writing that it expected to read that line in the gate which introduced it, and was
+corrected by its own red run producing no such line. **So the acceptance has two halves and the second
+one happens after the landing**: confirm the new behaviour on the next gate anybody runs, and treat its
+absence THEN as the real finding.
+
 **AN OVERLOADED EXIT CODE CANNOT CARRY A PROOF.** Two conditions sharing a number is fine for a human
 reading a message and **useless for a check that must decide.** The probe below required `exit 2` from a
 script where **2 meant both *the board could not be read* and *your argument was refused*** - so on any
