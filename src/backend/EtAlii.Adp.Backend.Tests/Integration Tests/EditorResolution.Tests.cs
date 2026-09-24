@@ -199,9 +199,9 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
     //
     // FIVE MECHANISMS WERE PROPOSED AND NONE REPRODUCES. Recorded so nobody spends the day again:
     //
-    //   1. a dropped notification          INJECTED, green - two arrive per write, so losing one is
-    //                                      survivable; each write raises Renamed+Renamed (the save)
-    //                                      and Changed+Changed (the external write), measured
+    //   1. a dropped notification          INJECTED, green - two arrive per write THROUGH THIS
+    //                                      SESSION'S WATCHER, so losing one is survivable. See the
+    //                                      filter caveat below: the count is the instrument's.
     //   2. a not-exists window around the  INJECTED at 1.5 s, green - and the RPC BLOCKS through the
     //      replace consuming the refusal   window, so the test is never waiting during it
     //   3. a stale read superseded late    not run: it needs a second notification to rescue the
@@ -213,6 +213,24 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
     //                                      control arm was three components with no tests, and the
     //                                      supporting instance was a test renamed and fixed a day
     //                                      earlier at 09929541
+    //
+    // THE NOTIFICATION COUNT IS A PROPERTY OF THE WATCHER, NOT OF THE WRITE, and the first version of
+    // this comment said "each write raises TWO notifications, both the SAME event type - measured"
+    // without saying through what. Corrected, because a coalescing argument built on "two of one
+    // type" would be resting on one watcher's configuration:
+    //
+    //   * PlainEditorSession watches `new FileSystemWatcher(directory, Path.GetFileName(path))` - a
+    //     PER-FILENAME filter with NO explicit NotifyFilter, so the default LastWrite | FileName.
+    //     Through that, one temp-then-replace publish showed TWO transitions, both Renamed.
+    //   * RootFolderWatcher - which is what the diagram stores' reload rides - is recursive with
+    //     NotifyFilter = FileName | DirectoryName | LastWrite | Size. Through that, Developer 2
+    //     measured THREE for the same publish: Renamed dest -> *.TMP, Renamed ~adp-*.tmp -> dest,
+    //     Changed dest.
+    //
+    // So the backup-file rename is a third transition either way, and the two counts differ by the
+    // instrument rather than by the file system. **A coalescing story built on two needs re-running
+    // on three.** Same defect class as the rest of this comment: a count correct about the set the
+    // instrument could see.
     //
     // WHAT LANDED INSTEAD IS DIAGNOSTICS AND FOUR CORRECTNESS FIXES, none of them claimed as the
     // cause: NextAddAsync now names what it discarded, a refused re-read no longer consumes the
