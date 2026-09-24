@@ -282,6 +282,13 @@ false at the scope that mattered. **A structural remedy feels like a different k
 which is why nobody re-runs the residue question on it** - and that is why structural fixes get oversold as a
 class rather than one at a time.
 
+**And the shortest instance arrived inside the commit that landed this clause, which is why it is stated as the
+instance rather than as a curiosity.** The remedy for a line-wrapped search is to flatten the whitespace. **The
+flattening leaves blockquote markers sitting mid-phrase**, so a search for a sentence added minutes earlier
+returned zero because a `>` had landed in the middle of it. **The fix for blind spot one introduced blind spot
+three, and it was found by using the fix.** Nothing about the remedy announced its own residue; only running it
+against something it should have found did.
+
 **And when a written remedy fails anyway, the fix is not to repeat it louder.** Ask what it asks a person to do and when - **if the answer is "the right thing, unprompted, later", replace it with something the command or the directory carries.** The three above were each written down before they failed.
 
 **A third kind of remedy, for when the artifact CANNOT carry it.** All three above are prevention: make the
@@ -413,6 +420,12 @@ one whose own ruling it appeared to undermine.** It took a different test, not m
 who had no stake in the accusation being true. **When a measurement indicts, that is the moment to run the
 second instrument** - the reading feels like diligence, and agreement with it feels like honesty.
 
+**Its counterpart is the opposite asymmetry and the two together cover most of why bad instruments survive: a
+check that errs toward WASTED work rather than WRONG work never produces an incident, so it is never
+examined.** *Is my base current*, in [*Committing and merging in the shared main checkout*](#committing-and-merging-in-the-shared-main-checkout), is the worked case. **One kind of instrument is believed because it
+indicts; the other is unexamined because it only costs time** - and neither is failing in a way that looks like
+failure.
+
 **The rule half, which stands on its own: a shortcut taken four times is indistinguishable from a rule that
 never applied, and only the rule's own text and its stated exceptions can tell them apart.** Four commits in a
 row look like a practice, and **nothing about them says whether anybody decided.** That is what makes reading
@@ -453,7 +466,12 @@ deliberate. **A judgement that leaves no trace reads as a measurement.**
 against patterns grepped; a first-parent test against a parent count; scripts read against scripts reasoned
 about; and a search against a thing two sessions both assumed had landed. **Four instruments, no additional
 diligence in any of them** - which makes routing a finding to somebody else **a measurement rather than a
-courtesy**, and makes every clause below actionable rather than aspirational. The sessions holding the wrong
+courtesy**, and makes every clause below actionable rather than aspirational. **And this section states its own sampling
+method rather than reading as exhaustive: three of its items were found while verifying the branch that carries
+them** - the chained count that stopped on its own good news, a wrap in a sentence its author had written four
+hours earlier, and the blockquote marker above. **None was found by looking for it, which is the claim; it also
+means there is no way to know what an eleventh would have been.** A collection assembled this way cannot claim
+completeness, and this one does not. The sessions holding the wrong
 answers were not being sloppy, and no amount of re-reading would have moved any of them.
 
 **An instrument's reliability record is about the questions it was ASKED, not the questions it was used to
