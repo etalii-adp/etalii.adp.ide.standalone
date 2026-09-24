@@ -46,6 +46,15 @@ namespace EtAlii.Adp.Editor.Plain.Tests;
 /// pipeline. <b>Using a class is not the same as making it log, and only the second binds a cached
 /// logger.</b>
 /// </para>
+/// <para>
+/// <b>Which makes the 90 classes still holding the cached shape harder to guard than anyone has
+/// assumed.</b> Any future sweep over that pattern has this same trap: a test that exercises a class
+/// without making it emit will find its logger unbound, follow the replacement, and report health -
+/// so <b>a sweep's green would be worthless for exactly the reason this test's first green was.</b>
+/// Each subject has to be made to LOG before the pipeline moves, which is per-class work rather than
+/// something a loop can do. Worth knowing before the deferred conversion is picked up, because the
+/// cheap version of that guard cannot work.
+/// </para>
 /// </remarks>
 public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
 {
