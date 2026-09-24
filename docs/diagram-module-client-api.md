@@ -49,7 +49,7 @@ from `src/client`. The test computes the module-facing surface by parsing the tr
 
 **What the test does not yet hold.** It covers names a module imports, types a module supplies by value, and types a module file satisfies by existing. It does not yet cover the RETURN TYPES of the hooks a module calls - `DiagramStreamResult` from `useDiagramStream` among them - because a module reads their members without ever writing the type's name, so no set sees them. A member added to one of those types would leave every check green. Six such types exist today; an amendment to this specification is being raised to cover them, so this is a known gap rather than an oversight, and until it lands a change to one of them is caught by a reader rather than by this test.
 
-**Every figure quoted below says what it counts and when it was read**, because a count with neither is a number a reader cannot check. Figures in this document were read at `d1cc0da3` unless their own sentence says otherwise, and the test recomputes them rather than trusting them.
+**Every figure quoted below says what it counts and when it was read**, because a count with neither is a number a reader cannot check. Figures in this document were read at `267ee8f2`, where the test last ran green against them, unless their own sentence names another commit. **The test recomputes the sets, not the prose counts** - a sentence saying how many modules declare something, or how many guards walk module clients, is a timestamp, true at that commit and not re-checked afterwards.
 
 ## The shape of a module client
 
