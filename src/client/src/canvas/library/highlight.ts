@@ -23,10 +23,31 @@ import type { CSSProperties } from "react";
  * <b>The token paints nothing at rest</b> (Requirement 5.5): `--color-primary` is also timeline's
  * moment fill, ansible's outlines, the owl and rdf badges, skos's notation and sparql's projection
  * mark, so a highlight in that colour read as "selected" on things nobody had selected.
+ *
+ * <b>The width is a considered value, not a default.</b> An SVG stroke is CENTRED on the path and no
+ * property moves it outward - `stroke-alignment` was proposed for SVG2 and no browser implements it -
+ * so on a strongly filled shape the inner half sits on the fill and does no work, and the highlight
+ * is carried by its outer edge alone. That was measured on `c4`, judged by the user and accepted;
+ * `centralized-selection` Requirement 5.2 holds the contrast figures.
+ *
+ * <b>Widening the stroke so its outer half alone equals the declared width does NOT work</b>, and it
+ * is the first idea everyone has, including the author of this comment. It assumes a fill to swallow
+ * the inner half. `.c4-boundary rect` is `fill: none`, so widening would deliver a 6px highlight on
+ * exactly the shapes Requirement 5.3's fill-only rule governs.
  */
 export const HIGHLIGHT_STROKE = "var(--color-selected, #7c3aed)";
 
-/** How much heavier a highlighted line is drawn, when the notation states no width of its own. */
+/**
+ * The floor a highlighted line is drawn at: never thinner than this, and never less than one heavier
+ * than the notation's own.
+ *
+ * <b>A floor, not a fallback, and a width, not a delta</b> - this sentence used to say "how much
+ * heavier a highlighted line is drawn, when the notation states no width of its own", which is wrong
+ * in both directions at once. Read as a fallback it says the constant does not apply when a width is
+ * declared: a declared 1 would highlight at 2, where `Math.max(1 + 1, 3)` is 3. Read as a delta it
+ * says a declared 4 highlights at 7, where `Math.max(4 + 1, 3)` is 5. The only width it happened to
+ * describe correctly was the one where its two errors cancel.
+ */
 export const HIGHLIGHT_STROKE_WIDTH = 3;
 
 /**
