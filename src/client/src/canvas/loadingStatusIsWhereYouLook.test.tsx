@@ -77,6 +77,35 @@ describe("the canvas status", () => {
     });
   });
 
+  it("reaches shacl too, whose status was outside the shared rule entirely", () => {
+    // THE EIGHTH CANVAS. Seven render `<module>-status canvas-status`; shacl rendered its own
+    // `shacl-loading canvas-hint` saying "Loading...". canvas-hint is an SVG TEXT rule - fill and
+    // text-anchor - so on an HTML paragraph it did nothing, and the centring above could not reach
+    // an element that was not using the shared class. One cause, two symptoms.
+    //
+    // The class is READ FROM THE COMPONENT rather than written here, so this cannot drift into
+    // asserting about a string the source no longer renders - and the extraction asserts itself
+    // first, because a regex that matches nothing would otherwise make the whole case vacuous.
+    const source = readFileSync(
+      join(__dirname, "..", "..", "..", "diagrams", "rdf", "client", "ShaclCanvas.tsx"),
+      "utf-8",
+    );
+    const rendered = /loading && model\.shapes\.size === 0 \? <p className="([^"]+)"/.exec(source);
+    expect(rendered, "shacl's loading branch was not found, so this case would prove nothing").not.toBeNull();
+
+    withCanvasCss((host) => {
+      const status = document.createElement("p");
+      status.className = rendered![1];
+      host.appendChild(status);
+
+      const computed = getComputedStyle(status);
+      expect(
+        computed.top,
+        `shacl renders class "${rendered![1]}", which resolves to no status placement - it is outside the shared rule`,
+      ).toBe("50%");
+      expect(computed.transform).toContain("translate(-50%, -50%)");
+    });
+  });
   it("leaves the rejection in its corner, because that one answers a gesture over a drawn diagram", () => {
     // THE CONTROL. Without it, moving every absolutely-positioned message to the middle would pass
     // the test above just as well - and a rejection centred over a diagram somebody is editing is a
