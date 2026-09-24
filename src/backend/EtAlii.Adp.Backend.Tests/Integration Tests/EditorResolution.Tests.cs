@@ -108,6 +108,25 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         Assert.Equal("just some notes\n", Encoding.UTF8.GetString(element.Payload!.Value.Span));
     }
 
+    // THIS TEST HAS A KNOWN INTERMITTENT FAILURE, and here is the whole of what is known, so that
+    // whoever fixes it inherits a count rather than an impression. It fails with a gRPC
+    // DeadlineExceeded at exactly 60 s, reading the stream.
+    //
+    //     gate runs with the FULL gate self-test alongside:  5 runs, 2 failures
+    //     gate runs in the self-test's quick mode:           3 runs, 0 failures
+    //
+    // Measured 2026-09-23/24. It has only ever failed while the full self-test was running beside it -
+    // twenty-one minutes of a few hundred git processes - and a 60-second deadline is what that load
+    // would push over. SUGGESTIVE RATHER THAN ESTABLISHED: n is small, and 'ran the full self-test' is
+    // also 'changed the gate directory', so the two are confounded even within these eight runs.
+    //
+    // AND THE SAMPLE CANNOT BE EXTENDED CHEAPLY ANY MORE. Since the self-test gained a quick mode,
+    // almost nothing runs the full suite, so the storm arm will grow by roughly one run a month. Do not
+    // wait for better numbers; they will not arrive.
+    //
+    // The fix is the shape used on the failure-record family: this test's subject is that the stream
+    // delivers both views, and it asserts that inside a fixed clock. Wait on the event, or give the
+    // deadline room the machine cannot eat.
     [Fact]
     public async Task ADslOpenAsDiagramAndAsTextAtOnce_BothStayTrueToTheFile()
     {
