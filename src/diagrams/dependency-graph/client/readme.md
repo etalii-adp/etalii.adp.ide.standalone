@@ -47,5 +47,5 @@ The guard for that behaviour is therefore in the library
 shelter — `dotnet-dependency-graph` and `timeline`, which migrate next.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`declarative-diagram-modules`](../../../../.spec-workflow/specs/declarative-diagram-modules/) for
+[`declarative-diagram-modules`](../../../../.spec-workflow/archive/specs/declarative-diagram-modules/) for
 the specification this canvas is the reference for.
