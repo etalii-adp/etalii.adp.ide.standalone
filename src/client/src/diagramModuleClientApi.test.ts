@@ -123,7 +123,12 @@ function internalList(text: string): string[] {
     throw new Error("The readme has no 'Library-internal exports' section, so check 3 would compare against nothing.");
   }
 
-  return [...section.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+  // Only the list itself - the lines that START with a backtick. The sentence above it carries the
+  // commit the list was read at, in backticks, and reading the whole section reported that hash as
+  // a missing export: the third time this document annotated a convention in a way its own parser
+  // misread.
+  const listLines = section.split("\n").filter((line) => line.startsWith("`"));
+  return listLines.flatMap((line) => [...line.matchAll(/`([^`]+)`/g)].map((match) => match[1]));
 }
 
 /**

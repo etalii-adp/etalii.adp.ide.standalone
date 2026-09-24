@@ -252,6 +252,8 @@ Source: [`src/client/src/canvas/library/examples/acyclic.example.ts`](../src/cli
 
 **Their members.** `RouteEnds` carries `source`, `target`; `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`.
 
+**Their members.** `RelationTypeDefinition` carries `endpoints`, `adorn`.
+
 ### Layout, dragging, snap and extent
 
 **Declarations:** `SnapDeclaration`, `DropTargetDeclaration`, `LayoutDefinition`, `LayoutMode`, `DraggingPolicy`, `SnapAxis`, `DeclaredNumber`
@@ -320,7 +322,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **`{ kind: "menu" }` is an invocation a module must read carefully.** `centralized-selection` gave an existing name a new meaning: an action invoked from the shared menu reaches the module as `action-invoked` and **never reaches the backend**. The declaration is unchanged and the member names are unchanged, so no check keyed on declarations or members can demand an entry for it — which is exactly why it is written out here.
 
-### The toolbox
+### The toolbox declaration
 
 **Declarations:** `ToolboxDefinition`, `ToolboxItemDefinition`
 
@@ -439,6 +441,8 @@ sequenceDiagram
 
 **Their members.** `DiagramViewport` carries `x`, `y`, `width`, `height`; `SelectionChanged` carries `kind`, `selection`.
 
+**Their members.** `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
+
 ## Selection
 
 **Declarations:** `SelectedItem`, `DiagramSelection`
@@ -460,6 +464,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 **Given no `source`, the canvas highlights its own last press and tells nobody** — which is what a library test or a picture with no backend wants.
 
 **What a module no longer writes.** Deriving a selection, pushing one, or mapping keys to element ids are all the library's now. If you are reading an older module for a pattern, that part of it is gone rather than optional — and the names that did it have no entry here on purpose, because documenting them would teach a way of working the library no longer accepts.
+
+**Their members.** `SelectedItem` carries `kind`, `id`.
 
 ## The context channel
 
@@ -530,6 +536,8 @@ sequenceDiagram
     Report->>Backend: UpdateView
     Backend-->>Canvas: only the deltas for what is visible
 ```
+
+**Their members.** `Viewport` carries `minX`, `minY`, `maxX`, `maxY`.
 
 ## Geometry for custom shapes and routes
 
