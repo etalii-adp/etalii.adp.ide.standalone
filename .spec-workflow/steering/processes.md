@@ -243,9 +243,10 @@ exposed?** Two worked instances:
 - **`backend-centralization`'s R2.4 and R2.5 land together, per store.** Each half alone leaves that store
   inconsistent: keeping the last good document on a failed reload without confirming that a missing file is
   really gone would stop a deleted body from ever becoming an empty diagram.
-- **`client-centralization`'s task 3 lands only after tasks 6 and 8.** Landed first, the single refusal
-  surface would reach the registered canvases before the work it depends on, and refusals would go silent
-  where they are shown today.
+- **`client-centralization`'s task 3 lands only after tasks 6 and 8.** Task 3 gives refusals one surface in
+  place of **sixteen rejection surfaces across thirteen modules** - three that replace the library's and
+  thirteen that compose it, counted by parsing class attributes as tokens. Landed before 6 and 8, the
+  refusals that feed those surfaces would have had nowhere to go, and would have gone silent.
 
 **A task is the wrong unit because it is the implementer's unit, not the user's**: a task can be complete and
 leave `develop` exposing a half-built behaviour. **A specification is the wrong unit because it is too big**,
