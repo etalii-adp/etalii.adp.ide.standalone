@@ -1362,6 +1362,27 @@ a reader can see the interval you could not.
 
 **`ahead=0` also answers a narrower question than it appears to: ahead of WHICH `develop`, read WHEN.**
 
+**And the moving ref can be read by a BUILD, not just by a session - so do not commit in a worktree while a
+build or suite is running there.** `Nerdbank.GitVersioning` is referenced from `src/Directory.Build.props` for
+**every** project under `src/`, so its `GetBuildVersion` task reads git during each one's build; a ref moving
+under it fails the build outright:
+
+```
+error MSB4018: The "Nerdbank.GitVersioning.Tasks.GetBuildVersion" task failed unexpectedly.
+error MSB4018: Nerdbank.GitVersioning.GitException: An commit object with SHA <sha> could not be found.
+```
+
+**The window is the whole build rather than an instant**, because the task runs per project and the solution
+has dozens. The commit that caused it was judged independent *because it only touched git* - which is exactly
+what makes it not independent here.
+
+**The diagnostic half is the part that transfers: `TESTS_EXIT=1` with NO TEST SUMMARY AT ALL is a build break,
+not a test failure.** A run that reached the tests prints `total:`, `failed:`, `succeeded:`, `skipped:` and
+`duration:` whether it passed or not, so **the absence of the whole block is the signal** - and a reader
+meeting the bare exit without it goes hunting for a failing test that does not exist. Measured by the session
+that hit it: a genuine test failure exits **2**, a build break **1**. **Re-running on a settled tree is the
+entire remedy**; nothing is wrong with the tree or the change.
+
 **Two clauses from the process-tree instance, both earned the hard way.** *A kill orphans, it does not
 terminate*: the wrapper was killed and the script survived, the script was killed and the suite survived, the
 suite was killed and **its test host survived and was still spawning children three minutes later - and each
