@@ -225,6 +225,76 @@ rather than by eye - anchors `rgb(30,41,59)` where an unstyled path in the same 
 itself was not performed by hand** - a synthesised mousedown did not start the gesture - so the
 wedge's absence is inferred from the computed style, not seen. Worth one human drag.
 
+## The diagram pane offers one scrollbar, not two (canvas-single-scrollbar, tasks 4 and 6)
+
+**Reported twice by the user, on two diagrams, and invisible to every test in the suite.** An `<svg>`
+is an inline element, so the library's drawing surface sat on a line box that reserved about four
+pixels of descender space below its baseline. `overflow: visible` let that spill out of the surface and
+into the pane that scrolls, which then offered a SECOND vertical scrollbar beside the diagram's own.
+
+**Why it is here rather than in the client suite.** The suite's guard
+(`DiagramCanvas.test.tsx`, *makes its surface a block box*) asserts the COMPUTED `display` under
+`canvas.css` and that is all it can do: jsdom applies stylesheets in source order, implements neither
+specificity nor `!important`, and lays out nothing. **So it proves the rule is declared and reached, and
+says nothing about what a real cascade resolves or what a real pane measures.** Only a browser can
+answer the question the user asked.
+
+- **Preconditions**: backend + client running on a Debug developer build; `src/examples` open as a
+  project. The header must show the **developer session** marker.
+- **Actions**: open `diagrams/dependency-graph/example-1/services.dgr`, and then
+  `diagrams/timeline/example-1/roadmap.tml` as the second diagram - **the two the user reported**.
+- **The pane's limits, the `innerWidth` check and the origin check are the preamble's**, in the item *What
+  the in-app browser pane can answer, and what it cannot* - **cited rather than restated**, and by NAME
+  rather than by number because the number moves whenever a preamble item is added. Read it before running
+  this entry.
+- **The one thing this entry adds to it**: read `window.innerWidth` **on every row**, not once as a
+  precondition. A survey of two diagrams spans turns, and an emulated viewport is cleared when a turn ends,
+  so a later row can measure a window with no width. **A row whose own `innerWidth` is 0 is not a failure,
+  it is a row that did not run.**
+- **Measure the WRAPPER, not the pane, and this was corrected by running the check** (task 6). The
+  element is `div.library-canvas` - `.dependency-graph-surface` on one diagram,
+  `.timeline-surface.canvas-viewport` on the other - and its host, `div.*-canvas.canvas-host`:
+  - the wrapper's `scrollHeight` **equals** its `clientHeight`, and its `scrollWidth` its `clientWidth`;
+  - the host's, likewise;
+  - the surface's computed `display` is `block`.
+- **THE PANE IS THE WRONG ELEMENT AND THE ROW WOULD HAVE PASSED BEFORE THE FIX.**
+  `div.tabbed-pane-content` reads `scrollHeight == clientHeight` at 1600x900 **whether the surface is
+  inline or block**, because it has around 230px of slack that absorbs four pixels. Shrinking the
+  viewport does not rescue it: at 1600x520 the pane overflows by 280px in BOTH states for an unrelated
+  reason, so four pixels are invisible against it either way. **There is no viewport in that pair where
+  the four pixels decide whether the pane scrolls.** A row written against the pane is a row that
+  cannot fail.
+- **The decisive form is a perturbation rather than a reading.** Set `display: inline` on the surface
+  from the console - the state before the fix - read the wrapper, restore, and read again. Four pixels
+  appear and disappear on demand. A single reading of a fixed tree cannot distinguish a working rule
+  from an absent defect.
+- **Both equalities are recorded even though only one axis ever failed.** An inline box reserves space
+  BELOW its baseline and not beside it, so no horizontal spill was ever observed - recording the
+  horizontal one is what makes a future regression in that axis visible rather than a surprise.
+- **Name the diagram and the element each number came from.** A survey row without its element is how a
+  pass reported a working diagram this week.
+
+**Result 2026-09-24**: **passed**, on a Debug developer build at 1600x900 with the developer-session
+marker present, by perturbation rather than by reading. `scrollHeight - clientHeight`, shipped then
+forced to `display: inline` then restored:
+
+| diagram | element | shipped | inline | restored |
+| --- | --- | --- | --- | --- |
+| `services.dgr` | `div.library-canvas.dependency-graph-surface` | 0 | **4** | 0 |
+| `services.dgr` | `div.dependency-graph-canvas.canvas-host` | 0 | **4** | 0 |
+| `roadmap.tml` | `div.library-canvas.timeline-surface.canvas-viewport` | 0 | **4** | 0 |
+
+Horizontal was 0 everywhere in every state, which is what R1.4 asks be recorded rather than assumed:
+an inline box reserves space below its baseline and not beside it, so no horizontal spill was ever
+observed and recording it is what makes a future regression in that axis visible.
+
+**Two honesty notes on this result.** The `roadmap.tml` numbers were taken TWICE: the first reading was
+in a window in which the backend then died with an internal CLR error, so it was discarded and retaken
+on a healthy process - *check the origin still answers* cuts the same way for a positive as for a
+negative. And `window.innerWidth` was read on every measurement, not once: it came back **0** after a
+reload, because an emulated viewport is cleared when a turn ends - the exact failure this entry warns
+about, met while running the entry.
+
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
 **A defect found by looking at the running app.** The diagram type is named after loops and drew

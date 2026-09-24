@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { DiagramCanvas, DiagramCanvasCore } from "./DiagramCanvas";
@@ -508,6 +510,55 @@ describe("DiagramCanvas", () => {
     // measurement that found the bug was 303px of surface inside a 469px pane.
     expect(surface.classList.contains("canvas-drawing")).toBe(true);
     expect(surface.classList.contains("canvas-host")).toBe(false);
+  });
+
+  /**
+   * And the surface is a BLOCK box, which is the other half of filling the pane.
+   *
+   * ## The defect
+   *
+   * An `<svg>` is an inline element by default, so its line box reserves descender space below the
+   * baseline - about four pixels. `overflow: visible` lets that spill out of the surface and into the
+   * pane that scrolls, which offered a SECOND vertical scrollbar beside the diagram's own. `canvas.css`
+   * records that the same failure reached `.library-canvas` once before.
+   *
+   * ## Why the assertion is `block` rather than `not inline`
+   *
+   * The specification's task asked for *not `inline`*, and that assertion cannot fail here.
+   * **Measured before writing it: jsdom reports `display: ""` for an svg carrying no rule, and
+   * `vertical-align: ""` with it.** So *not inline* is true of the broken tree as well as the fixed
+   * one - a guard that passes before the fix exists is the thing this file has a rule against.
+   * Asserting `block` fails today, passes after the rule, and is nearer the criterion, which is about
+   * the BOX rather than about four pixels.
+   *
+   * ## What it cannot see, stated here so nobody over-reads it
+   *
+   * jsdom applies stylesheets in source order and implements neither specificity nor `!important`
+   * (measured 2026-09-23). So this proves the rule is DECLARED and REACHED. **It cannot prove what a
+   * real cascade resolves**, and a reader who takes it as evidence that a module's
+   * higher-specificity rules lose has read more than it says. The browser check in `tests.md` is what
+   * answers that.
+   */
+  it("makes its surface a block box, so no descender space spills into the pane", () => {
+    // Arrange: the canvas as the application loads it - with canvas.css, because a computed value
+    // means nothing without the stylesheet that produces it.
+    const style = document.createElement("style");
+    style.textContent = readFileSync(join(__dirname, "..", "canvas.css"), "utf-8");
+    document.head.appendChild(style);
+
+    try {
+      const { container } = renderCanvas();
+      const surface = container.querySelector("svg.library-canvas-surface")!;
+
+      // Assert: COMPUTED, never the declared attribute. A presentation attribute loses to any CSS
+      // rule, so a declared value says nothing about what the cascade resolved.
+      expect(
+        getComputedStyle(surface).display,
+        "the surface is not a block box, so its line box reserves descender space that spills into the pane",
+      ).toBe("block");
+    } finally {
+      style.remove();
+    }
   });
 
   it("a declared background draws behind the elements, and a declared extent is what fit shows", () => {
