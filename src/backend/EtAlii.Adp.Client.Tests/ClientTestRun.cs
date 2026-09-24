@@ -91,16 +91,46 @@ public static class ClientTestRun
     private static string Relative(string root, string path) =>
         IoPath.GetRelativePath(root, path).Replace('\\', '/');
 
+    /// <summary>
+    /// What is missing before the client suite could possibly run, given the client folder.
+    /// </summary>
+    /// <remarks>
+    /// Extracted from <see cref="Run"/> so it can be driven against built fixtures rather than
+    /// against whatever the current tree happens to contain. That is not tidying: the defect below
+    /// was invisible precisely because this could only ever be exercised through a real tree, and a
+    /// real tree's state is partly authored by the test run itself.
+    /// </remarks>
+    internal static IReadOnlyList<string> MissingDependencies(string client)
+    {
+        // The install lives at the npm WORKSPACE root, src/, and this looks for npm's OWN hidden
+        // lockfile there. Checked before spawning anything, so the reason is a sentence rather than
+        // a module-resolution stack.
+        //
+        // THE MARKER IS CHOSEN BECAUSE NOTHING BUT npm WRITES IT, not because it happens to be
+        // present today. npm maintains `node_modules/.package-lock.json` as its own record of the
+        // installed tree. A check that picks a path nothing else writes by luck stops working the
+        // day somebody adds a tool that caches under `node_modules` - and that is not hypothetical:
+        // a client test run writes `.vite-temp` into this very folder and `.vite` beside the
+        // package, so DIRECTORY existence is not npm's to vouch for at either location.
+        //
+        // What this replaced tested for two directories and was wrong in both directions at once.
+        // `src/package.json` declares `workspaces: ["client", "diagrams/*/client"]`, so an install
+        // hoists everything here and creates NO `src/client/node_modules` - it refused every
+        // correctly installed tree. And `Directory.Exists` accepted a folder holding only Vite's
+        // cache, so it passed on a tree with no install at all. That made it self-perpetuating: the
+        // first run in a fresh tree failed, and every run afterwards passed on what the previous run
+        // had left behind. A check wrong in both directions carries no information either way, which
+        // is worse than its absence, because it retires the question.
+        var workspace = IoPath.GetFullPath(IoPath.Combine(client, ".."));
+        var marker = IoPath.Combine(workspace, "node_modules", ".package-lock.json");
+
+        return File.Exists(marker) ? [] : [marker];
+    }
+
     private static ClientRunResult Run()
     {
         var client = ClientRoot();
-        // The install lives at the npm WORKSPACE root, src/, with a per-workspace folder beside each
-        // package; either being absent means nothing can run. Checked before spawning anything, so the
-        // reason is a sentence rather than a module-resolution stack.
-        var workspace = IoPath.GetFullPath(IoPath.Combine(client, ".."));
-        var missing = new[] { IoPath.Combine(workspace, "node_modules"), IoPath.Combine(client, "node_modules") }
-            .Where(folder => !Directory.Exists(folder))
-            .ToList();
+        var missing = MissingDependencies(client);
         if (missing.Count > 0)
         {
             // Stated rather than skipped: a green suite that silently tested nothing is the one
