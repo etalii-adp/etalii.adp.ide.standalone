@@ -112,7 +112,15 @@ describe("a relation in an acyclic set cannot close a cycle", () => {
     fireEvent(anchor, pointer("pointerdown", { button: 0, clientX: 550, clientY: 0 }));
     fireEvent(anchor, pointer("pointermove", { clientX: 40, clientY: 0 }));
 
-    // Assert.
+    // Assert: forbidden under the pointer, then refused on release.
+    //
+    // The criterion says such a target shall be neither offered nor highlighted, and it is worth
+    // saying why that is ONE assertion here rather than two. `library-connect-target` and
+    // `library-connect-forbidden` are painted from a single `connectHighlight` value, so they are
+    // mutually exclusive by construction: an added `expect(...contains("library-connect-target"))
+    // .toBe(false)` cannot fail while this line passes. It was written, planted against, and
+    // removed - it never evaluated, because the forbidden assertion fails first. A check that
+    // cannot fail reads as a second guarantee and is none.
     expect(elementOn(container, "a").classList.contains("library-connect-forbidden")).toBe(true);
     fireEvent(anchor, pointer("pointerup", { clientX: 40, clientY: 0 }));
     expect(onConnectionDrawn).not.toHaveBeenCalled();
@@ -171,6 +179,11 @@ describe("the three checks each refuse on their own", () => {
    * The plant this detects is a verdict that returns early once cardinality is satisfied - or
    * once the walk is - which is indistinguishable from the correct code on any example where both
    * rules agree. So each drag here violates exactly one of them.
+   *
+   * <b>Do not remove this as redundant. The other four tests in this file cannot see that defect
+   * by construction</b>, because every one of them declares no cardinality at all. Measured: with
+   * `if (cardinality !== undefined) return true;` planted ahead of the walk, this test was the only
+   * failure in the file and the other four were green.
    */
   it("refuses a cycle while cardinality passes, and refuses over cardinality while the walk passes", () => {
     // Arrange (cycle only): A -> B -> C, cap of five, so C has four outgoing to spare.
