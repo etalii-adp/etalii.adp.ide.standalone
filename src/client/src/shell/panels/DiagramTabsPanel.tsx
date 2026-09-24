@@ -151,6 +151,21 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
     // so two files of the same type land the same component at the same position, and
     // without the key React reuses the instance across a tab switch - which is how opening
     // a second markdown file kept showing the first one's editor, state and all.
+    //
+    // AND THE PANE RENDERING ONE TAB AT A TIME IS HOLDING UP THE CONNECTION BUDGET, which is
+    // the part no comment here used to say. Each mounted document holds three server-streaming
+    // calls - WatchHierarchy, ContextService/Watch and DiagramService/Open, the only
+    // server-streaming RPCs the API declares - and a browser allows about six concurrent
+    // HTTP/1.1 connections per ORIGIN, shared across tabs in one profile. Unmounting the
+    // inactive tabs is what keeps that at three rather than three per open document.
+    //
+    // So a change made for an ordinary reason - preserving canvas zoom and pan, an undo stack,
+    // avoiding a re-baseline flicker - must be made KNOWINGLY: keeping four documents mounted in
+    // one browser tab reaches the cap on its own, which is worse than the two-tab defect it was
+    // found through, because it needs no second tab. Over TLS the browser negotiates HTTP/2 and
+    // multiplexes onto one connection, which removes the cap; until the deployment actually
+    // serves TLS, this unmounting is the only thing holding the line.
+    // DiagramTabsPanel.test.tsx asserts the live stream count stays 1 for every N open tabs.
     content: <DiagramPanel key={tab.key} diagram={tab.diagram} />,
   }));
 

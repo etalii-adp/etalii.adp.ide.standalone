@@ -69,6 +69,33 @@
   height: 100%;
 }
 
+/*
+ * The surface the library draws on, and the ONE declaration is not redundant beside the sizing
+ * rule above: that one says how big the surface is, this one says what KIND OF BOX it is.
+ *
+ * An `<svg>` is an inline element by default, so it sits on a line box that reserves descender
+ * space below the baseline - about four pixels. `overflow: visible` lets that spill out of the
+ * surface and into the pane that scrolls, which then offers a SECOND vertical scrollbar beside the
+ * diagram's own. Two users reported it on two diagrams.
+ *
+ * `display: block` rather than `vertical-align: top`. Both remove the same four pixels and a
+ * measurement cannot tell them apart - but only this one stops the surface being an inline box at
+ * all, and the requirement is about the box rather than about the pixels. A surface left inline
+ * with its alignment corrected is one line-height change away from the same defect.
+ *
+ * It is its own rule rather than a line added to `.canvas-drawing` above. That class carries SIZING
+ * and is shared with every hand-written canvas; this is the library surface's own box. Amending
+ * `.canvas-drawing` would be behaviourally identical today, because nothing else wears it - and it
+ * would put a library-specific fix on a shared class, where the next reader cannot tell which
+ * canvas it was for.
+ *
+ * `.library-canvas` above records the same failure reaching this file once before, on the wrapper
+ * rather than the surface: a class with no rule behind it, and nothing that could see it.
+ */
+.library-canvas-surface {
+  display: block;
+}
+
 .canvas-status,
 .canvas-rejection {
   position: absolute;

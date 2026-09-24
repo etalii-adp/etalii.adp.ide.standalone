@@ -32,6 +32,14 @@
   --color-accent-subtle: #f0fdf4; /* a ground TINTED towards the accent, not a neutral lift: a deployment job is a different kind of thing to reason about, so it is a different thing to look at. --color-surface-raised is a 6% overlay, which is a different meaning rather than a near match */
   --color-loop-reinforcing: #0369a1; /* the causal-loop notation's own semantic pair, and the only */
   --color-loop-balancing: #c2410c;   /* pair here that means something rather than ranks something. Blue and orange are the convention; the hue is kept across themes and the lightness moved, because the original #4daafc and #d18616 read at 2.48:1 and 2.94:1 on white */
+  --color-warning-bg: #fdf3d7; /* the pale ground a warning banner sits on, mirroring --color-danger-bg. editors.css carried it privately as --warning-background, which the theme never defined */
+
+  /* THE TYPE STACKS. Not colours, which is why a --color-* walk never saw them: four module
+     stylesheets read --font-sans or --font-mono and NOTHING DEFINED EITHER. wardley-map's seven
+     `font-family: var(--font-sans)` carry no fallback at all, so the declaration was invalid at
+     computed-value time and those labels have always rendered in whatever they inherited. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* WHAT IS SELECTED, and what a dragged connection would land on - one colour for both, by the
      user's ruling of 2026-09-22 that a drop target wins in the selection colour. A violet NO
      DIAGRAM PAINTS AT REST (Requirement 5.5): --color-primary is also timeline's moment fill,
@@ -76,6 +84,7 @@
     --color-accent-subtle: #16351f; /* the same tint, lifted off the dark surface instead of the light one */
     --color-loop-reinforcing: #4daafc; /* the original hues, which only ever read on a dark ground - */
     --color-loop-balancing: #fb923c;   /* this is the theme the private tokens were quietly written for */
+    --color-warning-bg: #3f2d05; /* the same relationship to the surface as --color-danger-bg keeps */
     --color-selected: #a78bfa; /* the same violet, lifted so it still reads on the dark surface */
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
   }

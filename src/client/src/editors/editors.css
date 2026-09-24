@@ -21,18 +21,18 @@
   flex: 1;
   min-width: 0;
   overflow: auto;
-  border-left: 1px solid var(--panel-border, #8883);
+  border-left: 1px solid var(--color-border);
   padding: 0 0.75rem;
 }
 
 .text-editor-status {
   padding: 0.2rem 0.6rem;
   font-size: 0.8rem;
-  border-top: 1px solid var(--panel-border, #8883);
+  border-top: 1px solid var(--color-border);
 }
 
 .text-editor-dirty {
-  color: var(--accent, #c60);
+  color: var(--color-warning);
 }
 
 .text-editor-conflict,
@@ -42,8 +42,8 @@
   gap: 0.6rem;
   align-items: center;
   padding: 0.4rem 0.6rem;
-  background: var(--warning-background, #fdf3d7);
-  color: var(--warning-foreground, #533f03);
+  background: var(--color-warning-bg);
+  color: var(--color-text);
 }
 
 .base-text-editor {
@@ -59,7 +59,7 @@
   gap: 0.5rem;
   flex-wrap: wrap;
   padding: 0.3rem 0.6rem;
-  border-bottom: 1px solid var(--panel-border, #8883);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .markdown-outline button {

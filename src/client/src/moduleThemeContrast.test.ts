@@ -134,9 +134,14 @@ describe("module colours honour the theme", () => {
 
   /**
    * The cause behind both looks, stated directly rather than through a ratio: a private
-   * namespace the theme never defines. `themeTokens.test.ts` walks `--color-*` today and task
-   * 2 widens it to every custom property - until then this names the two namespaces that put
-   * a defect in front of a user.
+   * namespace the theme never defines.
+   *
+   * <b>This used to say `themeTokens.test.ts` walks `--color-*` "today", and that task 2 would
+   * widen it "until then".</b> Task 2 has landed and that walk now covers every custom property,
+   * so the sentence was three hours from describing a state that no longer held - the same shape
+   * as the phantom line it was written beside. A "today" in a comment is a promise to come back,
+   * and nobody does. This assertion stays because it names the two namespaces that put a defect
+   * in front of a user, which the general walk cannot say.
    */
   it("neither module reads a token the theme does not declare", () => {
     const offenders = [

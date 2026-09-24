@@ -24,4 +24,4 @@ layout:
   res:http://www.w3.org/ns/prov#Revision: 261.35 1548.458
   res:http://www.w3.org/ns/prov#Role: -975.285 453.8
   res:http://www.w3.org/ns/prov#Start: -799.461 653.237
-  res:http://www.w3.org/ns/prov#Usage: 1029.375 1124.231
+  res:http://www.w3.org/ns/prov#Usage: 1106.914 1077.708
