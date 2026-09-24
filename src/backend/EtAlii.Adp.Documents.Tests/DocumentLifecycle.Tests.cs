@@ -201,6 +201,9 @@ public class DocumentLifecycleTests : IDisposable
 
         var installed = lifecycle.Reload(path);
 
+        // The refusal was really met: without this, a lifecycle that never consulted the scripted
+        // reader would pass by reading the file some other way.
+        Assert.Equal(0, refusalsLeft);
         Assert.True(installed);
         Assert.Equal("second", lifecycle.GetOrLoad(path).Text);
     }
@@ -227,6 +230,7 @@ public class DocumentLifecycleTests : IDisposable
 
         var installed = lifecycle.Reload(path);
 
+        Assert.Equal(0, vanishingsLeft);
         Assert.True(installed);
         Assert.Equal("second", lifecycle.GetOrLoad(path).Text);
     }
@@ -239,6 +243,8 @@ public class DocumentLifecycleTests : IDisposable
         var path = Write("plan.note", "good");
         var reads = 0;
         var refusing = false;
+        // THREE IS THE INJECTED BOUND, not production's five: this pins that the retry stops at whatever
+        // count it is given. Production's own count is a choice recorded beside its constant.
         var lifecycle = Scripted(attempts: 3, read: file =>
         {
             reads++;
@@ -273,7 +279,12 @@ public class DocumentLifecycleTests : IDisposable
             return File.ReadAllText(file);
         });
 
-        Assert.Equal("the real content", lifecycle.GetOrLoad(path).Text);
+        var opened = lifecycle.GetOrLoad(path);
+
+        // The first open really met the refusal, so this passes because of the retry rather than
+        // because the open never reached the refusing reader.
+        Assert.Equal(0, refusalsLeft);
+        Assert.Equal("the real content", opened.Text);
     }
 
     // Lambdas with discards rather than methods, so no parameter is left unused.
