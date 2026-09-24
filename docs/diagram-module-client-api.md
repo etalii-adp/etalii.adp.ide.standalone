@@ -88,7 +88,7 @@ sequenceDiagram
 
 ## Registration and discovery
 
-**Declarations:** `DiagramCanvasRegistration`, `DiagramClientModule`
+**Declarations:** `DiagramCanvasRegistration`, `DiagramClientModule`, `TextEditorPanel`
 
 **What it is for.** A module tells the client which diagram types it can draw, and with what. This is the only wiring between a module and the shell: there is no list of diagram types anywhere in the client, exactly as there is none in the backend.
 
@@ -126,7 +126,7 @@ import "./dependency-graph.css";
 
 ## The stream and the model
 
-**Declarations:** `useDiagramStream`, `DiagramModel`, `DiagramModelElement`, `DiagramModelConnection`
+**Declarations:** `useDiagramStream`, `DiagramModel`, `DiagramModelElement`, `DiagramModelConnection`, `Delta`, `Element`
 
 **What it is for.** A diagram's contents arrive as a stream of deltas from the backend, and the canvas draws a model. `useDiagramStream` owns the transport, the lifecycle, the retry and the state; a module supplies an empty model and a function that folds one delta into it.
 
@@ -190,7 +190,7 @@ classDiagram
 
 ### Element types and shapes
 
-**Declarations:** `ElementTypeDefinition`, `CustomShapeRef`, `ShapeBounds`
+**Declarations:** `ElementTypeDefinition`, `CustomShapeRef`, `ShapeBounds`, `AnchorEnablement`, `AnchorPositions`, `AnchorSet`, `NamedAnchorPoint`, `CompassPosition`, `SideFraction`, `BuiltInShape`, `ShapeKind`, `ShapeSelection`, `CustomShapeState`, `SizingRule`, `ElementStyle`, `BoundElementStyle`, `DataAttributes`, `ClassDeclaration`, `DecorationDeclaration`, `DecorationGlyph`
 
 **What it is for.** What kinds of thing the diagram has, and how each is drawn.
 
@@ -216,9 +216,11 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **The guards.** `assertValidDiagramDefinition` rejects a type whose shape and anchors disagree. An element whose `type` matches no declared id draws a visible fallback box rather than vanishing.
 
+**Their members.** `AnchorEnablement` carries `visible`, `enabled`, `edgeSides`; `NamedAnchorPoint` carries `x`, `y`, `name`; `SideFraction` carries `side`, `at`, `name`; `ShapeSelection` carries `path`, `cases`, `fallback`; `CustomShapeState` carries `selected`, `dragging`, `connectTarget`; `ElementStyle` carries `fill`, `stroke`, `strokeWidth`, `dash`, `cornerRadius`, `labelTypography`; `BoundElementStyle` carries `fill`, `stroke`, `labelColor`, `silhouette`; `ClassDeclaration` carries `className`, `when`, `on`; `DecorationDeclaration` carries `glyph`, `anchor`, `each`, `step`, `from`, `to`, `radius`, `width`, `height`, `d`, `marker`, `text`, `textAt`, `textAnchor`, `typography`, `className`, `markerEnd`, `tooltip`, `data`, `accessibility`, `when`.
+
 ### Relation types, routes and constraints
 
-**Declarations:** `RelationTypeDefinition`, `CustomRouteRef`, `AcyclicRule`
+**Declarations:** `RelationTypeDefinition`, `CustomRouteRef`, `AcyclicRule`, `BuiltInRoute`, `RouteKind`, `RouteEnds`, `RouteLabelRule`, `ConnectionStyle`, `CustomMarkerRef`, `MarkerKind`, `EndpointConstraint`, `Cardinality`
 
 **What it is for.** What connects to what, how the line is routed, and what connections are forbidden.
 
@@ -248,9 +250,11 @@ Source: [`src/client/src/canvas/library/examples/acyclic.example.ts`](../src/cli
  */
 ```
 
+**Their members.** `RouteEnds` carries `source`, `target`; `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`.
+
 ### Layout, dragging, snap and extent
 
-**Declarations:** `SnapDeclaration`, `DropTargetDeclaration`
+**Declarations:** `SnapDeclaration`, `DropTargetDeclaration`, `LayoutDefinition`, `LayoutMode`, `DraggingPolicy`, `SnapAxis`, `DeclaredNumber`
 
 **What it is for.** Where elements may go and how they move.
 
@@ -266,9 +270,35 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
   dragging: "enabled",
 ```
 
+**Their members.** `LayoutDefinition` carries `modes`, `dragUnderAutomaticLayout`, `treeDirection`; `SnapAxis` carries `step`, `origin`.
+
+### Background
+
+**Declarations:** `DiagramBackground`, `AxisDeclaration`, `BackgroundDeclaration`, `BandDeclaration`, `GridlineDeclaration`, `MarkDeclaration`, `RegionDeclaration`
+
+**What it is for.** What sits behind the elements rather than among them — the axes, bands, gridlines, regions and marks of a diagram whose space means something, such as a Wardley map's evolution axis.
+
+**Whether a module needs it.** One of the 13 modules declares a background. A diagram whose position carries no meaning declares none, and the canvas draws plain ground.
+
+**Its shape.** A background binds against the model's own `background` value by a path the module declares, so the library draws it without learning the diagram's schema.
+
+**Their members.** `AxisDeclaration` carries `orientation`, `title`, `startLabel`, `endLabel`, `className`, `typography`; `BackgroundDeclaration` carries `className`, `bands`, `axes`, `gridlines`, `regions`, `marks`; `BandDeclaration` carries `each`, `orientation`, `start`, `end`, `label`, `edge`, `className`, `typography`, `when`; `GridlineDeclaration` carries `orientation`, `at`, `className`; `MarkDeclaration` carries `each`, `x`, `y`, `glyph`, `radius`, `width`, `label`, `labelOffset`, `labelAnchor`, `tooltip`, `className`, `typography`, `when`; `RegionDeclaration` carries `each`, `x`, `y`, `width`, `height`, `label`, `className`.
+
+### Labels and bindings
+
+**Declarations:** `LabelColumn`, `LabelDeclaration`, `LabelPlacement`, `LabelRule`, `LabelSlot`, `LabelStack`, `LabelTypography`, `Binding`, `BindingPath`, `CollectionBinding`, `Condition`, `FieldBinding`, `NumberFormat`, `PartsBinding`, `TemplateBinding`, `TemporalFormat`
+
+**What it is for.** What text an element or connection shows, where, and where that text comes from.
+
+**Whether a module needs it.** Any module whose elements carry text. A binding reads a value from the model instead of repeating a constant, which is what keeps a label tracking the document.
+
+**Its shape.** A label is declared with a placement and a typography; its text is a `Binding` — a literal template, a field read by path, a collection, or parts assembled together — optionally gated by a `Condition` and formatted by a number or temporal format.
+
+**Their members.** `LabelColumn` carries `text`, `insetX`, `align`, `className`, `truncate`; `LabelDeclaration` carries `wrap`, `text`, `placement`, `slot`, `offset`, `anchorTo`, `stack`, `typography`, `editable`, `truncate`, `when`, `tooltip`, `className`, `align`, `insetX`, `editorBox`, `columns`; `LabelRule` carries `placement`, `insetTop`, `insetHeight`, `insetX`, `truncate`, `editable`; `LabelStack` carries `lineHeight`, `start`; `LabelTypography` carries `fontSize`, `fontWeight`, `fontStyle`, `color`, `scaleWithView`; `CollectionBinding` carries `path`, `each`, `when`, `join`; `FieldBinding` carries `path`, `when`, `plural`, `number`; `NumberFormat` carries `times`, `plus`, `modulo`, `round`, `format`; `PartsBinding` carries `parts`, `join`, `when`; `TemplateBinding` carries `template`, `when`.
+
 ### Actions, shortcuts and enablement
 
-**Declarations:** `ActionDeclaration`
+**Declarations:** `ActionDeclaration`, `ActionInvocation`, `ActionTarget`, `DeclaredFlag`
 
 **What it is for.** What a user may do to an element, a connection or the diagram, and how each is invoked.
 
@@ -311,7 +341,7 @@ export const TOOLBOX_EXAMPLE: ToolboxDefinition = {
 
 ### Chrome
 
-**Declarations:** `ChromeDeclaration`
+**Declarations:** `ChromeDeclaration`, `ChromeLegendDeclaration`, `ChromeTextDeclaration`, `RulerDeclaration`, `RulerRung`
 
 **What it is for.** The text around the diagram rather than the diagram — loading and unavailable states, a title, a legend, rulers.
 
@@ -331,9 +361,11 @@ Source: [`src/client/src/canvas/library/examples/chrome.example.ts`](../src/clie
 
 **Related.** [Styling](#styling) for the classes chrome uses, and [Events, and how a module answers them](#events-and-how-a-module-answers-them) for what a declared action raises.
 
+**Their members.** `ChromeLegendDeclaration` carries `entries`, `swatchClass`, `when`, `className`; `ChromeTextDeclaration` carries `text`, `when`, `typography`, `className`; `RulerDeclaration` carries `orientation`, `unitsPerCanvasUnit`, `origin`, `ladder`, `minSpacingPx`, `className`, `when`; `RulerRung` carries `every`, `label`.
+
 ## The canvas
 
-**Declarations:** `DiagramCanvas`, `DiagramRuntimeConfig`, `assertValidDiagramDefinition`
+**Declarations:** `DiagramCanvas`, `DiagramRuntimeConfig`, `assertValidDiagramDefinition`, `DiagramCanvasProps`, `DiagramEditingIntegration`
 
 **What it is for.** The one component that draws a diagram. A module renders it, hands it a definition, a model and a set of handlers, and writes no rendering code of its own.
 
@@ -359,9 +391,11 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
       />
 ```
 
+**Their members.** `DiagramCanvasProps` carries `definition`, `model`, `events`, `config`, `source`, `editing`, `toolboxItems`, `className`, `scrollbarsClassName`, `ariaLabel`; `DiagramEditingIntegration` carries `editingId`, `onPropose`, `onSubmit`, `onCancel`.
+
 ## Events, and how a module answers them
 
-**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`
+**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`
 
 **What it is for.** **Every event is a request, never a report.** The canvas raises what a user did; the module decides what happens and sends it to the backend. Nothing is applied to the model by the library on its own.
 
@@ -379,6 +413,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
       if (key === undefined || targetId === undefined) {
         return;
 ```
+
+**`SelectionChanged` is declared here because it is a member of the `DiagramEvent` union, and it is NOT a module's to handle.** It is the library's own event, raised to the library's selection wrapper and to nobody else; there is no handler a module can supply for it, and a handler map that names one is a type error. It appears in this document only so that a reader who meets it in the union knows it is the library's.
 
 **`ActionRefused` is how a refusal arrives.** The library runs the shared menu's actions against the backend, so a refusal comes back to the library rather than to the module, and is handed on as `action-refused` with the `actionId` and a `message`.
 
@@ -401,15 +437,17 @@ sequenceDiagram
     end
 ```
 
+**Their members.** `DiagramViewport` carries `x`, `y`, `width`, `height`; `SelectionChanged` carries `kind`, `selection`.
+
 ## Selection
 
-**Declarations:** `SelectedItem`, `DiagramSelection`, `CanvasSource`
+**Declarations:** `SelectedItem`, `DiagramSelection`
 
 **What it is for.** What the user has selected — **owned by the library, not by the module**.
 
 **Whether a module needs it.** A module writes no selection code at all. It declares which types may be selected and passes `source`; the library reads the backend's selection, pushes a press's, and wires the shared context menu itself.
 
-**Its shape.** `source` is a `CanvasSource` — which diagram this canvas draws. `selectable` is a flag a module declares on an element type or a relation type. A handler that needs to know what was selected reads it from the event it is given.
+**Its shape.** `source` is a `CanvasSource` — which diagram this canvas draws. **`CanvasSource` has no Declarations line yet, and that is a known gap rather than an omission:** it is declared in `librarySelection.ts`, a library file the surface's folder rule does not include, so the computation reaches the `source` prop and stops there. It is plainly module-facing - it is what a module hands the canvas - and an amendment is being raised so the walk resolves a referenced type through the import that declares it. `selectable` is a flag a module declares on an element type or a relation type. A handler that needs to know what was selected reads it from the event it is given.
 
 Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 
@@ -425,7 +463,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## The context channel
 
-**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `contextShortcutOf`, `inlineLabelElementIdOf`
+**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `contextShortcutOf`, `inlineLabelElementIdOf`, `ActionOutcome`, `useContextProblems`, `ContextShortcut`, `Problem`, `ProblemSeverity`
 
 **What it is for.** Running an action against the backend, and answering a prompt it asks in return.
 
@@ -445,6 +483,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
 ```
+
+**Their members.** `ActionOutcome` carries `accepted`, `error`.
 
 ## The toolbox
 
@@ -493,7 +533,7 @@ sequenceDiagram
 
 ## Geometry for custom shapes and routes
 
-**Declarations:** `forwardBezierPath`, `ShapePoint`
+**Declarations:** `forwardBezierPath`, `ShapePoint`, `ConnectorBox`, `facingAnchorsBetween`, `horizontalBezierPath`, `sideAnchorOf`
 
 **What it is for.** Building a path or an anchor point when a built-in shape or route does not fit.
 
@@ -502,6 +542,8 @@ sequenceDiagram
 **Its shape.** The connectors module exports the path builders a custom route composes; a custom shape's `render` is handed `ShapeBounds` and returns an element, and its `edgePoint` answers where a connection meets it.
 
 **Related.** [`src/client/src/canvas/elements/readme.md`](../src/client/src/canvas/elements/readme.md) for element geometry and [`src/client/src/canvas/label/readme.md`](../src/client/src/canvas/label/readme.md) for label placement. Neither is restated here.
+
+**Their members.** `ConnectorBox` carries `x`, `y`, `width`, `height`.
 
 ## Styling
 
@@ -516,6 +558,8 @@ sequenceDiagram
 **The guards.** `themeTokens.test.ts` walks every custom property in the tree and requires each to resolve to a theme token or to one the same stylesheet declares, and a local palette that declares one mode fails.
 
 ## Tests a module writes, and what a module must not do
+
+**Declarations:** `expectLibrarySelection`
 
 **What it is for.** The library's shared test helpers, and the guards that walk every module client and fail when one reinvents something shared.
 
