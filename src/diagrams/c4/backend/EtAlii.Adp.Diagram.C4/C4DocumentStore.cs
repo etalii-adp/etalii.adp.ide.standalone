@@ -73,11 +73,19 @@ public sealed class C4DocumentStore : IC4DocumentStore
         return Loaded(path).Workspace;
     }
 
-    public string Save(string path)
+    public string Save(string path, C4Document document)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(document);
 
-        var entry = Loaded(path);
+        // THE DOCUMENT WRITTEN IS THE ONE THE CALLER EDITED, never one re-fetched from the cache.
+        // Taking it as an argument is the enforcement: there is no cache read left here to get
+        // wrong. Until this signature changed, Save called Loaded(path) itself while Reload
+        // replaces _entries[path], so a reload landing between a command's ReplaceLine and its
+        // save wrote the re-read file and returned "" for success - the command's inverse then
+        // went onto the undo stack for a change the file never received. Measured in six other
+        // stores and fixed at 6c4f90d6; this store, causal-loop and mindmap were missed there
+        // because their saves re-fetch through a differently named helper.
         if (_unreadable.ContainsKey(path))
         {
             // AN ENTRY STANDING IN FOR A FILE THAT COULD NOT BE READ IS NOT A DOCUMENT TO WRITE:
@@ -86,7 +94,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
             return $"{Path.GetFileName(path)} could not be read, so it was not written.";
         }
 
-        var text = entry.Document.ToText();
+        var text = document.ToText();
         _selfWrites[path] = 1;
         try
         {
@@ -114,8 +122,10 @@ public sealed class C4DocumentStore : IC4DocumentStore
             _selfWrites.TryRemove(path, out _);
         }
 
-        var workspace = C4Parser.Parse(entry.Document);
-        _entries[path] = new C4DocumentEntry(entry.Document, workspace);
+        // This also re-establishes the cache around the document that was just written, so the
+        // entry and the bytes on disk cannot disagree afterwards.
+        var workspace = C4Parser.Parse(document);
+        _entries[path] = new C4DocumentEntry(document, workspace);
         Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, workspace));
         return "";
     }
