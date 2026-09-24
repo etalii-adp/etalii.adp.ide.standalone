@@ -539,7 +539,9 @@ sequenceDiagram
 | `themeTokens.test.ts` | a custom property defined nowhere, or a palette declaring one mode | a theme token, or a local palette declaring both |
 | `fileUrlPaths.test.ts` | a hand-built file URL | the shared path helpers |
 
-**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. **The rule finds a test that walks DIRECTLY, and not one that walks through a helper**: this document's own guard is in that blind class, because its walking lives in `diagramModuleClientApi.surface.ts` rather than in the test file. The requirements named eight of these; thirteen is what the tree holds now, so that figure is a timestamp rather than a count.
+**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; thirteen is what the tree holds now, so that figure is a timestamp rather than a count.
+
+**The rule has two blind spots, and both have already mattered.** It does not find a test that walks through a HELPER: this document's own guard is in that class, because its walking lives in `diagramModuleClientApi.surface.ts` rather than in the test file. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the thirteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
 
 ## A minimal module client, end to end
 
