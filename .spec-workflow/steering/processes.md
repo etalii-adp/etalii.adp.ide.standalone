@@ -929,7 +929,7 @@ A change that makes a document untrue fixes it in the same change. Four artefact
 - **`.proto` files** are the primary API documentation for the public gRPC contracts and must stay self-explanatory: clear message and field naming, comments for non-obvious constraints.
 - **Non-obvious architectural decisions belong in `tech.md`'s decision log**, not scattered through the code as comments. A decision recorded where it was implemented is findable only by whoever already knows where that is.
 
-(`docs/dependencies.md` needs no rule here — its guard is a test.)
+(`docs/dependencies.md` needs no rule here — its guard is a test. `docs/diagram-module-client-api.md` is half guarded: `diagramModuleClientApi.test.ts` holds its declarations, excerpts, diagrams and guard table against the code, but not its prose, which falls under this section's first sentence - the change that makes one of its sentences untrue fixes it, as a change moving a shared hook's move call must rewrite the sentence saying modules build their own.)
 
 **AND THE OPPOSITE POLARITY IS THE ONE NOBODY TRIPS OVER: A SUMMARY OUTLIVING THE RULE IT SUMMARISES.** Everything
 above is about a document going FALSE, which somebody eventually meets and fixes. This is a document staying
