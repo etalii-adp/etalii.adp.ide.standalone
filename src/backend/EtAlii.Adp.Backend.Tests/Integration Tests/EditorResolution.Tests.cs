@@ -108,71 +108,72 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         Assert.Equal("just some notes\n", Encoding.UTF8.GetString(element.Payload!.Value.Span));
     }
 
-    // THIS TEST REQUIRES SUITE PARALLELISM TO FAIL. That is the accurate word and INTERMITTENT is not:
-    // a reader who hears intermittent runs it a few times, sees green, and concludes it is fixed or
-    // imaginary. It fails with a gRPC DeadlineExceeded at exactly 60 s, reading the stream, and here is
-    // the whole of what is known, so that whoever fixes it inherits a count rather than an impression.
+    // THIS TEST HAS A SIXTY-SECOND gRPC DEADLINE AND IT IS SET IN THE ARRANGE BLOCK BELOW:
+    // `deadline: DateTime.UtcNow.AddSeconds(60)`, a named argument on the Open calls that create
+    // `diagramCall` and `textCall`. NextAddAsync's own docstring says the same thing in words.
     //
-    //     gate runs with the FULL gate self-test alongside:  5 runs, 2 failures
-    //     gate runs in the self-test's quick mode:           4 runs, 1 failure
-    //     this test ALONE, instrumented:                    10 runs, 0 failures
+    // It is cited by NAME rather than by line, because the first draft of this correction said
+    // "lines 195 and 201" and shortening the comment moved them to 190 and 196 before the file was
+    // saved. **A comment that cites line numbers in its own file invalidates itself whenever its own
+    // length changes** - the same defect it is here to correct, one turn later.
     //
-    // Measured 2026-09-23/24. THE LOAD HYPOTHESIS IS WEAK AND WAS WEAKENED BY THE RUN THAT LANDED THIS
-    // COMMENT. For a day it had failed only while the full self-test ran beside it - twenty-one minutes
-    // of a few hundred git processes, which a 60-second deadline would plausibly not survive - and the
-    // first draft of this comment said so. Then it failed in quick mode, with no storm at all. Two in
-    // five against one in four is not a difference this n can see, so whatever makes it fail is present
-    // in an ordinary FULL-SUITE run and the storm is at most an aggravator.
+    // THIS COMMENT USED TO SAY THE SIXTY SECONDS WAS SET NOWHERE IN THIS REPOSITORY. That was WRONG
+    // WHEN WRITTEN rather than overtaken, and the difference matters: the deadlines entered on
+    // 2026-09-01 in a84d12ad and the claim on 2026-09-24 in cf419d02, twenty-three days apart.
     //
-    // That the record went stale between being written and being committed is the other half of what
-    // this comment is for: it is a measurement, it has a date, and it will be wrong again.
+    // THE MECHANISM OF THE MISS IS WORTH MORE THAN THE FINDING, and it is one character run. The
+    // search was for `FromSeconds(60)`; the code says `AddSeconds(60)` - one builds a TimeSpan, the
+    // other offsets a DateTime, and a search is correct about the string it was given. THE TELL WAS
+    // IN THE RESULT ITSELF: that grep's only hit anywhere in src/backend was this comment asserting
+    // the absence. **A search whose sole result is the claim that the thing is not there is the
+    // signature of a search that missed** - and it reads exactly like confirmation.
     //
-    // AND THE SAMPLE CANNOT BE EXTENDED CHEAPLY ANY MORE. Since the self-test gained a quick mode,
-    // almost nothing runs the full suite, so the storm arm will grow by roughly one run a month. Do not
-    // wait for better numbers; they will not arrive.
+    // WHAT STILL STANDS, BECAUSE IT WAS MEASURED RATHER THAN SEARCHED:
     //
-    // TWO ELIMINATIONS, BOTH BY MEASUREMENT RATHER THAN BY SEARCH, which is why they can be relied on:
-    // a grep proves a constant is not written down, and neither of these is about what is written down.
+    //   * the HttpClient's timeout is 00:03:20 - two hundred seconds, logged on eleven consecutive
+    //     runs - so the sixty-second deadline is what fires first, as the reasoning predicted;
+    //   * ten isolated runs, instrumented, ten greens. Alone, the chain finishes well inside sixty.
     //
-    //   * THE HttpClient TIMEOUT IS NOT IT. Logged at the moment the channel is built, on eleven
-    //     consecutive runs: 00:03:20 every time. Two hundred seconds, not sixty. This is where the
-    //     reasoning below points, so it is recorded as CHECKED rather than skimmed.
-    //   * IT DOES NOT REPRODUCE ALONE. Ten isolated runs of this test, instrumented, ten greens.
+    // Both eliminations survive intact. The third was a string search rather than a measurement, and
+    // **a string search has to be re-run rather than cited, because its blind spot is invisible from
+    // its own result.** Do not read the two kinds at one confidence again.
     //
-    // AND THE INSTRUMENT WAS ALIVE: THE FAILURE DECLINED TO APPEAR IN FRONT OF IT. Those ten greens are
-    // not a blind probe's silence, which would prove nothing. The probe wrote its timeout line on every
-    // one of the eleven runs, so it was demonstrably reached; and had the stream thrown it would have
-    // written the elapsed time, the exception's real type, its message and the RpcException's
-    // Status.DebugException. It wrote none of those because nothing threw.
+    // THE FAILURE RATE, board-wide rather than from one worktree: 4 failures in 58 gate runs that
+    // reached the backend suite, across seven scratch worktrees. An earlier note here said 3 in 9 -
+    // one worktree's history, read as if it were everyone's.
     //
-    // WHAT IS NOT KNOWN, so the next person does not repeat the search: the sixty seconds is not set
-    // anywhere in this repository. No Deadline on the call or the channel, no FromSeconds(60) in the
-    // backend, nothing in the service's appsettings or Program.cs, no xunit runner timeout. It arrives
-    // as a gRPC DeadlineExceeded - a status, not a cancellation, so it is not the test host's token -
-    // which puts it in the gRPC or HttpClient path. That instrument was built and run - it is what the
-    // eliminations above are made of - and it answered one of its two questions. The elapsed-time half
-    // is still unanswered, because it needs a failure and the failure will not appear in isolation.
-    // Whoever resumes this should carry the probe into a FULL SUITE run rather than a targeted one.
+    // AND THE THIRTY-SECOND SITES HAVE NEVER FAILED. Five explicit deadlines exist in the tree: these
+    // two sixties, and three thirties - `boomCall` and `notesCall` in EditorModuleIsolation.Tests.cs,
+    // and FirstAddDeltaAsync's own call at the foot of this file. In those same 58 runs
+    // EditorModuleIsolationTests failed ZERO times, and its eleven appearances in those logs are all
+    // stack-trace lines from its own deliberately-throwing fixture - which is also the proof that it
+    // ran rather than being skipped, since a passing test prints nothing at all.
     //
-    // A BETTER SHAPE IS HELD BACK DELIBERATELY. AddDiagramFlow.Tests uses a per-message timeout linked
-    // to the test's token, so a stream that never delivers says which message never arrived instead of
-    // DeadlineExceeded. That is the right diagnostics and the wrong number here: its budget is ten
-    // seconds against this sixty, so adopting it today would probably make this fail MORE often, and a
-    // diagnostics improvement that raises the failure rate is not one anybody thanks you for. Adopt it
-    // once the root cause is known and the budget can be set on purpose.
+    // IF GENERAL HOST CONTENTION WERE THE CAUSE, THE SHORTER BUDGETS WOULD FIRE FIRST AND OFTENER.
+    // They never fire. So the cause is THIS test's wait chain rather than the suite being slow - but
+    // **the discriminator narrows rather than closes**, because a thirty-second budget on a short
+    // chain is not a fair comparison with a sixty-second budget on a long one. What would close it:
+    // put thirty seconds on THIS test's calls and see whether the rate rises.
     //
-    // WHERE TO LOOK NEXT, narrowed by those eliminations: whatever imposes sixty seconds is NOT a
-    // per-test constant, because a per-test constant would have fired in the ten isolated runs. It is
-    // reached only when other tests are running, which makes it a property of something SHARED rather
-    // than a clock anybody set. The three candidates, in the order worth trying:
+    // AND THE CHAIN IS THE LIKELY WHY. Five sequential stream awaits share two call deadlines, and a
+    // per-call deadline's clock starts when the CALL is made, not when the await begins. The text
+    // call carries three of those five awaits, plus a SaveText round trip, plus an external file
+    // write, plus the watcher latency that follows it - all inside one sixty seconds that began
+    // before any of it.
     //
-    //   1. the shared test host - several tests share a WebApplicationFactory instance
-    //   2. the connection pool behind it
-    //   3. something in the gRPC stack that manifests only when several calls share that host
+    // A BETTER SHAPE IS AVAILABLE NOW, AND THE REASON THIS COMMENT ONCE GAVE FOR HOLDING IT BACK WAS
+    // WRONG. It said AddDiagramFlow's per-message timeout would make this fail MORE often, its budget
+    // being ten seconds against this sixty. **That is true of AddDiagramFlow's NUMBER and false of the
+    // SHAPE.** A per-message timeout gives each await its own budget instead of sharing one across the
+    // chain, so the same shape at sixty seconds per message is STRICTLY MORE GENEROUS than today. The
+    // budget is a free parameter, and the ten seconds is AddDiagramFlow's choice for its own chain.
     //
-    // The fix is the shape used on the failure-record family: this test's subject is that the stream
-    // delivers both views, and it asserts that inside a fixed clock. Wait on the event, or give the
-    // deadline room the machine cannot eat.
+    // It also keeps the test honest, which a raised call deadline would not: a view that never arrives
+    // still fails, and the message names WHICH view, where a deadline raised until nothing can exceed
+    // it is a vacuous test wearing a fixed one's clothes.
+    //
+    // This comment records what is known. The repair is owned elsewhere (37bb3e06) and the number it
+    // lands on should be chosen on purpose rather than inherited.
     [Fact]
     public async Task ADslOpenAsDiagramAndAsTextAtOnce_BothStayTrueToTheFile()
     {
