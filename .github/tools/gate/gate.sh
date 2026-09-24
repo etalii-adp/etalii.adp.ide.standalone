@@ -153,6 +153,13 @@ UNDELETED="$LOGS/undeleted-test-folders"
 # the report is for this summary, not for the test's own output, and a test that prints differently
 # depending on who ran it is its own kind of confusing.
 SELFTEST_REPORT="$LOGS/selftest.txt"
+# Deleted first, though it cannot exist yet: this path is inside THIS run's own log directory, which
+# gate_run_logs_dir makes fresh, so no previous run's report can be here. The line is insurance against
+# that invariant being changed by somebody who does not know it is load-bearing - if the log directory
+# ever becomes reusable, this is what stops the gate printing the last run's verdict as though it were
+# this one's, which is the reused-workspace defect that once had a session reading twelve-minute-old
+# gate logs as current.
+rm -f "$SELFTEST_REPORT"
 (cd "$MRG/src/backend" && ADP_UNDELETED_FOLDERS_DIR="$UNDELETED" ADP_GATE_SELFTEST_REPORT="$SELFTEST_REPORT" dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
 DT_EXIT=$?
 echo "DOTNET_TEST_EXIT=$DT_EXIT"

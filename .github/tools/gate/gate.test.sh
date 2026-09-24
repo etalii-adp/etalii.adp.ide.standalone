@@ -54,11 +54,12 @@ case "${1:-}" in
     ;;
 esac
 [ $# -le 1 ] || { echo "RESULT=selftest-broken (expected one argument at most; got $#)"; exit 2; }
-# MEASURED on Git Bash: quick runs 119 of the 177 cases in 16.8 s, against 1274 s for the full suite.
-# The 119 is a measurement and the 109 is NOT: msys-gated cases sit in both the cheap and the skipped
-# regions, so the 58-case difference cannot simply be carried across. 109 assumes the same 58 are
-# skipped elsewhere, which is unverified here. A wrong pin fails LOUDLY with the true count in the
-# same line, so the first run on another platform corrects it rather than passing quietly.
+# MEASURED on Git Bash: quick runs 120 of the 178 cases in about 17 s, against 1274 s for the full
+# suite. BOTH msys numbers were run here - 120 in quick and 178 in full - rather than one being
+# derived from the other. 168 and 110 are NOT measured: msys-gated cases sit in both the cheap and
+# the skipped regions, so the 58-case difference cannot simply be carried across, and those two
+# assume it can. A wrong pin fails LOUDLY with the true count in the same line, so the first run on
+# another platform corrects it rather than passing quietly.
 if [ "$MSYS" = 1 ]; then EXPECTED=178; EXPECTED_QUICK=120; else EXPECTED=168; EXPECTED_QUICK=110; fi
 [ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
