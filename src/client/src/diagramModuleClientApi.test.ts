@@ -38,7 +38,7 @@ describe("the module-facing client API surface, computed", () => {
     // `DiagramDefinition` is the one named in the requirement.
     expect(surface.setB.has("DiagramDefinition")).toBe(true);
     for (const root of SET_B_ROOTS) {
-      expect([...surface.setB.keys()], `'${root}' is a Set B root and must be reached by the walk`).toContain(root);
+      expect([...surface.setB.keys()], `'${root.name}' is a Set B root and must be reached by the walk`).toContain(root.name);
     }
   });
 
@@ -59,7 +59,7 @@ describe("the module-facing client API surface, computed", () => {
     expect(surface.surfaceFiles.length).toBeGreaterThanOrEqual(14);
     expect(surface.exportsBySurfaceFile.size).toBeGreaterThanOrEqual(90);
     for (const root of SET_B_ROOTS) {
-      expect(surface.exportsBySurfaceFile.has(root), `no surface file exports the root '${root}'`).toBe(true);
+      expect(surface.exportsBySurfaceFile.has(root.name), `no surface file exports the root '${root.name}'`).toBe(true);
     }
   });
 });

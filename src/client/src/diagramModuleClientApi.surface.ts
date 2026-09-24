@@ -35,8 +35,32 @@ const CORE_CONTRACTS = new Set([
 /** The one library folder whose helpers a module's TEST files may import (the 2026-09-12 amendment). */
 const TEST_ONLY_PREFIX = "@client/canvas/library/testing/";
 
-/** The four roots of Set B: what a module hands the canvas by value. */
-export const SET_B_ROOTS = ["DiagramDefinition", "DiagramCanvasProps", "DiagramEventHandlers", "DiagramModel"];
+/**
+ * The four roots of Set B: what a module hands the canvas by value, each QUALIFIED BY THE FILE
+ * that declares it.
+ *
+ * **A bare name is not enough, and one of these proves it.** `DiagramCanvasProps` is declared
+ * twice - in `shell/panels/diagramCanvas.ts` as what a canvas COMPONENT receives, and in
+ * `canvas/library/DiagramCanvas.tsx` as what the LIBRARY canvas takes. Both are module-facing and
+ * neither is wrong. Walking by bare name picked whichever file sorted first, which happened to be
+ * the right one and would have silently become the wrong one after a folder rename.
+ *
+ * Set A never had this problem: one of its entries is a name paired with a SPECIFIER, so the two
+ * are already distinct there. The asymmetry is the defect, not the duplicate name - so the roots
+ * carry their file and a rename makes a root stop resolving, which is loud.
+ */
+export const SET_B_ROOTS: readonly SetBRoot[] = [
+  { name: "DiagramDefinition", file: "client/src/canvas/library/definition/diagramDefinition.ts" },
+  { name: "DiagramCanvasProps", file: "client/src/canvas/library/DiagramCanvas.tsx" },
+  { name: "DiagramEventHandlers", file: "client/src/canvas/library/api/diagramEvents.ts" },
+  { name: "DiagramModel", file: "client/src/canvas/library/api/diagramModel.ts" },
+];
+
+/** A Set B root: the declaration's name, and the repo-relative file that must declare it. */
+export interface SetBRoot {
+  name: string;
+  file: string;
+}
 
 /** Where a name came from, so a failure can name the module rather than only the name. */
 export interface NameOrigin {
@@ -273,10 +297,36 @@ function referencedTypeNames(node: ts.Node): string[] {
   return names;
 }
 
-/** Set B: the by-value closure from the four roots, walked syntactically. */
-function computeSetB(exportsByName: Map<string, { file: string; node: ts.Node }>): Map<string, string> {
+/**
+ * Set B: the by-value closure from the four roots, walked syntactically.
+ *
+ * The roots are resolved by file and name; everything they reach is followed by name, which is
+ * sound because the ambiguity is at the roots - a referenced name is read in the context of the
+ * declaration that names it, and a second collision would surface as a root failing to resolve
+ * rather than as a quiet substitution.
+ */
+function computeSetB(
+  exportsByName: Map<string, { file: string; node: ts.Node }>,
+  exportsByFileAndName: Map<string, { file: string; node: ts.Node }>,
+): Map<string, string> {
   const setB = new Map<string, string>();
-  const queue = [...SET_B_ROOTS];
+  const queue: string[] = [];
+
+  for (const root of SET_B_ROOTS) {
+    const declaration = exportsByFileAndName.get(`${root.file}#${root.name}`);
+    if (declaration === undefined) {
+      // Loudly: a root that no longer resolves means the surface moved under this computation,
+      // and every set below it would otherwise be quietly short.
+      throw new Error(
+        `Set B root '${root.name}' is not exported by '${root.file}'. If the declaration moved, ` +
+          "move it in SET_B_ROOTS too - the roots are file-qualified precisely so this fails rather " +
+          "than silently resolving to another declaration of the same name.",
+      );
+    }
+
+    setB.set(root.name, declaration.file);
+    queue.push(...referencedTypeNames(declaration.node));
+  }
 
   while (queue.length > 0) {
     const name = queue.shift() as string;
@@ -320,11 +370,13 @@ export function computeModuleClientApiSurface(): ModuleClientApiSurface {
   const allSurfaceFiles = [...new Set([...libraryFiles, ...importedFrom])].sort();
 
   const exportsByName = new Map<string, { file: string; node: ts.Node }>();
+  const exportsByFileAndName = new Map<string, { file: string; node: ts.Node }>();
   const exportsBySurfaceFile = new Map<string, string>();
   for (const file of allSurfaceFiles) {
     const repoRelative = relative(root, file).replace(/\\/g, "/");
     const source = readSource(file, root); // throws, loudly, if a named surface file is unreadable
     for (const [name, node] of exportedDeclarations(source)) {
+      exportsByFileAndName.set(`${repoRelative}#${name}`, { file: repoRelative, node });
       if (!exportsByName.has(name)) {
         exportsByName.set(name, { file: repoRelative, node });
         exportsBySurfaceFile.set(name, repoRelative);
@@ -334,7 +386,7 @@ export function computeModuleClientApiSurface(): ModuleClientApiSurface {
 
   return {
     setA,
-    setB: computeSetB(exportsByName),
+    setB: computeSetB(exportsByName, exportsByFileAndName),
     surfaceFiles: allSurfaceFiles.map((file) => relative(root, file).replace(/\\/g, "/")),
     moduleFiles,
     exportsBySurfaceFile,
