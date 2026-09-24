@@ -21,7 +21,7 @@ flowchart LR
     process <--> files
 ```
 
-**What each part is built with.** The server side is .NET, on the SDK pinned by `src/global.json`. The client is React with TypeScript, built by Vite. Between them is gRPC, reaching the browser over grpc-web on ASP.NET Core's gRPC-Web middleware.
+**What each part is built with.** The server side is .NET, on the SDK pinned by `src/global.json`. The client is React with TypeScript, built by Vite. Between them is gRPC, reaching the browser over grpc-web on ASP.NET Core's gRPC-Web middleware. Authentication sits on the gRPC calls themselves - `SessionInterceptor` in `EtAlii.Adp.Authentication` - rather than in a gateway in front of them.
 
 **One process, not two.** ASP.NET Core serves the built client as static files *and* hosts the gRPC-Web endpoint. There is no separate frontend server in production: `EtAlii.Adp.Backend.Service` is the whole server side. In local development Vite runs as a dev server and ASP.NET Core proxies to it, purely so edits hot-reload — the browser still talks to the ASP.NET Core port, and in production Vite is not running at all.
 
@@ -36,10 +36,10 @@ flowchart LR
 A browser speaking grpc-web can open neither bidirectional nor client streaming, so everything two-way is expressed as **two correlated one-way legs**:
 
 - **Client to backend — unary `Action` calls.** Reporting a selection, running an action, proposing a value, updating a viewport. `ContextService`'s `Select`, `ExecuteAction`, `ProposeInput`, `SubmitInteraction` and `CancelInteraction` are the worked examples.
-- **Backend to client — one server-streaming `Watch`.** Everything the backend initiates rides the stream that connection already has open. **A feature that needs to push something new adds a member to that stream's message, never a second stream.**
-- **Correlated by a connection id**, carried on every call of both legs, which is what lets an `Action` on one HTTP request affect the stream opened by another.
-- **One stream per connection, not one per consumer.** The client opens `Watch` once and fans the result out in-process. Several panels wanting the same push is not a reason for several streams.
-- **Per-connection state dies with the stream**, keyed by that id and never shared with another connection — not even the same user on the same project.
+- **Backend to client — one server-streaming `Watch`.** Everything the backend initiates rides the stream that connection already has open; `ContextService.Watch` and `HierarchyService.WatchHierarchy` are the worked examples. **A feature that needs to push something new adds a member to that stream's message, never a second stream.**
+- **Correlated by a connection id**, carried on every call of both legs, which is what lets an `Action` on one HTTP request affect the stream opened by another. Today it is the `watch_id` the hierarchy and context calls share, a `ShortGuid` the client generates once per mounted shell.
+- **One stream per connection, not one per consumer.** The client opens `Watch` once and fans the result out in-process, through a React context at the shell level. Several panels wanting the same push is not a reason for several streams.
+- **Per-connection state dies with the stream**, keyed by that id and never shared with another connection — not even the same user on the same project. `IHierarchyModelStore`, `IContextSelectionStore` and `IContextInteractionStore` each hold theirs this way.
 - **Reconnect by reopening `Watch` with the same id.** The stream's first message is always the current state, so a reconnected client is re-baselined without a protocol of its own.
 
 **What rides the stream are deltas** — add, remove, update — so several open clients, and external edits the backend notices on disk, converge without anyone refreshing. **The client reconciles an incoming delta against its own not-yet-saved edits and does not silently discard them**, which is a client obligation and not something the protocol enforces.
