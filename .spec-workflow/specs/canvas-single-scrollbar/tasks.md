@@ -18,7 +18,7 @@ There is no *satisfied ahead* set here and no criterion met by the document's ow
 
 ## The tasks
 
-- [ ] 1. The client guard, written first so that it fails
+- [x] 1. The client guard, written first so that it fails
   - Files: `src/client/src/canvas/library/DiagramCanvas.test.tsx`
   - Beside the existing assertion that the surface carries `canvas-drawing` — the same element, already mounted, so a reader meets the new case where they already look rather than in a file they must find.
   - Mount a canvas **with `canvas.css` loaded** and assert the surface's **computed** `display` is not `inline`. **Computed, never declared**: a presentation attribute loses to any CSS rule, and a declared value says nothing about what the cascade resolved.
@@ -27,7 +27,7 @@ There is no *satisfied ahead* set here and no criterion met by the document's ow
   - It mounts one canvas and needs no corpus, no explorer children and no sixteen-diagram pass.
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 2. The rule, which makes task 1 pass
+- [x] 2. The rule, which makes task 1 pass
   - Files: `src/client/src/canvas/canvas.css`
   - A rule for `.library-canvas-surface` setting `display: block`. **Not `vertical-align: top`**, which removes the same four pixels and leaves the surface an inline box — R1.3 is about the box rather than the pixels, and it is what chooses between two changes a measurement calls equivalent.
   - **A new rule rather than an amendment to `.canvas-drawing`** at `canvas.css:44`, per R2.1, even though that class is applied to nothing else and amending it would be behaviourally identical today.
@@ -35,7 +35,7 @@ There is no *satisfied ahead* set here and no criterion met by the document's ow
   - **No module stylesheet and no module component is touched.** wardley-map needs no change and will see none: its wrapper is `display: flex`, which blockifies the svg already, so the fix is a no-op on that one canvas.
   - _Requirements: 1.3, 2.1, 2.3_
 
-- [ ] 3. Count the module workarounds, and count the right thing
+- [x] 3. Count the module workarounds, and count the right thing
   - Files: the implementation log
   - R2.2 expects **zero** module workarounds for this defect and says a non-zero count is a finding. **Zero is what the design measured, and the count that produces it is *workarounds for this defect*, not *rules that hide the symptom*.**
   - Three module stylesheets clip an ancestor of their canvas — `causal-loop`, `mindmap`, `azure-pipeline` — and **none is a workaround**: each states its own reason, and causal-loop's comment says outright that the frame clips and fills the pane's width. **All three stay.** Removing a clip that happens to hide four pixels would change what those frames do, which no criterion asks for.
@@ -43,7 +43,7 @@ There is no *satisfied ahead* set here and no criterion met by the document's ow
   - The log records the count as zero **with the three-and-one distinction**, so the next reader does not re-derive it.
   - _Requirements: 2.2_
 
-- [ ] 4. The `tests.md` entry for the browser check
+- [x] 4. The `tests.md` entry for the browser check
   - Files: `tests.md`
   - Open a named canvas; assert **`innerWidth > 0` on the row itself**, not once as a precondition — an emulated viewport is cleared when a turn ends, so a multi-row pass silently returns to 0x0 partway through.
   - Record that the pane's `scrollHeight` equals its `clientHeight` **and** its `scrollWidth` equals its `clientWidth`, and that exactly one vertical scroll affordance is offered.
@@ -51,7 +51,7 @@ There is no *satisfied ahead* set here and no criterion met by the document's ow
   - It belongs in `tests.md` rather than in the suite because only a real cascade and a real layout can answer it.
   - _Requirements: 3.4_
 
-- [ ] 5. Judge whether `docs/screenshots/dependency-graph.png` has become misleading
+- [x] 5. Judge whether `docs/screenshots/dependency-graph.png` has become misleading
   - Files: `docs/screenshots/dependency-graph.png` (only if the judgement says so), using the existing `docs/screenshots/capture.mjs`
   - **This claims no acceptance criterion.** It is CLAUDE.md's rule that a UI change making a screenshot misleading means retaking it, and that image is a capture of **one of the two diagrams the user reported**.
   - **Stated as a judgement rather than an instruction, because it could not be settled by looking**: the image is 1600px wide and the defect is four pixels, so whether a second vertical bar is visible in it is at or below what that image can decide by eye. **Do not retake on the strength of the argument alone.**
@@ -60,7 +60,7 @@ There is no *satisfied ahead* set here and no criterion met by the document's ow
   - **Both outcomes are acceptable, and only the unrecorded one is wrong.** *Retake it* and *leave it* are equally good answers provided the log says which was chosen and why. **This is not a disguised instruction to retake**: an implementer who retakes to be safe has converted a judgement into a ritual and taught nobody anything, including themselves.
   - _Requirements: none — a house rule, recorded here so it is neither forgotten nor mistaken for a criterion_
 
-- [ ] 6. The browser check, run, and the coverage diff traced to code
+- [x] 6. The browser check, run, and the coverage diff traced to code
   - Files: the implementation log, and `tests.md`'s result line
   - Run the check task 4 wrote, on a local build, and record the outcome with the diagram and element named. **This is what verifies R1.1, R1.2 and R1.4** — the client guard cannot, because jsdom resolves no real cascade and lays out no real pane.
   - **R1.4 is a verification rather than a repair**: an inline box reserves space below its baseline and not beside it, so no horizontal spill was ever observed. Recording both equalities is what makes a future regression in either axis visible.

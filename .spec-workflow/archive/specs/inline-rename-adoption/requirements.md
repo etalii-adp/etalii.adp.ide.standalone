@@ -26,9 +26,9 @@ Seventeen `*Canvas.tsx` files, but **fourteen real canvases across ten modules**
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **direct manipulation** — renaming should be changing the text you are looking at, not filling in a form about it, and that should be true wherever a label is yours to change.
-* [structure.md](../../steering/structure.md)'s **core-vs-module boundary** — the editor and the registry are core and stay core; which labels are renameable is each module's own knowledge and stays there.
-* [tech.md](../../steering/tech.md)'s **Context** section — a module offers what a user can do through its action provider, and this feature adds a presentation for one kind of answer rather than a second path to the backend.
+* [product.md](../../../steering/product.md)'s **direct manipulation** — renaming should be changing the text you are looking at, not filling in a form about it, and that should be true wherever a label is yours to change.
+* [structure.md](../../../steering/structure.md)'s **core-vs-module boundary** — the editor and the registry are core and stay core; which labels are renameable is each module's own knowledge and stays there.
+* [tech.md](../../../steering/tech.md)'s **Context** section — a module offers what a user can do through its action provider, and this feature adds a presentation for one kind of answer rather than a second path to the backend.
 * `view-delta-adoption` (specification removed from the tree; in history before `53f68611`) is the shape this follows: the shared half first, then one independently landable adopter per module, then a guard.
 
 ## Requirements

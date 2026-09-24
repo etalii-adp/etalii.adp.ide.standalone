@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Five things every entry below assumes
+## What every entry below assumes
 
 **Signing in — a developer build does not ask.** Since `developer-sign-in-bypass`, a locally
 running developer build opens **already authenticated** and the sign-in form is never rendered:
@@ -146,6 +146,24 @@ The check outlives the instance, because the window recurs whenever anything is 
 `git merge-base --is-ancestor <commit> develop`, or look for the type it introduces in `develop`'s
 sources.
 
+**A wedged origin makes a canvas that reports nothing indistinguishable from a canvas with a real
+defect, so confirm the origin still answers before recording any negative row.** Until the HTTPS
+endpoint of `two-tab-connection-wedge` task 1 is the one you are browsing, opening documents in two
+tabs on one origin exhausts that origin's HTTP/1.1 connection pool, and **nothing on it completes
+again - not a gRPC call, not a plain static file.** A check run after that point reports emptiness
+for a reason that has nothing to do with what it was checking.
+
+**The two readings are identical from the inside**, which is why this is a precondition rather than a
+note: a panel that never populates, a canvas that draws nothing, a property grid that stays blank -
+each looks exactly like the defect somebody is hunting. **Every negative row recorded after a wedge
+is worthless and cannot be told from a genuine finding by looking at it.**
+
+The check is one request for something that is not gRPC at all: fetch any static asset on the same
+origin and require a response. **If a plain file does not come back, stop** - the wedge is what you
+are looking at, and every row since the last known-good one has to be re-run rather than trusted.
+Re-running means a fresh browser profile, not a fresh tab: see the entry below for why a new tab
+joins an already-exhausted pool.
+
 ## The context surface is reachable on a causal loop diagram (causal-loop-diagram, resolver fix)
 
 **Found by opening the app, and invisible to every test until then.** The module shipped without
@@ -224,6 +242,76 @@ rather than by eye - anchors `rgb(30,41,59)` where an unstyled path in the same 
 `rgb(0,0,0)`; preview `fill: none` with a dashed green stroke; invalid variant red. **The drag
 itself was not performed by hand** - a synthesised mousedown did not start the gesture - so the
 wedge's absence is inferred from the computed style, not seen. Worth one human drag.
+
+## The diagram pane offers one scrollbar, not two (canvas-single-scrollbar, tasks 4 and 6)
+
+**Reported twice by the user, on two diagrams, and invisible to every test in the suite.** An `<svg>`
+is an inline element, so the library's drawing surface sat on a line box that reserved about four
+pixels of descender space below its baseline. `overflow: visible` let that spill out of the surface and
+into the pane that scrolls, which then offered a SECOND vertical scrollbar beside the diagram's own.
+
+**Why it is here rather than in the client suite.** The suite's guard
+(`DiagramCanvas.test.tsx`, *makes its surface a block box*) asserts the COMPUTED `display` under
+`canvas.css` and that is all it can do: jsdom applies stylesheets in source order, implements neither
+specificity nor `!important`, and lays out nothing. **So it proves the rule is declared and reached, and
+says nothing about what a real cascade resolves or what a real pane measures.** Only a browser can
+answer the question the user asked.
+
+- **Preconditions**: backend + client running on a Debug developer build; `src/examples` open as a
+  project. The header must show the **developer session** marker.
+- **Actions**: open `diagrams/dependency-graph/example-1/services.dgr`, and then
+  `diagrams/timeline/example-1/roadmap.tml` as the second diagram - **the two the user reported**.
+- **The pane's limits, the `innerWidth` check and the origin check are the preamble's**, in the item *What
+  the in-app browser pane can answer, and what it cannot* - **cited rather than restated**, and by NAME
+  rather than by number because the number moves whenever a preamble item is added. Read it before running
+  this entry.
+- **The one thing this entry adds to it**: read `window.innerWidth` **on every row**, not once as a
+  precondition. A survey of two diagrams spans turns, and an emulated viewport is cleared when a turn ends,
+  so a later row can measure a window with no width. **A row whose own `innerWidth` is 0 is not a failure,
+  it is a row that did not run.**
+- **Measure the WRAPPER, not the pane, and this was corrected by running the check** (task 6). The
+  element is `div.library-canvas` - `.dependency-graph-surface` on one diagram,
+  `.timeline-surface.canvas-viewport` on the other - and its host, `div.*-canvas.canvas-host`:
+  - the wrapper's `scrollHeight` **equals** its `clientHeight`, and its `scrollWidth` its `clientWidth`;
+  - the host's, likewise;
+  - the surface's computed `display` is `block`.
+- **THE PANE IS THE WRONG ELEMENT AND THE ROW WOULD HAVE PASSED BEFORE THE FIX.**
+  `div.tabbed-pane-content` reads `scrollHeight == clientHeight` at 1600x900 **whether the surface is
+  inline or block**, because it has around 230px of slack that absorbs four pixels. Shrinking the
+  viewport does not rescue it: at 1600x520 the pane overflows by 280px in BOTH states for an unrelated
+  reason, so four pixels are invisible against it either way. **There is no viewport in that pair where
+  the four pixels decide whether the pane scrolls.** A row written against the pane is a row that
+  cannot fail.
+- **The decisive form is a perturbation rather than a reading.** Set `display: inline` on the surface
+  from the console - the state before the fix - read the wrapper, restore, and read again. Four pixels
+  appear and disappear on demand. A single reading of a fixed tree cannot distinguish a working rule
+  from an absent defect.
+- **Both equalities are recorded even though only one axis ever failed.** An inline box reserves space
+  BELOW its baseline and not beside it, so no horizontal spill was ever observed - recording the
+  horizontal one is what makes a future regression in that axis visible rather than a surprise.
+- **Name the diagram and the element each number came from.** A survey row without its element is how a
+  pass reported a working diagram this week.
+
+**Result 2026-09-24**: **passed**, on a Debug developer build at 1600x900 with the developer-session
+marker present, by perturbation rather than by reading. `scrollHeight - clientHeight`, shipped then
+forced to `display: inline` then restored:
+
+| diagram | element | shipped | inline | restored |
+| --- | --- | --- | --- | --- |
+| `services.dgr` | `div.library-canvas.dependency-graph-surface` | 0 | **4** | 0 |
+| `services.dgr` | `div.dependency-graph-canvas.canvas-host` | 0 | **4** | 0 |
+| `roadmap.tml` | `div.library-canvas.timeline-surface.canvas-viewport` | 0 | **4** | 0 |
+
+Horizontal was 0 everywhere in every state, which is what R1.4 asks be recorded rather than assumed:
+an inline box reserves space below its baseline and not beside it, so no horizontal spill was ever
+observed and recording it is what makes a future regression in that axis visible.
+
+**Two honesty notes on this result.** The `roadmap.tml` numbers were taken TWICE: the first reading was
+in a window in which the backend then died with an internal CLR error, so it was discarded and retaken
+on a healthy process - *check the origin still answers* cuts the same way for a positive as for a
+negative. And `window.innerWidth` was read on every measurement, not once: it came back **0** after a
+reload, because an emulated viewport is cleared when a turn ends - the exact failure this entry warns
+about, met while running the entry.
 
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
@@ -3023,3 +3111,55 @@ below stays either way.
   copy, confirm the block degrades to source text in both readers, and restore it. A check that
   has never seen the failure mode cannot report its absence - and this failure mode looks like
   ordinary text rather than like an error.
+
+## Two tabs on one origin both keep working (two-tab-connection-wedge, task 2)
+
+**This is a procedure rather than a test, and the task says so rather than pretending otherwise.** The
+reproduction needs two real browser tabs sharing one browser profile on one origin, and no unit or
+integration harness can produce a shared per-profile connection pool. CLAUDE.md's rule applies
+directly: a bug only a running app can reproduce leaves a step-by-step entry here.
+
+**An integration test written to stand in for this WILL pass, and that is worse than having none.** It
+would measure one client, one pool and no contention, and then report health on the exact defect it
+was written to catch - converting "unverified" into "verified" while nothing has been verified. This
+repository has already produced three client tests that passed against the code they were written to
+catch. **If you believe you have automated this, you have automated a different thing: say so and
+leave this procedure in place.**
+
+The mechanism: a browser allows about six concurrent HTTP/1.1 connections per origin, shared across
+tabs in one profile. Each open document holds three server-streaming gRPC calls - `WatchHierarchy`,
+`ContextService/Watch` and `DiagramService/Open`, which are the only server-streaming RPCs the whole
+API declares - so two documents reach the cap and the next request is queued forever. Over TLS, ALPN
+negotiates HTTP/2 and every request multiplexes onto one connection, which removes the cap rather
+than raising it.
+
+- **Preconditions**: a locally running developer build. **Note which scheme you are browsing** - the
+  `before` half needs `http://localhost:5080` and the `after` half needs `https://localhost:5443`,
+  and `launchSettings.json` serves both. An untrusted certificate is fine: click through the warning
+  once per browser profile. Use **one** hostname throughout, and see the first trap below.
+- **Actions**:
+  1. Open the app and open a project and one document. Confirm it is healthy - a probe settles in
+     milliseconds and the canvas draws.
+  2. Open a **second tab on the same origin** - same scheme, same hostname, same port - and open a
+     document there.
+  3. In whichever tab you like, request a plain static asset on that origin.
+- **Expected, over `http://`**: the second tab wedges, and **nothing on that origin completes again,
+  including the static file in step 3.** That last part is the diagnosis: it is an origin-wide
+  exhaustion, not a diagram fault.
+- **Expected, over `https://`**: both tabs work, both keep receiving their diagram deltas, and the
+  static file returns. Opening further documents in further tabs does not degrade either.
+- **Two traps that made this hard to see, and a later tester will hit both.** `127.0.0.1` and
+  `localhost` are **different origin keys**, so using one in each tab does not reproduce the defect
+  and makes it look absent. And **the pool is per profile and shared across tabs**, so a "fresh tab"
+  joins an already-exhausted pool rather than starting clean - every fresh-tab trial during the
+  investigation was worthless for this reason. To get a genuinely clean pool, use a new browser
+  profile or restart the browser.
+- **Note**: do not try to confirm the cap from inside the page. A request queued by the browser and a
+  request the server never answered are identical to page JavaScript; six attempts to tell them apart
+  failed during the investigation and the seventh needed `netstat` from outside the browser.
+- **Result**: not yet run. The `after` half is verifiable now that task 1 has landed an HTTPS
+  endpoint; the ALPN half of it is already measured - `openssl s_client -alpn h2` against that
+  endpoint reports `ALPN protocol: h2` over TLSv1.3, and the same connection asked for `http/1.1`
+  only reports `http/1.1`, so the negotiation is real rather than assumed. **What remains unverified
+  is the browser-level behaviour of two real tabs**, which is exactly the part no instrument here can
+  stand in for.
