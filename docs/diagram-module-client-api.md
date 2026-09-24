@@ -118,6 +118,167 @@ export function useDependencyGraphStream(projectId: Uint8Array, path: readonly s
 
 ## The definition
 
+**Declarations:** `DiagramDefinition`
+
+**What it is for.** One object says what a diagram type IS — what its elements are, how they connect, what may be dragged, what a user may do to them. The library reads it and draws; a module writes no rendering code.
+
+**Whether a module needs it.** Always, and it is the largest thing a module writes by hand. **Everything below is a member of this one object.**
+
+**Its shape.** `elementTypes`, `relationTypes`, `toolbox`, `layout`, `dragging`, `extent`, `snap`, `dropTarget`, `background`, `chrome`, `actions`, `backgroundMenu`, `connectOnRightDrag`, `dragBounds` and `acyclic`. Only `elementTypes` and `relationTypes` are structural; the rest declare behaviour and may be omitted.
+
+**Which of these are actually used, measured rather than assumed.** Parsing all 13 modules that declare a definition — in both shapes it is written in, a typed constant and a function returning one — `elementTypes`, `relationTypes`, `layout` and `dragging` are set by all 13; `actions` by 7; `snap` by 2; `background`, `backgroundMenu`, `connectOnRightDrag`, `dragBounds`, `dropTarget` and `extent` by one each. **`toolbox`, `chrome` and `acyclic` are set by none**, and their entries below say so and excerpt a type-checked example instead of an invented one.
+
+**It is validated at declaration, not at draw time.** A module wraps its definition in `assertValidDiagramDefinition`, so a contradictory declaration fails where it is written rather than as a blank canvas later.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```ts
+const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+```
+
+### Element types and shapes
+
+**Declarations:** `ElementTypeDefinition`, `CustomShapeRef`, `ShapeBounds`
+
+**What it is for.** What kinds of thing the diagram has, and how each is drawn.
+
+**Whether a module needs it.** Always — all 13 modules declare it, and it is the only member with no useful default.
+
+**Its shape.** An `ElementTypeDefinition` carries `id`, `shape`, `style`, `boundStyle`, `classNames`, `data`, `tooltip`, `label`, `labels`, `decorations`, `actions`, `anchors`, `sizing`, `resize`, `draggable`, `deletable`, `selectable` and `beneathConnections`. A type whose shape is not one of the built-ins names a `CustomShapeRef` instead, which carries `customShape`, `render`, `edgePoint` and `anchors`; a renderer is handed `ShapeBounds` — `x`, `y`, `width`, `height`.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```ts
+  elementTypes: [
+    {
+      id: "node",
+      // THE SHAPE THIS MODULE USED TO DRAW ITSELF. `span` is the same shared component the
+      // custom renderer wrapped - the renderer existed to add three classes and an edge rule,
+      // both of which are declarations now.
+      shape: "span",
+      classNames: [
+        { className: "dependency-graph-element canvas-element" },
+        { className: "dependency-graph-node canvas-node" },
+      ],
+```
+
+**The guards.** `assertValidDiagramDefinition` rejects a type whose shape and anchors disagree. An element whose `type` matches no declared id draws a visible fallback box rather than vanishing.
+
+### Relation types, routes and constraints
+
+**Declarations:** `RelationTypeDefinition`, `CustomRouteRef`, `AcyclicRule`
+
+**What it is for.** What connects to what, how the line is routed, and what connections are forbidden.
+
+**Whether a module needs it.** `relationTypes` is declared by all 13 modules. `acyclic` is declared by none.
+
+**Its shape.** A `RelationTypeDefinition` carries `id`, `route`, `style`, `label`, `adjustable`, `selectable`, `className`, `lineClassName`, `hitClassName` and `emptyRelease`. A route the built-ins do not cover is a `CustomRouteRef` — `customRoute` and `path`. An `AcyclicRule` carries `relationTypes`: the relation ids a cycle may not be formed from, so a "depends on" edge can refuse a cycle while other relation types stay free to form one.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```ts
+  relationTypes: [
+    {
+      id: "depends",
+      route: dependencyRoute,
+      style: { endMarker: "arrow" },
+      label: { placement: "midpoint", offset: -6, editable: true },
+      className: "dependency-graph-relation",
+      lineClassName: "dependency-graph-relation-line",
+      hitClassName: "dependency-graph-relation-hit",
+```
+
+**No shipped module declares `acyclic`**, so its example is a type-checked file rather than an excerpt passed off as shipped code:
+
+Source: [`src/client/src/canvas/library/examples/acyclic.example.ts`](../src/client/src/canvas/library/examples/acyclic.example.ts)
+
+```ts
+ */
+```
+
+### Layout, dragging, snap and extent
+
+**Declarations:** `SnapDeclaration`, `DropTargetDeclaration`
+
+**What it is for.** Where elements may go and how they move.
+
+**Whether a module needs it.** `layout` and `dragging` are declared by all 13 modules; `snap` by 2, `dropTarget`, `extent` and `dragBounds` by one each. Omitted, a diagram lays out by its default mode and drags freely.
+
+**Its shape.** A `SnapDeclaration` carries `x` and `y`. A `DropTargetDeclaration` carries `parentPath`, `ring`, `preview` and `group`. `dragging` is a policy rather than an object, and the runtime config can override it per render without a remount.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```ts
+  snap: { y: { step: ROW_HEIGHT } },
+  layout: { modes: ["manual"] },
+  dragging: "enabled",
+```
+
+### Actions, shortcuts and enablement
+
+**Declarations:** `ActionDeclaration`
+
+**What it is for.** What a user may do to an element, a connection or the diagram, and how each is invoked.
+
+**Whether a module needs it.** Seven of the 13 declare `actions` on the definition; others declare them per element type, which is where the reference module puts them.
+
+**Its shape.** An `ActionDeclaration` carries `id`, `invokedBy`, `appliesTo`, `enabled`, `label` and `when`. **A shortcut is described as data, never wired by hand**: the module says which key invokes which action id, and the library derives the key set and dispatches.
+
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+
+```ts
+      actions: [
+        { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+        { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-right", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+        { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+      ],
+```
+
+**`{ kind: "menu" }` is an invocation a module must read carefully.** `centralized-selection` gave an existing name a new meaning: an action invoked from the shared menu reaches the module as `action-invoked` and **never reaches the backend**. The declaration is unchanged and the member names are unchanged, so no check keyed on declarations or members can demand an entry for it — which is exactly why it is written out here.
+
+### The toolbox
+
+**Declarations:** `ToolboxDefinition`, `ToolboxItemDefinition`
+
+**What it is for.** What a module contributes to the toolbox panel, beyond what its element types already imply.
+
+**Whether a module needs it.** **No shipped module declares `toolbox`.** A module that declares nothing gets a toolbox derived from its element types, which is why none has needed to override it yet.
+
+**Its shape.** `ToolboxDefinition` carries `suppress` and `add`. A `ToolboxItemDefinition` carries `id`, `title`, `icon` and `payload`.
+
+Source: [`src/client/src/canvas/library/examples/toolbox.example.ts`](../src/client/src/canvas/library/examples/toolbox.example.ts)
+
+```ts
+export const TOOLBOX_EXAMPLE: ToolboxDefinition = {
+  suppress: ["note"],
+  add: [{ id: "milestone", title: "Milestone", icon: "flag", payload: "milestone" }],
+};
+```
+
+### Chrome
+
+**Declarations:** `ChromeDeclaration`
+
+**What it is for.** The text around the diagram rather than the diagram — loading and unavailable states, a title, a legend, rulers.
+
+**Whether a module needs it.** **No shipped module declares `chrome`.** The three modules with loading and unavailable states render them in their own JSX, which is what `client-centralization` task 3 moves into the library; when that lands, the first module to adopt it replaces this example.
+
+**Its shape.** `ChromeDeclaration` carries `loading`, `unavailable`, `title`, `legend` and `rulers`.
+
+Source: [`src/client/src/canvas/library/examples/chrome.example.ts`](../src/client/src/canvas/library/examples/chrome.example.ts)
+
+```ts
+  loading: { text: { template: "Loading\u2026" } },
+  unavailable: { text: { template: "This build cannot draw this diagram." } },
+  title: { text: { template: "Dependency graph" } },
+};
+
+```
+
+**Related.** [Styling](#styling) for the classes chrome uses, and [Events, and how a module answers them](#events-and-how-a-module-answers-them) for what a declared action raises.
+
 ## The canvas
 
 ## Events, and how a module answers them
