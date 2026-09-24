@@ -2933,8 +2933,10 @@ own `BUILT_IN_SHAPES` is what covers the shapes; this pass covers the look.** Do
 row here be read as *this canvas is correct*.
 
 **Preconditions and what the pane can be trusted for** are in *"What the in-app browser pane can
-answer, and what it cannot"*, the fifth item of **Five things every entry below assumes**. Read
-it; this entry does not repeat it. Specific to this pass: `src/examples` open as a project,
+answer, and what it cannot"*, under **What every entry below assumes**. Cited by name and not by
+position: an ordinal moves whenever an item is added, and a count in a heading is a value two
+branches can both edit and still merge cleanly. Read it; this entry does not repeat it. Specific
+to this pass: `src/examples` open as a project,
 backend and client running from a worktree on your reserved ports, **browsing the backend's
 port**.
 
