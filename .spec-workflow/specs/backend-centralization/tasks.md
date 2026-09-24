@@ -174,6 +174,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 - [ ] 24. Behaviour changes only where a criterion says so
   - Files: the implementation log, and whichever tests changed
   - **Every existing test that changed in this work is listed with the criterion that permitted it.** A test that changed for convenience rather than for a criterion is a finding, and the log says which it was.
+  - **R2.4 authorises sparql's one behaviour change, and the log names it.** Before: a reload that could not read replaced a good query with an error entry. After: the last good query is kept, because keep-last-good on reload applies to every store and a module's declared state governs only the first open (the user's chat ruling, 2026-09-25).
   - _Requirements: 8.1_
 - [ ] 25. The closing gate on a fresh tree, and the coverage diff traced to code
   - Files: the implementation log
