@@ -108,7 +108,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 ## Group 3 — The diff and the change handler, which the lifecycle's change event feeds
 
 - [ ] 11. The shared change-detecting diff
-  - Files: new in `EtAlii.Adp.Documents`, plus its tests
+  - Files: new in `EtAlii.Adp.Diagram`, plus its tests. The diff works on `DiagramElement` and `DiagramDelta`, which `Diagram` declares, and `Diagram` already references `Documents`, so placing it there would be a cycle (the user's chat ruling, 2026-09-25).
   - Equality is equal position, type and payload. **Removals first, then additions**, settled by the design.
   - A table-driven test over add, remove, move, retype and payload-change. **Seen to fail against an equality that ignores payload.**
   - _Requirements: 4.1, 4.4, 4.5_
@@ -116,7 +116,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
   - Files: ansible-structure, helm-charts, azure-pipeline, c4 and causal-loop sessions, and their tests
   - _Requirements: 4.2_
 - [ ] 13. The shared document-change handler
-  - Files: new in `EtAlii.Adp.Documents`, plus its tests
+  - Files: new in `EtAlii.Adp.Diagram`, plus its tests. It raises diagram deltas, for the same reason as task 11 (the user's chat ruling, 2026-09-25).
   - A session ignores changes to other paths. **A test drives two sessions on two paths and asserts the second hears nothing**, seen to fail against a handler that ignores the path.
   - _Requirements: 5.1_
 - [ ] 14. Convert azure-pipeline, c4 and causal-loop onto the handler
@@ -139,7 +139,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 ## Group 5 — The two small shared edits
 
 - [ ] 17. One restore-lines edit, and three modules onto it
-  - Files: `EtAlii.Adp.Documents`, plus causal-loop, databricks and rdf, and their tests
+  - Files: `EtAlii.Adp.Documents`, which gains a reference to `EtAlii.Adp.History` for the command, plus causal-loop, databricks and rdf, and their tests (the user's chat ruling, 2026-09-25)
   - Usable by a fourth module without copying, which the criterion requires and a second consumer proves.
   - _Requirements: 6.1, 6.2_
 - [ ] 18. One YAML node range, and four modules onto it
