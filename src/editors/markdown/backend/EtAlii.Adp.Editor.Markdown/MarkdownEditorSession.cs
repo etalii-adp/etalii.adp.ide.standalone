@@ -52,11 +52,17 @@ public sealed class MarkdownEditorSession : IEditorSession
             // to be swallowed. That ordering is a hard dependency rather than a preference.
             //
             // Error: the one signal FileSystemWatcher gives when its internal buffer overflows and
-            // it has silently dropped events. Unsubscribed, an overflow is invisible. Four other
-            // watchers in this tree log it; these two did not.
+            // it has silently dropped events. Unsubscribed, an overflow is invisible - and LOGGED
+            // ONLY, it is still unlearned: the log hears of it while the editor keeps showing what it
+            // held before. Which events were dropped is unknowable, so the file is read again
+            // (backend-centralization R2.9). Subscribing alone satisfied the wiring guard and not
+            // the obligation, which is what the obligation tests caught.
             _watcher.Deleted += (_, _) => OnExternalChange();
             _watcher.Error += (_, args) =>
-                _logger.Warning(args.GetException(), "The watcher for {Path} stumbled", _path);
+            {
+                _logger.Warning(args.GetException(), "The watcher for {Path} stumbled; reading it again", _path);
+                OnExternalChange();
+            };
 
             // Subscribed BEFORE the watcher is enabled. Four other watchers in this tree do it
             // this way - RootFolderWatcher, TrackedProblemRoot, AnsibleWatchedFolder and
