@@ -432,6 +432,41 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## Tests a module writes, and what a module must not do
 
+**What it is for.** The library's shared test helpers, and the guards that walk every module client and fail when one reinvents something shared.
+
+**Whether a module needs it.** Every module has a canvas test, and every module is walked by the guards below whether it knows it or not. **This is the half of the API that is enforced rather than offered.**
+
+**The shared helpers.** `expectLibrarySelection`, in `src/client/src/canvas/library/testing/`, asserts that a press produced the library's own selection rather than a module's idea of one. It is the one library folder a module's TEST files may import from, and imports from it are part of the module-facing surface for that reason.
+
+**The guards that walk module clients — thirteen of them, measured rather than recalled:**
+
+| Guard | What it forbids | The shared mechanism instead |
+| --- | --- | --- |
+| `noPrivateGestures.test.ts` | a module-owned drag, pan or connect layer | the library's gesture handling |
+| `noModuleSelection.test.ts` | deriving or pushing a selection | the library owns selection |
+| `noPrivateScrollbars.test.ts` | a module's own scrollbars | the shared scroll surface |
+| `noPrivateLabelEditors.test.ts` | a module's own inline label editor | `useContextPrompt` and the declared label |
+| `noPrivateViewReports.test.ts` | a hand-rolled viewport report | `useViewReport` |
+| `diagramStreamOpensOnlyInHook.test.ts` | opening a delta stream anywhere else | `useDiagramStream`, which every module wraps |
+| `declarativeModules.test.ts` | drawing a diagram outside the declaration | `DiagramDefinition` |
+| `libraryGuards.test.tsx` | built-in routes leaving the shared geometry | the connectors module |
+| `noUnstyledLibraryClasses.test.ts` | a library class with no style behind it | the library's own stylesheet |
+| `sharedStylesheetImports.test.ts` | a module that does not import the shared canvas stylesheet | the import in `register.ts` |
+| `highlightSurvivesModuleStyles.test.tsx` | module styles that defeat the shared highlight | class composition |
+| `themeTokens.test.ts` | a custom property defined nowhere, or a palette declaring one mode | a theme token, or a local palette declaring both |
+| `fileUrlPaths.test.ts` | a hand-built file URL | the shared path helpers |
+
+**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. **The rule finds a test that walks DIRECTLY, and not one that walks through a helper**: this document's own guard is in that blind class, because its walking lives in `diagramModuleClientApi.surface.ts` rather than in the test file. The requirements named eight of these; thirteen is what the tree holds now, so that figure is a timestamp rather than a count.
+
 ## A minimal module client, end to end
 
 ## Library-internal exports
+
+**These are the library's own exports that no module uses and none may.** A name here is not a smaller API than the one above — it is the other side of the same boundary, and a module importing one is the signal that either the module is reaching too far or this document is out of date.
+
+**The list is computed, not maintained.** It is exactly the library's exports that appear in neither set, so it cannot drift from the code: a name that leaves the library fails the test, and a name a module starts importing leaves this list and must gain an entry above.
+
+**65 names**, at `48137847`:
+
+`ActionLookup`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
+
