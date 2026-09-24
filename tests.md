@@ -2833,87 +2833,161 @@ whether real glyphs fit. That half is the browser's, and it is this entry.
   - **Left standing**: a C4 name is not truncated. The backend clamps cards at 240, so a name
     over about 34 characters at 13px would still run out. No example has one.
 
-## Selection and its two looks, on all sixteen canvases (centralized-selection, task 24)
+## Selection and its one look, on all sixteen canvases (centralized-selection, task 24)
 
-The user's instruction named four diagram types whose selection worked - timeline,
-dependency-graph, causal-loop and c4 - and four that did not: helm-charts,
-dotnet-dependency-graph, azure-pipeline and ansible-structure. **That comparison is the
-acceptance oracle, and it is recorded as such**: the four named broken must end up behaving
-exactly like the four named working.
+**What one press per canvas can answer, and what it cannot — read this before recording a
+row.** Pressing one element answers *the element I pressed carried the highlight*. It does not
+answer *every shape this canvas can draw carries it*. The distinction is not pedantic: it is how
+`styled-box` shipped unpainted on `c4` behind fifteen green canvases, and how `symbol`'s plain
+circle shipped unpainted on `wardley-map` while this document would have called that canvas
+working — the element pressed happened to be a square. **The guard that enumerates the library's
+own `BUILT_IN_SHAPES` is what covers the shapes; this pass covers the look.** Do not let a green
+row here be read as *this canvas is correct*.
+
+**Preconditions and what the pane can be trusted for** are in *"What the in-app browser pane can
+answer, and what it cannot"*, the fifth item of **Five things every entry below assumes**. Read
+it; this entry does not repeat it. Specific to this pass: `src/examples` open as a project,
+backend and client running from a worktree on your reserved ports, **browsing the backend's
+port**.
 
 **Why this entry exists, and what it is the only evidence for.** Every canvas has unit tests
 that mount it and assert what selection *does* (`expectLibrarySelection`, called from each
-module's own canvas test), and a text guard that no module writes selection code
-(`noModuleSelection.test.ts`). **jsdom applies no CSS**, so no unit test can say whether the
-shared highlight is legible on a diagram's fills - including the colours a backend chooses,
-which is why the look changed from a recoloured stroke to a ring drawn outside the shape
-(Requirement 5.2) - nor whether *selected* and *would accept this connection* can be told apart
-when both are on (Requirement 6.2). Those are this entry's, and Requirement 10.3 says so.
+module's own canvas test), a text guard that no module writes selection code
+(`noModuleSelection.test.ts`), and a guard that every built-in shape receives the paint
+(`highlightSurvivesModuleStyles.test.tsx`). **jsdom applies no CSS cascade worth the name** — it
+implements neither specificity nor `!important` (measured against jsdom 25.0.1 on 2026-09-23) —
+so no unit test can say whether the highlight is *legible* on a diagram's fills, including the
+colours a backend chooses (Requirement 5.2). That is this entry's, and Requirement 10.3 says so.
 
-- **Preconditions**: backend + client running from the worktree on your reserved ports, browsing
-  the backend's port; `src/examples` open as a project. **The Claude window must be in front**:
-  a hidden pane reports a 0x0 viewport, stops painting, and a press then lands on nothing.
-- **Steps**: open each diagram below, and on each: press an element, press a connection where the
-  notation selects one, press empty canvas, and drag an element a short distance. Paste the
-  function and call `probe()` on each tab; then **look at the canvas** for the three things the
-  probe cannot judge.
+**The look, as the library draws it today.** One highlight per item, and the item's own outline
+carries it: `stroke` set to `var(--color-selected, #7c3aed)` **inline on the drawn shape**, at
+`max(declared + 1, 3)`, with the fill untouched. **There is no ring.** A separate outline drawn
+outside the shape was the previous answer and the user replaced it on 2026-09-22; anything below
+that reads as though a second element were drawn is a mistake in this document, not in the app.
+A valid drop target wears **the same look, once** (Requirement 6.2) — so a drag passing over the
+selected element changes nothing visible, which is the expected outcome rather than a failure.
+
+- **Steps.** Open each diagram below. **Select its tab and confirm the document before pressing
+  anything** — documents open on double-click and open *behind* the fronted tab, which has cost
+  two sessions a measurement of the wrong diagram. Then on each: press an element, press a
+  connection where the notation selects one, press empty canvas, and drag an element a short
+  distance. Paste the function and call `await probe()` on each tab; then **look at the canvas**
+  for the things the probe cannot judge.
+
   ```js
   async function probe() {
+    // LIVENESS FIRST. A negative row is a claim about an absence, and three mechanisms
+    // manufacture absences here: a 0x0 pane, a shell that renders but listens to nothing, and
+    // an origin that has stopped answering while curl still gets 200. Each returns exactly what
+    // a real defect returns. Refuse to measure rather than record a manufactured zero.
+    if (innerWidth === 0) { return "PANE COLLAPSED - record nothing"; }
+    try {
+      const probeUrl = "/favicon.ico?probe=" + Date.now();
+      await Promise.race([
+        fetch(probeUrl, { cache: "no-store" }),
+        new Promise((_, no) => setTimeout(() => no(new Error("wedged")), 2000)),
+      ]);
+    } catch { return "ORIGIN NOT ANSWERING - record nothing, open a FRESH TAB (a reload does not clear it)"; }
+
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const canvas = [...document.querySelectorAll(".library-canvas")].find((c) => c.getBoundingClientRect().width > 10);
+    if (!canvas) { return "NO CANVAS - wrong tab, or the document did not open"; }
     const at = (el) => { const b = el.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; };
     const press = (t, x, y) => { const ev = (type, buttons) => new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x, clientY: y });
       t.dispatchEvent(ev("pointerdown", 1)); t.dispatchEvent(ev("pointerup", 0)); };
     const sel = () => [...canvas.querySelectorAll(".canvas-selected")].map((e) => e.dataset.elementId ?? e.dataset.connectionId);
+    // THE DRAWN SHAPE, not the group above it. The paint is inline on the rect/ellipse/path the
+    // reader sees; it sat on the wrapping <g> once, where it is INHERITED and every node shape
+    // ignores it, and every value the library computed was correct while nothing changed colour.
+    const drawn = (host) => [...host.querySelectorAll("rect, ellipse, path, polygon, circle")]
+      .filter((n) => !n.hasAttribute("data-anchor") && !(n.getAttribute("class") ?? "").includes("library-resize-handle"));
+    const painted = (host) => drawn(host).filter((n) => (n.style.stroke ?? "").includes("--color-selected"));
+
     const out = {};
     const els = [...canvas.querySelectorAll("[data-element-id]")].filter((e) => e.getBoundingClientRect().width > 2);
     const cons = [...canvas.querySelectorAll("[data-connection-id]")];
     const el = els[Math.min(1, els.length - 1)];
     press(document.elementFromPoint(...at(el)) ?? el, ...at(el)); await sleep(1200);
-    const ring = canvas.querySelector("rect.library-selected-outline");
-    const shape = ring?.closest("[data-element-id]")?.querySelector(".library-shape, rect:not(.library-selected-outline)");
-    out.element = { selected: sel(), ring: !!ring, stroke: ring && getComputedStyle(ring).stroke, dashed: ring ? getComputedStyle(ring).strokeDasharray !== "none" : null,
-      gapPx: ring && shape ? +(shape.getBoundingClientRect().x - ring.getBoundingClientRect().x).toFixed(1) : null };
+    const host = canvas.querySelector(".canvas-selected") ?? el;
+    const wearing = painted(host)[0];
+    out.element = {
+      selected: sel(),
+      shapesDrawn: drawn(host).length,
+      shapesPainted: painted(host).length,
+      stroke: wearing && getComputedStyle(wearing).stroke,
+      width: wearing && getComputedStyle(wearing).strokeWidth,
+      anchorsPainted: [...host.querySelectorAll("[data-anchor]")].filter((a) => (a.style.stroke ?? "").includes("--color-selected")).length,
+    };
     if (cons.length) { const hit = cons[0].querySelector(".canvas-connection-hit") ?? cons[0]; press(hit, ...at(hit)); await sleep(1200);
       const line = cons[0].querySelector(".canvas-connection-line");
-      out.connection = { selected: sel(), stroke: line && getComputedStyle(line).stroke }; }
+      out.connection = { selected: sel(), stroke: line && getComputedStyle(line).stroke, width: line && getComputedStyle(line).strokeWidth }; }
     const svg = canvas.querySelector("svg.library-canvas-surface"); const b = svg.getBoundingClientRect();
     press(svg, b.x + 3, b.y + 3); await sleep(1200); out.afterBackground = sel();
     const d = els[0]; const [x, y] = at(d); const ev = (type, buttons, dx) => new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x + dx, clientY: y });
     const t = document.elementFromPoint(x, y) ?? d;
     t.dispatchEvent(ev("pointerdown", 1, 0)); t.dispatchEvent(ev("pointermove", 1, 40)); t.dispatchEvent(ev("pointerup", 0, 40)); await sleep(1200);
     out.afterDrag = sel();
-    return JSON.stringify(out);
+    return JSON.stringify(out, null, 1);
   }
   ```
+
   The sixteen, each from `src/examples/diagrams/<type>/`: `timeline`, `dependency-graph`,
   `causal-loop`, `c4` (**the oracle's four that worked**); `helm-charts`,
   `dotnet-dependency-graph`, `azure-pipeline`, `ansible-structure` (**the oracle's four that did
   not**); then `databricks`, `rdf`, `owl`, `shacl`, `skos`, `sparql`, `mindmap`, `wardley-map`.
+
+  **The oracle.** The user named four diagram types whose selection worked and four that did not,
+  and **that comparison is the acceptance criterion**: the four named broken must end up behaving
+  exactly like the four named working.
+
 - **Expected, from the probe**: `element.selected` names the pressed element and nothing else;
-  `element.ring` true, its stroke the primary colour, not dashed; `connection.selected` names the
-  pressed connection **and not the element pressed before it** - a press replaces; `afterBackground`
-  empty; `afterDrag` unchanged from before the drag - **a drag does not select what it moves**.
-  On `mindmap` and `wardley-map` a connection press is a background press by declaration
-  (Requirement 2.4), so `connection.selected` is empty there and nowhere else.
-- **Expected, by eye - the half no test can make**:
-  1. The ring reads clearly against that diagram's own fills, **including c4's backend-chosen
-     colours** and databricks' and azure-pipeline's cards.
+  **`shapesPainted` is at least 1** and `stroke` resolves to the selected colour at `width` 3 or
+  more; `anchorsPainted` is non-zero on the canvases that draw anchors; `connection.selected`
+  names the pressed connection **and not the element pressed before it** — a press replaces;
+  `afterBackground` empty; `afterDrag` unchanged from before the drag — **a drag does not select
+  what it moves**. On `mindmap` and `wardley-map` a connection press is a background press by
+  declaration (Requirement 2.4), so `connection.selected` is empty there and nowhere else.
+
+- **Expected, by eye — the half no test can make**:
+  1. The highlight reads clearly against that diagram's own fills, **including `c4`'s
+     backend-chosen colours** and databricks' and azure-pipeline's cards.
   2. A selected connection's highlight runs **the whole route**, label and adornments included,
      not just one segment.
-  3. Drag a connection from an anchor over a legal target: the target wears the **accept** ring -
-     dashed, further out, its own colour - and if that target is also the selection, **both rings
-     show at once**, one inside the other (Requirement 6.2).
-- **Before you trust a zero**: plant one. With something selected, delete its ring in the
-  console (`document.querySelector("rect.library-selected-outline").remove()`) and check the
-  probe reports `ring: false`; then press again to bring it back. A probe that cannot see the
-  ring's absence cannot report its presence.
-- **The open question this pass settles**: the ring's offset is in canvas units, so it scales
-  with zoom - at a zoomed-out fit it sat about 1px outside the box when this was written. Judge
-  it at fit, at 100%, and zoomed in. If it does not read at fit, the remedy is a screen-constant
-  offset (pixels converted to units per render) rather than a larger constant, which would gape
-  when zoomed in.
+  3. Drag a connection from an anchor over a legal target: the target wears **the selected
+     colour**, and **if that target is also the current selection, nothing changes visibly** —
+     one item, one highlight (Requirement 6.2). **Two simultaneous indications of the same state
+     on one item is the defect**, not the expected result.
+  4. **Nothing wears the selected colour at rest** (Requirement 5.5). Press the background and
+     look: no element, anchor, connection or decoration should be in it.
 
+- **Before you trust a zero, plant one.** With an element selected, clear the paint in the
+  console and confirm the probe notices, then press again to restore it:
+  ```js
+  const n = [...document.querySelector(".canvas-selected").querySelectorAll("rect, ellipse, path, polygon, circle")]
+    .find((e) => (e.style.stroke ?? "").includes("--color-selected"));
+  n.style.stroke = ""; (await probe());   // shapesPainted must drop by one
+  ```
+  **A probe that cannot see the paint's absence cannot report its presence** — and on this pass
+  the zero has three other ways to be manufactured, which is why the probe refuses to run at all
+  when the pane is collapsed or the origin has stopped answering.
+
+- **Result — NOT RUN as written.** This procedure has **never been executed in this form**. It
+  was rewritten on 2026-09-24 because its previous version probed for
+  `rect.library-selected-outline`, an element withdrawn from the client on 2026-09-22: a Tester
+  following it would have found nothing and recorded a defect that did not exist. **Both Tester
+  sessions are disabled, so it has not been run since the rewrite and this entry must not be read
+  as a pass.**
+
+  **The closest evidence, and it is not this procedure.** Architect 2 measured the look by hand
+  on 2026-09-23: fifteen of sixteen canvases on `90b31d49` (the outline in the selected colour,
+  3px, inline, fill untouched; anchors carrying it on the five canvases that draw them; light
+  theme `rgb(124,58,237)` at 5.7:1 against a white fill; nothing in the selected colour at rest
+  on any canvas), and `c4` on `7ef929ff` after `styled-box` was fixed. It recorded contrast
+  against `c4`'s own fills — 3.72:1 and 2.06:1 dark, 1.78:1 light, against the canvas ground 5.38
+  and 5.70 — **and the user judged it legible and accepted it**, which Requirement 5.2 records.
+  **That pass pressed one element per canvas**, so it is subject to the limit stated at the top
+  of this entry: it is why `wardley-map` was recorded as working while `symbol`'s plain circle
+  was unpainted.
 ## Both architecture pages' mermaid renders, in both readers (architecture-documentation, task 9)
 
 **Why this is here rather than in a test.** The pages carry one mermaid block each, and nothing
