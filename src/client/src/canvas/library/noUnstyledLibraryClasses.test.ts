@@ -80,7 +80,6 @@ describe("no unstyled library classes", () => {
   const paintedElsewhere = new Set([
     "library-shape",
     "library-frame",
-    "library-custom-",
     "library-fallback",
     "library-canvas-background",
     "library-canvas-surface",
@@ -116,6 +115,13 @@ describe("no unstyled library classes", () => {
     "library-open-arrow",
     "library-circle",
     "library-diamond",
+    // `library-custom-` ALSO USED TO SIT HERE, and it was never a class at all. It is the leading
+    // fragment of an SVG marker reference - `url(#library-custom-${kind.customMarker})` - so it was
+    // never in the emitted set and its exemption never did anything. Measured rather than spotted:
+    // listed, and not emitted. A specification proposing a walk for exactly this - every entry still
+    // emitted - was archived for unrelated reasons, and this entry is the one thing that walk would
+    // have found. That is a point in its favour and not enough to revive it: one dead line in one
+    // list, against a guard that answers a question this file has since documented it cannot answer.
     // `library-connect-target` and `library-connect-forbidden` USED TO SIT HERE, and they were
     // the only two entries on this list with no reason written beside them - which is what an
     // exemption looks like when it is really an unfixed defect. Neither was painted anywhere:
