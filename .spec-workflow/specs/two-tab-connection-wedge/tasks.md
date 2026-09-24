@@ -101,6 +101,14 @@ and be attempted.
     unit or integration harness can produce a shared per-profile connection pool. CLAUDE.md's rule
     applies directly: a bug only a running app can reproduce leaves a step-by-step entry in
     `tests.md`.
+  - **The consequence, stated because a bare prohibition does not survive a reader who thinks they
+    have found a way round it.** An integration test that stands in for this reproduction will pass.
+    It will pass because it is measuring something else - one client, one pool, no contention - and
+    it will then report health on the exact defect it was written to catch. **That is worse than no
+    test at all**, because it converts "unverified" into "verified" while nothing has been verified.
+    This repository has already produced three client tests that passed against the code they were
+    written to catch. If you believe you have automated it, you have automated a different thing:
+    say so and leave the procedure in place.
   - The entry: open the app, open a project and one document - healthy, a probe settles in
     milliseconds. Open a second tab on the **same origin**, open a document there. Before the fix:
     wedged, and nothing on that origin completes again, including a plain static file. After the
