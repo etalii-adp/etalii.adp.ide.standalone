@@ -5,12 +5,19 @@ sequenced behind it** - that ordering is from the design and it is deliberate. A
 is not a shipped configuration, the window between them is unbounded, and the guard and the bound
 are what protect the product during exactly that window.
 
-**The production decision has been taken: ADP is to be served over TLS.** Relayed by the Scrum
-master on 2026-09-23 after putting the design's question to the user. **The design's approval
-carries no comment**, so this document records the ruling with that provenance rather than as a
-user statement in the record - the weak link is the thing a later reader needs to know about. The
-consequence is written closed rather than hedged: **Requirement 3's stream reduction is optional**,
-task 5, and is not needed to make the product correct.
+**The production decision has been taken: ADP is to be served over TLS. It is the user's ruling,
+given directly on 2026-09-24** in answer to the design's question, which was put to them as a
+selection between TLS, staying on plain HTTP, and a third deployment answer nobody had.
+
+*Provenance, recorded because it was briefly weaker than this.* The ruling first reached this
+document as a relay from the Scrum master, and the design's approval carries no comment, so the
+first version of this paragraph attributed it to the relay rather than to the user - a record that
+overstates its own provenance being worse than one admitting a weak link. It was then confirmed by
+the user directly, so the attribution above is theirs. The relay turned out to be accurate, which
+is one trial and not evidence that relaying is sound.
+
+The consequence is written closed rather than hedged: **Requirement 3's stream reduction is
+optional**, task 5, and is not needed to make the product correct.
 
 **The certificate is not an obstacle and there is no per-agent cost.** An earlier draft of the
 requirements claimed the honest cost included "a development certificate", and **that claim was
