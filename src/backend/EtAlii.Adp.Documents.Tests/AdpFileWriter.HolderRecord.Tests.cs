@@ -65,7 +65,12 @@ public class AdpFileWriterHolderRecordTests : IDisposable
 
             Assert.ThrowsAny<IOException>(() => AdpFileWriter.Save(path, "after"));
 
-            var warning = Assert.Single(logs.Warnings);
+            // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
+            // concurrent test's warning must not redden this one. An absent line still fails.
+            var warning = Assert.Single(
+                logs.Warnings,
+                w => w.Contains(path, StringComparison.Ordinal) &&
+                     w.Contains("Could not publish", StringComparison.Ordinal));
             Assert.Contains($"pid {holder.Id}", warning, StringComparison.Ordinal);
             Assert.Contains($"this process is pid {Environment.ProcessId}", warning, StringComparison.Ordinal);
         }
@@ -94,7 +99,12 @@ public class AdpFileWriterHolderRecordTests : IDisposable
             Assert.ThrowsAny<IOException>(() => AdpFileWriter.Save(path, "after"));
         }
 
-        var warning = Assert.Single(logs.Warnings);
+        // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
+        // concurrent test's warning must not redden this one. An absent line still fails.
+        var warning = Assert.Single(
+            logs.Warnings,
+            w => w.Contains(path, StringComparison.Ordinal) &&
+                 w.Contains("Could not publish", StringComparison.Ordinal));
         Assert.Contains($"pid {Environment.ProcessId}", warning, StringComparison.Ordinal);
         Assert.Contains("THIS process", warning, StringComparison.Ordinal);
     }
@@ -113,7 +123,12 @@ public class AdpFileWriterHolderRecordTests : IDisposable
 
         // Same exception, same record, and the failed query says it failed rather than saying nobody.
         Assert.Same(wild, thrown);
-        var warning = Assert.Single(logs.Warnings);
+        // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
+        // concurrent test's warning must not redden this one. An absent line still fails.
+        var warning = Assert.Single(
+            logs.Warnings,
+            w => w.Contains(path, StringComparison.Ordinal) &&
+                 w.Contains("holders could not be determined", StringComparison.Ordinal));
         Assert.Contains("0x80070497", warning, StringComparison.Ordinal);
         Assert.Contains("holders could not be determined", warning, StringComparison.Ordinal);
         Assert.DoesNotContain(FileHolders.None, warning, StringComparison.Ordinal);
