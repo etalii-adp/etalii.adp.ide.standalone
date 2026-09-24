@@ -212,6 +212,22 @@ the operation it is about rather than only the order.
 
 Without an identity you inherit the machine's global `user.name` in every checkout, so your work is indistinguishable from the user's own. The first version of this rule used plain `git config`; four sessions overwrote each other and two commits carry the wrong author.
 
+**A `--worktree` identity binds to the DIRECTORY, not to the session - so gating in another session's live
+scratch tree signs the merge as THAT SESSION.** And this is worse than a naming collision, which is the whole
+point: **a collision announces itself.** Two sessions in one directory produce a refused `--ff-only`, a dirty
+tree, something that stops you. This produces **a clean green with a wrong author, and nothing in anybody's
+workflow inspects the author of a merge that passed.** The rule *one scratch tree per agent, named for the
+agent* is true and **silent about the case that actually arises**: somebody else's tree exists, it is already
+configured, and using it costs nothing visible. The near-instance was a session queued third for a gate slot,
+choosing between `mrga2` and a live `mrga3` belonging to another session - it took its own, and had it not,
+the merge for a `CLAUDE.md` change authorised in *its* session would have been signed by the other. Neither
+session would have caught it: you do not audit the author of someone else's merge, and nobody audits the
+author of a green one.
+
+**Which sharpens the read-back above rather than repeating it.** The reason given there is that you might
+inherit somebody's identity. The sharper reason is that **the inherited identity produces no symptom at all**
+- so the read-back is not belt-and-braces, it is the only instrument.
+
 **Why an identity rather than the `Co-Authored-By` trailer**, which was the alternative considered: the trailer is a per-commit act that can be forgotten, and it is forgotten *structurally* - present exactly when composing a message was a deliberate act, absent whenever the message came for free. `git commit -m "one line"` and `git merge --no-edit` are both ways of not writing one, which is why bookkeeping and merges - the two highest-frequency commit kinds - are the two that fail. Nine of twelve recent merges lacked it. An identity is set once per working tree and cannot be forgotten per commit: one is a discipline, the other is a property.
 
 The trailer remains useful in one direction only, and the limit matters because **the inverse reading is the more useful one**. A present trailer proves an agent made the commit. An absent one proves nothing at all - so "which of these did a human do?" is exactly the question it cannot answer, and a test reliable only in the less useful direction will be used in the other one.
@@ -320,6 +336,47 @@ issuer's verification and not the actor's care: **the tell, read at the moment o
 was correct when taken and stale by the time it arrived, and no check on their side could have covered that
 window. That is the argument for *refuse a go whose premise changed* sitting with the session about to act -
 demonstrated rather than asserted, and twice in one day, both caught by a session refusing.
+
+## Precedent is not permission, and "not a merge commit" is not "straight onto develop"
+
+**A session authorised to make a two-line change to `CLAUDE.md` looked at how that file had been changed
+before, concluded the established route was direct commits to `develop`, and proposed following it - and the
+route it saw did not exist.** The ruling went the other way: anything changing the repository's files goes
+through a worktree and the four gates, and the **one** stated exception is a specification document, *because
+the dashboard reads those from `develop` and nowhere else*. `CLAUDE.md` is not one and no dashboard reads it.
+**The ruling was right, and the premise the session argued from was false.** Both halves are worth keeping,
+because the second is the transferable one.
+
+**The rule half, which stands on its own: a shortcut taken four times is indistinguishable from a rule that
+never applied, and only the rule's own text and its stated exceptions can tell them apart.** Four commits in a
+row look like a practice, and **nothing about them says whether anybody decided.** That is what makes reading
+precedent as permission the natural mistake rather than a careless one - the count is exactly what makes it
+persuasive.
+
+**The measurement half, which is why this is here rather than in a correction: the query answered a
+neighbouring question and returned a well-formed wrong answer.** The evidence was *"its last four changes were
+single-parent commits"* - `30e9e42c`, `611f2ce3`, `97bc6d21`, `8770ca5e`, all four real, all four genuinely
+single-parent. **But "single-parent" and "directly on `develop`" are different questions, and every ordinary
+commit on a properly gated branch is single-parent**: the merge commit carries two parents, the work on the
+branch carries one. So a parent-count test cannot separate *committed straight onto `develop`* from *committed
+on a branch that was then merged*, which are precisely the two cases the rule distinguishes. **The test that
+answers the real question is first-parent membership of `develop`** - `git rev-list --first-parent develop` -
+and by it **all six of that file's changes came in through merged branches** - `30e9e42c`, for one,
+as the second parent of `0bdd8e6d`. **The cited evidence was evidence of the rule being followed.**
+
+**And the search missed a fifth, the most recent of all** - `60922acd`, landed the same day, also on a
+merged branch. A window ending before the latest instance is how a history that contradicts you reads as a
+history that supports you.
+
+**The cost argument also runs backwards from how it was first framed.** *A markdown-only change cannot move
+any of the four gates* was offered as a reason the gates were unnecessary. It is the reason they are **cheap**:
+**a rule whose cost is one three-minute gate does not need an exception.** The expensive rules are the ones
+worth arguing about.
+
+**The half that pays forward: say in the commit message which route you took and why.** The landing that
+followed this ruling records that it went through the gates **by ruling rather than by precedent** - so the
+next reader of that file's history meets a commit that is not another silent instance, and can tell which were
+deliberate. **A judgement that leaves no trace reads as a measurement.**
 
 ## Provenance is never in the name
 
@@ -1282,6 +1339,25 @@ different scale, and two of them are the Scrum master's own:
 
 **The discipline: re-read the state immediately before the act, not at the start of your turn** - and where the
 state belongs to somebody else, ask rather than infer.
+
+**And the interval is not carelessness - it is the length of a careful message.** Three instances in one
+evening, from two sessions, every reading correct when taken. A session cold-reading this document's own new
+clauses measured *"no unlanded branch touches this file - clean tree, `ahead=0`"*, stated it as verified, and
+built a premise correction on it. **The branch had been created four minutes earlier and had no commit on it
+yet**; the reflog dates the gap at 4m22s, and the base it measured genuinely was `develop`'s tip in that
+window. So `ahead=0` was not merely defensible, it was **correct** - and **no re-phrasing, no better tool and
+no re-run could have found a commit that did not exist yet.** Only re-reading could. The same session then
+reported `ahead=1` and `GATING=none` in a later message; by arrival the tip had moved again and the gate lock
+it read as free was held by the very branch it was writing about.
+
+**That inverts the intuition the rule invites.** The reader assumes a stale reading is the mark of somebody
+rushing. What expired all three was **four paragraphs of good reasoning written from them** - the more thought
+between the reading and the act, the staler the reading. **So this is a tax on thoroughness, not on haste**,
+and the sessions most exposed are the ones writing the most careful message. Two remedies, both cheap:
+re-read immediately before the act rather than at the start of the turn, and **say when a state was read**, so
+a reader can see the interval you could not.
+
+**`ahead=0` also answers a narrower question than it appears to: ahead of WHICH `develop`, read WHEN.**
 
 **Two clauses from the process-tree instance, both earned the hard way.** *A kill orphans, it does not
 terminate*: the wrapper was killed and the script survived, the script was killed and the suite survived, the
