@@ -9,7 +9,33 @@ namespace EtAlii.Adp.Editor.Plain;
 /// </summary>
 public sealed class PlainEditorSession : IEditorSession
 {
-    private static readonly ILogger _logger = Log.ForContext<PlainEditorSession>();
+    /// <summary>
+    /// Resolved AT THE CALL SITE rather than cached in a static field, following
+    /// <c>AdpFileWriter</c>, which carries the measurement behind this shape.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Serilog's unset <c>Log.Logger</c> is a <c>SilentLogger</c>, and a
+    /// <c>private static readonly ILogger</c> evaluated at that moment IS that silent logger for the
+    /// life of the process - configuring <c>Log.Logger</c> afterwards changes nothing for it. Type
+    /// initialisation runs in FIRST-USE order, so whether a class is mute depends on when it happened
+    /// to be touched, and nothing visible distinguishes a muted class from a quiet one.
+    /// </para>
+    /// <para>
+    /// <b>Why this class rather than the tree.</b> This session's warnings are the only record that a
+    /// re-read was refused - the path that discards a notification if the retry above runs out. A
+    /// warning that may never be written is not a weak signal but an absent one, and its silence was
+    /// load-bearing during the deadline-flake investigation: "no evidence of a drop" and "no channel
+    /// for evidence of a drop" were indistinguishable for two days.
+    /// </para>
+    /// <para>
+    /// <b>The tree-wide conversion stays deferred by the user, not declined.</b> 92 classes hold the
+    /// cached-static shape and 90 still do; the pattern remains house style and no session should
+    /// convert files on its own initiative. This is one class, changed because its silence was
+    /// standing in the way of a specific diagnosis.
+    /// </para>
+    /// </remarks>
+    private static ILogger Logger => Log.ForContext<PlainEditorSession>();
 
     private readonly string _path;
     private readonly FileSystemWatcher? _watcher;
@@ -54,7 +80,7 @@ public sealed class PlainEditorSession : IEditorSession
             // watchers in this tree log it; these two did not.
             _watcher.Deleted += (_, _) => OnExternalChange();
             _watcher.Error += (_, args) =>
-                _logger.Warning(args.GetException(), "The watcher for {Path} stumbled", _path);
+                Logger.Warning(args.GetException(), "The watcher for {Path} stumbled", _path);
 
             // Subscribed BEFORE the watcher is enabled. Four other watchers in this tree do it
             // this way - RootFolderWatcher, TrackedProblemRoot, AnsibleWatchedFolder and
@@ -104,7 +130,7 @@ public sealed class PlainEditorSession : IEditorSession
         {
             // Out of attempts: the file is genuinely unreadable rather than mid-replace. Worth a
             // line, and the last good content stays in place rather than being replaced by nothing.
-            _logger.Warning(
+            Logger.Warning(
                 "The externally changed {Path} no longer opens after {Attempts} attempts: {Refusal}",
                 _path,
                 ReadAttempts,
