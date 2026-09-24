@@ -71,14 +71,14 @@
   - Purpose: the ordering the user ruled, checked rather than remembered
   - _Requirements: 1.2_
 
-- [ ] 9. The `.fdg` document: parse, splice, round-trip
+- [x] 9. The `.fdg` document: parse, splice, round-trip
   - File: `src/diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph/FdgParser.cs`, `FdgWriter.cs`, `_Model/*.cs`, `FdgDocumentFactory.cs` (all new), `.gitattributes`, fixtures under `.../Fixtures/`
   - The header line `functional-decomposition-graph: 1`, then `elements:` and `connections:` as the design states them, read into a model carrying each entry's line range, through core's `LineDocument` and `LineSplice`. Positions are the element's top-left; `width` per element; `height` only for a Comment; the other four share `FdgGeometry.SharedHeight` = 48. A Comment's `text` is a block scalar. **The parser never throws**; an unknown key, an unknown type or a malformed entry is passed over and survives.
   - Guard: a byte-identical round trip over every fixture — CRLF, LF, no final newline, comments, blank lines — byte-compared, with `*.fdg -text` added to `.gitattributes` first and checked with `git ls-files --eol`; an edit rewrites only its entry's lines; a malformed document yields a model and a problem rather than an exception.
   - Seen to fail against: a writer that re-serialises the document rather than splicing (the round trip then differs in quoting or key order), and `*.fdg` left without `-text` (the fixtures then compare git's rewriting rather than the writer's output).
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 10. The rules table, as data, and the validator
+- [x] 10. The rules table, as data, and the validator
   - File: `.../FdgRelations.cs`, `.../FdgRuleSet.cs`, `.../FdgOwnership.cs`, `.../FdgValidator.cs` (new), tests
   - `FdgRelations` states Requirement 5's table once on the backend: per relation id, its allowed source and target element types and its limits. `FdgRuleSet` reports each breach with the elements involved, under the rule ids the design lists: `fdg.forbidden-link`, `fdg.self-link`, `fdg.second-parent`, `fdg.second-shows`, `fdg.ownership-cycle`, `fdg.dangling-reference`, `fdg.duplicate-id`, `fdg.unreadable-entry`. `FdgOwnership.CyclesIn` is the one cycle implementation.
   - Guard: one fixture per rule id carrying exactly that breach, plus the example carrying none; **a Shows loop is NOT reported** (the cycle rule covers ownership only).
