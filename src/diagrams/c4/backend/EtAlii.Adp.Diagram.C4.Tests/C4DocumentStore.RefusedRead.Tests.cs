@@ -150,7 +150,9 @@ public class C4DocumentStoreRefusedReadTests : IDisposable
         Assert.Equal(1, _reader.Refused);
         Assert.Equal(0, _reader.Pending);
         Assert.Contains(workspace.Elements, element => element.Name == "Customer");
-        Assert.Equal("", store.Save(body));
+        // The two-argument Save refuses a path marked unreadable, keyed on the path; GetOrLoad only
+        // hands it the document WorkspaceOf already cached, so it cannot clear the mark first.
+        Assert.Equal("", store.Save(body, store.GetOrLoad(body)));
     }
 
     [Fact]
