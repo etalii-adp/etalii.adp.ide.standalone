@@ -158,8 +158,9 @@ you are saving was never the expensive part.
 `who-is-gating.sh` returns **2 only when it cannot read the board**, and **0 for a free board, for a
 holder, and for a lock whose owner is not written yet alike** - so `tell && commit` runs the commit
 whatever the board says. **Every `&&` chain ever written over it has been a print statement wearing a
-check's clothes.** The remedy is to make the state that must be REACHED the thing that gates, rather
-than the state that must be avoided the thing that aborts:
+check's clothes.** The state form, which is the recognisable half: **a verdict produced by nothing going
+wrong looks identical to one produced by everything going right.** The remedy is to make the state that must
+be REACHED the thing that gates, rather than the state that must be avoided the thing that aborts:
 
     TELL=$(bash .github/tools/gate/who-is-gating.sh)
     case "$TELL" in *GATING=none*) ;; *) echo 'HOLDER - refusing'; exit 9;; esac
@@ -229,6 +230,97 @@ The trailer remains useful in one direction only, and the limit matters because 
 **So recognise the precursor: `git worktree remove` refusing from inside the tree.** The error itself is telling you the shell is in the wrong place, and the obvious follow-up is a relative deletion issued from exactly the directory that caused the error. **After that refusal, the next command must be absolute.**
 
 **And when a written remedy fails anyway, the fix is not to repeat it louder.** Ask what it asks a person to do and when - **if the answer is "the right thing, unprompted, later", replace it with something the command or the directory carries.** The three above were each written down before they failed.
+
+**A third kind of remedy, for when the artifact CANNOT carry it.** All three above are prevention: make the
+command or the directory hold the rule so there is no later moment. That works when the command can be
+changed, and **it cannot work for a search** - there is no argument to make required and no directory to carry
+it, and nothing stops anybody grepping for the wrong string. So the remedy shifts from preventing the mistake
+to **naming what the wrong result looks like**, because recognition costs nothing: you are already looking at
+the output.
+
+The instance, and the reason this is a category rather than a nicety: a comment declared a 60-second constant
+"not set anywhere in this repository", eliminated by a grep for `FromSeconds(60)` when the code said
+`AddSeconds(60)` - one builds a `TimeSpan`, the other offsets a `DateTime`, and the search was correct about
+the string it was given. **The tell was in the result itself: that grep's only hit was the comment asserting
+the absence.**
+
+> **A search whose only hit is the claim that the thing is not there is the signature of a search that
+> missed** - and it reads exactly like confirmation.
+
+That is checkable on the first run. The action-shaped version - *re-run string searches, their blind spot is
+invisible from their result* - is not, because at the moment of running a search you believe it. **If a rule
+begins "always", "remember to" or "re-run", it asks for vigilance and will decay; if it begins "a result that
+looks like X is", it asks for recognition and will hold.** Convert the first into the second wherever the
+failure has a visible signature - and where it has none, that absence is itself worth writing down.
+
+**Three zeros from one audit, every one of them the instrument rather than the file.** The clause above was
+cold-read by another session, which quoted two sentences from this document back at me. Checking those
+quotations, I was one message away from reporting them as fabrications:
+
+- `git log -S "first mounted assertion"` returned **nothing, across every ref and every path** - because that
+  sentence *wraps mid-phrase*, breaking between `mounted` and `assertion`. `-S` compares line-wise, so a
+  phrase spanning a newline is invisible to it. Flatten the whitespace first and it is there.
+- `grep -c "after a landing"` returned **0** on two different revisions - because the line is **shouted**:
+  *STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.* `grep -ci` finds it.
+- **and the control was clean.** All twenty-four worktrees checked for an uncommitted copy the reader might
+  have been looking at, every one of them clean - **which made the fabrication reading stronger rather than
+  weaker.**
+
+**Prose wraps and rules get shouted, so both blind spots are live every time anybody greps this file**, and
+neither is visible in the result. Search a prose document case-insensitively, and flatten whitespace before
+searching for any phrase longer than a few words.
+
+> **A correct control on the wrong hypothesis strengthens the wrong conclusion.**
+
+That control was rigorous and its answer was true. It eliminated the one innocent explanation I had thought
+of - a working tree I could not see - and eliminating an innocent explanation is exactly what makes a guilty
+reading credible. **A control protects only the hypothesis it was built against**, and mine was aimed at
+*where the text might be* rather than at *whether my search could see it*. The reading it strengthened was
+that a careful peer had invented quotations.
+
+**And the discipline that actually caught this is the cheapest one in this document: report a search, not an
+elimination.** The cold read's third finding said *"I searched six phrasings and could not find it - and I am
+reporting a search, not an elimination."* It was reading the wrong revision entirely, so no phrasing could
+have found what it was looking for. **Because it claimed only what it had run, the gap arrived as a question
+and was settled in one command; had it claimed the clause was absent, the answer would have been a false
+all-clear with nothing in it to invite a second look.** Two sessions were saved by that single hedge in one
+day. **"I could not find it" and "it is not there" cost the same to write and differ by everything the
+instrument cannot see.**
+
+## A rule that is silent about its sibling case reads as complete
+
+**A false rule gets caught. A true-but-partial one does not.** A rule whose antecedent covers one branch of a
+fork and says nothing about the other is correct every time it fires, so nothing ever contradicts it - and the
+case it omits does not come up until it does. Four instances, from four authors, in two days:
+
+- **Approval versus rejection.** *The durable record of a verdict is the snapshot's `trigger`* is true of an
+  approval and of a revision request, and **a rejection writes no snapshot at all** - so a rejected card and an
+  unanswered one are indistinguishable to a reader following the rule exactly. The missing half is that the
+  request JSON's `status` is the only record of a rejection.
+- **Measured versus searched.** *Two eliminations, both by measurement, which is why they can be relied on* was
+  true of the two it described. A third elimination in the same list was a **string search**, inherited at the
+  same confidence, and it was wrong: the constant it declared absent sat forty-six lines below the claim. The
+  missing half is that a search must be re-run rather than cited.
+- **Per-test versus shared budget.** *A per-test constant would have fired in the isolated runs* is sound, and
+  it says nothing about a budget **shared across five sequential awaits in one call** - which is what the
+  deadline actually was. The missing half is that a per-call clock starts when the call is made, not when the
+  await begins.
+- **One go versus two.** *A go names a branch explicitly to the session that owns it* is correct, and silent
+  about **two explicit gos outstanding at once**. A naming that has been issued and not yet taken up is still
+  live, so the board was not free when the tell said it was - and no amount of re-reading the tell catches
+  that, because **the tell cannot see a go sitting in somebody's inbox.** The missing half, in its enforceable
+  form: **one naming is live at a time, and the issuer does not issue a second until the first reports.**
+
+**State the missing half as the action its owner takes, not as an awareness.** "Be aware that two gos can be
+outstanding" is unenforceable; "I do not issue a second until the first reports" is a thing somebody does or
+does not do. The same distinction as [*A remedy that must be remembered is not a remedy*](#a-remedy-that-must-be-remembered-is-not-a-remedy).
+
+**And note where the catch came from in the last case, because it decides where such rules live.** Not the
+issuer's verification and not the actor's care: **the tell, read at the moment of use.** The issuer's reading
+was correct when taken and stale by the time it arrived, and no check on their side could have covered that
+window. That is the argument for *refuse a go whose premise changed* sitting with the session about to act -
+demonstrated rather than asserted, and twice in one day, both caught by a session refusing.
+
 ## Provenance is never in the name
 
 **An identifier records what something was called, never how it came to be.** Three agents made this mistake in one afternoon: one inferred an agent from a branch-name substring, then a commit's *location* from its author string; another was about to infer authorship the same way and checked first. Each time the identifier looked like evidence of provenance and was in fact evidence of **configuration** - a branch name somebody chose, a `user.name` somebody had or had not set.
@@ -292,6 +384,29 @@ the general form instead: *a test may change only where it pinned behaviour a na
 changes; it names that criterion and changes only what the criterion changes.* An enumerated exemption list
 grows once per discovery and blocks implementation on an approval each time; the general rule is answerable
 from the approved text without amending it. **Keep both halves - name the criterion, and change only that far.**
+
+**`selection-after-drag` is the one specification that does this, and it is worth copying by name.** Its
+tasks document says outright that criterion 6.3 is the one no task can claim, and why. Nine completed
+specifications were diffed on 2026-09-24; it is the only one whose silence a reader does not have to
+reconstruct, and reconstructing it is precisely the work the diff exists to save. The other eight were clean
+but mute.
+
+**The extraction has a repeatable blind spot in this repository, and a mandated check with a reproducible
+blind spot is worse than an ad-hoc one** - because the wrongness comes back the same every time and therefore
+reads as confirmation. `backend-project-decomposition`'s requirements document carries a numbered **options**
+list (*"Options: (a, recommended) … (b) …"*) alongside its acceptance criteria, and a regex that takes
+`^\d+\.` under a `### Requirement` heading cannot tell the two apart. Criteria 6.1, 6.2 and 6.3 each appear
+twice there - once as a criterion, once as an option - so that specification's criteria count is inflated and
+those three identities are ambiguous. **Read the unclaimed list rather than only its length**, and where a
+requirements document mixes options into numbered prose, say so in the diff's own report.
+
+**And the second pass finds a class the first cannot: a criterion met by a SUBSTITUTE rather than by the thing
+it names.** `backend-project-decomposition` 6.3 requires `jb inspectcode` "run and shown clean"; the tool
+cannot evaluate this SDK's projects at all, so a committed guard - `NamespaceProviders.Tests` - was ruled the
+substitute, and that test's own docstring records the ruling. The criterion is satisfied and the named
+instrument was never run. **Re-reading the documents would never surface that, because both documents are
+telling the truth** - only tracing the criterion to a file and a string does, which is the whole reason the
+second run asks a different question.
 ## Bugs found during implementation or verification
 
 **Every bug found leaves a guard behind, so it cannot silently return.** Whether it surfaced from a failing test, a code review, or a manual pass.
@@ -1261,6 +1376,35 @@ the reading a broken instrument manufactures, so only absences need the proof. *
 to the INSTRUMENT's failure and insensitive to the SUBJECT's absence.** Backwards, it either never fires, or it
 fires on every genuine finding and gets deleted as noise within the week. *(Architect 2.)*
 
+**A probe must assert a code AND a message that no failure path produces together, because an instrument check
+whose pass code is also a failure code checks nothing.** The two gate scripts refuse differently, measured by
+running both:
+
+- **`who-is-gating.sh --no-such-flag` exits 3** with `TELL_REFUSED=<unrecognised argument …>`. Three is a
+  *deliberate argument-refusal* code there, chosen because 2 already meant both *unreadable board* and
+  *argument refused* - **a probe cannot rest on a code shared with a failure.** This is the script the probe is
+  for.
+- **`gate.sh --no-such-flag` exits 1** with the usage line and `RESULT=missing-arguments`, for any wrong
+  argument count or empty argument. **`gate.sh` has no argument path that exits 3**; its 3 is the `aborted-*`
+  family - missing `gate-lib.sh`, no main checkout, a stale copy run from a worktree, a non-empty log dir.
+
+So *run the probe, expect 3* is true of the tell and **fail-open if said of `gate.sh`**: a genuinely aborted
+probe would exit 3 and read as healthy, which is the one thing a probe exists to rule out. A probe for
+`gate.sh` asserts **exit 1 and the `RESULT=missing-arguments` line** - exit 1 alone is also what a real refusal
+returns, so it is the *pair* that says the script ran, validated, and refused.
+
+**The general form, which is why the tell's 3 exists at all: an overloaded exit code cannot carry a proof - a
+probe must require the value that no FAILURE can produce.** The tell's refusal code was originally 2, and 2 also
+meant *the board could not be read* - **so on any unreadable board the probe passed against precisely the copy
+it exists to detect.** The flag it was proving is only trustworthy if the copy answering has been shown to know
+it, because an old copy ignores an unknown argument and exits zero, which reads as FREE.
+
+**And the reason that survived three chances to be noticed is the better half: its first outside adopter did not
+rest on the exit code at all - it read the message and reported what it had read.** So the artefact recorded a
+pass and the weakness never surfaced. **When a check's careful users compensate for its weakness, the record
+shows a pass** - which means a history of passes is not evidence that the check is sound, only that nobody
+depended on the part that was broken. *(Both Architect 1's, offered with the instance.)*
+
 **When you relay a fact you did not read yourself, put the instruction not to trust you in the same message as
 the claim.** A relay said a card had been **rejected** and added, in the same breath, *wait for the verdict on
 disk before touching the file - my word is not the verdict*. The disk said **approved**. **The instruction is the
@@ -1514,6 +1658,27 @@ continuing would have been hunting something that did not exist: **stopping was 
 and a session that had invented a fourth route would have found a plausible one and closed a hunt on a
 measurement of invisible nodes. **The same trap caught the specification's author and then the first mounted
 assertion written against it, inside an hour.**
+
+**A gate log names a test as it WAS, not as it is** - the same defect as a comment citing line numbers in its
+own file, one directory over. A census offered as evidence for a subscription-ordering hypothesis rested on two
+failures of `SolutionWatcherTests.ABurstOfChanges_SettlesIntoOneReport`. **That test does not exist**: it was
+renamed and rewritten as `ABurstOfChanges_CollapsesAndThenStops`, and both failures predate that fix by hours -
+it had been flaky for asserting machine behaviour rather than a contract, was diagnosed as exactly that, and
+closed a day before it appeared in a table as evidence about something else. **A failure name from a log is a
+citation of a thing that may since have changed**, so resolve it against the tree before it carries weight.
+*(Architect 1's, volunteered with two other defects in the same table: the mechanism could not arise, and three
+of the four components on its clean side had no tests at all - a control arm that cannot express the outcome.)*
+
+**And a file git calls modified while `git diff` shows NOTHING is not a git fault.** It is a working tree at LF
+under a CRLF house style: `diff` normalises through `text=auto eol=crlf` and the stat entry does not, and
+`git update-index --refresh` does not clear it. **Settle it by byte comparison** - `git show HEAD:<path>` against
+the file, comparing lengths, CRLF counts and equality after `\r\n`→`\n`; the healthy reading is *index 0 CRLF,
+working tree many, identical after normalisation*, which is `i/lf w/crlf` stated in bytes. **The fix is
+`git checkout -- <path>`**, which rewrites the file from the index with the filter applied and leaves a clean
+status; nothing is lost, because the content was already identical. `cp` and any regenerating tool are the usual
+culprits, and it matters beyond tidiness: **a dirty tree makes `gate.sh` refuse with
+`RESULT=gates-changed-tracked-files`**, so an invisible line-ending difference blocks a landing for a reason that
+looks like nothing.
 
 ## A settled boundary
 
