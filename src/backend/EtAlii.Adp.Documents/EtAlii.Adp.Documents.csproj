@@ -11,6 +11,10 @@
 
   <ItemGroup>
     <PackageReference Include="Serilog" />
+    <!-- For YamlNodeRange only: the shared rule turning a parsed YAML node into the lines it occupies
+         needs the node and mark types it reads (backend-centralization R7). A package, not a project,
+         so it adds no edge to the project graph; every module that reads YAML references it already. -->
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>
