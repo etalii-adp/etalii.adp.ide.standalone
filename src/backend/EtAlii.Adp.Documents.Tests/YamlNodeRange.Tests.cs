@@ -44,6 +44,47 @@ public class YamlNodeRangeTests
     }
 
     [Fact]
+    public void ABlockScalarFollowedStraightByTheNextElement_DoesNotTakeThatElementsFirstLine()
+    {
+        // THE COLUMN-ONE STEP BACK. A block scalar's end mark is the start of the NEXT line, column
+        // one, whatever that line's indentation - so without stepping back off it, this element's
+        // range takes "  - id: b" and a splice edits the wrong declaration. Nothing guarded this until
+        // a plant removing the step left 444 tests green; this input was then found by measurement:
+        // with the step the element is (1,3), without it (1,4).
+        const string text =
+            "elements:\n" +
+            "  - id: a\n" +
+            "    notes: |\n" +
+            "      line one\n" +
+            "  - id: b\n";
+
+        var range = YamlNodeRange.Of(Elements(text)[0], LineDocument.Parse(text).Lines);
+
+        Assert.Equal(new LineRange(1, 3), range);
+    }
+
+    [Fact]
+    public void ABlockScalarFollowedByABlankAndAComment_LeavesThemToTheNextElement()
+    {
+        // THE TRAILING TRIM, which is R7's own user story: trailing blank lines and comments are
+        // treated alike. The comment introduces the next element, so an edit of this one must not
+        // rewrite it. Also unguarded until a plant removing the trim left 444 tests green; measured
+        // on this input, with the trim (1,3), without it (1,4).
+        const string text =
+            "elements:\n" +
+            "  - id: a\n" +
+            "    notes: |\n" +
+            "      line one\n" +
+            "\n" +
+            "  # introduces b\n" +
+            "  - id: b\n";
+
+        var range = YamlNodeRange.Of(Elements(text)[0], LineDocument.Parse(text).Lines);
+
+        Assert.Equal(new LineRange(1, 3), range);
+    }
+
+    [Fact]
     public void AMappingEntry_TakesItsKeyAndItsValueTogether()
     {
         // databricks's form: removing or moving an entry has to take the key line and the value's lines.
