@@ -314,4 +314,27 @@ public partial class ArchitecturePagesTests
             + "is right and the page is stale:"
             + Environment.NewLine + string.Join(Environment.NewLine, wrong));
     }
+
+    [Theory]
+    [InlineData(ArchitecturePage)]
+    [InlineData(StructurePage)]
+    public void EveryCountAPageStates_IsOneTheTreeRecomputes(string page)
+    {
+        // The other direction. The test above asks whether every recomputed value is still on the
+        // page; this asks whether every **n** on the page is still a recomputed value. Without it a
+        // stale figure survives as long as the fresh one also appears somewhere, and a new count
+        // added to a page is never checked at all - Requirement 5.2 says EVERY stated count.
+        var recomputed = ExpectedCounts().Values.ToHashSet();
+        var stray = CountExpression().Matches(Read(page))
+            .Select(match => int.Parse(match.Groups[1].Value))
+            .Where(value => !recomputed.Contains(value))
+            .Distinct()
+            .ToArray();
+
+        Assert.True(
+            stray.Length == 0,
+            $"{page} states {string.Join(", ", stray.Select(value => $"**{value}**"))}, which this guard does not "
+            + "recompute. Either the figure is stale, or it is a new count: add its recomputation to ExpectedCounts, or, "
+            + "if the tree cannot give it, remove it from the page (Requirement 3.3).");
+    }
 }
