@@ -252,6 +252,41 @@ invisible from their result* - is not, because at the moment of running a search
 begins "always", "remember to" or "re-run", it asks for vigilance and will decay; if it begins "a result that
 looks like X is", it asks for recognition and will hold.** Convert the first into the second wherever the
 failure has a visible signature - and where it has none, that absence is itself worth writing down.
+
+**Three zeros from one audit, every one of them the instrument rather than the file.** The clause above was
+cold-read by another session, which quoted two sentences from this document back at me. Checking those
+quotations, I was one message away from reporting them as fabrications:
+
+- `git log -S "first mounted assertion"` returned **nothing, across every ref and every path** - because that
+  sentence *wraps mid-phrase*, breaking between `mounted` and `assertion`. `-S` compares line-wise, so a
+  phrase spanning a newline is invisible to it. Flatten the whitespace first and it is there.
+- `grep -c "after a landing"` returned **0** on two different revisions - because the line is **shouted**:
+  *STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.* `grep -ci` finds it.
+- **and the control was clean.** All twenty-four worktrees checked for an uncommitted copy the reader might
+  have been looking at, every one of them clean - **which made the fabrication reading stronger rather than
+  weaker.**
+
+**Prose wraps and rules get shouted, so both blind spots are live every time anybody greps this file**, and
+neither is visible in the result. Search a prose document case-insensitively, and flatten whitespace before
+searching for any phrase longer than a few words.
+
+> **A correct control on the wrong hypothesis strengthens the wrong conclusion.**
+
+That control was rigorous and its answer was true. It eliminated the one innocent explanation I had thought
+of - a working tree I could not see - and eliminating an innocent explanation is exactly what makes a guilty
+reading credible. **A control protects only the hypothesis it was built against**, and mine was aimed at
+*where the text might be* rather than at *whether my search could see it*. The reading it strengthened was
+that a careful peer had invented quotations.
+
+**And the discipline that actually caught this is the cheapest one in this document: report a search, not an
+elimination.** The cold read's third finding said *"I searched six phrasings and could not find it - and I am
+reporting a search, not an elimination."* It was reading the wrong revision entirely, so no phrasing could
+have found what it was looking for. **Because it claimed only what it had run, the gap arrived as a question
+and was settled in one command; had it claimed the clause was absent, the answer would have been a false
+all-clear with nothing in it to invite a second look.** Two sessions were saved by that single hedge in one
+day. **"I could not find it" and "it is not there" cost the same to write and differ by everything the
+instrument cannot see.**
+
 ## A rule that is silent about its sibling case reads as complete
 
 **A false rule gets caught. A true-but-partial one does not.** A rule whose antecedent covers one branch of a
