@@ -12,7 +12,11 @@
   <ItemGroup>
     <!-- So the re-read retry can be guarded with a reader that refuses on demand: the window it
          exists for is microseconds wide, and a test driving the real file system would only hit it
-         by luck. -->
+         by luck. See PlainEditorSession.ReadWithRetry for the reasoning at the seam itself.
+
+         This is the house shape rather than a one-off: 21 other projects in this tree already open
+         their internals to their own test assembly this way, EtAlii.Adp.Documents, .Hierarchy,
+         .Context and every diagram module among them. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Editor.Plain.Tests" />
   </ItemGroup>
 

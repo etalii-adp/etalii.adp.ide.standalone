@@ -63,8 +63,11 @@ public class PlainEditorSessionReadRetryTests
         Assert.Null(result.Buffer);
         Assert.Equal("'x' does not exist.", result.Refusal);
 
-        // The attempt count is asserted, not just the outcome: a retry that gave up immediately and
-        // one that gave up after three produce the identical refusal.
+        // THE ATTEMPT COUNT IS THE ASSERTION, NOT THE OUTCOME, AND IT MUST NOT BE TRIMMED AS AN
+        // IMPLEMENTATION DETAIL. A retry that gave up immediately and one that gave up after three
+        // produce the IDENTICAL refusal, so the outcome cannot tell them apart and only the count
+        // can. That is the same wrong-dimension trap this repository ruled on in SolutionWatcher's
+        // tests the same morning - an assertion true of the wrong property of the right subject.
         Assert.Equal(3, reads);
     }
 

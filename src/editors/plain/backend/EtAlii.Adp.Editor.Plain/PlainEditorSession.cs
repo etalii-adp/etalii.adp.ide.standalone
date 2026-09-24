@@ -104,11 +104,23 @@ public sealed class PlainEditorSession : IEditorSession
     }
 
     /// <summary>
-    /// Reads until it succeeds or runs out of attempts. Internal rather than private so the retry
-    /// can be guarded deterministically: the window it exists for is microseconds wide, so a test
-    /// driving the real file system could only ever hit it by luck, and a guard that passes by luck
-    /// is not one.
+    /// Reads until it succeeds or runs out of attempts.
     /// </summary>
+    /// <remarks>
+    /// <b>The reader is a function, and that is for the guard rather than for the production path -
+    /// which always passes the same one.</b> The window this retry exists for is microseconds wide
+    /// by design, so a test deleting and recreating a file could only land inside it by luck, and a
+    /// guard that passes by luck is not a guard. Taking the read as a parameter lets
+    /// <c>PlainEditorSession.ReadRetry.Tests</c> supply a reader that refuses exactly as often as it
+    /// chooses, which makes the retry deterministic instead of making the test patient.
+    /// <para>
+    /// <b>Internal rather than private for the same reason</b>, via <c>InternalsVisibleTo</c> in this
+    /// project's <c>.csproj</c>. That is this tree's house shape rather than a concession: 21 other
+    /// projects already open their internals to their own test assembly, including
+    /// <c>EtAlii.Adp.Documents</c>, <c>EtAlii.Adp.Hierarchy</c>, <c>EtAlii.Adp.Context</c> and every
+    /// diagram module.
+    /// </para>
+    /// </remarks>
     internal static TextFileBufferOpenResult ReadWithRetry(
         Func<TextFileBufferOpenResult> read,
         int attempts,
