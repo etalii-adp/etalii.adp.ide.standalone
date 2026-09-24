@@ -64,21 +64,21 @@
 
 ## The module half — each task names what it waits on
 
-- [ ] 8. Check the waits, before writing any module code
+- [x] 8. Check the waits, before writing any module code
   - File: the implementation log only
   - Establish on `develop`, by measurement rather than memory: `backend-centralization`'s shared document-store lifecycle (R2, including R2.3 self-write suppression and R2.4–2.6 the failed-reload rules), its save result (R3), its change-detecting diff (R4), its document-change handler (R5), its restore-lines edit (R6), its YAML node range (R7) and its `new:`/`rel:` gesture grammar (R11); and `client-centralization`'s shared stream hook and delta fold. For each, name the type or function that exists and the commit that landed it, or record that it does not exist yet.
   - **If a piece is missing, stop and report rather than writing a local copy**: writing one is the fourteenth instance those specifications exist to remove, and the user ruled this order deliberately.
   - Purpose: the ordering the user ruled, checked rather than remembered
   - _Requirements: 1.2_
 
-- [ ] 9. The `.fdg` document: parse, splice, round-trip
+- [x] 9. The `.fdg` document: parse, splice, round-trip
   - File: `src/diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph/FdgParser.cs`, `FdgWriter.cs`, `_Model/*.cs`, `FdgDocumentFactory.cs` (all new), `.gitattributes`, fixtures under `.../Fixtures/`
   - The header line `functional-decomposition-graph: 1`, then `elements:` and `connections:` as the design states them, read into a model carrying each entry's line range, through core's `LineDocument` and `LineSplice`. Positions are the element's top-left; `width` per element; `height` only for a Comment; the other four share `FdgGeometry.SharedHeight` = 48. A Comment's `text` is a block scalar. **The parser never throws**; an unknown key, an unknown type or a malformed entry is passed over and survives.
   - Guard: a byte-identical round trip over every fixture — CRLF, LF, no final newline, comments, blank lines — byte-compared, with `*.fdg -text` added to `.gitattributes` first and checked with `git ls-files --eol`; an edit rewrites only its entry's lines; a malformed document yields a model and a problem rather than an exception.
   - Seen to fail against: a writer that re-serialises the document rather than splicing (the round trip then differs in quoting or key order), and `*.fdg` left without `-text` (the fixtures then compare git's rewriting rather than the writer's output).
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 10. The rules table, as data, and the validator
+- [x] 10. The rules table, as data, and the validator
   - File: `.../FdgRelations.cs`, `.../FdgRuleSet.cs`, `.../FdgOwnership.cs`, `.../FdgValidator.cs` (new), tests
   - `FdgRelations` states Requirement 5's table once on the backend: per relation id, its allowed source and target element types and its limits. `FdgRuleSet` reports each breach with the elements involved, under the rule ids the design lists: `fdg.forbidden-link`, `fdg.self-link`, `fdg.second-parent`, `fdg.second-shows`, `fdg.ownership-cycle`, `fdg.dangling-reference`, `fdg.duplicate-id`, `fdg.unreadable-entry`. `FdgOwnership.CyclesIn` is the one cycle implementation.
   - Guard: one fixture per rule id carrying exactly that breach, plus the example carrying none; **a Shows loop is NOT reported** (the cycle rule covers ownership only).
@@ -86,8 +86,9 @@
   - _Requirements: 5.1, 5.5_
 
 - [ ] 11. Store, session and mapper, on the shared pieces
-  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
+  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
   - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type, centre, width and height, and the payloads `FdgElementPayload { name, text }` and `FdgConnectionPayload { name }`. **A Description is never sent.**
+  - **The module's backend `DiagramDefinition`**, in `Diagram.cs` as every module's is, whose `Build` registers the store, session and session factory. Without it FDG never reaches the diagram catalog, and task 15's example cannot register. No task in 11–19 claimed it until the user's chat ruling of 2026-09-25; Developer 1 found the gap.
   - Guard: a session over the example delivers every element at the shared height; a Description set through the property grid never appears in any delta.
   - Seen to fail against: a mapper that packs `description` into the payload — the delta assertion then finds it.
   - _Waits on: `backend-centralization` R2, R3, R4, R5_
@@ -106,6 +107,7 @@
   - The toolbox describes the five element types as data. The property grid offers a Description for all five types and every connection, a Name for the four named types, and a connection's Name. Every property change is a command (task 12).
   - Guard: each of the five types and a connection offers a Description row; a Comment offers no Name row; a property set through the grid reaches the document and undoes.
   - Seen to fail against: a provider that omits the Description for one type, which the per-type assertion then reports.
+  - _Waits on: task 12 (every property change is one of its commands)_
   - _Requirements: 7.1, 7.2, 7.3, 8.1_
 
 - [ ] 14. The client module: registration, definition, handlers
@@ -142,7 +144,7 @@
   - **jsdom is not evidence for any of these**: it applies no CSS and lays out no text.
   - _Requirements: 13.1, 13.2_
 
-- [ ] 19. Close the loop on what the library gained
+- [x] 19. Close the loop on what the library gained
   - File: the implementation log only
   - Record which of the six capabilities any other module could now adopt, and name the modules that would benefit: `wrap` for c4's hand-written description wrapping, `resize: "both"` for anything user-sized, outline attachment for `diamond`, `hexagon` and `parallelogram` once a module declares one.
   - Purpose: the declarative rule pays off only if the next module finds the capability; this is the note that makes it findable

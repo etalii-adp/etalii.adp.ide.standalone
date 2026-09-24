@@ -10,11 +10,21 @@ import { EntryKind } from "../../generated/shared_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import { DiagramTabsPanel } from "./DiagramTabsPanel";
 
+// Streams the canvases have opened and not yet closed. `vi.hoisted` because `vi.mock` is
+// hoisted above ordinary module scope, so a plain `const` here would not exist yet when the
+// factory runs.
+//
+// This counts STREAMS, not mounted canvases and not hook calls: `live` moves on a canvas's
+// stream lifecycle, `opened` only ever rises. Reading one population for another is how the
+// two-tab wedge stayed hidden - "three streams per diagram" says how many times the hook runs,
+// not how many streams exist at once.
+const streams = vi.hoisted(() => ({ live: 0, opened: 0, peakLive: 0 }));
+
 // The canvas would open a stream; the tab model is what is under test. Mocked at the registry
 // rather than at any one canvas, because this panel routes through the registry and knows no
 // diagram type by name - the path shown is what proves the right diagram reached the panel.
 vi.mock("./diagramCanvases", async () => {
-  const { useState } = await import("react");
+  const { useEffect, useState } = await import("react");
   // ONE stable component, exactly like the real registry's registered canvases: a fresh
   // function per call would be a new component type to React and force a remount on every
   // render, hiding the very instance-reuse defect the remount guard exists to pin. The
@@ -22,6 +32,16 @@ vi.mock("./diagramCanvases", async () => {
   // keeps its old state - for a real editor, the text being edited.
   const Canvas = ({ path }: { path: string[] }) => {
     const [mountedAt] = useState(() => path.join("/"));
+    // The one thing a real canvas does that this guard is about: it opens a server stream
+    // while it is mounted and closes it when it goes away.
+    useEffect(() => {
+      streams.opened += 1;
+      streams.live += 1;
+      streams.peakLive = Math.max(streams.peakLive, streams.live);
+      return () => {
+        streams.live -= 1;
+      };
+    }, []);
     return (
       <div data-testid="mindmap-canvas" data-mounted-at={mountedAt}>
         {path.join("/")}
@@ -86,6 +106,9 @@ describe("DiagramTabsPanel", () => {
   beforeEach(() => {
     contextState.selection = null;
     contextState.levels = [];
+    streams.live = 0;
+    streams.opened = 0;
+    streams.peakLive = 0;
   });
 
   it("shows the empty state until something opens, with no placeholder tabs", () => {
@@ -276,4 +299,36 @@ describe("DiagramTabsPanel", () => {
       markTabDirty("notes.txt", false);
     }
   });
+  it("holds one live Open stream however many documents are open (two-tab-connection-wedge task 3)", () => {
+    // Arrange. Four documents opened one after another, the double-click flow four times.
+    const { rerender } = renderPanel();
+    const files: [Uint8Array, string][] = [
+      [entryA, "one.adp"],
+      [entryB, "two.adp"],
+      [entryA, "three.adp"],
+      [entryB, "four.adp"],
+    ];
+
+    // Act, asserting as we go: the count must not grow at any N, not merely at the end.
+    for (const [id, name] of files) {
+      push(id, [name], "freeplane/mindmap");
+      rerender(<DiagramTabsPanel projectId={projectId} />);
+      expect(streams.live).toBe(1);
+    }
+
+    // Assert.
+    // The invariant: one live stream for every N, because `TabbedPane` renders one tab's
+    // content at a time and the inactive tabs' canvases are unmounted. Three server streams
+    // per open document against a browser's ~6 connections per origin is what made the
+    // second tab wedge, so this is a correctness property and not tidiness.
+    expect(streams.peakLive).toBe(1);
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+
+    // And the floor that stops this passing while measuring nothing: streams really were
+    // opened and closed four times. Without it a mock whose effect never ran would report
+    // `live: 0`, `peakLive: 0` and a confident green - a zero from a dead instrument looks
+    // exactly like a zero from a healthy one.
+    expect(streams.opened).toBe(4);
+  });
+
 });

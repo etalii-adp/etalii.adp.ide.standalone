@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
+    <!--
+      Core abstractions only, and the dependency runs module -> core and never back. This module
+      carries no reference to EtAlii.Adp.Diagram or EtAlii.Adp.Backend yet: task 9 is the document
+      - parse, splice, round-trip - and nothing in it knows what a session or a service is. The
+      references arrive with the components that need them (task 11 onwards), so a reader can see
+      from this file alone how much of the module exists.
+    -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reading only. See the note beside its PackageVersion in src/Directory.Packages.props. -->
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests" />
+  </ItemGroup>
+
+</Project>

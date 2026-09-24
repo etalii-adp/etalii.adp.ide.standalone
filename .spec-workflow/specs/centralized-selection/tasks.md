@@ -156,11 +156,11 @@ Each: pass `source`, delete the glue, delete its private selected class, and cal
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 11.1_
 
 - [x] 23. The `declarative-diagram-modules` Requirement 1.2 annotation — **its own card**
-  - Files: `.spec-workflow/specs/declarative-diagram-modules/requirements.md` (main checkout, spec bookkeeping)
+  - Files: `.spec-workflow/archive/specs/declarative-diagram-modules/requirements.md` (main checkout, spec bookkeeping)
   - A **labelled annotation only** beside 1.2 — *"superseded by `centralized-selection` Requirement 8: selection is not a module's to handle"* — with **no rewording of the approved text**. **Raised as its own dashboard card** so the user approves the moved text rather than meeting it by reading, and the Scrum master told as it is raised.
   - _Requirements: 8.1, 8.2_
 
-- [ ] 24. The browser pass
+- [x] 24. The browser pass
   - Files: `tests.md`
   - All sixteen canvases in a real browser: select an element, select a connection where selectable, press the background, and **confirm a drag does not select**. The outline must read clearly on each diagram's fills, including backend-chosen colours; a connection's highlight must run its whole route; *selected* and *accept* must be distinguishable when both hold. **The user's oracle, recorded as such**: the four named broken behave exactly as the four named working. jsdom is not taken as evidence for any of this.
   - _Requirements: 5.2, 10.1, 10.2, 10.3_

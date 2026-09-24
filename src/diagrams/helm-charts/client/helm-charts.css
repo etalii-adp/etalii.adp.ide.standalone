@@ -21,6 +21,49 @@
   cursor: grab;
 }
 
+/*
+ * THE PER-KIND PALETTE, DECLARED. It used to be read and never written: fifteen --helm-* names
+ * were read and three declared, so the twelve below were hard-coded literals wearing a token's
+ * clothes - `var(--helm-chart-fill, rgb(61 123 217 / 14%))` looks customisable and is not.
+ * A reader who believed helm had a palette would have built on something that did not exist.
+ *
+ * Declared here on ansible-structure's pattern: owned by the module, and redeclared under the
+ * dark scheme below so a kind keeps its hue while the ground changes. One hue per kind, muted
+ * fills so labels stay readable.
+ */
+.helm-canvas {
+  --helm-chart-fill: rgb(61 123 217 / 14%);
+  --helm-chart-stroke: #3d7bd9;
+  --helm-subchart-fill: rgb(52 152 160 / 14%);
+  --helm-subchart-stroke: #3498a0;
+  --helm-dependency-fill: rgb(142 84 196 / 14%);
+  --helm-dependency-stroke: #8e54c4;
+  --helm-values-fill: rgb(46 160 100 / 14%);
+  --helm-values-stroke: #2ea064;
+  --helm-template-fill: rgb(196 130 32 / 14%);
+  --helm-template-stroke: #c48220;
+  --helm-meta-fill: rgb(120 120 130 / 12%);
+  --helm-meta-stroke: #78787f;
+}
+
+/* The same six hues, lifted so they still read against the dark surface they are mixed into. */
+@media (prefers-color-scheme: dark) {
+  .helm-canvas {
+    --helm-chart-fill: rgb(125 180 240 / 18%);
+    --helm-chart-stroke: #7db4f0;
+    --helm-subchart-fill: rgb(110 205 212 / 18%);
+    --helm-subchart-stroke: #6ecdd4;
+    --helm-dependency-fill: rgb(184 140 228 / 18%);
+    --helm-dependency-stroke: #b88ce4;
+    --helm-values-fill: rgb(110 205 150 / 18%);
+    --helm-values-stroke: #6ecd96;
+    --helm-template-fill: rgb(232 176 90 / 18%);
+    --helm-template-stroke: #e8b05a;
+    --helm-meta-fill: rgb(165 165 178 / 16%);
+    --helm-meta-stroke: #a5a5b2;
+  }
+}
+
 .helm-canvas:active {
   cursor: grabbing;
 }
@@ -38,7 +81,7 @@
 }
 
 .helm-canvas-message code {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   background: var(--color-surface-raised, rgb(0 0 0 / 6%));
   padding: 0 0.25rem;
   border-radius: 3px;
@@ -74,7 +117,7 @@
 .helm-node-label {
   fill: var(--color-text);
   font-size: 13px;
-  font-family: var(--font-sans, system-ui, sans-serif);
+  font-family: var(--font-sans);
   pointer-events: none;
   user-select: none;
 }
@@ -135,7 +178,7 @@
 .helm-edge-label {
   fill: var(--color-text-muted);
   font-size: 11px;
-  font-family: var(--font-sans, system-ui, sans-serif);
+  font-family: var(--font-sans);
   pointer-events: none;
   user-select: none;
 }

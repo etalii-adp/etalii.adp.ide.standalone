@@ -321,7 +321,7 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         </p>
       ) : null}
 
-      {loading && model.shapes.size === 0 ? <p className="shacl-loading canvas-hint">Loading…</p> : null}
+      {loading && model.shapes.size === 0 ? <p className="shacl-status canvas-status">Opening…</p> : null}
     </div>
   );
 }

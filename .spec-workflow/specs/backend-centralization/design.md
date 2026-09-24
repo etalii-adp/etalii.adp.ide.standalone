@@ -4,7 +4,7 @@
 
 Thirteen diagram-module backends each carry their own copy of the same six or seven jobs: loading and reloading a document, saving it, working out what changed, reacting to a change on disk, restoring lines for an undo, turning a YAML node into a line range, and parsing the ids a canvas gesture sends. The requirements measured which copies are the same job and which have drifted. This design says what each shared piece is, where the module's own part of it stays, and in what order the thirteen move onto it.
 
-**Four of the requirements' criteria are already satisfied on `develop`**, because the user ruled the defects the scan found fixed ahead of the specification rather than inside it. They are cited here rather than re-designed (*What landed ahead*).
+**Four of the requirements' criteria are satisfied ahead of this work on `develop`**, because the user ruled the defects the scan found fixed ahead of the specification rather than inside it. They are cited here rather than re-designed (*What landed ahead*). **Two of the four hold in two stores rather than across the tree** - R2.4 and R2.5, corrected here on 2026-09-24 after measurement - and between them they are the largest behavioural change group 2 still has to make. That section now says so, because "already satisfied" read as tree-wide **grants a reader permission to skip it**, which is the worst thing a traceability claim can do.
 
 **One thing is deliberately not decided here: where the shared types live.** Placement is the user's judgement, so it is asked with the reference counts as cost (*Placement*). Everything else below is the same under every answer: only the namespace and project of each shared type change.
 
@@ -22,14 +22,22 @@ Thirteen diagram-module backends each carry their own copy of the same six or se
 
 ## What landed ahead
 
-The user ruled three defects found by the scan fixed immediately rather than inside this work. They are on `develop`, and each satisfies a criterion this design therefore does not restate:
+The user ruled three defects found by the scan fixed immediately rather than inside this work. They are on `develop`. **Read the third column for the scope: two of these rows satisfy their criterion in the tree, and one satisfies it in two stores.**
 
 | Criterion | Landed as | What it does |
 | --- | --- | --- |
 | R4.3 (a removal is always sent) | `350b8f9e`, merged at `88c26d44` | c4 sends removals when a document changes, so an element deleted in a text editor leaves the canvas. |
-| R2.3 (a store ignores a reload of its own save) | `350b8f9e` | causal-loop no longer marks its own diagram unreadable while saving. |
-| R2.4 (a failed reload keeps the last good document) | `350b8f9e` | and R2.5's confirmation of absence arrives as **`IDiagramDocumentReloader.BodyDeleted`**: the bridge sends it on a `Deleted` event, on a rename to anything but `<body>~RF<hex>.TMP`, and for a body missing after a watcher overflow. **This design adopts that signal rather than re-deciding it.** |
+| R2.3 (a store ignores a reload of its own save) | `350b8f9e` | causal-loop no longer marks its own diagram unreadable while saving. **Tree-wide: all nine writable stores suppress their own writes** - measured 2026-09-24 as a `_selfWrites` set plus an early return in `Reload`, in nine of nine. |
+| R2.4 (a failed reload keeps the last good document), and R2.5's signal | `350b8f9e`, **in c4 and causal-loop only - two of ten stores** | R2.5's confirmation of absence arrives as **`IDiagramDocumentReloader.BodyDeleted`**: the bridge sends it on a `Deleted` event, on a rename to anything but `<body>~RF<hex>.TMP`, and for a body missing after a watcher overflow. **This design adopts that signal rather than re-deciding it.** **But the signal being sent tree-wide is not the same as a store acting on it, and the difference is the note below.** |
 | R11.2 (an empty relation end is refused) | `d2fb4e7e` | causal-loop's parser refuses an empty variable id and its relation parser refuses an empty end, closing a path that silently wrote `link a ->  +`. |
+
+**R2.4 and R2.5 are two of ten, and they are COUPLED - so the conversion order is a correctness property rather than a preference.** Measured 2026-09-24: **c4 and causal-loop** keep the last good document on a failed reload, and both override `BodyDeleted`; the other eight do neither. The two facts are not independent, because **`IDiagramDocumentReloader.BodyDeleted` has a default implementation - `=> Reload(rootPath, bodyPath)`** - whose own comment states the condition: *"A store with no such rule gets a reload, which is what a delete always was."*
+
+That default is correct **only while a store installs an empty document on a failed read**, which is what the other eight do today. So a deletion reaches `Reload`, the read fails, an empty document goes in, and the deletion looks right by accident.
+
+**Give a store keep-last-good (R2.4) without giving it `BodyDeleted` (R2.5) in the same change, and a deleted body stops emptying the diagram - it keeps the last good one forever**, which is the exact outcome R2.5's sentence forbids ("a deleted body is an empty diagram, not the last one kept alive"). **Nothing in the type system expresses that coupling**: the module compiles, satisfies the interface, and is silently wrong. **So R2.4 and R2.5 land together, per store, and never R2.4 across ten followed by R2.5 across ten** - the intermediate state is not a smaller version of the defect being fixed, it is a new one. R2.6 already asks for both guards, each seen to fail, which is the check; this note is about the order that decides whether the second guard is protecting anything.
+
+**How the two-of-ten figure was reached, since it is uneven.** Read behaviourally: c4's and causal-loop's `Reload` each have an explicit branch returning without installing when the read fails, and timeline's `Load` swallows `IOException` into `text = ""`. **Inferred for the remaining seven** from three corroborating absences - no keep-last-good branch, no `BodyDeleted` override, and no `*DocumentStore.FailedReload.Tests.cs` - all three landing on the same two stores. Those seven are to be read before conversion rather than assumed.
 
 **Two more changes belong to the same discipline and are in flight rather than landed:**
 
@@ -66,11 +74,11 @@ Every shared piece below has to live somewhere, and the reference graph makes th
 One shared implementation of `GetOrLoad`, `Forget`, `Load`'s read-or-open-empty opening, `Reload` and `Save`'s bookkeeping. A module supplies two things and nothing else: **how its text parses into its own entry**, and **what its change event carries**.
 
 - **Self-write suppression (R2.3) is in the shared piece**, so no store can lack it.
-- **A failed reload keeps the last good document (R2.4)**, and a missing body is confirmed through **`BodyDeleted`** (R2.5) rather than by timing.
+- **A failed reload keeps the last good document (R2.4)**, and a missing body is confirmed through **`BodyDeleted`** (R2.5) rather than by timing. **These two hold in two of ten stores today, and they are coupled** - the lifecycle brings both to a store in one change, never one without the other, because `BodyDeleted`'s default routes to `Reload` and is correct only for a store that installs empty on a failed read (*What landed ahead*).
 - **Read-only stores** (sparql) use the same lifecycle without a save (R2.7).
 - **mindmap keeps two differences** and they are declared rather than tolerated (R2.8): it skips documents it never loaded, and its change event names the kind of structural change. Both are expressed by the module's own event type, not by an override of the lifecycle.
 - **Deletes take the writer's turn**, as above.
-- **The shared lifecycle is where the watcher obligation (R2.9) is INTENDED to be met**, so that a module cannot get it wrong by omission - which is how two editor sessions came to hear `Changed` and not `Renamed` while the writer's own 106 tests stayed green. **As of today it is not met there: both editor sessions construct their own `FileSystemWatcher` and now subscribe correctly by themselves, and nothing in R2.9 requires the subscription to move.** So this is a direction for the shared piece rather than a property the tree currently has. Known gap recorded rather than fixed here: `SolutionWatcher` has no `Error` handler; it belongs to its own module and is in `dotnet-dependency-graph/findings.md`.
+- **The shared lifecycle is where the watcher obligation (R2.9) is INTENDED to be met**, so that a module cannot get it wrong by omission - which is how two editor sessions came to hear `Changed` and not `Renamed` while the writer's own 106 tests stayed green. **As of today it is not met there: both editor sessions construct their own `FileSystemWatcher` and now subscribe correctly by themselves, and nothing in R2.9 requires the subscription to move.** So this is a direction for the shared piece rather than a property the tree currently has. **The gap this paragraph used to record is closed: `SolutionWatcher` gained its `Error` handler at `a2318531` on `develop`, and all seven production watchers now subscribe to all five events** - re-measured 2026-09-24 by reading each subscription's receiver, after a first pass that matched `.Error +=` on any object in the file and so could not have told the difference. **What task 9 still owes is the other half of its own wording**: `WatcherWiring.Tests.cs` asserts the subscriptions and its own sweep's liveness, which is the shape R2.9 rules out - *"a reviewer SHALL be able to check it by asking what the watcher would miss rather than by counting subscriptions."* The obligation tests, that a component learns of a deletion and of a lost-events window, are not written.
 
 ### S3 — One save result, and a guard against ignoring it (R3)
 
@@ -179,7 +187,7 @@ Every guard is seen to fail against a stated planted defect before it is trusted
 | Requirement | Where |
 | --- | --- |
 | R1 one line document | S1 |
-| R2 store lifecycle | S2; R2.3–R2.5 landed ahead (`350b8f9e`) |
+| R2 store lifecycle | S2; R2.3 landed ahead tree-wide (`350b8f9e`), R2.4 and R2.5 in **two of ten stores only** - see *What landed ahead* |
 | R3 save result and its guard | S3 |
 | R4 diff, and delta order | S4; R4.3 landed ahead |
 | R5 change handler | S5 |
