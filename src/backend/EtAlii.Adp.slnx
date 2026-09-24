@@ -91,6 +91,9 @@
     <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/EtAlii.Adp.Diagram.DotNetDependencyGraph.csproj" />
     <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.csproj" />
     <Project Path="../diagrams/erd-entity-relationship/backend/EtAlii.Adp.Diagram.ErdEntityRelationship/EtAlii.Adp.Diagram.ErdEntityRelationship.csproj" />
+    <!-- The functional decomposition graph: UI elements, data, actions and functions, and what owns what. -->
+    <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.csproj" />
+    <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.csproj" />
     <Project Path="../diagrams/gcp-architecture/backend/EtAlii.Adp.Diagram.GcpArchitecture/EtAlii.Adp.Diagram.GcpArchitecture.csproj" />
     <Project Path="../diagrams/generic-swimlane/backend/EtAlii.Adp.Diagram.GenericSwimlane/EtAlii.Adp.Diagram.GenericSwimlane.csproj" />
     <Project Path="../diagrams/iso-flowchart/backend/EtAlii.Adp.Diagram.IsoFlowchart/EtAlii.Adp.Diagram.IsoFlowchart.csproj" />
