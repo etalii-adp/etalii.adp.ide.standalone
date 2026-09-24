@@ -47,11 +47,14 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     public MindmapDocument? Get(string bodyPath) =>
         _documents.TryGetValue(bodyPath, out var document) ? document : null;
 
-    public void Save(string bodyPath, MindmapChange change)
+    public DocumentSaveResult Save(string bodyPath, MindmapChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
         if (!_documents.TryGetValue(bodyPath, out var document))
         {
+            // Still an exception, and deliberately: saving a map this store never loaded is a
+            // programming error rather than an outcome a user can act on. R2.8's "skips documents it
+            // never loaded" is about Reload, which returns early below; task 10 owns that question.
             throw new InvalidOperationException($"No document is loaded for {bodyPath}.");
         }
 
@@ -68,6 +71,17 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         {
             AdpFileWriter.Save(bodyPath, document.ToText());
         }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // THE EDIT STAYS IN MEMORY, which is the whole of this change (R3.2, R3.4). Until now a
+            // refused write threw out of here, out of the command handler and out to the caller as an
+            // exception rather than a sentence - so a user whose file was held open by another program
+            // was told nothing they could act on, and the command reported no failure a caller could
+            // read. The document is left as the command edited it, so retrying once the file is
+            // writable saves the same edit rather than asking the user to make it again.
+            Logger.Warning(exception, "Could not write {BodyPath}; the change is kept in memory", bodyPath);
+            return DocumentSaveResult.Failure($"{IoPath.GetFileName(bodyPath)} could not be written. The change is still here to try again.");
+        }
         finally
         {
             _selfWrites.TryRemove(bodyPath, out _);
@@ -75,6 +89,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 
         Logger.Debug("Saved {BodyPath} after {Change}", bodyPath, change.GetType().Name);
         Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, change));
+        return DocumentSaveResult.Ok;
     }
 
     /// <summary>Drops a loaded document, so the next ask re-reads the file - after an external edit, or when its last viewer left.</summary>

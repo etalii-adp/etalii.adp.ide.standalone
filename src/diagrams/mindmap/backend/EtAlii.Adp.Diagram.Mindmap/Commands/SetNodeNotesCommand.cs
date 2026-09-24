@@ -20,8 +20,10 @@ internal sealed class SetNodeNotesCommandHandler(IMindmapDocumentStore documents
 
         var previous = node.Notes;
         document.SetNotes(node, command.Notes);
-        Documents.Save(command.BodyPath, new MindmapNodeUpdated(command.NodeId));
+        var saved = Documents.Save(command.BodyPath, new MindmapNodeUpdated(command.NodeId));
 
-        return Task.FromResult(CommandResult.Success(command with { Notes = previous }));
+        return Task.FromResult(saved.Failed
+            ? CommandResult.Failure(saved.Error)
+            : CommandResult.Success(command with { Notes = previous }));
     }
 }

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>
@@ -18,7 +20,14 @@ public interface IMindmapDocumentStore
     MindmapDocument? Get(string bodyPath);
 
     /// <summary>Writes the loaded document back to <paramref name="bodyPath"/>, atomically, and reports the change.</summary>
-    void Save(string bodyPath, MindmapChange change);
+    /// <remarks>
+    /// <b>Returns a result rather than throwing for a failed write, and the edit stays in memory when
+    /// it fails</b> (backend-centralization R3.2, R3.4). It used to be <c>void</c> and let the
+    /// writer's exception escape, so a refused write reached the caller as an exception rather than a
+    /// sentence and the user was told nothing they could act on. A save this store never loaded a
+    /// document for is still an exception: that is a programming error, not an outcome.
+    /// </remarks>
+    DocumentSaveResult Save(string bodyPath, MindmapChange change);
 
     /// <summary>
     /// Re-reads a map an external tool changed on disk and announces it (Requirement 11.8).

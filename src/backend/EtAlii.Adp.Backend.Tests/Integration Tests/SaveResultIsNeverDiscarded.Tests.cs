@@ -60,16 +60,19 @@ public partial class SaveResultIsNeverDiscardedTests
     /// its line. A debt with an owner, kept visibly separate from <see cref="VoidByDesign"/>, which
     /// is a design decision with a reason: merging the two turns "not yet" into "never" silently.
     /// </summary>
-    private static readonly (string File, string Reason)[] Tracked =
-    [
-        ("diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Commands/AddChildNodeCommand.cs", "task 4 - mindmap's Save returns void today and throws on failure"),
-        ("diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Commands/AddSiblingNodeCommand.cs", "task 4 - as above"),
-        ("diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Commands/MoveNodeCommand.cs", "task 4 - as above"),
-        ("diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Commands/RemoveNodeCommand.cs", "task 4 - as above, two call sites"),
-        ("diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Commands/SetNodeLinkCommand.cs", "task 4 - as above"),
-        ("diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Commands/SetNodeNotesCommand.cs", "task 4 - as above"),
-        ("diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Commands/SetNodeTextCommand.cs", "task 4 - as above"),
-    ];
+    /// <summary>
+    /// Sites that will become discards when a conversion lands, each naming the task that deletes
+    /// its line. A debt with an owner, kept visibly separate from <see cref="VoidByDesign"/>, which
+    /// is a design decision with a reason: merging the two turns "not yet" into "never" silently.
+    /// </summary>
+    /// <remarks>
+    /// <b>Empty since task 4</b>, which converted mindmap's eight call sites - the seven entries here
+    /// named that task and were deleted by it, which is the whole arrangement working rather than an
+    /// accident. It is kept rather than removed because the next conversion group needs somewhere to
+    /// put its debt, and because <see cref="NoTrackedEntryOutlivesItsFix"/> is what makes an entry
+    /// expire rather than settle.
+    /// </remarks>
+    private static readonly (string File, string Reason)[] Tracked = [];
 
     /// <summary>A statement that BEGINS with a save call: nothing precedes it, so nothing read it.</summary>
     [GeneratedRegex(@"^(await\s+)?(?<receiver>[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*)\.Save\(")]
