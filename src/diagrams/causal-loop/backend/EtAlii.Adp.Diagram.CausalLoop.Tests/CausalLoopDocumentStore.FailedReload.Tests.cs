@@ -113,7 +113,11 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         // confirmed before it counts as gone, so the diagram must never be lost.
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        var store = new CausalLoopDocumentStore();
+        // The retry's wait taken away, and only here: every reload that finds the body renamed away
+        // mid-publish now waits between attempts, and at 50 ms this test went from 0.8 s to 8.4 s
+        // (2026-09-25). What it guards is that the diagram is never lost, which keep-last-good decides,
+        // not how long a retry waits; the store's own attempts are kept.
+        var store = new CausalLoopDocumentStore(Documents.SharedDocumentReader.ReadAllText, CausalLoopDocumentStore.DefaultReadAttempts, TimeSpan.Zero);
         Assert.True(store.GetOrLoad(path).IsUsable);
 
         using var stop = new CancellationTokenSource();

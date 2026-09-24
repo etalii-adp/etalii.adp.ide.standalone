@@ -197,7 +197,11 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // keeps the last good model, so zero is the only passing answer rather than a lucky one.
         var body = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
-        var store = new C4DocumentStore();
+        // The retry's wait taken away, and only here: every reload that finds the body renamed away
+        // mid-publish now waits between attempts, and at 50 ms this test went from 0.9 s to 15.3 s
+        // (2026-09-25). What it guards is that the model is never lost, which keep-last-good decides,
+        // not how long a retry waits; the store's own attempts are kept.
+        var store = new C4DocumentStore(Documents.SharedDocumentReader.ReadAllText, C4DocumentStore.DefaultReadAttempts, TimeSpan.Zero);
         Assert.NotEmpty(store.WorkspaceOf(body).Elements);
 
         using var stop = new CancellationTokenSource();
