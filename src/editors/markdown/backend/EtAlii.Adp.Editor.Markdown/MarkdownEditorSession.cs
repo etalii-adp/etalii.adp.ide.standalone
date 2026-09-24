@@ -29,7 +29,7 @@ public sealed class MarkdownEditorSession : IEditorSession
         var directory = Path.GetDirectoryName(path);
         if (_buffer is not null && directory is not null)
         {
-            _watcher = new FileSystemWatcher(directory, Path.GetFileName(path)) { EnableRaisingEvents = true };
+            _watcher = new FileSystemWatcher(directory, Path.GetFileName(path));
 
             // EVERY EVENT A PUBLISH ACTUALLY RAISES, not just Changed. A write in place raises
             // Changed; a temp-then-replace publish - which is what AdpFileWriter does, and now
@@ -42,6 +42,14 @@ public sealed class MarkdownEditorSession : IEditorSession
             _watcher.Changed += (_, _) => OnExternalChange();
             _watcher.Created += (_, _) => OnExternalChange();
             _watcher.Renamed += (_, _) => OnExternalChange();
+
+            // Subscribed BEFORE the watcher is enabled. Four other watchers in this tree do it
+            // this way - RootFolderWatcher, TrackedProblemRoot, AnsibleWatchedFolder and
+            // HelmWatchedFolder - and enabling first leaves the watcher live with no handlers
+            // attached, so anything raised in that window is received by nobody. The window is
+            // small and nothing has been shown to fall through it; a hole is worth closing on
+            // its own terms.
+            _watcher.EnableRaisingEvents = true;
         }
     }
 

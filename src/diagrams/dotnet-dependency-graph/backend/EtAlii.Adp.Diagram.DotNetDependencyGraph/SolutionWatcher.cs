@@ -60,13 +60,16 @@ public sealed class SolutionWatcher : IDisposable
                 // recursive watch over a repository root would wake on every build artifact.
                 IncludeSubdirectories = false,
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
-                EnableRaisingEvents = true,
             };
 
             watcher.Changed += OnFileSystemEvent;
             watcher.Created += OnFileSystemEvent;
             watcher.Deleted += OnFileSystemEvent;
             watcher.Renamed += OnFileSystemEvent;
+
+            // Enabled AFTER the handlers, as RootFolderWatcher and the two WatchedFolders do:
+            // a watcher live before its handlers exist raises into nothing.
+            watcher.EnableRaisingEvents = true;
             _watchers.Add(watcher);
         }
 
