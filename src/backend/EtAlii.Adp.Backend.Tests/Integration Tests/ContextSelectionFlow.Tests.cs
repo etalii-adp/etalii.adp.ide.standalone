@@ -61,7 +61,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
             });
         });
     }
@@ -116,11 +116,11 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             new ContextService.ContextServiceClient(channel));
     }
 
-    private static Task<Common.Wire.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name) =>
+    private static Task<EtAlii.Adp.Documents.Wire.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name) =>
         // A registration is a child of its subject now, so the lookup follows the nesting.
         NestedEntryLookup.EntryIdOfAsync(session.Hierarchy, session.ProjectId, session.WatchId, session.Headers, name);
 
-    private static ContextSelection Selection(Common.Wire.ShortGuid entryId, params string[] path)
+    private static ContextSelection Selection(EtAlii.Adp.Documents.Wire.ShortGuid entryId, params string[] path)
     {
         var selection = new ContextSelection
         {

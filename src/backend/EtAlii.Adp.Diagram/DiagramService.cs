@@ -166,7 +166,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     /// file names it again rather than opening in an arbitrary rival.
     /// </summary>
     private bool TryResolveEditor(
-        Common.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,
@@ -194,7 +194,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     /// containment check, and the file's existence - nothing about which editor.
     /// </summary>
     private bool TryResolveTextFile(
-        Common.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,

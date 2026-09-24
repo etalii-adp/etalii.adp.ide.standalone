@@ -10,8 +10,8 @@ namespace EtAlii.Adp.Backend.Tests;
 internal sealed record ContextSelectionFlowSession(
     GrpcChannel Channel,
     Metadata Headers,
-    Common.Wire.ShortGuid ProjectId,
-    Common.Wire.ShortGuid WatchId,
+    EtAlii.Adp.Documents.Wire.ShortGuid ProjectId,
+    EtAlii.Adp.Documents.Wire.ShortGuid WatchId,
     HierarchyService.HierarchyServiceClient Hierarchy,
     ContextService.ContextServiceClient Context) : IDisposable
 {

@@ -79,7 +79,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
             });
         });
     }
@@ -165,7 +165,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<IReadOnlyList<string>> ElementIdsAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        Common.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
@@ -176,7 +176,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<string> TitleOfAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        Common.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
@@ -188,7 +188,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<IReadOnlyList<Element>> BaselineAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        Common.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -234,7 +234,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<EtAlii.Adp.Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

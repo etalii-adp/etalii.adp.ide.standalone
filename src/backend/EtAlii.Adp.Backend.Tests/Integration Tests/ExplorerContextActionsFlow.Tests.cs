@@ -62,7 +62,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
             });
         });
     }

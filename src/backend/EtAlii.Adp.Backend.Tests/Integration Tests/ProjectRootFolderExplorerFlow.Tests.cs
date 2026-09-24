@@ -59,7 +59,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
             });
         });
     }

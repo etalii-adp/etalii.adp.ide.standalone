@@ -77,7 +77,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
             });
         });
     }
@@ -305,7 +305,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     /// Every entry of the project, by name - one nested level deep, because a registration is a
     /// child of the subject it names.
     /// </summary>
-    private static async Task<IReadOnlyDictionary<string, Common.Wire.ShortGuid>> EntriesAsync(
+    private static async Task<IReadOnlyDictionary<string, EtAlii.Adp.Documents.Wire.ShortGuid>> EntriesAsync(
         GrpcChannel channel,
         Metadata headers,
         ShortGuid projectId,
@@ -332,7 +332,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     }
 
     /// <summary>The canvas's own selection shape: the <c>.adp</c> file, then the element as its child.</summary>
-    private static ContextSelection ElementChain(Common.Wire.ShortGuid entryId, string elementId) =>
+    private static ContextSelection ElementChain(EtAlii.Adp.Documents.Wire.ShortGuid entryId, string elementId) =>
         new()
         {
             Source = ContextSelectionSource.Explorer,
@@ -348,8 +348,8 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
-        Common.Wire.ShortGuid projectId,
-        Common.Wire.ShortGuid watchId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid watchId,
         Metadata headers,
         string actionId) =>
         contextClient.ExecuteActionAsync(

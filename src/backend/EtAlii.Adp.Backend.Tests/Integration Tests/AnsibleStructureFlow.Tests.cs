@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
+using DiagramService = EtAlii.Adp.Diagram.Wire.DiagramService;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 using Wire = EtAlii.Adp.Diagram.AnsibleStructure.Wire;
 
@@ -279,7 +280,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     }
 
     private async Task<IReadOnlyList<Element>> BaselineAsync(
-        DiagramService.DiagramServiceClient client, Metadata headers, Common.Wire.ShortGuid projectId)
+        DiagramService.DiagramServiceClient client, Metadata headers, EtAlii.Adp.Documents.Wire.ShortGuid projectId)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(MessageTimeout);
@@ -324,7 +325,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<EtAlii.Adp.Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

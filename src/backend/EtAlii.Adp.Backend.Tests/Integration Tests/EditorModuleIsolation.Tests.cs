@@ -76,7 +76,7 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
 
                 // The detonating module rides in beside the real ones: the discovered
                 // definitions plus one claimant of .boom, and its throwing factory.
@@ -145,7 +145,7 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<EtAlii.Adp.Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

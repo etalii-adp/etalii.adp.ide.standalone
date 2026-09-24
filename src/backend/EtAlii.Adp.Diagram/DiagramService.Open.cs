@@ -158,7 +158,7 @@ public sealed partial class DiagramService
     }
 
     private bool TryResolveBody(
-        Common.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,

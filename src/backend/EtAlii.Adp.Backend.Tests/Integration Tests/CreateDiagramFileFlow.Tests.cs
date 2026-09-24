@@ -95,7 +95,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<EtAlii.Adp.Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();
@@ -181,8 +181,8 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     /// <summary>Opens Add on the given target and returns the prompt it pushed, with its interaction id.</summary>
-    private async Task<(ContextPrompt Prompt, Common.Wire.ShortGuid InteractionId)> OpenAddDialogAsync(
-        CreateDiagramFileFlowSession session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Common.Wire.ShortGuid? folderId = null)
+    private async Task<(ContextPrompt Prompt, EtAlii.Adp.Documents.Wire.ShortGuid InteractionId)> OpenAddDialogAsync(
+        CreateDiagramFileFlowSession session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, EtAlii.Adp.Documents.Wire.ShortGuid? folderId = null)
     {
         var pendingPrompt = ReadUntilPromptAsync(stream, cancellationToken);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);

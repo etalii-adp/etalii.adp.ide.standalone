@@ -268,8 +268,8 @@ public sealed partial class ContextService
     /// explorer's empty space reads, and the root is what that space is.
     /// </summary>
     private async ValueTask<ContextTarget?> TryResolveTargetAsync(
-        Common.Wire.ShortGuid projectId,
-        Common.Wire.ShortGuid watchId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid watchId,
         ContextSource? source,
         ServerCallContext context)
     {

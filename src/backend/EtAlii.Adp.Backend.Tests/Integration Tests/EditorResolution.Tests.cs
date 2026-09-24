@@ -60,7 +60,7 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
             });
         });
     }
@@ -450,7 +450,7 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
     private static async Task<Add> FirstAddDeltaAsync(
         DiagramService.DiagramServiceClient diagramClient,
         Metadata headers,
-        Common.Wire.ShortGuid projectId,
+        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         var path = new Path();
@@ -486,7 +486,7 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<EtAlii.Adp.Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();
