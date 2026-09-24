@@ -118,3 +118,45 @@ describe("the diagram stream is opened only by useDiagramStream", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * The move, by the same argument and the same instrument (client-centralization Requirement 7).
+ *
+ * Fourteen modules each built their own `moveElementTo` on the stream's client - kept per module
+ * deliberately by technical-debt-cleanup R3.2, reversed by the user on 2026-09-20. Thirteen bodies
+ * were identical; the fourteenth had drifted in the way copies do, catching the failure and
+ * returning a fixed "The position could not be saved." in place of the backend's own reason. That
+ * is the drift this guard exists to stop recurring: one call, so there is nothing to drift from.
+ *
+ * Same limits as the open guard above, stated for the same reason: it recognises the `MoveElement`
+ * request by its shape, and the positive control proves the pattern still sees the one call that
+ * is allowed, so a pattern that stopped matching fails rather than reporting a clean tree.
+ */
+const DIAGRAM_MOVE = /\.moveElement\(\s*\{\s*projectId\s*:/;
+
+describe("an element is moved only by useDiagramStream", () => {
+  it("recognises the one allowed call - the pattern still matches what it polices", () => {
+    // Arrange.
+    const root = sourceRoot();
+
+    // Act.
+    const hookSource = readFileSync(join(root, THE_HOOK), "utf8");
+
+    // Assert: the control. Without it, an offender list of [] could mean a pattern gone blind.
+    expect(DIAGRAM_MOVE.test(hookSource)).toBe(true);
+  });
+
+  it("finds no other file building its own move", () => {
+    // Arrange.
+    const root = sourceRoot();
+
+    // Act.
+    const offenders = sourcesUnder(clientDirectories(root))
+      .map((file) => relative(root, file).replaceAll("\\", "/"))
+      .filter((file) => file !== THE_HOOK)
+      .filter((file) => DIAGRAM_MOVE.test(readFileSync(join(root, file), "utf8")));
+
+    // Assert: a module takes `moveElementTo` from useDiagramStream's result and passes it on.
+    expect(offenders).toEqual([]);
+  });
+});
