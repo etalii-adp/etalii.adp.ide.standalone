@@ -1,8 +1,8 @@
 ﻿using System.Threading.Channels;
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context.Wire;
 using Xunit;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Context.Tests;
 
 public class ContextSelectionStoreTests : IDisposable

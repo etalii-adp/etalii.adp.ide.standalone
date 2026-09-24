@@ -1,11 +1,11 @@
 ﻿using System.Threading.Channels;
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Diagram;
 
 public sealed partial class DiagramService

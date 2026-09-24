@@ -1,5 +1,5 @@
-using EtAlii.Adp.Common;
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.History;
 using EtAlii.Adp.TestSupport;

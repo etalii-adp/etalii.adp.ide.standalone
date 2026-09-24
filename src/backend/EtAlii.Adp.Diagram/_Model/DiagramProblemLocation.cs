@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// Where a <see cref="DiagramProblem"/> sits, when its rule can say: a diagram element for a

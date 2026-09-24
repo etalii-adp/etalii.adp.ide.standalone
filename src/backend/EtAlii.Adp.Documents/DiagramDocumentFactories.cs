@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// The registered <see cref="IDiagramDocumentFactory"/> instances, looked up by origin, and

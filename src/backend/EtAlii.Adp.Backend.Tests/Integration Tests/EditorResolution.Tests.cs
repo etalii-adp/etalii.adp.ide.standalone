@@ -1,6 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;

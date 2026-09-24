@@ -1,4 +1,5 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;

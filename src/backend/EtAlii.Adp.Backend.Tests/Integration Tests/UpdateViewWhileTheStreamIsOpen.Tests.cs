@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.C4;
@@ -14,7 +14,7 @@ using Grpc.Core.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 using Service = EtAlii.Adp.Diagram.DiagramService;
 
 namespace EtAlii.Adp.Backend.Tests;

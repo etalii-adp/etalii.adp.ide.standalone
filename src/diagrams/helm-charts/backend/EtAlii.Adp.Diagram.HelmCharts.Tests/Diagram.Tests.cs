@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Microsoft.Extensions.DependencyInjection;
 
 using Xunit;

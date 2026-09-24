@@ -1,6 +1,6 @@
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context.Wire;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Context;
 
 /// <summary>

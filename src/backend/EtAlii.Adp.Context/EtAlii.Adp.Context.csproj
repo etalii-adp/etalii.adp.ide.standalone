@@ -9,7 +9,6 @@
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp.Authentication\EtAlii.Adp.Authentication.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
   </ItemGroup>

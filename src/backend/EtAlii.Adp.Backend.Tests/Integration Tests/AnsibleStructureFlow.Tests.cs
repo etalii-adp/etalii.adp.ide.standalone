@@ -1,6 +1,6 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Common;
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 using Wire = EtAlii.Adp.Diagram.AnsibleStructure.Wire;
 

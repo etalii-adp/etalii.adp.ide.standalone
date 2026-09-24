@@ -1,6 +1,6 @@
 ﻿using System.Threading.Channels;
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -8,7 +8,7 @@ using EtAlii.Adp.Projects;
 using Google.Protobuf;
 using Grpc.Core;
 using Serilog;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Diagram;
 
 /// <summary>

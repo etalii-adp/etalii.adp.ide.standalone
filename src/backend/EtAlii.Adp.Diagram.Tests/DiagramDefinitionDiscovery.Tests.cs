@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Xunit;
 using Alpha = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
 using Duplicate = EtAlii.Adp.Diagram.Tests.Fixtures.Duplicate;
