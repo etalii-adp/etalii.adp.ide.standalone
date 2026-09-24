@@ -14,6 +14,8 @@ import { createGrpcWebTransport } from "@connectrpc/connect-web";
 // actually exists (src/api/authentication.proto), which is where DescribeProduct lives.
 import { AuthenticationService } from "../generated/authentication_pb";
 import { createAuthInterceptor } from "./grpcAuthInterceptor";
+import { createSlowRequestInterceptor } from "./grpcSlowRequestInterceptor";
+import { raiseLocalNotice } from "../shell/context/localNotices";
 import { DeveloperSessionContext } from "./developerSession";
 
 export type LoginResult = { ok: true } | { ok: false; message: string };
@@ -57,7 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () =>
       createGrpcWebTransport({
         baseUrl: "/",
-        interceptors: [createAuthInterceptor(() => tokenRef.current, clearSession)],
+        // Order is not arbitrary: the slow-request bound wraps the auth interceptor, so the
+        // interval it measures is the whole round trip the user is waiting on rather than
+        // only the part after the token is attached.
+        interceptors: [
+          createSlowRequestInterceptor(raiseLocalNotice),
+          createAuthInterceptor(() => tokenRef.current, clearSession),
+        ],
       }),
     [clearSession],
   );

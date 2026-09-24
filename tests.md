@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Five things every entry below assumes
+## What every entry below assumes
 
 **Signing in — a developer build does not ask.** Since `developer-sign-in-bypass`, a locally
 running developer build opens **already authenticated** and the sign-in form is never rendered:
@@ -145,6 +145,24 @@ The check outlives the instance, because the window recurs whenever anything is 
 **verify the implementation commit, not the bookkeeping one** —
 `git merge-base --is-ancestor <commit> develop`, or look for the type it introduces in `develop`'s
 sources.
+
+**A wedged origin makes a canvas that reports nothing indistinguishable from a canvas with a real
+defect, so confirm the origin still answers before recording any negative row.** Until the HTTPS
+endpoint of `two-tab-connection-wedge` task 1 is the one you are browsing, opening documents in two
+tabs on one origin exhausts that origin's HTTP/1.1 connection pool, and **nothing on it completes
+again - not a gRPC call, not a plain static file.** A check run after that point reports emptiness
+for a reason that has nothing to do with what it was checking.
+
+**The two readings are identical from the inside**, which is why this is a precondition rather than a
+note: a panel that never populates, a canvas that draws nothing, a property grid that stays blank -
+each looks exactly like the defect somebody is hunting. **Every negative row recorded after a wedge
+is worthless and cannot be told from a genuine finding by looking at it.**
+
+The check is one request for something that is not gRPC at all: fetch any static asset on the same
+origin and require a response. **If a plain file does not come back, stop** - the wedge is what you
+are looking at, and every row since the last known-good one has to be re-run rather than trusted.
+Re-running means a fresh browser profile, not a fresh tab: see the entry below for why a new tab
+joins an already-exhausted pool.
 
 ## The context surface is reachable on a causal loop diagram (causal-loop-diagram, resolver fix)
 
@@ -3019,3 +3037,55 @@ below stays either way.
   copy, confirm the block degrades to source text in both readers, and restore it. A check that
   has never seen the failure mode cannot report its absence - and this failure mode looks like
   ordinary text rather than like an error.
+
+## Two tabs on one origin both keep working (two-tab-connection-wedge, task 2)
+
+**This is a procedure rather than a test, and the task says so rather than pretending otherwise.** The
+reproduction needs two real browser tabs sharing one browser profile on one origin, and no unit or
+integration harness can produce a shared per-profile connection pool. CLAUDE.md's rule applies
+directly: a bug only a running app can reproduce leaves a step-by-step entry here.
+
+**An integration test written to stand in for this WILL pass, and that is worse than having none.** It
+would measure one client, one pool and no contention, and then report health on the exact defect it
+was written to catch - converting "unverified" into "verified" while nothing has been verified. This
+repository has already produced three client tests that passed against the code they were written to
+catch. **If you believe you have automated this, you have automated a different thing: say so and
+leave this procedure in place.**
+
+The mechanism: a browser allows about six concurrent HTTP/1.1 connections per origin, shared across
+tabs in one profile. Each open document holds three server-streaming gRPC calls - `WatchHierarchy`,
+`ContextService/Watch` and `DiagramService/Open`, which are the only server-streaming RPCs the whole
+API declares - so two documents reach the cap and the next request is queued forever. Over TLS, ALPN
+negotiates HTTP/2 and every request multiplexes onto one connection, which removes the cap rather
+than raising it.
+
+- **Preconditions**: a locally running developer build. **Note which scheme you are browsing** - the
+  `before` half needs `http://localhost:5080` and the `after` half needs `https://localhost:5443`,
+  and `launchSettings.json` serves both. An untrusted certificate is fine: click through the warning
+  once per browser profile. Use **one** hostname throughout, and see the first trap below.
+- **Actions**:
+  1. Open the app and open a project and one document. Confirm it is healthy - a probe settles in
+     milliseconds and the canvas draws.
+  2. Open a **second tab on the same origin** - same scheme, same hostname, same port - and open a
+     document there.
+  3. In whichever tab you like, request a plain static asset on that origin.
+- **Expected, over `http://`**: the second tab wedges, and **nothing on that origin completes again,
+  including the static file in step 3.** That last part is the diagnosis: it is an origin-wide
+  exhaustion, not a diagram fault.
+- **Expected, over `https://`**: both tabs work, both keep receiving their diagram deltas, and the
+  static file returns. Opening further documents in further tabs does not degrade either.
+- **Two traps that made this hard to see, and a later tester will hit both.** `127.0.0.1` and
+  `localhost` are **different origin keys**, so using one in each tab does not reproduce the defect
+  and makes it look absent. And **the pool is per profile and shared across tabs**, so a "fresh tab"
+  joins an already-exhausted pool rather than starting clean - every fresh-tab trial during the
+  investigation was worthless for this reason. To get a genuinely clean pool, use a new browser
+  profile or restart the browser.
+- **Note**: do not try to confirm the cap from inside the page. A request queued by the browser and a
+  request the server never answered are identical to page JavaScript; six attempts to tell them apart
+  failed during the investigation and the seventh needed `netstat` from outside the browser.
+- **Result**: not yet run. The `after` half is verifiable now that task 1 has landed an HTTPS
+  endpoint; the ALPN half of it is already measured - `openssl s_client -alpn h2` against that
+  endpoint reports `ALPN protocol: h2` over TLSv1.3, and the same connection asked for `http/1.1`
+  only reports `http/1.1`, so the negotiation is real rather than assumed. **What remains unverified
+  is the browser-level behaviour of two real tabs**, which is exactly the part no instrument here can
+  stand in for.
