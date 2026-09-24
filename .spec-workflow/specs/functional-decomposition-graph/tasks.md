@@ -8,7 +8,7 @@
 
 ## The library half — nothing waits on this
 
-- [ ] 1. Three shapes, one outline each, and the region text fits in
+- [x] 1. Three shapes, one outline each, and the region text fits in
   - File: `src/client/src/canvas/library/definition/diagramDefinition.ts`, `src/client/src/canvas/library/shapes/outline.ts` (new), `src/client/src/canvas/library/DiagramCanvas.tsx`, `src/client/src/canvas/library/shapes/outline.test.ts` (new)
   - Add `"superellipse"`, `"trapezoid"` and `"diode"` to `BuiltInShape` and `BUILT_IN_SHAPES`; add `outlineOf(shape, bounds)` returning the closed outline and `textRegionOf(shape, bounds, bandHeight)` computed from it. Superellipse exponent 4 at 64 samples; trapezoid corners (0,0) (1,0) (0.85,1) (0.15,1); diode a rectangle closed by a semicircle of radius `height/2` at 24 samples. `diamond`, `hexagon` and `parallelogram` return their existing corner lists, so their drawing does not move.
   - Guard: for each new shape, at the shared height and widths 80, 160 and 400, every corner of the text region lies inside the outline (point in polygon), and each shape renders with its declared class.
@@ -17,7 +17,7 @@
   - _Leverage: `canvas/elements/` for the existing shape components, `BUILT_IN_SHAPES`' guard in `declarativeModules.test.ts`_
   - _Requirements: 9.1, 4.1_
 
-- [ ] 2. Height resize
+- [x] 2. Height resize
   - File: `.../definition/diagramDefinition.ts`, `.../api/diagramEvents.ts`, `.../DiagramCanvas.tsx`, `.../DiagramCanvas.resize.test.tsx` (new)
   - `ElementTypeDefinition.resize?: "width" | "both"`, read only when `sizing: "user"`; **omitted means `"width"`**, today's behaviour. `ElementResized.side` widens to `"left" | "right" | "top" | "bottom"`, and the vertical edge is carried the way the horizontal one is: the far edge stays put and is never crossed.
   - Guard: a `"both"` type raises `element-resized` with `side: "bottom"` and the new height; a type that omits `resize` renders no top or bottom handle; `timeline`'s own suite passes unchanged.
@@ -25,7 +25,7 @@
   - Purpose: a Comment can be made taller without changing what every other user-sized element offers
   - _Requirements: 9.2, 4.2, 4.3, 3.2_
 
-- [ ] 3. Wrapped labels, and `LabelRule.wrap` removed
+- [x] 3. Wrapped labels, and `LabelRule.wrap` removed
   - File: `.../definition/labels.ts`, `.../definition/diagramDefinition.ts`, `.../definition/labels.test.ts`
   - `LabelDeclaration.wrap?: boolean`. A wrapped label is laid out inside `textRegionOf`, broken at spaces and at explicit newlines, at the library's own character-width estimate, stacked at the typography's line height. Text that overflows the region's height ends its last visible line with an ellipsis and keeps the full text as the label's tooltip. **Delete `LabelRule.wrap`**, which no module declares and nothing reads (Requirement 9.3's "or removed").
   - Guard: a 60-character label in a 160-wide box yields more than one line and no line exceeds the region; an explicit newline starts a new line; an overflowing label ends in `…`.
@@ -33,21 +33,21 @@
   - Note: when `backend-centralization` R10's shared text metric lands, this reads that fixture's value instead of the local constant. Write the guard against the metric function, not the literal, so the change is one line.
   - _Requirements: 9.3, 4.3, 4.4_
 
-- [ ] 4. The shared multiline inline editor
+- [x] 4. The shared multiline inline editor
   - File: `src/client/src/canvas/label/InlineLabelEditor.tsx`, `src/client/src/canvas/label/inlineLabelEditor.css`, `.../DiagramCanvas.tsx`, `src/client/src/canvas/label/InlineLabelEditor.test.tsx`
   - A label declaring `wrap: true` opens a **textarea** over the label's text region; Enter inserts a newline, Ctrl+Enter or Cmd+Enter commits, Escape cancels, blur commits as it does today. The commit is today's `label-commit-requested` with newlines in `value` — no new event.
   - Guard: a wrapped label opens a textarea and an unwrapped one an input; Enter does not commit and Ctrl+Enter does; the committed value carries the newline; Escape leaves the model unchanged.
   - Seen to fail against: the single-line editor opened for a wrapped label, where Enter commits and the newline never reaches the model.
   - _Requirements: 9.4, 7.3, 4.3_
 
-- [ ] 5. A declared cycle rule
+- [x] 5. A declared cycle rule
   - File: `.../definition/diagramDefinition.ts`, `.../DiagramCanvas.tsx`, `.../definition/validateDiagramDefinition.ts`, `.../DiagramCanvas.acyclic.test.tsx` (new), `.../definition/validateDiagramDefinition.test.ts`
   - `DiagramDefinition.acyclic?: readonly { relationTypes: readonly string[] }[]`. `connectVerdict` gains a **third independent check**: when the relation being drawn belongs to a set, a target is refused if a directed path already runs from that target to the source through connections whose types are in the same set — a breadth-first walk over `model.connections`, bounded by the connection count. The type check, the cardinality check and this one each refuse on their own, and none is consulted to skip another. `validateDiagramDefinition` rejects an entry naming a relation type the definition does not declare.
   - Guard: A→B→C under a covered type refuses C→A; the same chain under an exempt type allows it; a chain mixing covered and exempt types is not a cycle; a cardinality refusal still fires when the cycle check would pass and the reverse; an unknown relation id fails validation.
   - Seen to fail against: a verdict that skips the walk (C→A is offered), and one that returns early when cardinality passes (the independence case).
   - _Requirements: 9.5, 5.2, 5.4_
 
-- [ ] 6. Connectors meet the outline, not the bounding box
+- [x] 6. Connectors meet the outline, not the bounding box
   - File: `.../DiagramCanvas.tsx`, `.../DiagramCanvas.attachment.test.tsx` (new)
   - For every shape `outlineOf` covers, the edge point is where the ray from the centre towards the other end meets the **outline**. `box` and `pill` keep today's geometry.
   - Guard: a connector approaching a trapezoid from its lower left lands on the slanted side, inside the bounding box and on the outline to within half a unit; a box's attachment point does not move.
@@ -55,7 +55,7 @@
   - Purpose: Requirement 6.1's arrowhead meets the element; no declaration can express this, so it is library work under Requirement 1.2
   - _Requirements: 6.1, 1.2_
 
-- [ ] 7. The five colour tokens, and the contrast guard
+- [x] 7. The five colour tokens, and the contrast guard
   - File: `src/client/src/index.css`, `src/client/src/theme.contrast.test.ts` (new)
   - Light mode is the user's hex exactly: `#aaed92`, `#ededed`, `#9edcfa`, `#86e6d9`, `#fcf281`. Dark mode is the design's: `#2e7814`, `#696969`, `#086fa1`, `#187569`, `#736a03` — same hue and saturation, lightness lowered to the lightest value reaching 5.0:1.
   - Guard: the test parses `index.css`, computes each token's WCAG contrast against `--color-text` in both modes, and asserts **two lines with different subjects, both unrounded**: at least **4.5:1** for any fill the contract admits, the WCAG AA line; and at least **5.0:1** for the five shipped dark tokens, the margin R4.6 exists to create. Each failure says which line was crossed, and the test states its linearisation formula and that the reference token is `--color-text`.
