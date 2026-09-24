@@ -246,3 +246,119 @@ describe("InlineLabelEditor", () => {
     expect(props.onSubmit).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * The multi-line editor, for a label the definition declares `wrap: true`.
+ *
+ * <b>The shapes that matter are the two negatives.</b> A textarea whose Enter still commits is the
+ * single-line editor wearing a different tag: the newline the user typed never reaches the model,
+ * and nothing on screen says why. And an input rendered for a wrapped label is the same defect
+ * from the other side. So the assertions here are that Enter does NOT commit and is NOT prevented
+ * - the default is what inserts the newline - and that a plain placement still gets an input.
+ */
+describe("InlineLabelEditor, for a wrapped label", () => {
+  const wrapped: LabelPlacement = { x: 10, y: 20, width: 160, height: 60, text: "before", multiline: true };
+
+  function area(): HTMLTextAreaElement {
+    return screen.getByLabelText("Label") as HTMLTextAreaElement;
+  }
+
+  it("renders a textarea for a multiline placement, and an input for a single-line one", () => {
+    // Arrange, act.
+    const { unmount } = renderEditor({ placement: wrapped });
+
+    // Assert: the tag itself, because an input cannot hold a newline however it is styled.
+    expect(area().tagName).toBe("TEXTAREA");
+    unmount();
+
+    renderEditor();
+    expect(field().tagName).toBe("INPUT");
+  });
+
+  it("opens focused with the whole text selected, exactly as the single-line editor does", () => {
+    // The multi-line branch is a second field, and a second field is a second chance to lose a
+    // behaviour that was paid for once already.
+    renderEditor({ placement: wrapped });
+
+    expect(document.activeElement).toBe(area());
+    expect(area().selectionStart).toBe(0);
+    expect(area().selectionEnd).toBe("before".length);
+  });
+
+  it("leaves Enter to the textarea, committing nothing and preventing nothing", async () => {
+    // Arrange.
+    const { props } = renderEditor({ placement: wrapped });
+
+    // Act. fireEvent returns false when the handler called preventDefault, and jsdom performs no
+    // default text insertion - so "was the default allowed" is the closest a unit test gets to
+    // "the newline was typed", and it is the half the code decides.
+    type("after");
+    let allowed = true;
+    await act(async () => {
+      allowed = fireEvent.keyDown(area(), { key: "Enter" });
+    });
+
+    // Assert.
+    expect(props.onSubmit).not.toHaveBeenCalled();
+    expect(allowed).toBe(true);
+  });
+
+  it("commits on Ctrl+Enter, with the newline intact in the committed value", async () => {
+    // Arrange.
+    const { props } = renderEditor({ placement: wrapped });
+
+    // Act.
+    type("first\nsecond");
+    await act(async () => {
+      fireEvent.keyDown(area(), { key: "Enter", ctrlKey: true });
+    });
+
+    // Assert: the newline is the payload. A value arriving as "firstsecond", or as "first", is the
+    // defect this whole task exists to prevent, and it is invisible in a screenshot.
+    expect(props.onSubmit).toHaveBeenCalledWith("first\nsecond");
+  });
+
+  it("commits on Cmd+Enter too, because that is the same gesture on a Mac", async () => {
+    // Arrange.
+    const { props } = renderEditor({ placement: wrapped });
+
+    // Act.
+    type("first\nsecond");
+    await act(async () => {
+      fireEvent.keyDown(area(), { key: "Enter", metaKey: true });
+    });
+
+    // Assert.
+    expect(props.onSubmit).toHaveBeenCalledWith("first\nsecond");
+  });
+
+  it("dispatches nothing on Escape, leaving the model as it was", async () => {
+    // Arrange.
+    const { props } = renderEditor({ placement: wrapped });
+
+    // Act.
+    type("first\nsecond");
+    await act(async () => {
+      fireEvent.keyDown(area(), { key: "Escape" });
+    });
+
+    // Assert.
+    expect(props.onSubmit).not.toHaveBeenCalled();
+    expect(props.onCancel).toHaveBeenCalled();
+  });
+
+  it("still commits on blur, so the rule does not differ between the two fields", async () => {
+    // Arrange.
+    const { props } = renderEditor({ placement: wrapped });
+
+    // Act.
+    type("first\nsecond");
+    await act(async () => {
+      fireEvent.blur(area());
+    });
+
+    // Assert. Blur-commits is the rule most likely to be "fixed" the other way by a later reader;
+    // a second field is exactly where it would be dropped without anyone noticing.
+    expect(props.onSubmit).toHaveBeenCalledWith("first\nsecond");
+  });
+});

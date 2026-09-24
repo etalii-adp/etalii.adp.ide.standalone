@@ -40,10 +40,15 @@ export interface InlineLabelEditorProps {
  *   opening an editor and pressing Enter is not an edit.
  * - **Enter commits whatever is typed**, rather than waiting for a current verdict the way the
  *   dialog's confirm button does. See the note at `commit` for why they differ here.
+ *
+ * <b>A multiline placement renders a textarea instead, and only Enter behaves differently there.</b>
+ * Blur still commits, Escape still cancels, a refusal still holds the box open: a second field is
+ * the obvious place for one of those to be quietly dropped, so they are shared rather than copied.
  */
 export function InlineLabelEditor({ placement, onPropose, onSubmit, onCancel, onReturnFocus }: InlineLabelEditorProps) {
   const entry = useContextPromptEntry({ initialValue: placement.text, onPropose, onSubmit });
-  const field = useRef<HTMLInputElement>(null);
+  const field = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const multiline = placement.multiline === true;
 
   // Set the moment the editor starts closing, so the blur that closing causes is not read as a
   // second commit. Without it, Enter commits and then the unmount's blur commits again.
@@ -119,6 +124,42 @@ export function InlineLabelEditor({ placement, onPropose, onSubmit, onCancel, on
     onCancel();
   };
 
+  /**
+   * What Enter means, which is the one behaviour the two fields do not share.
+   *
+   * In a textarea Enter is text the user is typing, so it is neither committed nor prevented - the
+   * browser's own default is what inserts the newline, and preventing it is precisely the defect
+   * that makes a wrapped label impossible to write. Ctrl or Cmd with Enter is the commit, the
+   * gesture every multi-line field in every editor uses for "done".
+   */
+  const keyDown = (event: { key: string; ctrlKey: boolean; metaKey: boolean; preventDefault: () => void }) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      abandon();
+      return;
+    }
+    if (event.key !== "Enter") {
+      // Everything else belongs to the textbox. The canvas already declines to act on keys
+      // whose target is a text input, so Delete and its kin type rather than delete
+      // (Requirement 8.4); stopping propagation here would be a second, divergent copy of
+      // that rule.
+      return;
+    }
+    if (multiline && !event.ctrlKey && !event.metaKey) {
+      return;
+    }
+    event.preventDefault();
+    void commit();
+  };
+
+  const shared = {
+    className: "inline-label-editor-field",
+    "aria-label": "Label",
+    value: entry.value,
+    onBlur: () => void commit(),
+    onKeyDown: keyDown,
+  };
+
   const height = placement.height + (entry.message ? MESSAGE_HEIGHT : 0);
 
   return (
@@ -130,31 +171,24 @@ export function InlineLabelEditor({ placement, onPropose, onSubmit, onCancel, on
       height={height}
     >
       <div className="inline-label-editor-body">
-        <input
-          ref={field}
-          className="inline-label-editor-field"
-          type="text"
-          aria-label="Label"
-          value={entry.value}
-          onChange={(event) => entry.setValue(event.target.value)}
-          onBlur={() => void commit()}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void commit();
-              return;
-            }
-            if (event.key === "Escape") {
-              event.preventDefault();
-              abandon();
-              return;
-            }
-            // Everything else belongs to the textbox. The canvas already declines to act on keys
-            // whose target is a text input, so Delete and its kin type rather than delete
-            // (Requirement 8.4); stopping propagation here would be a second, divergent copy of
-            // that rule.
-          }}
-        />
+        {multiline ? (
+          <textarea
+            ref={(element) => {
+              field.current = element;
+            }}
+            {...shared}
+            onChange={(event) => entry.setValue(event.target.value)}
+          />
+        ) : (
+          <input
+            ref={(element) => {
+              field.current = element;
+            }}
+            {...shared}
+            type="text"
+            onChange={(event) => entry.setValue(event.target.value)}
+          />
+        )}
         {entry.message && (
           <p className="inline-label-editor-error" role="alert">
             {entry.message}

@@ -291,6 +291,38 @@ export function scaledTypography(typography: LabelTypography | undefined, viewSc
   return { ...typography, fontSize: (typography.fontSize ?? 12) * factor };
 }
 
+/**
+ * The region a wrapped label's text was laid out in, for the inline editor that opens over it.
+ *
+ * <b>It returns the layout's own region rather than recomputing a band from the outside.</b> The
+ * region and the line count are solved together, so anything that guesses the band arrives at a
+ * different box - and an editor that is not exactly over the text it replaces is the defect users
+ * see, as text jumping the moment the box opens. One fit, read twice.
+ *
+ * `null` for a declaration that is not wrapped, whose condition fails, or whose text resolves to
+ * nothing: all three mean there is no wrapped block here, and the caller keeps its existing
+ * single-line answer.
+ */
+export function wrappedLabelRegion(
+  declaration: LabelDeclaration,
+  source: BindingSource,
+  bounds: ShapeBounds,
+  shape: BuiltInShape = "box",
+): ShapeBounds | null {
+  if (declaration.wrap !== true || !holds(declaration.when, source)) {
+    return null;
+  }
+
+  const entries = resolveEntries(declaration.text, source);
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const lineHeight = declaration.stack?.lineHeight ?? Math.round((declaration.typography?.fontSize ?? 12) * 1.4);
+  const whole = entries.map((entry) => entry.text).join("\n");
+  return fittedWrap(whole, shape, bounds, lineHeight).region;
+}
+
 export function layoutLabels(
   declarations: readonly LabelDeclaration[] | undefined,
   source: BindingSource,

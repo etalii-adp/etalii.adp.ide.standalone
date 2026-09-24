@@ -34,7 +34,7 @@ import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
 import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
-import { layoutLabels } from "./definition/labels";
+import { layoutLabels, wrappedLabelRegion } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
 import { actionForGesture, actionForKey } from "./definition/actions";
@@ -1347,6 +1347,24 @@ export function DiagramCanvasCore({
         if (declared !== undefined) {
           const bounds = elementBounds(element, type);
           const text = element.label ?? "";
+          // Which shape the label sits in, for the wrapped branch and for the composite one
+          // below: a custom shape supplies its own geometry and has no outline here, so it reads
+          // as a box.
+          const shape = type === undefined || isCustomShape(type.shape) ? "box" : shapeOf(type.shape, sourceOf(element));
+
+          /*
+           * A WRAPPED LABEL OPENS OVER ITS TEXT REGION, ahead of every other branch.
+           *
+           * It has to come first because a wrapped label typically declares neither an `offset`
+           * nor an `editorBox`, which is the centred branch's condition - so it would open over
+           * the whole element, and over the slanted edge of anything that is not a rectangle. The
+           * region is the one the layout fitted, so the box is exactly where the text is.
+           */
+          const region = wrappedLabelRegion(declared, sourceOf(element), bounds, shape);
+          if (region !== null) {
+            return { x: region.x, y: region.y, width: region.width, height: region.height, text, multiline: true };
+          }
+
           if (declared.placement === "beside") {
             return element.labelAt !== undefined
               ? asideLabelPlacement(element.labelAt, 0, text)
@@ -1362,7 +1380,7 @@ export function DiagramCanvasCore({
             return centredLabelPlacement({ x: element.x, y: element.y, width: bounds.width, height: bounds.height }, text);
           }
 
-          const lines = layoutLabels([declared], sourceOf(element), bounds);
+          const lines = layoutLabels([declared], sourceOf(element), bounds, 1, shape);
           const line = lines.find((candidate) => candidate.editable);
           if (line === undefined) {
             // The declaration is editable but this element draws no line for it - an absent
