@@ -2936,9 +2936,21 @@ row here be read as *this canvas is correct*.
 answer, and what it cannot"*, under **What every entry below assumes**. Cited by name and not by
 position: an ordinal moves whenever an item is added, and a count in a heading is a value two
 branches can both edit and still merge cleanly. Read it; this entry does not repeat it. Specific
-to this pass: `src/examples` open as a project,
-backend and client running from a worktree on your reserved ports, **browsing the backend's
-port**.
+to this pass: backend and client running from a worktree on your reserved ports, **browsing the
+backend's port**.
+
+**Open a COPY of `src/examples` from outside the repository, never the checkout's own.** This
+entry used to say only "`src/examples` open as a project", and the workspace already carries a
+project named *Showcase* pointing at `C:\git\EtAlii.Adp\src\examples` — **the shared main
+checkout**. The steps below drag an element, and **a drag writes layout into the document**, so
+following the old wording dirties the checkout every other session is working in. That is not
+hypothetical: four example documents were modified that way this week and had to be traced back
+to whoever had the app open.
+
+What the 2026-09-24 run did, so the next reader copies a procedure rather than inventing one:
+`cp -r <worktree>/src/examples <temp>/adp-selection-pass`, then **Add project** in the app with
+that path, run the pass, and afterwards **remove the project from the workspace and delete the
+copy** — in that order, so no project is left pointing at a folder that no longer exists.
 
 **Why this entry exists, and what it is the only evidence for.** Every canvas has unit tests
 that mount it and assert what selection *does* (`expectLibrarySelection`, called from each
