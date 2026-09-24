@@ -4,7 +4,7 @@ using Grpc.Core;
 using Grpc.Core.Testing;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Authentication.Tests;
 
 /// <summary>
 /// The product-description answer (github-build-pipeline Requirement 2.3): the version comes

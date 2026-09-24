@@ -3,7 +3,7 @@ using System.Xml.Linq;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// Keeps <c>docs/dependencies.md</c> true (documentation spec, Requirement 9.5): its Backend and

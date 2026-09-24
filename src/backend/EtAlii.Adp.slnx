@@ -28,6 +28,7 @@
   <Project Path="EtAlii.Adp.Backend.Service/EtAlii.Adp.Backend.Service.csproj" />
   <Project Path="EtAlii.Adp.Backend.Tests/EtAlii.Adp.Backend.Tests.csproj" />
   <Project Path="EtAlii.Adp.Authentication/EtAlii.Adp.Authentication.csproj" />
+  <Project Path="EtAlii.Adp.Authentication.Tests/EtAlii.Adp.Authentication.Tests.csproj" />
   <Project Path="EtAlii.Adp.Sessions/EtAlii.Adp.Sessions.csproj" />
   <Project Path="EtAlii.Adp.Context/EtAlii.Adp.Context.csproj" />
   <Project Path="EtAlii.Adp.Context.Tests/EtAlii.Adp.Context.Tests.csproj" />
@@ -37,6 +38,7 @@
   <Project Path="EtAlii.Adp.TestSupport/EtAlii.Adp.TestSupport.csproj" />
   <Project Path="EtAlii.Adp.Projects.Tests/EtAlii.Adp.Projects.Tests.csproj" />
   <Project Path="EtAlii.Adp.Sessions.Tests/EtAlii.Adp.Sessions.Tests.csproj" />
+  <Project Path="EtAlii.Adp.Repository.Tests/EtAlii.Adp.Repository.Tests.csproj" />
   <Project Path="EtAlii.Adp.Problems.Tests/EtAlii.Adp.Problems.Tests.csproj" />
   <Project Path="EtAlii.Adp.Hierarchy/EtAlii.Adp.Hierarchy.csproj" />
   <Project Path="EtAlii.Adp.Hierarchy.Tests/EtAlii.Adp.Hierarchy.Tests.csproj" />

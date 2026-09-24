@@ -1,7 +1,7 @@
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// No C# source file under <c>src</c> contains a carriage return that is not part of a

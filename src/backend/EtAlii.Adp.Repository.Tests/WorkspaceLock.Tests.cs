@@ -2,7 +2,7 @@ using System.Text.Json;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// Keeps <c>src/package-lock.json</c> agreeing with the npm workspaces. When a module gains a

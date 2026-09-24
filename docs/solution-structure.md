@@ -20,25 +20,25 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **105** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **107** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **27** |
+| core | **29** |
 | diagram | **74** |
 | editor | **4** |
 | production | **78** |
-| test | **27** |
+| test | **29** |
 
-Those are **two different splits of the same 105**, and the coincidence that 78 and 27 appear in both is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 107**, and the coincidence that 78 and 29 appear in both is exactly what makes a wrong classification look right.
 
-There are **121** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "121 projects" would be wrong in the confident direction.**
+There are **123** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "121 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
 **The solution's project paths are relative to `src/backend/`.** A core project therefore appears as `EtAlii.Adp.Context/EtAlii.Adp.Context.csproj` with no `backend` segment, while a diagram project appears as `../diagrams/<type>/backend/...`.
 
-Classifying by path segment — "count the ones containing `backend`" — yields a plausible **78 / 27** split that is not the core/module split at all. It happens to match the production/test sizes, which is why it survives a sanity check. **Classify core projects by the absence of a leading `../`.**
+Classifying by path segment — "count the ones containing `backend`" — yields a plausible **78 / 29** split that is not the core/module split at all. It happens to match the production/test sizes, which is why it survives a sanity check. **Classify core projects by the absence of a leading `../`.**
 
 ## The core projects
 
@@ -60,7 +60,7 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Test helpers shipped as a project | `EtAlii.Adp.TestSupport` |
 
-**12** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Sessions.Tests`.
+**14** test: `EtAlii.Adp.Tests`, `EtAlii.Adp.Authentication.Tests`, `EtAlii.Adp.Backend.Tests`, `EtAlii.Adp.Client.Tests`, `EtAlii.Adp.Context.Tests`, `EtAlii.Adp.Diagram.Tests`, `EtAlii.Adp.Documents.Tests`, `EtAlii.Adp.Editor.Tests`, `EtAlii.Adp.Hierarchy.Tests`, `EtAlii.Adp.History.Tests`, `EtAlii.Adp.Problems.Tests`, `EtAlii.Adp.Projects.Tests`, `EtAlii.Adp.Repository.Tests`, `EtAlii.Adp.Sessions.Tests`.
 
 Not every production project has a matching test project, and that is not a gap to close by reflex — some are covered from `EtAlii.Adp.Backend.Tests`.
 
@@ -107,6 +107,6 @@ Showcase documents live in `src/examples/`, not in a module's `Fixtures/`. The t
 
 **Not covered here, deliberately** (a later pass, each its own specification): what is inside a module, the wire contracts and generated code, the client component tree, deployment and hosting, and the editor family's internals.
 
-**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that every count above recomputes from the tree, and that the page stays within its size limit.
+**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Repository.Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that every count above recomputes from the tree, and that the page stays within its size limit.
 
 **It cannot check whether a description is still accurate.** Every count on this page is guarded; every *sentence* around them is not. A concern column that names the wrong project would pass silently, because the project exists.
