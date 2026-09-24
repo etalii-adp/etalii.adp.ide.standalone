@@ -21,4 +21,4 @@ without that, nothing here could resolve `react`.
   rule whatever order the bundler emits.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`c4-diagrams`](../../../../.spec-workflow/archive/specs/c4-diagrams/) for this diagram type's spec.
+`c4-diagrams` (removed from the tree; in history before `ece03c36`) for this diagram type's spec.

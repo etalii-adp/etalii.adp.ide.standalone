@@ -55,7 +55,12 @@ public class AdpFileWriterFailureRecordTests : IDisposable
 
         // Assert. The caller still gets the original exception - no error policy is imposed here.
         Assert.Same(wild, thrown);
-        var warning = Assert.Single(logs.Warnings);
+        // One warning ABOUT THIS, not one warning in total: the capture is process-wide, so a
+        // concurrent test's warning must not redden this one. An absent line still fails.
+        var warning = Assert.Single(
+            logs.Warnings,
+            w => w.Contains(path, StringComparison.Ordinal) &&
+                 w.Contains("Unable to remove the file to be replaced", StringComparison.Ordinal));
         Assert.Contains("0x80070497", warning, StringComparison.Ordinal);
         Assert.Contains(path, warning, StringComparison.Ordinal);
         Assert.Contains("Unable to remove the file to be replaced", warning, StringComparison.Ordinal);
