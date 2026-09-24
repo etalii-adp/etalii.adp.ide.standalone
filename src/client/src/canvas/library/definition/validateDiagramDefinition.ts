@@ -48,6 +48,20 @@ export function validateDiagramDefinition(definition: DiagramDefinition): readon
     }
   }
 
+  // An acyclic rule naming a relation nobody declares enforces nothing, and enforces it silently:
+  // the walk simply never covers an edge, so the diagram admits the cycle the author forbade. That
+  // is a definition bug of exactly the shape this function exists to catch - a typo in an id.
+  const knownRelationTypes = new Set(definition.relationTypes.map((relation) => relation.id));
+  for (const rule of definition.acyclic ?? []) {
+    for (const relationType of rule.relationTypes) {
+      if (!knownRelationTypes.has(relationType)) {
+        problems.push(
+          `An acyclic rule names relation type "${relationType}", which this definition does not declare.`,
+        );
+      }
+    }
+  }
+
   return problems;
 }
 

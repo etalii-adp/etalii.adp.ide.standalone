@@ -1065,4 +1065,28 @@ export interface DiagramDefinition {
    * while the pointer is still down. Omitted, drags roam free.
    */
   dragBounds?: ShapeBounds;
+  /**
+   * Sets of relation types within which a directed cycle is not admitted. See {@link AcyclicRule}.
+   *
+   * Omitted, every relation may close a cycle, which is what a causal loop diagram is made of -
+   * so this is declared by the notations that forbid one, and by no others.
+   */
+  acyclic?: readonly AcyclicRule[];
+}
+
+/**
+ * One set of relation types that must stay acyclic among themselves.
+ *
+ * <b>A set rather than a flag, because acyclicity is a property of a set of edges and not of a
+ * diagram.</b> A decomposition's "contains" relations must form a tree while its annotations,
+ * drawn between the same elements, may run any way they like - and a per-relation boolean cannot
+ * say that a path alternating between two relation types is still a cycle, which is precisely
+ * what a set does say.
+ *
+ * Several sets are allowed and are independent: a relation belonging to two of them is refused if
+ * either would close.
+ */
+export interface AcyclicRule {
+  /** The relation type ids the rule covers. A path leaves the set at the first edge outside it. */
+  relationTypes: readonly string[];
 }

@@ -614,9 +614,25 @@ export function DiagramCanvasCore({
         }
       }
 
+      /*
+       * THE THIRD CHECK, and it is independent of the two above it: would this connection close a
+       * directed cycle within a set the relation belongs to?
+       *
+       * Independent means no check is consulted to skip another. Each of the three refuses on its
+       * own and none of them can pass on another's behalf - written as a sequence of guards
+       * precisely so that satisfying cardinality cannot return a verdict before the walk has run.
+       * That shape is invisible on every example where two of the rules agree, which is why
+       * `DiagramCanvas.acyclic.test.tsx` drives one refusal each rule alone can explain.
+       */
+      for (const rule of definition.acyclic ?? []) {
+        if (rule.relationTypes.includes(relation.id) && reaches(model.connections, rule.relationTypes, target.id, sourceId)) {
+          return false;
+        }
+      }
+
       return true;
     },
-    [model.connections],
+    [definition.acyclic, model.connections],
   );
 
   /**
@@ -2877,6 +2893,46 @@ function resizedBounds(bounds: ConnectorBox, side: ResizedSide, delta: number): 
 /** The pointer delta along the dragged side's own axis. */
 function alongSide(side: ResizedSide, dx: number, dy: number): number {
   return side === "left" || side === "right" ? dx : dy;
+}
+
+/**
+ * Whether a directed path already runs from one element to another through connections whose type
+ * is in `types` - the walk a declared acyclic rule refuses on.
+ *
+ * <b>Breadth-first over a visited set, not a bounded depth.</b> A model may already hold a cycle
+ * whatever the definition says: the rule can have been declared after the document was written, or
+ * the document written by hand. A walk that trusted the rule to have been enforced would follow
+ * that cycle forever with the pointer still down, and the visited set is what makes termination a
+ * property of the algorithm rather than of the data.
+ *
+ * Edges outside the set are not traversed at all, so a path that leaves the set is not a path: a
+ * decomposition whose "contains" edges must form a tree is unaffected by annotations drawn over
+ * the same elements.
+ */
+function reaches(
+  connections: readonly DiagramModelConnection[],
+  types: readonly string[],
+  from: string,
+  to: string,
+): boolean {
+  const edges = connections.filter((connection) => types.includes(connection.type));
+  const seen = new Set<string>([from]);
+  const queue: string[] = [from];
+
+  while (queue.length > 0) {
+    const at = queue.shift()!;
+    if (at === to) {
+      return true;
+    }
+    for (const edge of edges) {
+      if (edge.sourceId === at && !seen.has(edge.targetId)) {
+        seen.add(edge.targetId);
+        queue.push(edge.targetId);
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
