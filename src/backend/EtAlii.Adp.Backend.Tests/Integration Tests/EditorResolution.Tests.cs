@@ -194,13 +194,13 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
 
         // The diagram view: the router claims the path, exactly as it always has (R5.1).
         using var diagramCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path }, headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
-        var diagramBaseline = await NextAddAsync(diagramCall.ResponseStream, add => add.Elements.Count > 0);
+        var diagramBaseline = await NextAddAsync(diagramCall.ResponseStream, add => add.Elements.Count > 0, "the diagram baseline");
         Assert.DoesNotContain(diagramBaseline.Elements, element => element.Id?.Value == "content");
 
         // The text view of the same path, on the same connection: editor_id forces the editor
         // family - the "Open as text" tab's stream (R5.2) - and both stay open at once.
         using var textCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path, EditorId = "*" }, headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
-        var textBaseline = await NextAddAsync(textCall.ResponseStream, add => add.Elements.Any(element => element.Id?.Value == "content"));
+        var textBaseline = await NextAddAsync(textCall.ResponseStream, add => add.Elements.Any(element => element.Id?.Value == "content"), "the text baseline");
         Assert.Equal(originalText, ContentOf(textBaseline));
 
         // Act 1: save through the text wire, renaming the person.
@@ -213,7 +213,7 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
 
         // Assert 1a: the text session hears its own file change from disk - a Remove+Add
         // replacement, not a stale private copy.
-        var textAfterSave = await NextAddAsync(textCall.ResponseStream, add => ContentOf(add) == editedText);
+        var textAfterSave = await NextAddAsync(textCall.ResponseStream, add => ContentOf(add) == editedText, "the text view to hear the SaveText write");
         Assert.Equal(editedText, ContentOf(textAfterSave));
 
         // Assert 1b: R5.3's other half - the diagram hears the same save as pushed deltas.
@@ -224,7 +224,8 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         // and the bridge is what closed it.)
         var diagramAfterSave = await NextAddAsync(
             diagramCall.ResponseStream,
-            add => add.Elements.Any(element => PayloadTextOf(element).Contains("Quartermaster", StringComparison.Ordinal)));
+            add => add.Elements.Any(element => PayloadTextOf(element).Contains("Quartermaster", StringComparison.Ordinal)),
+            "the diagram to hear the SaveText write");
         Assert.DoesNotContain(diagramAfterSave.Elements, element => element.Id?.Value == "content");
 
         // Act 2 and assert 2: the reverse direction. A diagram-side save lands on the same
@@ -234,7 +235,7 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         var diagramSideText = editedText.Replace("Quartermaster", "Quartermistress");
         await File.WriteAllTextAsync(
             IoPath.Combine(_projectFolder, "both.dsl"), diagramSideText, TestContext.Current.CancellationToken);
-        await NextAddAsync(textCall.ResponseStream, add => ContentOf(add) == diagramSideText);
+        await NextAddAsync(textCall.ResponseStream, add => ContentOf(add) == diagramSideText, "the text view to hear the external write");
     }
 
     /// <summary>The "content" element's text, or empty for an Add that carries none.</summary>
@@ -251,18 +252,126 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
     private static string PayloadTextOf(Element element) =>
         element.Payload is { } payload ? Encoding.UTF8.GetString(payload.Value.Span) : "";
 
-    /// <summary>Reads the stream until an Add matches; the call's own deadline is the timeout.</summary>
-    private static async Task<Add> NextAddAsync(IAsyncStreamReader<Delta> stream, Func<Add, bool> matches)
+    // THE GUARD ON NextAddAsync's REPORT. Two tests rather than one, because the value of the
+    // report is telling the two cases APART: a stream that said nothing, and a stream that said
+    // the wrong thing. A single test would pass on a report unable to distinguish them.
+    //
+    // Both fail against the previous NextAddAsync, which threw "The stream ended before the
+    // expected Add delta arrived." for either case - seen to fail before being believed.
+
+    [Fact]
+    public async Task WhenDeltasArriveAndNoneMatch_TheFailureNamesEveryOneItDiscarded()
     {
-        while (await stream.MoveNext(TestContext.Current.CancellationToken))
+        var remove = new Delta { Remove = new Remove() };
+        var wrongAdd = new Delta { Add = new Add() };
+        wrongAdd.Add.Elements.Add(new Element { Id = new ElementId { Value = "not-content" }, Type = "x" });
+        var stream = new ScriptedDeltaStream([remove, wrongAdd]);
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NextAddAsync(stream, _ => false, "something that never comes"));
+
+        Assert.Contains("something that never comes", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("discarded 2 message(s)", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("Remove", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("not-content", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("<no content element>", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WhenNothingArrivesAtAll_TheFailureSaysSoRatherThanShowingAnEmptyList()
+    {
+        var stream = new ScriptedDeltaStream([]);
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NextAddAsync(stream, _ => true, "something that never comes"));
+
+        // The distinguishing half: silence is NAMED, not rendered as an empty collection.
+        Assert.Contains("discarded NOTHING", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("discarded 0", failure.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A stream that yields exactly what it was given and then ends.</summary>
+    private sealed class ScriptedDeltaStream(IReadOnlyList<Delta> deltas) : IAsyncStreamReader<Delta>
+    {
+        private int _index = -1;
+
+        public Delta Current => deltas[_index];
+
+        public Task<bool> MoveNext(CancellationToken cancellationToken) =>
+            Task.FromResult(++_index < deltas.Count);
+    }
+
+    /// <summary>
+    /// Reads the stream until an Add matches; the call's own deadline is the timeout.
+    /// </summary>
+    /// <remarks>
+    /// <b>It names what it DISCARDED when it gives up, and that is the method's purpose rather
+    /// than a convenience.</b> The loop drops three different things silently: a delta that is
+    /// not an <c>Add</c>, an <c>Add</c> whose payload fails the predicate, and an <c>Add</c>
+    /// carrying no <c>content</c> element at all - because <see cref="ContentOf"/> answers empty
+    /// for that, and empty fails every predicate here.
+    /// <para>
+    /// <b>So "nothing arrived" and "something arrived carrying the wrong thing" produced the
+    /// identical observation</b> - an <c>RpcException/DeadlineExceeded</c> and nothing else - for
+    /// every one of the four recorded failures above. Those two want opposite repairs: one points
+    /// at whatever should have sent a delta, the other at what it sent. An empty discard list says
+    /// the stream was silent; a populated one says the answer came and was thrown away. Until this
+    /// existed each occurrence was a tally mark rather than evidence, which is why four of them
+    /// bought no mechanism.
+    /// </para>
+    /// </remarks>
+    private static async Task<Add> NextAddAsync(
+        IAsyncStreamReader<Delta> stream,
+        Func<Add, bool> matches,
+        string awaiting = "an Add matching the predicate")
+    {
+        var discarded = new List<string>();
+        try
         {
-            if (stream.Current.ActionCase == Delta.ActionOneofCase.Add && matches(stream.Current.Add))
+            while (await stream.MoveNext(TestContext.Current.CancellationToken))
             {
-                return stream.Current.Add;
+                var delta = stream.Current;
+                if (delta.ActionCase == Delta.ActionOneofCase.Add && matches(delta.Add))
+                {
+                    return delta.Add;
+                }
+
+                discarded.Add(DescribeDiscarded(delta));
             }
         }
+        catch (RpcException exception)
+        {
+            // The deadline arrives HERE rather than ending the loop, so the report has to be
+            // written on the way out of MoveNext. Wrapping keeps the original as InnerException.
+            throw new InvalidOperationException(
+                $"Waiting for {awaiting}: the call ended as {exception.StatusCode}, {DiscardReport(discarded)}",
+                exception);
+        }
 
-        throw new InvalidOperationException("The stream ended before the expected Add delta arrived.");
+        throw new InvalidOperationException(
+            $"Waiting for {awaiting}: the stream ended, {DiscardReport(discarded)}");
+    }
+
+    /// <summary>
+    /// The discard list as a sentence. The empty case is spelled out rather than shown as an empty
+    /// list, because it is the informative half and the one a reader skims past.
+    /// </summary>
+    private static string DiscardReport(List<string> discarded) =>
+        discarded.Count == 0
+            ? "having discarded NOTHING - no message reached this reader at all, so the stream was silent rather than carrying the wrong thing."
+            : $"having discarded {discarded.Count} message(s): {string.Join(" | ", discarded)}";
+
+    /// <summary>What a discarded delta was, in enough detail to tell the three drop cases apart.</summary>
+    private static string DescribeDiscarded(Delta delta)
+    {
+        if (delta.ActionCase != Delta.ActionOneofCase.Add)
+        {
+            return delta.ActionCase.ToString();
+        }
+
+        var ids = string.Join(",", delta.Add.Elements.Select(element => element.Id?.Value ?? "<no id>"));
+        var content = ContentOf(delta.Add);
+        return $"Add(ids=[{ids}], content={(content.Length == 0 ? "<no content element>" : $"{content.Length} chars")})";
     }
 
     /// <summary>Opens the stream and returns the first Add delta the baseline produces.</summary>
