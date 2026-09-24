@@ -245,6 +245,14 @@ The trailer remains useful in one direction only, and the limit matters because 
 
 **So recognise the precursor: `git worktree remove` refusing from inside the tree.** The error itself is telling you the shell is in the wrong place, and the obvious follow-up is a relative deletion issued from exactly the directory that caused the error. **After that refusal, the next command must be absolute.**
 
+**A remedy inherits the residue of the thing it replaces unless you check.** The clearest instance is
+self-inflicted and therefore credible: a session insisted - correctly - that a message-ordering remedy state
+what it left behind, then proposed a structural fix for the same problem and sold it on *"the check and the act
+are one operation, so there is no interval to go stale in"*, without looking for the same residue there. It was
+false at the scope that mattered. **A structural remedy feels like a different kind of thing from a discipline,
+which is why nobody re-runs the residue question on it** - and that is why structural fixes get oversold as a
+class rather than one at a time.
+
 **And when a written remedy fails anyway, the fix is not to repeat it louder.** Ask what it asks a person to do and when - **if the answer is "the right thing, unprompted, later", replace it with something the command or the directory carries.** The three above were each written down before they failed.
 
 **A third kind of remedy, for when the artifact CANNOT carry it.** All three above are prevention: make the
@@ -399,6 +407,50 @@ worth arguing about.
 followed this ruling records that it went through the gates **by ruling rather than by precedent** - so the
 next reader of that file's history meets a commit that is not another silent instance, and can tell which were
 deliberate. **A judgement that leaves no trace reads as a measurement.**
+
+## None of these was found by looking harder
+
+**Four findings in one evening, four sessions, and not one of them was produced by more care.** Bytes quoted
+against patterns grepped; a first-parent test against a parent count; scripts read against scripts reasoned
+about; and a search against a thing two sessions both assumed had landed. **Four instruments, no additional
+diligence in any of them** - which makes routing a finding to somebody else **a measurement rather than a
+courtesy**, and makes every clause below actionable rather than aspirational. The sessions holding the wrong
+answers were not being sloppy, and no amount of re-reading would have moved any of them.
+
+**An instrument's reliability record is about the questions it was ASKED, not the questions it was used to
+answer.** That is the general form of every instance this document has collected: the wrapper exit code whose
+record is spotless because everyone independently distrusts it; the `ls` that answered correctly about every
+set it could see; the precondition check satisfied by a cache directory rather than an install; the probe that
+passed because its careful users read its message instead of its code. **Each was reliable. None was reliable
+for the question it was carrying.** Ask what a tool has been *asked* before citing what it has *shown*.
+
+**Two independent-looking sources that are actually one source read as corroboration - and this is WORSE than
+a single source, because it is the exact state the single-source rule tells you to look for and cannot
+detect.** *Agreement between readers who share a source is not corroboration* is checkable when the shared
+source is a document: you can ask what each of them read. **When the sharing is a RELAY, neither reader knows
+they are one source.** One session asserted a claim, a second repeated it as its own, and a third wrote it into
+this document before reading the underlying scripts - **the second telling supplied the confidence the first
+lacked**, and nobody was careless at any step. **The cross-check that works is not a second source, which is
+often impossible, but the SAME source read with an instrument that fails differently**, which is nearly always
+available: bytes against patterns, `ls -A` against `ls`, first-parent membership against a parent count.
+
+**And the board has a lock for the resource that collides destructively and nothing at all for the resource
+that collides wastefully.** `who-is-gating.sh` answers *is anybody gating*. It does not answer *is anybody on
+this*, and **the two questions have no instrument in common** - so the first gets read as an answer to the
+second, which is the neighbouring-question failure applied to coordination rather than to code. **Architect 1's
+instance, named at its own request:** three sessions pursued one finding - two summarised rules diverging from
+their reference - without any of them knowing. It was found and landed by one, relayed to a second, and
+independently verified by Architect 1, **which put it to the user as a selection, got a yes, and built a branch
+from a base that already contained the fix.** The user authorised the same edit twice, the second time for work
+already done. **Architect 1 checked the tell for a lock and never checked whether anybody was working on the
+same finding; it treated the first as an answer to the second.** The coordinator's half - knowing two sessions
+were on it and telling neither - is a separate failure with a separate owner.
+
+**The encouraging measurement from the same day, because it is the other half of the same fact.** Three times,
+two sessions reached the same correction independently and their messages crossed in flight - once with one
+already rewriting its own sentence before the other's arrived. **Duplicated effort and findable corrections are
+the same property seen twice**: what makes the work redundant is what makes it reliable. The remedy is an
+instrument for *is anybody on this*, not less independence.
 
 ## Provenance is never in the name
 
@@ -1379,6 +1431,16 @@ and the sessions most exposed are the ones writing the most careful message. Two
 re-read immediately before the act rather than at the start of the turn, and **say when a state was read**, so
 a reader can see the interval you could not.
 
+**And the distribution is evidence about the MEDIUM rather than about the sessions - which is offered with its
+doubt attached rather than resolved.** Five instances, five sessions, nobody careless, and a sixth in which one
+session asked another to *keep* a doubt in this document that had never been in it: it existed only in their
+messages, and the session asked would have confirmed it kept. **The medium is asynchronous messages over
+mutable shared state, where the cost of thinking is measured in the staleness of what you thought about.** If
+that reading is right, then **you cannot fix a property of the medium with a rule addressed to its
+participants**, and every remedy above is a mitigation rather than a fix. **Whether it is the right reading is
+exactly the kind of thing a clause should say it does not know** - five instances in one evening is a
+distribution, not a proof, and the alternative reading is that five sessions were simply unlucky together.
+
 **`ahead=0` also answers a narrower question than it appears to: ahead of WHICH `develop`, read WHEN.**
 
 **The narrowest this gets from OUTSIDE the tool, and it names its own residue.** Put the tell in the same
@@ -1397,7 +1459,10 @@ about its cost, from reading the scripts rather than from running them:
   full self-test rather than `mode=quick`, and the refusal needs its own `RESULT=` line so a caller can tell
   *board held* from *arguments wrong* from *gates red* - three exits that must not collapse into one.
 - **The obstacle usually named for it - that the gate holds the board while it runs, so a tell call would
-  refuse itself - is an ordering constraint rather than a hard part.** `gate.sh` acquires its lock and only
+  refuse itself - is an ordering constraint rather than a hard part.**  **This is a retraction, not a refinement, and it is worth naming how it got written down:** one session
+  asserted that obstacle, a second repeated it, and a third wrote it into this document without reading the
+  scripts. **Neither of the first two had measured it.**
+ `gate.sh` acquires its lock and only
   then writes its tell entry, so a check placed before the lock cannot see itself.
 - **The real difficulty is that it narrows the window rather than closing it, for a reason the proposal does
   not mention.** The lock is per scratch worktree and the tell aggregates across them, so there is no single
@@ -1426,6 +1491,13 @@ not a test failure.** A run that reached the tests prints `total:`, `failed:`, `
 meeting the bare exit without it goes hunting for a failing test that does not exist. Measured by the session
 that hit it: a genuine test failure exits **2**, a build break **1**. **Re-running on a settled tree is the
 entire remedy**; nothing is wrong with the tree or the change.
+
+**And the two exit codes are not equally established, which a reader will otherwise assume.** `2` was seen
+**twice**, on two independent runs failing 140 tests against the same precondition; `1` was seen **once**,
+because the build was broken once by accident and deliberately not repeated when spending a cycle to
+manufacture a second was ruled against. **The asymmetry is in the opportunities, not in the care** - worth
+saying, because a discriminator resting on one observation of one side gets used as though both sides were
+equally measured.
 
 **Two clauses from the process-tree instance, both earned the hard way.** *A kill orphans, it does not
 terminate*: the wrapper was killed and the script survived, the script was killed and the suite survived, the
