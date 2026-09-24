@@ -31,9 +31,10 @@ One worktree for the whole specification, one Developer owning it until every ta
   - _Requirements: 1.1, 1.2, 1.4, 12.1_
 
 - [ ] 3. One surface for refusals, one for status
-  - Files: `DiagramCanvas.tsx`, `canvas.css`, the fifteen module rejection surfaces, the three module loading/unavailable blocks
+  - Files: `DiagramCanvas.tsx`, `canvas.css`, the sixteen module rejection surfaces across thirteen modules, and the status blocks of four modules plus the shell's own
   - The library shows a refused action, shortcut, move and **failed save** in one place, and the loading, reconnecting and unavailable states in one appearance. **No module declares a rejection or status element.** The four canvases with no `onActionRefused` handler — `ansible-structure`, `azure-pipeline`, `c4`, `mindmap` — need none afterwards; `action-refused` stays in the contract for a module that wants its own display.
-  - **Guard: mounted, over every registered canvas** — push a refusal and fail if no message appears, if more than one surface shows it, or if a module declares one.
+  - **Guard: mounted, over every registered canvas** — push a refusal and fail if no message appears, if more than one surface shows it, if a module declares one, **and fail if the surface that appears is not the library's.** The fourth condition is not redundant: *more than one* catches a module that **adds** to the library's surface, and there are three that **replace** it — `dotnet-dependency-graph`, `helm-charts` and `wardley-map` name their own rejection class and do not compose `canvas-rejection` at all, where the other thirteen surfaces do. Against those three one surface appears, the count is right, and it is the wrong surface, so a guard counting only surfaces is green on precisely the cases the task exists for.
+  - **Four modules declare a status element, not three, and the counts here are by class token rather than by substring.** `azure-pipeline`, `mindmap` and `c4` each declare a loading and an unavailable class; `rdf` declares `shacl-loading` at `ShaclCanvas.tsx:324` with **no unavailable counterpart**. Outside the diagram modules the shell has `text-editor-loading`/`-unavailable`, `explorer-tree-loading`, `explorer-tree-loading-children`, `explorer-tree-node-unavailable`, `choice-tree-row-unavailable`, `property-grid-row-unavailable` and a bare `unavailable`. Where this list and the rule disagree, **the rule governs**: no module declares a rejection or status element.
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 12.1_
 
 ---
