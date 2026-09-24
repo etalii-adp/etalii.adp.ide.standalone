@@ -364,9 +364,12 @@ answers the real question is first-parent membership of `develop`** - `git rev-l
 and by it **all six of that file's changes came in through merged branches** - `30e9e42c`, for one,
 as the second parent of `0bdd8e6d`. **The cited evidence was evidence of the rule being followed.**
 
-**And the search missed a fifth, the most recent of all** - `60922acd`, landed the same day, also on a
-merged branch. A window ending before the latest instance is how a history that contradicts you reads as a
-history that supports you.
+**And a SECOND wrong answer came from the same real SHAs by a different route, so keep the two apart.** The
+parent count asked a *neighbouring question*; the four-commit window asked **the right question of the wrong
+sample**. The search stopped at four and missed a fifth, `60922acd`, **the most recent of all** and also on a
+merged branch. **A window that stops short of the newest instance is how a history that contradicts you
+reads as a history that supports you** - and it needs no faulty query at all, which is why it survives
+fixing the query. Ask what the sample excludes, and make the newest instance the one you check first.
 
 **The cost argument also runs backwards from how it was first framed.** *A markdown-only change cannot move
 any of the four gates* was offered as a reason the gates were unnecessary. It is the reason they are **cheap**:
