@@ -78,6 +78,33 @@ gate_tree_matches_head() {
   esac
 }
 
+# gate_blocking_paths <changed-by-the-merge> <locally-changed> - the paths in BOTH newline-separated
+# lists, in the first list's order. These are the only paths a fast-forward can refuse over.
+#
+# GIT REFUSES ON A COLLISION, NOT ON A DIRTY INDEX, which is the distinction the whole diagnosis
+# rests on: a local change to a file the fast-forward does not touch lets it through, and a local
+# change to one it does touch stops it with "Your local changes would be overwritten". Measured
+# 2026-09-24 in a scratch repository, all three shapes - untouched path, touched path, staged
+# deletion of a touched path - and in every case the local work was left intact.
+#
+# It is a function rather than two greps at the call site because this is the sentence a refused
+# landing prints as its cause, and a confident wrong cause is worse than no cause at all: it is what
+# sends the reader at the wrong remedy.
+gate_blocking_paths() {
+  local changed=${1:-} locally=${2:-} path
+  [ -n "$changed" ] && [ -n "$locally" ] || return 0
+  printf '%s\n' "$changed" | while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    case "
+$locally
+" in
+      *"
+$path
+"*) printf '%s\n' "$path" ;;
+    esac
+  done
+}
+
 # --- A run's logs. Two requirements that look opposed and are not.
 #
 # One: no run may read another run's log. A reused scratch tree once served a twelve-minute-old green

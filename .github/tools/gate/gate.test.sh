@@ -54,13 +54,22 @@ case "${1:-}" in
     ;;
 esac
 [ $# -le 1 ] || { echo "RESULT=selftest-broken (expected one argument at most; got $#)"; exit 2; }
-# MEASURED on Git Bash: quick runs 120 of the 178 cases in about 17 s, against 1274 s for the full
-# suite. BOTH msys numbers were run here - 120 in quick and 178 in full - rather than one being
-# derived from the other. 168 and 110 are NOT measured: msys-gated cases sit in both the cheap and
-# the skipped regions, so the 58-case difference cannot simply be carried across, and those two
-# assume it can. A wrong pin fails LOUDLY with the true count in the same line, so the first run on
-# another platform corrects it rather than passing quietly.
-if [ "$MSYS" = 1 ]; then EXPECTED=178; EXPECTED_QUICK=120; else EXPECTED=168; EXPECTED_QUICK=110; fi
+# MEASURED on Git Bash: quick runs 126 of the 191 cases, against 1274 s for the full suite. 181 and
+# 116 are NOT measured: msys-gated cases sit in both the cheap and the skipped regions, so the case
+# difference cannot simply be carried across, and those two assume it can. A wrong pin fails LOUDLY
+# with the true count in the same line, so the first run on another platform corrects it rather than
+# passing quietly.
+#
+# DO NOT DERIVE A NEW PIN BY ARITHMETIC. The older note here said as much about call sites, and it
+# was proved again on 2026-09-24: a branch adding cases to this file computed its pin by adding, grew
+# its block afterwards, and shipped a wrong number that the pin then caught on the first run. Add
+# cases, RUN it, and read the true count off the failure line. Two branches adding cases at once will
+# also conflict here by construction - whichever lands second must re-run rather than re-add.
+#
+# The 17 s figure this note used to carry for quick was a QUIET-MACHINE figure and was never labelled
+# as one; it did not reproduce under load on 2026-09-24. Do not read a slow quick run as a regression
+# without measuring the load first.
+if [ "$MSYS" = 1 ]; then EXPECTED=191; EXPECTED_QUICK=126; else EXPECTED=181; EXPECTED_QUICK=116; fi
 [ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
@@ -420,6 +429,17 @@ bash "$HERE/who-is-gating.sh" --require-free extra > /dev/null 2>&1; report 3 "$
 REFUSED=$(bash "$HERE/who-is-gating.sh" --typo-for-the-probe > /dev/null 2>&1; echo $?)
 report distinct "$([ "$REFUSED" != 2 ] && echo distinct || echo SHARED-WITH-UNREADABLE)" "refusal does not share the unreadable code, which is what lets a probe require it"
 
+echo "== gate_blocking_paths: the paths a fast-forward can actually refuse over"
+# A pure function, so it is tested here rather than through a repository. It produces the CAUSE a
+# refused landing prints, and a confident wrong cause is worse than none - it is what sends the
+# reader at the wrong remedy.
+report b.txt "$(gate_blocking_paths "$(printf 'a.txt\nb.txt\nc.txt')" "$(printf 'b.txt\nz.txt')")" "a path in both lists is the collision"
+report "" "$(gate_blocking_paths a.txt z.txt)" "no overlap is no collision - this is the SAFE case a refusal would have blocked"
+report "" "$(gate_blocking_paths a.txt '')" "nothing locally changed is no collision"
+report "" "$(gate_blocking_paths '' a.txt)" "a merge that changes nothing is no collision"
+report "" "$(gate_blocking_paths a.txt xa.txt)" "a SUBSTRING is not a path - xa.txt does not collide with a.txt"
+report "Implementation Logs/x.md" "$(gate_blocking_paths "$(printf 'Implementation Logs/x.md\nb.txt')" 'Implementation Logs/x.md')" "a path with a space in it survives, which .spec-workflow is full of"
+
 echo "== gate.sh refuses to start without its four arguments"
 G="$HERE/gate.sh"
 out=$(bash "$G" 2>&1)
@@ -516,9 +536,33 @@ out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
 report "1:main-checkout-not-on-develop" "$?:$(result_of "$out")" "land.sh with the main checkout on another branch"
 report "$ELSE0" "$(git -C "$R2" rev-parse elsewhere)" "... and that branch was not moved"
 git -C "$R2" switch -q develop
+# A dirty shared index, in both of the only two shapes there are. The refusal case FIRST, because it
+# leaves develop untouched and so the landing case below still has something to land.
+#
+# These exist because `RESULT=ff-refused` used to be a bare string, and an operator who cannot see
+# that the base is still good reaches for `git stash` to get "past" it - which is how this board lost
+# another session's in-flight work. The sentence that prevents it is "develop has NOT moved".
+echo staged > "$R2/f.txt" && git -C "$R2" add f.txt || broken "cannot stage a colliding path"
+[ -n "$(git -C "$R2" diff --name-only "$DEV0" "$MERGED" -- f.txt)" ] ||
+  broken "f.txt is not a path this fast-forward touches, so the collision case would test nothing"
 out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
-report "0:landed" "$?:$(result_of "$out")" "land.sh lands the gated commit"
+report "1:ff-refused" "$?:$(result_of "$out")" "a staged path the fast-forward would touch is refused by git, as it always was"
+report 1 "$(printf '%s\n' "$out" | grep -c '^BLOCKED_BY=f.txt')" "... and land.sh now NAMES the path, instead of a bare ff-refused"
+report 1 "$(printf '%s\n' "$out" | grep -c 'develop has NOT moved')" "... and says the base is still good, which is the sentence that stops the reach for git stash"
+report "$DEV0" "$(git -C "$R2" rev-parse develop)" "... and develop did not move"
+git -C "$R2" restore --staged --worktree f.txt || broken "cannot clear the colliding path"
+
+echo staged > "$R2/unrelated.txt" && git -C "$R2" add unrelated.txt || broken "cannot stage an unrelated path"
+[ -z "$(git -C "$R2" diff --name-only "$DEV0" "$MERGED" -- unrelated.txt)" ] ||
+  broken "unrelated.txt IS touched by this fast-forward, so the safe case would test the wrong thing"
+out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
+report "0:landed" "$?:$(result_of "$out")" "land.sh lands the gated commit - a staged path the fast-forward does not touch is SAFE and is not refused"
 report "$MERGED" "$(git -C "$R2" rev-parse develop)" "... and develop is exactly that commit"
+report 1 "$(printf '%s\n' "$out" | grep -c '^STAGED_IN_MAIN_CHECKOUT=unrelated.txt')" "... and the staged path was named as a warning rather than acted on"
+report "unrelated.txt" "$(git -C "$R2" diff --cached --name-only)" "... and the staged entry survived the landing, which is why it must be committed straight after"
+# `absent` is the PASS here, and it is the whole claim the header rests on: the file is staged, so it
+# is in the index, and it is nowhere in develop's tip - a fast-forward commits nothing.
+report absent "$(git -C "$R2" show develop:unrelated.txt 2> /dev/null || echo absent)" "... while NOT entering develop's tip, which is why a landing cannot carry another session's work into develop"
 
 echo "== retire.sh, in a throwaway repository"
 link_dir() { # <link> <target> - a directory link the way npm makes one here: a junction on Windows
