@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/library-class-rule-inventory/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-24T01:13:43.932Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790212423569_bxc4okncr",
+      "approvalTitle": "library-class-rule-inventory design: the guard already exists, and two approved requirements are wrong"
+    }
+  ]
+}

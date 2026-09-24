@@ -3,8 +3,10 @@
   "title": "backend-centralization S2: the watcher obligation's intended home, and the plain statement that the tree does not have that property yet",
   "filePath": ".spec-workflow/specs/backend-centralization/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-23T12:47:19.167Z",
   "category": "spec",
-  "categoryName": "backend-centralization"
+  "categoryName": "backend-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-23T16:25:06.586Z"
 }

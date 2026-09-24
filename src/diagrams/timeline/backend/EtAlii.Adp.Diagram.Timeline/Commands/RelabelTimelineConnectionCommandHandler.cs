@@ -36,7 +36,7 @@ public sealed class RelabelTimelineConnectionCommandHandler : ICommandHandler<Re
         var inverse = new RelabelTimelineConnectionCommand(command.BodyPath, command.ConnectionId, connection.Label);
         TimelineWriter.SetConnectionLabel(entry.Document, connection, command.Label);
 
-        var error = _documents.Save(command.BodyPath);
+        var error = _documents.Save(command.BodyPath, entry);
         return Task.FromResult(error.Length == 0
             ? CommandResult.Success(inverse)
             : CommandResult.Failure(error));

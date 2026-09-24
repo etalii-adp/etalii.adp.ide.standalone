@@ -53,6 +53,13 @@ export interface ElementMoved {
 }
 
 /**
+ * Which edge a resize moved. `top` and `bottom` arrive only from a type declaring
+ * `resize: "both"`; a type that declares nothing offers the two vertical edges only, which is
+ * what every user-sizable type did before height resize existed.
+ */
+export type ResizedSide = "left" | "right" | "top" | "bottom";
+
+/**
  * An edge of a user-sizable element was dragged (sizing: "user"). The bounds are the whole
  * resized rectangle and `side` names the edge that moved, so a module mapping an axis - the
  * timeline's begin and end - knows which end the user meant.
@@ -60,7 +67,7 @@ export interface ElementMoved {
 export interface ElementResized {
   kind: "element-resized";
   elementId: string;
-  side: "left" | "right";
+  side: ResizedSide;
   bounds: { x: number; y: number; width: number; height: number };
 }
 

@@ -213,7 +213,7 @@ public class PipelineSessionTests : IDisposable
         var entry = _store.GetOrLoad(_workspace, path);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(build), "Build it all");
-        _store.Save(_workspace, path);
+        _store.Save(_workspace, path, entry);
 
         // Assert.
         var deltas = Assert.Single(pushed);
@@ -236,7 +236,7 @@ public class PipelineSessionTests : IDisposable
         var entry = _store.GetOrLoad(_workspace, path);
         var build = entry.Model.Stages.Single(stage => stage.Name == "Build");
         new PipelineWriter(entry.Document).SetDisplayName(PipelineEditTarget.For(build), "Build it all");
-        _store.Save(_workspace, path);
+        _store.Save(_workspace, path, entry);
 
         // Assert.
         Assert.NotNull(pushed);

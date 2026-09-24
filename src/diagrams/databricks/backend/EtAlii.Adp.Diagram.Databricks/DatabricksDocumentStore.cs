@@ -28,11 +28,11 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
     }
 
     /// <inheritdoc />
-    public string Save(string path)
+    public string Save(string path, DatabricksDocumentEntry entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        var entry = GetOrLoad(path);
+        ArgumentNullException.ThrowIfNull(entry);
         if (!entry.IsUsable)
         {
             // Writing a document whose models are empty because it never parsed would replace a
@@ -67,6 +67,10 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
         // The document's own lines are authoritative and unchanged by writing them out, but what
         // they mean has changed - so the models are rebuilt from the document rather than re-read.
         var reparsed = Parse(path, entry.Document);
+        // Also re-establishes the cache from what was just written, which is a second job this
+        // line now does: where a reload evicted the entry mid-command, the cache and the file agree
+        // afterwards. Do not optimise it away as a redundant reassignment - that reopens half of the
+        // lost-edit window this signature closed.
         _entries[path] = reparsed;
         Changed?.Invoke(this, new DatabricksDocumentChangedEventArgs(path, reparsed));
         return "";

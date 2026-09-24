@@ -40,9 +40,6 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
     {
         public string Content => throw new InvalidOperationException("This module is broken on purpose.");
 
-        public Task<string> SaveAsync(string newContent, CancellationToken cancellationToken = default) =>
-            throw new InvalidOperationException("This module is broken on purpose.");
-
         // The event is part of the contract; a throwing double still declares it.
         public event EventHandler<EditorContentChangedEventArgs>? Changed
         {

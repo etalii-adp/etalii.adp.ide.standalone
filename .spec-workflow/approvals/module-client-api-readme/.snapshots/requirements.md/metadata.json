@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/module-client-api-readme/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1789140254249_u3w261ggb",
       "approvalTitle": "module-client-api-readme requirements (docs/ readme of the diagram-module client API; complete by measurement)"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-24T12:08:36.869Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790250085283_z1n8hkky7",
+      "approvalTitle": "Amendment, one sentence: five per-folder readmes, not six. The connections readme was removed along with the connection components, as dead code, at my own landing 798f07a5."
     }
   ]
 }

@@ -31,6 +31,20 @@
   overflow-x: auto;
 }
 
+/*
+ * The multi-line field, for a label declared `wrap: true`. Element-qualified rather than given a
+ * class of its own, so a module's stylesheet cannot come to depend on a second name for the same
+ * box - and so the shared rules above apply to both fields without being restated.
+ */
+textarea.inline-label-editor-field {
+  /* The box is the label's own text region; a drag handle would resize it away from the text. */
+  resize: none;
+  /* Wrapped text wraps, and a typed newline is kept - the whole point of the textarea. */
+  white-space: pre-wrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .inline-label-editor-error {
   margin: 0;
   color: var(--color-danger, #dc2626);

@@ -12,6 +12,17 @@
   --color-success: #15803d; /* a completed state - deeper than the limegreen accent, so the two read apart */
   --color-warning: #b45309; /* an amber caution - the truncated-view banner and kin */
   --color-diagram-potential: #166534; /* a dark green, clearly not the registered limegreen */
+  /* FIVE FILLS FOR A DECOMPOSITION'S ELEMENT KINDS, one token per kind rather than a literal in a
+     module's stylesheet, by the user's ruling. In THIS mode they are the user's own hex exactly -
+     not a value anybody adjusted for contrast, because against the light theme's #0f172a text they
+     already run 11.96 to 15.44 to 1 and there is nothing to fix. The dark block restates each at
+     the same hue and saturation with the lightness lowered; see the note there for why those are
+     not simply the lightest same-hue variants that reach 4.5. */
+  --color-diagram-fdg-ui-element: #aaed92;
+  --color-diagram-fdg-data-element: #ededed;
+  --color-diagram-fdg-action: #9edcfa;
+  --color-diagram-fdg-function: #86e6d9;
+  --color-diagram-fdg-comment: #fcf281;
   /* FOUR TOKENS THE THEME LACKED, each carrying a distinction its diagram exists to show rather
      than a shade somebody liked. Added 2026-09-23 with client-centralization task 1, when
      azure-pipeline's ten private --adp-* and causal-loop's five --vscode-* were mapped onto the
@@ -55,6 +66,20 @@
     --color-success: #4ade80; /* lighter on the dark surface, still clearly not the limegreen accent */
     --color-warning: #fbbf24; /* brighter amber, so the caution still reads on the dark surface */
     --color-diagram-potential: #3f9142; /* darker and duller than limegreen, still legible on the dark surface */
+    /* THE SAME FIVE HUES, LIGHTNESS LOWERED UNTIL EACH REACHES 5.0:1 against this theme's
+       --color-text (#f1f5f9) - 5.0275, 5.0112, 5.0462, 5.0613 and 5.0553 in this order.
+       The lightest same-hue variants that merely reach 4.5 were measured and rejected: they sit at
+       4.4942 to 4.5327, and TWO OF THEM DO NOT REACH 4.5 AT ALL (#1a7e70 at 4.4974 and #7c7203 at
+       4.4942). A value that close to the line is a value that fails on the next small edit, or on
+       somebody else's rounding, so the margin is the point rather than a nicety. Every one of
+       those figures is against #f1f5f9 and NOT against white, where #7c7203 reads 4.92 - which is
+       how two sessions computed different numbers for the same colour. `theme.contrast.test.ts`
+       recomputes all of this from this file. */
+    --color-diagram-fdg-ui-element: #2e7814;
+    --color-diagram-fdg-data-element: #696969;
+    --color-diagram-fdg-action: #086fa1;
+    --color-diagram-fdg-function: #187569;
+    --color-diagram-fdg-comment: #736a03;
     --color-border-strong: #94a3b8; /* the polarity flips with the ground, as --color-border does */
     --color-accent-subtle: #16351f; /* the same tint, lifted off the dark surface instead of the light one */
     --color-loop-reinforcing: #4daafc; /* the original hues, which only ever read on a dark ground - */

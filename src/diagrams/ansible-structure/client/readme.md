@@ -1,6 +1,7 @@
 # Ansible structure — client
 
-The read-only canvas for `ansible/structure`, and the registration the shell discovers.
+The canvas for `ansible/structure`, and the registration the shell discovers. It edits no
+Ansible file; the one thing a user authors here is where a node sits.
 
 | File | What it is |
 |---|---|
@@ -8,19 +9,20 @@ The read-only canvas for `ansible/structure`, and the registration the shell dis
 | `AnsibleCanvas.tsx` | Draws the nodes and the five edge kinds; selects, and reveals a node's file. |
 | `ansible-structure.css` | **All** of the appearance, including the per-play palette. |
 | `ansibleModel.ts` | Decodes the payload and folds the delta stream into a plain model. |
-| `useAnsibleStream.ts` | Opens the diagram, re-baselines on reconnect, reports the viewport. |
+| `useAnsibleStream.ts` | Opens the diagram, re-baselines on reconnect, reports the viewport, and moves a node. |
 
-## Three absences that are the design
+## What the client deliberately does not have
 
-This is a read-only diagram type, and the client half says so by what it does not have. Each is
-covered by a test, so none of them can quietly come back:
+The diagram edits no Ansible file, and the client half says so by what it does not have. Each
+absence is covered by a test, so none of them can quietly come back:
 
-- **No `moveElement` on the hook.** The backend refuses a move with a sentence, so exposing the
-  call would put a gesture in the client's reach whose only possible outcome is a refusal.
+- **One write on the hook, `moveElementTo`, and no other.** The layout is the only thing a user
+  authors here; ansible-refinements gave the backend a position to store, so a drag now has an
+  answer other than a refusal. `useAnsibleStream.test.ts` pins that there is no second write.
 - **No group or ungroup handling in `applyDelta`.** Nothing here folds, so the backend never
   emits those deltas and the model has no fold state to hold.
-- **No editing affordance on the canvas** — nothing draggable, no drop target, no editable
-  field, no toolbox. `AnsibleCanvas.test.tsx` asserts all four.
+- **No content editing on the canvas** — nodes reposition, but there is no HTML `draggable`
+  element, no editable field and no toolbox. `AnsibleCanvas.test.tsx` asserts those three.
 
 ## The palette rule
 

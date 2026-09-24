@@ -75,7 +75,7 @@ Commit any set of files added or removed under `.spec-workflow/` immediately, in
 
 **Do not amend a document under a pending card unless you are willing to ask the user to reject it.** The tool refuses to delete a pending approval, so an agent cannot clean up after itself: the card is left pointing at a snapshot that no longer matches the file, and only the user can break that by rejecting it. **Disclosure is not sufficient** — disclosing an amendment tells the user it happened; it does not restore the record.
 
-**Verdict snapshots arrive already staged and belong to nobody.** The dashboard writes them under `.spec-workflow/approvals/*/.snapshots/` when a card is answered, staged in the shared index — and any staged entry makes an in-place merge unsafe here, so they block whoever merges next. **Staged is the hazard; modified is somebody working.** Before merging, if `git diff --cached` is non-empty, commit **precisely those staged paths and nothing else**, in their own commit, whether or not they are yours. Never extend that to modified-but-unstaged files — sweeping those into your commit under your message is the exact failure that produced three misattributed commits in one day. If you raised the card, check for staged snapshots when its verdict lands.
+**Verdict snapshots arrive already staged and belong to nobody.** The dashboard writes them under `.spec-workflow/approvals/*/.snapshots/` when a card is answered, staged in the shared index — and any staged entry makes an in-place merge unsafe here, so they block whoever merges next. **Staged is the hazard; modified is somebody working.** **Commit them before a gate, and again after a landing** — not only before a merge: if `git diff --cached` is non-empty, commit **precisely those staged paths and nothing else**, in their own commit, whether or not they are yours. **The two moments are the same files in the opposite order, and the discriminator is which operation comes next:** the merge happens inside `gate.sh` at the START of a run, while a fast-forward writes no commit and cannot be invalidated by ownerless files in the index — so committing them first at the landing moves `develop` and invalidates the landing you were about to run. Never extend that to modified-but-unstaged files — sweeping those into your commit under your message is the exact failure that produced three misattributed commits in one day. If you raised the card, check for staged snapshots when its verdict lands.
 
 Full rules and reasoning: [processes.md, *Specification bookkeeping*](.spec-workflow/steering/processes.md#specification-bookkeeping).
 
@@ -90,6 +90,19 @@ Full rules and reasoning, including the source that carried three conflicting li
 Move a diagram type's row in `docs/diagrams.md` as its state changes, with the state icon and the `<vendor>/<diagram-type>` origin tag.
 
 Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
+
+## The architecture pages
+
+Two documents say what the system is and where its code lives, so a session does not re-derive either from the tree:
+
+- **[docs/architecture.md](docs/architecture.md)** — what ADP is, the three parts and the one process, the two gRPC call legs, where a diagram lives, how a diagram type plugs in, what the canvas is, and which project owns which concern.
+- **[docs/solution-structure.md](docs/solution-structure.md)** — the folders under `src/`, the solution's project counts and how they split, the core projects by concern, a module's folder shape, namespaces, and where tests and fixtures live.
+
+**Read them when you arrive at an area you have not worked in**, and before counting or classifying anything about the solution yourself — the counting traps that produced two wrong answers in one hour are written out on the structure page.
+
+**They are descriptive, not normative.** They say what is; the rules are here and in the steering documents. Where a page and a rule disagree, the rule wins and the page is stale.
+
+**Update the page in the same change that makes one of its sentences false** — a renamed project, a moved folder, a new `src/` folder, a changed call shape. `ArchitecturePages.Tests` holds the paths, the project names, the counts and the page size, so those reddens by themselves; **it cannot tell whether a description is still true**, and that half is yours.
 
 ## Documentation refresh
 
@@ -135,7 +148,7 @@ Some documents are exempt because their **bytes are the test subject**: a module
 
 ## Running the backend tests
 
-Run the suite as `dotnet test --solution EtAlii.Adp.slnx` from `src/backend/`, with `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` set. **Judge every gate by an exit code captured into a variable before any pipe, never by grepping output, and read `Zero tests ran` as a broken build.** All four gates — `npm test`, `npm run typecheck`, `dotnet format style --verify-no-changes --severity info`, `dotnet test` — must exit zero before a worktree merges into `develop`.
+Run the suite as `dotnet test --solution EtAlii.Adp.slnx` from `src/backend/`, with `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` set. **Judge every gate by an exit code captured into a variable before any *subsequent command* — not merely before a pipe — never by grepping output, and read `Zero tests ran` as a broken build.** A pipe is not the only way to lose the status and it is not the common one: any command after the one you care about overwrites `$?`. End the command with the status you captured. All four gates — `npm test`, `npm run typecheck`, `dotnet format style --verify-no-changes --severity info`, `dotnet test` — must exit zero before a worktree merges into `develop`.
 
 Full rules and reasoning, including the `MAX_PATH` failure and the fresh-worktree codegen trap: [processes.md, *Running the backend tests*](.spec-workflow/steering/processes.md#running-the-backend-tests).
 
