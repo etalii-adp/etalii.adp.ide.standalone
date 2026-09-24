@@ -25,37 +25,37 @@
 .pipeline-canvas-loading,
 .pipeline-canvas-unavailable {
   padding: 1rem;
-  color: var(--adp-text-muted, #6b7280);
+  color: var(--color-text-muted, #64748b);
 }
 
 /* A stage: the container everything else sits inside. */
 .pipeline-stage-box {
-  fill: var(--adp-surface-sunken, #f3f4f6);
-  stroke: var(--adp-border, #d1d5db);
+  fill: var(--color-bg, #f8fafc);
+  stroke: var(--color-border, #e2e8f0);
   stroke-width: 1;
 }
 
 .pipeline-stage-name {
   font-size: 14px;
   font-weight: 600;
-  fill: var(--adp-text, #111827);
+  fill: var(--color-text, #0f172a);
 }
 
 .pipeline-stage-count {
   font-size: 12px;
-  fill: var(--adp-text-muted, #6b7280);
+  fill: var(--color-text-muted, #64748b);
 }
 
 /* A job, a step, or a template reference. */
 .pipeline-box {
-  fill: var(--adp-surface, #ffffff);
-  stroke: var(--adp-border, #d1d5db);
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-border, #e2e8f0);
   stroke-width: 1;
 }
 
 .pipeline-box-name {
   font-size: 12px;
-  fill: var(--adp-text, #111827);
+  fill: var(--color-text, #0f172a);
 }
 
 /*
@@ -63,15 +63,15 @@
  * is a different thing to reason about, so it is a different thing to look at (Requirement 8.3).
  */
 .pipeline-deployment .pipeline-box {
-  fill: var(--adp-accent-subtle, #eef2ff);
-  stroke: var(--adp-accent, #4f46e5);
+  fill: var(--color-accent-subtle, #f0fdf4);
+  stroke: var(--color-primary, limegreen);
   stroke-width: 2;
 }
 
 /* A template reference this module could not follow: an admitted gap, drawn as one. */
 .pipeline-template .pipeline-box {
   fill: none;
-  stroke: var(--adp-border, #d1d5db);
+  stroke: var(--color-border, #e2e8f0);
   stroke-dasharray: 6 4;
 }
 
@@ -90,7 +90,7 @@
 
 /* An arrow: what waits for what. */
 .pipeline-edge {
-  stroke: var(--adp-border-strong, #9ca3af);
+  stroke: var(--color-border-strong, #64748b);
   stroke-width: 1.5;
 }
 
@@ -105,14 +105,14 @@
 
 /* A dependsOn naming something that does not exist: the mistake this diagram is for. */
 .pipeline-edge-broken {
-  stroke: var(--adp-danger, #dc2626);
+  stroke: var(--color-danger, #dc2626);
   stroke-dasharray: 2 4;
 }
 
 /* What an element says about itself without being opened (Requirement 8.4). */
 .pipeline-indicator {
   font-size: 11px;
-  fill: var(--adp-text-muted, #6b7280);
+  fill: var(--color-text-muted, #64748b);
   pointer-events: none;
 }
 
@@ -123,19 +123,19 @@
 }
 
 .pipeline-problem-mark-error {
-  fill: var(--adp-danger, #dc2626);
+  fill: var(--color-danger, #dc2626);
 }
 
 .pipeline-problem-mark-warning {
-  fill: var(--adp-warning, #d97706);
+  fill: var(--color-warning, #b45309);
 }
 
 .pipeline-problem-error .pipeline-box,
 .pipeline-problem-error .pipeline-stage-box {
-  stroke: var(--adp-danger, #dc2626);
+  stroke: var(--color-danger, #dc2626);
 }
 
 .pipeline-problem-warning .pipeline-box,
 .pipeline-problem-warning .pipeline-stage-box {
-  stroke: var(--adp-warning, #d97706);
+  stroke: var(--color-warning, #b45309);
 }

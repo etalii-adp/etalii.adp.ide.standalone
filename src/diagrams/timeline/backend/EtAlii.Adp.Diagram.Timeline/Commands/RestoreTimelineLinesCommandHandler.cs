@@ -44,7 +44,7 @@ public sealed class RestoreTimelineLinesCommandHandler : ICommandHandler<Restore
             entry.Document.Insert(segment.Start, segment.Lines);
         }
 
-        var error = _documents.Save(command.BodyPath);
+        var error = _documents.Save(command.BodyPath, entry);
         return Task.FromResult(error.Length == 0
             // Redoing the undo removes it again - by id, which the element has again now.
             ? CommandResult.Success(new RemoveTimelineElementCommand(command.BodyPath, command.ElementId))

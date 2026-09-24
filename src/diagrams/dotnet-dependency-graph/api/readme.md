@@ -5,15 +5,14 @@ node or edge carries, packed into the core `Element`'s `Any`. No core proto is e
 here.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`dotnet-dependency-graph`](../../../../.spec-workflow/specs/dotnet-dependency-graph/) for this
+[`dotnet-dependency-graph`](../../../../.spec-workflow/archive/specs/dotnet-dependency-graph/) for this
 diagram type's spec.
 
-**Empty at task 1, and the emptiness is deliberate.** The module skeleton lands registering,
-resolving and drawing nothing, so that every later task changes a module that already builds.
-A payload arrives with the client canvas that needs one.
+`dotnet-dependency-graph.proto` is the one file here. The folder was empty at task 1, when the
+module skeleton landed registering, resolving and drawing nothing; the payload arrived with the
+client canvas that needed it.
 
-**When a `.proto` does land here, the backend project includes it by name rather than by
-glob.** A default-include glob in a project that owns no generated types is how a file dropped
+**The backend project includes the `.proto` by name rather than by glob.** A default-include glob in a project that owns no generated types is how a file dropped
 into a folder gets silently double-generated — the trap `EtAlii.Adp.Backend` carried until the
 post-decomposition backlog removed it. An absent glob is a rule that cannot be forgotten; an
 exclusion list is one that must be remembered.

@@ -1,5 +1,6 @@
 import { holds, resolveEntries, resolveMany, resolveNumber, resolveOneAt, type Binding, type BindingSource } from "./binding";
-import type { DeclaredNumber, LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
+import type { BuiltInShape, DeclaredNumber, LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
+import { textRegionOf } from "../shapes/outline";
 
 /**
  * `labels` — what an element says, declared rather than drawn.
@@ -43,6 +44,103 @@ export interface LaidOutLabel {
  * capacities that disagree by a character and a diagram that looks different in two places.
  */
 const CHAR_WIDTH = 7;
+
+/**
+ * The width this library estimates for a string, in canvas units.
+ *
+ * Exported because a guard about wrapping has to measure what the wrapper measures. Asserting
+ * against the literal 7 instead would pass while disagreeing with the code, and would have to be
+ * edited the day the estimate is replaced by a real text metric - which is exactly the "second
+ * copy of the data" a guard must not be.
+ */
+export function estimatedTextWidth(text: string): number {
+  return text.length * CHAR_WIDTH;
+}
+
+/** How many characters fit a width, by the same estimate. At least one, so a fit always advances. */
+function capacityOf(width: number): number {
+  return Math.max(1, Math.floor(width / CHAR_WIDTH));
+}
+
+/**
+ * The text broken into lines no wider than `width`, at spaces and at explicit newlines.
+ *
+ * A word longer than the line is broken rather than allowed to overflow: a URL in a comment is
+ * still text somebody has to read, and a line that runs out of the shape is not a kinder answer.
+ */
+function wrappedLines(text: string, width: number): readonly string[] {
+  const capacity = capacityOf(width);
+  const lines: string[] = [];
+  for (const paragraph of text.split("\n")) {
+    let current = "";
+    for (const word of paragraph.split(" ")) {
+      let remaining = word;
+      while (remaining.length > capacity) {
+        // A word that cannot fit any line at all: break it at the capacity.
+        if (current.length > 0) {
+          lines.push(current);
+          current = "";
+        }
+        lines.push(remaining.slice(0, capacity));
+        remaining = remaining.slice(capacity);
+      }
+      const candidate = current.length === 0 ? remaining : `${current} ${remaining}`;
+      if (candidate.length <= capacity) {
+        current = candidate;
+        continue;
+      }
+      if (current.length > 0) {
+        lines.push(current);
+      }
+      current = remaining;
+    }
+    lines.push(current);
+  }
+  return lines;
+}
+
+/**
+ * The wrapped lines of one declaration, fitted to the shape rather than to its bounding box.
+ *
+ * The band the text occupies decides the region, and the region decides how many lines the text
+ * breaks into - so the two are solved together, by fitting until the line count stops changing.
+ * A fixed band would be wrong in both directions: the shape's full height collapses the region of
+ * a rounded shape to nothing, and one line's height refuses the second line a comment needs.
+ */
+function fittedWrap(
+  text: string,
+  shape: BuiltInShape,
+  bounds: ShapeBounds,
+  lineHeight: number,
+): { lines: readonly string[]; region: ShapeBounds; overflowed: boolean } {
+  let lineCount = 1;
+  let region = textRegionOf(shape, bounds, lineHeight);
+  let lines = wrappedLines(text, region.width);
+
+  // Six rounds is far more than any real label needs; the cap is here so a shape whose region
+  // shrinks as it grows cannot oscillate forever.
+  for (let round = 0; round < 6 && lines.length !== lineCount; round++) {
+    lineCount = lines.length;
+    const wanted = textRegionOf(shape, bounds, lineCount * lineHeight);
+    if (wanted.width <= 0 || wanted.height <= 0) {
+      break;
+    }
+    region = wanted;
+    lines = wrappedLines(text, region.width);
+  }
+
+  const room = Math.max(1, Math.floor(region.height / lineHeight));
+  if (lines.length <= room) {
+    return { lines, region, overflowed: false };
+  }
+
+  // What does not fit says so, rather than being drawn outside the shape or silently dropped.
+  const visible = lines.slice(0, room);
+  const last = visible[room - 1] ?? "";
+  const capacity = capacityOf(region.width);
+  visible[room - 1] = last.length >= capacity ? `${last.slice(0, Math.max(0, capacity - 1))}…` : `${last}…`;
+  return { lines: visible, region, overflowed: true };
+}
 
 /** Vertical offsets for the named slots, as fractions of the box height. */
 const SLOT_FRACTION: Record<LabelSlot, number> = { header: 0.28, body: 0.5, footer: 0.78 };
@@ -193,12 +291,50 @@ export function scaledTypography(typography: LabelTypography | undefined, viewSc
   return { ...typography, fontSize: (typography.fontSize ?? 12) * factor };
 }
 
+/**
+ * The region a wrapped label's text was laid out in, for the inline editor that opens over it.
+ *
+ * <b>It returns the layout's own region rather than recomputing a band from the outside.</b> The
+ * region and the line count are solved together, so anything that guesses the band arrives at a
+ * different box - and an editor that is not exactly over the text it replaces is the defect users
+ * see, as text jumping the moment the box opens. One fit, read twice.
+ *
+ * `null` for a declaration that is not wrapped, whose condition fails, or whose text resolves to
+ * nothing: all three mean there is no wrapped block here, and the caller keeps its existing
+ * single-line answer.
+ */
+export function wrappedLabelRegion(
+  declaration: LabelDeclaration,
+  source: BindingSource,
+  bounds: ShapeBounds,
+  shape: BuiltInShape = "box",
+): ShapeBounds | null {
+  if (declaration.wrap !== true || !holds(declaration.when, source)) {
+    return null;
+  }
+
+  const entries = resolveEntries(declaration.text, source);
+  if (entries.length === 0) {
+    return null;
+  }
+
+  const lineHeight = declaration.stack?.lineHeight ?? Math.round((declaration.typography?.fontSize ?? 12) * 1.4);
+  const whole = entries.map((entry) => entry.text).join("\n");
+  return fittedWrap(whole, shape, bounds, lineHeight).region;
+}
+
 export function layoutLabels(
   declarations: readonly LabelDeclaration[] | undefined,
   source: BindingSource,
   bounds: ShapeBounds,
   /** The view's width over the definition's own extent - 1 when the diagram declares none. */
   viewScale = 1,
+  /**
+   * The shape the label sits in, for a wrapped label's text region. Defaulted to `box`, whose
+   * region is the bounds less the padding - so an unwrapped label, and every existing caller,
+   * behaves exactly as before.
+   */
+  shape: BuiltInShape = "box",
 ): readonly LaidOutLabel[] {
   if (!declarations || declarations.length === 0) {
     return [];
@@ -217,6 +353,38 @@ export function layoutLabels(
     }
 
     const lines = entries.map((entry) => entry.text);
+
+    if (declaration.wrap === true) {
+      const typography = scaledTypography(declaration.typography, viewScale);
+      const lineHeight = declaration.stack?.lineHeight ?? Math.round((typography?.fontSize ?? 12) * 1.4);
+      const whole = lines.join("\n");
+      const fitted = fittedWrap(whole, shape, bounds, lineHeight);
+      const align = declaration.align ?? "middle";
+      const anchor = align === "start" ? "start" : align === "end" ? "end" : "middle";
+      const x = align === "start" ? fitted.region.x : align === "end" ? fitted.region.x + fitted.region.width : fitted.region.x + (fitted.region.width / 2);
+      // Centred in the region: the block of text sits where the shape has room for it, which is
+      // not the same as the middle of the bounding box for a shape that is not a rectangle.
+      const blockHeight = fitted.lines.length * lineHeight;
+      const top = fitted.region.y + Math.max(0, (fitted.region.height - blockHeight) / 2);
+
+      fitted.lines.forEach((line, lineIndex) => {
+        laidOut.push({
+          text: line,
+          x,
+          y: top + (lineIndex * lineHeight) + lineHeight * 0.75,
+          anchor,
+          typography,
+          // One authored value beneath all of it, so the whole block is what an editor opens.
+          editable: declaration.editable ?? false,
+          className: classOf(declaration.className, entries[0]!.root),
+          // The full text stays reachable where it did not all fit (Requirement 4.4).
+          tooltip: fitted.overflowed ? whole : (declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined),
+          declarationIndex,
+          lineIndex,
+        });
+      });
+      return;
+    }
 
     const base = baselineOf(declaration, bounds, source.element);
     const stackStart = numberOf(declaration.stack?.start, source, 0);

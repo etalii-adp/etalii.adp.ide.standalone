@@ -34,6 +34,7 @@ public static class DestinationState
     /// One line describing <paramref name="path"/> right now. Never throws: it runs inside a
     /// failure path, and a diagnostic that fails the save it describes would be worse than silence.
     /// </summary>
+    /// <param name="path">The path to describe.</param>
     /// <param name="ourScratch">
     /// The scratch file THIS publish was using, when there is one. Named so the line can tell a
     /// reader's own publish from somebody else's - see <see cref="Siblings"/>.

@@ -68,7 +68,7 @@ internal sealed class RemovePipelineElementCommandHandler(IPipelineDocumentStore
             .ToList();
 
         new PipelineWriter(entry.Document).RemoveElement(target);
-        var error = documents.Save(command.RootPath, command.BodyPath);
+        var error = documents.Save(command.RootPath, command.BodyPath, entry);
         return Task.FromResult(error.Length > 0
             ? CommandResult.Failure(error)
             : CommandResult.Success(new RestorePipelineLinesCommand(
@@ -128,7 +128,7 @@ internal sealed class RestorePipelineLinesCommandHandler(IPipelineDocumentStore 
         }
 
         new PipelineWriter(entry.Document).InsertElement(null, Math.Max(command.AtLine - 1, 0), command.Lines);
-        var error = documents.Save(command.RootPath, command.BodyPath);
+        var error = documents.Save(command.RootPath, command.BodyPath, entry);
         if (error.Length > 0)
         {
             return Task.FromResult(CommandResult.Failure(error));

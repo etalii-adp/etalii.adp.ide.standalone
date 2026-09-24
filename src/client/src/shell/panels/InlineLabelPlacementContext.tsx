@@ -8,6 +8,15 @@ export interface LabelPlacement {
   height: number;
   /** The text the editor replaces, so it can open with what is on screen. */
   text: string;
+  /**
+   * Whether the text is MULTI-LINE, so the editor is a textarea rather than a single-line input.
+   *
+   * The canvas decides this, because the canvas is what knows the label was declared `wrap: true`
+   * - and it has to be said here rather than inferred from the text, because a wrapped label whose
+   * current value happens to hold no newline is still a wrapped label. Inferring it would give the
+   * user a field they can type a newline into only once they already have one.
+   */
+  multiline?: boolean;
 }
 
 /** A canvas's answer for one element: where its label is, or null if it cannot place it. */

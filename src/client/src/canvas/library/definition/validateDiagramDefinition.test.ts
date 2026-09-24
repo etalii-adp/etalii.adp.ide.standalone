@@ -56,6 +56,24 @@ describe("validateDiagramDefinition", () => {
     expect(problems.some((problem) => problem.includes('"phantom"') && problem.includes('"link"'))).toBe(true);
   });
 
+  it("rejects an acyclic rule naming a relation type the definition does not declare", () => {
+    // A typo here enforces nothing and enforces it silently: the walk never covers the edge, so
+    // the diagram quietly admits the cycle the author wrote the rule to forbid.
+    const definition = { ...goodDefinition(), acyclic: [{ relationTypes: ["link", "contians"] }] };
+
+    const problems = validateDiagramDefinition(definition);
+
+    expect(problems.some((problem) => problem.includes('"contians"') && problem.includes("acyclic"))).toBe(true);
+  });
+
+  it("accepts an acyclic rule over relation types it does declare", () => {
+    // The other half of the pair: a guard that only ever sees the rejection cannot tell a working
+    // check from one that rejects everything.
+    const definition = { ...goodDefinition(), acyclic: [{ relationTypes: ["link"] }] };
+
+    expect(validateDiagramDefinition(definition)).toEqual([]);
+  });
+
   it("rejects a custom shape that supplies no renderer", () => {
     const definition = goodDefinition();
     // Constructed as unknown-first because the point IS the missing functions: a module that
@@ -111,6 +129,7 @@ describe("validateDiagramDefinition", () => {
   });
 
   it("the built-in routes cover the four existing connector families", () => {
+    // The families were once separate components, since removed; the routes are what remains.
     // straight -> the straight components; cubic-bezier -> bezier and fixed-bezier; the
     // interactive family is cubic-bezier plus adjustability on the relation type; arc is
     // causal-loop's chord-bowed link. A named-member canary each, so the population can

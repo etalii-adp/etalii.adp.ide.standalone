@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/backend-centralization/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T20:12:53.412Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790194373271_l6kgng3zn",
+      "approvalTitle": "backend-centralization tasks: 25 tasks in the design's risk order, with 5 criteria satisfied ahead and R2.9 measurably unmet at three call sites"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T20:29:27.524Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790194373271_l6kgng3zn",
+      "approvalTitle": "backend-centralization tasks: 25 tasks in the design's risk order, with 5 criteria satisfied ahead and R2.9 measurably unmet at three call sites"
+    }
+  ]
+}

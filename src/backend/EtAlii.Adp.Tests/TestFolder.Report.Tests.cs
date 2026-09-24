@@ -50,6 +50,8 @@ public class TestFolderReportTests : IDisposable
         // Act.
         var workers = Enumerable.Range(0, threads).Select(t => new Thread(() =>
         {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             barrier.SignalAndWait();
             for (var i = 0; i < linesEach; i++)
             {

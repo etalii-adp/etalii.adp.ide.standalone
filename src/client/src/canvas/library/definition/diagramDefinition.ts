@@ -66,6 +66,19 @@ export type BuiltInShape =
    * rather than a class on the same one, which is why it is a shape and not a style.
    */
   | "moment"
+  /**
+   * A squircle - |x/a|^4 + |y/b|^4 = 1 - which reads as a box with the corners taken off rather
+   * than as a rounded rectangle, and so distinguishes a kind of element at a glance.
+   */
+  | "superellipse"
+  /** Narrower at the bottom than the top, for an element that reads as narrowing down. */
+  | "trapezoid"
+  /**
+   * A rectangle closed on the right by a semicircle, so the shape points the way its relations
+   * run. Its outline, its text region and its edge point all come from
+   * {@link outlineOf} rather than from three separate ideas of where it is.
+   */
+  | "diode"
   /** A ring inside the ellipse - owl's `doubled` and wardley's submap mark (rows 18, 27, 28). */
   | "double-ellipse";
 
@@ -96,6 +109,9 @@ export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
   "hexagon",
   "pill",
   "parallelogram",
+  "superellipse",
+  "trapezoid",
+  "diode",
   "cylinder",
   "moment",
   "double-ellipse",
@@ -385,6 +401,16 @@ export interface LabelStack {
 
 /** One declared label. A single-label module writes one of these, which is why migration is mechanical. */
 export interface LabelDeclaration {
+  /**
+   * Lay this label out as WRAPPED text inside the shape's text region rather than as one line.
+   *
+   * The region comes from `textRegionOf`, so a trapezoid's text stays off its slanted edge and a
+   * diode's off its curved end - measuring against the bounding box is what puts text outside a
+   * shape that is not a rectangle. Breaks at spaces and at explicit newlines, at the library's
+   * own character-width estimate, stacked at the typography's line height; text that does not fit
+   * ends its last visible line with an ellipsis and keeps the whole text as the label's tooltip.
+   */
+  wrap?: boolean;
   /** What it says: a field, a template, or a collection with `each`. */
   text: Binding;
   /** Relative to the shape. Defaults to `inside`, which is what a single centred label is. */
@@ -487,7 +513,6 @@ export interface LabelRule {
   insetTop?: number;
   insetHeight?: number;
   insetX?: number;
-  wrap?: boolean;
   truncate?: boolean;
   /**
    * Editable means: through the shared `InlineLabelEditor`, committing as an event, and
@@ -694,6 +719,18 @@ export interface ElementTypeDefinition {
   };
   anchors: AnchorSet;
   sizing: SizingRule;
+
+  /**
+   * Which edges a `sizing: "user"` type lets the reader drag. <b>Omitted means `"width"`</b>,
+   * which is what every user-sizable type did before this existed - so a type that declares
+   * nothing is unaffected, and the timeline's spans keep exactly the two handles they had.
+   *
+   * `"both"` adds the top and bottom edges, for an element whose height is its own content
+   * rather than a shared constant - a comment sized to the text somebody wrote in it. Read only
+   * when `sizing` is `"user"`: a content-sized or model-sized element has no edge to offer,
+   * because its size is not the reader's to choose.
+   */
+  resize?: "width" | "both";
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
   draggable?: boolean;
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
@@ -717,7 +754,8 @@ export interface ElementTypeDefinition {
 }
 
 /**
- * The built-in routes (Requirement 3.1). These absorb the four existing connector families:
+ * The built-in routes (Requirement 3.1). These absorbed the four connector families that were
+ * once separate components (removed once nothing drew them):
  * `straight` covers the straight components, `cubic-bezier` covers bezier and fixed-bezier,
  * the interactive family is `cubic-bezier` with `adjustable: true` on its relation type, and
  * `arc` covers causal-loop's chord-bowed links. A chordless path - causal-loop's self-loop -
@@ -1027,4 +1065,28 @@ export interface DiagramDefinition {
    * while the pointer is still down. Omitted, drags roam free.
    */
   dragBounds?: ShapeBounds;
+  /**
+   * Sets of relation types within which a directed cycle is not admitted. See {@link AcyclicRule}.
+   *
+   * Omitted, every relation may close a cycle, which is what a causal loop diagram is made of -
+   * so this is declared by the notations that forbid one, and by no others.
+   */
+  acyclic?: readonly AcyclicRule[];
+}
+
+/**
+ * One set of relation types that must stay acyclic among themselves.
+ *
+ * <b>A set rather than a flag, because acyclicity is a property of a set of edges and not of a
+ * diagram.</b> A decomposition's "contains" relations must form a tree while its annotations,
+ * drawn between the same elements, may run any way they like - and a per-relation boolean cannot
+ * say that a path alternating between two relation types is still a cycle, which is precisely
+ * what a set does say.
+ *
+ * Several sets are allowed and are independent: a relation belonging to two of them is refused if
+ * either would close.
+ */
+export interface AcyclicRule {
+  /** The relation type ids the rule covers. A path leaves the set at the first edge outside it. */
+  relationTypes: readonly string[];
 }

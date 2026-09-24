@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/centralized-selection/requirements.md",
-  "currentVersion": 6,
+  "currentVersion": 7,
   "snapshots": [
     {
       "version": 1,
@@ -49,6 +49,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790093195450_pxu4e3s9w",
       "approvalTitle": "Requirements amendment (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): one highlight by colour change on element, anchors and lines, replacing the ring; 5.4 and 5.5 added; Requirement 6 reversed explicitly, superseding its 2026-09-11 amendment (1b32c428)."
+    },
+    {
+      "version": 7,
+      "filename": "snapshot-007.json",
+      "timestamp": "2026-09-23T16:25:20.931Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790179999022_noomhev2d",
+      "approvalTitle": "Requirements amendment (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): 5.4 stops citing the withdrawn ring as its evidence and states the criterion's own limit (one press per canvas answers \"the element I pressed\", not \"every shape this canvas can draw\"); 5.2 records the user's c4 verdict with the measured margin beside it (fdf46da5)."
     }
   ]
 }

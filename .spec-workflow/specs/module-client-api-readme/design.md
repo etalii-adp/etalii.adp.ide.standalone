@@ -41,7 +41,7 @@ Nothing here is implemented before `centralized-selection` is on `develop` (Requ
 
 The module-facing surface is the union of two sets (Requirement 2.1), both computed by the test on every run, so the boundary moves with the code.
 
-**Set A, what modules import.** For every non-test `.ts`/`.tsx` file under `src/diagrams/*/client/`, every name imported from an `@client/...` specifier, parsed with the compiler. **A module's test files count too, for one folder: what they import from the library's shared `testing/` helpers** (amended 2026-09-12; see *The amendment* below). Excluded are a module's own generated payload types, `@client/generated/{type}_pb` where `{type}` is not a core contract. The core contracts (`deltas_pb`, `elements_pb`, `context_pb`, `context-contract_pb`, `diagrams_pb`, `problems_pb`) are shared and stay in. At `5befeb0a` this was 122 names from 42 specifiers, 15 of them module-own.
+**Set A, what modules import.** For every non-test `.ts`/`.tsx` file under `src/diagrams/*/client/`, every name imported from an `@client/...` specifier, parsed with the compiler. **A module's test files count too, for one folder: what they import from the library's shared `testing/` helpers** (amended 2026-09-12; see *The amendment* below). Excluded are a module's own generated payload types, `@client/generated/{type}_pb` where `{type}` is not a core contract. The core contracts (`deltas_pb`, `elements_pb`, `context_pb`, `context-contract_pb`, `diagrams_pb`, `problems_pb`) are shared and stay in. At `5befeb0a`, before the exclusion this was 122 names from 42 specifiers, 15 of the specifiers module-own; after it, Set A is 52 from 27. A compiler-side re-measurement on 2026-09-24 gives 123 pre-exclusion; the one-name difference has not been isolated and nothing depends on it.
 
 **Set B, what modules supply by value.** Starting from the roots `DiagramDefinition`, `DiagramCanvasProps`, `DiagramEventHandlers` and `DiagramModel`, follow every type reference, `extends` clause and `typeof` query through the exported declarations of the surface files, syntactically. For a function or a constant, only its signature counts. **Measured for this design at `96c4a07b`: the 14 library files export 158 declarations, and the walk reaches 98 of them** — 49 in `diagramDefinition.ts`, 18 in `diagramEvents.ts`, 9 in `binding.ts`, 6 in `background.ts`, 5 in `chrome.ts`, 4 in `actions.ts`, 3 each in `DiagramCanvas.tsx` and `diagramModel.ts`, 1 in `diagramRuntimeConfig.ts`.
 
@@ -61,7 +61,7 @@ Three conventions carry every check; nothing else in the readme is parsed.
 
 What it is for. Whether a module needs it. Its shape. The example:
 
-Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
+Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../../../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 ```
 
 - **`**Declarations:**`** — one line per entry, naming in backticks every declaration the entry covers. The union of these lines is what the readme covers.
@@ -96,7 +96,7 @@ An entry answers the six questions of Requirement 3.1 in order: what it is for; 
 ### Component 1 — The readme, `docs/diagram-module-client-api.md`
 
 - **Purpose:** the one home for the module-facing client API (Requirements 1.1, 1.2).
-- **Reuses:** links, rather than restates, the six per-folder readmes and the walkthrough (Requirement 1.3).
+- **Reuses:** links, rather than restates, the five per-folder readmes and the walkthrough (Requirement 1.3).
 
 ### Component 2 — The mermaid diagrams, in the readme only
 

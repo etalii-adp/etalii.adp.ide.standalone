@@ -15,7 +15,6 @@ One row per `PackageVersion` entry in `src/Directory.Packages.props`, which mana
 | `Google.Protobuf` | 3.31.1 | The protobuf runtime behind every generated message — including the `Any` payloads diagram modules pack their element data into. | BSD-3-Clause |
 | `Grpc.AspNetCore` | 2.83.0 | Hosts the gRPC services inside the one ASP.NET Core process that is ADP's whole backend. | Apache-2.0 |
 | `Grpc.AspNetCore.Web` | 2.83.0 | The gRPC-Web middleware that lets a browser — which cannot speak native gRPC — reach those same services. | Apache-2.0 |
-| `Grpc.Core.Api` | 2.83.0 | The gRPC contract assembly - `ServerCallContext` and friends - that `EtAlii.Adp.Common` compiles its `SessionContext` accessor against without pulling the whole ASP.NET Core server stack into the bottom project. | Apache-2.0 |
 | `Grpc.Core.Testing` | 2.46.6 | Fabricates `ServerCallContext` instances so gRPC service methods can be unit-tested without a running server. | Apache-2.0 |
 | `Grpc.Net.Client` | 2.83.0 | The gRPC client the integration tests use to call the real host over its own wire. | Apache-2.0 |
 | `Grpc.Tools` | 2.83.0 | Compiles the `.proto` contracts in `src/api/` and the module `api/` folders into C# at build time. | Apache-2.0 |
@@ -29,7 +28,7 @@ One row per `PackageVersion` entry in `src/Directory.Packages.props`, which mana
 | `Serilog.AspNetCore` | 10.0.0 | Wires Serilog into the ASP.NET Core host and reads its levels and sinks from the `Serilog` section of `appsettings.json`. | Apache-2.0 |
 | `xunit.runner.visualstudio` | 4.0.0 | Lets Rider and VS Test Explorer discover and run the xUnit v3 tests a developer works in daily. | Apache-2.0 |
 | `xunit.v3` | 4.0.0 | The test framework for every backend test project, on Microsoft.Testing.Platform per `src/global.json`. | Apache-2.0 |
-| `YamlDotNet` | 18.1.0 | Reads YAML with a line number on every node for the ansible-structure, azure-pipeline, timeline and databricks modules — reading only; no module serialises back through it (the manifest's own comment records the full reasoning). | MIT |
+| `YamlDotNet` | 18.1.0 | Reads YAML with a line number on every node for the ansible-structure, azure-pipeline, timeline, dependency-graph, helm-charts and databricks modules — reading only; no module serialises back through it (the manifest's own comment records the full reasoning). | MIT |
 
 ## Client
 

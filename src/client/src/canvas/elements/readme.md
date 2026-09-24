@@ -1,7 +1,7 @@
 # Element drawing and interaction
 
-One folder per way of drawing a diagram element. As with `../connections/`, the
-implementations are deliberately **not merged**: each was extracted from the module that grew
+One folder per way of drawing a diagram element. The implementations are deliberately
+**not merged**: each was extracted from the module that grew
 it, renamed generically, and parameterized just enough to move - unifying them into fewer
 shapes is a later, separate decision, and easier to take with them sitting side by side here.
 

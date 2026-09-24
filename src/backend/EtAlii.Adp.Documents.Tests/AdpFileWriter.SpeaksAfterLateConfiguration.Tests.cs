@@ -111,8 +111,11 @@ public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
         using var entered = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             entered.Set();
             answer.Wait(Patience);
+            // ReSharper restore AccessToDisposedClosure
             return "pid 4242 someone.exe";
         };
 

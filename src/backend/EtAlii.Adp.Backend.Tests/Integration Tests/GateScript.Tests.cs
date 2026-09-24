@@ -23,6 +23,33 @@ namespace EtAlii.Adp.Backend.Tests;
 /// own installation and never from <c>PATH</c>, where <c>System32\bash.exe</c> would start WSL.
 /// </para>
 /// <para>
+/// <b>A product branch runs the quick subset, not the whole suite</b>, and the full suite runs only
+/// when the branch changes <c>.github/tools/gate/</c>. The full run costs 1274 s measured on a quiet
+/// machine; the subset costs 16.8 s and covers 119 of 177 cases. What it drops is the two sections
+/// that build throwaway repositories end to end; what it keeps is the guard's refusals, the verdict
+/// parsing, the logs, the tell and the argument handling.
+/// </para>
+/// <para>
+/// <b>What that costs is less than it sounds like, and saying so precisely is the point.</b> Every
+/// gate run exercises <c>gate.sh</c>'s happy path by definition - it is the thing running - so a
+/// break there fails loudly on the next gate whether or not this test ran. What the self-test covers
+/// and ordinary operation does not is the <b>refusal</b> paths: a husk refused, the main checkout
+/// refused, a stale verdict refused. Those are in the quick subset. <b>What is genuinely unguarded
+/// on a product branch is the end-to-end behaviour of <c>gate.sh</c>, <c>land.sh</c> and
+/// <c>retire.sh</c> against a real repository</b>, and only a change outside the gate directory could
+/// break that without re-running it - by moving something those scripts assume. That is a real gap
+/// and it is stated rather than papered over.
+/// </para>
+/// <para>
+/// <b>Why the minutes mattered enough to do this.</b> The full suite drives a few hundred git
+/// processes for twenty-one minutes <em>in parallel with every other test</em>. On 2026-09-23 a gate
+/// failed on two unrelated tests - a 60-second gRPC deadline, and an assertion that a failure record
+/// holds one log line where contention adds a second - both of which that load explains and neither
+/// of which reproduces alone. The link is a coincidence in time rather than a measured cause, and
+/// removing the load from product gates settles it either way: if the storm was the cause the
+/// failures stop, and if it was not they recur and cost nothing to observe.
+/// </para>
+/// <para>
 /// Green needs both halves of the script's answer: exit code 0 <b>and</b> its
 /// <c>RESULT=selftest-green</c> line, which it prints only when every expected case ran and none
 /// was wrong.
@@ -30,10 +57,23 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 public class GateScriptTests
 {
-    // Generous on purpose: the suite drives a few hundred git processes, which took 35 s on a quiet
-    // machine and 209 s on a slow one the same day. A timeout here fails a gate for the wrong reason;
-    // nothing in the suite waits for input, so a real hang is the unlikely case.
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(15);
+    // A LIVENESS BOUND, NOT A PERFORMANCE BUDGET. The suite drives a few hundred git processes, and
+    // what that costs has moved a long way: 35 s on a quiet machine and 209 s on a slow one on
+    // 2026-09-22, then 1274 s - twenty-one minutes - on a QUIET machine on 2026-09-23, measured
+    // alone with nothing else running. The 15-minute ceiling set against the first two numbers was
+    // therefore being exceeded by every gate on the board, deterministically and for a reason no
+    // branch could fix, because a branch carrying the remedy must itself pass this test.
+    //
+    // Raised to 45 rather than to just above 21 for two reasons. A ceiling set at the last
+    // measurement is already too low for the next landing - the self-test is 167 cases here and a
+    // branch taking it to 177 is in hand. And a timeout doing double duty as a performance alarm
+    // stops the board every time the honest number drifts, which is what just happened.
+    //
+    // WHAT IS NOT MEASURED, stated rather than implied: the 1274 s is a QUIET-MACHINE figure. Under
+    // a full gate this test ran past 15 minutes and was killed there, so its loaded cost is unknown
+    // and 45 minutes is 2.1x an unloaded number rather than a headroom over a measured one. If this
+    // fires again, that ratio is the first thing to measure and the growth is the thing to fix.
+    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(45);
 
     [Fact]
     public async Task SelfTestIsGreen()
@@ -45,13 +85,80 @@ public class GateScriptTests
         Assert.True(File.Exists(script), $"The shared gate's self-test is missing: {script}");
         var bash = await LocateBash(cancellation);
 
-        // Act.
-        var (exitCode, output) = await Run(bash, [script.Replace('\\', '/')], root, cancellation);
+        var full = await GateDirectoryChanged(root, cancellation);
+        string[] arguments = full
+            ? [script.Replace('\\', '/')]
+            : [script.Replace('\\', '/'), "--quick"];
 
-        // Assert.
+        // Act.
+        var (exitCode, output) = await Run(bash, arguments, root, cancellation);
+
+        // Assert. The two verdicts contain neither the other, so this cannot be satisfied by the
+        // wrong one - including by an older script that ignores --quick and runs everything.
+        var expected = full ? "RESULT=selftest-green" : "RESULT=selftest-quick-green";
+        ReportToTheGate(full, exitCode, output);
         Assert.True(
-            exitCode == 0 && output.Contains("RESULT=selftest-green", StringComparison.Ordinal),
-            $"The shared gate's self-test is not green (exit {exitCode}):{Environment.NewLine}{output}");
+            exitCode == 0 && output.Contains(expected, StringComparison.Ordinal),
+            $"The shared gate's self-test is not green in {(full ? "full" : "quick")} mode " +
+            $"(exit {exitCode}, wanted {expected}):{Environment.NewLine}{output}");
+    }
+
+    /// <summary>
+    /// Hands this run's verdict to the gate's summary, when the gate asked for one.
+    /// </summary>
+    /// <remarks>
+    /// xUnit emits nothing for a test that passes, so this test's verdict has never reached a gate log
+    /// and the mode a gate ran in was invisible exactly when everything worked. Only <c>gate.sh</c> sets
+    /// <c>ADP_GATE_SELFTEST_REPORT</c>, so a developer running <c>dotnet test</c> sees no change.
+    /// <b>A failure to write is swallowed on purpose</b>: this is a report about a check, not the check,
+    /// and it must never be the thing that reddens a gate. The gate prints <c>SELFTEST=absent</c> when
+    /// the file does not arrive, which is where that failure becomes visible.
+    /// </remarks>
+    private static void ReportToTheGate(bool full, int exitCode, string output)
+    {
+        var report = Environment.GetEnvironmentVariable("ADP_GATE_SELFTEST_REPORT");
+        if (string.IsNullOrWhiteSpace(report))
+        {
+            return;
+        }
+
+        var verdict = output
+            .Split('\n')
+            .Select(line => line.Trim())
+            .LastOrDefault(line => line.StartsWith("RESULT=", StringComparison.Ordinal))
+            ?? $"RESULT=unreadable (exit {exitCode})";
+        try
+        {
+            File.WriteAllText(report, $"mode={(full ? "full" : "quick")} {verdict}");
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Whether this branch changes the gate itself, and therefore has to re-prove all of it.
+    /// </summary>
+    /// <remarks>
+    /// <b>Every answer it cannot establish is <c>true</c>.</b> A missing <c>develop</c>, a git that
+    /// fails, a shallow clone: each runs the full suite. The expensive direction is the safe one, and
+    /// a filter that guessed <em>quick</em> when it could not tell would narrow coverage exactly where
+    /// the repository is least ordinary.
+    /// </remarks>
+    private static async Task<bool> GateDirectoryChanged(string root, CancellationToken cancellation)
+    {
+        // develop...HEAD is the branch's own changes since it diverged, which is what a gate merges.
+        // In the gate's scratch tree HEAD is the merge commit and develop is the base, so the same
+        // expression answers the same question there.
+        var (exitCode, output) = await Run(
+            "git",
+            ["diff", "--name-only", "develop...HEAD", "--", ".github/tools/gate/"],
+            root,
+            cancellation);
+        return exitCode != 0 || output.Trim().Length > 0;
     }
 
     private static string LocateRepositoryRoot()

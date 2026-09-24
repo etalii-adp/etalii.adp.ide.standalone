@@ -24,10 +24,10 @@ The element type `node` declares:
 
 - **`shape: "span"`** — the same shared component the custom renderer wrapped.
 - **`classNames`** — `dependency-graph-element canvas-element` and `dependency-graph-node
-  canvas-node` always; `dependency-graph-selected` and `dependency-graph-connect-target
-  canvas-connect-target` conditioned on the canvas's own state. Those two conditions are why the
-  library can see `state.selected` at all: twenty-three of the twenty-eight element types in the
-  tree style on interaction state, and before this specification a declaration could not.
+  canvas-node`, both unconditional. The selected and connect-target looks are the library's own
+  (since 528f1434); the module once declared `dependency-graph-selected` and
+  `dependency-graph-connect-target` conditioned on interaction state, which is why a declaration
+  can see `state.selected` at all.
 - **`labels`** — one line, truncated to the box, editable through the shared inline editor.
 - **`anchors`** — the two named side anchors a dependency gesture lifts from, plus
   `edgeSides: "horizontal"`, which is what the custom shape's `edgePoint` did: a target end
@@ -47,5 +47,5 @@ The guard for that behaviour is therefore in the library
 shelter — `dotnet-dependency-graph` and `timeline`, which migrate next.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`declarative-diagram-modules`](../../../../.spec-workflow/specs/declarative-diagram-modules/) for
+[`declarative-diagram-modules`](../../../../.spec-workflow/archive/specs/declarative-diagram-modules/) for
 the specification this canvas is the reference for.

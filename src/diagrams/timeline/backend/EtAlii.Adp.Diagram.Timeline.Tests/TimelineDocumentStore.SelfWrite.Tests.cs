@@ -7,6 +7,19 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// The control for the causal-loop store's self-write probe: the same saves and the same
 /// concurrent reloads, against a store that ignores a reload of a path it is saving.
 /// </summary>
+/// <remarks>
+/// <b>What this cannot see, stated because it was believed to cover it.</b> Every save here writes
+/// the SAME text, so losing the in-memory entry costs nothing: the re-read document and the
+/// discarded one are byte-identical. A discarded EDIT is therefore invisible to this test by
+/// construction - it ran 2000 iterations of exactly this race and stayed green while
+/// <c>TimelineFlowTests</c> lost an undo's edit under gate contention. The precondition it never
+/// establishes is an edit that exists in memory and nowhere else, and
+/// <see cref="TimelineDocumentStoreLostEditTests"/> is the test that does establish it.
+/// <para>
+/// The fetch-and-save on one line below says the same thing in code: nothing is ever edited
+/// between the two, which is why the race this drives is the harmless half of it.
+/// </para>
+/// </remarks>
 public class TimelineDocumentStoreSelfWriteTests : IDisposable
 {
     private const string Text = "timeline: 1\nelements:\n  - id: aaa\n    label: Period\n    begin: 2026-01-05\n    end: 2026-02-13\n    row: 0\n";
@@ -38,6 +51,8 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var reloads = 0;
         var reloader = Task.Run(() =>
         {
+            // ReSharper disable once AccessToModifiedClosure
+            // Reason: Used in a test case which is acceptable.
             while (Volatile.Read(ref saving) == 1)
             {
                 store.Reload(path);
@@ -54,7 +69,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {
-            if (store.Save(path).Length > 0)
+            if (store.Save(path, store.GetOrLoad(path)).Length > 0)
             {
                 refused++;
             }

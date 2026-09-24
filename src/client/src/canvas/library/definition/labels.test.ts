@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { DiagramModelElement } from "../api/diagramModel";
 import type { BindingSource } from "./binding";
 import type { LabelDeclaration } from "./diagramDefinition";
-import { layoutLabels } from "./labels";
+import { estimatedTextWidth, layoutLabels } from "./labels";
+import { textRegionOf } from "../shapes/outline";
 
 const element: DiagramModelElement = { id: "e1", type: "card", x: 0, y: 0 };
 const bounds = { x: -100, y: -40, width: 200, height: 80 };
@@ -351,5 +352,95 @@ describe("labels - an offset moves the line down, it does not un-align it", () =
     expect(out.x).toBe(0);
     expect(out.anchor).toBe("middle");
     expect(out.y).toBe(bounds.y + 18);
+  });
+});
+
+describe("a wrapped label is laid out inside the shape, not inside its bounding box", () => {
+  /**
+   * The widths here are asserted against `estimatedTextWidth`, the function the wrapper itself
+   * measures with, rather than against the literal 7 it happens to use today. A guard naming the
+   * literal would pass while disagreeing with the code, and would have to be edited the day a
+   * real text metric replaces the estimate - a second copy of the data rather than a check on it.
+   */
+  const wrapped = (extra: Partial<LabelDeclaration> = {}): LabelDeclaration => ({
+    text: { path: "payload.note" },
+    wrap: true,
+    typography: { fontSize: 10 },
+    ...extra,
+  });
+
+  /** The label's text arrives through the binding, as every other declaration's does. */
+  const withText = (text: string) => source({ note: text });
+
+  /** A 160-wide box, the width the task names, at the notation's shared element height. */
+  const box = { x: -80, y: -24, width: 160, height: 48 };
+
+  it("breaks a long label onto more than one line, none wider than the region", () => {
+    // Arrange: sixty characters, which cannot fit one 160-wide line at the library's estimate.
+    const label = "The quick brown fox jumps over the lazy dog and keeps going";
+    expect(label).toHaveLength(59);
+
+    // Act. A box tall enough for the wrap, so this test is about breaking rather than about
+    // truncation - the 48-tall box has room for two lines, and cutting is the next test's subject.
+    const tall = { ...box, height: 120 };
+    const out = layoutLabels([wrapped()], withText(label), tall, 1, "box");
+
+    // Assert: more than one line, and every line fits the room the shape gives.
+    expect(out.length).toBeGreaterThan(1);
+    const region = textRegionOf("box", tall, out.length * 14);
+    for (const line of out) {
+      expect(estimatedTextWidth(line.text), line.text).toBeLessThanOrEqual(region.width);
+    }
+    // Every word survives the break, in order: a wrap that dropped one would still fit.
+    expect(out.map((line) => line.text).join(" ").split(/\s+/)).toEqual(label.split(" "));
+  });
+
+  it("starts a new line at an explicit newline, whether or not the line was full", () => {
+    // Act.
+    const out = layoutLabels([wrapped()], withText("Short\nSecond"), box, 1, "box");
+
+    // Assert.
+    expect(out.map((line) => line.text)).toEqual(["Short", "Second"]);
+  });
+
+  it("ends the last visible line with an ellipsis, and keeps the whole text as the tooltip", () => {
+    // Arrange: far more text than a 48-tall box has lines for.
+    const label = Array.from({ length: 40 }, (_, index) => `word${index}`).join(" ");
+
+    // Act.
+    const out = layoutLabels([wrapped()], withText(label), box, 1, "box");
+
+    // Assert: it says it was cut rather than being drawn outside the shape or silently dropped.
+    expect(out[out.length - 1]!.text.endsWith("…")).toBe(true);
+    expect(out[out.length - 1]!.tooltip).toBe(label);
+  });
+
+  it("measures a trapezoid against its slanted sides, so its text is narrower than a box's", () => {
+    // Arrange: the same label and the same bounds, in two shapes. A trapezoid's bottom edge runs
+    // from 0.15 to 0.85 of the width, so the room for text is narrower than the bounding box -
+    // which is the whole reason this is measured against the outline.
+    const label = "The quick brown fox jumps over the lazy dog and keeps going";
+
+    // Act.
+    const inBox = layoutLabels([wrapped()], withText(label), box, 1, "box");
+    const inTrapezoid = layoutLabels([wrapped()], withText(label), box, 1, "trapezoid");
+
+    // Assert: the trapezoid takes at least as many lines, and no line of it exceeds the narrower
+    // region. Measuring against the bounding box is the planted defect this catches.
+    expect(inTrapezoid.length).toBeGreaterThanOrEqual(inBox.length);
+    const region = textRegionOf("trapezoid", box, inTrapezoid.length * 14);
+    for (const line of inTrapezoid) {
+      expect(estimatedTextWidth(line.text), line.text).toBeLessThanOrEqual(region.width);
+    }
+    // And the two really are different layouts, or this test would pass on a box-measured wrap.
+    expect(inTrapezoid.map((line) => line.text)).not.toEqual(inBox.map((line) => line.text));
+  });
+
+  it("leaves an unwrapped label exactly as it was: one line, untouched", () => {
+    // The capability is opt-in; a declaration that says nothing keeps today's single line.
+    const label = "The quick brown fox jumps over the lazy dog and keeps going";
+    const out = layoutLabels([{ text: { path: "payload.note" } }], withText(label), box, 1, "trapezoid");
+    expect(out).toHaveLength(1);
+    expect(out[0]!.text).toBe(label);
   });
 });

@@ -72,6 +72,8 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var answer = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             answer.Wait(Patience);
             return "pid 4242 someone.exe";
         };
@@ -120,8 +122,11 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var entered = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             entered.Set();
             stuck.Wait(Patience);
+            // ReSharper restore AccessToDisposedClosure
             return "never gets here in this test";
         };
         using var logs = LogCapture.Start();
@@ -154,6 +159,8 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var refuse = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             refuse.Wait(Patience);
             throw new InvalidOperationException("the Restart Manager refused");
         };
@@ -178,6 +185,8 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var stuck = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             stuck.Wait(Patience);
             return "never";
         };

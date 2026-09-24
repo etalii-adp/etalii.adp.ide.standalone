@@ -55,8 +55,11 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
 
         var saving = Task.Run(() => AdpFileWriter.Save(path, "after", replace: (temporary, destination) =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             inside.Set();
             release.Wait(Patience, TestContext.Current.CancellationToken);
+            // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
         }), TestContext.Current.CancellationToken);
 

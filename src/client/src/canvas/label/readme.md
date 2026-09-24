@@ -14,10 +14,10 @@ hand-rolled across ten canvases, each copied from whichever came before.
   already speaks, and reports intent. It does not know what a rename is and cannot decide what
   is renameable.
 - `inlineLabelEditor.css` — the look, on the theme variables.
-- `labelPlacement.ts` — three pure functions answering *where the editor goes*, for the three
+- `labelPlacement.ts` — four pure functions answering *where the editor goes*, for the four
   shapes a canvas draws: `centredLabelPlacement` for a label filling its element's box,
-  `insetLabelPlacement` for one named line inside a composite box, and `midpointLabelPlacement`
-  for a bare text on a connection. No React, no DOM, no module vocabulary. They were C4's
+  `insetLabelPlacement` for one named line inside a composite box, `midpointLabelPlacement`
+  for a bare text on a connection, and `asideLabelPlacement` for a label beside a mark. No React, no DOM, no module vocabulary. They were C4's
   private helpers first and were extracted rather than written, so the fourth canvas to adopt
   does not copy them a fourth time.
 
@@ -45,12 +45,27 @@ Four behaviours look like preferences and are not:
   than retyped from a label that is no longer visible.
 - **An unchanged value dispatches nothing.** Opening an editor and pressing Enter is not an edit,
   and a command there would put an inverse on the undo stack that undoes nothing.
-- **Enter commits whatever is typed**, unlike the dialog's confirm button, which stays disabled
-  until a verdict has judged the exact text in the box. An inline editor has no button to
-  disable, and a keystroke that silently does nothing — which is what waiting looks like inside
-  the 200 ms validation debounce — is worse than a refusal the user can read. Nothing is
-  bypassed: the handler validates its own preconditions, and the refusal comes back through the
-  same submission result the dialog reads.
+- **Enter commits whatever is typed** — in the single-line field — unlike the dialog's confirm
+  button, which stays disabled until a verdict has judged the exact text in the box. An inline
+  editor has no button to disable, and a keystroke that silently does nothing — which is what
+  waiting looks like inside the 200 ms validation debounce — is worse than a refusal the user can
+  read. Nothing is bypassed: the handler validates its own preconditions, and the refusal comes
+  back through the same submission result the dialog reads.
+
+## The multi-line field
+
+A placement that says `multiline` renders a **textarea** instead of an input, and the canvas says
+so for a label the definition declares `wrap: true`. Only Enter differs: there it is text the user
+is typing, so it is neither committed nor prevented — the browser's own default inserts the
+newline — and **Ctrl+Enter or Cmd+Enter is the commit**. Blur commits, Escape cancels, a refusal
+holds the box open and an unchanged value dispatches nothing, exactly as above; those are shared
+rather than copied, because a second field is the obvious place for one of them to be lost.
+
+`multiline` is stated by the canvas rather than inferred from the text, because a wrapped label
+whose current value happens to hold no newline is still a wrapped label — inferring it would hand
+the user a field they can type a newline into only once they already have one. The editor's box is
+the label's fitted **text region**, not the element's bounding box, so it sits over the text it
+replaces rather than over a trapezoid's slanted edge.
 
 ## Which labels get one
 
@@ -76,8 +91,11 @@ while editing the description alone.
 
 ## Adoption
 
-- **mindmap** - node labels. Its provider marks `Rename` and leaves add-child, add-sibling and
+- **mindmap** - node labels. Its provider marks `Rename`, and marks the rename that follows
+  add-child and add-sibling, which create the node first and name it from its siblings. It leaves
   edit-notes on the dialog, which is the sharpest example in the tree of where the line falls.
+- **causal-loop** - variable names. `Rename…` on a variable opens over the name a reader sees on
+  it, while the provider's other prompts stay on the dialog.
 - **timeline** - element labels and connection labels. A span's editor covers its box; an
   instant's sits beside its diamond, which is why `asideLabelPlacement` exists.
 - **dependency-graph** - node labels and relation labels. Every node is a span, so centred
@@ -112,8 +130,8 @@ while editing the description alone.
 Every implemented module now has either an entry above or a recorded reason in its own
 client readme. The reasons divide in two, and the difference matters: **exempt** means the
 module has nothing this feature could attach to - the four RDF readings, whose drawn labels
-are prefixed names computed from IRIs, and ansible-structure, helm-charts and sparql, which
-offer no rename at all - while **pending** means a gesture is missing, not a reason:
+are prefixed names computed from IRIs, and ansible-structure, helm-charts, sparql and dotnet-dependency-graph,
+which offer no rename at all - while **pending** means a gesture is missing, not a reason:
 databricks' edges await edge selection. A module that later gains a rename adopts as ever:
 a module adopts by setting the marker on the prompts whose value is the label, and its canvas by
 registering a placement resolver. Nothing else is needed and no other canvas has to change.

@@ -214,7 +214,7 @@ export function actionForGesture(
  *
  * <b>The menu's entries are always the backend's list</b>: what is offered, under which label, in
  * which group, stays single-sourced. What a definition may declare is <b>who runs</b> an entry. One
- * whose id it declares with `invokedBy: { kind: "menu" }` goes to the module's handler as
+ * whose id it declares with `invokedBy: [{ kind: "menu" }]` goes to the module's handler as
  * `action-invoked`, exactly as a declared shortcut or gesture does, and nothing is sent to the
  * backend - databricks' simulated runs, which must never reach a command or a file
  * (centralized-selection, design A).

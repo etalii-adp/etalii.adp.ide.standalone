@@ -12,8 +12,51 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The scope is <b>exactly the listed documents</b>, not a repository-wide crawl. The module
-/// readmes predate the documentation spec and are not retro-guarded here.
+/// The scope is <b>the listed documents, every in-tree readme under <c>src/</c>, and every
+/// specification document under <c>.spec-workflow/specs/</c> and the archive beside it</b>. The
+/// readmes were left out at first, as predating the documentation spec, and on 2026-09-24 that
+/// exclusion was found holding five links into <c>.spec-workflow/archive</c>, which the nightly
+/// cleanup had removed. They are discovered rather than listed, so a new module's readme is
+/// guarded on arrival; <c>node_modules</c>, <c>bin</c> and <c>obj</c> are skipped as not the
+/// repository's own writing.
+/// </para>
+/// <para>
+/// <b>The specification documents joined on 2026-09-24, the day archiving nine of them broke
+/// three links nothing was watching.</b> Archiving moves a specification one folder deeper, so
+/// every link written with a fixed number of parent steps changes what it reaches: three links
+/// to the steering documents resolved as <c>../../steering/</c> and, once archived, pointed at
+/// an <c>.spec-workflow/archive/steering/</c> that does not exist. That change passed four green
+/// gates. The archive is walked as well as the live folder for exactly that reason - a guard
+/// that stopped at the live folder would still not see the break, because the break happens in
+/// the copy that has just been moved out of it.
+/// </para>
+/// <para>
+/// <b>What breaks is not the destination but the depth</b>, and that is the sentence to carry
+/// away: archiving adds one path segment, so every link written with a fixed number of parent
+/// steps changes what it reaches, wherever it was pointing. The three that broke pointed OUT to
+/// the steering documents, not at another specification - so re-checking only the spec-to-spec
+/// links after a move would have found none of them. After any move of a document, the links to
+/// re-check are all of them.
+/// </para>
+/// <para>
+/// <b>Read the green narrowly: this guard checks about three percent of the path claims a
+/// specification makes.</b> Measured on 2026-09-24, the live specification documents carry four
+/// relative links between them and 131 backticked path spans - specifications reference files as
+/// <c>`src/...`</c> far more often than they link to them. Sixty-one of those spans do not
+/// resolve, and almost all of that is elisions like <c>`.../DiagramCanvas.tsx`</c>, globs like
+/// <c>`_Model/*.cs`</c>, paths written relative to <c>src/client/src</c>, and files a
+/// specification proposes to create. They are deliberately not checked: the standing reading is
+/// that a stale code span is a timestamp rather than decay, and any pattern that tried to sort
+/// the sixty-one would be a heuristic needing retuning - a second copy of the data rather than a
+/// check on it.
+/// </para>
+/// <para>
+/// <b><c>Implementation Logs</c> are deliberately excluded, and the exclusion is load-bearing
+/// rather than tidy.</b> A log records how a guard was seen to fail, which means quoting the
+/// planted link verbatim - one of them carries <c>[the renderer notes](renderer-notes.md)</c>,
+/// a link that is dead on purpose and whose deadness is the evidence. Walking the logs would
+/// redden this build on a truthful record. <c>SpecificationDocumentsAreFound</c> checks that the
+/// exclusion still excludes, so it cannot quietly become an exclusion of everything.
 /// </para>
 /// <para>
 /// <b><c>docs/diagrams.md</c> joined the list on 2026-09-10, and HTML links with it.</b> Until
@@ -32,6 +75,14 @@ namespace EtAlii.Adp.Backend.Tests;
 public partial class DocumentationLinksTests
 {
     /// <summary>The delivered documents, repo-relative.</summary>
+    /// <remarks>
+    /// <b>The agent files are here for a reason that arrived with the architecture pages.</b> That
+    /// specification moves passages OUT of <c>tech.md</c> and <c>structure.md</c> and leaves links
+    /// in their place, so those files started carrying relative links that can go stale - and a
+    /// removal pass is exactly the operation that leaves one dangling. <c>CLAUDE.md</c>, the four
+    /// steering documents and the two pages therefore join the list the delivered documentation
+    /// already occupied.
+    /// </remarks>
     private static readonly string[] Documents =
     [
         "readme.md",
@@ -40,9 +91,71 @@ public partial class DocumentationLinksTests
         "docs/creating-an-editor-module.md",
         "docs/screenshots/readme.md",
         "docs/diagrams.md",
+        "docs/architecture.md",
+        "docs/solution-structure.md",
+        "CLAUDE.md",
+        ".spec-workflow/steering/structure.md",
+        ".spec-workflow/steering/tech.md",
+        ".spec-workflow/steering/product.md",
+        ".spec-workflow/steering/roles.md",
     ];
 
     private static string RepositoryRoot { get; } = Locate();
+
+    /// <summary>Every <c>readme.md</c> under <c>src/</c>, repo-relative - discovered, not listed.</summary>
+    private static IReadOnlyList<string> InTreeReadmes { get; } = DiscoverInTreeReadmes();
+
+    private static IReadOnlyList<string> DiscoverInTreeReadmes()
+    {
+        var skipped = new HashSet<string>(["node_modules", "bin", "obj"], StringComparer.OrdinalIgnoreCase);
+        var found = new List<string>();
+        var pending = new Stack<string>([IoPath.Combine(RepositoryRoot, "src")]);
+        while (pending.Count > 0)
+        {
+            var folder = pending.Pop();
+            found.AddRange(Directory.EnumerateFiles(folder)
+                .Where(file => string.Equals(IoPath.GetFileName(file), "readme.md", StringComparison.OrdinalIgnoreCase))
+                .Select(file => IoPath.GetRelativePath(RepositoryRoot, file).Replace(IoPath.DirectorySeparatorChar, '/')));
+            foreach (var child in Directory.EnumerateDirectories(folder).Where(child => !skipped.Contains(IoPath.GetFileName(child))))
+            {
+                pending.Push(child);
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// The folder name whose contents are records of what was done rather than descriptions of
+    /// what is - and which therefore quote dead links on purpose. See the remarks on the class.
+    /// </summary>
+    private const string LogFolder = "Implementation Logs";
+
+    /// <summary>
+    /// Every specification document, repo-relative - the live folder and the archive beside it,
+    /// discovered rather than listed, with the implementation logs left out.
+    /// </summary>
+    private static IReadOnlyList<string> SpecificationDocuments { get; } = DiscoverSpecificationDocuments();
+
+    private static IReadOnlyList<string> DiscoverSpecificationDocuments()
+    {
+        var roots = new[]
+        {
+            IoPath.Combine(RepositoryRoot, ".spec-workflow", "specs"),
+            IoPath.Combine(RepositoryRoot, ".spec-workflow", "archive", "specs"),
+        };
+
+        var found = new List<string>();
+        foreach (var root in roots.Where(Directory.Exists))
+        {
+            found.AddRange(Directory
+                .EnumerateFiles(root, "*.md", SearchOption.AllDirectories)
+                .Select(file => IoPath.GetRelativePath(RepositoryRoot, file).Replace(IoPath.DirectorySeparatorChar, '/'))
+                .Where(file => !file.Contains($"/{LogFolder}/", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return found;
+    }
 
     private static string Locate()
     {
@@ -79,7 +192,7 @@ public partial class DocumentationLinksTests
         var checkedLinks = 0;
         var checkedHtmlLinks = 0;
 
-        foreach (var document in Documents)
+        foreach (var document in Documents.Concat(InTreeReadmes).Concat(SpecificationDocuments))
         {
             var fullPath = IoPath.Combine(RepositoryRoot, document);
             if (!File.Exists(fullPath))
@@ -155,6 +268,41 @@ public partial class DocumentationLinksTests
             $"No relative HTML links were extracted from {Documents.Length} delivered documents, so the catalog's links are not being checked at all.");
 
         Assert.True(dead.Count == 0, "Dead documentation links:" + Environment.NewLine + string.Join(Environment.NewLine, dead));
+    }
+
+    [Fact]
+    public void TheInTreeReadmesAreFound()
+    {
+        // Assert. Discovery, not a count: two readmes that must always exist, one core and one
+        // module, so a walk that stops finding readmes fails here instead of guarding nothing.
+        Assert.Contains("src/diagrams/readme.md", InTreeReadmes);
+        Assert.Contains("src/client/src/canvas/label/readme.md", InTreeReadmes);
+        Assert.DoesNotContain(InTreeReadmes, readme => readme.Contains("/node_modules/", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void SpecificationDocumentsAreFound()
+    {
+        // Assert, first, that the walk is alive at all. Deliberately not a count and deliberately
+        // not a named specification: specifications are archived and archives are deleted
+        // nightly, so any fixed name here would fail a correct tree on the day its subject moved
+        // - which is how two floors in this same file failed right trees on 2026-09-11. What must
+        // hold is only that .spec-workflow/specs still exists and still yields documents, without
+        // which every assertion about their links is vacuous.
+        Assert.True(
+            SpecificationDocuments.Count > 0,
+            "No specification documents were found under '.spec-workflow/specs' or the archive beside it, so none of their links are being checked at all.");
+
+        // Assert, second, that the exclusion still excludes. An implementation log quotes the
+        // dead link a guard was planted with, so walking the logs would redden this build on a
+        // truthful record - but an exclusion that silently widened to everything would look
+        // exactly like a clean tree. This asks the filesystem whether logs exist and the set
+        // whether it kept any, so the two cannot be confused.
+        var logsExistOnDisk = Directory
+            .EnumerateDirectories(IoPath.Combine(RepositoryRoot, ".spec-workflow"), LogFolder, SearchOption.AllDirectories)
+            .Any();
+        Assert.True(logsExistOnDisk, $"No '{LogFolder}' folder exists, so the exclusion below is asserting nothing.");
+        Assert.DoesNotContain(SpecificationDocuments, document => document.Contains($"/{LogFolder}/", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

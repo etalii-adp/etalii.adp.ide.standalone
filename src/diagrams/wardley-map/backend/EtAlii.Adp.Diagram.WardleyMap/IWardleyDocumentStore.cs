@@ -49,7 +49,15 @@ public interface IWardleyDocumentStore
     /// either way, so a caller that ignores this answers the user with a save that never
     /// happened - which is what this returned nothing at all in order to do.
     /// </returns>
-    WardleyPublishResult Save(string path);
+    /// <remarks>
+    /// <b>The document is a parameter rather than something this looked up, and that is the fix for
+    /// a data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever
+    /// was in the cache at save time - and <see cref="Reload"/> evicts. A reload landing between a
+    /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
+    /// command's inverse on the undo stack for a change that never happened. Passing the document
+    /// makes that ordering unrepresentable: what the caller edited is what gets written.
+    /// </remarks>
+    WardleyPublishResult Save(string path, WardleyDocument document);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.
