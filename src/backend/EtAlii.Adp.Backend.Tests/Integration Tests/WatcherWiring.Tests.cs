@@ -77,6 +77,50 @@ public class WatcherWiringTests
     }
 
     /// <summary>
+    /// Every watcher subscribes to <c>Error</c>, which is the only signal
+    /// <see cref="FileSystemWatcher"/> gives when its internal buffer overflows and it has dropped
+    /// events. Unsubscribed, an overflow is indistinguishable from nothing having happened - the
+    /// most expensive shape a failure can take, because it looks like health.
+    /// </summary>
+    /// <remarks>
+    /// <b>Seen to fail, and it found one more than was being fixed.</b> The change that added
+    /// <c>Error</c> covered the two editor sessions; this test reddened anyway and named
+    /// <c>SolutionWatcher</c> as a third silent watcher, which was then subscribed too. So the
+    /// count here is three against develop, not the two the author had in mind - the guard was
+    /// written from a list and corrected by being run. <c>InternalBufferSize</c> is left at its
+    /// default everywhere, which is what makes the signal worth having rather than theoretical.
+    /// </remarks>
+    [Fact]
+    public void EveryWatcherReportsItsOwnOverflow()
+    {
+        var silent = new List<string>();
+
+        // PRODUCTION watchers only, and the asymmetry is the reason rather than convenience: a test's
+        // own watcher dropping events surfaces as a failing or hanging test, which is loud. A
+        // production watcher dropping them surfaces as nothing at all. This scoping was added after
+        // the test named AdpFileWriter.Tests' own fixture watcher - a true finding about the wrong
+        // population.
+        foreach (var file in SourceFiles().Where(candidate => !IsTestProject(candidate)))
+        {
+            var text = File.ReadAllText(file);
+            if (!text.Contains("new FileSystemWatcher", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!text.Contains(".Error +=", StringComparison.Ordinal))
+            {
+                silent.Add(IoPath.GetRelativePath(RepositoryRoot, file).Replace('\\', '/'));
+            }
+        }
+
+        Assert.True(
+            silent.Count == 0,
+            "A FileSystemWatcher does not subscribe to Error, so a buffer overflow that silently "
+                + "drops events is invisible: " + string.Join(", ", silent));
+    }
+
+    /// <summary>
     /// The guard's own floor. A pattern that matches nothing and a tree that is clean print the
     /// same green, so this asserts the sweep actually reached the watchers - without it, a typo in
     /// the glob would read as compliance.
@@ -96,6 +140,10 @@ public class WatcherWiringTests
         Assert.Contains("PlainEditorSession", withWatchers);
         Assert.Contains("SolutionWatcher", withWatchers);
     }
+
+    /// <summary>A file belonging to a test assembly, by its project folder's name.</summary>
+    private static bool IsTestProject(string file) =>
+        file.Contains(".Tests" + IoPath.DirectorySeparatorChar, StringComparison.Ordinal);
 
     private static IEnumerable<string> SourceFiles() =>
         Directory

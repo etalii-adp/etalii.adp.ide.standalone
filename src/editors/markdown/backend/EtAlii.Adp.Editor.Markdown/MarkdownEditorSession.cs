@@ -43,6 +43,21 @@ public sealed class MarkdownEditorSession : IEditorSession
             _watcher.Created += (_, _) => OnExternalChange();
             _watcher.Renamed += (_, _) => OnExternalChange();
 
+            // Deleted and Error complete the set, and neither is the fix for anything.
+            //
+            // Deleted: File.Replace and File.Move can present the destination name's transition as
+            // a Deleted, and RootFolderWatcher takes all five where this took three. Subscribing it
+            // is only safe BECAUSE the refused re-read now retries - a Deleted callback finds the
+            // name absent by construction, and before the retry landed its only possible fate was
+            // to be swallowed. That ordering is a hard dependency rather than a preference.
+            //
+            // Error: the one signal FileSystemWatcher gives when its internal buffer overflows and
+            // it has silently dropped events. Unsubscribed, an overflow is invisible. Four other
+            // watchers in this tree log it; these two did not.
+            _watcher.Deleted += (_, _) => OnExternalChange();
+            _watcher.Error += (_, args) =>
+                _logger.Warning(args.GetException(), "The watcher for {Path} stumbled", _path);
+
             // Subscribed BEFORE the watcher is enabled. Four other watchers in this tree do it
             // this way - RootFolderWatcher, TrackedProblemRoot, AnsibleWatchedFolder and
             // HelmWatchedFolder - and enabling first leaves the watcher live with no handlers

@@ -67,6 +67,12 @@ public sealed class SolutionWatcher : IDisposable
             watcher.Deleted += OnFileSystemEvent;
             watcher.Renamed += OnFileSystemEvent;
 
+            // Error is the only signal FileSystemWatcher gives when its internal buffer overflows
+            // and it has silently dropped events. Unsubscribed, an overflow looks exactly like a
+            // quiet solution. RootFolderWatcher and the two WatchedFolders already log it.
+            watcher.Error += (_, args) =>
+                _logger.Warning(args.GetException(), "The watcher for {Directory} stumbled", directory);
+
             // Enabled AFTER the handlers, as RootFolderWatcher and the two WatchedFolders do:
             // a watcher live before its handlers exist raises into nothing.
             watcher.EnableRaisingEvents = true;
