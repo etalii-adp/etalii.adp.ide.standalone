@@ -717,7 +717,8 @@ export interface ElementTypeDefinition {
 }
 
 /**
- * The built-in routes (Requirement 3.1). These absorb the four existing connector families:
+ * The built-in routes (Requirement 3.1). These absorbed the four connector families that were
+ * once separate components (removed once nothing drew them):
  * `straight` covers the straight components, `cubic-bezier` covers bezier and fixed-bezier,
  * the interactive family is `cubic-bezier` with `adjustable: true` on its relation type, and
  * `arc` covers causal-loop's chord-bowed links. A chordless path - causal-loop's self-loop -

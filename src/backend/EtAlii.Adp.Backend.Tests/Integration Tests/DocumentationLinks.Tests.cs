@@ -12,8 +12,12 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The scope is <b>exactly the listed documents</b>, not a repository-wide crawl. The module
-/// readmes predate the documentation spec and are not retro-guarded here.
+/// The scope is <b>the listed documents plus every in-tree readme</b> under <c>src/</c>. The
+/// readmes were left out at first, as predating the documentation spec, and on 2026-09-24 that
+/// exclusion was found holding five links into <c>.spec-workflow/archive</c>, which the nightly
+/// cleanup had removed. They are discovered rather than listed, so a new module's readme is
+/// guarded on arrival; <c>node_modules</c>, <c>bin</c> and <c>obj</c> are skipped as not the
+/// repository's own writing.
 /// </para>
 /// <para>
 /// <b><c>docs/diagrams.md</c> joined the list on 2026-09-10, and HTML links with it.</b> Until
@@ -59,6 +63,29 @@ public partial class DocumentationLinksTests
 
     private static string RepositoryRoot { get; } = Locate();
 
+    /// <summary>Every <c>readme.md</c> under <c>src/</c>, repo-relative - discovered, not listed.</summary>
+    private static IReadOnlyList<string> InTreeReadmes { get; } = DiscoverInTreeReadmes();
+
+    private static IReadOnlyList<string> DiscoverInTreeReadmes()
+    {
+        var skipped = new HashSet<string>(["node_modules", "bin", "obj"], StringComparer.OrdinalIgnoreCase);
+        var found = new List<string>();
+        var pending = new Stack<string>([IoPath.Combine(RepositoryRoot, "src")]);
+        while (pending.Count > 0)
+        {
+            var folder = pending.Pop();
+            found.AddRange(Directory.EnumerateFiles(folder)
+                .Where(file => string.Equals(IoPath.GetFileName(file), "readme.md", StringComparison.OrdinalIgnoreCase))
+                .Select(file => IoPath.GetRelativePath(RepositoryRoot, file).Replace(IoPath.DirectorySeparatorChar, '/')));
+            foreach (var child in Directory.EnumerateDirectories(folder).Where(child => !skipped.Contains(IoPath.GetFileName(child))))
+            {
+                pending.Push(child);
+            }
+        }
+
+        return found;
+    }
+
     private static string Locate()
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
@@ -94,7 +121,7 @@ public partial class DocumentationLinksTests
         var checkedLinks = 0;
         var checkedHtmlLinks = 0;
 
-        foreach (var document in Documents)
+        foreach (var document in Documents.Concat(InTreeReadmes))
         {
             var fullPath = IoPath.Combine(RepositoryRoot, document);
             if (!File.Exists(fullPath))
@@ -170,6 +197,16 @@ public partial class DocumentationLinksTests
             $"No relative HTML links were extracted from {Documents.Length} delivered documents, so the catalog's links are not being checked at all.");
 
         Assert.True(dead.Count == 0, "Dead documentation links:" + Environment.NewLine + string.Join(Environment.NewLine, dead));
+    }
+
+    [Fact]
+    public void TheInTreeReadmesAreFound()
+    {
+        // Assert. Discovery, not a count: two readmes that must always exist, one core and one
+        // module, so a walk that stops finding readmes fails here instead of guarding nothing.
+        Assert.Contains("src/diagrams/readme.md", InTreeReadmes);
+        Assert.Contains("src/client/src/canvas/label/readme.md", InTreeReadmes);
+        Assert.DoesNotContain(InTreeReadmes, readme => readme.Contains("/node_modules/", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

@@ -2,8 +2,8 @@
 
 The read-only canvas for `dotnet/dependency-graph`, and the registration the shell discovers.
 
-**Empty at task 1.** The module lands registering and drawing nothing, so the canvas, the model
-and the stream hook arrive with task 10 — which follows the authored `generic/dependencies`
+The canvas (`DotNetDependencyGraphCanvas.tsx`), the model (`dotnetDependencyGraphModel.ts`)
+and the stream hook (`useDotNetDependencyGraphStream.ts`) arrived with task 10 — which follows the authored `generic/dependencies`
 module's conventions deliberately, so that two dependency graphs do not feel like two products.
 
 The shell finds a module's client by scanning `src/diagrams/<type>/client/register.ts`, so

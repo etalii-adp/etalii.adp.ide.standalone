@@ -35,6 +35,29 @@
 *.sh    text eol=lf
 
 # ---------------------------------------------------------------------------------------------
+# Generated protobuf output, which a tool writes and nobody authors.
+#
+# `npm test` in `src/client` runs `pretest` -> `npm run generate` -> fourteen `buf generate`
+# invocations, and buf writes LF. Under the CRLF rule above, that leaves seven tracked files
+# rewritten in every tree where the mandatory client gate has been run - and the gate is mandatory
+# before merging, so every agent meets it in every fresh worktree. The hazard is attribution rather
+# than content: a pathspec-limited commit misses them, but a bare `git commit -a` in the shared main
+# checkout takes all seven under somebody else's message, and they look like real work in
+# `git status` while containing none.
+#
+# So the ending follows the generator rather than the house style, because these files are output.
+# `src/.editorconfig` carries the matching `end_of_line = lf` for the same paths: the two files must
+# agree, and exempting a folder in one of them only is how they start contradicting each other.
+#
+# This does NOT make `git status` a policy check. Status compares normalised content, so a file can
+# read clean while its own bytes have drifted - `git ls-files --eol` is the only thing that answers
+# that question, and it remains the way to check any of this.
+#
+# The user ruled this exemption on 2026-09-23, after it was raised as a policy question rather than
+# taken as a tidy-up.
+src/client/src/generated/**   text eol=lf
+
+# ---------------------------------------------------------------------------------------------
 # Documents whose *bytes* are the test subject rather than its input.
 #
 # Each diagram module's round-trip requirement says a document ADP did not change comes back

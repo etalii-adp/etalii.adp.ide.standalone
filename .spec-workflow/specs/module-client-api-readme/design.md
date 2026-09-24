@@ -96,7 +96,7 @@ An entry answers the six questions of Requirement 3.1 in order: what it is for; 
 ### Component 1 — The readme, `docs/diagram-module-client-api.md`
 
 - **Purpose:** the one home for the module-facing client API (Requirements 1.1, 1.2).
-- **Reuses:** links, rather than restates, the six per-folder readmes and the walkthrough (Requirement 1.3).
+- **Reuses:** links, rather than restates, the five per-folder readmes and the walkthrough (Requirement 1.3).
 
 ### Component 2 — The mermaid diagrams, in the readme only
 

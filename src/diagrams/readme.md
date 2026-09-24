@@ -6,17 +6,19 @@ For the full catalog of diagram types — including ones only identified or spec
 
 ## Module layout
 
-Each diagram type gets its own folder, named after the diagram, containing up to three subfolders:
+Each diagram type gets its own folder, named after the diagram, containing up to four subfolders:
 
 ```
 src/diagrams/<diagram>/
 ├── backend/   EtAlii.Adp.Diagram.<Diagram> and EtAlii.Adp.Diagram.<Diagram>.Tests
 ├── client/    TypeScript and related code for the web client
-└── api/       .proto extensions (messages, services) specific to this diagram type
+├── api/       .proto extensions (messages, services) specific to this diagram type
+└── examples/  documents a reader can open and click around in
 ```
 
 - **`backend/`** — a C# project named `EtAlii.Adp.Diagram.<Diagram>`, plus a corresponding `EtAlii.Adp.Diagram.<Diagram>.Tests` project. This is where the diagram type's own persistence, validation, and any other server-side logic live.
 - **`client/`** — the TypeScript (and related) code the web client uses to render and interact with this diagram type. Lives beside `backend/`, not inside it, mirroring the top-level `src/backend` / `src/client` split.
 - **`api/`** — any `.proto` messages and services this diagram type adds on top of the shared core contract in `src/api/`. Kept separate from `src/api/` so core contracts and diagram-type contracts don't drift into the same file.
+- **`examples/`** — example documents with their `.adp` registrations, one folder per set. Every registration in them is opened against the deployed catalog by `ExampleRegistrationTests`, and they are seeded into `src/examples/`, where the copies are not held byte-for-byte in sync unless a module's own tests insist on it ([creating-a-diagram-module.md](../../docs/creating-a-diagram-module.md#tests-fixtures-and-examples) says why).
 
-This mirrors `src/`'s own top-level split (`api/`, `backend/`, `client/`), applied per diagram type instead of once for the whole app.
+The first three mirror `src/`'s own top-level split (`api/`, `backend/`, `client/`), applied per diagram type instead of once for the whole app.

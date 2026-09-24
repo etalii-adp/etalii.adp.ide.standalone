@@ -31,7 +31,7 @@ it.
 Capture retargets every subsequent pointer event - and the browser's own `click` - to the
 capturing element. Capturing to the surface therefore moves clicks off the pressed element,
 which broke click-to-select on the ansible canvas while every unit test stayed green (jsdom
-implements no capture; the comment on its `onNodePointerDown` tells the story). Capturing on
+implements no capture; the comment in `usePointerGesture.ts` tells the story). Capturing on
 the element keeps events where the wiring is, and makes a release outside the surface or the
 window end the gesture through the ordinary `pointerup` - which is what retires the
 mouseleave-as-pointerup hacks. `lostpointercapture` is the abandonment signal: a gesture

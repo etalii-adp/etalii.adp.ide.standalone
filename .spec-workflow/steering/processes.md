@@ -60,6 +60,17 @@ Two distinct hazards, and the rule for one does not cover the other.
 
 **Commit with an explicit pathspec: `git commit -F msg -- <paths>`.** `git add <path>` stages one file, but a bare `git commit` commits *the whole index*, including whatever another session has staged into it. This has swept another agent's files into an unrelated commit under the wrong message and the wrong identity at least four times. "Stage carefully" is not the fix, because care is not what fails — **in this repository a directory pathspec is a sweep by construction**, since the main checkout nearly always holds somebody's uncommitted work. Name files, never folders.
 
+**And the rule is *name the files*; the CHECK is *read the `create mode` lines back*.** A pathspec over
+a DIRECTORY commits the modified tracked files under it and **silently ignores the untracked ones**,
+because a pathspec filters the index and an untracked file is not in it - while `git add -- <dir>` does
+pick them up, which is what makes the asymmetry easy to miss. **On 2026-09-23 an approval request landed
+and its request-time snapshot beside it did not**, leaving a card pointing at a snapshot that is not in
+the repository: **invisible until somebody else checks out that commit**, because the file is present in
+the working tree of the session that raised it. It was caught by reading the commit's own output - three
+`create mode` lines where four were meant - and **a pathspec that silently covers two of three files
+looks identical to one that covers all three** until then. Naming the files is what people already do;
+reading the modes back is the part that fails loudly.
+
 **Commit your own implementation log the moment the tool writes it.** The other half of the same failure, and the half that is easier to miss: an uncommitted file left in the shared checkout is what turns somebody else's careless pathspec into a wrong commit message. The sweeper gets blamed; whoever left the file there supplied it. This is already what *Specification bookkeeping* asks for — it was being read as covering the documents rather than the logs the tool writes for you.
 
 **Never merge while anything is staged - yours or anyone else's.** `git merge` requires the index to match HEAD; when it does not, git stashes the working state and, on the failure path, does **not** restore it. That silently reverted or deleted **26 paths belonging to three other sessions**, reporting only `Index was not unstashed. Merge with strategy ort failed.` - a single line for two dozen files of other people's work. Reading `git status` first is necessary and not sufficient: it tells you what a merge would *write*, not that attempting one is unsafe.
@@ -122,9 +133,59 @@ staled by, or `GATING=none`, or `TELL_UNREADABLE=<dir>` with a non-zero exit. **
 commit, not at the start of your turn**, and remember that **it warns and never authorises** - a clear read
 does not make the board yours.
 
+**Why the naming is a person rather than a check, which the tell cannot tell you itself: the board is
+serialised by a DECISION, not by a lock.** Gate locks are per scratch worktree, so **they do not exclude
+each other** - if a free slot were self-service, two sessions would read *free* in the same second and
+**both would be correct**. That is the reason behind *warns and never authorises*, and it is worth having
+because the sentence without its reason invites somebody to decide the warning is enough when the board
+is obviously quiet. *(The Scrum master's.)*
+
+**And the dangerous version of this arrives as HELPFULNESS, which is why it survives people who have
+already learnt the rule.** On 2026-09-24 the holder of the board wrote that it would land and report
+*so that the next session is not waiting on a message of mine* - **which makes the go come from whoever
+FINISHED rather than from whoever is serialising.** That is self-service with an extra step, written
+three hours after the same session had nearly collided with another over exactly this, and by a session
+that had already withdrawn the same move twice that day.
+
+**The costume is the whole difficulty: a person looking out for a violation is watching for
+permission-shaped things, and a kindness is not shaped like permission.** *Saving somebody a message* and
+*granting somebody a turn* look nothing alike and are the same act. **The tell generalises past the
+board: if you are reasoning your way to the conclusion that you may proceed - or that somebody else may -
+that reasoning is the evidence that you may not.** Ask instead; it costs one message and the round trip
+you are saving was never the expensive part.
+
+**And the tell is FAIL-OPEN in a chain, which is worse than it sounds because it reads as a check.**
+`who-is-gating.sh` returns **2 only when it cannot read the board**, and **0 for a free board, for a
+holder, and for a lock whose owner is not written yet alike** - so `tell && commit` runs the commit
+whatever the board says. **Every `&&` chain ever written over it has been a print statement wearing a
+check's clothes.** The remedy is to make the state that must be REACHED the thing that gates, rather
+than the state that must be avoided the thing that aborts:
+
+    TELL=$(bash .github/tools/gate/who-is-gating.sh)
+    case "$TELL" in *GATING=none*) ;; *) echo 'HOLDER - refusing'; exit 9;; esac
+
+**`--require-free` now does this inside the tool** (exit 0 only for a positive `GATING=none`), which is
+the better place for it - but the pattern generalises past this one script, and the clause above about a
+verdict comparison that errors into ALL GREEN is the same defect in a different file.
+
 **And the one moment a develop commit is free is when your own base is already stale.** A run that will refuse
 its fast-forward anyway cannot be made worse; that is the only window, and it is worth using deliberately
 rather than waiting for a quiet board that may not come.
+
+**And the base can move from outside the board entirely, which makes a refold the ordinary outcome rather than
+an incident.** The first draft of this clause said a develop commit needs the Scrum master's gap the same way a
+gate slot does. **It cannot: on 2026-09-23 the user landed six commits in under half an hour into the middle of
+two consecutive gate runs** - both green on all four gates at 6678 tests, both refused - **and the user neither
+asks for a gap nor should have to.** A clause that implies otherwise promises a protection it cannot deliver.
+**It is one clause and not two, because the agent case and the user case differ only in whom you could ask and
+not at all in what happens**; the remedy is identical, so splitting them would imply two remedies where there is
+one. What follows is practical: **read the tell at the instant of use rather than trusting a placement** - the
+gap is scheduling, the read is the check - and **treat the refold as a cost of doing business**, which is why
+the gate reports `gates-green-but-base-stale-refold-needed` itself instead of leaving it to be discovered at the
+fast-forward. **When the cadence makes refolds routine, the answer is the user's to give and not an agent's to
+infer**: asked directly, they chose to batch landings until they stopped committing for the day. A peer offered
+the narrower reading that a fast-forward onto an unmoved base was surely still permitted, and was right to be
+refused - **that is the carve-out shape, and it is most persuasive exactly when the case looks safest.**
 
 **STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.** Same files, opposite order, and the
 discriminator is which operation comes next. The existing rule - clear the index before merging - is about the
@@ -311,6 +372,95 @@ into the developer's real profile instead of a test root. The argument for delet
 that the mistake is understood now; **the count is the argument against, and only a guard that keeps its count
 can make it.** Read this beside the seen-to-fail rule above: one says a guard must be proven, this says a
 proven guard must not be deleted because its mistake has started to look obvious.
+### Guards that cannot fail, and the seven ways it happens
+
+**Every guard below was green while the thing it existed to catch was happening.** None was vacuous in the
+usual sense - most asserted something true. **The defect is always the same shape: the guard's subject is not
+the thing that can break**, and the seven cases differ in how the subject came to be wrong.
+
+**1. A guard whose subject the code under test gets to choose cannot fail.** Two guards asked *is the highlight
+applied?* and found their subject by taking **the first node carrying an inline stroke** - which was the
+wrapping `<g>`, exactly where the defect had put the paint. The paint was there, the value was right, the
+assertion was true, **and the shape on screen did not change colour**, because an SVG child that states its own
+stroke ignores an inherited one. **This is not the vacuous-test case: a vacuous test asserts nothing, while this
+one asserted something true and irrelevant.** The subject was selected by a property the defect also satisfies,
+so **the search and the assertion were the same claim made twice.** The fix is two independent moves and only
+the pair works: name the subject **structurally** (the drawn shape), and assert what it **computes** with the
+module's stylesheet loaded rather than what the library **states**. Proven by sabotage: put the paint back on
+the group and eight cases fail. **What it cost to find: nothing in the four gates - somebody opened the app and
+looked.**
+
+**2. Sabotage the call site, not only the thing it calls.** A helper learned to mark its own scratch file, and
+its first two guards called that helper **directly, passing the argument themselves**. Sabotaging the *publish*
+- one argument dropped at one call site, the regression a later reader would actually cause - **left both guards
+green**, and the failure record would have reverted to its misleading wording with every test passing. **A unit
+guard cannot see a wiring regression, and the wiring is where the reader's evidence comes from.** The third
+guard drives the real save.
+
+**3. A positive assertion cannot detect a surplus.** A planted defect rendered resize handles for every type
+that declares user sizing. The tasks document said the module's own suite would report it. **It does not:** that
+suite presses `[data-resize="right"]` and never asserts the horizontal handles are **absent**, and the right
+handle still exists when two more appear beside it. **A suite that presses a handle cannot report a handle that
+should not exist.** So **when a defect ADDS something, only an absence assertion detects it** - and a document
+must name the **detector** rather than a **companion**: *the module's suite passes unchanged* is true, worth
+keeping, and holds in both worlds, which makes it no evidence about the change.
+
+**4. A timing guard has its own load as a second subject**, and the remedy differs by what the guard asserts,
+so a flat *avoid timing in tests* would be wrong about three of these four. **Ordering** - *the delete has not
+finished while the save holds the turn* - cannot fail wrongly but can go **vacuous** if the pool never starts
+the contender, so assert the evidence that the contender **ran**; and **say in the comment that the line doing
+so is load-bearing**, or the next reader deletes it as redundant. **Latency** - *a slow diagnostic does not hold
+the save open* - needs a clock, and is safe through its **ratio**: a 100-200 ms budget against a 3-5 s
+assertion. **An async effect arriving** - *the late line appears* - should be released **deterministically**
+where possible, and where not, **report what arrived instead** on timeout, or LATE and SWAPPED are
+indistinguishable. **A race that needs load** - the concurrent-save guards - is one-directional: more load means
+more chances to catch a defect and never a false pass, so leave those alone. **And a negative asserted from a
+window cannot fail wrongly but can PASS wrongly**, which is the worse direction for a must-not guard: make
+*never* observable by asserting the thing was entered, then asserting silence.
+
+**5. At one subject a rule is a second copy of the data; at two it pays for itself.** A test that replaced a
+process-wide logging pipeline starved every capture running beside it - **seven failures in three unrelated
+classes, from a project that passed 117 of 117 alone.** The tree-wide rule was declined because **exactly two
+places assign that pipeline**, one of them correct production code: a rule with a single subject is a copy of
+the fact rather than a check on it. **So the trigger is written down instead: when a SECOND test needs to
+replace the pipeline, give it the helper rather than the freedom.** And the fix was not a test collection -
+**membership is the rule nobody keeps, measured at eighteen of nineteen classes never joining** - but a
+replacement that carries the shared sink beside its own. **The scattered signature is its own lesson: seven
+failures across three unrelated classes point everywhere except at the cause**, which is why the guard lives in
+the only class that can cause it.
+
+**6. An exact-count canary cries wolf, and this one is ours.** The gate's self-test pins its own case count so
+that a case which silently stops running reddens. **It fired twice in one afternoon as a red with nothing
+wrong** - once when thirteen cases were added, once when four more were - and the same criticism had just been
+used to remove a case count from `docs/guards.md`'s prose, **so the number was moved rather than removed.** The
+question is what the property actually is: if it is *no case was silently skipped*, **a floor plus a check that
+no two cases share a description asserts it without rotting on every addition.** If it really is *the count is
+exactly this*, it will keep crying wolf - **and a guard that cries wolf gets edited to agree rather than
+investigated**, which is how a canary becomes a formality. Changing it inside the branch that trips it would
+mix two decisions, so it is recorded here and changed on its own.
+
+**And the counterexample belongs beside the criticism, because it arrived hours later on the same branch and it
+is the one change the pinned count is good for.** Two comment-only edits were made to the gate's own scripts -
+no behaviour, no cases - and the selftest returned `cases=167 wrong=0 expected=167`. **Had a comment
+accidentally swallowed a case, the pinned count is the ONLY thing in the run that would have said so**: every
+remaining case would still have passed, and a floor would have been satisfied too. So the criticism above is
+narrower than it first reads: **an exact count cries wolf on ADDITIONS, and earns its keep on edits that are
+not supposed to change the count at all.** A criticism carrying its own counterexample is much harder to
+misapply than one without - the version without it invites somebody to delete the count on the next red.
+
+**7. An emptiness check is satisfied by the failure mode, so floor on what SCALES with the work rather than
+on what merely exists.** A harness built to time a diagram's `UpdateView` asserted `Assert.NotEmpty(baseline)`
+to prove it was not timing an empty session. **It passed at one delta - which is also exactly what a document
+that failed to parse produces.** The report would have read *2 ms* either way, with the same confidence and the
+same green; the run was in fact sound, but only because its author looked inside the delta rather than trusting
+that not-empty meant loaded. **The fix is the general form: the floor moved from the delta count to the ELEMENT
+count**, which a document that did not load cannot satisfy. Distinguish it from clause 1 - the defect does not
+choose the subject here - and from clause 3: the assertion is present and positive, and the surplus is not the
+problem. **What is wrong is that the quantity floored does not grow with the work**, so the smallest passing
+value and the failure mode are the same value. `docs/guards.md`'s own `KnownFloor = 25` against 35 actual paths
+is the shape done right: it floors on the quantity that scales with the document, so an emptied document fails
+while an added row needs no edit. (Developer 3, 2026-09-23, found in a measurement built for something else.)
+
 ## Running the backend tests
 
 The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather than VSTest. Two consequences:
@@ -324,7 +474,55 @@ Each test project is therefore an executable (`<OutputType>Exe</OutputType>`) �
 
 **A verdict's dangerous input is missing, not wrong.** *(Developer 3's finding.)* A wrong value is compared and fails; a missing one is often never compared at all. The natural form of the rule above - `grep -q "Zero tests ran" <log> && refuse` - passes when the log is missing, because `grep` exits 2 on a missing file and the `&&` never fires. Two scripted gate chains on this board had exactly that, and in both the verdict reached green by falling through rather than by being earned. **And a chain run by hand is not exempt because a person reads the result** *(Developer 1's words)*: `grep -c "Zero tests ran"` prints `0` for an empty log exactly as for a good one, and that `0` is the number read as the good sign - a landing made by eye was protected only by a positive check its author carried in their head. A person reading output is a verdict with no refusal state. **So check it positively: require the log's `total:` above zero and `failed: 0`, so a missing or truncated log refuses rather than passing unread.** Write the verdict to start refused, with success assigned in one place behind every positive condition, and compare statuses as strings - `[ "" -ne 0 ]` is an error, and an error is false inside `if`. **Test it by deleting the log before the verdict reads it**, alongside a real log as the case that must pass.
 
-**Judge every gate by an exit code captured into a variable before any pipe.** In a pipeline `$?` is the last command's status, so `dotnet test … | tail` reports `tail`'s success and a crashed or zero-test run reads as green. A zero-test run does exit non-zero — 5 for zero tests, 8 for a filter matching nothing — so the exit code carries the information that grepping the output destroys. `.github/workflows/build.yml` embodies this: every gate step is judged by its exit code and nothing greps output.
+**Judge every gate by an exit code captured into a variable before any SUBSEQUENT COMMAND - not merely before a pipe.** In a pipeline `$?` is the last command's status, so `dotnet test … | tail` reports `tail`'s success and a crashed or zero-test run reads as green. A zero-test run does exit non-zero — 5 for zero tests, 8 for a filter matching nothing — so the exit code carries the information that grepping the output destroys. `.github/workflows/build.yml` embodies this: every gate step is judged by its exit code and nothing greps output.
+
+**AND A TRUNCATING COMMAND IN YOUR OWN PIPELINE PRODUCES A WELL-FORMED WRONG ANSWER** - `head`, `tail`,
+`-m`, `--max-count`, a default page size. **A count taken from a command with a limit in it is a count OF
+THE LIMIT unless you have checked otherwise**, and it is worse than a wrong pattern because the output
+looks complete and the number is plausible.
+
+**Twice in two days, from opposite directions, both in the author's own pipeline.** A `head -5` reported
+**five** warning assertions where there were **seven**, and the five were reported to the board as a
+measurement. And a probe piped into `head` reported **exit 0** where the script had returned **3**,
+because `$?` is the last command's status - **read by somebody who had the exit-code clause above in
+front of them at the time.** One hid a count, the other hid a status.
+
+**The second is the more dangerous and it is worth saying why: the pipe made a CORRECT script look like a
+FAIL-OPEN one.** The failure mode of the check was to **accuse the thing it was checking**. **A check that
+produces false accusations is worse than one that is merely silent**, because somebody acts on it - and
+what they act on is usually the innocent party, which is where the time goes.
+
+**A pipe is not the only way to lose the status and it is not the common one.** A trailing `; echo "EXIT=$?"`
+does identical damage and happens far more often - **precisely because it is what somebody adds in order to SEE
+the exit code.** `$?` is read while the echo is being assembled, the echo then succeeds, and **the echo's own 0
+becomes the wrapper's status.** In every instance below **the echoed value was right and the notification was
+wrong**, which is the worst possible arrangement: the correct number is sitting in the output that nobody
+re-reads once a green notification has arrived.
+
+**Four instances on 2026-09-23, in four sessions**: a gate notification reporting exit 0 over a log saying
+`RESULT=gates-red ( format=2 )`; a format run notified as 0 whose captured `FORMAT_EXIT` was 2; one from that
+morning; and a gate run of mine that **printed `WRAPPER_EXIT=1` and was notified as exit code 0**, because a
+`tail` of the log ran last. **Three of the four were found by somebody CHECKING another's report rather than re-reading their own** - the fourth instance above surfaced while verifying the other three, one session found its own by reading a peer's, and another found its second by correcting its first. **Nobody found their own by re-reading it**, which is a better argument for cross-checking than the count is. *(Architect 3's observation, about a set it collected.)*
+
+**The guidance against this was already written and already correct**, which is the
+argument for the remedy rather than against the rule.
+
+**So make it structurally impossible at the point of invocation: end the command with the status you captured.**
+
+    cmd > "$LOG" 2>&1; RC=$?; echo "EXIT=$RC"; exit $RC
+
+The notification then agrees with the log and nobody has to know the rule. **Same shape as the git-identity
+remedy: set it once where the command is written and it cannot be got wrong afterwards, which beats any rule
+depending on vigilance at the moment nobody is looking.**
+
+**And the diagnosis matters as much as the fix, because the obvious culprit was innocent.** `gate.sh` is
+correct - **every failure path exits non-zero, including the `gates-red` path, and the green path's implicit 0
+is right** - so a tooling change was drafted and correctly abandoned. **The fault is in how the runner is
+invoked, not in the runner**, and a fix applied to the script would have left every hand-written invocation
+still lying. *(Architect 3, who diagnosed it and withdrew its own proposed tooling fix.)*
+
+**A note on the short form**: CLAUDE.md's summary of this rule still says *before any pipe*. **Read it as any
+subsequent command** - the narrower wording points at the rarer cause, and that file is the user's to change.
 
 Set `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` before gating; concurrent MSBuild nodes have been diagnosed as the cause of 0xC0000005 host crashes on this machine.
 
@@ -477,9 +675,23 @@ Rewriting the 45-odd commits was considered and rejected: history surgery in a c
 
 Six instances in one day, across four sessions, each caught only because somebody re-measured:
 
-- `git log --oneline` prints an identical line whoever authored it.
+- `git log --oneline` prints an identical line whoever authored it - **and it prints the same two rows for a
+  landing that happened once as for one that happened twice.** The house pattern commits on a branch and merges
+  `--no-ff` with the same message, so **both objects carry that message**: two rows, identical subjects, minutes
+  apart, the same insertions/deletions stat on the same file - and at the tip *between* them the defect is still
+  present, because the merge's first parent is develop's own tip and legitimately predates the fix. **That reads
+  unmistakably as a revert-and-reapply**, which on a shared checkout is the shape worth panicking about.
+  **`git log -1 --format='%P'` settles it: two parents means the second row is the merge of the first.** Measured
+  on 2026-09-23 - one parent on the branch commit, two on the merge, identical subjects on both. **And the two
+  instruments you reach for first are both silent in a way that resembles a result**: `git show --stat` prints a
+  merge's combined diff, which looks like a second identical change and *confirms* the fear, while `git patch-id`
+  returns **empty** for a merge, which reads as a failed comparison rather than as an answer. **A board taking
+  several landings an hour will meet this, looking at somebody else's work with no context for it.** *(Developer
+  4's, filed as a non-finding: it had the alarm drafted as "the fix may have landed twice" and spent three
+  commands first - which is the *notice when you have only one source* clause working rather than failing, four
+  hours after the same session watched it fail.)*
 - `git config user.name` prints the effective value without its source - so it cannot distinguish your own correctly-scoped identity from one you inherited.
-- `grep -c $'\r'` prints `0` for a file with no carriage returns **and** for a shell that never expanded the pattern. It reported a correctly-CRLF file as LF.
+- **Three instruments answer the CR question wrongly, and each fails looking safe rather than loud.** `grep -c $'\r'` prints `0` for a file with no carriage returns **and** for a shell that never expanded the pattern - it reported a correctly-CRLF file as LF. `awk '/\r$/{n++} END {print n+0}'` prints `0` for a file that is **CRLF on every line**, because msys gawk strips the CR reading in text mode (2026-09-22); it has none of the tells that make the first suspect - no bashism, and a pattern that plainly says what it means - and a following `sed -i 's/\r*$/\r/'` then "did nothing" by the same measure, while `od -c` showed both files had been correct all along. And `od -c | grep -c '\\r'` counts **the document's own textual mentions of** `\r`: it returned 8370 on a file with **zero** CR bytes (2026-09-23), because that file is about line endings and discusses them. **`git ls-files --eol` for a tracked file, `od -c` for an untracked one, and a byte-level count of LF not preceded by CR when you need it in a script.**
 - `md5sum` over whole files reports drift when only a namespace line differs.
 - `git worktree add` fails where a chained `cd` cannot see it.
 - A sabotage whose replacement pattern never matched leaves the suite green, which reads as robust code rather than as a test that never ran.
@@ -500,11 +712,13 @@ Six instances in one day, across four sessions, each caught only because somebod
 
 **The same fact about wrappers governs *stopping* work, not only reading it - and it has two halves that point opposite ways.**
 
-**Killing a chain does not kill the work.** Stopping a backgrounded task stops what it points at: the wrapper pipeline, `bash chain.sh 2>&1 | tail`. **The script underneath runs on, and finishes whatever it was going to do.** One session stopped a merge chain precisely to avoid landing inside another session's window, read `develop` immediately after and honestly saw the old head - **and the script completed its own `--ff-only` minutes later, moving `develop` under an open window and costing the other session a full re-fold and re-gate.** The stop had reported success. Confirmed twice within the hour: a watch loop also outlived its own successful kill, found still running by a process scan, harmless only because it read rather than wrote. **So "nothing in flight" is not established by a stop reporting success. It needs a verified process kill, or the chain's own log showing a terminal `RESULT=`** - and the scan proving it must build its pattern by concatenation, or it matches its own probe.
+**Killing a chain does not kill the work.** Stopping a backgrounded task stops what it points at: the wrapper pipeline, `bash chain.sh 2>&1 | tail`. **The script underneath runs on, and finishes whatever it was going to do.** One session stopped a merge chain precisely to avoid landing inside another session's window, read `develop` immediately after and honestly saw the old head - **and the script completed its own `--ff-only` minutes later, moving `develop` under an open window and costing the other session a full re-fold and re-gate.** The stop had reported success. Confirmed twice within the hour: a watch loop also outlived its own successful kill, found still running by a process scan, harmless only because it read rather than wrote. **So "nothing in flight" is not established by a stop reporting success. It needs a verified process kill, or the chain's own log showing a terminal `RESULT=`** - and the scan proving it must build its pattern by concatenation, or it matches its own probe. **Confirmed a third time on 2026-09-24, on a gate rather than a chain**: a stop reported success while `gate.sh` ran on through `dotnet format` and `dotnet test`, and only a process scan showed it. The new detail is what happened next - **the follow-up kill was REFUSED by the session's own permission classifier as interfering with a workload.** So the remedy was forced rather than chosen, and it was the one the paragraph below recommends anyway: let the fail-closed chain reach its own guard. **An agent cannot rely on being able to clean up after a stop that did not stop anything.**
 
 **And therefore, when a chain is fail-closed, letting it run into its own guard is safer than killing it.** Because the wrapper can neither stop the work nor tell you that it failed to, **an attempted kill is a coin toss you will not see the result of.** A second session, warned mid-chain, declined to stop for exactly this reason: its chain merged, ran four gates green, and then refused at `FF=128` because `develop` had moved beneath it. **It discarded four green gates rather than claim them, because they described a tree that no longer existed.** Nothing needed cleaning up. **A guard that fails closed beats a coordinator who looks** - the chain's opening `reset --hard develop` makes its base correct by construction, where a human re-check in the window had by then failed twice. **So write chains that refuse, and prefer their refusal to your intervention.**
 
 **A fresh-tree build is not a stricter gate - it is the only one that reads a different input.** Every other gate reads `obj/`, which is a cache of the last *successful* generation, so `dotnet test` prints the same green whether the generated code is current or stale. A generated-code break is therefore invisible to it **by construction**, not by bad luck: nine sessions went green through a window in which `develop` compiled in no fresh checkout. This is the same question asked of a build's input rather than a command's output - *what would this read if the generated code were broken?* The same cache - and the only way to change the answer is to build a tree that has none.
+
+**AND A GATE WHOSE `MERGED` EQUALS ITS `GATED_ON_BASE` GATED NOTHING.** That one asks what a gate read; this one asks **what it read it ABOUT**, and it is the cheaper of the two to get wrong because every visible signal is correct. Edit a file, launch `gate.sh` before committing it, and the merge is a no-op: **all four gates pass, `RESULT=gates-green-ff-withheld` prints, and `TO_LAND` names one SHA twice** - `land.sh <base> <base>`, which fast-forwards `develop` to itself and reports `RESULT=landed`. **A clean landing record for a change still sitting in the working tree.** The four gates cannot tell you, and were not wrong: they gated `develop`, and their green is evidence about `develop` and nothing else. **`MERGED` against `GATED_ON_BASE` is the only line in the summary that distinguishes the two cases** - read by luck on 2026-09-24, on the way to running the `TO_LAND` line. **And `RESULT=landed` is not the answer either, because a fast-forward to the current head is a legal fast-forward.** The habit that catches it is the family's own question pointed at the gate: *which tree did this gate read, and which commit did it add to it?*
 
 **A reused *workspace* does the same thing at a smaller scale.** A scratch merge worktree keeps its gate logs between runs, so mid-run I read `g-dotnet.log` for progress and announced the gates green - **the file was twelve minutes old, from a previous killed run, and that run's gate had not been reached yet.** Its content could not have revealed this; only its mtime could. **Delete a run's logs before the run, or read their timestamps, because a workspace answers for whichever run touched it last.**
 
@@ -551,7 +765,142 @@ The two are one error at different moments: the first measures a boundary that e
 
 **These are one idea at seven scopes** - a command, a wrapper reporting on a command, the cached input a command reads, a claim about your own work, a check written down, a hold coordinated across sessions, and the scope of a measurement - and they move together. Splitting them by which was learned first would break the argument.
 
+**`DOTNET_TOTAL` IS NOT A COUNT OF BACKEND TESTS**, and the wrongness is invisible because both tiers
+arrive in one number. `EtAlii.Adp.Client.Tests` enumerates **every client `*.test.ts` and `*.test.tsx` as
+theory data** - one row per file plus one per test - so **a client-only change moves a backend total.**
+On 2026-09-24 the total fell 6687 to 6681 and **two sessions reached two comfortable explanations from
+opposite directions, both wrong**: *dead test methods went with dead code*, and *the deleted lines are in
+a `.test.tsx`, therefore npm, therefore they cannot touch `DOTNET_TOTAL`.* The second is the more
+instructive: **the reasoning was sound about the tier and wrong about the boundary**, and its author was
+confident precisely because the file extension made it obvious.
+
+**The method is the half that makes the clause usable, because the clause alone only says be careful.**
+**Six as a NUMBER invited two plausible stories and supported neither. Six as NAMES closed it in one
+diff**: `dotnet test --list-tests` at both commits, then `comm` over the sorted lists - nine gone, three
+added, every one accounted for. **It enumerates theory ROWS individually**, which is what settled it, and
+the seven that vanished were `ClientTests.EveryClientTestFile_Passes` and six
+`ClientTests.EveryClientTest_Passes` rows for one deleted client file.
+
+**And a count of `[Fact]`/`[Theory]` attributes was run, was RIGHT, and could not have found this** -
+3643 to 3644, up by one, while the total fell by six. **The check was not sloppy; it was blind to the
+thing that moved**, because the rows are data and not attributes. **A correct reading from a blind
+instrument is the hardest kind to distrust.** What made the answer safe was a separate exclusion done
+first: **54 assemblies in both runs and `skipped` identical at 44**, so *a project silently not running*
+was ruled out independently of the name diff - without which a fully-explained minus six would still
+have been consistent with it.
+
+**And *two instruments disagree* can itself be the wrong reading: before treating a conflict as a fact about the
+subject, check that both instruments measured the same POPULATION.** A specification recorded a label's contrast
+at **1.37:1, a black label**, from a browser measurement. The session implementing its guard read the stylesheet
+and got **1.17:1** - not black. It chased three routes to that black, **excluded all three, and reported the
+conflict unresolved rather than inventing a fourth.** For hours the board held *a source reading and a browser
+measurement disagree, and both instruments are working.* **They never disagreed.** One had measured labels; the
+other had taken an **unclassed, empty `<text>` node** of the eight every canvas renders. **The artefact of that
+mismatch was a plausible, stable, reproducible disagreement between two correct tools.**
+
+**Why this is worse than a wrong count and deserves saying separately: a wrong count announces itself as a number
+somebody can re-derive, while a false disagreement announces itself as evidence of a real conflict in the
+subject - and it RECRUITS people to explain it.** Three careful investigations went into routes to a black that
+was never there. **The check is the same one as always, asked of the pair rather than of either: did these two
+measure the same members?** *(The false-disagreement framing is the Scrum master's; the underlying catch is
+Developer 4's, which named the unclassed empty node as "how the next person will meet it" in the very message
+that reported the conflict - and the next person had been Architect 2, three hours earlier, into an approved
+specification.)*
+
 **Several instances of this section's shape are collected under *Measure the thing, not something adjacent to it*** - a log line attributed by adjacency, a stopped task that was not a stopped gate, and evidence that lived only in a working tree.
+
+**And the check inside a tool has the same blind spot: an assertion that its anchor EXISTS cannot tell you the
+anchor is in the wrong PLACE.** Two instances on 2026-09-23, both in anchored patch scripts written specifically to
+be safe. **A patch inserting nine numbered criteria anchored on criterion 7 where it meant 8** and produced the
+order 1 2 3 4 5 6 7 9 8: every anchor was found, every `assert text.count(old) == 1` passed, and it was caught only
+because the dry run printed the resulting sequence for a human to read. **A patch appending a clause to the end of
+one section anchored on a heading that exists exactly once and sits 340 lines ABOVE that section** - so the clause
+landed under an unrelated parent, with the assertion green and the diff the expected size. **In both cases the
+wrongness was in a relation, and only presences were asserted.** So **assert a relation: the neighbour on the far
+side, the ordering of two anchors, or the resulting sequence printed out** - the same remedy the tree-walking guard
+rule above reaches for when it demands two independent markers rather than one. **The second instance was found by
+printing the section boundaries afterwards and noticing the new heading's line number fell outside them** - which
+is the cheapest possible check and was not in the script.
+
+**Text proximity is not containment, so a regex over source answers *what is nearest in the file* and never
+*what contains this*.** A survey of every diagram module took **the nearest `className` above
+`<DiagramCanvas>`** as that canvas's wrapper and reported 16 of 19 modules with no wrapper height rule. It had
+picked `c4-canvas-title`, `mindmap-canvas-loading`, `helm-canvas-rejection` - **sibling status divs, because
+conditional JSX puts `{loading ? <div/> : null}` siblings BEFORE the canvas in source order.** The wrapper is
+the first `className` after the final `return (`, and the figure is **11 of 16**. The same shape caught a tree
+walk an hour later: the explorer's tree is **flat**, with depth carried in `padding-left`, so scoping a search
+to a folder's `li` found nothing while the whole-tree search kept returning the first document in the file.
+
+**Only a parse - or the DOM at runtime - answers containment.** When the same question was asked again on
+2026-09-23 for the scrollbar defect, the count came from **parsing each `<DiagramCanvas>` element's own opening
+tag**, and the answer it produced (16 canvases across 13 modules) then had to survive a second reading anyway,
+because *how many canvases exist* and *how many modules exist* are different questions that the earlier survey
+had blurred. **What saved the first one was hand-checking ONE row before believing the table** - `c4-canvas-title`
+is visibly a title - **which is why the wrong number never reached a report. A table of nineteen plausible rows
+invites belief; one hand-checked row costs a minute.**
+
+**An edit that finds nothing to change and reports success is indistinguishable from an edit that had nothing to
+do.** A script to drop four landed entries from a queue note printed **`dropped: 0`**, prepended its new record,
+wrote the file and **removed nothing** - leaving the note claiming twenty-one queued with four already landed. It
+reported success having done half the job. The cause was **mixed line endings in one file**: appends written
+through a bash heredoc were LF, edits written through python were CRLF, so splitting on `"\r\n## "` matched
+almost no heading. **A second attempt failed its own assertion, which is how the mechanism was found.** Four
+hours later, in another session, a coverage script differenced its claimed set against an **empty** set and
+printed **`UNCLAIMED: none`** - a clean pass from comparing nothing, because it looked for criteria written as
+`1.1` while the document composes them from a heading plus a list. **Both operations reported success having
+examined nothing, in sessions that had each spent that day writing clauses about exactly this - which is why the
+remedy is an assertion and not more care.**
+
+**Two rules. An edit that can find nothing to change asserts HOW MANY it changed** - `assert len(dropped) == 4`
+is the whole difference between a silent no-op and a loud one - **and a count you do not believe is worth more
+than a message saying it worked**, because `dropped: 0` was the only true signal on that run and it was printed
+beside a line claiming the record had been written. **A file edited by two different tools acquires two
+line-ending conventions, and every separator-based edit after that is a coin toss**: normalise on the way in.
+*(This clause is the EDIT end of the absence clause under* Measure the thing*, which is the INSTRUMENT end;
+`dropped: 0` and `UNCLAIMED: none` appear in both because each is a reading that examined nothing and a write
+that changed nothing at the same moment.)*
+
+**`git status` clean does not mean the working tree honours the line-ending policy, because status compares
+NORMALISED content and the policy is about the bytes on disk.** Measured on the same seven files on 2026-09-23,
+by two sessions, with **different answers** - which is the finding rather than a complication. Developer 4, in a
+fresh worktree straight after `npm test`, saw all seven **modified with no content change at all**: `git diff
+--numstat` returned **no rows**, not zero-line rows, and `git diff` printed only the LF-will-be-replaced
+warning. An hour later, in the main checkout, `git status` reported **nothing dirty** while `git ls-files --eol`
+showed **five of the seven as `w/mixed`**, one `w/lf` and one `w/crlf`. **Both readings were correct. Clean and
+mixed at the same time is exactly what normalisation produces**: a file that normalises to the index's blob is
+not modified, however its own bytes are arranged.
+
+**The cause is that a MANDATORY gate is one of the generating scripts.** `npm test` in `src/client` runs
+`pretest` -> `npm run generate` -> fourteen `buf generate` invocations, and buf writes LF into a tree whose
+policy is `* text=auto eol=crlf`, with **no `.gitattributes` rule covering `src/client/src/generated/`**. The
+house note already says generating scripts are the usual culprit; **what it does not say is that the gate every
+agent must run before merging is one of them**, so every agent meets this in every fresh worktree.
+
+**The hazard is attribution, not correctness.** A pathspec-limited commit misses them, which is the point of
+the pathspec rule. **A bare `git commit -a` in the shared main checkout takes all seven under somebody else's
+message** - the exact shape of the three misattributed commits already recorded above, with the aggravation that
+these files look like real work in `git status` and contain none. **Restore with `git checkout --
+src/client/src/generated/` WHILE THEY ARE STILL DIRTY, and know that the same command is a no-op once they are
+not.** Measured both ways on 2026-09-23: straight after the gate it repaired the bytes, and in a checkout where
+five of the seven were `w/mixed` with `git status` clean it **exited 0, printed nothing and changed nothing** -
+git rewrites only what it considers modified, and normalisation had already made them unmodified. **Deleting the
+seven files and then checking them out brought all seven back `w/crlf`.** So the drift that `status` cannot see
+is also the drift `checkout` will not fix, and **the repair has to destroy the drifted copies to work** - which
+is the *reports success having changed nothing* clause above, arriving in a repair rather than in a script.
+
+**Report what each run measured rather than what git does, because the two checkouts behaved differently and
+nobody could say why.** Asked to reproduce the clean-but-drifted state, the other session wrote the file both
+half-CRLF and all-LF and **got a dirty file each time** - so `checkout` had something to rewrite and did.
+Same `.git/config` on both sides, `core.autocrlf=true`, no worktree override, same attributes. **One
+checkout's copies had normalised to the blob and the other's had not, and both states have since been
+repaired, so neither is re-examinable.** That is the honest limit. **What survives it is the read-back:**
+`git checkout -- <paths>` **exits 0 and prints nothing whether it rewrote seven files or none**, so *ask what
+it would print if your belief were false* answers "the same thing". **A repair without a read-back is not a
+repair, it is a hope** - and `git ls-files --eol` is the read-back in this case. *(The reproduction attempt,
+and that sentence, are Developer 4's.)* Whether the durable fix is a `.gitattributes` line for
+that folder or a generator that writes CRLF is **a house-policy question and not an agent's to settle** - the
+two files that state the policy must agree, so changing it for one folder is a decision, not a tidy-up.
+*(Developer 4 measured the symptom and explicitly declined to propose one over the other.)*
 
 ## Measure the thing, not something adjacent to it
 
@@ -678,6 +1027,45 @@ wild instance and no number. **Both are the same mistake: taking what you could 
 3 found machine speed deciding what a guard asserted, fixed it, and did not look at the production path one
 file away - where the same two-second budget decides whether a failure record can name a holder at all, most
 easily failing under exactly the load that produces the failure.
+**A numeral is not a quantity until it says WHICH quantity it is - and two right numbers can contradict each
+other.** Two sessions computed the same crossover and got 39.9 / 34.5 / 27.9 against 51.9 / 46.5 / 39.9 -
+**every pair exactly 12 apart, which is the 6-unit padding at top and bottom.** One had measured the text
+region's height at crossover, the other the band height requested, and the helper subtracts the padding from
+what it is asked for. **Neither was wrong, and "39.9" meant two different things**; a reader meeting both has
+no way to tell which. It was found by recomputing rather than by accepting, which is the only way it could
+have been.
+
+**And the instrument for what a number MEANS is the document that chose it, not the code.** Asked to settle a
+height from the code, a session found the library's `DEFAULT_HEIGHT` at 40 while the diagram's shared height
+is 48: **the code alone would have answered confidently and wrongly.** It read the design document instead.
+***Measure it* is the right instinct for what a value IS and the wrong one for what it MEANS.**
+
+**Correcting the source does not correct the copies, so the sweep is *where else does this number appear?* and
+not *is the source right now?*** A conflated figure - a harness total read as this code's rate - originated in
+one session's report, was inherited by another, and **had reached two memory notes and one steering clause
+before either looked.** Each read plausibly alone; none pointed at the others. The fix was to re-grep the
+number across the whole store rather than to repair the two mentions already known, **which is the only
+version of the check that finds a copy nobody remembers making.** A quoted number is a well-formed wrong
+answer, and those invite no second look.
+
+**A verdict printed to stdout is a verdict that cannot be cited later**, which is the same idea at the
+instrument end. Today a session reported *three consecutive gates refused* and could substantiate two: the
+third run's `RESULT=` line had gone to a scrollback rather than to a log, so it could not be recovered even by
+the session that produced it. **The gate writes its exit codes to files precisely so a number outlives the
+moment** - a result that exists only in a transcript is, for every later purpose, a run that did not happen.
+*(Developer 1's formulation, from correcting the number.)* **A second instance the same day: a task notification
+reporting exit 0 over a log that said `RESULT=gates-red ( format=2 )`** - the true status had been echoed and then
+overwritten by the echo's own success, so the citable record and the believed record disagreed, and the believed
+one was the one nobody could check.
+
+**A third was proposed for this clause and does not belong in it - worth recording because the proposal was mine
+and a peer repeated it back approvingly.** I reported a selftest as having *vanished without printing a verdict*.
+It had not: it ran throughout, and its output was invisible only because the command ended in `| tail -3`. **That
+is a SWALLOWED verdict, not a lost one** - the run was citable the whole time by reading the file it was writing
+to, which is how it was settled. It belongs with the two-blind-instruments paragraph and nowhere near here. **A
+clause gains nothing from a third instance that is really a different failure**, and leaving it in would have
+taught a reader that runs disappear.
+
 ### A proxy in the evidence
 
 - **Evidence lives on the branch or in a scratchpad, never only in the working tree.** The overnight cleanup
@@ -716,6 +1104,13 @@ easily failing under exactly the load that produces the failure.
   it. The neighbours usually carry their own verdicts, so read those before attributing an orphan line. **And
   with several assemblies running in parallel, adjacent is not even sequential**: lines interleave by
   completion time, so only the verdict printed on a line is about that line's subject.
+
+**Every string in a table meant to be MATCHED against reality is read out of the artifact that produces it,
+never recalled and never invented.** A lookup table existed so that somebody holding a real log could match a
+line against it, and one row carried an invented placeholder instead of the actual constant. **It would have
+matched nothing while looking complete - which is worse than omitting the row**, because an absent row sends
+the reader to the source and a wrong one sends them away satisfied. When the four strings were finally read out
+of the code, **three were right from memory and one was not, and nothing in the table distinguished them.**
 
 ### A proxy inside the guard
 
@@ -788,6 +1183,222 @@ remains* rather than *no orphan remains*. **A name filter decides your coverage 
 attribution**, and both of that day's process-hunt errors were that one thing - one in the open, one hidden
 under a correct-looking walk.
 
+### An instrument that reports absence must first prove it is present
+
+**A clean result means one of two things, and they are not close: *nothing is wrong*, or *nothing happened*.**
+*(The rule and the six instances are Developer 1's; the two constraints below are Architect 2's.)*
+Six mechanisms produced the second while looking exactly like the first, all on 2026-09-23, none from
+carelessness:
+
+- **A silent logger.** A class held a logger bound to Serilog's default sink, so on the occurrence everyone was
+  waiting for there was **no line at all** - and a missing line reads as *it did not happen*.
+- **A degraded shell.** The client threw `useContextConnection must be used within a ContextConnectionProvider`
+  from four components, **went on drawing the last document perfectly**, produced events, and round-tripped
+  nothing. A negative measured there is worthless and looks identical to a negative that means something.
+- **A 0x0 browser pane.** Sixteen geometry rows came back clean with every pane reporting `h: 0`. **Nothing
+  throws**, which is what makes it expensive.
+- **A wedged origin.** A console with no errors, while `curl` from outside returned 200 in 4.7 ms - the page was
+  not reaching the server it appeared to be reading.
+- **`UNCLAIMED: none`** from a coverage diff whose criteria set was **empty**: the right answer to the wrong
+  question, printed in the format of the right one.
+- **`dropped: 0`** from a filter that matched nothing, because the file it read had mixed line endings.
+
+**And TWO blind instruments agreeing reads as corroboration, which is how a careful reader talks themselves into
+the wrong answer.** A long-running script had to be checked for liveness. Its task output was empty **because the
+command ended in `| tail -3`, which emits nothing until the pipeline exits** - so a running job and a dead one
+print the same nothing. And a process check said zero **because the pattern named the script while the process is
+`bash`** - so it prints zero whether the script is running or not. **Two independent readings, both incapable of
+returning anything else, agreeing on *it died*.** The cost was real: a second copy was started, and two
+concurrent runs of a suite that builds fixture worktrees can collide and redden for a reason belonging to
+neither. **It was settled by reading the file the script was actually writing to** - 741 bytes, then 1062, with a
+plausible last line - which is the one instrument that could have said *alive*. **Before concluding absence from
+two agreeing checks, ask whether either COULD have said otherwise**; corroboration between two instruments blind
+in the same direction is not corroboration.
+
+**And an instrument can be HALF alive, which none of the six above can be.** A pane is 0x0 or it is not; an origin
+answers or it does not. **An analyser can run, parse, emit a valid report, and be blind only to the question you
+asked.** Measured on `jb inspectcode`: a correctly-parsed run reported `AccessToDisposedClosure = 0` **from a run
+carrying 327 `Cannot resolve symbol` and `Ambiguous invocation` errors.** An analyser that cannot resolve the
+method cannot decide whether a closure captures a disposed variable either - **so zero from a blind analyser is
+indistinguishable from zero from a clean one, and nothing in the output says which you have.**
+
+**Only a planted control separated them**: neutralise the three suppressions, confirm the warning appears (3),
+restore, confirm it goes (0). **And the control's own run carried ZERO resolution errors, which is how the 327
+were diagnosed as a cold-build artifact rather than a property of the tree** - the control proved the instrument
+*and* explained the earlier run, which is the argument for planting one even when you are confident of the answer.
+**So the liveness check must be specific to the FINDING you want, not to the tool running** - which is the
+canary-sensitivity condition arriving from the other end: a check sensitive to *the analyser started* would have
+passed here.
+
+**The same tool also fails open when misconfigured**, which is the ordinary member of the family: pointed at the
+wrong toolset it printed `No files to inspect were found`, **exited 0, and wrote a valid, empty report** - green
+exit, well-formed output, zero findings, indistinguishable from a clean inspection. The invocation that works
+here names the SDK and toolset explicitly (`--dotnetcoresdk`, `--toolset-path`), and **its output is SARIF JSON
+whatever the `-o` extension says**, so an XML grep over it returns 0 - a second empty instrument inside ten
+minutes. *(Developer 1's, all three.)*
+
+**Why the pair matters more than either half: two `IDE0053` findings sat on `develop` until a gate tripped over
+them and blocked every session.** `dotnet format` sees those and not ReSharper's inspections; `jb` sees
+ReSharper's and not those. **A reader who reaches for the second tool and misconfigures it is told everything is
+fine**, so both routes to noticing close at once. On the documentation half, stated as measured rather than as
+relayed: there is **no `.config/dotnet-tools.json`**, so *not installed in this repository* is literally true of a
+repo-local tool, **while the tool is installed globally** (`jetbrains.resharper.globaltools 2026.2.2`). **Both
+readings are available and only one sends the reader to the tool - that ambiguity is the defect rather than a
+falsehood**, and the sentence sits directly after an install command, which pushes the reader toward *absent*.
+
+**The limit, stated so nobody reads this as a proposal: `jb inspectcode` is NOT a missing fifth gate.** A run
+takes minutes and needs per-machine toolset flags. It answers a question `dotnet format` cannot, and that is all
+it is for. *(Developer 1's limit, offered with the finding.)*
+
+**Proof of presence is always one line** - `fetch('/favicon.ico')`, `innerWidth > 0`, *did anything else witness
+this event*, an assertion that the set being filtered is non-empty - **and it is never written by someone reading
+the failing output, because the failing output looks like success.** That is the whole difficulty: the moment you
+would want the check is the moment nothing prompts you to write it.
+
+**Two constraints on the canary, both of which it fails without.** **(a) It binds the NEGATIVE half only.** A
+positive observation is self-proving - something was seen, so the instrument reached the subject. An absence is
+the reading a broken instrument manufactures, so only absences need the proof. **(b) The canary must be sensitive
+to the INSTRUMENT's failure and insensitive to the SUBJECT's absence.** Backwards, it either never fires, or it
+fires on every genuine finding and gets deleted as noise within the week. *(Architect 2.)*
+
+**When you relay a fact you did not read yourself, put the instruction not to trust you in the same message as
+the claim.** A relay said a card had been **rejected** and added, in the same breath, *wait for the verdict on
+disk before touching the file - my word is not the verdict*. The disk said **approved**. **The instruction is the
+only reason the error cost nothing**: the receiver had no independent reason to doubt a plausible message from a
+reliable sender, and a plan to fold four corrections into a rejection would otherwise have been built on it.
+**Three relayed statuses were wrong or early in one day** - a card announced as raised before it was, a develop
+SHA quoted from memory three commits behind, and that rejection which was an approval - **and the only one that
+cost nothing is the one where the sender told the receiver not to trust the sender.**
+
+**Why this is a clause and not *be careful with relays*: it does not depend on the receiver being suspicious**,
+and vigilance fails exactly when the relay is plausible and the sender reliable, which was true of all three.
+**The sender always knows whether they read the artefact or are repeating someone else; the receiver never
+does.** So the control belongs to the only party holding that information, and it costs one sentence.
+
+**A fourth instance arrived in the message proposing where to file this clause, which is the best argument for it
+available.** Its author cited a sentence as already being in this document - *a population has an owner and a
+lifetime* - **which does not appear in it at all.** The citation came from memory of a message they had SENT
+rather than of the file as it stands: **a claim about an artefact's contents, second-hand, delivered as if read**,
+in the act of proposing the rule against exactly that. They found it by grepping rather than by being told.
+*(Architect 2's, prompted by the relay that carried its own warning, and volunteered against itself; the framing
+that this is cheaper than either party being more careful is the Scrum master's.)*
+
+**The operational form, which is cheaper than any of this: when you pass news that touches somebody else's
+AUTHORISATION, say what it does not authorise in the same sentence.** Two faults on 2026-09-23 had that exact
+shape and neither was a relay of a status - both were news. *Develop's gate is green, which is your cue* was true
+in its first half and an authorisation in its second: green was **necessary and not sufficient**, another session
+was still gating, and the coordinator names the branch. The receiver refused it on those grounds. **The instinct
+behind it is wanting to be useful with news, which is a good instinct to have and a bad one to act on
+unqualified** - and the qualification costs one clause of one sentence.
+
+**And the exposure is highest for whoever coordinates, because most of a coordinator's messages ARE relays and
+their messages carry the most authority.** The Scrum master's own count for that day was three card verdicts
+relayed from chat rather than read from disk, and one window granted on a stale reading - **a higher rate than any
+session it was relaying to.** So the role least able to check every claim it passes is the role whose unchecked
+claims cost most, which is the argument for the sender's one sentence rather than for the receiver's suspicion.
+
+**A fifth instance, and the reason it is the strongest one in the clause: it happened AFTER both parties had
+written this rule.** A miscount - *three runs today produced no citable verdict*, when only two were
+substantiable - passed from the session that made it to the coordinator, who **relayed it onward without
+checking, then relayed the correction, both inside an hour.** Neither party was careless and both had just
+authored the clause. **The artifact caught it and the authors did not**, which is the whole argument for the
+control being structural rather than attentional: a rule you wrote this morning does not protect you from a
+plausible number this afternoon. Recorded as an instance rather than as anybody's credit - **the useful fact is
+that writing the rule is not one of its remedies.**
+
+**And the corollary for routing, which is not the same rule: route a question through a coordinator when they
+hold context you lack - not when they would only be repeating you.** A condition was set that an
+`.editorconfig` change come back through the Scrum master for the user; the session that had just measured the
+problem put it to the user directly instead, with the confirmation of the relay folded in as one of the options.
+**The condition was withdrawn, because a second hop adds latency without adding safety when the party holding the
+evidence is the one asking.** The distinction is worth stating because both halves look like diligence: **routing
+for context is diligence, routing for ceremony is delay** - and the coordinator is usually the only one who can
+say which it would be. *(The Scrum master's, withdrawing its own condition.)*
+
+**Its complement, and the harder half: notice when you have only ONE source.** The same session that refused to
+invent an explanation for a measured conflict **invented one elsewhere the same day without noticing** - *this
+stylesheet still reads that token, so the repair is one line* - carried it four hours, through three sessions and
+into a commit message, **from a test header's past tense read as present.** It was not a lapse in care; the care
+was identical. **The difference was that the conflict had two instruments and the claim had one, and nothing in
+the writing said which.** A disagreement announces itself and forces routes to be excluded; **a single unchecked
+source reads exactly like a verified one.** So refusal is what you do *after* the disagreement surfaces, by which
+time the hard part is done. **`git log -S'<symbol>' -- <file>` answers *is this still true* and *what closed it*
+in one command**, and a defect named in a comment is a historical record by construction - written at the moment
+of the fix, and nobody revisits prose that still reads correctly. **And the tell that should have bought an extra
+command rather than fewer: the claim flattered its author's own change**, making a token they were adding look
+overdue rather than new.
+
+**And that tell does more work than any skill at spotting a lone source, which is the honest version of this
+clause and its author's own correction of a compliment.** The same session **recognised the shape immediately on
+a claim about somebody else's work** - an alarm resting on a display it knew could not distinguish two readings,
+checked in three commands before sending - and **missed it entirely on the claim about its own change**, four
+hours apart, same care. **One success in the easy direction and one failure in the hard one is not evidence that
+anybody can tell which kind of claim they are holding; it is evidence that a foreign claim is easier to see than
+one's own.** So the clause promises less and holds: **the claims you will fail to recognise as single-source are
+the ones that suit you** - which is why the flattery tell fires exactly where recognition does not. *(Developer
+4's, correcting both a flattering framing offered to it - including by me - and then my compliment about its
+recovery. It preferred the clause promise less than claim a discrimination it had demonstrated once, in the easy
+direction.)*
+
+**Those two and the two above are one subject, which is worth naming rather than leaving a reader to notice: how
+a true-looking thing gets believed.** An **absence** manufactured by a dead instrument; a **conflict** that was
+two instruments measuring different populations; a **relay** nobody could audit; and a **lone source** that reads
+like a corroborated one. **Every wrong answer on 2026-09-23 came from a single source nobody crossed** - a grep, a
+probe, a note, a filter, a header - **and the ones that were caught were caught because a second instrument
+existed, not because anyone was more careful the second time.**
+
+**A GATE-TOOLING CHANGE IS NEVER EXERCISED BY ITS OWN GATE**, so its acceptance is the self-test plus
+**the first run after it lands** - never the landing run itself. `gate.sh` runs from the **main
+checkout**, not from the merged tree the gates judge, so a change to it takes effect only once it is on
+`develop`. **A reader who checks the introducing branch's own log for the new behaviour and does not find
+it will conclude the change is broken**, and will be wrong for a reason that is invisible from the diff.
+
+**The author is as exposed as the reader**: the session that added a `SELFTEST=` line to the gate's
+summary said in writing that it expected to read that line in the gate which introduced it, and was
+corrected by its own red run producing no such line. **So the acceptance has two halves and the second
+one happens after the landing**: confirm the new behaviour on the next gate anybody runs, and treat its
+absence THEN as the real finding.
+
+**AN OVERLOADED EXIT CODE CANNOT CARRY A PROOF.** Two conditions sharing a number is fine for a human
+reading a message and **useless for a check that must decide.** The probe below required `exit 2` from a
+script where **2 meant both *the board could not be read* and *your argument was refused*** - so on any
+unreadable board **it passed against precisely the copy it exists to detect.** Refusal now has a code of
+its own, and the rule it satisfies is the general one: **a probe requires the value that no FAILURE can
+produce**, because that is the only value whose presence proves the thing the probe is asking about.
+
+**And the reason it survived three chances to be seen is worth more than the fix: WHEN A CHECK'S CAREFUL
+USERS COMPENSATE FOR ITS WEAKNESS, THE RECORD SHOWS A PASS AND THE WEAKNESS NEVER SURFACES.** Its first
+outside adopter **did not rest on the exit code at all** - it read the message, which names the caller's
+own argument back and which an old copy cannot produce - **and it reported what it had read rather than
+that the probe had passed.** Had it written *the probe passed*, the artefact would have recorded a pass
+and the hole would still be there. **The author of a rule is the worst-placed person to notice their own
+instance of it**: the same session wrote the script, the prose and the clause, and missed it in all three.
+
+**A NEW STRICT FLAG IS NOT TRUSTWORTHY UNTIL THE COPY ANSWERING IT HAS BEEN PROVEN TO KNOW IT**, and this
+belongs here rather than with the fail-open clauses because **the defect is not that the check read the
+wrong state - it is that the instrument is not the one you think you are holding.**
+
+**Every strict mode added to an existing CLI is fail-open against every copy that predates it**, because
+**ignoring an unknown argument is the universal default**. The new flag's whole value is an exit code, and
+an old copy returns the reassuring one. **The proof is the same shape as every other liveness proof: feed
+the instrument something it MUST refuse, and require the refusal.**
+
+    bash who-is-gating.sh --probe-unsupported > /dev/null 2>&1
+    [ $? -eq 2 ] || { echo 'this copy predates the flag; its exit code means nothing'; exit 3; }
+
+**The author's own instance, attached because a rule carrying its author's mistake survives a reader who
+thinks it does not apply to them**: an hour after building `--require-free`, I ran it from the main
+checkout, read `exit 0` as *the board is free*, and only then noticed **the flag was not on `develop` at
+all**. The board was free and the printed `GATING=none` said so - **but the exit code could not have told
+me otherwise, and I had reached for the exit code precisely because I had just made it mean something.**
+Measured both ways: the same nonsense argument exits 0 against the old copy and 2 against the new one.
+**A new instrument is most trusted in the hour it is built.**
+
+**Its sibling is clause 7 under *Guards that cannot fail*, and the difference is worth holding.** That clause is
+about a floor set on a quantity that does not scale with the work, so the failure mode satisfies it. This one is
+about an instrument that never reached its subject at all. **A guard can be well-founded and still be read through
+a dead instrument**, which is why the two do not substitute for each other.
+
 ## Records that were right when written
 
 **The shape: correct when written, conclusion intact, premise moved underneath - and nothing in the artifact says which of its parts went stale.** This is not a wrong record and it is not a stale cache. It is advice that earned its place by solving a real problem, still reads as authoritative, and is now the cause of the next failure. **It is more dangerous than a bad instruction from a stranger, because it arrives pre-trusted** - and if it is your own note it arrives with the authority of a lesson you remember learning.
@@ -809,7 +1420,100 @@ Fix only what moved. Rewriting a whole entry because one clause went stale destr
 
 **Ship the instrument with the figure.** A count carried in prose is unfalsifiable a week later; the same count with its command and its date is re-checkable in seconds, so a reader quoting a stale number is quoting a timestamp. This is the *terminal `RESULT=` line* discipline in a different medium: **do not report a value nobody can recheck.**
 
+**And a restatement is not the fact it restates - which is a different failure from the one above, because here
+the instrument was right and available the whole time.** Two instances, 2026-09-23. **The gate tell reported
+`develop f0ad424b` while develop was at `751705d7`** - and the tell had not been consulted for that number; it
+was **retyped from memory into a message**, by the session that had built the tell. **And `highlight.ts`'s doc
+line for a constant disagrees with the expression four lines below it**, wrong in two directions at once - it
+calls a floor a fallback and an absolute width a delta, against `Math.max(declared + 1, HIGHLIGHT_STROKE_WIDTH)`
+- and the only declared width it is accidentally right about is the one where its two errors cancel. **In both
+cases a copy drifted from its original, and in both cases the check was to read the original rather than to
+trust the copy.**
+
+**The tempting lesson is the wrong one and it is expensive: this is not evidence that the instrument is
+unreliable.** The tell was correct and one command away throughout; the doc line sat four lines from the
+expression that refutes it. **What drifted was the retelling**, so the remedy is to read the original at the
+moment of quoting - not to hedge the instrument, and not to add a second instrument to check the first.
+**Applies identically to a quoted SHA, a paraphrased constant, and a requirement's cited example.**
+*(Architect 2, arguing for one entry with two instances rather than two entries - and the first instance is its
+own report of somebody else's slip, which is why the pair was visible at all.)*
+
+**A corollary about the tell specifically, from its first use in anger: the tell gave the base and `git
+merge-base` said the base was stale, and neither alone would have.** The tell without the check reads as *a gate
+is running, wait*; the check without the tell has no base to test. **A reader who has only one of the two has
+half an instrument**, which is worth saying because the tell is the newer half and the tempting one to quote by
+itself.
+
 **And a note may never have been your reasoning at all.** The project memory store is shared: of 54 notes, 41 carry an `originSessionId` naming twelve distinct sessions. Those arrive in context before a session begins, with attribution stripped, reading as background rather than as somebody's argument - **the standing we refuse to grant a peer's message, granted automatically because it came in a file.** The mirror matters too: **correcting such a note in place leaves your reasoning under the original author's id**, so say in the note that the reasoning changed hands.
+
+**A NOTE CANNOT REPORT ITS OWN STALENESS**, so a clause is cited by reading develop's copy and never from the
+queue note that proposed it. `git show develop:<path> | grep -c '<phrase>'` answers *is it landed*; reading
+your own note answers *did I mean to land it*, which is a different question that feels identical. **A false
+citation is load-bearing: a reader who believes a clause is in steering will not queue it, and the entry then
+looks discharged from both ends.** This is not a rule about carelessness - **the property you want, *is this
+still true*, is not one the artifact can carry.**
+
+**A second face: a measurement can be stale the moment it is PARAPHRASED, even by the person who took it.** A
+grep returned 9; it was paraphrased as "nine places", told to two sessions, and repeated back as an argument.
+Attributed to the entries they sat under, the truth was **seven entries across twelve lines** - and the commit
+message then said "twelve separate sentences", which a line count does not measure either. **A count of
+matching LINES answers a different question from a count of PLACES, and the paraphrase is where the question
+changes, silently, with nothing recording that it did.**
+
+**Five instances in two days, all found by reading the tree and none by re-reading the note**: ten clauses that
+were eight, thirteen queued that were four, a branch described as next when it had landed, the nine-places
+paraphrase - and, writing the clause above, **a queue note whose own placement guidance named the wrong
+section**, which sent an insert into an unrelated parent with every assertion green. **The note that carries
+this rule was itself the fifth instance of it.** It also has a success to its name, which is the reason to
+trust the instrument rather than the recollection: a clause was nearly repaired on develop today because a
+queue note said it overclaimed, and reading develop's copy showed the overclaiming form had never landed
+there at all.
+
+**An explanation's thoroughness is evidence about its HISTORY, not about its correctness - a comment's density
+maps past incidents rather than present danger.** `highlight.ts` explains at length why the selection paint is
+inline and why it sits on the drawn shape: **both were got wrong once, on screen, at a day's cost.** Four lines
+below, the doc line for the width constant was wrong in two directions at once - *when no width is stated*
+describes a fallback where the code has a **floor**, and *how much heavier* describes a delta where the value is
+**absolute** - against `Math.max(declared + 1, HIGHLIGHT_STROKE_WIDTH)`. **The one declared width it is
+accidentally right about is where its two errors cancel.**
+
+**Why it survived: the line never caused a visible failure, so nobody ever had a reason to read it against the
+code four lines below.** One session edited that file three times in a day and quoted the constant twice without
+reading the prose; another quoted it correctly in a requirement **by reading the expression** and still did not
+notice the sentence beside it. **The well-explained parts of a file are precisely the parts that once failed in
+production; the unexamined part is the part that never has.** The check is cheap and narrow: **when you touch a
+constant, read its own doc line against its own expression, in the same minute** - not the file's much-revised
+explanations, which have been read many times, but the one sentence nobody has had a reason to doubt.
+*(Architect 2's. Ruled to sit BESIDE the absence clause rather than be folded into it: that one is about what a
+clean reading proves, this one about where attention goes, and a reader could act on either without the other.)*
+
+**A hunt's record names what was checked and EXCLUDED, not only what was found - because the most attractive
+wrong answer is what the next person will land on first.** While looking for an inherited fill, Developer 4
+found that **every declared element renders an unclassed, empty `<text>` node**: at
+`DiagramCanvas.tsx:2449`, `const label = type?.labels !== undefined ? "" : (element.label ?? "")`, so a type
+declaring its own labels still gets the element's `<text>`, classless and contentless, beside the real
+`library-element-label canvas-node-label` one. **It paints nothing and it is not a defect.** But SVG `fill`
+inherits, there is one of these inside every declared element on the board, and **it is what a mounted
+assertion hits before the selector is scoped** - which is precisely the moment somebody is hunting an inherited
+fill.
+
+**Recording it as checked-and-excluded is worth more than the shrug it deserves on its own**, and the
+surrounding state is why: a label measured in the browser as computed `rgb(0,0,0)` when **neither
+`--color-text` nor its fallback is black**, three source-level routes excluded by reading them rather than
+guessing, **and the route unfound with no fourth invented to close it.** The browser instrument was
+itself suspect at the time, so the measurement's state is *unknown* rather than wrong. **An open hunt with
+three excluded routes and one honest gap is a better artifact than a closed one with a plausible answer** - and
+the excluded routes are the part that stops the next session repeating the first hour.
+
+**It resolved within hours, and the resolution is why the honest stop was not merely polite.** Re-measured by
+**grouping the text nodes by class** instead of taking one from the element's group: the labels compute
+`rgb(15,23,42)`, which is `--color-text`, and **the eight unclassed nodes compute `rgb(0,0,0)` and are all
+empty.** The original probe had taken one of those eight. **The label was never black**, there was no fourth
+route, and **the real figure is 1.17:1 against the 1.37:1 an approved specification had recorded.** So
+continuing would have been hunting something that did not exist: **stopping was CORRECT, not just candid**,
+and a session that had invented a fourth route would have found a plausible one and closed a hunt on a
+measurement of invisible nodes. **The same trap caught the specification's author and then the first mounted
+assertion written against it, inside an hour.**
 
 ## A settled boundary
 

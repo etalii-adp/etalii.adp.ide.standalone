@@ -4,13 +4,14 @@
 edge carries, packed into the core `Element`'s `Any`. No core proto is edited from here.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`ansible-structure-diagram`](../../../../.spec-workflow/archive/specs/ansible-structure-diagram/) for
-this diagram type's spec.
+`ansible-structure-diagram` for this diagram type's spec (removed from the tree; in history
+before `ece03c36`).
 
 ## Two things about this proto worth knowing before editing it
 
 **It generates into `EtAlii.Adp.Diagram.AnsibleStructure.Wire`, not the module's own namespace.**
-Every other module generates into its own. This one cannot: its wire shapes and its domain model
+Most modules generate into their own; this one, like causal-loop, helm-charts and
+dotnet-dependency-graph, cannot: its wire shapes and its domain model
 share four names — `AnsibleEdge`, `AnsibleEdgeKind`, `AnsibleRoleContents`,
 `AnsibleInventoryGroup` — because they are genuinely the same concepts, flattened for the wire.
 Generating into the module namespace is a hard `CS0101` collision with the `_Model` records.

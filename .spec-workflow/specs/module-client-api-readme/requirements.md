@@ -37,7 +37,7 @@ At least eight tests walk every module's client code and fail on a forbidden pat
 ### What already documents it
 
 - `docs/creating-a-diagram-module.md` (181 lines) covers the whole module path and gives the client one dense paragraph, plus the client halves of *Renaming in place* and *The view-delta loop*. `processes.md` *Keeping documentation true* makes it update in the same change as any touch point it names.
-- Six per-folder readmes document library internals: `canvas/label`, `canvas/gesture`, `canvas/scroll`, `canvas/elements`, `canvas/connections`, and `src/client/src/diagrams/readme.md`, which is the reference for the view report.
+- Five per-folder readmes document library internals: `canvas/label`, `canvas/gesture`, `canvas/scroll`, `canvas/elements`, and `src/client/src/diagrams/readme.md`, which is the reference for the view report. A sixth, the connections readme, went with the four connection components it described, which were removed as dead code at `798f07a5` (2026-09-24).
 
 ### What is moving under it
 

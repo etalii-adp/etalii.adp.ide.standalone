@@ -3,8 +3,10 @@
   "title": "FDG design: L1's guard is blind at width 80, so the ninth case is not a hole to be fixed",
   "filePath": ".spec-workflow/specs/functional-decomposition-graph/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-23T11:25:21.305Z",
   "category": "spec",
-  "categoryName": "functional-decomposition-graph"
+  "categoryName": "functional-decomposition-graph",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-23T11:27:59.570Z"
 }
