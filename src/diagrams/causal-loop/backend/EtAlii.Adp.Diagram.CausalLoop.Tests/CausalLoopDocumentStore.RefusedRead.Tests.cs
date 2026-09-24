@@ -33,7 +33,7 @@ public class CausalLoopDocumentStoreRefusedReadTests : IDisposable
         + "link a -> b +\r\n";
 
     // The attempts are the store's own count; only the wait between them is taken away.
-    private const int Attempts = 5;
+    private const int Attempts = CausalLoopDocumentStore.DefaultReadAttempts;
 
     private readonly string _workspace = IoPath.Combine(IoPath.GetTempPath(), "adp-causal-loop-refused-read-" + Guid.NewGuid().ToString("N"));
     private readonly ScriptedReader _reader = new();
@@ -60,16 +60,19 @@ public class CausalLoopDocumentStoreRefusedReadTests : IDisposable
         // Act
         store.Reload(path);
 
-        // Assert: the refusal was hit, then read past - not the file read some other way.
+        // Assert: the refusal was hit - not the file read some other way.
         Assert.Equal(1, _reader.Refused);
         Assert.Equal(0, _reader.Pending);
-        Assert.Equal(2, _reader.Reads - readsBefore);
 
-        // Assert: the change arrived, and the sessions on it were told.
+        // Assert: the change arrived, and the sessions on it were told. Asserted before the read
+        // count, so a store that does not retry fails HERE, on the lost change itself.
         var entry = store.GetOrLoad(path);
         Assert.True(entry.IsUsable, entry.Error);
         Assert.Contains(entry.Model.Variables, variable => variable.Label == "Gamma");
         Assert.Equal(1, changes);
+
+        // Assert: by reading past the refusal once, not by reading again some other way.
+        Assert.Equal(2, _reader.Reads - readsBefore);
     }
 
     [Fact]

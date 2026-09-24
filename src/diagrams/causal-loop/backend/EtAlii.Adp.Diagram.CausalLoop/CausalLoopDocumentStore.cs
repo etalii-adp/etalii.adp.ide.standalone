@@ -23,7 +23,7 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
     // DocumentLifecycle's numbers, unchanged: a refusal is believed after about a fifth of a second.
     // A choice rather than a measurement, because what holds the file is not yet known - which is
     // why a read that needed a retry logs how many it took.
-    private const int DefaultReadAttempts = 5;
+    internal const int DefaultReadAttempts = 5;
     private static readonly TimeSpan DefaultBetweenReadAttempts = TimeSpan.FromMilliseconds(50);
 
     private readonly ConcurrentDictionary<string, CausalLoopDocumentEntry> _entries =

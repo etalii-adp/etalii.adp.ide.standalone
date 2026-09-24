@@ -52,7 +52,7 @@ public class C4DocumentStoreRefusedReadTests : IDisposable
         """;
 
     // The attempts are the store's own count; only the wait between them is taken away.
-    private const int Attempts = 5;
+    private const int Attempts = C4DocumentStore.DefaultReadAttempts;
 
     private readonly string _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Diagram.C4.RefusedRead", Guid.NewGuid().ToString("N"));
     private readonly ScriptedReader _reader = new();
@@ -79,15 +79,18 @@ public class C4DocumentStoreRefusedReadTests : IDisposable
         // Act
         store.Reload(body);
 
-        // Assert: the refusal was hit, then read past - not the file read some other way.
+        // Assert: the refusal was hit - not the file read some other way.
         Assert.Equal(1, _reader.Refused);
         Assert.Equal(0, _reader.Pending);
-        Assert.Equal(2, _reader.Reads - readsBefore);
 
-        // Assert: the change arrived, in the store and to the sessions on it.
-        Assert.Contains(store.WorkspaceOf(body).Elements, element => element.Name == "Auditor");
+        // Assert: the change arrived, to the sessions on it and in the store. Asserted before the
+        // read count, so a store that does not retry fails HERE, on the lost change itself.
         Assert.NotNull(told);
         Assert.Contains(told.Elements, element => element.Name == "Auditor");
+        Assert.Contains(store.WorkspaceOf(body).Elements, element => element.Name == "Auditor");
+
+        // Assert: by reading past the refusal once, not by reading again some other way.
+        Assert.Equal(2, _reader.Reads - readsBefore);
     }
 
     [Fact]
