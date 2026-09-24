@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Six things every entry below assumes
+## What every entry below assumes
 
 **Signing in — a developer build does not ask.** Since `developer-sign-in-bypass`, a locally
 running developer build opens **already authenticated** and the sign-in form is never rendered:
