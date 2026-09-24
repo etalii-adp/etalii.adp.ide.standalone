@@ -158,7 +158,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
   - **Padding, minimum and maximum stay each module's own decision**; only the metric is shared, so a module that sizes a box differently is not made wrong by this task.
   - _Requirements: 10.1, 10.2, 10.3_
 - [ ] 21. The gesture id grammar, with its golden fixture
-  - Files: the shared grammar, the fixture, backend tests
+  - Files: the shared grammar, the fixture, backend tests, and the five modules that build or parse gesture ids today - causal-loop, databricks, dependency-graph, rdf and timeline - moved onto it, as R11.1 requires (the user's chat ruling, 2026-09-25).
   - Building and parsing `new:` and `rel:` ids. R11.2's refusal of an empty end is already on `develop`; this task adopts it rather than reimplementing it.
   - _Requirements: 11.1, 11.3_
 - [ ] 22. The element and relation type strings, with their fixture
