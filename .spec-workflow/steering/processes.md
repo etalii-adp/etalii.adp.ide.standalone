@@ -158,8 +158,9 @@ you are saving was never the expensive part.
 `who-is-gating.sh` returns **2 only when it cannot read the board**, and **0 for a free board, for a
 holder, and for a lock whose owner is not written yet alike** - so `tell && commit` runs the commit
 whatever the board says. **Every `&&` chain ever written over it has been a print statement wearing a
-check's clothes.** The remedy is to make the state that must be REACHED the thing that gates, rather
-than the state that must be avoided the thing that aborts:
+check's clothes.** The state form, which is the recognisable half: **a verdict produced by nothing going
+wrong looks identical to one produced by everything going right.** The remedy is to make the state that must
+be REACHED the thing that gates, rather than the state that must be avoided the thing that aborts:
 
     TELL=$(bash .github/tools/gate/who-is-gating.sh)
     case "$TELL" in *GATING=none*) ;; *) echo 'HOLDER - refusing'; exit 9;; esac
@@ -211,6 +212,22 @@ the operation it is about rather than only the order.
 
 Without an identity you inherit the machine's global `user.name` in every checkout, so your work is indistinguishable from the user's own. The first version of this rule used plain `git config`; four sessions overwrote each other and two commits carry the wrong author.
 
+**A `--worktree` identity binds to the DIRECTORY, not to the session - so gating in another session's live
+scratch tree signs the merge as THAT SESSION.** And this is worse than a naming collision, which is the whole
+point: **a collision announces itself.** Two sessions in one directory produce a refused `--ff-only`, a dirty
+tree, something that stops you. This produces **a clean green with a wrong author, and nothing in anybody's
+workflow inspects the author of a merge that passed.** The rule *one scratch tree per agent, named for the
+agent* is true and **silent about the case that actually arises**: somebody else's tree exists, it is already
+configured, and using it costs nothing visible. The near-instance was a session queued third for a gate slot,
+choosing between `mrga2` and a live `mrga3` belonging to another session - it took its own, and had it not,
+the merge for a `CLAUDE.md` change authorised in *its* session would have been signed by the other. Neither
+session would have caught it: you do not audit the author of someone else's merge, and nobody audits the
+author of a green one.
+
+**Which sharpens the read-back above rather than repeating it.** The reason given there is that you might
+inherit somebody's identity. The sharper reason is that **the inherited identity produces no symptom at all**
+- so the read-back is not belt-and-braces, it is the only instrument.
+
 **Why an identity rather than the `Co-Authored-By` trailer**, which was the alternative considered: the trailer is a per-commit act that can be forgotten, and it is forgotten *structurally* - present exactly when composing a message was a deliberate act, absent whenever the message came for free. `git commit -m "one line"` and `git merge --no-edit` are both ways of not writing one, which is why bookkeeping and merges - the two highest-frequency commit kinds - are the two that fail. Nine of twelve recent merges lacked it. An identity is set once per working tree and cannot be forgotten per commit: one is a discipline, the other is a property.
 
 The trailer remains useful in one direction only, and the limit matters because **the inverse reading is the more useful one**. A present trailer proves an agent made the commit. An absent one proves nothing at all - so "which of these did a human do?" is exactly the question it cannot answer, and a test reliable only in the less useful direction will be used in the other one.
@@ -229,6 +246,160 @@ The trailer remains useful in one direction only, and the limit matters because 
 **So recognise the precursor: `git worktree remove` refusing from inside the tree.** The error itself is telling you the shell is in the wrong place, and the obvious follow-up is a relative deletion issued from exactly the directory that caused the error. **After that refusal, the next command must be absolute.**
 
 **And when a written remedy fails anyway, the fix is not to repeat it louder.** Ask what it asks a person to do and when - **if the answer is "the right thing, unprompted, later", replace it with something the command or the directory carries.** The three above were each written down before they failed.
+
+**A third kind of remedy, for when the artifact CANNOT carry it.** All three above are prevention: make the
+command or the directory hold the rule so there is no later moment. That works when the command can be
+changed, and **it cannot work for a search** - there is no argument to make required and no directory to carry
+it, and nothing stops anybody grepping for the wrong string. So the remedy shifts from preventing the mistake
+to **naming what the wrong result looks like**, because recognition costs nothing: you are already looking at
+the output.
+
+The instance, and the reason this is a category rather than a nicety: a comment declared a 60-second constant
+"not set anywhere in this repository", eliminated by a grep for `FromSeconds(60)` when the code said
+`AddSeconds(60)` - one builds a `TimeSpan`, the other offsets a `DateTime`, and the search was correct about
+the string it was given. **The tell was in the result itself: that grep's only hit was the comment asserting
+the absence.**
+
+> **A search whose only hit is the claim that the thing is not there is the signature of a search that
+> missed** - and it reads exactly like confirmation.
+
+That is checkable on the first run. The action-shaped version - *re-run string searches, their blind spot is
+invisible from their result* - is not, because at the moment of running a search you believe it. **If a rule
+begins "always", "remember to" or "re-run", it asks for vigilance and will decay; if it begins "a result that
+looks like X is", it asks for recognition and will hold.** Convert the first into the second wherever the
+failure has a visible signature - and where it has none, that absence is itself worth writing down.
+
+**Three zeros from one audit, every one of them the instrument rather than the file.** The clause above was
+cold-read by another session, which quoted two sentences from this document back at me. Checking those
+quotations, I was one message away from reporting them as fabrications:
+
+- `git log -S "first mounted assertion"` returned **nothing, across every ref and every path** - because that
+  sentence *wraps mid-phrase*, breaking between `mounted` and `assertion`. `-S` compares line-wise, so a
+  phrase spanning a newline is invisible to it. Flatten the whitespace first and it is there.
+- `grep -c "after a landing"` returned **0** on two different revisions - because the line is **shouted**:
+  *STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.* `grep -ci` finds it.
+- **and the control was clean.** All twenty-four worktrees checked for an uncommitted copy the reader might
+  have been looking at, every one of them clean - **which made the fabrication reading stronger rather than
+  weaker.**
+
+**Prose wraps and rules get shouted, so both blind spots are live every time anybody greps this file**, and
+neither is visible in the result. Search a prose document case-insensitively, and flatten whitespace before
+searching for any phrase longer than a few words.
+
+> **A correct control on the wrong hypothesis strengthens the wrong conclusion.**
+
+That control was rigorous and its answer was true. It eliminated the one innocent explanation I had thought
+of - a working tree I could not see - and eliminating an innocent explanation is exactly what makes a guilty
+reading credible. **A control protects only the hypothesis it was built against**, and mine was aimed at
+*where the text might be* rather than at *whether my search could see it*. The reading it strengthened was
+that a careful peer had invented quotations.
+
+**And the discipline that actually caught this is the cheapest one in this document: report a search, not an
+elimination.** The cold read's third finding said *"I searched six phrasings and could not find it - and I am
+reporting a search, not an elimination."* It was reading the wrong revision entirely, so no phrasing could
+have found what it was looking for. **Because it claimed only what it had run, the gap arrived as a question
+and was settled in one command; had it claimed the clause was absent, the answer would have been a false
+all-clear with nothing in it to invite a second look.** Two sessions were saved by that single hedge in one
+day. **"I could not find it" and "it is not there" cost the same to write and differ by everything the
+instrument cannot see.**
+
+**And the same holds for a REPAIR, not just for a reading - which is the harder version, because a repair
+gets copied.** A window found in six document stores was fixed and commented in all six; five comments say the
+reassignment also re-establishes the cache from what was just written and must not be optimised away as
+redundant. **The sixth had to say something different**: that store's cache holds the very document object the
+caller edited, so it keeps no reparsed entry to put back, and a reload that evicted it only means the next
+load re-reads a file that now *has* the edit. Same window, different repair - **and the copied comment would
+have been WRONG there rather than merely redundant.** **Five identical comments and one that must differ is a
+pattern a sweep cannot produce and a reader cannot audit by sampling**, so the sixth is exactly the one that
+gets written by copying.
+
+## A rule that is silent about its sibling case reads as complete
+
+**A false rule gets caught. A true-but-partial one does not.** A rule whose antecedent covers one branch of a
+fork and says nothing about the other is correct every time it fires, so nothing ever contradicts it - and the
+case it omits does not come up until it does. Four instances, from four authors, in two days:
+
+- **Approval versus rejection.** *The durable record of a verdict is the snapshot's `trigger`* is true of an
+  approval and of a revision request, and **a rejection writes no snapshot at all** - so a rejected card and an
+  unanswered one are indistinguishable to a reader following the rule exactly. The missing half is that the
+  request JSON's `status` is the only record of a rejection.
+- **Measured versus searched.** *Two eliminations, both by measurement, which is why they can be relied on* was
+  true of the two it described. A third elimination in the same list was a **string search**, inherited at the
+  same confidence, and it was wrong: the constant it declared absent sat forty-six lines below the claim. The
+  missing half is that a search must be re-run rather than cited.
+- **Per-test versus shared budget.** *A per-test constant would have fired in the isolated runs* is sound, and
+  it says nothing about a budget **shared across five sequential awaits in one call** - which is what the
+  deadline actually was. The missing half is that a per-call clock starts when the call is made, not when the
+  await begins.
+- **One go versus two.** *A go names a branch explicitly to the session that owns it* is correct, and silent
+  about **two explicit gos outstanding at once**. A naming that has been issued and not yet taken up is still
+  live, so the board was not free when the tell said it was - and no amount of re-reading the tell catches
+  that, because **the tell cannot see a go sitting in somebody's inbox.** The missing half, in its enforceable
+  form: **one naming is live at a time, and the issuer does not issue a second until the first reports.**
+
+**State the missing half as the action its owner takes, not as an awareness.** "Be aware that two gos can be
+outstanding" is unenforceable; "I do not issue a second until the first reports" is a thing somebody does or
+does not do. The same distinction as [*A remedy that must be remembered is not a remedy*](#a-remedy-that-must-be-remembered-is-not-a-remedy).
+
+**And note where the catch came from in the last case, because it decides where such rules live.** Not the
+issuer's verification and not the actor's care: **the tell, read at the moment of use.** The issuer's reading
+was correct when taken and stale by the time it arrived, and no check on their side could have covered that
+window. That is the argument for *refuse a go whose premise changed* sitting with the session about to act -
+demonstrated rather than asserted, and twice in one day, both caught by a session refusing.
+
+## Precedent is not permission, and "not a merge commit" is not "straight onto develop"
+
+**A session authorised to make a two-line change to `CLAUDE.md` looked at how that file had been changed
+before, concluded the established route was direct commits to `develop`, and proposed following it - and the
+route it saw did not exist.** The ruling went the other way: anything changing the repository's files goes
+through a worktree and the four gates, and the **one** stated exception is a specification document, *because
+the dashboard reads those from `develop` and nowhere else*. `CLAUDE.md` is not one and no dashboard reads it.
+**The ruling was right, and the premise the session argued from was false.** Both halves are worth keeping,
+because the second is the transferable one.
+
+**And note which direction this failed in, because it is the harder one to catch: an instrument that ACCUSES
+is trusted more readily than one that EXCUSES.** Nobody argues with bad news about themselves. A truncated
+count and a search that was honest only about the string it was given both *let something off*, and in each
+case somebody eventually noticed the absence did not fit. **The parent count did the opposite - it
+manufactured a violation against five sessions' correct work, and three sessions believed it, including the
+one whose own ruling it appeared to undermine.** It took a different test, not more care, and it took somebody
+who had no stake in the accusation being true. **When a measurement indicts, that is the moment to run the
+second instrument** - the reading feels like diligence, and agreement with it feels like honesty.
+
+**The rule half, which stands on its own: a shortcut taken four times is indistinguishable from a rule that
+never applied, and only the rule's own text and its stated exceptions can tell them apart.** Four commits in a
+row look like a practice, and **nothing about them says whether anybody decided.** That is what makes reading
+precedent as permission the natural mistake rather than a careless one - the count is exactly what makes it
+persuasive.
+
+**The measurement half, which is why this is here rather than in a correction: the query answered a
+neighbouring question and returned a well-formed wrong answer.** The evidence was *"its last four changes were
+single-parent commits"* - `30e9e42c`, `611f2ce3`, `97bc6d21`, `8770ca5e`, all four real, all four genuinely
+single-parent. **But "single-parent" and "directly on `develop`" are different questions, and every ordinary
+commit on a properly gated branch is single-parent**: the merge commit carries two parents, the work on the
+branch carries one. So a parent-count test cannot separate *committed straight onto `develop`* from *committed
+on a branch that was then merged*, which are precisely the two cases the rule distinguishes. **The test that
+answers the real question is first-parent membership of `develop`** - `git rev-list --first-parent develop` -
+and by it **all six of that file's changes came in through merged branches** - `30e9e42c`, for one,
+as the second parent of `0bdd8e6d`. **The cited evidence was evidence of the rule being followed.**
+
+**And a SECOND wrong answer came from the same real SHAs by a different route, so keep the two apart.** The
+parent count asked a *neighbouring question*; the four-commit window asked **the right question of the wrong
+sample**. The search stopped at four and missed a fifth, `60922acd`, **the most recent of all** and also on a
+merged branch. **A window that stops short of the newest instance is how a history that contradicts you
+reads as a history that supports you** - and it needs no faulty query at all, which is why it survives
+fixing the query. Ask what the sample excludes, and make the newest instance the one you check first.
+
+**The cost argument also runs backwards from how it was first framed.** *A markdown-only change cannot move
+any of the four gates* was offered as a reason the gates were unnecessary. It is the reason they are **cheap**:
+**a rule whose cost is one three-minute gate does not need an exception.** The expensive rules are the ones
+worth arguing about.
+
+**The half that pays forward: say in the commit message which route you took and why.** The landing that
+followed this ruling records that it went through the gates **by ruling rather than by precedent** - so the
+next reader of that file's history meets a commit that is not another silent instance, and can tell which were
+deliberate. **A judgement that leaves no trace reads as a measurement.**
+
 ## Provenance is never in the name
 
 **An identifier records what something was called, never how it came to be.** Three agents made this mistake in one afternoon: one inferred an agent from a branch-name substring, then a commit's *location* from its author string; another was about to infer authorship the same way and checked first. Each time the identifier looked like evidence of provenance and was in fact evidence of **configuration** - a branch name somebody chose, a `user.name` somebody had or had not set.
@@ -292,6 +463,29 @@ the general form instead: *a test may change only where it pinned behaviour a na
 changes; it names that criterion and changes only what the criterion changes.* An enumerated exemption list
 grows once per discovery and blocks implementation on an approval each time; the general rule is answerable
 from the approved text without amending it. **Keep both halves - name the criterion, and change only that far.**
+
+**`selection-after-drag` is the one specification that does this, and it is worth copying by name.** Its
+tasks document says outright that criterion 6.3 is the one no task can claim, and why. Nine completed
+specifications were diffed on 2026-09-24; it is the only one whose silence a reader does not have to
+reconstruct, and reconstructing it is precisely the work the diff exists to save. The other eight were clean
+but mute.
+
+**The extraction has a repeatable blind spot in this repository, and a mandated check with a reproducible
+blind spot is worse than an ad-hoc one** - because the wrongness comes back the same every time and therefore
+reads as confirmation. `backend-project-decomposition`'s requirements document carries a numbered **options**
+list (*"Options: (a, recommended) … (b) …"*) alongside its acceptance criteria, and a regex that takes
+`^\d+\.` under a `### Requirement` heading cannot tell the two apart. Criteria 6.1, 6.2 and 6.3 each appear
+twice there - once as a criterion, once as an option - so that specification's criteria count is inflated and
+those three identities are ambiguous. **Read the unclaimed list rather than only its length**, and where a
+requirements document mixes options into numbered prose, say so in the diff's own report.
+
+**And the second pass finds a class the first cannot: a criterion met by a SUBSTITUTE rather than by the thing
+it names.** `backend-project-decomposition` 6.3 requires `jb inspectcode` "run and shown clean"; the tool
+cannot evaluate this SDK's projects at all, so a committed guard - `NamespaceProviders.Tests` - was ruled the
+substitute, and that test's own docstring records the ruling. The criterion is satisfied and the named
+instrument was never run. **Re-reading the documents would never surface that, because both documents are
+telling the truth** - only tracing the criterion to a file and a string does, which is the whole reason the
+second run asks a different question.
 ## Bugs found during implementation or verification
 
 **Every bug found leaves a guard behind, so it cannot silently return.** Whether it surfaced from a failing test, a code review, or a manual pass.
@@ -1168,6 +1362,71 @@ different scale, and two of them are the Scrum master's own:
 **The discipline: re-read the state immediately before the act, not at the start of your turn** - and where the
 state belongs to somebody else, ask rather than infer.
 
+**And the interval is not carelessness - it is the length of a careful message.** Three instances in one
+evening, from two sessions, every reading correct when taken. A session cold-reading this document's own new
+clauses measured *"no unlanded branch touches this file - clean tree, `ahead=0`"*, stated it as verified, and
+built a premise correction on it. **The branch had been created four minutes earlier and had no commit on it
+yet**; the reflog dates the gap at 4m22s, and the base it measured genuinely was `develop`'s tip in that
+window. So `ahead=0` was not merely defensible, it was **correct** - and **no re-phrasing, no better tool and
+no re-run could have found a commit that did not exist yet.** Only re-reading could. The same session then
+reported `ahead=1` and `GATING=none` in a later message; by arrival the tip had moved again and the gate lock
+it read as free was held by the very branch it was writing about.
+
+**That inverts the intuition the rule invites.** The reader assumes a stale reading is the mark of somebody
+rushing. What expired all three was **four paragraphs of good reasoning written from them** - the more thought
+between the reading and the act, the staler the reading. **So this is a tax on thoroughness, not on haste**,
+and the sessions most exposed are the ones writing the most careful message. Two remedies, both cheap:
+re-read immediately before the act rather than at the start of the turn, and **say when a state was read**, so
+a reader can see the interval you could not.
+
+**`ahead=0` also answers a narrower question than it appears to: ahead of WHICH `develop`, read WHEN.**
+
+**The narrowest this gets from OUTSIDE the tool, and it names its own residue.** Put the tell in the same
+invocation as the gate - read and launch as one command, so `TELL_EXIT` appears in the gate's own log - rather
+than read, compose, launch. **That removes the message-length interval, which is the one that produced every
+instance above, and it is still not zero**: the read and the launch remain two operations, so a run starting
+between them is unrefused. **A partial remedy that states its residue is worth more than the rule alone**,
+because the next reader can see what is left rather than assuming it was closed.
+
+**And the version that closes it cannot be a rule at all - it has to be inside the tool, which is a stated
+next step rather than something to do in passing.** `gate.sh` would call the tell itself and refuse unless it
+reads free, so the check and the act are one operation and there is no interval to go stale in. Three things
+about its cost, from reading the scripts rather than from running them:
+
+- **It is not a two-line change and it does not get the fast path.** Touching `.github/tools/gate/` means a
+  full self-test rather than `mode=quick`, and the refusal needs its own `RESULT=` line so a caller can tell
+  *board held* from *arguments wrong* from *gates red* - three exits that must not collapse into one.
+- **The obstacle usually named for it - that the gate holds the board while it runs, so a tell call would
+  refuse itself - is an ordering constraint rather than a hard part.** `gate.sh` acquires its lock and only
+  then writes its tell entry, so a check placed before the lock cannot see itself.
+- **The real difficulty is that it narrows the window rather than closing it, for a reason the proposal does
+  not mention.** The lock is per scratch worktree and the tell aggregates across them, so there is no single
+  board-wide lock to take atomically: two gates can both read free and then both lock their own trees.
+  **Closing it properly means one shared lock acquired atomically, which is a larger change than adding a
+  check** - and worth saying, because a proposal believed to close a window will stop anybody looking for the
+  residue.
+
+**And the moving ref can be read by a BUILD, not just by a session - so do not commit in a worktree while a
+build or suite is running there.** `Nerdbank.GitVersioning` is referenced from `src/Directory.Build.props` for
+**every** project under `src/`, so its `GetBuildVersion` task reads git during each one's build; a ref moving
+under it fails the build outright:
+
+```
+error MSB4018: The "Nerdbank.GitVersioning.Tasks.GetBuildVersion" task failed unexpectedly.
+error MSB4018: Nerdbank.GitVersioning.GitException: An commit object with SHA <sha> could not be found.
+```
+
+**The window is the whole build rather than an instant**, because the task runs per project and the solution
+has dozens. The commit that caused it was judged independent *because it only touched git* - which is exactly
+what makes it not independent here.
+
+**The diagnostic half is the part that transfers: `TESTS_EXIT=1` with NO TEST SUMMARY AT ALL is a build break,
+not a test failure.** A run that reached the tests prints `total:`, `failed:`, `succeeded:`, `skipped:` and
+`duration:` whether it passed or not, so **the absence of the whole block is the signal** - and a reader
+meeting the bare exit without it goes hunting for a failing test that does not exist. Measured by the session
+that hit it: a genuine test failure exits **2**, a build break **1**. **Re-running on a settled tree is the
+entire remedy**; nothing is wrong with the tree or the change.
+
 **Two clauses from the process-tree instance, both earned the hard way.** *A kill orphans, it does not
 terminate*: the wrapper was killed and the script survived, the script was killed and the suite survived, the
 suite was killed and **its test host survived and was still spawning children three minutes later - and each
@@ -1260,6 +1519,35 @@ positive observation is self-proving - something was seen, so the instrument rea
 the reading a broken instrument manufactures, so only absences need the proof. **(b) The canary must be sensitive
 to the INSTRUMENT's failure and insensitive to the SUBJECT's absence.** Backwards, it either never fires, or it
 fires on every genuine finding and gets deleted as noise within the week. *(Architect 2.)*
+
+**A probe must assert a code AND a message that no failure path produces together, because an instrument check
+whose pass code is also a failure code checks nothing.** The two gate scripts refuse differently, measured by
+running both:
+
+- **`who-is-gating.sh --no-such-flag` exits 3** with `TELL_REFUSED=<unrecognised argument …>`. Three is a
+  *deliberate argument-refusal* code there, chosen because 2 already meant both *unreadable board* and
+  *argument refused* - **a probe cannot rest on a code shared with a failure.** This is the script the probe is
+  for.
+- **`gate.sh --no-such-flag` exits 1** with the usage line and `RESULT=missing-arguments`, for any wrong
+  argument count or empty argument. **`gate.sh` has no argument path that exits 3**; its 3 is the `aborted-*`
+  family - missing `gate-lib.sh`, no main checkout, a stale copy run from a worktree, a non-empty log dir.
+
+So *run the probe, expect 3* is true of the tell and **fail-open if said of `gate.sh`**: a genuinely aborted
+probe would exit 3 and read as healthy, which is the one thing a probe exists to rule out. A probe for
+`gate.sh` asserts **exit 1 and the `RESULT=missing-arguments` line** - exit 1 alone is also what a real refusal
+returns, so it is the *pair* that says the script ran, validated, and refused.
+
+**The general form, which is why the tell's 3 exists at all: an overloaded exit code cannot carry a proof - a
+probe must require the value that no FAILURE can produce.** The tell's refusal code was originally 2, and 2 also
+meant *the board could not be read* - **so on any unreadable board the probe passed against precisely the copy
+it exists to detect.** The flag it was proving is only trustworthy if the copy answering has been shown to know
+it, because an old copy ignores an unknown argument and exits zero, which reads as FREE.
+
+**And the reason that survived three chances to be noticed is the better half: its first outside adopter did not
+rest on the exit code at all - it read the message and reported what it had read.** So the artefact recorded a
+pass and the weakness never surfaced. **When a check's careful users compensate for its weakness, the record
+shows a pass** - which means a history of passes is not evidence that the check is sound, only that nobody
+depended on the part that was broken. *(Both Architect 1's, offered with the instance.)*
 
 **When you relay a fact you did not read yourself, put the instruction not to trust you in the same message as
 the claim.** A relay said a card had been **rejected** and added, in the same breath, *wait for the verdict on
@@ -1514,6 +1802,27 @@ continuing would have been hunting something that did not exist: **stopping was 
 and a session that had invented a fourth route would have found a plausible one and closed a hunt on a
 measurement of invisible nodes. **The same trap caught the specification's author and then the first mounted
 assertion written against it, inside an hour.**
+
+**A gate log names a test as it WAS, not as it is** - the same defect as a comment citing line numbers in its
+own file, one directory over. A census offered as evidence for a subscription-ordering hypothesis rested on two
+failures of `SolutionWatcherTests.ABurstOfChanges_SettlesIntoOneReport`. **That test does not exist**: it was
+renamed and rewritten as `ABurstOfChanges_CollapsesAndThenStops`, and both failures predate that fix by hours -
+it had been flaky for asserting machine behaviour rather than a contract, was diagnosed as exactly that, and
+closed a day before it appeared in a table as evidence about something else. **A failure name from a log is a
+citation of a thing that may since have changed**, so resolve it against the tree before it carries weight.
+*(Architect 1's, volunteered with two other defects in the same table: the mechanism could not arise, and three
+of the four components on its clean side had no tests at all - a control arm that cannot express the outcome.)*
+
+**And a file git calls modified while `git diff` shows NOTHING is not a git fault.** It is a working tree at LF
+under a CRLF house style: `diff` normalises through `text=auto eol=crlf` and the stat entry does not, and
+`git update-index --refresh` does not clear it. **Settle it by byte comparison** - `git show HEAD:<path>` against
+the file, comparing lengths, CRLF counts and equality after `\r\n`→`\n`; the healthy reading is *index 0 CRLF,
+working tree many, identical after normalisation*, which is `i/lf w/crlf` stated in bytes. **The fix is
+`git checkout -- <path>`**, which rewrites the file from the index with the filter applied and leaves a clean
+status; nothing is lost, because the content was already identical. `cp` and any regenerating tool are the usual
+culprits, and it matters beyond tidiness: **a dirty tree makes `gate.sh` refuse with
+`RESULT=gates-changed-tracked-files`**, so an invisible line-ending difference blocks a landing for a reason that
+looks like nothing.
 
 ## A settled boundary
 
