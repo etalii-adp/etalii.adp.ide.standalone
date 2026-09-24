@@ -45,6 +45,8 @@ npm test -- src/diagramModuleClientApi.test.ts
 
 from `src/client`. The test computes the module-facing surface by parsing the tree — what modules import, and what they supply by value — and fails when this document covers a name that no longer exists, omits one a module uses, or quotes an excerpt that has changed in its source.
 
+**What the test does not yet hold.** It covers names a module imports, types a module supplies by value, and types a module file satisfies by existing. It does not yet cover the RETURN TYPES of the hooks a module calls - `DiagramStreamResult` from `useDiagramStream` among them - because a module reads their members without ever writing the type's name, so no set sees them. A member added to one of those types would leave every check green. Six such types exist today; an amendment to this specification is being raised to cover them, so this is a known gap rather than an oversight, and until it lands a change to one of them is caught by a reader rather than by this test.
+
 **Every figure quoted below says what it counts and when it was read**, because a count with neither is a number a reader cannot check. Figures in this document were read at `d1cc0da3` unless their own sentence says otherwise, and the test recomputes them rather than trusting them.
 
 ## The shape of a module client
@@ -521,7 +523,7 @@ sequenceDiagram
 
 **The shared helpers.** `expectLibrarySelection`, in `src/client/src/canvas/library/testing/`, asserts that a press produced the library's own selection rather than a module's idea of one. It is the one library folder a module's TEST files may import from, and imports from it are part of the module-facing surface for that reason.
 
-**The guards that walk module clients — thirteen of them, measured rather than recalled:**
+**The guards that walk module clients — fourteen of them, measured rather than recalled:**
 
 | Guard | What it forbids | The shared mechanism instead |
 | --- | --- | --- |
@@ -538,10 +540,11 @@ sequenceDiagram
 | `highlightSurvivesModuleStyles.test.tsx` | module styles that defeat the shared highlight | class composition |
 | `themeTokens.test.ts` | a custom property defined nowhere, or a palette declaring one mode | a theme token, or a local palette declaring both |
 | `fileUrlPaths.test.ts` | a hand-built file URL | the shared path helpers |
+| `diagramModuleClientApi.test.ts` | this document drifting from the module-facing surface — an undocumented name, a stale entry, a changed excerpt, a diagram naming nothing real | an entry here |
 
-**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; thirteen is what the tree holds now, so that figure is a timestamp rather than a count.
+**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; fourteen is what the tree holds now, so that figure is a timestamp rather than a count.
 
-**The rule has two blind spots, and both have already mattered.** It does not find a test that walks through a HELPER: this document's own guard is in that class, because its walking lives in `diagramModuleClientApi.surface.ts` rather than in the test file. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the thirteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
+**The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the thirteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
 
 ## A minimal module client, end to end
 
