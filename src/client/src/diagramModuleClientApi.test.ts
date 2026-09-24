@@ -144,12 +144,50 @@ describe("docs/diagram-module-client-api.md is held to the code", () => {
   const text = readme();
   const declared = declaredNames(text);
 
-  it("is alive: the document, the surface and the conventions were all found", () => {
-    // The liveness floor. Every check below reads one of these, and each would pass on an empty
-    // answer, so the absence of any of them is reported here as itself rather than as a clean run.
+  it("is alive: the readers find what was PLANTED for them, and not what was hidden from them", () => {
+    // A liveness gate that only asks "did this come back empty" detects blindness solely where
+    // blindness is implausible: if the true answer were legitimately empty, a blind reader and a
+    // working one agree and the run CONFIRMS the broken instrument. So the readers are given a
+    // document written here, with a positive they must find and a decoy they must not.
+    const planted = [
+      "## A planted section",
+      "",
+      "**Declarations:** `PlantedDeclaration`",
+      "",
+      "It names `plantedMember` in its own body.",
+      "",
+      "Source: [`docs/diagram-module-client-api.md`](../docs/diagram-module-client-api.md)",
+      "",
+      "```ts",
+      "const plantedExcerpt = true;",
+      "```",
+      "",
+      "```",
+      "**Declarations:** `DecoyInsideAFence`",
+      "```",
+      "",
+      "## Library-internal exports",
+      "",
+      "`PlantedInternal`",
+      "",
+    ].join("\n");
+
+    const plantedNames = declaredNames(planted);
+    expect([...plantedNames.keys()], "the Declarations reader cannot see a planted entry, so a clean " +
+      "run of check 1 would mean nothing").toContain("PlantedDeclaration");
+    expect([...plantedNames.keys()], "THE DECOY WAS READ: a Declarations line inside a fence was " +
+      "treated as a real entry. The readme demonstrates its own conventions inside fences, so this " +
+      "is the failure that makes the checks pass for the wrong reason.").not.toContain("DecoyInsideAFence");
+    expect(excerpts(planted).map((each) => each.body), "the excerpt reader cannot see a planted Source block")
+      .toEqual(["const plantedExcerpt = true;"]);
+    expect(internalList(planted), "the internal-list reader cannot see a planted list").toEqual(["PlantedInternal"]);
+    expect(sections(planted).get("A planted section") ?? "", "the section reader lost a planted body")
+      .toContain("`plantedMember`");
+
+    // Only now is the real document's non-emptiness worth asserting: the readers are known to read.
     expect(text.length, "the readme is empty").toBeGreaterThan(2000);
-    expect(declared.size, "no Declarations lines were parsed - the convention or the fence-skipping changed").toBeGreaterThanOrEqual(10);
-    expect(excerpts(text).length, "no Source: excerpts were parsed").toBeGreaterThanOrEqual(10);
+    expect(declared.size, "no Declarations lines were parsed from the real document").toBeGreaterThanOrEqual(10);
+    expect(excerpts(text).length, "no Source: excerpts were parsed from the real document").toBeGreaterThanOrEqual(10);
     expect(new Set([...surface.setA.keys(), ...surface.setB.keys()]).size).toBeGreaterThanOrEqual(90);
   });
 
