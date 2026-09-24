@@ -1,23 +1,18 @@
 # Technology stacks
 
-* For the time being the backend services and other capabilities will be implemented in .NET, with the latest SDK configured using global.json.
-* For the time being the frontend applications will be web based. This might change with the right reasoning.
-* The web client is built with React + TypeScript, and draws the diagram canvas as SVG through the shared canvas library in `src/client/src/canvas`. No canvas or WebGL renderer was ever adopted; large diagrams stay fast by virtualizing to what is visible, not by the renderer.
-* The communication between the frontend and backend services will be gRPC based. Authentication and authorization will be done as decorations on the corresponding gRPC initialization calls. From the browser this happens over grpc-web, backed by ASP.NET Core's gRPC-Web middleware.
-* For hosting ASP.NET core is preferred. In production ASP.NET Core serves the built React client as static files and hosts the gRPC-Web endpoint in the same process - one process, no separate frontend server, no Blazor involved.
+Moved to [docs/architecture.md, *The three parts, and the single boundary*](../../docs/architecture.md#the-three-parts-and-the-single-boundary): .NET on the SDK `src/global.json` pins, React with TypeScript built by Vite, gRPC over grpc-web, one ASP.NET Core process serving both, and a canvas drawn as SVG.
 
 # Development tools
 
 * The development will mostly be done using Jetbrains Rider.
 * The development team prefers an F5 experience, which means that development, testing and debugging should be doable in one go. I.e. locally and without any complex dependencies. To achieve this it should be possible to ramp up all relevant services using local-only persistency and hosting.
-* The React client uses Vite as its dev server/build tool, for fast hot-module-reload during local development and a static-file bundle for production. These two do not compete for hosting: in the F5 scenario, ASP.NET Core still owns the port the browser talks to and proxies frontend requests through to the Vite dev server (a standard SPA-proxy pattern) purely so edits hot-reload instantly without a full rebuild; in production Vite is not running at all, and ASP.NET Core simply serves Vite's static build output directly, alongside the gRPC-Web endpoint, in that same single process.
+* How Vite and ASP.NET Core share the browser's port during F5, and why production runs no Vite at all: [docs/architecture.md, *The three parts, and the single boundary*](../../docs/architecture.md#the-three-parts-and-the-single-boundary).
 
 # Naming & Identity
 
 * The organization is called 'EtAlii', mind the uppercase E and A.
 * The product name is an abbreviation 'ADP', which stands for 'A Different Perspective'.
-* When using namespaces, include the company name and product name. In .NET world this would be 'EtAlii.Adp', for other languages where appropriate it would be 'com.etalii.adp'.
-* Use the Base36 based `ShortGuid` (`src/backend/EtAlii.Adp/ShortGuid.cs`) everywhere where an ID or identity is needed.
+* Namespaces (`EtAlii.Adp.<Area>` in .NET, `com.etalii.adp` elsewhere) and the identity type `ShortGuid`: [structure.md, *Naming*](structure.md#naming) keeps the rules applied while writing, and [docs/solution-structure.md](../../docs/solution-structure.md#namespaces-and-the-folders-that-do-not-contribute) the fuller treatment.
 * **An agent commits under its own name, never the repository owner's.** Every commit in this repository so far is authored `vrenken <github@vrenken.eu>`, whether a person or an agent wrote it. That makes `git log --author` and `git blame` unable to answer "who wrote this" — the one question they exist to answer — and it credits the owner with work they did not do. An agent therefore sets its own identity on each commit:
   * `git -c user.name="<agent-session-name>" -c user.email="<agent-session-name>@agents.invalid" commit -m "..." -- <pathspec>`
   * **Per invocation, never `git config`.** Writing the identity into the repository's config would relabel the owner's own commits too, trading one wrong attribution for another.
@@ -35,39 +30,19 @@
 
 # Runtime
 
-The idea is that the solution can:
-
-* Run standalone locally.
-  * Using a backend service that makes local file access possible.
-  * A client that runs as a web page in the browser.
-  * A client that runs as a locally hosted web application (i.e. without the chrome of a web browser).
-* Can later on also be hosted somewhere to facilitate runtime architectural design changes.
-* Can later be partially embedded in VS Code.
+Moved to [docs/architecture.md, *The three parts, and the single boundary*](../../docs/architecture.md#the-three-parts-and-the-single-boundary).
 
 # Diagram storage
 
-* Diagrams are persisted as plain, text-based files under the user's chosen workspace folder - never in a database - so they remain diffable and version-control-friendly.
-* Wherever possible already existing text-based file formats will be used. If needed additional files will be used to store meta-data (for example to link to other elements/diagrams).
-* **When a diagram's file format carries no layout information but authored layout makes sense for the type, the layout is stored in the `.adp` registration file** - as metadata enriching the body, never written into the body itself. The body file belongs to whatever tool owns its format, and positions ADP invented must not show up in its diffs; the `.adp` is ADP's own file, already sits beside the body, and is the one place such enrichment belongs. A format that carries its own layout natively keeps using it; a type whose layout is computed and never authored stores nothing.
-* The backend is the sole owner of reading/writing diagram files; the web client never touches the filesystem directly, it only talks gRPC to the backend.
-* File-system access from the backend is scoped to explicitly opened workspace folders, not the whole machine.
+Moved to [docs/architecture.md, *Where a diagram lives*](../../docs/architecture.md#where-a-diagram-lives).
 
 # Frontend-backend synchronization
 
-* State changes flow from backend to client as a gRPC stream per open diagram, so multiple clients (and external file edits picked up by the backend) stay in sync without manual refresh.
-* The client is expected to reconcile incoming pushed changes against local, not-yet-saved edits without silently discarding user input. These changes are always deltas, i.e. add/remove/update and similar messages.&#x20;
-* Large diagrams are handled through UI-side virtualization (only rendering what's visible) rather than by limiting what the backend can store. The virtualization is supported by view information that is send from the client to the backend, so that it can then decide which updates to send. This indirectly requires the backend to remember the state of the view in the client per connection.&#x20;
+Moved to [docs/architecture.md, *The two call legs*](../../docs/architecture.md#the-two-call-legs).
 
 # gRPC call shapes
 
-There is no bidirectional streaming in this system, and no client streaming either. A browser talking grpc-web cannot open either one, so a contract that needs two-way traffic is expressed as **two correlated one-way legs**.
-
-* **Client to backend: unary `Action` calls.** Anything the client wants to do - report a selection, run an action, propose a value, submit or cancel an interaction, update its viewport - is a plain unary request/response. `ContextService`'s `Select`, `ExecuteAction`, `ProposeInput`, `SubmitInteraction` and `CancelInteraction` are the worked examples.
-* **Backend to client: one server-streaming `Watch` call.** Everything the backend initiates - pushed state, change deltas, prompts, availability updates - rides the one stream that connection already has open. `ContextService.Watch` and `HierarchyService.WatchHierarchy` are the worked examples. A feature that needs to push something new adds a member to that stream's message, never a second stream.
-* **The two legs are correlated by a connection id.** The client generates it once per mounted shell and carries it on every call of both legs; today it is the `watch_id` `ShortGuid` the hierarchy and context calls already share. It is what lets an `Action` call on one HTTP request affect the stream opened by another.
-* **One stream per connection, not one per consumer.** The client opens `Watch` once and fans the result out in-process (a React context at the shell level). Several panels wanting the same push is not a reason for several streams.
-* **Per-connection state is keyed by the connection id and dies with the stream.** `IHierarchyModelStore`, `IContextSelectionStore` and `IContextInteractionStore` all hold their state 1:1 per `watch_id` and discard it when the stream ends - never shared with another connection, not even one from the same user on the same project.
-* **Reconnect by reopening `Watch` with the same connection id.** The stream's first message is always the current state, so a reconnected client is re-baselined without a reconciliation protocol of its own.
+Moved to [docs/architecture.md, *The two call legs*](../../docs/architecture.md#the-two-call-legs).
 
 # Implementation order
 
