@@ -60,6 +60,17 @@ Two distinct hazards, and the rule for one does not cover the other.
 
 **Commit with an explicit pathspec: `git commit -F msg -- <paths>`.** `git add <path>` stages one file, but a bare `git commit` commits *the whole index*, including whatever another session has staged into it. This has swept another agent's files into an unrelated commit under the wrong message and the wrong identity at least four times. "Stage carefully" is not the fix, because care is not what fails — **in this repository a directory pathspec is a sweep by construction**, since the main checkout nearly always holds somebody's uncommitted work. Name files, never folders.
 
+**And the rule is *name the files*; the CHECK is *read the `create mode` lines back*.** A pathspec over
+a DIRECTORY commits the modified tracked files under it and **silently ignores the untracked ones**,
+because a pathspec filters the index and an untracked file is not in it - while `git add -- <dir>` does
+pick them up, which is what makes the asymmetry easy to miss. **On 2026-09-23 an approval request landed
+and its request-time snapshot beside it did not**, leaving a card pointing at a snapshot that is not in
+the repository: **invisible until somebody else checks out that commit**, because the file is present in
+the working tree of the session that raised it. It was caught by reading the commit's own output - three
+`create mode` lines where four were meant - and **a pathspec that silently covers two of three files
+looks identical to one that covers all three** until then. Naming the files is what people already do;
+reading the modes back is the part that fails loudly.
+
 **Commit your own implementation log the moment the tool writes it.** The other half of the same failure, and the half that is easier to miss: an uncommitted file left in the shared checkout is what turns somebody else's careless pathspec into a wrong commit message. The sweeper gets blamed; whoever left the file there supplied it. This is already what *Specification bookkeeping* asks for — it was being read as covering the documents rather than the logs the tool writes for you.
 
 **Never merge while anything is staged - yours or anyone else's.** `git merge` requires the index to match HEAD; when it does not, git stashes the working state and, on the failure path, does **not** restore it. That silently reverted or deleted **26 paths belonging to three other sessions**, reporting only `Index was not unstashed. Merge with strategy ort failed.` - a single line for two dozen files of other people's work. Reading `git status` first is necessary and not sufficient: it tells you what a merge would *write*, not that attempting one is unsafe.
@@ -121,6 +132,41 @@ C:/git/EtAlii.Adp/.github/tools/gate/who-is-gating.sh`** prints one line per hol
 staled by, or `GATING=none`, or `TELL_UNREADABLE=<dir>` with a non-zero exit. **Read it immediately before the
 commit, not at the start of your turn**, and remember that **it warns and never authorises** - a clear read
 does not make the board yours.
+
+**Why the naming is a person rather than a check, which the tell cannot tell you itself: the board is
+serialised by a DECISION, not by a lock.** Gate locks are per scratch worktree, so **they do not exclude
+each other** - if a free slot were self-service, two sessions would read *free* in the same second and
+**both would be correct**. That is the reason behind *warns and never authorises*, and it is worth having
+because the sentence without its reason invites somebody to decide the warning is enough when the board
+is obviously quiet. *(The Scrum master's.)*
+
+**And the dangerous version of this arrives as HELPFULNESS, which is why it survives people who have
+already learnt the rule.** On 2026-09-24 the holder of the board wrote that it would land and report
+*so that the next session is not waiting on a message of mine* - **which makes the go come from whoever
+FINISHED rather than from whoever is serialising.** That is self-service with an extra step, written
+three hours after the same session had nearly collided with another over exactly this, and by a session
+that had already withdrawn the same move twice that day.
+
+**The costume is the whole difficulty: a person looking out for a violation is watching for
+permission-shaped things, and a kindness is not shaped like permission.** *Saving somebody a message* and
+*granting somebody a turn* look nothing alike and are the same act. **The tell generalises past the
+board: if you are reasoning your way to the conclusion that you may proceed - or that somebody else may -
+that reasoning is the evidence that you may not.** Ask instead; it costs one message and the round trip
+you are saving was never the expensive part.
+
+**And the tell is FAIL-OPEN in a chain, which is worse than it sounds because it reads as a check.**
+`who-is-gating.sh` returns **2 only when it cannot read the board**, and **0 for a free board, for a
+holder, and for a lock whose owner is not written yet alike** - so `tell && commit` runs the commit
+whatever the board says. **Every `&&` chain ever written over it has been a print statement wearing a
+check's clothes.** The remedy is to make the state that must be REACHED the thing that gates, rather
+than the state that must be avoided the thing that aborts:
+
+    TELL=$(bash .github/tools/gate/who-is-gating.sh)
+    case "$TELL" in *GATING=none*) ;; *) echo 'HOLDER - refusing'; exit 9;; esac
+
+**`--require-free` now does this inside the tool** (exit 0 only for a positive `GATING=none`), which is
+the better place for it - but the pattern generalises past this one script, and the clause above about a
+verdict comparison that errors into ALL GREEN is the same defect in a different file.
 
 **And the one moment a develop commit is free is when your own base is already stale.** A run that will refuse
 its fast-forward anyway cannot be made worse; that is the only window, and it is worth using deliberately
@@ -1258,6 +1304,26 @@ two instruments measuring different populations; a **relay** nobody could audit;
 like a corroborated one. **Every wrong answer on 2026-09-23 came from a single source nobody crossed** - a grep, a
 probe, a note, a filter, a header - **and the ones that were caught were caught because a second instrument
 existed, not because anyone was more careful the second time.**
+
+**A NEW STRICT FLAG IS NOT TRUSTWORTHY UNTIL THE COPY ANSWERING IT HAS BEEN PROVEN TO KNOW IT**, and this
+belongs here rather than with the fail-open clauses because **the defect is not that the check read the
+wrong state - it is that the instrument is not the one you think you are holding.**
+
+**Every strict mode added to an existing CLI is fail-open against every copy that predates it**, because
+**ignoring an unknown argument is the universal default**. The new flag's whole value is an exit code, and
+an old copy returns the reassuring one. **The proof is the same shape as every other liveness proof: feed
+the instrument something it MUST refuse, and require the refusal.**
+
+    bash who-is-gating.sh --probe-unsupported > /dev/null 2>&1
+    [ $? -eq 2 ] || { echo 'this copy predates the flag; its exit code means nothing'; exit 3; }
+
+**The author's own instance, attached because a rule carrying its author's mistake survives a reader who
+thinks it does not apply to them**: an hour after building `--require-free`, I ran it from the main
+checkout, read `exit 0` as *the board is free*, and only then noticed **the flag was not on `develop` at
+all**. The board was free and the printed `GATING=none` said so - **but the exit code could not have told
+me otherwise, and I had reached for the exit code precisely because I had just made it mean something.**
+Measured both ways: the same nonsense argument exits 0 against the old copy and 2 against the new one.
+**A new instrument is most trusted in the hour it is built.**
 
 **Its sibling is clause 7 under *Guards that cannot fail*, and the difference is worth holding.** That clause is
 about a floor set on a quantity that does not scale with the work, so the failure mode satisfies it. This one is
