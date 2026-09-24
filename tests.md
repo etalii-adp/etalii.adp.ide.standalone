@@ -225,6 +225,43 @@ rather than by eye - anchors `rgb(30,41,59)` where an unstyled path in the same 
 itself was not performed by hand** - a synthesised mousedown did not start the gesture - so the
 wedge's absence is inferred from the computed style, not seen. Worth one human drag.
 
+## The diagram pane offers one scrollbar, not two (canvas-single-scrollbar, tasks 4 and 6)
+
+**Reported twice by the user, on two diagrams, and invisible to every test in the suite.** An `<svg>`
+is an inline element, so the library's drawing surface sat on a line box that reserved about four
+pixels of descender space below its baseline. `overflow: visible` let that spill out of the surface and
+into the pane that scrolls, which then offered a SECOND vertical scrollbar beside the diagram's own.
+
+**Why it is here rather than in the client suite.** The suite's guard
+(`DiagramCanvas.test.tsx`, *makes its surface a block box*) asserts the COMPUTED `display` under
+`canvas.css` and that is all it can do: jsdom applies stylesheets in source order, implements neither
+specificity nor `!important`, and lays out nothing. **So it proves the rule is declared and reached, and
+says nothing about what a real cascade resolves or what a real pane measures.** Only a browser can
+answer the question the user asked.
+
+- **Preconditions**: backend + client running on a Debug developer build; `src/examples` open as a
+  project. The header must show the **developer session** marker.
+- **Actions**: open `diagrams/dependency-graph/example-1/services.dgr`, and then
+  `diagrams/timeline/example-1/roadmap.tml` as the second diagram - **the two the user reported**.
+- **On every row, before any measurement**: read `window.innerWidth` and record it. **Not once as a
+  precondition.** An emulated viewport is cleared when a turn ends, so a multi-row pass silently
+  returns to 0x0 partway through and every row after that measures a window with no width. A row whose
+  own `innerWidth` is 0 is not a failure, it is a row that did not run.
+- **And before recording any negative**: check the console and confirm the origin still answers. A
+  degraded shell renders the last document perfectly while listening to nothing, and a wedged origin
+  answers `curl` in milliseconds while nothing in the tab completes. Either produces a clean-looking
+  row that means nothing happened.
+- **Expected**, measured on the scrolling pane and with the element named in the result:
+  - the pane's `scrollHeight` **equals** its `clientHeight`;
+  - the pane's `scrollWidth` **equals** its `clientWidth`;
+  - **exactly one** vertical scroll affordance is offered on the diagram;
+  - the surface's computed `display` is `block`.
+- **Both equalities are recorded even though only one axis ever failed.** An inline box reserves space
+  BELOW its baseline and not beside it, so no horizontal spill was ever observed - recording the
+  horizontal one is what makes a future regression in that axis visible rather than a surprise.
+- **Name the diagram and the element each number came from.** A survey row without its element is how a
+  pass reported a working diagram this week.
+
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
 **A defect found by looking at the running app.** The diagram type is named after loops and drew
