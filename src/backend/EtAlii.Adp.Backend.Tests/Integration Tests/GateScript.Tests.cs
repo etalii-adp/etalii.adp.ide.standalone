@@ -96,10 +96,47 @@ public class GateScriptTests
         // Assert. The two verdicts contain neither the other, so this cannot be satisfied by the
         // wrong one - including by an older script that ignores --quick and runs everything.
         var expected = full ? "RESULT=selftest-green" : "RESULT=selftest-quick-green";
+        ReportToTheGate(full, exitCode, output);
         Assert.True(
             exitCode == 0 && output.Contains(expected, StringComparison.Ordinal),
             $"The shared gate's self-test is not green in {(full ? "full" : "quick")} mode " +
             $"(exit {exitCode}, wanted {expected}):{Environment.NewLine}{output}");
+    }
+
+    /// <summary>
+    /// Hands this run's verdict to the gate's summary, when the gate asked for one.
+    /// </summary>
+    /// <remarks>
+    /// xUnit emits nothing for a test that passes, so this test's verdict has never reached a gate log
+    /// and the mode a gate ran in was invisible exactly when everything worked. Only <c>gate.sh</c> sets
+    /// <c>ADP_GATE_SELFTEST_REPORT</c>, so a developer running <c>dotnet test</c> sees no change.
+    /// <b>A failure to write is swallowed on purpose</b>: this is a report about a check, not the check,
+    /// and it must never be the thing that reddens a gate. The gate prints <c>SELFTEST=absent</c> when
+    /// the file does not arrive, which is where that failure becomes visible.
+    /// </remarks>
+    private static void ReportToTheGate(bool full, int exitCode, string output)
+    {
+        var report = Environment.GetEnvironmentVariable("ADP_GATE_SELFTEST_REPORT");
+        if (string.IsNullOrWhiteSpace(report))
+        {
+            return;
+        }
+
+        var verdict = output
+            .Split('\n')
+            .Select(line => line.Trim())
+            .LastOrDefault(line => line.StartsWith("RESULT=", StringComparison.Ordinal))
+            ?? $"RESULT=unreadable (exit {exitCode})";
+        try
+        {
+            File.WriteAllText(report, $"mode={(full ? "full" : "quick")} {verdict}");
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     /// <summary>

@@ -148,9 +148,15 @@ echo "FORMAT_EXIT=$FMT_EXIT"
 # Test folders the run could not delete are reported into this run's own logs, one file per test
 # process, rather than into the machine-wide file every run and every session appends to.
 UNDELETED="$LOGS/undeleted-test-folders"
-(cd "$MRG/src/backend" && ADP_UNDELETED_FOLDERS_DIR="$UNDELETED" dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
+# The self-test reports its verdict here rather than through xUnit, which emits nothing for a test
+# that passes. Only the gate sets this variable, so a developer's plain `dotnet test` is unchanged -
+# the report is for this summary, not for the test's own output, and a test that prints differently
+# depending on who ran it is its own kind of confusing.
+SELFTEST_REPORT="$LOGS/selftest.txt"
+(cd "$MRG/src/backend" && ADP_UNDELETED_FOLDERS_DIR="$UNDELETED" ADP_GATE_SELFTEST_REPORT="$SELFTEST_REPORT" dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
 DT_EXIT=$?
 echo "DOTNET_TEST_EXIT=$DT_EXIT"
+echo "SELFTEST=$(gate_selftest_report "$SELFTEST_REPORT")"
 echo "UNDELETED_FOLDERS=$(gate_undeleted_folders "$UNDELETED")"
 
 gate_verdict "$LOGS/dotnet-test.log"
