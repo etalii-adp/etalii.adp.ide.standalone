@@ -111,6 +111,7 @@ describe("validateDiagramDefinition", () => {
   });
 
   it("the built-in routes cover the four existing connector families", () => {
+    // The families were once separate components, since removed; the routes are what remains.
     // straight -> the straight components; cubic-bezier -> bezier and fixed-bezier; the
     // interactive family is cubic-bezier plus adjustability on the relation type; arc is
     // causal-loop's chord-bowed link. A named-member canary each, so the population can
