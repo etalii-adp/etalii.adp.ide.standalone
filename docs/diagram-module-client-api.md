@@ -49,6 +49,41 @@ from `src/client`. The test computes the module-facing surface by parsing the tr
 
 ## The shape of a module client
 
+**Two pictures before the entries.** The first is how a module is found and mounted; the second is what happens while one diagram is open.
+
+```mermaid
+flowchart LR
+    reg["client/register.ts<br/>exports registrations"]
+    glob["the shell's glob<br/>src/diagrams/*/client/register.ts"]
+    match["matches(mimeType)"]
+    canvas["DiagramCanvas<br/>mounted with the module's Canvas"]
+
+    reg --> glob
+    glob --> match
+    match -->|"the type is claimed"| canvas
+    match -->|"nothing claims it"| none["PanelPlaceholder<br/>from the module's unsupported"]
+```
+
+**Nothing lists the diagram types.** The shell globs for `register.ts`, so adding a type means adding a module, and deleting the folder removes the type.
+
+```mermaid
+sequenceDiagram
+    participant Backend
+    participant Hook as useDiagramStream
+    participant Model as DiagramModel
+    participant Canvas as DiagramCanvas
+    participant Module as the module's handler
+
+    Backend-->>Hook: delta
+    Hook->>Model: fold the delta in
+    Model->>Canvas: the model to draw
+    Canvas->>Module: a DiagramEvent - a request, not a report
+    Module->>Backend: a command, through the module's own transport
+    Backend-->>Hook: the resulting delta
+```
+
+**The loop is the whole architecture.** A gesture is a request the module answers by telling the backend; the change comes back as a delta like any other, so an edit by this client and an edit by another take the same path.
+
 ## Registration and discovery
 
 **Declarations:** `DiagramCanvasRegistration`, `DiagramClientModule`
@@ -134,6 +169,21 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ```ts
 const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+```
+
+```mermaid
+classDiagram
+    class DiagramDefinition
+    DiagramDefinition --> ElementTypeDefinition : elementTypes
+    DiagramDefinition --> RelationTypeDefinition : relationTypes
+    DiagramDefinition --> ToolboxDefinition : toolbox
+    DiagramDefinition --> ChromeDeclaration : chrome
+    DiagramDefinition --> ActionDeclaration : actions
+    DiagramDefinition --> SnapDeclaration : snap
+    DiagramDefinition --> DropTargetDeclaration : dropTarget
+    DiagramDefinition --> AcyclicRule : acyclic
+    ElementTypeDefinition --> CustomShapeRef : shape
+    RelationTypeDefinition --> CustomRouteRef : route
 ```
 
 ### Element types and shapes
@@ -330,6 +380,25 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **`ActionRefused` is how a refusal arrives.** The library runs the shared menu's actions against the backend, so a refusal comes back to the library rather than to the module, and is handed on as `action-refused` with the `actionId` and a `message`.
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant Canvas as DiagramCanvas
+    participant Module as the module's handler
+    participant Backend
+
+    User->>Canvas: draws a connection
+    Canvas->>Module: ConnectionDrawn
+    Module->>Backend: the command
+    alt accepted
+        Backend-->>Module: a delta
+        Module-->>Canvas: the new model
+    else refused
+        Backend-->>Module: a message
+        Module-->>Canvas: ActionRefused, shown as a rejection
+    end
+```
+
 ## Selection
 
 **Declarations:** `SelectedItem`, `DiagramSelection`, `CanvasSource`
@@ -406,6 +475,20 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **Related.** [`src/client/src/diagrams/readme.md`](../src/client/src/diagrams/readme.md) describes the mechanism — the debounce, the delta the backend computes from it, and why the report is per connection.
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant Canvas as DiagramCanvas
+    participant Report as useViewReport
+    participant Backend
+
+    User->>Canvas: pans or zooms
+    Canvas->>Report: ViewChanged
+    Report->>Report: debounce, and convert to the module's own units
+    Report->>Backend: UpdateView
+    Backend-->>Canvas: only the deltas for what is visible
+```
+
 ## Geometry for custom shapes and routes
 
 **Declarations:** `forwardBezierPath`, `ShapePoint`
@@ -459,6 +542,20 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 **How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. **The rule finds a test that walks DIRECTLY, and not one that walks through a helper**: this document's own guard is in that blind class, because its walking lives in `diagramModuleClientApi.surface.ts` rather than in the test file. The requirements named eight of these; thirteen is what the tree holds now, so that figure is a timestamp rather than a count.
 
 ## A minimal module client, end to end
+
+**From an empty `client/` folder to a mounted canvas.** Each step links the entry that explains it; none of them repeats it.
+
+1. **Create the workspace package.** `client/package.json`, private, named `@adp/diagram-<type>-client`, declaring only what the module's own code uses. See [Registration and discovery](#registration-and-discovery).
+2. **Declare what the diagram IS.** A `DiagramDefinition` with at least `elementTypes` and `relationTypes`, wrapped in `assertValidDiagramDefinition` so a contradiction fails where it is written. See [The definition](#the-definition).
+3. **Wrap the stream.** A hook of your own that calls `useDiagramStream` with an empty model and a function folding one delta into it, returning whatever your canvas needs on top. See [The stream and the model](#the-stream-and-the-model). **Do not open the stream any other way** — a guard forbids it and will name your file.
+4. **Write the canvas component.** It receives the shell's `DiagramCanvasProps`, calls your hook, and renders `DiagramCanvas` with the definition, the model, your handlers and `source`. See [The canvas](#the-canvas).
+5. **Answer the events you care about.** Each handler is optional; an unanswered one is a gesture you chose to ignore. See [Events, and how a module answers them](#events-and-how-a-module-answers-them).
+6. **Run actions through the context channel** rather than calling the backend directly, and remember it resolves rather than rejects. See [The context channel](#the-context-channel).
+7. **Report the view** if your diagrams can outgrow the viewport, converting to your own units. See [The view report](#the-view-report).
+8. **Register.** `client/register.ts` exporting `registrations`, importing the shared stylesheet and your own beside it. See [Registration and discovery](#registration-and-discovery).
+9. **Write the canvas test**, calling the shared helper rather than asserting your own selection. See [Tests a module writes, and what a module must not do](#tests-a-module-writes-and-what-a-module-must-not-do).
+
+**What you never write:** selection, scrollbars, gestures, an inline label editor, a viewport report of your own, or a second stream. Each has a guard, and each guard names the shared mechanism instead.
 
 ## Library-internal exports
 
