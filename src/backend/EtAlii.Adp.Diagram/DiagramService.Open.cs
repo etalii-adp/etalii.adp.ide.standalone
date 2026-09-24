@@ -98,6 +98,7 @@ public sealed partial class DiagramService
                 watchId,
                 KindsOf(args.Deltas));
 
+            // MUST STAY NON-BLOCKING: DiagramDocumentChangeHandler raises into this while holding its lock.
             foreach (var delta in args.Deltas)
             {
                 channel.Writer.TryWrite(ToProto(delta));
