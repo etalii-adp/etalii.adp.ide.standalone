@@ -3061,23 +3061,89 @@ selected element changes nothing visible, which is the expected outcome rather t
   the zero has three other ways to be manufactured, which is why the probe refuses to run at all
   when the pane is collapsed or the origin has stopped answering.
 
-- **Result — NOT RUN as written.** This procedure has **never been executed in this form**. It
-  was rewritten on 2026-09-24 because its previous version probed for
-  `rect.library-selected-outline`, an element withdrawn from the client on 2026-09-22: a Tester
-  following it would have found nothing and recorded a defect that did not exist. **Both Tester
-  sessions are disabled, so it has not been run since the rewrite and this entry must not be read
-  as a pass.**
+- **Result 2026-09-24: PASSED on all sixteen canvases**, on `develop` `2327238c`, a Debug developer
+  build in the `developer` environment with the **developer-session marker present** and no sign-in
+  form rendered. Instrument: the **in-app browser pane**, open but not fronted
+  (`visibilityState: "hidden"`, viewport emulated 1600x900), driven by scripted `PointerEvent`s.
+  Geometry and computed styles are valid in that state and **screenshots are not, so none was
+  taken** and no row rests on one. Every row below carries the document it measured **and the
+  canvas class that was fronted at the moment of measurement**.
 
-  **The closest evidence, and it is not this procedure.** Architect 2 measured the look by hand
-  on 2026-09-23: fifteen of sixteen canvases on `90b31d49` (the outline in the selected colour,
-  3px, inline, fill untouched; anchors carrying it on the five canvases that draw them; light
-  theme `rgb(124,58,237)` at 5.7:1 against a white fill; nothing in the selected colour at rest
-  on any canvas), and `c4` on `7ef929ff` after `styled-box` was fixed. It recorded contrast
-  against `c4`'s own fills — 3.72:1 and 2.06:1 dark, 1.78:1 light, against the canvas ground 5.38
-  and 5.70 — **and the user judged it legible and accepted it**, which Requirement 5.2 records.
-  **That pass pressed one element per canvas**, so it is subject to the limit stated at the top
-  of this entry: it is why `wardley-map` was recorded as working while `symbol`'s plain circle
-  was unpainted.
+  On every row the highlight was `rgb(167, 139, 250)` at `3px` — the dark theme's selected colour —
+  on the drawn shape, with `shapesPainted` equal to `shapesDrawn`; `afterBackground` and
+  `afterDrag` were empty everywhere.
+
+  | diagram | document | fronted canvas | element selected | painted/drawn | anchors | connection selected |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | `timeline` | `roadmap.tml` | (tab confirmed; class not captured) | `build` | 1/1 | 2 | `c1` |
+  | `dependency-graph` | `services.dgr` | `dependency-graph-surface` | `api-gateway` | 1/1 | 2 | `r-web-gateway` |
+  | `causal-loop` | `on-call.cld` | `causal-loop-canvas-host` | `variable:onCallLoad` | 1/1 | 0 | `link:incidents\|onCallLoad` |
+  | `c4` | `bottling-mes.plant-landscape.adp` | `c4-canvas-host` | `supervisor` | **2/2** | 0 | `operator->mes@83` |
+  | `helm-charts` | `.adp` | `helm-canvas` | `tpl:templates/NOTES.txt` | 1/1 | 0 | `edge:tpl:…\|Includes\|…` |
+  | `dotnet-dependency-graph` | `PipelineToolkit.adp` | `dotnet-dependency-canvas` | `package:System.Text.Json` | 1/1 | 0 | `depends:project:…->package:Serilog` |
+  | `azure-pipeline` | `multi-stage.adp` | `pipeline-canvas-surface` | `Test` | 1/1 | 0 | `edge:Build->Test` |
+  | `ansible-structure` | `.adp` | `ansible-canvas-viewport` | `inventory:inventories/staging` | 1/1 | 0 | `edge:playbook:dbservers.yml\|Targets\|db` |
+  | `databricks` | `databricks.adp` | `databricks-surface` | `target:prod` | 1/1 | 0 | `override:prod/pipelines/bronze_to_gold` |
+  | `rdf` | `laureates.adp` | `rdf-surface` | `res:…/category/economic-sciences` | 1/1 | 2 | `edge:res:…/chemistry-1901\|category\|…` |
+  | `owl` | `owl-time.adp` | `owl-surface` | `res:…time#DateTimeDescription` | 1/1 | 2 | `edge:res:…time#TemporalEntity\|after\|…` |
+  | `shacl` | `navigation-shapes.adp` | `shacl-surface` | `res:…/catNavShape` | 1/1 | 0 | `shacl-edge:…\|node\|…` |
+  | `skos` | `geographic-names.adp` | `skos-surface` | `res:http://zbw.eu/stw/thsys/g` | 1/1 | 2 | `edge:res:…\|broader\|…` |
+  | `sparql` | `describe-embl-cds.adp` | `sparql-surface` | `iri:…/embl-cds/AAO89367.1` | 1/1 | 0 | *(document draws none)* |
+  | `mindmap` | `mindmap.adp` | `mindmap-canvas-host` | `ID_1guw8w5hp34usdnp25phle3s4` | 1/1 | 0 | **empty, by declaration (R2.4)** |
+  | `wardley-map` | `tea.adp` | `wardley-surface` | `avqohxnc11ciraky6hphffm0c` | 1/1 | 0 | **empty, by declaration (R2.4)** |
+
+  **The oracle is satisfied.** The four the user named broken — `helm-charts`,
+  `dotnet-dependency-graph`, `azure-pipeline`, `ansible-structure` — behave exactly as the four
+  named working. `helm-charts`' `afterBackground` is empty, which is the behaviour it lacked.
+
+  **On `mindmap` and `wardley-map` the empty connection result is the declared exception behaving
+  as declared, not an absence of evidence**: the connection's own line kept its notation stroke
+  (`rgb(51,65,85)` and `rgb(148,163,184)`, both at `1.5px`), so it demonstrably was not painted
+  rather than merely not found.
+
+  **The limit at the top of this entry, discharged for the one mark it has caught before.** On
+  `wardley-map` each mark kind present was pressed separately rather than one element: the **plain
+  component (circle), 7 of them, paints**, and so does the **square anchor (2)**. That circle is
+  the mark `symbol` shipped unpainted, and the mark the 2026-09-23 pass masked by pressing a
+  square. **No submap (double-ring) exists in `tea.owm`, so that mark remains untested.**
+
+  **Requirement 5.5 at rest, measured rather than assumed**: after a background press on
+  `wardley-map`, **zero** nodes in the canvas carried the selected token inline and **zero**
+  computed to `rgb(167,139,250)`.
+
+  **The canary was planted and it fired**: with an element selected, clearing the drawn shape's
+  inline stroke took `shapesPainted` 1 → 0, and restoring it returned 1. **The probe can see the
+  paint's absence, so its zeros mean something.**
+
+  **What this pass does NOT cover, stated so nobody over-reads it.**
+  - **The light theme.** Every row above is the dark theme's `rgb(167,139,250)`. The light
+    theme's `rgb(124,58,237)` was measured by Architect 2 on 2026-09-23 and not re-measured here.
+  - **One press per canvas** on fifteen of the sixteen — the exception is `wardley-map` above. A
+    green row says *the element I pressed carried the highlight*, never *every shape this canvas
+    can draw does*. `highlightSurvivesModuleStyles.test.tsx` is what covers the shapes.
+  - **Legibility.** Nothing here judges whether the violet *reads* against a fill; that is the
+    user's verdict recorded in Requirement 5.2, and no screenshot was taken.
+  - **One document per diagram type**, named above.
+  - **An incidental observation, not investigated and not a selection finding**: `skos`'s
+    `business-economics.adp` rendered an empty canvas — zero elements and zero connections after
+    a deliberate extra wait — while `geographic-names.adp` on the same module drew 430 elements
+    and 760 connections. It is recorded here because it was seen, not because this pass judged it.
+
+  **A hazard this run met, worth knowing before the next one.** A `javascript_tool` call that
+  times out can still **complete afterwards** and front a different document. One reading of
+  `dotnet-dependency-graph` came back with an empty connection result; a repeat with the canvas
+  class captured **before and after the probe** showed the class had changed under the earlier
+  measurement, and the clean re-run passed. **A false defect was one report away.** Every row
+  above was therefore taken with the fronted canvas identified in the same call as the probe, and
+  the entry's `openAfter` helper now refuses a row whose canvas changed mid-measurement.
+
+  **The closest prior evidence, and it is not this procedure.** Architect 2 measured the look by
+  hand on 2026-09-23: fifteen of sixteen canvases on `90b31d49`, and `c4` on `7ef929ff` after
+  `styled-box` was fixed, with contrast against `c4`'s own fills — 3.72:1 and 2.06:1 dark, 1.78:1
+  light, against the canvas ground 5.38 and 5.70 — **and the user judged it legible and accepted
+  it**, which Requirement 5.2 records. **That pass pressed one element per canvas**, which is why
+  `wardley-map` read as working while `symbol`'s plain circle was unpainted.
+
 ## Both architecture pages' mermaid renders, in both readers (architecture-documentation, task 9)
 
 **Why this is here rather than in a test.** The pages carry one mermaid block each, and nothing
