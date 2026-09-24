@@ -23,10 +23,19 @@
 # to be held at once:
 #
 # ONE: A FAST-FORWARD COMMITS NOTHING. Staged entries in the main checkout do not enter develop's
-# tip; they survive the landing as staged entries against the new base. Measured, all three shapes.
-# So a landing cannot carry somebody else's work into develop, and the cost of a dirty index here is
-# entirely DOWNSTREAM - the next session's bare `git commit` sweeping those paths under its own
-# message, which is how three commits were misattributed in one day.
+# tip; they survive the landing as staged entries against the new base.
+#
+#   THE PROOF, and it is a measured fact rather than a deduction: with an unrelated path staged, the
+#   landing succeeds, the staged entry survives with its content, and `git show develop:<that path>`
+#   finds NOTHING. The file is in the index and nowhere in develop's tip. That case is in the suite
+#   below, and `absent` is its PASS - see "which is why a landing cannot carry another session's work
+#   into develop".
+#
+# So the cost of a dirty index here is entirely DOWNSTREAM - the next session's bare `git commit`
+# sweeping those paths under its own message, which is how three commits were misattributed in one
+# day. Three sessions reached that conclusion by reasoning before anybody measured it, and an earlier
+# draft of this very file said the opposite ("carried along in your landing"), so it is written as an
+# assertion with its evidence attached rather than as something obvious.
 #
 # TWO: GIT REFUSES ON A COLLISION, NOT ON A DIRTY INDEX. A local change to a path the fast-forward
 # does not touch lets it through; one to a path it does touch stops it, loudly, changing nothing.
