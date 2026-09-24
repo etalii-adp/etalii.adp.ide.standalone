@@ -169,6 +169,19 @@ be REACHED the thing that gates, rather than the state that must be avoided the 
 the better place for it - but the pattern generalises past this one script, and the clause above about a
 verdict comparison that errors into ALL GREEN is the same defect in a different file.
 
+**And a third member of that family, which is worse than either because the thing that breaks the chain is the
+RIGHT ANSWER.** Verifying this very change, a heading check was chained behind a count of indented code fences
+with `&&`. **The fence count was legitimately zero - the desired result - and `grep -c` exits 1 when it matches
+nothing, so the chain stopped before the heading check ever ran**, while printing output that looked complete.
+
+> **A command that succeeds at finding nothing exits non-zero, so a chain built on it stops on its own good
+> news.**
+
+**That is worse than the fail-open chain above, where the first command's exit was merely uninformative.** Here
+it was correct, expected and wanted, and being correct is what cancelled the measurement after it. **The fix is
+not a cleverer single command** - that only moves the failure - **it is two commands and two answers**, or
+`|| true` where a zero count is a legitimate outcome.
+
 **And the one moment a develop commit is free is when your own base is already stale.** A run that will refuse
 its fast-forward anyway cannot be made worse; that is the only window, and it is worth using deliberately
 rather than waiting for a quiet board that may not come.
@@ -178,6 +191,22 @@ an incident.** The first draft of this clause said a develop commit needs the Sc
 gate slot does. **It cannot: on 2026-09-23 the user landed six commits in under half an hour into the middle of
 two consecutive gate runs** - both green on all four gates at 6678 tests, both refused - **and the user neither
 asks for a gap nor should have to.** A clause that implies otherwise promises a protection it cannot deliver.
+
+**And the question a refold turns on is not whether `develop` moved, it is whether it moved UNDER YOU.** *Is my
+base current* is a cheap proxy that says refold whenever anything lands at all. **The narrower pair answers the
+question that actually decides: `git log <base>..develop -- <the files you touch>` for what landed that can
+reach you, plus a `git merge-tree` conflict check.** On one evening the proxy would have cost a cycle and the
+scoped log was empty.
+
+**Its blind spot belongs in the same breath, or it is a licence rather than a technique: it is only sound
+because the log is SCOPED.** A semantic dependency living in a third file - something you touch that changed
+meaning because of something you do not - appears in neither the scoped log nor `merge-tree`, and **nothing here
+detects it.** So this answers the syntactic question and nothing answers the semantic one.
+
+**Why nobody had questioned the proxy: it errs toward wasted work rather than toward wrong work.** A check whose
+only failure mode is costing you a cycle never produces an incident, so it is never examined - which is the
+neighbouring-question failure with its consequences pointed somewhere harmless. *(Technique Architect 1's,
+blind spot the Scrum master's.)*
 **It is one clause and not two, because the agent case and the user case differ only in whom you could ask and
 not at all in what happens**; the remedy is identical, so splitting them would imply two remedies where there is
 one. What follows is practical: **read the tell at the instant of use rather than trusting a placement** - the
@@ -245,6 +274,21 @@ The trailer remains useful in one direction only, and the limit matters because 
 
 **So recognise the precursor: `git worktree remove` refusing from inside the tree.** The error itself is telling you the shell is in the wrong place, and the obvious follow-up is a relative deletion issued from exactly the directory that caused the error. **After that refusal, the next command must be absolute.**
 
+**A remedy inherits the residue of the thing it replaces unless you check.** The clearest instance is
+self-inflicted and therefore credible: a session insisted - correctly - that a message-ordering remedy state
+what it left behind, then proposed a structural fix for the same problem and sold it on *"the check and the act
+are one operation, so there is no interval to go stale in"*, without looking for the same residue there. It was
+false at the scope that mattered. **A structural remedy feels like a different kind of thing from a discipline,
+which is why nobody re-runs the residue question on it** - and that is why structural fixes get oversold as a
+class rather than one at a time.
+
+**And the shortest instance arrived inside the commit that landed this clause, which is why it is stated as the
+instance rather than as a curiosity.** The remedy for a line-wrapped search is to flatten the whitespace. **The
+flattening leaves blockquote markers sitting mid-phrase**, so a search for a sentence added minutes earlier
+returned zero because a `>` had landed in the middle of it. **The fix for blind spot one introduced blind spot
+three, and it was found by using the fix.** Nothing about the remedy announced its own residue; only running it
+against something it should have found did.
+
 **And when a written remedy fails anyway, the fix is not to repeat it louder.** Ask what it asks a person to do and when - **if the answer is "the right thing, unprompted, later", replace it with something the command or the directory carries.** The three above were each written down before they failed.
 
 **A third kind of remedy, for when the artifact CANNOT carry it.** All three above are prevention: make the
@@ -276,6 +320,11 @@ quotations, I was one message away from reporting them as fabrications:
 - `git log -S "first mounted assertion"` returned **nothing, across every ref and every path** - because that
   sentence *wraps mid-phrase*, breaking between `mounted` and `assertion`. `-S` compares line-wise, so a
   phrase spanning a newline is invisible to it. Flatten the whitespace first and it is there.
+  **It recurred the same evening against a sentence the searcher had written HIMSELF four hours earlier**:
+  `grep -F "measured by the session that hit it"` returned nothing, because that line breaks as *...Measured
+  by the session* / *that hit it: a genuine test failure exits...*. **Knowing your own wording is no
+  protection, because the wrap is not in the wording** - it is in where the paragraph happened to be filled,
+  which nobody remembers and no author chose.
 - `grep -c "after a landing"` returned **0** on two different revisions - because the line is **shouted**:
   *STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.* `grep -ci` finds it.
 - **and the control was clean.** All twenty-four worktrees checked for an uncommitted copy the reader might
@@ -284,7 +333,12 @@ quotations, I was one message away from reporting them as fabrications:
 
 **Prose wraps and rules get shouted, so both blind spots are live every time anybody greps this file**, and
 neither is visible in the result. Search a prose document case-insensitively, and flatten whitespace before
-searching for any phrase longer than a few words.
+searching for any phrase longer than a few words. **And strip blockquote and list
+markers before flattening, which is a THIRD property of the same instrument and was found the same way**:
+a search for a sentence just added to this document returned zero, because the sentence is a blockquote and
+flattening had left `>` sitting mid-phrase. **The flattening that fixes the wrap introduces its own
+mid-phrase litter** - `sed 's/^> \?//'` first, and the hit is there. Three properties now, all invisible in
+the result, all live on the document most likely to be searched for a rule.
 
 > **A correct control on the wrong hypothesis strengthens the wrong conclusion.**
 
@@ -366,6 +420,12 @@ one whose own ruling it appeared to undermine.** It took a different test, not m
 who had no stake in the accusation being true. **When a measurement indicts, that is the moment to run the
 second instrument** - the reading feels like diligence, and agreement with it feels like honesty.
 
+**Its counterpart is the opposite asymmetry and the two together cover most of why bad instruments survive: a
+check that errs toward WASTED work rather than WRONG work never produces an incident, so it is never
+examined.** *Is my base current*, in [*Committing and merging in the shared main checkout*](#committing-and-merging-in-the-shared-main-checkout), is the worked case. **One kind of instrument is believed because it
+indicts; the other is unexamined because it only costs time** - and neither is failing in a way that looks like
+failure.
+
 **The rule half, which stands on its own: a shortcut taken four times is indistinguishable from a rule that
 never applied, and only the rule's own text and its stated exceptions can tell them apart.** Four commits in a
 row look like a practice, and **nothing about them says whether anybody decided.** That is what makes reading
@@ -399,6 +459,55 @@ worth arguing about.
 followed this ruling records that it went through the gates **by ruling rather than by precedent** - so the
 next reader of that file's history meets a commit that is not another silent instance, and can tell which were
 deliberate. **A judgement that leaves no trace reads as a measurement.**
+
+## None of these was found by looking harder
+
+**Four findings in one evening, four sessions, and not one of them was produced by more care.** Bytes quoted
+against patterns grepped; a first-parent test against a parent count; scripts read against scripts reasoned
+about; and a search against a thing two sessions both assumed had landed. **Four instruments, no additional
+diligence in any of them** - which makes routing a finding to somebody else **a measurement rather than a
+courtesy**, and makes every clause below actionable rather than aspirational. **And this section states its own sampling
+method rather than reading as exhaustive: three of its items were found while verifying the branch that carries
+them** - the chained count that stopped on its own good news, a wrap in a sentence its author had written four
+hours earlier, and the blockquote marker above. **None was found by looking for it, which is the claim; it also
+means there is no way to know what an eleventh would have been.** A collection assembled this way cannot claim
+completeness, and this one does not. The sessions holding the wrong
+answers were not being sloppy, and no amount of re-reading would have moved any of them.
+
+**An instrument's reliability record is about the questions it was ASKED, not the questions it was used to
+answer.** That is the general form of every instance this document has collected: the wrapper exit code whose
+record is spotless because everyone independently distrusts it; the `ls` that answered correctly about every
+set it could see; the precondition check satisfied by a cache directory rather than an install; the probe that
+passed because its careful users read its message instead of its code. **Each was reliable. None was reliable
+for the question it was carrying.** Ask what a tool has been *asked* before citing what it has *shown*.
+
+**Two independent-looking sources that are actually one source read as corroboration - and this is WORSE than
+a single source, because it is the exact state the single-source rule tells you to look for and cannot
+detect.** *Agreement between readers who share a source is not corroboration* is checkable when the shared
+source is a document: you can ask what each of them read. **When the sharing is a RELAY, neither reader knows
+they are one source.** One session asserted a claim, a second repeated it as its own, and a third wrote it into
+this document before reading the underlying scripts - **the second telling supplied the confidence the first
+lacked**, and nobody was careless at any step. **The cross-check that works is not a second source, which is
+often impossible, but the SAME source read with an instrument that fails differently**, which is nearly always
+available: bytes against patterns, `ls -A` against `ls`, first-parent membership against a parent count.
+
+**And the board has a lock for the resource that collides destructively and nothing at all for the resource
+that collides wastefully.** `who-is-gating.sh` answers *is anybody gating*. It does not answer *is anybody on
+this*, and **the two questions have no instrument in common** - so the first gets read as an answer to the
+second, which is the neighbouring-question failure applied to coordination rather than to code. **Architect 1's
+instance, named at its own request:** three sessions pursued one finding - two summarised rules diverging from
+their reference - without any of them knowing. It was found and landed by one, relayed to a second, and
+independently verified by Architect 1, **which put it to the user as a selection, got a yes, and built a branch
+from a base that already contained the fix.** The user authorised the same edit twice, the second time for work
+already done. **Architect 1 checked the tell for a lock and never checked whether anybody was working on the
+same finding; it treated the first as an answer to the second.** The coordinator's half - knowing two sessions
+were on it and telling neither - is a separate failure with a separate owner.
+
+**The encouraging measurement from the same day, because it is the other half of the same fact.** Three times,
+two sessions reached the same correction independently and their messages crossed in flight - once with one
+already rewriting its own sentence before the other's arrived. **Duplicated effort and findable corrections are
+the same property seen twice**: what makes the work redundant is what makes it reliable. The remedy is an
+instrument for *is anybody on this*, not less independence.
 
 ## Provenance is never in the name
 
@@ -758,6 +867,23 @@ A change that makes a document untrue fixes it in the same change. Four artefact
 - **Non-obvious architectural decisions belong in `tech.md`'s decision log**, not scattered through the code as comments. A decision recorded where it was implemented is findable only by whoever already knows where that is.
 
 (`docs/dependencies.md` needs no rule here — its guard is a test.)
+
+**AND THE OPPOSITE POLARITY IS THE ONE NOBODY TRIPS OVER: A SUMMARY OUTLIVING THE RULE IT SUMMARISES.** Everything
+above is about a document going FALSE, which somebody eventually meets and fixes. This is a document staying
+**TRUE AND WEAKER** - and in the more-read of the two. Nothing is wrong, so nothing prompts a second look.
+
+**`CLAUDE.md` is injected at session start; `processes.md` is opened on demand.** So a rule strengthened only in
+the reference is followed in its weaker form by every session that never opens the reference - **and the sessions
+that most need the stronger form are mid-gate, which is exactly when nobody opens a reference.**
+
+**The instance, and it is worth more than the hypothesis: a session followed `CLAUDE.md`'s narrower exit-code rule
+the same day the stronger one landed in `processes.md`, and says it would again.** That is Architect 2, which found
+the divergence by cold-reading both documents rather than by tripping over it - the only way this family can be
+found, since neither sentence is wrong.
+
+**So a strengthening lands in BOTH or it lands in neither**, and the summary carries the mechanism rather than only
+the instruction: the weaker form of the exit-code rule was not shorter, it was missing the sentence that explains
+why a pipe is not the special case.
 
 ## Implementation order
 
@@ -1359,8 +1485,20 @@ different scale, and two of them are the Scrum master's own:
 - **And the purest, because it has no interval at all: a process tree was measured, what was seen was killed,
   and the tree had moved before the reader finished reading its own output.**
 
-**The discipline: re-read the state immediately before the act, not at the start of your turn** - and where the
-state belongs to somebody else, ask rather than infer.
+**THE DISCIPLINE, IN THE ONLY FORM THAT SURVIVES A BUSY TURN: A STATE YOU READ BEFORE YOUR LAST TOOL CALL IS A
+MEMORY, NOT A READING** - and where the state belongs to somebody else, ask rather than infer.
+
+**That wording is Architect 2's and it replaces mine, which asked for vigilance at the worst possible moment.**
+The original said *re-read the state immediately before the act, not at the start of your turn* - true, and a
+request for attention precisely when a turn is busiest, which is when nobody has any. **The replacement names a
+condition you can recognise in your own transcript**: count the tool calls since you read the thing, and if the
+answer is more than none you are quoting yourself. **A rule that asks you to LOOK beats one that asks you to
+REMEMBER**, and it is checkable after the fact rather than only before it.
+
+**Confirmed within the hour by a session that had never read the original.** It read the gate tell, develop's tip
+and the index, launched, spent twenty minutes auditing somebody else's findings, and re-read all three
+immediately before `land.sh` - which had not moved. **Its own account is the point: it would not have known if
+they had.**
 
 **And the interval is not carelessness - it is the length of a careful message.** Three instances in one
 evening, from two sessions, every reading correct when taken. A session cold-reading this document's own new
@@ -1378,6 +1516,16 @@ between the reading and the act, the staler the reading. **So this is a tax on t
 and the sessions most exposed are the ones writing the most careful message. Two remedies, both cheap:
 re-read immediately before the act rather than at the start of the turn, and **say when a state was read**, so
 a reader can see the interval you could not.
+
+**And the distribution is evidence about the MEDIUM rather than about the sessions - which is offered with its
+doubt attached rather than resolved.** Five instances, five sessions, nobody careless, and a sixth in which one
+session asked another to *keep* a doubt in this document that had never been in it: it existed only in their
+messages, and the session asked would have confirmed it kept. **The medium is asynchronous messages over
+mutable shared state, where the cost of thinking is measured in the staleness of what you thought about.** If
+that reading is right, then **you cannot fix a property of the medium with a rule addressed to its
+participants**, and every remedy above is a mitigation rather than a fix. **Whether it is the right reading is
+exactly the kind of thing a clause should say it does not know** - five instances in one evening is a
+distribution, not a proof, and the alternative reading is that five sessions were simply unlucky together.
 
 **`ahead=0` also answers a narrower question than it appears to: ahead of WHICH `develop`, read WHEN.**
 
@@ -1397,7 +1545,10 @@ about its cost, from reading the scripts rather than from running them:
   full self-test rather than `mode=quick`, and the refusal needs its own `RESULT=` line so a caller can tell
   *board held* from *arguments wrong* from *gates red* - three exits that must not collapse into one.
 - **The obstacle usually named for it - that the gate holds the board while it runs, so a tell call would
-  refuse itself - is an ordering constraint rather than a hard part.** `gate.sh` acquires its lock and only
+  refuse itself - is an ordering constraint rather than a hard part.**  **This is a retraction, not a refinement, and it is worth naming how it got written down:** one session
+  asserted that obstacle, a second repeated it, and a third wrote it into this document without reading the
+  scripts. **Neither of the first two had measured it.**
+ `gate.sh` acquires its lock and only
   then writes its tell entry, so a check placed before the lock cannot see itself.
 - **The real difficulty is that it narrows the window rather than closing it, for a reason the proposal does
   not mention.** The lock is per scratch worktree and the tell aggregates across them, so there is no single
@@ -1426,6 +1577,13 @@ not a test failure.** A run that reached the tests prints `total:`, `failed:`, `
 meeting the bare exit without it goes hunting for a failing test that does not exist. Measured by the session
 that hit it: a genuine test failure exits **2**, a build break **1**. **Re-running on a settled tree is the
 entire remedy**; nothing is wrong with the tree or the change.
+
+**And the two exit codes are not equally established, which a reader will otherwise assume.** `2` was seen
+**twice**, on two independent runs failing 140 tests against the same precondition; `1` was seen **once**,
+because the build was broken once by accident and deliberately not repeated when spending a cycle to
+manufacture a second was ruled against. **The asymmetry is in the opportunities, not in the care** - worth
+saying, because a discriminator resting on one observation of one side gets used as though both sides were
+equally measured.
 
 **Two clauses from the process-tree instance, both earned the hard way.** *A kill orphans, it does not
 terminate*: the wrapper was killed and the script survived, the script was killed and the suite survived, the
@@ -1812,6 +1970,13 @@ closed a day before it appeared in a table as evidence about something else. **A
 citation of a thing that may since have changed**, so resolve it against the tree before it carries weight.
 *(Architect 1's, volunteered with two other defects in the same table: the mechanism could not arise, and three
 of the four components on its clean side had no tests at all - a control arm that cannot express the outcome.)*
+
+**A second instance, the coordinator's own and named against itself: a gate go quoting `d27e8d4f`.** That SHA
+was not stale - it belonged to a branch that had been **abandoned**, so it was a reference that outlived the
+thing it referred to. **Both instances are references outliving their referents, and neither is detectable from
+the reference**: a test name from a log and a SHA from a discarded branch are both perfectly well-formed, and
+only resolving them against the tree says otherwise. **The tell is that you cannot tell** - so resolve, rather
+than inspect.
 
 **And a file git calls modified while `git diff` shows NOTHING is not a git fault.** It is a working tree at LF
 under a CRLF house style: `diff` normalises through `text=auto eol=crlf` and the stat entry does not, and
