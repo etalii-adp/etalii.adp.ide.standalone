@@ -3,8 +3,10 @@
   "title": "Amendment, one sentence: five per-folder readmes, not six. The connections readme was removed along with the connection components, as dead code, at my own landing 798f07a5.",
   "filePath": ".spec-workflow/specs/module-client-api-readme/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-24T11:41:25.283Z",
   "category": "spec",
-  "categoryName": "module-client-api-readme"
+  "categoryName": "module-client-api-readme",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-24T12:08:36.872Z"
 }

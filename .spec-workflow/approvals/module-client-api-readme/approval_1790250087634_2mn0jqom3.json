@@ -3,8 +3,10 @@
   "title": "Amendment, one word: the Reuses line links \"five\" per-folder readmes, not \"six\". This follows from the requirements card beside it (connections readme removed at 798f07a5).",
   "filePath": ".spec-workflow/specs/module-client-api-readme/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-24T11:41:27.634Z",
   "category": "spec",
-  "categoryName": "module-client-api-readme"
+  "categoryName": "module-client-api-readme",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-24T12:08:33.934Z"
 }
