@@ -72,7 +72,7 @@ public static class DependencyGraphParser
                 Scalar(mapping, "label") ?? "",
                 X(Scalar(mapping, "x")),
                 Row(Scalar(mapping, "row")),
-                Range(mapping, document)));
+                YamlNodeRange.Of(mapping, document.Lines)));
         }
 
         return elements;
@@ -93,7 +93,7 @@ public static class DependencyGraphParser
                 Scalar(mapping, "from") ?? "",
                 Scalar(mapping, "to") ?? "",
                 Scalar(mapping, "label") ?? "",
-                Range(mapping, document)));
+                YamlNodeRange.Of(mapping, document.Lines)));
         }
 
         return relations;
@@ -124,61 +124,4 @@ public static class DependencyGraphParser
     private static int Row(string? text) =>
         int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var row) ? row : 0;
 
-    /// <summary>
-    /// The lines that declare a node, narrowed to the ones that actually say something.
-    /// </summary>
-    /// <remarks>
-    /// A block collection has no closing token, so YamlDotNet gives its mapping an end mark at
-    /// the start of whatever follows - which without correction hands every element a range one
-    /// line long, or one that swallows the next element's first line. Two adjustments fix it:
-    /// take the furthest end mark in the subtree rather than the node's own, and step back off a
-    /// mark that sits in column one, which is a position after the node rather than within it.
-    /// Trailing blank and comment lines are then trimmed, because an edit has no business
-    /// rewriting a comment that merely happens to follow an element.
-    /// </remarks>
-    private static LineRange Range(YamlNode node, LineDocument document)
-    {
-        var last = document.Lines.Count - 1;
-        var extent = EndMark(node);
-        var start = Math.Clamp((int)node.Start.Line - 1, 0, last);
-        var end = Math.Clamp((int)extent.Line - 1, start, last);
-        if (extent.Column == 1 && end > start)
-        {
-            end--;
-        }
-
-        while (end > start && (document.Lines[end].IsBlank || document.Lines[end].IsComment))
-        {
-            end--;
-        }
-
-        return new LineRange(start, end);
-    }
-
-    /// <summary>The furthest end mark anywhere in a node's subtree.</summary>
-    /// <remarks>
-    /// An alias resolves to a node YAML requires to have been declared earlier, so following one
-    /// can only look backwards and never stretches a range past where the element really ends.
-    /// </remarks>
-    private static YamlDotNet.Core.Mark EndMark(YamlNode node)
-    {
-        var end = node.End;
-        foreach (var child in Descend(node))
-        {
-            var childEnd = EndMark(child);
-            if (childEnd.Line > end.Line)
-            {
-                end = childEnd;
-            }
-        }
-
-        return end;
-    }
-
-    private static IEnumerable<YamlNode> Descend(YamlNode node) => node switch
-    {
-        YamlMappingNode mapping => mapping.Children.Keys.Concat(mapping.Children.Values),
-        YamlSequenceNode sequence => sequence.Children,
-        _ => [],
-    };
 }
