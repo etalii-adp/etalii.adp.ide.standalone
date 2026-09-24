@@ -230,3 +230,134 @@ gate_verdict() {
   fi
   if [ -z "$WHY" ]; then VERDICT=green; fi
 }
+
+# gate_tell_write <lock-dir> <scratch> <branch> <base-or-pending> - writes the run's own line into
+# the lock it already holds, so any session can read WHICH TREE is gating WHICH BRANCH ON WHICH BASE
+# without asking anybody. A session about to move develop needs that and nothing else.
+#
+# BEST EFFORT, ALWAYS. It returns 0 whether or not it wrote, and the caller reports rather than
+# aborts. A diagnostic that can red a gate has inverted its own value - and the write is a rename
+# over a destination a reader may hold open, which is the exact operation measured at 0x80070497
+# 185 times in 400 this week.
+#
+# THE LINE CARRIES ITS OWN EXPIRY, and that is the whole design. A killed gate cleans up nothing, so
+# no tell may depend on the writer living to retract it: the reader is told when to stop believing
+# the line rather than having to know how long a run plausibly takes. A pid would not do - the one
+# recorded here is a Git bash pid no Windows reader can resolve, and the process that matters may be
+# an orphaned grandchild the writer never knew about (measured, 2026-09-23).
+#
+# ONE MACHINE, ONE CLOCK, UTC. The lease arithmetic rests on that and it is written rather than
+# assumed: the first thing to break if anything ever gates from another machine.
+#
+# THE FAILURE DIRECTION IS THE SAFE ONE. A shell whose `date` lacks `-d` cannot compute the expiry,
+# and the field then reads `unknown` rather than a timestamp - because the first draft fell back to
+# NOW, which birthed every line already expired and so told every reader to disregard a live gate.
+# That fallback is reached only in the environment where the primary fails, so it was not an unlikely
+# path but the only one that would ever run there. A line whose expiry could not be computed must
+# read as LIVE: over-holding is recoverable and expires by itself, an under-hold is neither.
+#
+# IT WARNS, IT NEVER AUTHORISES. An expired line says a reader may ASK about a stale lock. It never
+# licenses removing one, and it says nothing about whose turn the board is - that is a decision
+# somebody makes, not a fact a file can hold.
+gate_tell_write() {
+  local lock=${1:-} scratch=${2:-} branch=${3:-} base=${4:-pending} tmp
+  [ -n "$lock" ] && [ -d "$lock" ] || return 0
+  tmp="$lock/owner.$$"
+  {
+    printf '%s gating %s on base %s started %s ignore-after %s\n' \
+      "$scratch" "$branch" "$base" \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ 2> /dev/null || echo unknown)"
+    printf 'read it with: bash .github/tools/gate/who-is-gating.sh - it warns, it never authorises;\n'
+    printf 'the board decides whose turn it is. Ignore this line after the time above.\n'
+  } > "$tmp" 2> /dev/null || { rm -f "$tmp" 2> /dev/null; return 0; }
+  mv -f "$tmp" "$lock/owner" 2> /dev/null || rm -f "$tmp" 2> /dev/null
+  return 0
+}
+
+# gate_who_is_gating <worktrees-dir> - the reader. FOUR outputs, each a different string, because
+# the first draft of this used `cat <glob> 2>/dev/null` and that prints the identical nothing for
+# "nobody is gating", "the directory never existed", "the writer moved", "the path was mistyped" and
+# "the glob did not expand" - four of which mean no information while all five read as clear to
+# proceed. That is the gate-verdict shape: make the reassuring answer one that must be REACHED.
+#
+#   GATING=none                        nobody holds a lock
+#   <line>                             a holder, with its branch and base
+#   <scratch> gating (owner not written yet)   a holder whose details are not on disk yet or failed
+#   TELL_UNREADABLE=<dir>, exit 2      the path this reader expects does not exist
+#
+# IT GLOBS THE LOCK DIRECTORY, NOT THE OWNER FILE, and that is not a detail. The lock is created
+# before its line is written, and the write is deliberately best effort - so a reader globbing
+# `owner` would print GATING=none while a gate was genuinely running, which is the under-hold whose
+# cost is the unrecoverable one. Existence of the directory answers "is this tree busy", which is
+# the only thing the lock has ever truly said; content answers "on what".
+# gate_who_is_gating <worktrees-dir> [--require-free]
+#
+# Default: prints the board and returns 0 for a free board AND for a holder alike, because its
+# main caller is printing. That default is fail-open in a chain - `tell && commit` runs the commit
+# whatever the board says - which is why the flag exists rather than a change to the default.
+#
+# --require-free: returns 0 ONLY for a positive GATING=none. A holder, an EXPIRED line, an
+# unknown expiry and a lock whose owner is not written yet are all 1; an unreadable board stays 2.
+# The state that must be REACHED is what gates, rather than the state that must be avoided being
+# what aborts - so a board this reader cannot parse fails instead of passing.
+# gate_selftest_report <file>
+#
+# Prints the self-test's own verdict for the gate's summary, or `absent` - never nothing. The test
+# runs inside `dotnet test` and PASSES, so xUnit emits none of its output and the gate log has never
+# carried the verdict: the mode a gate ran in was invisible exactly when everything worked.
+#
+# Absence is reported rather than skipped because a missing report means EITHER the test did not run
+# OR the write failed, and both are things a reader must be told. A summary that stayed quiet about it
+# would be the same defect this line exists to remove.
+gate_selftest_report() {
+  local file=${1:-}
+  if [ -n "$file" ] && [ -s "$file" ]; then
+    sed -n '1p' "$file" | tr -d '\r'
+  else
+    printf 'absent (the test did not run, or could not write its report)'
+  fi
+}
+
+gate_who_is_gating() {
+  local dir=${1:-} mode=${2:-} lock owner found=0 scratch line ignore now
+  if [ -z "$dir" ] || [ ! -d "$dir" ]; then
+    printf 'TELL_UNREADABLE=%s\n' "${dir:-<no directory named>}"
+    return 2
+  fi
+  for lock in "$dir"/*/adp-gate.lock; do
+    [ -d "$lock" ] || continue
+    found=1
+    owner="$lock/owner"
+    if [ -s "$owner" ]; then
+      line=$(sed -n '1p' "$owner" | tr -d '\r')
+      ignore=${line##*ignore-after }
+      ignore=${ignore%% *}
+      now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      # The script does the arithmetic so a human in a hurry does not. Both labels say ASK, never
+      # clear: this warns and never authorises, and a stale lock is a question rather than a licence.
+      if [ "$ignore" = unknown ]; then
+        printf '%s (expiry unknown - treat as live)\n' "$line"
+      elif [ -n "$ignore" ] && [ "$ignore" \< "$now" ]; then
+        printf '%s (EXPIRED - ask, do not assume)\n' "$line"
+      else
+        printf '%s\n' "$line"
+      fi
+    else
+      scratch=${lock%/adp-gate.lock}
+      scratch=${scratch##*/}
+      printf '%s gating (owner not written yet)\n' "$scratch"
+    fi
+  done
+  if [ "$found" = 0 ]; then
+    printf 'GATING=none\n'
+    return 0
+  fi
+  # A holder of any kind reaches here, including an EXPIRED line and one whose owner is not on disk
+  # yet. Both already print ASK rather than clear, so both are 'not free': a stale lock is a question
+  # to ask and never a licence, and --require-free must not be the thing that converts it into one.
+  if [ "$mode" = --require-free ]; then
+    return 1
+  fi
+  return 0
+}

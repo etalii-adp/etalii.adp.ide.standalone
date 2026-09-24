@@ -1,6 +1,6 @@
 # Tasks Document
 
-**The order is the user's ruling, given as a selection on 2026-09-15: the library half now, the module half after the shared backend and client pieces it would otherwise copy have landed.** Tasks 1 to 7 are the library half and wait on nothing. **Tasks 8 to 19 are the module half, and each names the requirement it waits on** — `backend-centralization` (requirements approved, design in progress) and `client-centralization` (requirements in progress). **Neither specification has tasks yet, so the waits are named by requirement**, and the first module task re-states them as a check to run rather than a memory to trust.
+**The order is the user's ruling, given as a selection on 2026-09-15: the library half now, the module half after the shared backend and client pieces it would otherwise copy have landed.** Tasks 1 to 7 are the library half and wait on nothing. **Tasks 8 to 19 are the module half, and each names the requirement it waits on** — `backend-centralization` and `client-centralization` (**both requirements and design approved, as of 2026-09-23**; this paragraph said "design in progress" and "requirements in progress" until then). **Neither specification has tasks yet, so the waits are named by requirement**, and the first module task re-states them as a check to run rather than a memory to trust.
 
 **Every task's guard is seen to fail before it is trusted** (CLAUDE.md, *Bugs found during implementation or verification*), and each task below names the planted defect its guard must fail against. **No library declaration or test names this diagram** (Requirement 9.1, 9.6).
 
@@ -21,7 +21,7 @@
   - File: `.../definition/diagramDefinition.ts`, `.../api/diagramEvents.ts`, `.../DiagramCanvas.tsx`, `.../DiagramCanvas.resize.test.tsx` (new)
   - `ElementTypeDefinition.resize?: "width" | "both"`, read only when `sizing: "user"`; **omitted means `"width"`**, today's behaviour. `ElementResized.side` widens to `"left" | "right" | "top" | "bottom"`, and the vertical edge is carried the way the horizontal one is: the far edge stays put and is never crossed.
   - Guard: a `"both"` type raises `element-resized` with `side: "bottom"` and the new height; a type that omits `resize` renders no top or bottom handle; `timeline`'s own suite passes unchanged.
-  - Seen to fail against: handles rendered for every `sizing: "user"` type, which `timeline`'s suite then reports.
+  - Seen to fail against: handles rendered for every `sizing: "user"` type. **The detector is this task's own absence assertion** - that a type omitting `resize` renders no top or bottom handle. **`timeline`'s suite does NOT report it**: measured on 2026-09-23, the plant fails two assertions here and leaves timeline's 50 tests green, because that suite presses `[data-resize="right"]` and never asserts the horizontal handles are absent, and the right handle still exists when two more appear beside it. **A suite that presses a handle cannot report a handle that should not exist**, so *timeline's suite passes unchanged* is a no-regression companion - true, worth keeping, and holding in both worlds - rather than evidence about this change.
   - Purpose: a Comment can be made taller without changing what every other user-sized element offers
   - _Requirements: 9.2, 4.2, 4.3, 3.2_
 
@@ -58,8 +58,8 @@
 - [ ] 7. The five colour tokens, and the contrast guard
   - File: `src/client/src/index.css`, `src/client/src/theme.contrast.test.ts` (new)
   - Light mode is the user's hex exactly: `#aaed92`, `#ededed`, `#9edcfa`, `#86e6d9`, `#fcf281`. Dark mode is the design's: `#2e7814`, `#696969`, `#086fa1`, `#187569`, `#736a03` — same hue and saturation, lightness lowered to the lightest value reaching 5.0:1.
-  - Guard: the test parses `index.css`, computes each token's WCAG contrast against `--color-text` in both modes, and fails below 4.5:1.
-  - Seen to fail against: a dark value lightened past the line — `#7c7203`, which the requirements measured at 4.50 and the design rejected as too close.
+  - Guard: the test parses `index.css`, computes each token's WCAG contrast against `--color-text` in both modes, and asserts **two lines with different subjects, both unrounded**: at least **4.5:1** for any fill the contract admits, the WCAG AA line; and at least **5.0:1** for the five shipped dark tokens, the margin R4.6 exists to create. Each failure says which line was crossed, and the test states its linearisation formula and that the reference token is `--color-text`.
+  - Seen to fail against: **`#857a04`, measured at 4.0078**, below the line from either direction. **Not `#7c7203`**, which this task named until 2026-09-23: it measures **4.4942**, so it fails by 0.006 and passes under the figure the requirements then stated - a plant that tests the arithmetic's rounding rather than the guard's purpose, and precisely the closeness R4.6 exists to forbid. Developer 2 found both, and the requirements' erratum is corrected under its own card.
   - _Requirements: 4.5, 4.6_
 
 ## The module half — each task names what it waits on

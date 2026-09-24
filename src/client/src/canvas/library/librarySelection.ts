@@ -104,7 +104,7 @@ export interface LibrarySelection {
  * selection. A connection travels under its own id, never labelled as an element.
  *
  * <b>The menu</b> - the key, the pushed actions, the context-menu push and the action run are
- * built here. An entry the definition declares `invokedBy: { kind: "menu" }` is the module's to
+ * built here. An entry the definition declares `invokedBy: [{ kind: "menu" }]` is the module's to
  * run: it is raised as `action-invoked` and never sent (see {@link actionForMenuEntry}). Every
  * other entry runs against the backend's CURRENT selection, with no source of its own:
  * the menu opens only once the pushed selection is the item it was opened on, and a source

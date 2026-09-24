@@ -63,9 +63,18 @@ public class FileHoldersAnswersLateTests : IDisposable
         // measurement follows rather than being thrown away.
         var path = IoPath.Combine(_folder, "tea.owm");
         FileHolders.Budget = TimeSpan.FromMilliseconds(100);
+
+        // RELEASED BY THE TEST, NOT BY A CLOCK. This used to sleep 400ms to be "late", which made
+        // the guard depend on the thread pool starting that sleep promptly - and under a full
+        // parallel suite it did not: the late line missed a ten-second window and reddened a
+        // documentation-only branch. Now the query waits until this test has seen the inline half,
+        // so LATE is a fact about ordering rather than about how busy the machine is.
+        using var answer = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            Thread.Sleep(TimeSpan.FromMilliseconds(400));
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
+            answer.Wait(Patience);
             return "pid 4242 someone.exe";
         };
         using var logs = LogCapture.Start();
@@ -75,6 +84,8 @@ public class FileHoldersAnswersLateTests : IDisposable
         // The inline half says the question is open, and does not pretend nobody was holding it.
         Assert.Contains("not yet known", described, StringComparison.Ordinal);
         Assert.DoesNotContain(FileHolders.None, described, StringComparison.Ordinal);
+
+        answer.Set();
 
         // The late half arrives, naming the same path and this process, with its own elapsed time.
         var line = await EventuallyAsync(logs, warning =>
@@ -108,15 +119,29 @@ public class FileHoldersAnswersLateTests : IDisposable
         var path = IoPath.Combine(_folder, "tea.owm");
         FileHolders.Budget = TimeSpan.FromMilliseconds(100);
         using var stuck = new ManualResetEventSlim(false);
+        using var entered = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
+            entered.Set();
             stuck.Wait(Patience);
+            // ReSharper restore AccessToDisposedClosure
             return "never gets here in this test";
         };
         using var logs = LogCapture.Start();
 
         var described = FileHolders.Describe(path);
         Assert.Contains("not yet known", described, StringComparison.Ordinal);
+
+        // MAKES "NEVER" OBSERVABLE, and is load-bearing. Without it the silence asserted below
+        // is satisfied just as well by a query that was never CALLED - a Describe that
+        // short-circuited, a seam another class overwrote, a branch that never reached the
+        // service - so the guard would pass most confidently on the day the instrument stopped
+        // running at all. "Never answered" is only a fact about a query that started.
+        Assert.True(
+            entered.Wait(Patience, TestContext.Current.CancellationToken),
+            "The holder query was never entered, so the silence asserted below says nothing about a query that never answers.");
 
         await Task.Delay(TimeSpan.FromMilliseconds(600), TestContext.Current.CancellationToken);
 
@@ -131,14 +156,19 @@ public class FileHoldersAnswersLateTests : IDisposable
         // refuse, which "no second line" does not.
         var path = IoPath.Combine(_folder, "tea.owm");
         FileHolders.Budget = TimeSpan.FromMilliseconds(100);
+        using var refuse = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            Thread.Sleep(TimeSpan.FromMilliseconds(300));
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
+            refuse.Wait(Patience);
             throw new InvalidOperationException("the Restart Manager refused");
         };
         using var logs = LogCapture.Start();
 
-        FileHolders.Describe(path);
+        var described = FileHolders.Describe(path);
+        Assert.Contains("not yet known", described, StringComparison.Ordinal);
+        refuse.Set();
 
         var line = await EventuallyAsync(logs, warning =>
             warning.Contains(path, StringComparison.Ordinal) &&
@@ -155,6 +185,8 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var stuck = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             stuck.Wait(Patience);
             return "never";
         };
@@ -167,8 +199,19 @@ public class FileHoldersAnswersLateTests : IDisposable
         stuck.Set();
     }
 
+    /// <summary>
+    /// Waits for a line, and <b>says what it saw instead</b> when none arrives.
+    /// </summary>
+    /// <remarks>
+    /// "No matching line arrived" threw the capture away, and Architect 1 could not tell from the
+    /// artifact whether the line was LATE (an empty capture: the machine was busy) or WRONG (a line
+    /// present in the wrong shape: somebody else's query had been installed). Those are the two
+    /// hypotheses this whole instrument exists to separate, and its own guard could not report them.
+    /// The captured lines and the elapsed time are now in the message.
+    /// </remarks>
     private static async Task<string> EventuallyAsync(LogCapture logs, Func<string, bool> matches)
     {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         var deadline = DateTime.UtcNow + Patience;
         while (DateTime.UtcNow < deadline)
         {
@@ -181,7 +224,11 @@ public class FileHoldersAnswersLateTests : IDisposable
             await Task.Delay(25, TestContext.Current.CancellationToken);
         }
 
-        Assert.Fail("No matching line arrived within the patience window.");
+        var seen = logs.Warnings.ToArray();
+        var what = seen.Length == 0
+            ? "nothing at all was captured, which is what a query that never ran looks like"
+            : $"{seen.Length} line(s) were captured, none matching:{Environment.NewLine}  {string.Join(Environment.NewLine + "  ", seen)}";
+        Assert.Fail($"No matching line arrived within {clock.Elapsed.TotalSeconds:0.0}s of patience, and {what}");
         return "";
     }
 }

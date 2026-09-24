@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Four things every entry below assumes
+## Five things every entry below assumes
 
 **Signing in — a developer build does not ask.** Since `developer-sign-in-bypass`, a locally
 running developer build opens **already authenticated** and the sign-in form is never rendered:
@@ -32,6 +32,79 @@ not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` 
 **"1 more tabs" overflow button** beside `Toolbox`. That is the pane working as designed rather
 than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
 costs the time, and it is written here once rather than in each of the thirteen.
+
+**What the in-app browser pane can answer, and what it cannot.** **Seven entries below each
+rediscovered part of this**, across twelve lines between them, which is why it is here once. The
+pane has **three states, not two**, and they differ in what may be recorded from them:
+
+1. **The session is closed in the app: the pane is 0x0 and `visibilityState` is `hidden`.** Nothing
+   is trustworthy - there is no layout, so `getBoundingClientRect` is zero, `elementFromPoint` finds
+   nothing, and a synthetic press cannot be aimed. **Record nothing from this state.** It is the
+   dangerous one precisely because it looks like a clean pass: every count comes back zero and
+   nothing throws.
+2. **The session is open but the pane is not fronted: real layout, `visibilityState` still `hidden`.**
+   Geometry and computed styles ARE valid here - `getComputedStyle`, `getBBox`,
+   `getBoundingClientRect`, click-driven selection round trips and DOM updates all behave.
+   **Screenshots are not**, so a pass run here says so rather than leaving a reader to assume
+   somebody looked.
+3. **The pane is visible:** all of the above, plus screenshots.
+
+**Two cheap discriminators: `innerWidth > 0` before recording anything, and `visibilityState`
+before believing a screenshot.**
+
+**The mechanism is better than the state list, because it predicts which checks are affected:**
+`requestAnimationFrame` never fires in a hidden document - measured at 1.2s with no frame, against
+the visible tab's firing at once. Canvases repaint on an animation frame that never arrives, so
+**the question to ask of a check is *does this need a repaint*, not *is the pane visible***. A check
+wanting a canvas repaint in a hidden tab is undriveable; one wanting only a DOM change is fine.
+**And fronting does not lift it** - a second pane tab reports `hidden` even after `tabs_select`,
+because the pane has one permanently-visible document.
+
+**A fourth limit, independent of state: synthetic `PointerEvent`s do not start the canvas library's
+drag gesture.** Measured with the pane painting and `setPointerCapture(1)` throwing nothing: during
+the drag there was no transform, no dragging class, no ghost and no preview - **yet the release still
+landed the element.** So a drag's PREVIEW is unobservable by script here while its DROP is
+observable, which is the distinction to apply before claiming a drag check was run.
+
+**A fifth limit, and the one that decides whether a step can be driven at all: while the pane is hidden,
+clicks by COORDINATE land in the wrong place.** A press at the centre of a node measured with
+`getBoundingClientRect` was recorded by an instrumented listener as hitting the bare
+`svg.library-canvas-surface`, while `document.elementFromPoint` at that same x,y returned the node's own
+`<text>`. **The page's client coordinates and the pane's screenshot frame are not the same frame while it
+is hidden, and nothing warns you. Clicks by `ref` from `find` land correctly.** Geometry read through
+JavaScript is unaffected - `getBoundingClientRect`, `scrollHeight` and computed styles stay valid - so a
+measuring pass is safe where a pressing pass is not. **If a step presses something, press by ref and
+verify the press landed**; two lines do it:
+
+    svg.addEventListener("pointerdown", e => console.log(e.target.tagName, e.target.getAttribute("class")), true)
+
+**A sixth, and it makes a NEGATIVE result worthless: a degraded shell renders the last document perfectly
+while listening to nothing.** After a reload the shell threw `useContextConnection must be used within a
+ContextConnectionProvider` from four components at once; **the canvas went on drawing, presses produced
+events, and nothing round-tripped.** It behaves like a still image. **So `read_console_messages` before
+believing any negative is a precondition, not a debugging step** - one session nearly recorded "c4 shows
+no highlight" for a second time on a page that was simply not listening.
+
+**A seventh, cheap to hit and expensive to notice: documents open on DOUBLE-click, and they open in a tab
+BEHIND the one in front.** One session measured c4 while reading the wardley map, because the earlier
+document was still fronted; another reported four modules from one already-open tab and only noticed
+because all four rows were identical. **Select the intended tab and confirm the document before pressing
+or measuring anything.**
+
+**And an eighth, which is the mechanism behind *before recording anything* above and the reason it has to be
+read literally: an emulated viewport is cleared when a turn ends.** A sixteen-canvas pass cannot be done in
+one turn, so it is exactly the pass that silently returns to the 0x0 state - where **every pane reports
+`h: 0`, every geometry row comes back clean, and nothing throws.** So `innerWidth > 0` belongs in a
+procedure's STEPS as a per-row gate rather than in its preconditions: **a precondition is checked once, and
+this state can return mid-pass.** *(Developer 1's refinement, against a sixteen-canvas procedure of its
+own.)* One session found `innerWidth` at 0 with four panes at `h: 0` and recorded nothing from them - **only
+because it checked again rather than once**, and a procedure that says *check first* would have let it
+record four clean zeroes in good faith.
+
+The three states and the drag limit were measured by Architect 2 across two browser sessions; the
+animation-frame mechanism and the permanently-hidden second tab come from the 2026-09-06 pass
+recorded under *A property edit reaches a second connection*. **None of this is an application
+defect**, which is why an entry blocked by it is left unclaimed rather than failed.
 
 **One word for an outcome.** An outcome is recorded as `- **Result <date>**: **<verdict>** — ...`,
 one label, no synonyms. Ten entries here once said `**Verified <date>**` instead, and because every
@@ -2840,3 +2913,39 @@ when both are on (Requirement 6.2). Those are this entry's, and Requirement 10.3
   it at fit, at 100%, and zoomed in. If it does not read at fit, the remedy is a screen-constant
   offset (pixels converted to units per render) rather than a larger constant, which would gape
   when zoomed in.
+
+## Both architecture pages' mermaid renders, in both readers (architecture-documentation, task 9)
+
+**Why this is here rather than in a test.** The pages carry one mermaid block each, and nothing
+in this repository renders mermaid. `module-client-api-readme` task 1 opens with a spike for a
+mermaid-parse guard; **it has not landed** - checked 2026-09-23, no mermaid parser or renderer
+exists anywhere under `src/`. Until it does, whether a diagram *parses* can only be answered by
+a reader that draws it, and whether it is *readable* cannot be answered by a parser at all.
+Delete this entry when that spike lands and the guard covers the parse half; the by-eye half
+below stays either way.
+
+- **Preconditions**: the two pages exist - `docs/architecture.md` (one `flowchart LR`) and
+  `docs/solution-structure.md` (one `flowchart LR`). No running app is needed; this check is
+  about documents, not the product.
+- **Reader 1, the spec-workflow dashboard**: open the dashboard and view both pages through it.
+  This is the reader that matters most, because it is where a session reads documentation.
+- **Reader 2, the repository host**: view both pages on GitHub, which renders mermaid in
+  markdown natively. A block can parse in one renderer and not the other; two readers is the
+  point of the check, not redundancy.
+- **Expected, per page and per reader**:
+  1. The block renders **as a diagram**. A mermaid block that fails to parse degrades to its
+     source text rather than erroring - so a wall of `flowchart LR` source IS the failure, and
+     it is quiet.
+  2. `architecture.md` shows three nodes: the browser client, the one ASP.NET Core process, and
+     the workspace folder, with the two call legs labelled in opposite directions between the
+     first two.
+  3. `solution-structure.md` shows `src/` above **seven** children - api, backend, client,
+     diagrams, editors, examples, TestSupport. Seven, not six: an earlier count said six and
+     missed `TestSupport`.
+  4. **Readable at the dashboard's own width** (Requirement 4.4) without horizontal scrolling
+     or overlapping labels. Judge this in the dashboard at its natural width, not zoomed out
+     and not in a maximised window - the width a reader actually has is the width that counts.
+- **Before you trust a pass**: plant a failure once. Break one arrow (`-->` to `->`) in a local
+  copy, confirm the block degrades to source text in both readers, and restore it. A check that
+  has never seen the failure mode cannot report its absence - and this failure mode looks like
+  ordinary text rather than like an error.

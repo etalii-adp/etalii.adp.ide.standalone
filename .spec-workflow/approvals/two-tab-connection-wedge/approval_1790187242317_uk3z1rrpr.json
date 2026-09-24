@@ -1,0 +1,21 @@
+{
+  "id": "approval_1790187242317_uk3z1rrpr",
+  "title": "two-tab-connection-wedge - Requirements",
+  "filePath": ".spec-workflow/specs/two-tab-connection-wedge/requirements.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2026-09-23T18:14:02.317Z",
+  "category": "spec",
+  "categoryName": "two-tab-connection-wedge",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. Can we start using HTTP/2.0 without a certificate? i.e. the browser would show an error but for the start that is fine. \n\nWill that improve the situation? If so, rewrite the specs.\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"Can we start using HTTP/2.0 without a certificate? i.e. the browser would show an error but for the start that is fine. \\n\\nWill that improve the situation? If so, rewrite the specs.\",\n      \"timestamp\": \"2026-09-23T18:19:46.297Z\",\n      \"id\": \"comment_1790187586297_rfn64pphr\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. Can we start using HTTP/2.0 without a certificate? i.e. the browser would show an error but for the start that is fine. \\n\\nWill that improve the situation? If so, rewrite the specs.\\n\\n\",\n  \"timestamp\": \"2026-09-23T18:19:49.133Z\"\n}",
+  "respondedAt": "2026-09-23T18:19:49.171Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "Can we start using HTTP/2.0 without a certificate? i.e. the browser would show an error but for the start that is fine. \n\nWill that improve the situation? If so, rewrite the specs.",
+      "timestamp": "2026-09-23T18:19:46.297Z",
+      "id": "comment_1790187586297_rfn64pphr"
+    }
+  ]
+}

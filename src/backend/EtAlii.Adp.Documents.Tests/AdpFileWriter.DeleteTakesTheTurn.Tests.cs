@@ -48,15 +48,18 @@ public class AdpFileWriterDeleteTakesTheTurnTests : IDisposable
         // Deterministic rather than raced: the save stops INSIDE its replace, holding the turn, and
         // the delete must still be waiting when it does. Timing decides nothing.
         var path = IoPath.Combine(_folder, "tea.owm");
-        File.WriteAllText(path, "before");
+        await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
         using var logs = LogCapture.Start();
         using var inside = new ManualResetEventSlim(false);
         using var release = new ManualResetEventSlim(false);
 
         var saving = Task.Run(() => AdpFileWriter.Save(path, "after", replace: (temporary, destination) =>
         {
+            // ReSharper disable AccessToDisposedClosure
+            // Reason: Used in a test case which is acceptable.
             inside.Set();
             release.Wait(Patience, TestContext.Current.CancellationToken);
+            // ReSharper restore AccessToDisposedClosure
             File.Replace(temporary, destination, destinationBackupFileName: null, ignoreMetadataErrors: true);
         }), TestContext.Current.CancellationToken);
 

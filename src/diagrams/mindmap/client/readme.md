@@ -28,5 +28,5 @@ without that, nothing here could resolve `react`.
   Requirement 2.4).
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`mindmap-diagram`](../../../../.spec-workflow/archive/specs/mindmap-diagram/) for this diagram type's
+`mindmap-diagram` (removed from the tree; in history before `ece03c36`) for this diagram type's
 spec.

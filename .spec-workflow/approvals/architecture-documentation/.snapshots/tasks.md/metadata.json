@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/architecture-documentation/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T11:50:37.181Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790164237058_gu8ujc3fm",
+      "approvalTitle": "architecture-documentation tasks: ten tasks, the removal last so no fact is dropped, coverage diff 38/33/5/0"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T16:24:48.103Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790164237058_gu8ujc3fm",
+      "approvalTitle": "architecture-documentation tasks: ten tasks, the removal last so no fact is dropped, coverage diff 38/33/5/0"
+    }
+  ]
+}

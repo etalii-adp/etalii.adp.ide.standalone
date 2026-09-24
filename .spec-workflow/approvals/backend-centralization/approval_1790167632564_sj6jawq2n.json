@@ -1,0 +1,12 @@
+{
+  "id": "approval_1790167632564_sj6jawq2n",
+  "title": "backend-centralization R2.9: a watcher of a published path must learn of a publish, a creation, a deletion and a lost-event window",
+  "filePath": ".spec-workflow/specs/backend-centralization/requirements.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2026-09-23T12:47:12.564Z",
+  "category": "spec",
+  "categoryName": "backend-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-23T16:24:59.400Z"
+}

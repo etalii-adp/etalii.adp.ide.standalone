@@ -26,11 +26,14 @@ export function FrameElement({
   label,
   labelClassName,
   children,
+  style,
   ...groupProps
 }: FrameElementProps) {
   return (
     <g transform={`translate(${x} ${y})`} {...groupProps}>
-      <rect x={-width / 2} y={-height / 2} width={width} height={height} rx={rx} />
+      {/* The paint goes on the drawn shape, never on the wrapping group: a child that states its
+          own stroke - and every node class states one - ignores an inherited one (task 28). */}
+      <rect style={style} x={-width / 2} y={-height / 2} width={width} height={height} rx={rx} />
       <text className={labelClassName} x={-width / 2 + 12} y={height / 2 - 12}>
         {label}
       </text>

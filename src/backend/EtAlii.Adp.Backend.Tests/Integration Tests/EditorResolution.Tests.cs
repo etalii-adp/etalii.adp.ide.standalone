@@ -108,6 +108,72 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         Assert.Equal("just some notes\n", Encoding.UTF8.GetString(element.Payload!.Value.Span));
     }
 
+    // THIS TEST HAS A SIXTY-SECOND gRPC DEADLINE AND IT IS SET IN THE ARRANGE BLOCK BELOW:
+    // `deadline: DateTime.UtcNow.AddSeconds(60)`, a named argument on the Open calls that create
+    // `diagramCall` and `textCall`. NextAddAsync's own docstring says the same thing in words.
+    //
+    // It is cited by NAME rather than by line, because the first draft of this correction said
+    // "lines 195 and 201" and shortening the comment moved them to 190 and 196 before the file was
+    // saved. **A comment that cites line numbers in its own file invalidates itself whenever its own
+    // length changes** - the same defect it is here to correct, one turn later.
+    //
+    // THIS COMMENT USED TO SAY THE SIXTY SECONDS WAS SET NOWHERE IN THIS REPOSITORY. That was WRONG
+    // WHEN WRITTEN rather than overtaken, and the difference matters: the deadlines entered on
+    // 2026-09-01 in a84d12ad and the claim on 2026-09-24 in cf419d02, twenty-three days apart.
+    //
+    // THE MECHANISM OF THE MISS IS WORTH MORE THAN THE FINDING, and it is one character run. The
+    // search was for `FromSeconds(60)`; the code says `AddSeconds(60)` - one builds a TimeSpan, the
+    // other offsets a DateTime, and a search is correct about the string it was given. THE TELL WAS
+    // IN THE RESULT ITSELF: that grep's only hit anywhere in src/backend was this comment asserting
+    // the absence. **A search whose sole result is the claim that the thing is not there is the
+    // signature of a search that missed** - and it reads exactly like confirmation.
+    //
+    // WHAT STILL STANDS, BECAUSE IT WAS MEASURED RATHER THAN SEARCHED:
+    //
+    //   * the HttpClient's timeout is 00:03:20 - two hundred seconds, logged on eleven consecutive
+    //     runs - so the sixty-second deadline is what fires first, as the reasoning predicted;
+    //   * ten isolated runs, instrumented, ten greens. Alone, the chain finishes well inside sixty.
+    //
+    // Both eliminations survive intact. The third was a string search rather than a measurement, and
+    // **a string search has to be re-run rather than cited, because its blind spot is invisible from
+    // its own result.** Do not read the two kinds at one confidence again.
+    //
+    // THE FAILURE RATE, board-wide rather than from one worktree: 4 failures in 58 gate runs that
+    // reached the backend suite, across seven scratch worktrees. An earlier note here said 3 in 9 -
+    // one worktree's history, read as if it were everyone's.
+    //
+    // AND THE THIRTY-SECOND SITES HAVE NEVER FAILED. Five explicit deadlines exist in the tree: these
+    // two sixties, and three thirties - `boomCall` and `notesCall` in EditorModuleIsolation.Tests.cs,
+    // and FirstAddDeltaAsync's own call at the foot of this file. In those same 58 runs
+    // EditorModuleIsolationTests failed ZERO times, and its eleven appearances in those logs are all
+    // stack-trace lines from its own deliberately-throwing fixture - which is also the proof that it
+    // ran rather than being skipped, since a passing test prints nothing at all.
+    //
+    // IF GENERAL HOST CONTENTION WERE THE CAUSE, THE SHORTER BUDGETS WOULD FIRE FIRST AND OFTENER.
+    // They never fire. So the cause is THIS test's wait chain rather than the suite being slow - but
+    // **the discriminator narrows rather than closes**, because a thirty-second budget on a short
+    // chain is not a fair comparison with a sixty-second budget on a long one. What would close it:
+    // put thirty seconds on THIS test's calls and see whether the rate rises.
+    //
+    // AND THE CHAIN IS THE LIKELY WHY. Five sequential stream awaits share two call deadlines, and a
+    // per-call deadline's clock starts when the CALL is made, not when the await begins. The text
+    // call carries three of those five awaits, plus a SaveText round trip, plus an external file
+    // write, plus the watcher latency that follows it - all inside one sixty seconds that began
+    // before any of it.
+    //
+    // A BETTER SHAPE IS AVAILABLE NOW, AND THE REASON THIS COMMENT ONCE GAVE FOR HOLDING IT BACK WAS
+    // WRONG. It said AddDiagramFlow's per-message timeout would make this fail MORE often, its budget
+    // being ten seconds against this sixty. **That is true of AddDiagramFlow's NUMBER and false of the
+    // SHAPE.** A per-message timeout gives each await its own budget instead of sharing one across the
+    // chain, so the same shape at sixty seconds per message is STRICTLY MORE GENEROUS than today. The
+    // budget is a free parameter, and the ten seconds is AddDiagramFlow's choice for its own chain.
+    //
+    // It also keeps the test honest, which a raised call deadline would not: a view that never arrives
+    // still fails, and the message names WHICH view, where a deadline raised until nothing can exceed
+    // it is a vacuous test wearing a fixed one's clothes.
+    //
+    // This comment records what is known. The repair is owned elsewhere (37bb3e06) and the number it
+    // lands on should be chosen on purpose rather than inherited.
     [Fact]
     public async Task ADslOpenAsDiagramAndAsTextAtOnce_BothStayTrueToTheFile()
     {

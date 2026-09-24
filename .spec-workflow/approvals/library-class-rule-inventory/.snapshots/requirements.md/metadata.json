@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/library-class-rule-inventory/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T23:52:31.468Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790207550891_nerha9lgd",
+      "approvalTitle": "library-class-rule-inventory requirements: the guard that would have caught the scrollbar defect — and measuring it first found the direction it was named for is empty"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T23:53:47.209Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790207550891_nerha9lgd",
+      "approvalTitle": "library-class-rule-inventory requirements: the guard that would have caught the scrollbar defect — and measuring it first found the direction it was named for is empty"
+    }
+  ]
+}

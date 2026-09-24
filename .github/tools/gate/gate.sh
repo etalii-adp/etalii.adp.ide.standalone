@@ -60,7 +60,7 @@ trap finish EXIT
 
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "RESULT=aborted-cannot-locate-script"; exit 3; }
 . "$HERE/gate-lib.sh" 2>/dev/null
-if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head gate_run_logs_dir gate_keep_logs_red gate_prune_logs gate_remove_legacy_flat_logs gate_undeleted_folders > /dev/null 2>&1; then
+if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head gate_run_logs_dir gate_keep_logs_red gate_prune_logs gate_remove_legacy_flat_logs gate_undeleted_folders gate_tell_write gate_who_is_gating > /dev/null 2>&1; then
   echo "RESULT=aborted-library-missing ($HERE/gate-lib.sh)"
   exit 3
 fi
@@ -99,7 +99,8 @@ if ! mkdir "$GITDIR/adp-gate.lock" 2> /dev/null; then
   exit 1
 fi
 LOCK="$GITDIR/adp-gate.lock"
-echo "pid $$ since $(date -u +%Y-%m-%dT%H:%M:%SZ) gating $BRANCH" > "$LOCK/owner"
+gate_tell_write "$LOCK" "$SCRATCH_NAME" "$BRANCH" pending
+echo "TELL=bash .github/tools/gate/who-is-gating.sh (reads this run; base follows below)"
 
 if ! git -C "$MRG" config --worktree user.name "$IDENT"; then echo "RESULT=identity-not-set"; exit 1; fi
 if [ "$(git -C "$MRG" config user.name)" != "$IDENT" ]; then echo "RESULT=identity-not-effective"; exit 1; fi
@@ -118,6 +119,7 @@ esac
 echo "LOGS=$LOGS"
 BASE=$(git -C "$MAIN" rev-parse --verify -q develop) || { echo "RESULT=aborted-no-develop"; exit 3; }
 echo "GATED_ON_BASE=$BASE"
+gate_tell_write "$LOCK" "$SCRATCH_NAME" "$BRANCH" "$(git -C "$MAIN" rev-parse --short "$BASE")"
 git -C "$MRG" reset -q --hard "$BASE" || { echo "RESULT=reset-failed"; exit 1; }
 if ! git -C "$MRG" merge --no-ff "$BRANCH" -m "$MSG" > "$LOGS/merge.log" 2>&1; then
   cat "$LOGS/merge.log"
@@ -146,9 +148,27 @@ echo "FORMAT_EXIT=$FMT_EXIT"
 # Test folders the run could not delete are reported into this run's own logs, one file per test
 # process, rather than into the machine-wide file every run and every session appends to.
 UNDELETED="$LOGS/undeleted-test-folders"
-(cd "$MRG/src/backend" && ADP_UNDELETED_FOLDERS_DIR="$UNDELETED" dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
+# The self-test reports its verdict here rather than through xUnit, which emits nothing for a test
+# that passes. Only the gate sets this variable, so a developer's plain `dotnet test` is unchanged -
+# the report is for this summary, not for the test's own output, and a test that prints differently
+# depending on who ran it is its own kind of confusing.
+SELFTEST_REPORT="$LOGS/selftest.txt"
+# Deleted first, though it cannot exist yet: this path is inside THIS run's own log directory, which
+# gate_run_logs_dir makes fresh, so no previous run's report can be here. The line is insurance against
+# that invariant being changed by somebody who does not know it is load-bearing - if the log directory
+# ever becomes reusable, this is what stops the gate printing the last run's verdict as though it were
+# this one's, which is the reused-workspace defect that once had a session reading twelve-minute-old
+# gate logs as current.
+rm -f "$SELFTEST_REPORT"
+(cd "$MRG/src/backend" && ADP_UNDELETED_FOLDERS_DIR="$UNDELETED" ADP_GATE_SELFTEST_REPORT="$SELFTEST_REPORT" dotnet test --solution EtAlii.Adp.slnx) > "$LOGS/dotnet-test.log" 2>&1
 DT_EXIT=$?
 echo "DOTNET_TEST_EXIT=$DT_EXIT"
+# THIS LINE CANNOT APPEAR IN THE GATE THAT INTRODUCES IT. gate.sh runs from the MAIN CHECKOUT, not
+# from the merged tree, so a change here takes effect only once it has landed - the first run to print
+# SELFTEST= is the next gate anybody starts afterwards. A reader who checks the introducing branch's own
+# log, finds no SELFTEST= line and concludes the feature is broken has been misled by the ordinary
+# behaviour of the gate rather than by a defect.
+echo "SELFTEST=$(gate_selftest_report "$SELFTEST_REPORT")"
 echo "UNDELETED_FOLDERS=$(gate_undeleted_folders "$UNDELETED")"
 
 gate_verdict "$LOGS/dotnet-test.log"

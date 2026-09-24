@@ -12,6 +12,28 @@ The user's request, verbatim:
 
 **One measurement made while writing these requirements, because it is exactly what the documents are for.** Counting `.csproj` files under `src/` gives 121; the solution holds 105; the sixteen-file difference is fixture and example data belonging to the `dotnet-dependency-graph` module, which reads `.csproj` files as its subject matter. A first attempt at classifying those 105 by area also produced "78 backend, 27 other" - wrong, because the solution's paths are relative to `src/backend/`, so the core projects carry no `backend` segment while the diagram projects do. **Both are wrong answers that look right, and both are the sort of thing a session will derive again next week unless a page says otherwise.**
 
+**The user's verdict on the first version asked for one more thing, and measuring it produced the strongest
+argument in this document.** The request was that the existing agent files and rules be looked into, that the new
+documentation be enforced in them, and that any architecture content now belonging to the new pages be removed
+from them "to ensure centralization and consistency". Three claims were then checked in the steering documents
+that agents read every session:
+
+- `tech.md` says the web client renders "the diagram canvas via a canvas/WebGL-based library (e.g. Konva or
+  PixiJS) rather than raw SVG/DOM". **There is no Konva or PixiJS dependency in `src/client/package.json`, and
+  the canvas draws SVG** - `DiagramCanvas.tsx` is full of `<svg>`, `<rect>`, `<ellipse>` and `<path>`. The
+  statement is not merely stale; it would send a session looking for a renderer that was never adopted.
+- `structure.md` lists `EtAlii.Adp.Backend.Diagrams` and `EtAlii.Adp.Backend.Diagrams.Tests` among the core
+  projects. **Neither exists.** The abstractions live in `EtAlii.Adp.Diagram`, and the core set was decomposed
+  into eleven further projects - `Authentication`, `Common`, `Context`, `Documents`, `Editor`, `Hierarchy`,
+  `History`, `Problems`, `Projects`, `Sessions`, `TestSupport` - none of which the list mentions.
+- `structure.md`'s claim that shared contracts live in a dedicated `api/` folder **is true**, and is named here
+  so that the other two are read as measurements rather than as a case being built.
+
+**Two false architecture statements out of three checked, in the files agents are told to read.** That is what
+duplication costs: the same fact in two places drifts in one of them, and the reader cannot tell which. So
+Requirement 9 makes the agent files point at the new pages rather than restate them, and removes what they
+duplicate - which is the user's word, centralization, applied to documentation rather than to code.
+
 ## Alignment with Product Vision
 
 `product.md` describes ADP as a tool whose diagrams are its own repository's text files. The work here is carried out almost entirely by agent sessions, so **the repository's legibility to an agent is part of its fitness** rather than a courtesy. This specification adds the smallest documentation that measurably reduces re-derivation, and guards it so that it cannot quietly stop being true.
@@ -37,7 +59,7 @@ The user's request, verbatim:
 
 1. The design SHALL state, for every section of both pages, which re-derivation or which wrong turn it prevents.
 2. WHERE the team has actually taken a wrong turn, the page SHALL name it rather than only stating the correct fact. At minimum it SHALL carry the two named in the introduction: that the solution's project paths are relative to `src/backend/`, and that a `.csproj` under `src/` is not necessarily a project of the product.
-3. The pages SHALL NOT restate `CLAUDE.md` or `.spec-workflow/steering/processes.md`; they SHALL link to them. WHEN a subject is covered there THEN the page SHALL carry at most one sentence and a link.
+3. The pages SHALL NOT restate `CLAUDE.md` or `.spec-workflow/steering/processes.md`; they SHALL link to them. WHEN a subject is covered there THEN the page SHALL carry at most one sentence and a link. **The rule runs both ways**: where a steering document currently describes the architecture or the solution structure, that description moves to the page and the steering document links to it, per Requirement 9.
 4. The pages SHALL NOT duplicate `docs/creating-a-diagram-module.md`, `docs/creating-an-editor-module.md`, `docs/dependencies.md`, `docs/diagrams.md` or `docs/guards.md`; they SHALL link to them where a reader needs them.
 
 ### Requirement 3: Every count says what it counts, and can be checked
@@ -103,6 +125,48 @@ The user's request, verbatim:
 1. Each page SHALL state that it is descriptive rather than normative: it says what the tree is, while `CLAUDE.md` and `processes.md` say what to do and a specification says what to build.
 2. Each page SHALL state its refresh rule by link to `CLAUDE.md`'s *Documentation refresh* section: a change that moves something a page names updates the page in the same change.
 3. Each page SHALL name the guard that protects it, and SHALL say plainly that the guard checks existence, counts and size but **cannot** check whether a description is still accurate.
+
+### Requirement 9: The agent files point at these pages, and stop duplicating them
+
+**User Story:** As an agent session reading the rules at the start of my work, I want one place that describes
+the architecture, so that I am never choosing between two descriptions of it and never acting on the stale one.
+
+#### Acceptance Criteria
+
+1. The implementer SHALL read `CLAUDE.md`, `.spec-workflow/steering/structure.md`, `tech.md`, `product.md` and
+   `roles.md`, and SHALL produce a list of every passage that describes the high-level architecture or the
+   solution structure, with the page and section each belongs to. **The list SHALL be in the design**, so that
+   what moved and what stayed is reviewable rather than discovered later.
+2. WHEN a passage duplicates content that now lives on one of the two pages THEN it SHALL be removed from the
+   agent file and replaced by a link to the page's section. **A passage SHALL NOT be left in both places**, and a
+   removal SHALL NOT drop a fact: anything true and not yet on the page moves onto the page first.
+3. **Where a passage is NORMATIVE it stays where it is.** A rule about how the team works belongs in `CLAUDE.md`
+   or `processes.md` and is not architecture description - the commit-identity rules in `tech.md`'s naming
+   section are the clearest example, and they SHALL NOT move to a descriptive page. The design SHALL state this
+   division for every passage it lists, because the two kinds read alike and the wrong move would put process
+   guidance where nothing enforces it.
+4. WHERE a passage is found to be FALSE rather than merely duplicated, the correction SHALL land on the page and
+   the false passage SHALL be removed, and the implementation log SHALL name each one. **Two corrections are named
+   work of this specification rather than examples of it:** `tech.md`'s claim that the client renders the canvas
+   "via a canvas/WebGL-based library (e.g. Konva or PixiJS) rather than raw SVG/DOM", and `structure.md`'s core
+   project list, which names `EtAlii.Adp.Backend.Diagrams` and its test project - neither of which exists - while
+   omitting the eleven decomposed core projects that do. The three claims checked while writing these requirements
+   are the starting list and are not assumed to be the only ones; the implementer SHALL check the rest.
+5. `CLAUDE.md` SHALL carry a short section naming both pages and saying when to read them, so that a session
+   meets them before it starts re-deriving the tree. **This is the enforcement the user asked for**: the pages
+   are reachable from the file every session already reads, rather than only from `readme.md`.
+6. A guard SHALL assert that every steering document and `CLAUDE.md` link resolves, so that a moved section
+   cannot leave a dangling pointer where a duplicated paragraph used to be. IF `DocumentationLinks.Tests` does
+   not currently cover those files THEN this specification SHALL extend it rather than write a second guard.
+7. **An architecture claim in an agent file is a claim the guard must cover, wherever the claim lives.** The guard
+   of Requirement 5 checks the two pages; a project name, path or count left behind in `CLAUDE.md` or a steering
+   document is the same kind of statement and drifts the same way - which is how two false statements came to sit
+   in the files every session reads. So the guard SHALL assert the project names, paths and counts stated in
+   `CLAUDE.md` and the steering documents too, and the design SHALL say which statements those are. **Otherwise
+   this work moves the drift one directory over rather than ending it.**
+8. The design SHALL state how much of `structure.md` and `tech.md` is expected to remain after the removal. IF a
+   steering document would be left with nothing but links THEN the implementer SHALL raise it rather than delete
+   the file, because a steering document's existence is the user's decision and not an implementation detail.
 
 ## Non-Functional Requirements
 

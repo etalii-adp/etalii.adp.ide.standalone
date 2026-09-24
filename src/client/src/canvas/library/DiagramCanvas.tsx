@@ -2563,6 +2563,9 @@ function renderShapeBody(
           background={tokenColour(resolveBound(bound?.fill, source) ?? style.fill) ?? "var(--canvas-node-fill, #3b6ea5)"}
           color={tokenColour(resolveBound(bound?.labelColor, source) ?? style.labelTypography?.color) ?? "var(--canvas-node-label, #ffffff)"}
           name={label}
+          // The paint, which this call alone used to omit - c4 is the only module declaring
+          // `styled-box`, so c4 alone showed no highlight while every other canvas had one.
+          style={paint}
         />
       );
     case "symbol":

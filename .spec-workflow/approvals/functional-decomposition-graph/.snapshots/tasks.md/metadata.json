@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/functional-decomposition-graph/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,22 @@
       "trigger": "initial",
       "approvalId": "approval_1790098082641_yqnidwk6b",
       "approvalTitle": "functional-decomposition-graph - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T10:27:28.691Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790098082641_yqnidwk6b",
+      "approvalTitle": "functional-decomposition-graph - Tasks"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-23T11:36:17.663Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790162728541_ti8cot4ty",
+      "approvalTitle": "FDG tasks: the detector named rather than a companion, the plant the rulings replaced, and a dated status line"
     }
   ]
 }

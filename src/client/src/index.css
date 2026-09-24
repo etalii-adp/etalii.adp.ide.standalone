@@ -12,6 +12,15 @@
   --color-success: #15803d; /* a completed state - deeper than the limegreen accent, so the two read apart */
   --color-warning: #b45309; /* an amber caution - the truncated-view banner and kin */
   --color-diagram-potential: #166534; /* a dark green, clearly not the registered limegreen */
+  /* FOUR TOKENS THE THEME LACKED, each carrying a distinction its diagram exists to show rather
+     than a shade somebody liked. Added 2026-09-23 with client-centralization task 1, when
+     azure-pipeline's ten private --adp-* and causal-loop's five --vscode-* were mapped onto the
+     theme: these four had no equivalent OF THE SAME MEANING, and collapsing them into the nearest
+     one would have deleted the meaning rather than the token. */
+  --color-border-strong: #64748b; /* a line that must out-read the borders it crosses - azure draws its dependency arrows with it, and at --color-border they read as another box edge rather than as what waits for what */
+  --color-accent-subtle: #f0fdf4; /* a ground TINTED towards the accent, not a neutral lift: a deployment job is a different kind of thing to reason about, so it is a different thing to look at. --color-surface-raised is a 6% overlay, which is a different meaning rather than a near match */
+  --color-loop-reinforcing: #0369a1; /* the causal-loop notation's own semantic pair, and the only */
+  --color-loop-balancing: #c2410c;   /* pair here that means something rather than ranks something. Blue and orange are the convention; the hue is kept across themes and the lightness moved, because the original #4daafc and #d18616 read at 2.48:1 and 2.94:1 on white */
   /* WHAT IS SELECTED, and what a dragged connection would land on - one colour for both, by the
      user's ruling of 2026-09-22 that a drop target wins in the selection colour. A violet NO
      DIAGRAM PAINTS AT REST (Requirement 5.5): --color-primary is also timeline's moment fill,
@@ -38,6 +47,10 @@
     --color-success: #4ade80; /* lighter on the dark surface, still clearly not the limegreen accent */
     --color-warning: #fbbf24; /* brighter amber, so the caution still reads on the dark surface */
     --color-diagram-potential: #3f9142; /* darker and duller than limegreen, still legible on the dark surface */
+    --color-border-strong: #94a3b8; /* the polarity flips with the ground, as --color-border does */
+    --color-accent-subtle: #16351f; /* the same tint, lifted off the dark surface instead of the light one */
+    --color-loop-reinforcing: #4daafc; /* the original hues, which only ever read on a dark ground - */
+    --color-loop-balancing: #fb923c;   /* this is the theme the private tokens were quietly written for */
     --color-selected: #a78bfa; /* the same violet, lifted so it still reads on the dark surface */
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
   }

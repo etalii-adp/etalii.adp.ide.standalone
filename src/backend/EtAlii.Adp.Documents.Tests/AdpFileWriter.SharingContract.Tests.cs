@@ -4,7 +4,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Documents.Tests;
 
 /// <summary>
-/// What a reader must permit for <see cref="AdpFileWriter.Save"/> to be able to replace the file
+/// What a reader must permit for <see cref="AdpFileWriter.Save(string, string)"/> to be able to replace the file
 /// underneath it — the contract behind a flaky integration failure, pinned deterministically.
 /// </summary>
 /// <remarks>

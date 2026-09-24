@@ -3,8 +3,10 @@
   "title": "functional-decomposition-graph - Tasks",
   "filePath": ".spec-workflow/specs/functional-decomposition-graph/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-22T17:28:02.641Z",
   "category": "spec",
-  "categoryName": "functional-decomposition-graph"
+  "categoryName": "functional-decomposition-graph",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-23T10:27:28.697Z"
 }

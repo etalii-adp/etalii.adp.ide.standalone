@@ -24,19 +24,18 @@ public class MarkdownEditorSessionTests : IDisposable
     }
 
     [Fact]
-    public async Task ASession_ReadsAndSavesAMarkdownFile()
+    public async Task ASession_ReadsAMarkdownFile()
     {
         // Arrange.
         var path = IoPath.Combine(_root, "readme.md");
         await File.WriteAllBytesAsync(path, "# Title\r\n\r\nBody\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
-        await using var session = new MarkdownEditorSession(path);
 
         // Act.
-        var error = await session.SaveAsync("# Title\r\n\r\nChanged\r\n", TestContext.Current.CancellationToken);
+        await using var session = new MarkdownEditorSession(path);
 
-        // Assert: saved, with the CRLF endings the file arrived with.
-        Assert.Equal("", error);
-        Assert.Equal("# Title\r\n\r\nChanged\r\n"u8.ToArray(), await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+        // Assert: read as written, CRLF endings included. Saving is the shared save command's.
+        Assert.Equal("", session.Refusal);
+        Assert.Equal("# Title\r\n\r\nBody\r\n", session.Content);
     }
 
     [Fact]
@@ -48,8 +47,10 @@ public class MarkdownEditorSessionTests : IDisposable
         await File.WriteAllBytesAsync(path, bytes, TestContext.Current.CancellationToken);
         await using var session = new MarkdownEditorSession(path);
 
-        // Act.
-        var error = await session.SaveAsync(session.Content, TestContext.Current.CancellationToken);
+        // Act: what this module read, written back the way every editor's save writes it.
+        var opened = TextFileBuffer.Open(path);
+        Assert.NotNull(opened.Buffer);
+        var error = await opened.Buffer.SaveAsync(session.Content, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error);

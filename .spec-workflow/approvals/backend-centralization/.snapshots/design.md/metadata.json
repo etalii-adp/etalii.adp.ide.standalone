@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/backend-centralization/design.md",
-  "currentVersion": 1,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,22 @@
       "trigger": "initial",
       "approvalId": "approval_1790098088150_7kp8rc93o",
       "approvalTitle": "backend-centralization - Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T10:28:35.015Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790098088150_7kp8rc93o",
+      "approvalTitle": "backend-centralization - Design"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-23T16:25:06.583Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790167639167_cq4na3de2",
+      "approvalTitle": "backend-centralization S2: the watcher obligation's intended home, and the plain statement that the tree does not have that property yet"
     }
   ]
 }

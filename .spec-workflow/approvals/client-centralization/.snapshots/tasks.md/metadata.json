@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/client-centralization/tasks.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-23T13:54:55.835Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790171695449_5pota0k2z",
+      "approvalTitle": "client-centralization - Tasks (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): 13 tasks, coverage 43 criteria / 43 claims both ways; the two browser-measured theme defects first, with their measured contrast as acceptance (04b3a933)."
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-23T16:25:15.419Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790171695449_5pota0k2z",
+      "approvalTitle": "client-centralization - Tasks (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): 13 tasks, coverage 43 criteria / 43 claims both ways; the two browser-measured theme defects first, with their measured contrast as acceptance (04b3a933)."
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-23T18:17:29.836Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790187244587_0zj2c2mvu",
+      "approvalTitle": "Tasks amendment (raised by the Scrum master for Architect 2, whose spec-workflow connection is down): task 1's count corrected to TEN --adp-* names across 18 var() occurrences, counted by Developer 4 while writing its guard; a newly defined token must join the --color-* namespace or it defeats task 2's widened walk; and task 12's mirror direction points to canvas-single-scrollbar per the Scrum master's ruling (8d84194f)."
+    }
+  ]
+}
