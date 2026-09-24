@@ -169,6 +169,19 @@ be REACHED the thing that gates, rather than the state that must be avoided the 
 the better place for it - but the pattern generalises past this one script, and the clause above about a
 verdict comparison that errors into ALL GREEN is the same defect in a different file.
 
+**And a third member of that family, which is worse than either because the thing that breaks the chain is the
+RIGHT ANSWER.** Verifying this very change, a heading check was chained behind a count of indented code fences
+with `&&`. **The fence count was legitimately zero - the desired result - and `grep -c` exits 1 when it matches
+nothing, so the chain stopped before the heading check ever ran**, while printing output that looked complete.
+
+> **A command that succeeds at finding nothing exits non-zero, so a chain built on it stops on its own good
+> news.**
+
+**That is worse than the fail-open chain above, where the first command's exit was merely uninformative.** Here
+it was correct, expected and wanted, and being correct is what cancelled the measurement after it. **The fix is
+not a cleverer single command** - that only moves the failure - **it is two commands and two answers**, or
+`|| true` where a zero count is a legitimate outcome.
+
 **And the one moment a develop commit is free is when your own base is already stale.** A run that will refuse
 its fast-forward anyway cannot be made worse; that is the only window, and it is worth using deliberately
 rather than waiting for a quiet board that may not come.
@@ -178,6 +191,22 @@ an incident.** The first draft of this clause said a develop commit needs the Sc
 gate slot does. **It cannot: on 2026-09-23 the user landed six commits in under half an hour into the middle of
 two consecutive gate runs** - both green on all four gates at 6678 tests, both refused - **and the user neither
 asks for a gap nor should have to.** A clause that implies otherwise promises a protection it cannot deliver.
+
+**And the question a refold turns on is not whether `develop` moved, it is whether it moved UNDER YOU.** *Is my
+base current* is a cheap proxy that says refold whenever anything lands at all. **The narrower pair answers the
+question that actually decides: `git log <base>..develop -- <the files you touch>` for what landed that can
+reach you, plus a `git merge-tree` conflict check.** On one evening the proxy would have cost a cycle and the
+scoped log was empty.
+
+**Its blind spot belongs in the same breath, or it is a licence rather than a technique: it is only sound
+because the log is SCOPED.** A semantic dependency living in a third file - something you touch that changed
+meaning because of something you do not - appears in neither the scoped log nor `merge-tree`, and **nothing here
+detects it.** So this answers the syntactic question and nothing answers the semantic one.
+
+**Why nobody had questioned the proxy: it errs toward wasted work rather than toward wrong work.** A check whose
+only failure mode is costing you a cycle never produces an incident, so it is never examined - which is the
+neighbouring-question failure with its consequences pointed somewhere harmless. *(Technique Architect 1's,
+blind spot the Scrum master's.)*
 **It is one clause and not two, because the agent case and the user case differ only in whom you could ask and
 not at all in what happens**; the remedy is identical, so splitting them would imply two remedies where there is
 one. What follows is practical: **read the tell at the instant of use rather than trusting a placement** - the
@@ -284,6 +313,11 @@ quotations, I was one message away from reporting them as fabrications:
 - `git log -S "first mounted assertion"` returned **nothing, across every ref and every path** - because that
   sentence *wraps mid-phrase*, breaking between `mounted` and `assertion`. `-S` compares line-wise, so a
   phrase spanning a newline is invisible to it. Flatten the whitespace first and it is there.
+  **It recurred the same evening against a sentence the searcher had written HIMSELF four hours earlier**:
+  `grep -F "measured by the session that hit it"` returned nothing, because that line breaks as *...Measured
+  by the session* / *that hit it: a genuine test failure exits...*. **Knowing your own wording is no
+  protection, because the wrap is not in the wording** - it is in where the paragraph happened to be filled,
+  which nobody remembers and no author chose.
 - `grep -c "after a landing"` returned **0** on two different revisions - because the line is **shouted**:
   *STAGED SNAPSHOTS: COMMIT THEM BEFORE A GATE, AND AFTER A LANDING.* `grep -ci` finds it.
 - **and the control was clean.** All twenty-four worktrees checked for an uncommitted copy the reader might
@@ -292,7 +326,12 @@ quotations, I was one message away from reporting them as fabrications:
 
 **Prose wraps and rules get shouted, so both blind spots are live every time anybody greps this file**, and
 neither is visible in the result. Search a prose document case-insensitively, and flatten whitespace before
-searching for any phrase longer than a few words.
+searching for any phrase longer than a few words. **And strip blockquote and list
+markers before flattening, which is a THIRD property of the same instrument and was found the same way**:
+a search for a sentence just added to this document returned zero, because the sentence is a blockquote and
+flattening had left `>` sitting mid-phrase. **The flattening that fixes the wrap introduces its own
+mid-phrase litter** - `sed 's/^> \?//'` first, and the hit is there. Three properties now, all invisible in
+the result, all live on the document most likely to be searched for a rule.
 
 > **A correct control on the wrong hypothesis strengthens the wrong conclusion.**
 
@@ -1884,6 +1923,13 @@ closed a day before it appeared in a table as evidence about something else. **A
 citation of a thing that may since have changed**, so resolve it against the tree before it carries weight.
 *(Architect 1's, volunteered with two other defects in the same table: the mechanism could not arise, and three
 of the four components on its clean side had no tests at all - a control arm that cannot express the outcome.)*
+
+**A second instance, the coordinator's own and named against itself: a gate go quoting `d27e8d4f`.** That SHA
+was not stale - it belonged to a branch that had been **abandoned**, so it was a reference that outlived the
+thing it referred to. **Both instances are references outliving their referents, and neither is detectable from
+the reference**: a test name from a log and a SHA from a discarded branch are both perfectly well-formed, and
+only resolving them against the tree says otherwise. **The tell is that you cannot tell** - so resolve, rather
+than inspect.
 
 **And a file git calls modified while `git diff` shows NOTHING is not a git fault.** It is a working tree at LF
 under a CRLF house style: `diff` normalises through `text=auto eol=crlf` and the stat entry does not, and
