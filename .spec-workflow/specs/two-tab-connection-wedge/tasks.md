@@ -142,7 +142,13 @@ and be attempted.
     is undefended: an invariant nobody wrote down is a coincidence with tenure. A future change made
     for an ordinary reason - preserving canvas zoom and pan, an undo stack, avoiding a re-baseline
     flicker - must be made knowingly.
-  - Independent of task 1. Do not sequence it behind the TLS work.
+  - **Independent of task 1, and the reason is here rather than only in the design, because this is
+    the ordering a later reader will want to tidy away now the TLS answer landed on the comfortable
+    side.** A production decision is not a shipped configuration. The window between deciding to
+    serve over TLS and actually serving over TLS is unbounded, and during it this guard is the only
+    thing standing between the product and the worse defect - four documents in one tab. Sequencing
+    it behind the TLS work leaves the product unprotected in exactly the interval the guard exists
+    for.
   - _Requirements: 4.1, 4.2, 4.3_
 
 - [ ] 4. A bound on how long an incomplete request may look like success
@@ -159,7 +165,10 @@ and be attempted.
     worse while appearing to act.
   - Where the recovery can be offered it should be - closing other tabs - phrased as a suggestion
     rather than a diagnosis, because no user arrives at it unaided.
-  - Independent of task 1.
+  - **Independent of task 1, for the same reason task 3 states.** Until TLS is actually serving -
+    not decided, serving - this bound is the user's only signal that the application has stopped
+    working, and the interval between the decision and the deployment is unbounded. It is also the
+    only piece here that helps if the cap is reached by something nobody has predicted.
   - _Requirements: 5.1, 5.2, 5.3_
 
 - [ ] 5. Optional: collapse the three per-tab streams
