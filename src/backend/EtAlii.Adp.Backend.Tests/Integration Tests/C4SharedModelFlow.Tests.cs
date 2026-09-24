@@ -1,6 +1,6 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
@@ -79,7 +79,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
@@ -165,7 +165,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<IReadOnlyList<string>> ElementIdsAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
@@ -176,7 +176,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<string> TitleOfAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
@@ -188,7 +188,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<IReadOnlyList<Element>> BaselineAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -234,7 +234,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<EtAlii.Adp.Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

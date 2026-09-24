@@ -1,7 +1,7 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
@@ -87,7 +87,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
@@ -289,7 +289,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
     /// The watch id is a parameter because a hierarchy model is per connection: a selection made
     /// on one watch id cannot name an entry listed under another.
     /// </remarks>
-    private static async Task<IReadOnlyDictionary<string, EtAlii.Adp.Documents.Wire.ShortGuid>> EntriesAsync(
+    private static async Task<IReadOnlyDictionary<string, Documents.Wire.ShortGuid>> EntriesAsync(
         GrpcChannel channel,
         Metadata headers,
         ShortGuid projectId,
@@ -328,7 +328,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         Metadata headers,
         ShortGuid projectId,
         ShortGuid watchId,
-        EtAlii.Adp.Documents.Wire.ShortGuid entryId)
+        Documents.Wire.ShortGuid entryId)
     {
         var response = await client.DiscoverActionsAsync(
             new DiscoverActionsRequest
@@ -350,7 +350,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
     /// The child's path is left empty, which asks the backend to fill in the full chain rather
     /// than trusting the client's version of it - the same thing the pipeline canvas sends.
     /// </remarks>
-    private static ContextSelection ElementChain(EtAlii.Adp.Documents.Wire.ShortGuid entryId, string elementId)
+    private static ContextSelection ElementChain(Documents.Wire.ShortGuid entryId, string elementId)
     {
         var chain = new ContextSelection
         {

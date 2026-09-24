@@ -1,6 +1,6 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
@@ -57,7 +57,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }

@@ -1,6 +1,6 @@
+using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents.Wire;
-using EtAlii.Adp.Context;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;

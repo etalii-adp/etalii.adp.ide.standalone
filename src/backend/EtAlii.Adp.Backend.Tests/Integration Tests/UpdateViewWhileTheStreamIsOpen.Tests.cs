@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
@@ -94,7 +94,7 @@ public sealed class UpdateViewWhileTheStreamIsOpenTests : IDisposable
         // The host discovers these at startup and registers them before anything can serve a
         // request; the file router resolves an .adp to its module through them, so a container
         // without them cannot open a diagram at all.
-        IReadOnlyList<EtAlii.Adp.Documents.DiagramDefinition> definitions = DiagramDefinitionDiscovery.Discover();
+        IReadOnlyList<Documents.DiagramDefinition> definitions = DiagramDefinitionDiscovery.Discover();
         services.AddSingleton(definitions);
         services.AddSingleton<Service>();
 

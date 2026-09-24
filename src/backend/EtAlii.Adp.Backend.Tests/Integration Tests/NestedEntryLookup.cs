@@ -12,10 +12,10 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 internal static class NestedEntryLookup
 {
-    public static async Task<EtAlii.Adp.Documents.Wire.ShortGuid> EntryIdOfAsync(
+    public static async Task<Documents.Wire.ShortGuid> EntryIdOfAsync(
         HierarchyService.HierarchyServiceClient hierarchy,
-        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
-        EtAlii.Adp.Documents.Wire.ShortGuid watchId,
+        Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid watchId,
         Metadata headers,
         string name)
     {

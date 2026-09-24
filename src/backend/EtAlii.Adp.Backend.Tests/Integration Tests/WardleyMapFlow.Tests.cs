@@ -1,9 +1,9 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.WardleyMap;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
@@ -92,7 +92,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
@@ -511,7 +511,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
     // ---- plumbing -----------------------------------------------------------------------------
 
-    private static ContextSelection ElementChain(EtAlii.Adp.Documents.Wire.ShortGuid entryId, string elementId)
+    private static ContextSelection ElementChain(Documents.Wire.ShortGuid entryId, string elementId)
     {
         var chain = new ContextSelection
         {
@@ -550,8 +550,8 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
-        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
-        EtAlii.Adp.Documents.Wire.ShortGuid watchId,
+        Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid watchId,
         Metadata headers,
         string actionId) =>
         contextClient.ExecuteActionAsync(
@@ -569,7 +569,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     private static async Task<IReadOnlyList<Element>> BaselineAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid projectId,
         string fileName)
     {
         using var cts = CreateMessageTimeout();
@@ -660,7 +660,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<EtAlii.Adp.Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<Documents.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

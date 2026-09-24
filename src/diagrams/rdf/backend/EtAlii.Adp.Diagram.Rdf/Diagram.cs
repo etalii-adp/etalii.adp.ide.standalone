@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 

@@ -1,7 +1,7 @@
 ﻿using System.Threading.Channels;
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
@@ -158,7 +158,7 @@ public sealed partial class DiagramService
     }
 
     private bool TryResolveBody(
-        EtAlii.Adp.Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,

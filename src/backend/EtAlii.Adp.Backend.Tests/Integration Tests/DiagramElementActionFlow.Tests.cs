@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
@@ -63,7 +63,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }

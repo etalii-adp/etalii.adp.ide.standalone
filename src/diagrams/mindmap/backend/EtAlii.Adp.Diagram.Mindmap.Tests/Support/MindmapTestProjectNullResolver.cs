@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents.Wire;
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 
