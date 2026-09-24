@@ -87,10 +87,33 @@ function sections(text: string): Map<string, string> {
   return found;
 }
 
-/** Every `Source:` line with the fenced block under it. */
+/** Every `Source:` line with the fenced block under it - but only a Source: line OUTSIDE a fence. */
 function excerpts(text: string): { file: string; body: string }[] {
+  // The readme demonstrates this convention by showing a Source: line inside a fence. Today that
+  // demonstration has no body under it, so the pattern below would skip it anyway - but that is
+  // coincidence, not knowledge, and it breaks the day a demonstration includes an example body.
+  // So fences are located first and a Source: line inside one is never an excerpt.
+  const insideAFence = fenceSpans(text);
   return [...text.matchAll(/Source: \[`([^`]+)`\]\([^)]+\)\n\n```[a-z]*\n([\s\S]*?)\n```/g)]
+    .filter((match) => !insideAFence((match.index ?? 0)))
     .map((match) => ({ file: match[1], body: match[2] }));
+}
+
+/** Whether a character offset falls inside a fenced block, fences paired in document order. */
+function fenceSpans(text: string): (offset: number) => boolean {
+  const spans: [number, number][] = [];
+  let open: number | null = null;
+  for (const fence of text.matchAll(/^```.*$/gm)) {
+    const at = fence.index ?? 0;
+    if (open === null) {
+      open = at;
+    } else {
+      spans.push([open, at]);
+      open = null;
+    }
+  }
+
+  return (offset) => spans.some(([start, end]) => offset > start && offset < end);
 }
 
 /** The backticked names of the final list. */
