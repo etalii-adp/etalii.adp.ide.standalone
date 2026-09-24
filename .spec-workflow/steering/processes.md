@@ -303,6 +303,16 @@ all-clear with nothing in it to invite a second look.** Two sessions were saved 
 day. **"I could not find it" and "it is not there" cost the same to write and differ by everything the
 instrument cannot see.**
 
+**And the same holds for a REPAIR, not just for a reading - which is the harder version, because a repair
+gets copied.** A window found in six document stores was fixed and commented in all six; five comments say the
+reassignment also re-establishes the cache from what was just written and must not be optimised away as
+redundant. **The sixth had to say something different**: that store's cache holds the very document object the
+caller edited, so it keeps no reparsed entry to put back, and a reload that evicted it only means the next
+load re-reads a file that now *has* the edit. Same window, different repair - **and the copied comment would
+have been WRONG there rather than merely redundant.** **Five identical comments and one that must differ is a
+pattern a sweep cannot produce and a reader cannot audit by sampling**, so the sixth is exactly the one that
+gets written by copying.
+
 ## A rule that is silent about its sibling case reads as complete
 
 **A false rule gets caught. A true-but-partial one does not.** A rule whose antecedent covers one branch of a
@@ -346,6 +356,15 @@ through a worktree and the four gates, and the **one** stated exception is a spe
 the dashboard reads those from `develop` and nowhere else*. `CLAUDE.md` is not one and no dashboard reads it.
 **The ruling was right, and the premise the session argued from was false.** Both halves are worth keeping,
 because the second is the transferable one.
+
+**And note which direction this failed in, because it is the harder one to catch: an instrument that ACCUSES
+is trusted more readily than one that EXCUSES.** Nobody argues with bad news about themselves. A truncated
+count and a search that was honest only about the string it was given both *let something off*, and in each
+case somebody eventually noticed the absence did not fit. **The parent count did the opposite - it
+manufactured a violation against five sessions' correct work, and three sessions believed it, including the
+one whose own ruling it appeared to undermine.** It took a different test, not more care, and it took somebody
+who had no stake in the accusation being true. **When a measurement indicts, that is the moment to run the
+second instrument** - the reading feels like diligence, and agreement with it feels like honesty.
 
 **The rule half, which stands on its own: a shortcut taken four times is indistinguishable from a rule that
 never applied, and only the rule's own text and its stated exceptions can tell them apart.** Four commits in a
@@ -1361,6 +1380,31 @@ re-read immediately before the act rather than at the start of the turn, and **s
 a reader can see the interval you could not.
 
 **`ahead=0` also answers a narrower question than it appears to: ahead of WHICH `develop`, read WHEN.**
+
+**The narrowest this gets from OUTSIDE the tool, and it names its own residue.** Put the tell in the same
+invocation as the gate - read and launch as one command, so `TELL_EXIT` appears in the gate's own log - rather
+than read, compose, launch. **That removes the message-length interval, which is the one that produced every
+instance above, and it is still not zero**: the read and the launch remain two operations, so a run starting
+between them is unrefused. **A partial remedy that states its residue is worth more than the rule alone**,
+because the next reader can see what is left rather than assuming it was closed.
+
+**And the version that closes it cannot be a rule at all - it has to be inside the tool, which is a stated
+next step rather than something to do in passing.** `gate.sh` would call the tell itself and refuse unless it
+reads free, so the check and the act are one operation and there is no interval to go stale in. Three things
+about its cost, from reading the scripts rather than from running them:
+
+- **It is not a two-line change and it does not get the fast path.** Touching `.github/tools/gate/` means a
+  full self-test rather than `mode=quick`, and the refusal needs its own `RESULT=` line so a caller can tell
+  *board held* from *arguments wrong* from *gates red* - three exits that must not collapse into one.
+- **The obstacle usually named for it - that the gate holds the board while it runs, so a tell call would
+  refuse itself - is an ordering constraint rather than a hard part.** `gate.sh` acquires its lock and only
+  then writes its tell entry, so a check placed before the lock cannot see itself.
+- **The real difficulty is that it narrows the window rather than closing it, for a reason the proposal does
+  not mention.** The lock is per scratch worktree and the tell aggregates across them, so there is no single
+  board-wide lock to take atomically: two gates can both read free and then both lock their own trees.
+  **Closing it properly means one shared lock acquired atomically, which is a larger change than adding a
+  check** - and worth saying, because a proposal believed to close a window will stop anybody looking for the
+  residue.
 
 **And the moving ref can be read by a BUILD, not just by a session - so do not commit in a worktree while a
 build or suite is running there.** `Nerdbank.GitVersioning` is referenced from `src/Directory.Build.props` for
