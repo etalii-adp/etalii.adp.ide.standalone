@@ -59,14 +59,41 @@ public sealed class PlainEditorSession : IEditorSession
 
     public event EventHandler<EditorContentChangedEventArgs>? Changed;
 
+    /// <summary>
+    /// How many times a re-read is retried before the notification is given up on, and how long
+    /// between attempts.
+    /// </summary>
+    /// <remarks>
+    /// <b>A refusal must not consume the change.</b> A publish through <c>AdpFileWriter</c> is a
+    /// temp-then-replace, and <see cref="TextFileBuffer.Open"/> refuses on
+    /// <c>!info.Exists</c> - <b>before any exception handling</b>, so it is a refusal rather than
+    /// something a catch would see. A callback landing while the destination name is in transit
+    /// therefore got "does not exist", and the old code logged it and RETURNED: the notification
+    /// was consumed and nothing ever re-read, so a waiting reader waited for an event that had
+    /// already been delivered and thrown away.
+    /// <para>
+    /// Retrying is the whole fix. The window is microseconds wide by design, so three attempts a
+    /// short hop apart is generous rather than hopeful - and if all three refuse, the file really
+    /// is unreadable and the last good content stays in place, which is the behaviour the original
+    /// comment described and intended.
+    /// </para>
+    /// </remarks>
+    private const int ReadAttempts = 3;
+
+    private static readonly TimeSpan BetweenReadAttempts = TimeSpan.FromMilliseconds(20);
+
     private void OnExternalChange()
     {
-        var result = TextFileBuffer.Open(_path);
+        var result = ReadWithRetry(() => TextFileBuffer.Open(_path), ReadAttempts, BetweenReadAttempts);
         if (result.Buffer is null)
         {
-            // The file became unreadable underneath the session - worth a line, and the last
-            // good content stays in place rather than being replaced by nothing.
-            _logger.Warning("The externally changed {Path} no longer opens: {Refusal}", _path, result.Refusal);
+            // Out of attempts: the file is genuinely unreadable rather than mid-replace. Worth a
+            // line, and the last good content stays in place rather than being replaced by nothing.
+            _logger.Warning(
+                "The externally changed {Path} no longer opens after {Attempts} attempts: {Refusal}",
+                _path,
+                ReadAttempts,
+                result.Refusal);
             Refusal = result.Refusal;
             return;
         }
@@ -74,6 +101,31 @@ public sealed class PlainEditorSession : IEditorSession
         _buffer = result.Buffer;
         Refusal = "";
         Changed?.Invoke(this, new EditorContentChangedEventArgs(result.Buffer.Content));
+    }
+
+    /// <summary>
+    /// Reads until it succeeds or runs out of attempts. Internal rather than private so the retry
+    /// can be guarded deterministically: the window it exists for is microseconds wide, so a test
+    /// driving the real file system could only ever hit it by luck, and a guard that passes by luck
+    /// is not one.
+    /// </summary>
+    internal static TextFileBufferOpenResult ReadWithRetry(
+        Func<TextFileBufferOpenResult> read,
+        int attempts,
+        TimeSpan between)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var result = read();
+            if (result.Buffer is not null || attempt >= attempts)
+            {
+                return result;
+            }
+
+            Thread.Sleep(between);
+        }
     }
 
     public ValueTask DisposeAsync()

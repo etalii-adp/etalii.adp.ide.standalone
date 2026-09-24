@@ -9,4 +9,11 @@
     <PackageReference Include="Serilog" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- So the re-read retry can be guarded with a reader that refuses on demand: the window it
+         exists for is microseconds wide, and a test driving the real file system would only hit it
+         by luck. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Editor.Plain.Tests" />
+  </ItemGroup>
+
 </Project>
