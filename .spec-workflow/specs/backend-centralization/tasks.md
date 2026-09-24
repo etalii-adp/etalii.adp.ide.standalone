@@ -52,24 +52,24 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 
 ## Group 1 — The save result, first because every later step touches saving
 
-- [ ] 1. Add the seven project references the user's placement ruling costs
+- [x] 1. Add the seven project references the user's placement ruling costs
   - Files: the seven module backend `.csproj` files that do not yet reference `EtAlii.Adp.Documents`
   - The user ruled placement **(b) `EtAlii.Adp.Documents`** on 2026-09-22, at a stated cost of seven new project references, one line each. Add exactly those seven and nothing else; a module that already references it is left alone.
   - **A fresh worktree is built before anything else is trusted**, because every other gate reads `obj/` and a generated-code break is invisible to them by construction.
   - _Requirements: 8.1_
 
-- [ ] 2. The shared save result type
+- [x] 2. The shared save result type
   - Files: new in `EtAlii.Adp.Documents`, plus its tests
   - One result type carrying an error and enough for a caller to decide, returned by every store's save. **The type is named and shaped once here and not changed again**, which is why this group is first.
   - _Requirements: 3.1_
 
-- [ ] 3. A guard that a discarded save result fails the build
+- [x] 3. A guard that a discarded save result fails the build
   - Files: a new test in `EtAlii.Adp.Backend.Tests`, beside `GuardInventory.Tests.cs`
   - A discarded result anywhere in backend or module code reddens. **The guard is seen to fail against a planted discard before it is trusted**, and the planted defect and the message it produced are recorded in the implementation log.
   - **Sabotage the call site, not only the helper**: a unit guard over the result type cannot see a caller that drops it, which is where the regression a later reader would actually cause lives.
   - _Requirements: 3.3_
 
-- [ ] 4. mindmap's `Save` stops throwing, and the edit survives a failure
+- [x] 4. mindmap's `Save` stops throwing, and the edit survives a failure
   - Files: mindmap's store and its tests
   - `Save` returns the shared result rather than throwing for a failed write. **On failure the edit stays in memory**, as the other stores already do, so a user can retry rather than lose work.
   - A test asserts the edit is still present after a failed save. **It is seen to fail against the current throwing path.**
@@ -77,7 +77,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 
 ## Group 2 — The document-store lifecycle, the largest single reduction
 
-- [ ] 5. The shared lifecycle
+- [x] 5. The shared lifecycle
   - Files: new in `EtAlii.Adp.Documents`, plus its tests
   - Load, return, forget and reload, with the per-destination turn the writer already takes. **A first load whose file cannot be read produces a shared failure rather than each store's own**, and a parse that throws is reported as that document's problem so one document's failure never costs another's reload.
   - **THE SAVE PATH TAKES THE DOCUMENT AND NEVER READS THE CACHE.** This is a property of the signature rather than a rule to remember: the lifecycle's save accepts the `TDocument` the caller edited, and no cache read is reachable from it, so the defect cannot be written. **Amended into this task on 2026-09-24 because the defect it forbids was live in six stores that morning** - `Save(path)` re-fetched from the cache while `Reload` evicted, so a reload landing between a command's edit and its save discarded the edit **and reported success**, which put the command's inverse on the undo stack for a change that never happened. Fixed at `6c4f90d6`. **A shared lifecycle whose save reads the cache would reproduce that in all ten stores at once, from one line, and it would arrive looking like consolidation rather than like a regression.**
