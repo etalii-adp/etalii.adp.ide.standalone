@@ -1,65 +1,302 @@
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { computeModuleClientApiSurface, SET_B_ROOTS } from "./diagramModuleClientApi.surface";
+import mermaid from "mermaid";
+import { computeModuleClientApiSurface, SET_B_ROOTS, sourceRoot } from "./diagramModuleClientApi.surface";
 
 /**
- * The canaries for the computed module-facing surface (Requirement 6.4).
+ * `docs/diagram-module-client-api.md` is held to the code by this file rather than by review.
  *
- * The readme this feeds is checked against two sets that are recomputed on every run, so the
- * failure mode to fear is not a wrong answer but an EMPTY one: a moved folder, a renamed alias
- * or a parse that silently reads nothing would leave the sets small and every later check would
- * pass by having nothing to check. These assert the computation is alive before anything trusts
- * its output - a floor, two named members that must be found, and that every surface file was
- * actually read.
+ * Six checks, each collecting every offender and failing once naming them all, because a check that
+ * stops at the first gives a repair list of length one and is run again for the next.
  *
- * The floor is set below the measured size rather than at it, so an ordinary edit does not fail
- * it while an emptied computation does. The named members are the better half of the test: a
- * floor can be met by a set full of the wrong names, and `DiagramDefinition` reaching Set B is
- * the walk working rather than the count being large.
+ * **No check may pass when its input is missing.** An unreadable readme, an unreadable surface file
+ * or a Set B root that no longer resolves throws rather than producing a smaller answer - a short set
+ * makes every check below it pass by having nothing to check, which is the failure this whole file
+ * exists to prevent.
  */
-describe("the module-facing client API surface, computed", () => {
-  const surface = computeModuleClientApiSurface();
-  const everyName = new Set([...surface.setA.keys(), ...surface.setB.keys()]);
 
-  it("finds a surface at all, above a floor set below the measured size", () => {
-    // Assert. 90 is just under the size measured while the design was written; the message
-    // carries both sets' counts because a failure here is nearly always one of them collapsing
-    // to zero rather than both shrinking together.
-    expect(
-      everyName.size,
-      `Set A ∪ Set B holds ${everyName.size} names (Set A ${surface.setA.size}, Set B ${surface.setB.size}), ` +
-        `computed from ${surface.surfaceFiles.length} surface files and ${surface.moduleFiles.length} module files. ` +
-        "Below the floor means the computation found little or nothing - check the @client alias and the module client folders " +
-        "before assuming the API shrank.",
-    ).toBeGreaterThanOrEqual(90);
+/** The readme, read once. Throws rather than returning empty - see the note above. */
+function readme(): string {
+  const path = join(sourceRoot(), "..", "docs", "diagram-module-client-api.md");
+  if (statSync(path, { throwIfNoEntry: false })?.isFile() !== true) {
+    throw new Error(`The readme is missing at '${path}'. Every check below would otherwise pass on an empty document.`);
+  }
+
+  return readFileSync(path, "utf8").replace(/\r\n/g, "\n");
+}
+
+/**
+ * The document with every fenced block removed.
+ *
+ * **The readme demonstrates its own conventions by showing an example of each, inside a fence.** A
+ * parse that reads those examples treats them as real entries - and because they name real
+ * declarations, it would PASS for the wrong reason rather than fail. A document that teaches its
+ * format teaches the parser a lie unless the parser skips fences.
+ */
+function withoutFences(text: string): string {
+  return text.replace(/```[\s\S]*?```/g, "");
+}
+
+/** Every name on a `**Declarations:**` line, outside fences. */
+function declaredNames(text: string): Map<string, string> {
+  const declared = new Map<string, string>();
+  const body = withoutFences(text);
+  let section = "(before the first heading)";
+  for (const line of body.split("\n")) {
+    const heading = /^#{2,3} (.+)$/.exec(line);
+    if (heading !== null) {
+      section = heading[1];
+      continue;
+    }
+
+    const declarations = /^\*\*Declarations:\*\* (.+)$/.exec(line);
+    if (declarations !== null) {
+      for (const name of declarations[1].matchAll(/`([^`]+)`/g)) {
+        declared.set(name[1], section);
+      }
+    }
+  }
+
+  return declared;
+}
+
+/** The section a heading opens, to its text - for the field-coverage check. */
+function sections(text: string): Map<string, string> {
+  const found = new Map<string, string>();
+  let current: string | null = null;
+  let body: string[] = [];
+  for (const line of withoutFences(text).split("\n")) {
+    const heading = /^#{2,3} (.+)$/.exec(line);
+    if (heading !== null) {
+      if (current !== null) {
+        found.set(current, body.join("\n"));
+      }
+
+      current = heading[1];
+      body = [];
+    } else {
+      body.push(line);
+    }
+  }
+
+  if (current !== null) {
+    found.set(current, body.join("\n"));
+  }
+
+  return found;
+}
+
+/** Every `Source:` line with the fenced block under it. */
+function excerpts(text: string): { file: string; body: string }[] {
+  return [...text.matchAll(/Source: \[`([^`]+)`\]\([^)]+\)\n\n```[a-z]*\n([\s\S]*?)\n```/g)]
+    .map((match) => ({ file: match[1], body: match[2] }));
+}
+
+/** The backticked names of the final list. */
+function internalList(text: string): string[] {
+  const section = sections(text).get("Library-internal exports");
+  if (section === undefined) {
+    throw new Error("The readme has no 'Library-internal exports' section, so check 3 would compare against nothing.");
+  }
+
+  return [...section.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+}
+
+/**
+ * Tests that walk module clients: a client test naming the diagrams folder in a path literal AND
+ * reading the filesystem.
+ *
+ * **Its blind spot, stated because the rule's own author is in it**: this finds a test that walks
+ * DIRECTLY, not one that walks through a helper. This file walks through
+ * `diagramModuleClientApi.surface.ts`, so the rule does not find this file - which is correct for
+ * what the readme's table is for (guards a MODULE is subject to) and would be wrong for any use that
+ * claimed to enumerate every walker.
+ */
+function walkingTests(): string[] {
+  const root = sourceRoot();
+  const client = join(root, "client", "src");
+  const found: string[] = [];
+  const walk = (at: string): void => {
+    for (const entry of readdirSync(at)) {
+      const path = join(at, entry);
+      if (statSync(path, { throwIfNoEntry: false })?.isDirectory() === true) {
+        if (entry !== "node_modules") {
+          walk(path);
+        }
+      } else if (/\.test\.tsx?$/.test(entry)) {
+        const text = readFileSync(path, "utf8");
+        const namesTheFolder = /["'`][^"'`]*\bdiagrams\b[^"'`]*["'`]/.test(text);
+        const readsTheTree = /readdirSync|statSync|import\.meta\.glob/.test(text);
+        if (namesTheFolder && readsTheTree) {
+          found.push(path.slice(client.length + 1).replace(/\\/g, "/"));
+        }
+      }
+    }
+  };
+
+  walk(client);
+  return found.sort();
+}
+
+describe("docs/diagram-module-client-api.md is held to the code", () => {
+  const surface = computeModuleClientApiSurface();
+  const text = readme();
+  const declared = declaredNames(text);
+
+  it("is alive: the document, the surface and the conventions were all found", () => {
+    // The liveness floor. Every check below reads one of these, and each would pass on an empty
+    // answer, so the absence of any of them is reported here as itself rather than as a clean run.
+    expect(text.length, "the readme is empty").toBeGreaterThan(2000);
+    expect(declared.size, "no Declarations lines were parsed - the convention or the fence-skipping changed").toBeGreaterThanOrEqual(10);
+    expect(excerpts(text).length, "no Source: excerpts were parsed").toBeGreaterThanOrEqual(10);
+    expect(new Set([...surface.setA.keys(), ...surface.setB.keys()]).size).toBeGreaterThanOrEqual(90);
   });
 
-  it("reaches the four roots' own names in Set B, the walk rather than the count", () => {
-    // Assert. Every root is declared by a surface file, so every root must come back;
-    // `DiagramDefinition` is the one named in the requirement.
-    expect(surface.setB.has("DiagramDefinition")).toBe(true);
-    for (const root of SET_B_ROOTS) {
-      expect([...surface.setB.keys()], `'${root.name}' is a Set B root and must be reached by the walk`).toContain(root.name);
+  it("check 1 - covers every name in the surface, and every member of every covered interface", () => {
+    const uncovered = [...new Set([...surface.setA.keys(), ...surface.setB.keys()])]
+      .filter((name) => !declared.has(name))
+      .sort();
+    const missingMembers: string[] = [];
+    const bySection = sections(text);
+    for (const [name, section] of declared) {
+      const members = surface.interfaceMembers.get(name);
+      if (members === undefined || members.length === 0) {
+        continue;
+      }
+
+      const body = bySection.get(section) ?? "";
+      const absent = members.filter((member) => !body.includes(`\`${member}\``));
+      if (absent.length > 0) {
+        missingMembers.push(`${name} (in '${section}'): ${absent.join(", ")}`);
+      }
+    }
+
+    expect(uncovered, `${uncovered.length} name(s) in the computed surface have no Declarations line. ` +
+      "Each is a name a module can import that this document does not describe - add an entry, or stop exporting it.")
+      .toEqual([]);
+    expect(missingMembers, "an entry declares an interface without naming every member in its own section " +
+      "(Requirement 3.3), so a member added later would go undocumented while the entry still looked complete:\n" +
+      missingMembers.join("\n")).toEqual([]);
+  });
+
+  it("check 3 - every declared and listed name exists, and the internal list is exactly what is left over", () => {
+    const unknown = [...declared.keys()]
+      .filter((name) => !surface.exportsBySurfaceFile.has(name))
+      .sort();
+    const listed = internalList(text);
+    const computed = [...surface.exportsBySurfaceFile.entries()]
+      .filter(([name, file]) => file.includes("canvas/library") && !surface.setA.has(name) && !surface.setB.has(name))
+      .map(([name]) => name)
+      .sort();
+    const listedInASet = listed.filter((name) => surface.setA.has(name) || surface.setB.has(name));
+
+    expect(unknown, `${unknown.length} declared name(s) are exported by no surface file - a renamed or ` +
+      "removed declaration whose entry outlived it.").toEqual([]);
+    expect(listedInASet, "a name on the internal list is in Set A or Set B, so it is module-facing and " +
+      "must have an entry rather than a line on that list.").toEqual([]);
+    expect(listed, "the internal list is not exactly the library's exports outside both sets. It is " +
+      "generated rather than typed, so a difference means the generator and the document have diverged.")
+      .toEqual(computed);
+  });
+
+  it("check 4 - every excerpt occurs verbatim in the file it names", () => {
+    const wrong: string[] = [];
+    for (const { file, body } of excerpts(text)) {
+      const path = join(sourceRoot(), "..", file);
+      if (statSync(path, { throwIfNoEntry: false })?.isFile() !== true) {
+        wrong.push(`${file}: the file does not exist`);
+        continue;
+      }
+
+      if (!readFileSync(path, "utf8").replace(/\r\n/g, "\n").includes(body)) {
+        wrong.push(`${file}: the excerpt no longer occurs there`);
+      }
+    }
+
+    expect(wrong, "an excerpt has drifted from its source. Excerpts are copied, never retyped, so a " +
+      "difference means the source changed and the document did not:\n" + wrong.join("\n")).toEqual([]);
+  });
+
+  it("check 5 - diagram identifiers are real, and the guard table is the walking tests", () => {
+    const named = new Set<string>();
+    for (const block of text.matchAll(/```mermaid\n([\s\S]*?)```/g)) {
+      for (const identifier of block[1].matchAll(/\b(use[A-Z]\w+|[A-Z]\w+(?:Definition|Declaration|Ref|Rule|Handlers|Model|Canvas|Registration|Refused|Drawn))\b/g)) {
+        named.add(identifier[1]);
+      }
+    }
+
+    const unreal = [...named]
+      .filter((name) => !surface.setA.has(name) && !surface.setB.has(name) && !surface.exportsBySurfaceFile.has(name))
+      .sort();
+    const walkers = walkingTests();
+    const undocumented = walkers.filter((path) => !text.includes(`\`${path.split("/").pop() as string}\``)).sort();
+
+    expect(unreal, "a diagram names something that is not in the surface. A picture reads as " +
+      "illustration rather than as a claim, which is why this is checked:\n" + unreal.join("\n")).toEqual([]);
+    expect(walkers.length, "the walking-test detection found nothing, so the guard table is unchecked").toBeGreaterThanOrEqual(10);
+    expect(undocumented, `${undocumented.length} test(s) walk module clients and are not in the guard ` +
+      "table. A module is subject to them whether the document says so or not:\n" + undocumented.join("\n")).toEqual([]);
+  });
+
+  it("check 6 - every mermaid block parses, and is the kind the document uses it as", async () => {
+    const blocks = [...text.matchAll(/```mermaid\n([\s\S]*?)```/g)].map((match) => match[1]);
+    const failures: string[] = [];
+    const kinds: string[] = [];
+    for (const [index, block] of blocks.entries()) {
+      try {
+        const parsed = await mermaid.parse(block);
+        kinds.push(parsed?.diagramType ?? "unknown");
+      } catch (error) {
+        // A block that fails to parse degrades to its source text rather than erroring, so this
+        // failure is silent in every renderer - which is why it is asserted rather than looked at.
+        failures.push(`block ${index + 1}: ${(error as Error).message.split("\n")[0]}`);
+      }
+    }
+
+    expect(blocks.length, "the readme carries no mermaid blocks, so this check has nothing to parse").toBeGreaterThanOrEqual(5);
+    expect(failures, "a mermaid block does not parse. It will render as a code listing rather than as " +
+      "a diagram, which no render check reliably catches:\n" + failures.join("\n")).toEqual([]);
+    expect(kinds).toEqual(["flowchart-v2", "sequence", "classDiagram", "sequence", "sequence"]);
+  });
+
+  it("the paths this document writes resolve, because it is written to make that true", () => {
+    // A rule over a document I own, NOT a heuristic over documents I do not. Across the
+    // specifications, 61 of 131 backticked path spans legitimately do not resolve - elisions, globs,
+    // templates, paths relative to an implied root, and files a design proposes to create. A guard
+    // over those would be a second copy of the data. This readme is written to make its own spans
+    // resolvable, so here the rule is a rule rather than a guess.
+    const spans = [...withoutFences(text).matchAll(/`((?:src|docs)\/[A-Za-z0-9_./-]+)`/g)].map((match) => match[1]);
+    const dead = spans.filter((path) => statSync(join(sourceRoot(), "..", path), { throwIfNoEntry: false }) === undefined).sort();
+
+    expect(spans.length, "no repo-relative path spans were found, so this check is vacuous").toBeGreaterThanOrEqual(10);
+    expect(dead, "a path this document names does not exist:\n" + dead.join("\n")).toEqual([]);
+  });
+
+  it("the conformance-only category is enumerated from the code, not listed in prose", () => {
+    // A type describing a module FILE's own export shape cannot be imported by that file: it is
+    // satisfied by the file EXISTING at the import.meta.glob boundary. Such a type is in neither set
+    // and is NOT library-internal, so it may carry a Declarations line without being in Set A or B.
+    expect(surface.conformanceOnly.length,
+      "no import.meta.glob type arguments were found, so the third category is unenumerated and " +
+      "DiagramClientModule would read as library-internal").toBeGreaterThanOrEqual(1);
+    for (const name of surface.conformanceOnly) {
+      expect(surface.exportsBySurfaceFile.has(name) ? declared.has(name) || internalList(text).includes(name) : true,
+        `'${name}' is a conformance-only type in the surface and appears nowhere in the document`).toBe(true);
     }
   });
 
-  it("sees what a module imports from outside the library, in Set A", () => {
-    // Assert. `useViewReport` lives outside the library and reaches the surface only by being
-    // imported - so finding it proves Set A's import parse AND that a non-library file can
-    // enter the surface, which is the half a library-only walk would miss.
-    expect(
-      [...surface.setA.keys()],
-      `Set A holds ${surface.setA.size} names from ${surface.moduleFiles.length} module client files`,
-    ).toContain("useViewReport");
+  it("sees what a module imports from OUTSIDE the library, in Set A", () => {
+    // Kept from task 2: useViewReport lives outside the library and reaches the surface only by
+    // being imported, so finding it proves the import parse AND that a non-library file can enter
+    // the surface - the half a library-only walk would miss entirely.
+    expect([...surface.setA.keys()]).toContain("useViewReport");
+    expect(surface.surfaceFiles.filter((file) => !file.includes("canvas/library")).length).toBeGreaterThanOrEqual(5);
   });
 
-  it("read every surface file it names, and found exports in them", () => {
-    // Assert. computeModuleClientApiSurface throws on an unreadable file, so reaching here means
-    // each was read; what this adds is that reading them produced declarations, which is the
-    // difference between a file that parsed and a file that parsed to nothing.
-    expect(surface.surfaceFiles.length).toBeGreaterThanOrEqual(14);
-    expect(surface.exportsBySurfaceFile.size).toBeGreaterThanOrEqual(90);
+  it("the Set B roots are all reached, so the walk did not quietly stop", () => {
     for (const root of SET_B_ROOTS) {
-      expect(surface.exportsBySurfaceFile.has(root.name), `no surface file exports the root '${root.name}'`).toBe(true);
+      expect([...surface.setB.keys()], `'${root.name}' is a Set B root and must be reached`).toContain(root.name);
     }
   });
 });

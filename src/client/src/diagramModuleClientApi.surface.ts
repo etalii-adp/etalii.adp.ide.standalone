@@ -80,6 +80,17 @@ export interface ModuleClientApiSurface {
   moduleFiles: string[];
   /** Exported declarations of the surface files, name to declaring file - Set B's candidates. */
   exportsBySurfaceFile: Map<string, string>;
+  /** Each exported interface's own members, for the field-coverage check. */
+  interfaceMembers: Map<string, string[]>;
+  /**
+   * The third category: types satisfied by a file EXISTING rather than by any reference.
+   *
+   * A type describing a module file's own export shape cannot appear in Set A, because the file it
+   * describes does not import it - conformance is checked by assignment at the `import.meta.glob`
+   * boundary. Enumerated from the globs themselves, so it moves with the code: today it is one
+   * member, and the second one joins it without anybody editing a list.
+   */
+  conformanceOnly: string[];
 }
 
 /** The repository's `src` folder, found by walking up - the family's shared idiom. */
@@ -134,6 +145,30 @@ function filesUnder(directory: string, accept: (path: string) => boolean): strin
 }
 
 const isTestFile = (path: string): boolean => /\.test\.tsx?$/.test(path);
+
+/** Every `import.meta.glob<T>` type argument in the client - the conformance-only category. */
+function conformanceOnlyNames(root: string): string[] {
+  const found = new Set<string>();
+  for (const file of filesUnder(join(root, "client", "src"), (path) => isSource(path) && !isTestFile(path))) {
+    const source = readSource(file, root);
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node) && node.typeArguments !== undefined && node.typeArguments.length > 0 &&
+          node.expression.getText().endsWith("import.meta.glob")) {
+        for (const argument of node.typeArguments) {
+          if (ts.isTypeReferenceNode(argument)) {
+            found.add(argument.typeName.getText());
+          }
+        }
+      }
+
+      node.forEachChild(visit);
+    };
+
+    visit(source);
+  }
+
+  return [...found].sort();
+}
 const isSource = (path: string): boolean => /\.tsx?$/.test(path) && !path.endsWith(".d.ts");
 
 /** `@client/canvas/library/api/diagramEvents` becomes the absolute path of that file, or undefined. */
@@ -370,12 +405,22 @@ export function computeModuleClientApiSurface(): ModuleClientApiSurface {
   const allSurfaceFiles = [...new Set([...libraryFiles, ...importedFrom])].sort();
 
   const exportsByName = new Map<string, { file: string; node: ts.Node }>();
+  const interfaceMembers = new Map<string, string[]>();
   const exportsByFileAndName = new Map<string, { file: string; node: ts.Node }>();
   const exportsBySurfaceFile = new Map<string, string>();
   for (const file of allSurfaceFiles) {
     const repoRelative = relative(root, file).replace(/\\/g, "/");
     const source = readSource(file, root); // throws, loudly, if a named surface file is unreadable
     for (const [name, node] of exportedDeclarations(source)) {
+      if (ts.isInterfaceDeclaration(node) && !interfaceMembers.has(name)) {
+        // The interface's OWN members. Taken from the AST, so a nested object type's members stay
+        // in the nested type rather than being hoisted here.
+        interfaceMembers.set(
+          name,
+          node.members.map((member) => member.name?.getText()).filter((each): each is string => each !== undefined),
+        );
+      }
+
       exportsByFileAndName.set(`${repoRelative}#${name}`, { file: repoRelative, node });
       if (!exportsByName.has(name)) {
         exportsByName.set(name, { file: repoRelative, node });
@@ -388,6 +433,8 @@ export function computeModuleClientApiSurface(): ModuleClientApiSurface {
     setA,
     setB: computeSetB(exportsByName, exportsByFileAndName),
     surfaceFiles: allSurfaceFiles.map((file) => relative(root, file).replace(/\\/g, "/")),
+    interfaceMembers,
+    conformanceOnly: conformanceOnlyNames(root),
     moduleFiles,
     exportsBySurfaceFile,
   };
