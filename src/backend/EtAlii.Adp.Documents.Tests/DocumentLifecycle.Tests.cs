@@ -177,6 +177,105 @@ public class DocumentLifecycleTests : IDisposable
         Assert.Equal("second", lifecycle.GetOrLoad(path).Text);
     }
 
+    [Fact]
+    public void AReloadRefusedOnce_StillDeliversTheChange()
+    {
+        // THE EDITORRESOLUTION FLAKE'S MECHANISM, pinned deterministically (traced by Developer 5,
+        // 2026-09-25): a write's LAST event, a read refused once by another holder, and no later event
+        // to re-read it. Without a retry the last good document is kept and the change is lost for good.
+        var path = Write("plan.note", "first");
+        var refusalsLeft = 0;
+        var lifecycle = Scripted(read: file =>
+        {
+            if (refusalsLeft > 0)
+            {
+                refusalsLeft--;
+                throw new IOException("The process cannot access the file because it is being used by another process.");
+            }
+
+            return File.ReadAllText(file);
+        });
+        lifecycle.GetOrLoad(path);
+        File.WriteAllText(path, "second");
+        refusalsLeft = 1;
+
+        var installed = lifecycle.Reload(path);
+
+        Assert.True(installed);
+        Assert.Equal("second", lifecycle.GetOrLoad(path).Text);
+    }
+
+    [Fact]
+    public void AReloadThatFindsTheBodyGoneForAnInstant_StillDeliversTheChange()
+    {
+        // A publish renames the body away and back; a read landing in that instant finds it missing.
+        var path = Write("plan.note", "first");
+        var vanishingsLeft = 0;
+        var lifecycle = Scripted(read: file =>
+        {
+            if (vanishingsLeft > 0)
+            {
+                vanishingsLeft--;
+                throw new FileNotFoundException("gone for an instant", file);
+            }
+
+            return File.ReadAllText(file);
+        });
+        lifecycle.GetOrLoad(path);
+        File.WriteAllText(path, "second");
+        vanishingsLeft = 1;
+
+        var installed = lifecycle.Reload(path);
+
+        Assert.True(installed);
+        Assert.Equal("second", lifecycle.GetOrLoad(path).Text);
+    }
+
+    [Fact]
+    public void AReloadRefusedEveryTime_StopsAfterItsAttempts_AndKeepsTheLastGoodDocument()
+    {
+        // The retry is bounded, and keep-last-good is still what happens when it runs out. This is the
+        // case a retry cannot rescue: it must neither spin forever nor install the failure.
+        var path = Write("plan.note", "good");
+        var reads = 0;
+        var refusing = false;
+        var lifecycle = Scripted(attempts: 3, read: file =>
+        {
+            reads++;
+            return refusing ? throw new IOException("held") : File.ReadAllText(file);
+        });
+        var good = lifecycle.GetOrLoad(path);
+        refusing = true;
+        reads = 0;
+
+        var installed = lifecycle.Reload(path);
+
+        Assert.False(installed);
+        Assert.Same(good, lifecycle.GetOrLoad(path));
+        Assert.Equal(3, reads);
+    }
+
+    [Fact]
+    public void AFirstOpenRefusedOnce_OpensTheRealDocument_NotAnEmptyOne()
+    {
+        // Retried on a first open too: otherwise a holder keeping the file for a moment opens the diagram
+        // EMPTY through R2.2's fallback, though the file on disk is fine.
+        var path = Write("plan.note", "the real content");
+        var refusalsLeft = 1;
+        var lifecycle = Scripted(read: file =>
+        {
+            if (refusalsLeft > 0)
+            {
+                refusalsLeft--;
+                throw new IOException("held");
+            }
+
+            return File.ReadAllText(file);
+        });
+
+        Assert.Equal("the real content", lifecycle.GetOrLoad(path).Text);
+    }
+
     // Lambdas with discards rather than methods, so no parameter is left unused.
     private static readonly Func<string, string, Note> Parse = (_, text) => new Note(text);
 
@@ -189,6 +288,10 @@ public class DocumentLifecycleTests : IDisposable
     // A holder that shares nothing, so the lifecycle's shared read is refused while the file stays
     // present - the unreadable-but-present case. Windows-only by nature: FileShare is mandatory there.
     private static FileStream Hold(string path) => new(path, FileMode.Open, FileAccess.Read, FileShare.None);
+
+    // A lifecycle whose read refuses exactly as the test scripts it, retried without waiting.
+    private static DocumentLifecycle<Note> Scripted(Func<string, string> read, int attempts = 3) =>
+        new(Parse, unavailable: null, read, attempts, TimeSpan.Zero);
 
     private string Write(string name, string text)
     {

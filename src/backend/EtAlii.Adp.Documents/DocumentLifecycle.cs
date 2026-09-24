@@ -25,6 +25,19 @@ namespace EtAlii.Adp.Documents;
 /// unavailability governs the FIRST load only (R2.2), where there is no last good document to keep.
 /// </para>
 /// <para>
+/// <b>A refused read is retried before it is believed, because the last event has no successor.</b>
+/// Keep-last-good was first justified by "the watcher's next event re-reads the finished file". That
+/// is true while a publish is in flight, and false when the refusal lands on the LAST event of a
+/// write: nothing follows to re-read it, so the change is lost for good rather than late. Developer 5
+/// traced the EditorResolution 60-second flake to exactly that in c4's store: saved, read refused by
+/// another holder, last good kept, and no further event (2026-09-25). So a read that is refused, or
+/// that finds the body missing during a reload, is tried again a few times before anything is
+/// concluded, as <c>PlainEditorSession.ReadWithRetry</c> already does. <b>Retrying narrows that window
+/// and does not close it</b>: a hold longer than the retries still loses the change. The window is a
+/// choice rather than a measurement, because what held the file is not yet known, so a read that
+/// needed a retry logs how many it took. Those log lines are how the real hold gets measured.
+/// </para>
+/// <para>
 /// <b>Absence is confirmed by the watcher, never inferred from a read</b> (R2.5): a body missing
 /// on a reload is kept, exactly like an unreadable one, and becomes the empty document only through
 /// <see cref="BodyDeleted"/>. That pairing is the point - see <see cref="BodyDeleted"/>.
@@ -42,6 +55,16 @@ public sealed class DocumentLifecycle<TDocument>
     private readonly ConcurrentDictionary<string, TDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Func<string, string, TDocument> _parse;
     private readonly Func<string, DocumentUnavailability, string, TDocument>? _unavailable;
+    private readonly Func<string, string> _read;
+    private readonly int _readAttempts;
+    private readonly TimeSpan _betweenReadAttempts;
+
+    // Five tries, 50 ms apart: a refusal is believed after about a fifth of a second. Chosen for a
+    // sharing violation just after a save, which may be held longer than the microsecond-wide missing
+    // file PlainEditorSession retries for (3 x 20 ms) - so it is wider than that, and it is a choice,
+    // not a measurement.
+    private const int DefaultReadAttempts = 5;
+    private static readonly TimeSpan DefaultBetweenReadAttempts = TimeSpan.FromMilliseconds(50);
 
     /// <param name="parse">
     /// Turns a body path and its text into the cached document. Given <c>""</c> for a body that is
@@ -55,10 +78,29 @@ public sealed class DocumentLifecycle<TDocument>
     public DocumentLifecycle(
         Func<string, string, TDocument> parse,
         Func<string, DocumentUnavailability, string, TDocument>? unavailable = null)
+        : this(parse, unavailable, SharedDocumentReader.ReadAllText, DefaultReadAttempts, DefaultBetweenReadAttempts)
+    {
+    }
+
+    /// <summary>
+    /// With the read and its retry supplied, so a test can refuse exactly as often as it chooses and
+    /// wait for nothing - deterministic rather than patient.
+    /// </summary>
+    internal DocumentLifecycle(
+        Func<string, string, TDocument> parse,
+        Func<string, DocumentUnavailability, string, TDocument>? unavailable,
+        Func<string, string> read,
+        int readAttempts,
+        TimeSpan betweenReadAttempts)
     {
         ArgumentNullException.ThrowIfNull(parse);
+        ArgumentNullException.ThrowIfNull(read);
+        ArgumentOutOfRangeException.ThrowIfLessThan(readAttempts, 1);
         _parse = parse;
         _unavailable = unavailable;
+        _read = read;
+        _readAttempts = readAttempts;
+        _betweenReadAttempts = betweenReadAttempts;
     }
 
     /// <summary>The document at <paramref name="path"/>, opened once and kept.</summary>
@@ -101,12 +143,14 @@ public sealed class DocumentLifecycle<TDocument>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (!TryRead(path, out var text, out var unavailability, out var failure))
+        if (!TryRead(path, retryMissing: true, out var text, out var unavailability, out var failure))
         {
             if (_documents.ContainsKey(path))
             {
-                // A RELOAD THAT CANNOT READ KEEPS THE LAST GOOD DOCUMENT (R2.4). The watcher's next
-                // event re-reads the finished file; a body that is really gone arrives as BodyDeleted.
+                // A RELOAD THAT CANNOT READ KEEPS THE LAST GOOD DOCUMENT (R2.4) - but only once the
+                // retries are spent. Do not assume a later event will re-read it: this may have been the
+                // write's last one, and then the change is lost here. A body that is really gone
+                // arrives as BodyDeleted.
                 _logger.Warning(failure, "Keeping the last good {Path}: this reload could not read it ({Unavailability})", path, unavailability);
                 return false;
             }
@@ -160,7 +204,9 @@ public sealed class DocumentLifecycle<TDocument>
 
     private TDocument Open(string path)
     {
-        if (TryRead(path, out var text, out var unavailability, out var failure))
+        // A missing body on a first open is a new document rather than a publish in flight, so only a
+        // refused read is retried here - retrying a missing one would delay every new diagram.
+        if (TryRead(path, retryMissing: false, out var text, out var unavailability, out var failure))
         {
             return _parse(path, text);
         }
@@ -178,7 +224,31 @@ public sealed class DocumentLifecycle<TDocument>
             ? _parse(path, "")
             : _unavailable(path, unavailability, failure?.Message ?? "");
 
-    private static bool TryRead(string path, out string text, out DocumentUnavailability unavailability, out Exception? failure)
+    private bool TryRead(string path, bool retryMissing, out string text, out DocumentUnavailability unavailability, out Exception? failure)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            if (TryReadOnce(path, out text, out unavailability, out failure))
+            {
+                if (attempt > 1)
+                {
+                    _logger.Information("Read {Path} on attempt {Attempt} of {Attempts}", path, attempt, _readAttempts);
+                }
+
+                return true;
+            }
+
+            var worthRetrying = unavailability == DocumentUnavailability.Unreadable || retryMissing;
+            if (!worthRetrying || attempt >= _readAttempts)
+            {
+                return false;
+            }
+
+            Thread.Sleep(_betweenReadAttempts);
+        }
+    }
+
+    private bool TryReadOnce(string path, out string text, out DocumentUnavailability unavailability, out Exception? failure)
     {
         text = "";
         unavailability = DocumentUnavailability.Missing;
@@ -193,7 +263,7 @@ public sealed class DocumentLifecycle<TDocument>
 
         try
         {
-            text = SharedDocumentReader.ReadAllText(path);
+            text = _read(path);
             return true;
         }
         catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
