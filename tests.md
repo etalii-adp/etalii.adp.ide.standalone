@@ -2925,7 +2925,7 @@ Delete this entry when that spike lands and the guard covers the parse half; the
 below stays either way.
 
 - **Preconditions**: the two pages exist - `docs/architecture.md` (one `flowchart LR`) and
-  `docs/solution-structure.md` (one `flowchart TB`). No running app is needed; this check is
+  `docs/solution-structure.md` (one `flowchart LR`). No running app is needed; this check is
   about documents, not the product.
 - **Reader 1, the spec-workflow dashboard**: open the dashboard and view both pages through it.
   This is the reader that matters most, because it is where a session reads documentation.

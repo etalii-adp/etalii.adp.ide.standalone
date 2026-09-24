@@ -5,7 +5,7 @@
 ## The shape of `src/`
 
 ```mermaid
-flowchart TB
+flowchart LR
     src["src/"]
     src --> api["api/<br/>shared .proto contracts"]
     src --> backend["backend/<br/>the solution and the core projects"]
