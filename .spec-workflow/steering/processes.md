@@ -476,6 +476,22 @@ Each test project is therefore an executable (`<OutputType>Exe</OutputType>`) �
 
 **Judge every gate by an exit code captured into a variable before any SUBSEQUENT COMMAND - not merely before a pipe.** In a pipeline `$?` is the last command's status, so `dotnet test … | tail` reports `tail`'s success and a crashed or zero-test run reads as green. A zero-test run does exit non-zero — 5 for zero tests, 8 for a filter matching nothing — so the exit code carries the information that grepping the output destroys. `.github/workflows/build.yml` embodies this: every gate step is judged by its exit code and nothing greps output.
 
+**AND A TRUNCATING COMMAND IN YOUR OWN PIPELINE PRODUCES A WELL-FORMED WRONG ANSWER** - `head`, `tail`,
+`-m`, `--max-count`, a default page size. **A count taken from a command with a limit in it is a count OF
+THE LIMIT unless you have checked otherwise**, and it is worse than a wrong pattern because the output
+looks complete and the number is plausible.
+
+**Twice in two days, from opposite directions, both in the author's own pipeline.** A `head -5` reported
+**five** warning assertions where there were **seven**, and the five were reported to the board as a
+measurement. And a probe piped into `head` reported **exit 0** where the script had returned **3**,
+because `$?` is the last command's status - **read by somebody who had the exit-code clause above in
+front of them at the time.** One hid a count, the other hid a status.
+
+**The second is the more dangerous and it is worth saying why: the pipe made a CORRECT script look like a
+FAIL-OPEN one.** The failure mode of the check was to **accuse the thing it was checking**. **A check that
+produces false accusations is worse than one that is merely silent**, because somebody acts on it - and
+what they act on is usually the innocent party, which is where the time goes.
+
 **A pipe is not the only way to lose the status and it is not the common one.** A trailing `; echo "EXIT=$?"`
 does identical damage and happens far more often - **precisely because it is what somebody adds in order to SEE
 the exit code.** `$?` is read while the echo is being assembled, the echo then succeeds, and **the echo's own 0

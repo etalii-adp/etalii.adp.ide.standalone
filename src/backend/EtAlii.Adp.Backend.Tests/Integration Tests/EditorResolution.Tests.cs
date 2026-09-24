@@ -108,6 +108,45 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         Assert.Equal("just some notes\n", Encoding.UTF8.GetString(element.Payload!.Value.Span));
     }
 
+    // THIS TEST HAS A KNOWN INTERMITTENT FAILURE, and here is the whole of what is known, so that
+    // whoever fixes it inherits a count rather than an impression. It fails with a gRPC
+    // DeadlineExceeded at exactly 60 s, reading the stream.
+    //
+    //     gate runs with the FULL gate self-test alongside:  5 runs, 2 failures
+    //     gate runs in the self-test's quick mode:           4 runs, 1 failure
+    //
+    // Measured 2026-09-23/24. THE LOAD HYPOTHESIS IS WEAK AND WAS WEAKENED BY THE RUN THAT LANDED THIS
+    // COMMENT. For a day it had failed only while the full self-test ran beside it - twenty-one minutes
+    // of a few hundred git processes, which a 60-second deadline would plausibly not survive - and the
+    // first draft of this comment said so. Then it failed in quick mode, with no storm at all. Two in
+    // five against one in four is not a difference this n can see, so whatever makes it fail is present
+    // in an ordinary run and the storm is at most an aggravator.
+    //
+    // That the record went stale between being written and being committed is the other half of what
+    // this comment is for: it is a measurement, it has a date, and it will be wrong again.
+    //
+    // AND THE SAMPLE CANNOT BE EXTENDED CHEAPLY ANY MORE. Since the self-test gained a quick mode,
+    // almost nothing runs the full suite, so the storm arm will grow by roughly one run a month. Do not
+    // wait for better numbers; they will not arrive.
+    //
+    // WHAT IS NOT KNOWN, so the next person does not repeat the search: the sixty seconds is not set
+    // anywhere in this repository. No Deadline on the call or the channel, no FromSeconds(60) in the
+    // backend, nothing in the service's appsettings or Program.cs, no xunit runner timeout. It arrives
+    // as a gRPC DeadlineExceeded - a status, not a cancellation, so it is not the test host's token -
+    // which puts it in the gRPC or HttpClient path. Instrument it before changing it: log the call's
+    // deadline at the moment of the call and the elapsed time when it throws, and the two lines answer
+    // whose sixty seconds this is.
+    //
+    // A BETTER SHAPE IS HELD BACK DELIBERATELY. AddDiagramFlow.Tests uses a per-message timeout linked
+    // to the test's token, so a stream that never delivers says which message never arrived instead of
+    // DeadlineExceeded. That is the right diagnostics and the wrong number here: its budget is ten
+    // seconds against this sixty, so adopting it today would probably make this fail MORE often, and a
+    // diagnostics improvement that raises the failure rate is not one anybody thanks you for. Adopt it
+    // once the root cause is known and the budget can be set on purpose.
+    //
+    // The fix is the shape used on the failure-record family: this test's subject is that the stream
+    // delivers both views, and it asserts that inside a fixed clock. Wait on the event, or give the
+    // deadline room the machine cannot eat.
     [Fact]
     public async Task ADslOpenAsDiagramAndAsTextAtOnce_BothStayTrueToTheFile()
     {
