@@ -68,7 +68,7 @@ is a decision rather than work**. It has been taken, as recorded above. **No tas
 and none should be added** - a task reading "serve over TLS in production" would look implementable
 and be attempted.
 
-- [ ] 1. An HTTPS endpoint for local development, and the client pointed at it
+- [x] 1. An HTTPS endpoint for local development, and the client pointed at it
   - Files: `src/backend/EtAlii.Adp.Backend.Service/Properties/launchSettings.json`,
     `appsettings.developer.json`, `src/client/vite.config.ts`,
     `src/client/src/auth/AuthContext.tsx`
@@ -94,7 +94,7 @@ and be attempted.
     backend on their own port. Tell the Scrum master before landing rather than after.
   - _Requirements: 1.1, 1.2, 2.1 (development half), 2.3, 2.4 (development half)_
 
-- [ ] 2. The reproduction, written down as a procedure rather than a test
+- [x] 2. The reproduction, written down as a procedure rather than a test
   - Files: `tests.md`
   - **This cannot be an automated test and the task says so rather than pretending.** The
     reproduction needs two real browser tabs sharing one browser profile on one origin; no
@@ -124,7 +124,7 @@ and be attempted.
     confirm the origin still answers before recording any negative row.
   - _Requirements: 6.1, 6.2_
 
-- [ ] 3. The stream-count guard, and the comment saying what unmounting pays for
+- [x] 3. The stream-count guard, and the comment saying what unmounting pays for
   - Files: `src/client/src/shell/panels/DiagramTabsPanel.test.tsx`,
     `src/client/src/shell/panels/DiagramTabsPanel.tsx`
   - Assert the **count of live `Open` streams** - started and not yet closed - and that it does not
@@ -151,7 +151,7 @@ and be attempted.
     for.
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ] 4. A bound on how long an incomplete request may look like success
+- [x] 4. A bound on how long an incomplete request may look like success
   - Files: the client's request path and the existing errors-and-warnings surface
   - A request the user's action depends on that has not completed within a bounded interval surfaces
     as "not responding", through the **existing** errors-and-warnings surface rather than a new one.

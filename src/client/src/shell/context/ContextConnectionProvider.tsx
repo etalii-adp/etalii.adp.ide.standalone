@@ -21,6 +21,7 @@ import type { ProjectProblems } from "../../generated/problems_pb";
 import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 import { useCoalescedSelect } from "./useCoalescedSelect";
 import { requestTextTab } from "../panels/textTabRequests";
+import { onLocalNotice } from "./localNotices";
 
 /** The `none` alternative: a plain selection, nothing more. */
 export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: create(EmptySchema) };
@@ -525,6 +526,15 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
       // connection, so a failed cancel leaves nothing stranded that matters.
     });
   }, [client, promptInteractionId]);
+
+  // A notice the PAGE observed rather than one the backend sent - a request that has not come
+  // back within its bound (two-tab-connection-wedge Requirement 5.1). Same surface and same
+  // dismissal as a backend notice, because to a reader it is the same kind of thing: something
+  // that happened which they need to know and can then put away.
+  useEffect(
+    () => onLocalNotice((text) => setNotices((previous) => [...previous, { id: nextNoticeId(), text }])),
+    [],
+  );
 
   const dismissNotice = useCallback((id: number) => {
     setNotices((previous) => previous.filter((notice) => notice.id !== id));

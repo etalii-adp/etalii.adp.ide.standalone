@@ -34,3 +34,31 @@ The whole procedure is executable: [`capture.mjs`](capture.mjs) drives all of th
 | `markdown-editor.png` | `editors/markdown/` → `guide.md` | The three-part editor: heading outline above, CodeMirror text left, rendered preview right — and the status line reading **Saved**, since nothing was edited. |
 
 Each diagram capture clicks **Fit to View** after opening (where the toolbar offers it), so the content's framing does not depend on the previous session's pan and zoom. Two captures that follow one row of this table should differ only in rendering noise.
+
+## `dependency-graph.png` was judged and NOT retaken, 2026-09-24 (canvas-single-scrollbar task 5)
+
+**The question**: `canvas-single-scrollbar` made the library's drawing surface a block box, removing about
+four pixels of descender space that had been spilling into the scrolling pane. CLAUDE.md says a UI change
+that makes a screenshot misleading means retaking it, and this image is a capture of one of the two
+diagrams the defect was reported on.
+
+**Judged by measurement rather than by eye, and the eye could not have settled it**: the image is 1600px
+wide and the defect is four pixels, so whether a second bar is visible in it is at or below what that
+image can decide by looking. There is a vertical scroll affordance at the canvas's right edge, and at that
+scale a second four-pixel bar beside it would be about the width of the rendering itself.
+
+**NOT RETAKEN, and the reason answers a question prior to the comparison.** `capture.mjs` captures at
+exactly **1600x900**. At that viewport, measured in a live browser three times and in both states -
+surface `display: block` as shipped, then forced back to `inline`, then restored - **the scrolling pane's
+`scrollHeight` equals its `clientHeight` either way**: `div.tabbed-pane-content` measured 740px of client height against 507px of content, so it carries 233px of slack, which absorbs
+four. So at this image's own viewport the defect produces **no pane scroll at all**, and no capture taken
+there can be showing a scrollbar it caused. The affordance in the image is the diagram's own.
+
+**The instrument is named because the two available ones are not equivalent evidence.** This is the
+in-app browser at 1600x900 with a live perturbation, **not** a `capture.mjs` recapture compared against
+the committed file. The task proposed the recapture; a pixel comparison would have told me whether two
+images differ, which is a weaker question than whether the defect can appear at that viewport at all. It
+also needed `puppeteer-core`, which is not in the tree.
+
+**Both answers were acceptable and only an unrecorded one was not.** *Retake it* would not have been
+wrong; it would have been a ritual that taught nobody anything, including whoever performed it.

@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Five things every entry below assumes
+## What every entry below assumes
 
 **Signing in — a developer build does not ask.** Since `developer-sign-in-bypass`, a locally
 running developer build opens **already authenticated** and the sign-in form is never rendered:
@@ -146,6 +146,24 @@ The check outlives the instance, because the window recurs whenever anything is 
 `git merge-base --is-ancestor <commit> develop`, or look for the type it introduces in `develop`'s
 sources.
 
+**A wedged origin makes a canvas that reports nothing indistinguishable from a canvas with a real
+defect, so confirm the origin still answers before recording any negative row.** Until the HTTPS
+endpoint of `two-tab-connection-wedge` task 1 is the one you are browsing, opening documents in two
+tabs on one origin exhausts that origin's HTTP/1.1 connection pool, and **nothing on it completes
+again - not a gRPC call, not a plain static file.** A check run after that point reports emptiness
+for a reason that has nothing to do with what it was checking.
+
+**The two readings are identical from the inside**, which is why this is a precondition rather than a
+note: a panel that never populates, a canvas that draws nothing, a property grid that stays blank -
+each looks exactly like the defect somebody is hunting. **Every negative row recorded after a wedge
+is worthless and cannot be told from a genuine finding by looking at it.**
+
+The check is one request for something that is not gRPC at all: fetch any static asset on the same
+origin and require a response. **If a plain file does not come back, stop** - the wedge is what you
+are looking at, and every row since the last known-good one has to be re-run rather than trusted.
+Re-running means a fresh browser profile, not a fresh tab: see the entry below for why a new tab
+joins an already-exhausted pool.
+
 ## The context surface is reachable on a causal loop diagram (causal-loop-diagram, resolver fix)
 
 **Found by opening the app, and invisible to every test until then.** The module shipped without
@@ -224,6 +242,76 @@ rather than by eye - anchors `rgb(30,41,59)` where an unstyled path in the same 
 `rgb(0,0,0)`; preview `fill: none` with a dashed green stroke; invalid variant red. **The drag
 itself was not performed by hand** - a synthesised mousedown did not start the gesture - so the
 wedge's absence is inferred from the computed style, not seen. Worth one human drag.
+
+## The diagram pane offers one scrollbar, not two (canvas-single-scrollbar, tasks 4 and 6)
+
+**Reported twice by the user, on two diagrams, and invisible to every test in the suite.** An `<svg>`
+is an inline element, so the library's drawing surface sat on a line box that reserved about four
+pixels of descender space below its baseline. `overflow: visible` let that spill out of the surface and
+into the pane that scrolls, which then offered a SECOND vertical scrollbar beside the diagram's own.
+
+**Why it is here rather than in the client suite.** The suite's guard
+(`DiagramCanvas.test.tsx`, *makes its surface a block box*) asserts the COMPUTED `display` under
+`canvas.css` and that is all it can do: jsdom applies stylesheets in source order, implements neither
+specificity nor `!important`, and lays out nothing. **So it proves the rule is declared and reached, and
+says nothing about what a real cascade resolves or what a real pane measures.** Only a browser can
+answer the question the user asked.
+
+- **Preconditions**: backend + client running on a Debug developer build; `src/examples` open as a
+  project. The header must show the **developer session** marker.
+- **Actions**: open `diagrams/dependency-graph/example-1/services.dgr`, and then
+  `diagrams/timeline/example-1/roadmap.tml` as the second diagram - **the two the user reported**.
+- **The pane's limits, the `innerWidth` check and the origin check are the preamble's**, in the item *What
+  the in-app browser pane can answer, and what it cannot* - **cited rather than restated**, and by NAME
+  rather than by number because the number moves whenever a preamble item is added. Read it before running
+  this entry.
+- **The one thing this entry adds to it**: read `window.innerWidth` **on every row**, not once as a
+  precondition. A survey of two diagrams spans turns, and an emulated viewport is cleared when a turn ends,
+  so a later row can measure a window with no width. **A row whose own `innerWidth` is 0 is not a failure,
+  it is a row that did not run.**
+- **Measure the WRAPPER, not the pane, and this was corrected by running the check** (task 6). The
+  element is `div.library-canvas` - `.dependency-graph-surface` on one diagram,
+  `.timeline-surface.canvas-viewport` on the other - and its host, `div.*-canvas.canvas-host`:
+  - the wrapper's `scrollHeight` **equals** its `clientHeight`, and its `scrollWidth` its `clientWidth`;
+  - the host's, likewise;
+  - the surface's computed `display` is `block`.
+- **THE PANE IS THE WRONG ELEMENT AND THE ROW WOULD HAVE PASSED BEFORE THE FIX.**
+  `div.tabbed-pane-content` reads `scrollHeight == clientHeight` at 1600x900 **whether the surface is
+  inline or block**, because it has around 230px of slack that absorbs four pixels. Shrinking the
+  viewport does not rescue it: at 1600x520 the pane overflows by 280px in BOTH states for an unrelated
+  reason, so four pixels are invisible against it either way. **There is no viewport in that pair where
+  the four pixels decide whether the pane scrolls.** A row written against the pane is a row that
+  cannot fail.
+- **The decisive form is a perturbation rather than a reading.** Set `display: inline` on the surface
+  from the console - the state before the fix - read the wrapper, restore, and read again. Four pixels
+  appear and disappear on demand. A single reading of a fixed tree cannot distinguish a working rule
+  from an absent defect.
+- **Both equalities are recorded even though only one axis ever failed.** An inline box reserves space
+  BELOW its baseline and not beside it, so no horizontal spill was ever observed - recording the
+  horizontal one is what makes a future regression in that axis visible rather than a surprise.
+- **Name the diagram and the element each number came from.** A survey row without its element is how a
+  pass reported a working diagram this week.
+
+**Result 2026-09-24**: **passed**, on a Debug developer build at 1600x900 with the developer-session
+marker present, by perturbation rather than by reading. `scrollHeight - clientHeight`, shipped then
+forced to `display: inline` then restored:
+
+| diagram | element | shipped | inline | restored |
+| --- | --- | --- | --- | --- |
+| `services.dgr` | `div.library-canvas.dependency-graph-surface` | 0 | **4** | 0 |
+| `services.dgr` | `div.dependency-graph-canvas.canvas-host` | 0 | **4** | 0 |
+| `roadmap.tml` | `div.library-canvas.timeline-surface.canvas-viewport` | 0 | **4** | 0 |
+
+Horizontal was 0 everywhere in every state, which is what R1.4 asks be recorded rather than assumed:
+an inline box reserves space below its baseline and not beside it, so no horizontal spill was ever
+observed and recording it is what makes a future regression in that axis visible.
+
+**Two honesty notes on this result.** The `roadmap.tml` numbers were taken TWICE: the first reading was
+in a window in which the backend then died with an internal CLR error, so it was discarded and retaken
+on a healthy process - *check the origin still answers* cuts the same way for a positive as for a
+negative. And `window.innerWidth` was read on every measurement, not once: it came back **0** after a
+reload, because an emulated viewport is cleared when a turn ends - the exact failure this entry warns
+about, met while running the entry.
 
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
@@ -2833,87 +2921,163 @@ whether real glyphs fit. That half is the browser's, and it is this entry.
   - **Left standing**: a C4 name is not truncated. The backend clamps cards at 240, so a name
     over about 34 characters at 13px would still run out. No example has one.
 
-## Selection and its two looks, on all sixteen canvases (centralized-selection, task 24)
+## Selection and its one look, on all sixteen canvases (centralized-selection, task 24)
 
-The user's instruction named four diagram types whose selection worked - timeline,
-dependency-graph, causal-loop and c4 - and four that did not: helm-charts,
-dotnet-dependency-graph, azure-pipeline and ansible-structure. **That comparison is the
-acceptance oracle, and it is recorded as such**: the four named broken must end up behaving
-exactly like the four named working.
+**What one press per canvas can answer, and what it cannot — read this before recording a
+row.** Pressing one element answers *the element I pressed carried the highlight*. It does not
+answer *every shape this canvas can draw carries it*. The distinction is not pedantic: it is how
+`styled-box` shipped unpainted on `c4` behind fifteen green canvases, and how `symbol`'s plain
+circle shipped unpainted on `wardley-map` while this document would have called that canvas
+working — the element pressed happened to be a square. **The guard that enumerates the library's
+own `BUILT_IN_SHAPES` is what covers the shapes; this pass covers the look.** Do not let a green
+row here be read as *this canvas is correct*.
+
+**Preconditions and what the pane can be trusted for** are in *"What the in-app browser pane can
+answer, and what it cannot"*, under **What every entry below assumes**. Cited by name and not by
+position: an ordinal moves whenever an item is added, and a count in a heading is a value two
+branches can both edit and still merge cleanly. Read it; this entry does not repeat it. Specific
+to this pass: `src/examples` open as a project,
+backend and client running from a worktree on your reserved ports, **browsing the backend's
+port**.
 
 **Why this entry exists, and what it is the only evidence for.** Every canvas has unit tests
 that mount it and assert what selection *does* (`expectLibrarySelection`, called from each
-module's own canvas test), and a text guard that no module writes selection code
-(`noModuleSelection.test.ts`). **jsdom applies no CSS**, so no unit test can say whether the
-shared highlight is legible on a diagram's fills - including the colours a backend chooses,
-which is why the look changed from a recoloured stroke to a ring drawn outside the shape
-(Requirement 5.2) - nor whether *selected* and *would accept this connection* can be told apart
-when both are on (Requirement 6.2). Those are this entry's, and Requirement 10.3 says so.
+module's own canvas test), a text guard that no module writes selection code
+(`noModuleSelection.test.ts`), and a guard that every built-in shape receives the paint
+(`highlightSurvivesModuleStyles.test.tsx`). **jsdom applies no CSS cascade worth the name** — it
+implements neither specificity nor `!important` (measured against jsdom 25.0.1 on 2026-09-23) —
+so no unit test can say whether the highlight is *legible* on a diagram's fills, including the
+colours a backend chooses (Requirement 5.2). That is this entry's, and Requirement 10.3 says so.
 
-- **Preconditions**: backend + client running from the worktree on your reserved ports, browsing
-  the backend's port; `src/examples` open as a project. **The Claude window must be in front**:
-  a hidden pane reports a 0x0 viewport, stops painting, and a press then lands on nothing.
-- **Steps**: open each diagram below, and on each: press an element, press a connection where the
-  notation selects one, press empty canvas, and drag an element a short distance. Paste the
-  function and call `probe()` on each tab; then **look at the canvas** for the three things the
-  probe cannot judge.
+**The look, as the library draws it today.** One highlight per item, and the item's own outline
+carries it: `stroke` set to `var(--color-selected, #7c3aed)` **inline on the drawn shape**, at
+`max(declared + 1, 3)`, with the fill untouched. **There is no ring.** A separate outline drawn
+outside the shape was the previous answer and the user replaced it on 2026-09-22; anything below
+that reads as though a second element were drawn is a mistake in this document, not in the app.
+A valid drop target wears **the same look, once** (Requirement 6.2) — so a drag passing over the
+selected element changes nothing visible, which is the expected outcome rather than a failure.
+
+- **Steps.** Open each diagram below. **Select its tab and confirm the document before pressing
+  anything** — documents open on double-click and open *behind* the fronted tab, which has cost
+  two sessions a measurement of the wrong diagram. Then on each: press an element, press a
+  connection where the notation selects one, press empty canvas, and drag an element a short
+  distance. Paste the function and call `await probe()` on each tab; then **look at the canvas**
+  for the things the probe cannot judge.
+
   ```js
   async function probe() {
+    // LIVENESS FIRST. A negative row is a claim about an absence, and three mechanisms
+    // manufacture absences here: a 0x0 pane, a shell that renders but listens to nothing, and
+    // an origin that has stopped answering while curl still gets 200. Each returns exactly what
+    // a real defect returns. Refuse to measure rather than record a manufactured zero.
+    if (innerWidth === 0) { return "PANE COLLAPSED - record nothing"; }
+    try {
+      const probeUrl = "/favicon.ico?probe=" + Date.now();
+      await Promise.race([
+        fetch(probeUrl, { cache: "no-store" }),
+        new Promise((_, no) => setTimeout(() => no(new Error("wedged")), 2000)),
+      ]);
+    } catch { return "ORIGIN NOT ANSWERING - record nothing, open a FRESH TAB (a reload does not clear it)"; }
+
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const canvas = [...document.querySelectorAll(".library-canvas")].find((c) => c.getBoundingClientRect().width > 10);
+    if (!canvas) { return "NO CANVAS - wrong tab, or the document did not open"; }
     const at = (el) => { const b = el.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; };
     const press = (t, x, y) => { const ev = (type, buttons) => new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x, clientY: y });
       t.dispatchEvent(ev("pointerdown", 1)); t.dispatchEvent(ev("pointerup", 0)); };
     const sel = () => [...canvas.querySelectorAll(".canvas-selected")].map((e) => e.dataset.elementId ?? e.dataset.connectionId);
+    // THE DRAWN SHAPE, not the group above it. The paint is inline on the rect/ellipse/path the
+    // reader sees; it sat on the wrapping <g> once, where it is INHERITED and every node shape
+    // ignores it, and every value the library computed was correct while nothing changed colour.
+    const drawn = (host) => [...host.querySelectorAll("rect, ellipse, path, polygon, circle")]
+      .filter((n) => !n.hasAttribute("data-anchor") && !(n.getAttribute("class") ?? "").includes("library-resize-handle"));
+    const painted = (host) => drawn(host).filter((n) => (n.style.stroke ?? "").includes("--color-selected"));
+
     const out = {};
     const els = [...canvas.querySelectorAll("[data-element-id]")].filter((e) => e.getBoundingClientRect().width > 2);
     const cons = [...canvas.querySelectorAll("[data-connection-id]")];
     const el = els[Math.min(1, els.length - 1)];
     press(document.elementFromPoint(...at(el)) ?? el, ...at(el)); await sleep(1200);
-    const ring = canvas.querySelector("rect.library-selected-outline");
-    const shape = ring?.closest("[data-element-id]")?.querySelector(".library-shape, rect:not(.library-selected-outline)");
-    out.element = { selected: sel(), ring: !!ring, stroke: ring && getComputedStyle(ring).stroke, dashed: ring ? getComputedStyle(ring).strokeDasharray !== "none" : null,
-      gapPx: ring && shape ? +(shape.getBoundingClientRect().x - ring.getBoundingClientRect().x).toFixed(1) : null };
+    const host = canvas.querySelector(".canvas-selected") ?? el;
+    const wearing = painted(host)[0];
+    out.element = {
+      selected: sel(),
+      shapesDrawn: drawn(host).length,
+      shapesPainted: painted(host).length,
+      stroke: wearing && getComputedStyle(wearing).stroke,
+      width: wearing && getComputedStyle(wearing).strokeWidth,
+      anchorsPainted: [...host.querySelectorAll("[data-anchor]")].filter((a) => (a.style.stroke ?? "").includes("--color-selected")).length,
+    };
     if (cons.length) { const hit = cons[0].querySelector(".canvas-connection-hit") ?? cons[0]; press(hit, ...at(hit)); await sleep(1200);
       const line = cons[0].querySelector(".canvas-connection-line");
-      out.connection = { selected: sel(), stroke: line && getComputedStyle(line).stroke }; }
+      out.connection = { selected: sel(), stroke: line && getComputedStyle(line).stroke, width: line && getComputedStyle(line).strokeWidth }; }
     const svg = canvas.querySelector("svg.library-canvas-surface"); const b = svg.getBoundingClientRect();
     press(svg, b.x + 3, b.y + 3); await sleep(1200); out.afterBackground = sel();
     const d = els[0]; const [x, y] = at(d); const ev = (type, buttons, dx) => new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x + dx, clientY: y });
     const t = document.elementFromPoint(x, y) ?? d;
     t.dispatchEvent(ev("pointerdown", 1, 0)); t.dispatchEvent(ev("pointermove", 1, 40)); t.dispatchEvent(ev("pointerup", 0, 40)); await sleep(1200);
     out.afterDrag = sel();
-    return JSON.stringify(out);
+    return JSON.stringify(out, null, 1);
   }
   ```
+
   The sixteen, each from `src/examples/diagrams/<type>/`: `timeline`, `dependency-graph`,
   `causal-loop`, `c4` (**the oracle's four that worked**); `helm-charts`,
   `dotnet-dependency-graph`, `azure-pipeline`, `ansible-structure` (**the oracle's four that did
   not**); then `databricks`, `rdf`, `owl`, `shacl`, `skos`, `sparql`, `mindmap`, `wardley-map`.
+
+  **The oracle.** The user named four diagram types whose selection worked and four that did not,
+  and **that comparison is the acceptance criterion**: the four named broken must end up behaving
+  exactly like the four named working.
+
 - **Expected, from the probe**: `element.selected` names the pressed element and nothing else;
-  `element.ring` true, its stroke the primary colour, not dashed; `connection.selected` names the
-  pressed connection **and not the element pressed before it** - a press replaces; `afterBackground`
-  empty; `afterDrag` unchanged from before the drag - **a drag does not select what it moves**.
-  On `mindmap` and `wardley-map` a connection press is a background press by declaration
-  (Requirement 2.4), so `connection.selected` is empty there and nowhere else.
-- **Expected, by eye - the half no test can make**:
-  1. The ring reads clearly against that diagram's own fills, **including c4's backend-chosen
-     colours** and databricks' and azure-pipeline's cards.
+  **`shapesPainted` is at least 1** and `stroke` resolves to the selected colour at `width` 3 or
+  more; `anchorsPainted` is non-zero on the canvases that draw anchors; `connection.selected`
+  names the pressed connection **and not the element pressed before it** — a press replaces;
+  `afterBackground` empty; `afterDrag` unchanged from before the drag — **a drag does not select
+  what it moves**. On `mindmap` and `wardley-map` a connection press is a background press by
+  declaration (Requirement 2.4), so `connection.selected` is empty there and nowhere else.
+
+- **Expected, by eye — the half no test can make**:
+  1. The highlight reads clearly against that diagram's own fills, **including `c4`'s
+     backend-chosen colours** and databricks' and azure-pipeline's cards.
   2. A selected connection's highlight runs **the whole route**, label and adornments included,
      not just one segment.
-  3. Drag a connection from an anchor over a legal target: the target wears the **accept** ring -
-     dashed, further out, its own colour - and if that target is also the selection, **both rings
-     show at once**, one inside the other (Requirement 6.2).
-- **Before you trust a zero**: plant one. With something selected, delete its ring in the
-  console (`document.querySelector("rect.library-selected-outline").remove()`) and check the
-  probe reports `ring: false`; then press again to bring it back. A probe that cannot see the
-  ring's absence cannot report its presence.
-- **The open question this pass settles**: the ring's offset is in canvas units, so it scales
-  with zoom - at a zoomed-out fit it sat about 1px outside the box when this was written. Judge
-  it at fit, at 100%, and zoomed in. If it does not read at fit, the remedy is a screen-constant
-  offset (pixels converted to units per render) rather than a larger constant, which would gape
-  when zoomed in.
+  3. Drag a connection from an anchor over a legal target: the target wears **the selected
+     colour**, and **if that target is also the current selection, nothing changes visibly** —
+     one item, one highlight (Requirement 6.2). **Two simultaneous indications of the same state
+     on one item is the defect**, not the expected result.
+  4. **Nothing wears the selected colour at rest** (Requirement 5.5). Press the background and
+     look: no element, anchor, connection or decoration should be in it.
 
+- **Before you trust a zero, plant one.** With an element selected, clear the paint in the
+  console and confirm the probe notices, then press again to restore it:
+  ```js
+  const n = [...document.querySelector(".canvas-selected").querySelectorAll("rect, ellipse, path, polygon, circle")]
+    .find((e) => (e.style.stroke ?? "").includes("--color-selected"));
+  n.style.stroke = ""; (await probe());   // shapesPainted must drop by one
+  ```
+  **A probe that cannot see the paint's absence cannot report its presence** — and on this pass
+  the zero has three other ways to be manufactured, which is why the probe refuses to run at all
+  when the pane is collapsed or the origin has stopped answering.
+
+- **Result — NOT RUN as written.** This procedure has **never been executed in this form**. It
+  was rewritten on 2026-09-24 because its previous version probed for
+  `rect.library-selected-outline`, an element withdrawn from the client on 2026-09-22: a Tester
+  following it would have found nothing and recorded a defect that did not exist. **Both Tester
+  sessions are disabled, so it has not been run since the rewrite and this entry must not be read
+  as a pass.**
+
+  **The closest evidence, and it is not this procedure.** Architect 2 measured the look by hand
+  on 2026-09-23: fifteen of sixteen canvases on `90b31d49` (the outline in the selected colour,
+  3px, inline, fill untouched; anchors carrying it on the five canvases that draw them; light
+  theme `rgb(124,58,237)` at 5.7:1 against a white fill; nothing in the selected colour at rest
+  on any canvas), and `c4` on `7ef929ff` after `styled-box` was fixed. It recorded contrast
+  against `c4`'s own fills — 3.72:1 and 2.06:1 dark, 1.78:1 light, against the canvas ground 5.38
+  and 5.70 — **and the user judged it legible and accepted it**, which Requirement 5.2 records.
+  **That pass pressed one element per canvas**, so it is subject to the limit stated at the top
+  of this entry: it is why `wardley-map` was recorded as working while `symbol`'s plain circle
+  was unpainted.
 ## Both architecture pages' mermaid renders, in both readers (architecture-documentation, task 9)
 
 **Why this is here rather than in a test.** The pages carry one mermaid block each, and nothing
@@ -2949,3 +3113,55 @@ below stays either way.
   copy, confirm the block degrades to source text in both readers, and restore it. A check that
   has never seen the failure mode cannot report its absence - and this failure mode looks like
   ordinary text rather than like an error.
+
+## Two tabs on one origin both keep working (two-tab-connection-wedge, task 2)
+
+**This is a procedure rather than a test, and the task says so rather than pretending otherwise.** The
+reproduction needs two real browser tabs sharing one browser profile on one origin, and no unit or
+integration harness can produce a shared per-profile connection pool. CLAUDE.md's rule applies
+directly: a bug only a running app can reproduce leaves a step-by-step entry here.
+
+**An integration test written to stand in for this WILL pass, and that is worse than having none.** It
+would measure one client, one pool and no contention, and then report health on the exact defect it
+was written to catch - converting "unverified" into "verified" while nothing has been verified. This
+repository has already produced three client tests that passed against the code they were written to
+catch. **If you believe you have automated this, you have automated a different thing: say so and
+leave this procedure in place.**
+
+The mechanism: a browser allows about six concurrent HTTP/1.1 connections per origin, shared across
+tabs in one profile. Each open document holds three server-streaming gRPC calls - `WatchHierarchy`,
+`ContextService/Watch` and `DiagramService/Open`, which are the only server-streaming RPCs the whole
+API declares - so two documents reach the cap and the next request is queued forever. Over TLS, ALPN
+negotiates HTTP/2 and every request multiplexes onto one connection, which removes the cap rather
+than raising it.
+
+- **Preconditions**: a locally running developer build. **Note which scheme you are browsing** - the
+  `before` half needs `http://localhost:5080` and the `after` half needs `https://localhost:5443`,
+  and `launchSettings.json` serves both. An untrusted certificate is fine: click through the warning
+  once per browser profile. Use **one** hostname throughout, and see the first trap below.
+- **Actions**:
+  1. Open the app and open a project and one document. Confirm it is healthy - a probe settles in
+     milliseconds and the canvas draws.
+  2. Open a **second tab on the same origin** - same scheme, same hostname, same port - and open a
+     document there.
+  3. In whichever tab you like, request a plain static asset on that origin.
+- **Expected, over `http://`**: the second tab wedges, and **nothing on that origin completes again,
+  including the static file in step 3.** That last part is the diagnosis: it is an origin-wide
+  exhaustion, not a diagram fault.
+- **Expected, over `https://`**: both tabs work, both keep receiving their diagram deltas, and the
+  static file returns. Opening further documents in further tabs does not degrade either.
+- **Two traps that made this hard to see, and a later tester will hit both.** `127.0.0.1` and
+  `localhost` are **different origin keys**, so using one in each tab does not reproduce the defect
+  and makes it look absent. And **the pool is per profile and shared across tabs**, so a "fresh tab"
+  joins an already-exhausted pool rather than starting clean - every fresh-tab trial during the
+  investigation was worthless for this reason. To get a genuinely clean pool, use a new browser
+  profile or restart the browser.
+- **Note**: do not try to confirm the cap from inside the page. A request queued by the browser and a
+  request the server never answered are identical to page JavaScript; six attempts to tell them apart
+  failed during the investigation and the seventh needed `netstat` from outside the browser.
+- **Result**: not yet run. The `after` half is verifiable now that task 1 has landed an HTTPS
+  endpoint; the ALPN half of it is already measured - `openssl s_client -alpn h2` against that
+  endpoint reports `ALPN protocol: h2` over TLSv1.3, and the same connection asked for `http/1.1`
+  only reports `http/1.1`, so the negotiation is real rather than assumed. **What remains unverified
+  is the browser-level behaviour of two real tabs**, which is exactly the part no instrument here can
+  stand in for.
