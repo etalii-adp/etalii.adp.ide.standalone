@@ -89,8 +89,9 @@ describe("no module sends the backend a keystroke", () => {
     // Arrange.
     const root = sourceRoot();
 
-    // Act.
-    const librarySource = readFileSync(join(root, THE_LIBRARY), "utf8");
+    // Act: read exactly as the check below reads a module, comments blanked. Read raw, the control
+    // passed on the library's own comment naming `ContextShortcut` with every real send gone.
+    const librarySource = withoutComments(readFileSync(join(root, THE_LIBRARY), "utf8"));
 
     // Assert: the control. Without it, an offender list of [] could mean a pattern gone blind.
     expect(SENDS_A_KEYSTROKE.test(librarySource)).toBe(true);
