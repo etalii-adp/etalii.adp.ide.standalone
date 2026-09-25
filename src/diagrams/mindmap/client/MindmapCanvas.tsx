@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { elementSourceOf } from "@client/canvas/selection";
-import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
@@ -9,7 +8,6 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection, useContextPrompt, type ActionOutcome } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
@@ -57,19 +55,6 @@ function dropTargetAt(model: MindmapModel, draggedId: string, point: ShapePoint)
   return undefined;
 }
 
-/**
- * Which key the backend knows each declared action by.
- *
- * `add-child` is Insert here even though Tab invokes it too: the alias that used to live in the
- * key list was always a key-to-key mapping, and this is the same statement made once.
- */
-const BACKEND_KEYS: Readonly<Record<string, string>> = {
-  "add-child": "Insert",
-  "add-sibling": "Enter",
-  rename: "F2",
-  fold: " ",
-  delete: "Delete",
-};
 
 /** Whether `candidateId` sits inside the branch rooted at `rootId` - itself included. */
 function isInSubtree(model: MindmapModel, candidateId: string, rootId: string): boolean {
@@ -160,16 +145,19 @@ function definitionOf(): DiagramDefinition {
     actions: [
       {
         id: "add-child",
+        // Insert, not Tab, even when Tab fired it: the backend knows this action as Insert, and
+        // sending the key that was pressed would put an unknown keystroke on the wire (5.3).
+        backendKey: "Insert",
         invokedBy: [
           { kind: "shortcut", key: "Insert" },
           { kind: "shortcut", key: "Tab" },
         ],
         appliesTo: [{ kind: "element" }],
       },
-      { id: "add-sibling", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
-      { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-      { id: "fold", invokedBy: [{ kind: "shortcut", key: " " }], appliesTo: [{ kind: "element" }] },
-      { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
+      { id: "add-sibling", backendKey: "Enter", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+      { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+      { id: "fold", backendKey: " ", invokedBy: [{ kind: "shortcut", key: " " }], appliesTo: [{ kind: "element" }] },
+      { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
     ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
@@ -193,7 +181,7 @@ function definitionOf(): DiagramDefinition {
  */
 export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) {
   const { model, loading, failed, moveElement, reportView } = useMindmapStream(projectId, path);
-  const { executeAction, executeShortcut } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
   // A refusal is the backend's sentence, and it is shown on the rejection line every other canvas
@@ -250,18 +238,12 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     return { elements, connections };
   }, [model]);
 
-  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    surfaceRefusal(executeShortcut(shortcut, elementSourceOf(sourceId)));
-  };
-
   const events: DiagramEventHandlers = {
-    // The declared actions, answered as the shortcuts the backend has always known them by.
-    onActionInvoked: ({ actionId, targetId }) => {
-      const key = BACKEND_KEYS[actionId];
-      if (key !== undefined && targetId !== undefined) {
-        runShortcut(contextShortcutOf(key), targetId);
-      }
-    },
+    // A new action clears the last refusal before the backend answers - what this canvas did
+    // before task 6 moved the shortcut into the library, kept so that task changes nothing visible.
+    onActionInvoked: () => setRejection(""),
+    // The library sends the declared keystroke now, so its refusal arrives here.
+    onActionRefused: ({ message }) => setRejection(message),
     // Selection is the library's (centralized-selection); a press on a branch is a background
     // press because the branch type declares `selectable: false`.
     onElementMoved: ({ elementId, position }) => {

@@ -202,7 +202,7 @@ connections:
 
 ## Commands (Requirement 8)
 
-Every edit is a context action producing a command whose inverse is a **restore-lines** command. That command puts back exactly the line range the edit replaced, which is how `dependency-graph` and `timeline` undo, and it satisfies "undo SHALL restore exactly the lines the change rewrote".
+Every edit is a context action producing a command whose inverse is the shared **restore-document** command (`RestoreDocumentCommand`, backend-centralization's piece), holding the document's text as it was before the edit. It satisfies "undo SHALL restore the document as it was before the change" (Requirement 8.2 as read by the user's chat ruling of 2026-09-25).
 
 | Action | Target | Command | Notes |
 | --- | --- | --- | --- |
