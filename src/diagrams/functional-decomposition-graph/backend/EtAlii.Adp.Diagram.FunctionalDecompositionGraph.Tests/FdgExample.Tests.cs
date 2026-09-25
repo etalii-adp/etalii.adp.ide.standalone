@@ -20,37 +20,13 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// is declared - and fails them until the example carries it.
 /// </para>
 /// <para>
-/// <b>A missing example FAILS rather than skips.</b> The shape other modules use - skip when no
-/// <c>examples</c> folder is found - reads as green in a gate, and its upward walk stops at the
-/// first folder holding ANY <c>examples</c> directory, so a module without its own would climb to
-/// <c>src/examples</c> and find the wrong corpus while reporting success. This anchors on this
-/// module's own folder by name and throws when it is not there.
+/// <b>A missing example FAILS rather than skips</b>: see <see cref="FieldServiceExample"/>, which
+/// every test reading the example shares.
 /// </para>
 /// </remarks>
 public class FdgExampleTests
 {
-    private static string ExamplePath
-    {
-        get
-        {
-            // Up out of bin/Debug/net10.0 to this module's own folder, by name - not to the
-            // first folder that happens to contain an examples directory.
-            for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            {
-                if (directory.Name == "functional-decomposition-graph")
-                {
-                    var path = Path.Combine(directory.FullName, "examples", "field-service", "field-service.fdg");
-                    Assert.True(File.Exists(path), $"The field-service example is missing: {path}");
-                    return path;
-                }
-            }
-
-            throw new InvalidOperationException(
-                $"No functional-decomposition-graph folder above {AppContext.BaseDirectory}, so the example cannot be found. That is a failure, not a skip.");
-        }
-    }
-
-    private static LineDocument Document() => LineDocument.Parse(File.ReadAllText(ExamplePath));
+    private static LineDocument Document() => LineDocument.Parse(File.ReadAllText(FieldServiceExample.Path));
 
     private static FdgModel Model() => FdgParser.Parse(Document());
 
