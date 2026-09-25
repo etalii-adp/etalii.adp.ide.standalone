@@ -15,9 +15,31 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// <see cref="LineSplice.InsertionPointFor"/> does: appending a block item under a key that
 /// already carries <c>[]</c> would leave the key with two values and the file unparseable.
 /// </para>
+/// <para>
+/// <b>It is also the module's <see cref="IDiagramDocumentFactory"/>, and the host will not start
+/// without one.</b> <c>Program.cs</c> refuses any diagram type that declares a document extension but
+/// registers no factory, because such a type cannot be created from the Add dialog. That is a startup
+/// check, not a test, so a search of the test projects for what a type must register does not find it.
+/// Task 11's first build found it when every discovery test failed at once.
+/// </para>
 /// </remarks>
-public static class FdgDocumentFactory
+public sealed class FdgDocumentFactory : IDiagramDocumentFactory
 {
+    /// <inheritdoc />
+    public DiagramOrigin Origin => Diagram.FunctionalDecompositionGraph.Origin;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The base name is not written into the document: the schema has no title line, and inventing
+    /// one would put a key in every new file that nothing reads. CRLF, because a file ADP creates has
+    /// no existing style to preserve, and CRLF is the repository's own house style.
+    /// </remarks>
+    public string CreateEmptyDocument(string baseName)
+    {
+        ArgumentNullException.ThrowIfNull(baseName);
+        return EmptyDocument("\r\n");
+    }
+
     /// <summary>The document text, with the platform's line ending.</summary>
     public static string EmptyDocument() => EmptyDocument(Environment.NewLine);
 

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -17,6 +18,9 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // Without a document factory the host refuses to start: a type that declares an extension
+        // must be creatable from the Add dialog.
+        services.AddSingleton<IDiagramDocumentFactory, FdgDocumentFactory>();
         services.AddSingleton<FdgElementMapper>();
 
         // One document per path, shared by every connection viewing it. TryAdd rather than Add so a
