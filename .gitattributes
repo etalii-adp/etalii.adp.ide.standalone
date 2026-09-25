@@ -74,9 +74,9 @@ src/client/src/generated/**   text eol=lf
 # **An existing tree does not convert by itself.** Git rewrites a working file only when a checkout
 # changes it, and the index content of every `.proto` is identical before and after this rule, so a
 # tree that already holds CRLF protos keeps them until they are checked out again - delete them and
-# `git checkout -- '*.proto'`. A fresh worktree is LF from the start. Until a tree is converted, its
-# generate run writes the tracked `diagrams_pb.ts` back to its old bytes - a blank doc-comment line
-# regains a trailing space - and it shows as modified while containing no work. Check with
+# `git checkout -- '*.proto'`. A fresh worktree is LF from the start. A tree whose protos disagree
+# with the ones the tracked `*_pb.ts` were generated from shows those modified after a generate run,
+# containing no work - a blank doc-comment line gains or loses a trailing space. Check with
 # `git ls-files --eol`; for the ignored `*_pb.ts`, add `--others --ignored --exclude-standard`.
 #
 # The user ruled this on 2026-09-25.
