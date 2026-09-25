@@ -139,9 +139,9 @@ public class DotNetDependencyGraphPropertiesFlowTests : IClassFixture<WebApplica
 
         var rows = described.Properties.ToDictionary(property => property.Id, property => property.Value);
         Assert.True(rows.Count > 0, $"Opened at {openedAt}, the project node answered no property rows.");
-        Assert.Equal("Pipeline.Core", rows["name"]);
-        Assert.Equal("src/Pipeline.Core/Pipeline.Core.csproj", rows["path"]);
-        Assert.Equal("net10.0", rows["target-frameworks"]);
+        Assert.Equal("Pipeline.Core", rows["dotnet.name"]);
+        Assert.Equal("src/Pipeline.Core/Pipeline.Core.csproj", rows["dotnet.path"]);
+        Assert.Equal("net10.0", rows["dotnet.target-frameworks"]);
     }
 
     private static ContextSelection ElementChain(ShortGuid entryId, string elementId) =>
