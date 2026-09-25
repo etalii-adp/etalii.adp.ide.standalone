@@ -1,5 +1,6 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -12,8 +13,8 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
     /// store, the mapper, the session factory and the reload seam.
     /// </summary>
     /// <remarks>
-    /// The commands, the providers and the validator's join to the Errors and Warnings panel arrive
-    /// with the tasks that write them (12 and 13), so this list says how much of the module is wired.
+    /// The providers and the validator's join to the Errors and Warnings panel arrive with task 13,
+    /// so this list says how much of the module is wired.
     /// </remarks>
     public static IServiceCollection AddFunctionalDecompositionGraph(this IServiceCollection services)
     {
@@ -36,6 +37,19 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
 
         // Selection: an element or connection of an .fdg resolves to a selection the panels read.
         services.AddSingleton<IContextSourceResolver, FdgContextSourceResolver>();
+
+        // The commands, one handler each: the whole editable surface, and nothing writes the file
+        // except through them. Every one's undo is the shared restore command, registered once.
+        services.AddSingleton<ICommandHandler<AddFdgElementCommand>, AddFdgElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveFdgElementCommand>, RemoveFdgElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetFdgPlacementCommand>, SetFdgPlacementCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetFdgSizeCommand>, SetFdgSizeCommandHandler>();
+        services.AddSingleton<ICommandHandler<ConnectFdgElementsCommand>, ConnectFdgElementsCommandHandler>();
+        services.AddSingleton<ICommandHandler<DisconnectFdgConnectionCommand>, DisconnectFdgConnectionCommandHandler>();
+        services.AddSingleton<ICommandHandler<RenameFdgElementCommand>, RenameFdgElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetFdgDescriptionCommand>, SetFdgDescriptionCommandHandler>();
+        services.AddSingleton<ICommandHandler<RenameFdgConnectionCommand>, RenameFdgConnectionCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IFdgDocumentStore>>, RestoreDocumentCommandHandler<IFdgDocumentStore>>();
 
         return services;
     }
