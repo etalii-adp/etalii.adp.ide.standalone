@@ -8,7 +8,7 @@ import { emptyModel, type FdgModel } from "./fdgModel";
 
 /**
  * Task 14's handler guard: each library event produces its ONE route and nothing else - a move
- * through the stream's `moveElement`, a resize through `setProperty`, and a drop, connection,
+ * through the stream's `moveElementTo`, a resize through `setProperty`, and a drop, connection,
  * deletion or rename through a context action (the user's chat ruling of 2026-09-25).
  *
  * The library itself is replaced by a stand-in that keeps the handlers it was given, so each event
@@ -39,11 +39,14 @@ vi.mock("@client/diagrams/useDiagramStream", () => ({
     model: currentModel,
     loading: false,
     failed: false,
-    client: {
-      moveElement: (request: { elementId: string; position: { x: number; y: number } }) => {
-        moves.push({ elementId: request.elementId, x: request.position.x, y: request.position.y });
-        return Promise.resolve({ error: "" });
-      },
+    // Only the view report still reads the client, and that is replaced below.
+    client: {},
+    // The stream's one move (client-centralization task 8). Recorded here rather than at
+    // `client.moveElement`, which FdgCanvas no longer builds; what is recorded is unchanged - the
+    // element and the position FdgCanvas passes, which the TOP-LEFT test below reads.
+    moveElementTo: (elementId: string, x: number, y: number) => {
+      moves.push({ elementId, x, y });
+      return Promise.resolve("");
     },
   }),
 }));
@@ -100,7 +103,7 @@ beforeEach(() => {
 });
 
 describe("the functional decomposition graph canvas answers each library event through its one route", () => {
-  it("a move goes through moveElement, as the TOP-LEFT the document holds", async () => {
+  it("a move goes through moveElementTo, as the TOP-LEFT the document holds", async () => {
     // Arrange.
     const events = renderCanvas();
 
