@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -161,7 +161,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         for (var i = 0; i < 50; i++)
         {
-            Documents.AdpFileWriter.Save(body, Model);
+            AdpFileWriter.Save(body, Model);
             await Task.Delay(5, TestContext.Current.CancellationToken);
         }
 
@@ -201,7 +201,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // mid-publish now waits between attempts, and at 50 ms this test went from 0.9 s to 15.3 s
         // (2026-09-25). What it guards is that the model is never lost, which keep-last-good decides,
         // not how long a retry waits; the store's own attempts are kept.
-        var store = new C4DocumentStore(Documents.SharedDocumentReader.ReadAllText, C4DocumentStore.DefaultReadAttempts, TimeSpan.Zero);
+        var store = new C4DocumentStore(SharedDocumentReader.ReadAllText, C4DocumentStore.DefaultReadAttempts, TimeSpan.Zero);
         Assert.NotEmpty(store.WorkspaceOf(body).Elements);
 
         using var stop = new CancellationTokenSource();
@@ -212,7 +212,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
             {
                 try
                 {
-                    Documents.AdpFileWriter.Save(body, Model);
+                    AdpFileWriter.Save(body, Model);
                     Interlocked.Increment(ref publishes);
                 }
                 catch (IOException)

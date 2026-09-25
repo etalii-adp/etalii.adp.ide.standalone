@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;

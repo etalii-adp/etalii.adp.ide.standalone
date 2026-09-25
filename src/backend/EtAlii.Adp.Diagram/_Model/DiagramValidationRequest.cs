@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// Everything an <see cref="IDiagramValidator"/> is given about the one diagram it is judging.

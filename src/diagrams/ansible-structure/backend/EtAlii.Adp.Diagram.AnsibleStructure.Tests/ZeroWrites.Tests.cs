@@ -1,6 +1,5 @@
-using EtAlii.Adp.Common;
-using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
