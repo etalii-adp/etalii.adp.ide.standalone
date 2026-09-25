@@ -195,6 +195,18 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         var path = IoPath.Combine(_folder, "tea.owm");
         File.WriteAllText(path, "before");
 
+        // THE BUDGET ITS TWO SIBLINGS ALREADY HAVE, for the reason they give: this guard is about what
+        // the RECORD SAYS, and the timeout is pinned by AHolderQueryThatHangs_DoesNotHoldTheSaveOpen.
+        // At the production two seconds a full parallel gate timed the real query out and this read
+        // "holders not yet known after 2s" (FDG task 12's gate, 2026-09-25, found by Developer 1) - the
+        // third test in this class to meet that, and the one the first two fixes missed.
+        //
+        // NOT an injected answer through FileHolders.Query, which would be deterministic and would test
+        // the wrong thing: the subject includes the REAL Restart Manager saying nobody, and the mapping
+        // of its zero-holder answer to None rather than to "could not be determined". Injected, that
+        // mapping would go unexercised and this would test only how a supplied string is formatted.
+        FileHolders.Budget = TimeSpan.FromSeconds(30);
+
         var described = FileHolders.Describe(path);
 
         Assert.Contains(FileHolders.None, described, StringComparison.Ordinal);
