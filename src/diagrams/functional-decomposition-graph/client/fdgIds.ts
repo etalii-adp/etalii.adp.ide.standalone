@@ -61,9 +61,12 @@ export const FDG_OWNERSHIP_RELATIONS: readonly FdgRelationType[] = [
  * Add and connect are one id per type rather than one id with the type in the target, so the
  * target keeps the two shapes the resolver already reads and the type is never parsed out of it.
  */
+/** What every add action id starts with; the rest is the element type. */
+export const FDG_ADD_ACTION_PREFIX = "fdg.add.";
+
 export const FdgActions = {
   /** Adds an element of this type centred on the `new:x,y` target. */
-  add: (type: FdgElementType) => `fdg.add.${type}`,
+  add: (type: FdgElementType) => `${FDG_ADD_ACTION_PREFIX}${type}`,
   /** Draws this relation for the `rel:from->to` target. */
   connect: (relation: FdgRelationType) => `fdg.connect.${relation}`,
   /** Removes the target element and every connection to or from it. */
