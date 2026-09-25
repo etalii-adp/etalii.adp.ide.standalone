@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/backend-centralization/tasks.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790194373271_l6kgng3zn",
       "approvalTitle": "backend-centralization tasks: 25 tasks in the design's risk order, with 5 criteria satisfied ahead and R2.9 measurably unmet at three call sites"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-24T22:00:56.869Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790275851689_hnszrsxls",
+      "approvalTitle": "backend-centralization task 5: the save path may not read the cache, or group 2 reproduces today's data-loss defect in all ten stores"
     }
   ]
 }

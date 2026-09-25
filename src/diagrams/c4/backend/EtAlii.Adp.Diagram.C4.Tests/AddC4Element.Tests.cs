@@ -1,4 +1,3 @@
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -246,7 +245,7 @@ public class AddC4ElementTests : IDisposable
         var document = _documents.GetOrLoad(_bodyPath);
         var opened = document.CodeLines.Single(line => line.Code.Contains("container \"Web\"", StringComparison.Ordinal));
         document.InsertLine(opened.Number + 1, "                // Components arrive here as the design settles.");
-        _documents.Save(_bodyPath);
+        _documents.Save(_bodyPath, document);
 
         // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
