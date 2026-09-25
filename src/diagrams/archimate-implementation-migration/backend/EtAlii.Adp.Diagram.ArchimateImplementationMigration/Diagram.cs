@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.ArchimateImplementationMigration;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `archimate/implementation-migration`.</summary>

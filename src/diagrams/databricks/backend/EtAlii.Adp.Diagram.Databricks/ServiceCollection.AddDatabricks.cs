@@ -1,5 +1,5 @@
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -50,7 +50,7 @@ public static class ServiceCollectionAddDatabricksExtension
         services.AddSingleton<ICommandHandler<InsertDatabricksLibraryCommand>, InsertDatabricksLibraryCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveDatabricksLibraryCommand>, RemoveDatabricksLibraryCommandHandler>();
         services.AddSingleton<ICommandHandler<SetDatabricksPipelineScalarCommand>, SetDatabricksPipelineScalarCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreDatabricksDocumentCommand>, RestoreDatabricksDocumentCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IDatabricksDocumentStore>>, RestoreDocumentCommandHandler<IDatabricksDocumentStore>>();
 
         // The context seams, once for the whole family: which of the three types a file is does
         // not change what an element is (the C4 precedent).

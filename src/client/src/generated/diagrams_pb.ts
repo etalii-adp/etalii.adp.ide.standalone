@@ -214,13 +214,13 @@ export type MoveElementRequest = Message<"etalii.adp.MoveElementRequest"> & {
   /**
    * Where it lands, for a diagram that is arranged rather than nested. Unset means the move is
    * a re-parenting, described by the two fields above.
-   * 
+   *
    * The two gestures are genuinely different and a type usually supports one of them. Dragging
    * a mindmap node re-parents it: the tree *is* the layout, and there are no free coordinates
    * to land on. Dragging a C4 element moves it on the canvas and changes nothing about the
    * model, because a container belongs to the software system that declares it and no drag
    * should say otherwise.
-   * 
+   *
    * Before this field existed, a type that needed a position encoded "x,y" into new_parent_id
    * and split it on the comma. That worked and was tested, but the field's documented meaning
    * and its use had parted company, and the encoding had no schema for the next reader to

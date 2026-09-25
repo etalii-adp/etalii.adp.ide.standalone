@@ -1,6 +1,6 @@
 using System.Text;
 using System.Xml.Linq;
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Mindmap;
 

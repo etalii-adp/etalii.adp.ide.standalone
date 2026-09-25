@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package etalii.adp;
 
-option csharp_namespace = "EtAlii.Adp.Common.Wire";
+option csharp_namespace = "EtAlii.Adp.Documents.Wire";
 
 import "elements.proto"; // ProblemLocation carries an ElementId
 import "connection.proto"; // and a Path

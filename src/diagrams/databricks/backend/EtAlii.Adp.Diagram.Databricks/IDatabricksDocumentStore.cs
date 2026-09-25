@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
@@ -12,7 +14,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// YAML door - so three stores would be three copies of the same lifecycle keyed by the same
 /// paths.
 /// </remarks>
-public interface IDatabricksDocumentStore
+public interface IDatabricksDocumentStore : IReloadableDocumentStore
 {
     /// <summary>
     /// The document at <paramref name="path"/>, loaded once and kept. A file that is not there
@@ -29,7 +31,7 @@ public interface IDatabricksDocumentStore
     /// <remarks>
     /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
     /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
-    /// in the cache at save time - and <see cref="Reload"/> evicts. A reload landing between a
+    /// in the cache at save time - and <see cref="IReloadableDocumentStore.Reload"/> evicts. A reload landing between a
     /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
@@ -38,13 +40,6 @@ public interface IDatabricksDocumentStore
 
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
-
-    /// <summary>
-    /// Re-reads a document something outside changed, and tells the sessions on it. A no-op
-    /// while the store's own save of that path is in flight: its own write on disk is not an
-    /// external change, and must not bounce back as one.
-    /// </summary>
-    void Reload(string path);
 
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<DatabricksDocumentChangedEventArgs>? Changed;
