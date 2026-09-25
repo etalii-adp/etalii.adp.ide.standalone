@@ -3243,3 +3243,77 @@ than raising it.
   only reports `http/1.1`, so the negotiation is real rather than assumed. **What remains unverified
   is the browser-level behaviour of two real tabs**, which is exactly the part no instrument here can
   stand in for.
+
+## The functional decomposition graph, in a browser (functional-decomposition-graph, task 18)
+
+**Why this is a browser pass and not a test:** jsdom applies no CSS and lays out no text, so none of
+the rows below - a fill a stylesheet paints, a label's ink against a slanted outline, a drag that
+writes a size - is evidenced by the module's own suites. Requirements 13.1 and 13.2.
+
+- **Preconditions**: a locally running developer build ("developer session" in the header). A
+  **copy** of `src/diagrams/functional-decomposition-graph/examples/field-service/` (the `.adp` and
+  the `.fdg`) added as a project - the rows below edit the document. Open `field-service.fdg` by
+  selecting it in Hierarchy and pressing **Enter**. **Before recording any failed row, check the
+  origin still answers** (`fetch('/favicon.ico')` settles in milliseconds); a wedged origin looks
+  exactly like "nothing happened". Open one document per tab.
+- **Rows**:
+  1. **Five shapes, both themes.** One element of each type: a UI Element is a superellipse, a Data
+     Element a parallelogram with its top shifted right, an Action a trapezoid narrower at the
+     bottom, a Function a diode (square left, round right), a Comment a box. Read each shape's
+     **computed** fill, never its attribute: light mode `#aaed92`, `#ededed`, `#9edcfa`, `#86e6d9`,
+     `#fcf281`; dark mode `#2e7814`, `#696969`, `#086fa1`, `#187569`, `#736a03`. Labels are
+     `--color-text` in both, at least 4.5:1 against every fill.
+  2. **Text inside each shape.** Set one element of each named type to the minimum width (80) and
+     another to a generous one (400), and give a Comment more text than fits. Every label's **ink**
+     stays within the shape's outline, not merely its box; the overlong Comment's last visible line
+     ends in "…".
+  3. **Resize.** Drag the right and the left edge of each of the four named types: only left and
+     right handles exist, the width is written, and a left-edge drag also moves `x` so the right
+     edge stays put. A Comment has four handles; its width and its height are both written.
+  4. **Links.** Right-button drag from one element's body to another. Each of the five relations is
+     drawn by the pair that admits it (UI to UI, UI to Action, Action to Data, Data to Function,
+     Action to UI), and the document gains that relation. Refused, with the forbidden highlight and
+     **never** the valid one, and nothing written: Action to Action, a second parent, a
+     cycle-closing target, and anything onto a Comment.
+  5. **A connection name** added in the document appears at the connection's midpoint, and removed
+     disappears.
+  6. **A Description never appears**, on an element or a connection, as text or as a tooltip.
+- **Result 2026-09-25, Developer 1, develop at `60bcc5e6` (tasks 12, 13 and 14 landed), dark and
+  light via emulated `prefers-color-scheme`, in the IDE's built-in browser: all six rows pass, with
+  row 4's gesture start owed to a real hand (below).** Measured rather than looked at:
+  1. Outlines as specified (trapezoid 280-420 over 301-399; parallelogram 1328-1440 over
+     1300-1412; the diode's arc starting at width minus half the height). Computed fills equal to
+     the tokens above in both modes, exactly; label fill `rgb(15, 23, 42)` light and
+     `rgb(241, 245, 249)` dark; dark contrast 5.01 to 5.06.
+  2. Ink inside at 80 and at 400 for all four named types, and the overlong Comment ends "…"
+     inside its box. The Data Element at width 80 is the tightest case: the truncated label's
+     **box** corner sits 0.6 units past the slanted edge, in the empty descender space under the
+     "…"; its **ink**, measured with the browser's own text metrics, is 1.25 units clear on the left
+     and 1.38 on the right.
+  3. Real (trusted) drags wrote: Planning 80 -> 181 with `x` unchanged; Open task 80 -> 181 with
+     `x` 280 -> 178.62; Sync queue 80 -> 121; Location 140 -> 181; the Comment 96 -> 157 high and
+     260 -> 321 wide, `x` 1560 -> 1499.17.
+  4. All five relations written with the relation that admits the pair; all four refusals showed
+     the forbidden highlight only and wrote nothing. **These gestures were dispatched as pointer
+     events from the page, not made with a hand** - the tool has no right-button drag - so a real
+     right-button drag must still confirm the gesture START; what the library did with it
+     (preview, highlight, verdict, the action sent, the document written) is what was observed.
+  5. "holds the day" appeared and disappeared; "one per task" from the example is drawn.
+  6. None of five descriptions from the document appears in the canvas's text or `<title>`s - the
+     same search found the connection name in row 5, so the zero is not a blind one.
+- **Observations, not failures:**
+  - A single-line **truncated** label is fitted to the element's box, not to the shape's text
+    region (only wrapped labels use `textRegionOf`), so on a slanted shape at minimum width its ink
+    margin is about one unit where a wrapped label's is six.
+  - A left-edge resize writes a **rounded** width and an **unrounded** `x`, so the far edge moves
+    by up to half a unit (0.38 here).
+  - The canvas's vertical scrollbar thumb overlaps an element drawn at the canvas's right margin
+    and takes the press meant for its right resize handle; scroll or drag the left edge instead.
+- **Instrument traps met on this pass, so the next reader does not report them as defects:**
+  - **A hidden browser pane throttles `requestAnimationFrame` to about one frame a second**, and a
+    connect preview is published on a frame and honoured only once applied: read a highlight or
+    release sooner than that and nothing happens. Hold a dispatched gesture about three seconds.
+  - **Changing the emulated colour scheme or viewport re-sizes the pane**, and the canvas re-fits:
+    re-read an element's position immediately before each gesture.
+  - **With an emulated viewport larger than the pane, clicks land scaled** (a click reported at
+    591, 291 arrived at 1113, 548). Use the pane's own size for any input row.
