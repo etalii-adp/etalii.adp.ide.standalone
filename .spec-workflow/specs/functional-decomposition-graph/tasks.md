@@ -112,7 +112,7 @@
   - _Waits on: task 12 (every property change is one of its commands)_
   - _Requirements: 7.1, 7.2, 7.3, 8.1_
 
-- [ ] 14. The client module: registration, definition, handlers
+- [x] 14. The client module: registration, definition, handlers
   - File: `src/diagrams/functional-decomposition-graph/client/register.ts`, `FdgCanvas.tsx`, `fdg.css`, `readme.md` (new), tests
   - The definition the design states: five element types on the shapes of task 1, all `sizing: "user"` with `resize: "both"` on the Comment, one editable label each (the Comment's wrapped), a class per type for its fill, and no anchors on the Comment. Five relation types with `route: "cubic-bezier"`, an arrow end marker only, a midpoint editable label, endpoints and cardinality exactly as the rules table, `allowSelf: false`. `acyclic` naming the four ownership relations and **not** `shows`. Layout `manual`; the toolbox derived. Handlers turn each library event into its one route and nothing else: a move through `moveElementTo`, a resize through `setProperty`, and a drop, connection, deletion or rename through a context action or shortcut (the user's chat ruling of 2026-09-25). The ids are defined once, in the client, for tasks 12 and 13 to answer.
   - Guard: the definition passes `validateDiagramDefinition`; `declarativeModules` passes against this module unchanged; each library event produces its one action; a connect gesture over the example highlights an allowed target, refuses a forbidden pair, refuses a second parent, refuses a cycle-closing target, and **does** offer the Shows round trip.
@@ -128,7 +128,7 @@
   - Seen to fail against: an example missing one relation type, which the per-relation assertion reports.
   - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 16. Catalog and authoring documentation
+- [x] 16. Catalog and authoring documentation
   - File: `docs/diagrams.md`, `docs/creating-a-diagram-module.md`
   - Move the type's row to its new state as the work lands, keeping the `etalii/functional-decomposition-graph` origin. Document the six library capabilities where module authors are pointed for a definition: the three shapes and their text regions, `resize: "both"`, `wrap`, the multiline editor, `acyclic`, and outline attachment.
   - Guard: the documentation-links test passes; the catalog row's origin matches the `.adp` registration and the client registration's mime match, asserted rather than read.
