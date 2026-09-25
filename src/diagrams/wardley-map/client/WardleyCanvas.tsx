@@ -1,7 +1,5 @@
 import { useMemo, useState } from "react";
 
-import { elementSourceOf } from "@client/canvas/selection";
-import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
@@ -11,7 +9,6 @@ import { useContextConnection, useContextPrompt } from "@client/shell/context/Co
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import type { ContextShortcut } from "@client/generated/context-contract_pb";
 import {
   WardleyAttitudeKind,
   WardleyDecorator,
@@ -142,13 +139,6 @@ function attitudeName(kind: WardleyAttitudeKind): string {
 
 
 
-/**
- * Which key the backend knows each declared action by.
- *
- * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
- * in one place, rather than a keystroke built at each call site.
- */
-const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2" };
 
 /**
  * What a Wardley map allows, stated once: marks that drag inside the intrinsic 0..1 space and
@@ -376,7 +366,7 @@ function definitionOf(scale: MapScale): DiagramDefinition {
     // and the delete was a keystroke it built to describe a gesture the library had already
     // handed it. Declared, the library derives the key set and dispatches an action id.
     actions: [
-      { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+      { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
     ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
@@ -484,7 +474,7 @@ function definitionOf(scale: MapScale): DiagramDefinition {
  */
 export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useWardleyStream(projectId, path);
-  const { executeShortcut } = useContextConnection();
+  const {  } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
@@ -583,23 +573,7 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
     };
   }, [model, scale]);
 
-  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
-  };
-
   const events: DiagramEventHandlers = {
-    // The declared action, answered as the shortcut the backend has always known it by.
-    onActionInvoked: ({ actionId, targetId }) => {
-      const key = BACKEND_KEYS[actionId];
-      if (key !== undefined && targetId !== undefined) {
-        runShortcut(contextShortcutOf(key), targetId);
-      }
-    },
     // Selection is the library's (centralized-selection); which types select is declared above.
     // A menu action the backend refuses comes back here, for the rejection line.
     onActionRefused: ({ message }) => setRejection(message),

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { elementSourceOf } from "@client/canvas/selection";
-import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
@@ -9,7 +8,6 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection, useContextPrompt, type ActionOutcome } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { C4Model, C4Node, C4BoundaryBox } from "./c4Model";
@@ -32,13 +30,6 @@ type C4NodeElement = DiagramModelElement & { node: C4Node };
 type C4BoundaryElement = DiagramModelElement & { boundary: C4BoundaryBox };
 
 
-/**
- * Which key the backend knows each declared action by.
- *
- * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
- * in one place, rather than a keystroke built at each call site.
- */
-const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2", "insert": "Insert", "delete": "Delete" };
 
 /**
  * How many characters of the card's two small lines fit across it. The type line and the
@@ -182,9 +173,9 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   // and the delete was a keystroke it built to describe a gesture the library had already
   // handed it. Declared, the library derives the key set and dispatches an action id.
   actions: [
-    { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-    { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
-    { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+    { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+    { id: "insert", backendKey: "Insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+    { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
   ],
   layout: { modes: ["manual"] },
   dragging: "enabled",
@@ -199,7 +190,7 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  */
 export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useC4Stream(projectId, path);
-  const { executeAction, executeShortcut } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
   // A refusal is the backend's sentence, and it is shown on the rejection line every other canvas
@@ -266,18 +257,12 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     return { elements: [...boundaries, ...nodes], connections: relationships };
   }, [model]);
 
-  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    surfaceRefusal(executeShortcut(shortcut, elementSourceOf(sourceId)));
-  };
-
   const events: DiagramEventHandlers = {
-    // The declared actions, answered as the shortcuts the backend has always known them by.
-    onActionInvoked: ({ actionId, targetId }) => {
-      const key = BACKEND_KEYS[actionId];
-      if (key !== undefined && targetId !== undefined) {
-        runShortcut(contextShortcutOf(key), targetId);
-      }
-    },
+    // A new action clears the last refusal before the backend answers - what this canvas did
+    // before task 6 moved the shortcut into the library, kept so that task changes nothing visible.
+    onActionInvoked: () => setRejection(""),
+    // The library sends the declared keystroke now, so its refusal arrives here.
+    onActionRefused: ({ message }) => setRejection(message),
     // Selection is the library's (centralized-selection), and a boundary's inertness is its
     // type's `selectable: false` above.
     onElementMoved: ({ elementId, position }) => {

@@ -24,10 +24,27 @@ export interface DiagramStreamResult<TModel> {
    */
   failed: boolean;
   /**
-   * The service client the stream runs on, so a module's thin wrapper can build its own unary
-   * calls (`reportView`, a move mutation) on the same client without a second `createClient`.
+   * The service client the stream runs on, so a module can build its own unary calls on the same
+   * client without a second `createClient`. The move is no longer one of them - see
+   * {@link DiagramStreamResult.moveElementTo}.
    */
   client: Client<typeof DiagramService>;
+  /**
+   * Records where the user dropped an element, in canvas units. Resolves to the backend's refusal
+   * as a sentence, or to `""` when the move was accepted.
+   *
+   * <b>One implementation, where fourteen modules each wrote their own</b>
+   * (client-centralization Requirement 7). Thirteen of those bodies were byte-identical once
+   * comments were set aside. The fourteenth, `ansible-structure`'s, caught the failure and
+   * returned a fixed "The position could not be saved." - so a backend explaining WHY a move was
+   * refused was replaced by a sentence that explains nothing. This reports what was actually said,
+   * which is the specification's one permitted visible change besides the theme.
+   *
+   * <b>This reverses a deliberate decision</b>, and the reason is recorded where the decision was:
+   * archived `technical-debt-cleanup` R3.2 kept the move per module so each could shape its own;
+   * the user reversed it on 2026-09-20 because in practice none did - every body was the same call.
+   */
+  moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
 }
 
 /**
@@ -37,9 +54,14 @@ export interface DiagramStreamResult<TModel> {
  * the first message is always the current document, so the client re-baselines without a
  * protocol of its own.
  *
- * What stays per module, deliberately (technical-debt-cleanup R3.2): the model type, its empty
- * value, the response-to-model mapping, and the module's move call - built by its own wrapper on
- * the returned {@link DiagramStreamResult.client}.
+ * What stays per module: the model type, its empty value and the response-to-model mapping.
+ *
+ * <b>The move used to be on that list, and is not any more.</b> technical-debt-cleanup R3.2 kept
+ * it per module deliberately, built by each module's own wrapper on the returned client; the user
+ * reversed that on 2026-09-20 (client-centralization Requirement 7), because all fourteen wrappers
+ * turned out to be the same call. It is {@link DiagramStreamResult.moveElementTo} now. The sentence
+ * saying otherwise stood here until the change that made it false, which is the only point at
+ * which a comment like it gets corrected rather than repeated.
  *
  * The view report is no longer among them: it is shared, in `viewReport.ts` beside this file, and
  * a module builds it with `viewReportOf` on that same client.
@@ -140,5 +162,22 @@ export function useDiagramStream<TModel>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, projectId, watchId, pathKey, editorId]);
 
-  return { model, loading, failed, client };
+  const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
+    try {
+      const response = await client.moveElement({
+        projectId: { value: projectId },
+        watchId: { value: watchId },
+        path: { segments: [...path] },
+        elementId,
+        // The position is what makes this an arrangement rather than a re-parenting; the backend
+        // routes on its presence.
+        position: { x, y },
+      });
+      return response.error;
+    } catch (error) {
+      return error instanceof Error ? error.message : "The move could not be sent.";
+    }
+  };
+
+  return { model, loading, failed, client, moveElementTo };
 }
