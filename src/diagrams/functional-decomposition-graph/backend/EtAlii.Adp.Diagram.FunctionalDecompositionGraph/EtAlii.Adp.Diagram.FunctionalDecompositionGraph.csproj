@@ -5,11 +5,14 @@
     <!--
       Core abstractions only, and the dependency runs module -> core and never back. Task 9 needed
       Documents alone, for the document itself. Task 11 adds Diagram, for the session, the shared diff
-      and the shared change handler. Nothing here references EtAlii.Adp.Backend yet: the commands and
-      providers that need it arrive with tasks 12 and 13, so a reader can still see from this file how
-      much of the module exists.
+      and the shared change handler, and Context and Hierarchy for the selection resolver it lands
+      with. Nothing here references EtAlii.Adp.Backend yet: the commands and providers that need it
+      arrive with tasks 12 and 13, so a reader can still see from this file how much of the module
+      exists.
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
   </ItemGroup>
 
   <ItemGroup>

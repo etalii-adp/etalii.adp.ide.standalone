@@ -1,3 +1,4 @@
+using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -32,6 +33,9 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
         // The reload seam: an external write to an .fdg body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.
         services.AddSingleton<IDiagramDocumentReloader, FdgDocumentReloader>();
+
+        // Selection: an element or connection of an .fdg resolves to a selection the panels read.
+        services.AddSingleton<IContextSourceResolver, FdgContextSourceResolver>();
 
         return services;
     }

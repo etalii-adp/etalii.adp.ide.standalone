@@ -69,15 +69,15 @@ public sealed class FdgElementMapper
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        var drawable = Drawable(model);
-        var byId = drawable.Elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
+        var (elements, connections) = Drawable(model);
+        var byId = elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
 
-        var shownIds = drawable.Elements
+        var shownIds = elements
             .Where(element => Overlaps(element, viewport))
             .Select(element => element.Id)
             .ToHashSet(StringComparer.Ordinal);
 
-        var shownConnections = drawable.Connections
+        var shownConnections = connections
             .Where(connection => SpanOverlaps(byId[connection.From], byId[connection.To], viewport))
             .ToArray();
 
@@ -89,7 +89,7 @@ public sealed class FdgElementMapper
 
         return
         [
-            .. drawable.Elements.Where(element => shownIds.Contains(element.Id)).Select(Element),
+            .. elements.Where(element => shownIds.Contains(element.Id)).Select(Element),
             .. shownConnections.Select(Connection),
         ];
     }
