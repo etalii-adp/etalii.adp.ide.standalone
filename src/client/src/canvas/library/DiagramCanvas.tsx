@@ -657,23 +657,41 @@ export function DiagramCanvasCore({
    */
   const relationFrom = useCallback(
     (element: DiagramModelElement, anchor?: string): RelationTypeDefinition | undefined => {
-      // The anchor a connect starts from is part of the gesture's meaning: skos files a
-      // concept under another from its TOP anchor and cross-links from its SIDE. A source
-      // constraint naming anchors admits only drags that began on one of them.
-      const admits = (relation: RelationTypeDefinition | undefined) => {
-        if (relation === undefined || !relation.endpoints.source.elementTypes.includes(element.type)) {
-          return undefined;
-        }
-        const allowed = relation.endpoints.source.anchors;
-        if (Array.isArray(allowed) && (anchor === undefined || !allowed.includes(anchor))) {
-          return undefined;
-        }
-        return relation;
-      };
+      const admits = (relation: RelationTypeDefinition | undefined) =>
+        relation !== undefined && sourceAdmits(relation, element, anchor) ? relation : undefined;
       return admits(config?.activeTool !== undefined ? relationTypes.get(config.activeTool) : undefined)
         ?? definition.relationTypes.map((relation) => admits(relation)).find((relation) => relation !== undefined);
     },
     [config?.activeTool, definition.relationTypes, relationTypes],
+  );
+
+  /**
+   * Which relation a connect gesture draws ONTO this target - the one the press chose, unless
+   * that one cannot arrive here and another can.
+   *
+   * <b>The press cannot know the answer on its own.</b> It sees only the source, and a notation
+   * whose relations are told apart by what they point AT - a functional decomposition graph, where
+   * a screen owns a child screen, an action, data or a function through four different relations -
+   * would otherwise be able to draw one of them from any given element, whichever came first in the
+   * definition. So when the pressed relation does not admit the target's type, the gesture draws the
+   * first relation that admits BOTH ends (the source's anchor included); the three verdict checks
+   * then run on that relation, exactly as on any other.
+   *
+   * <b>A named tool still wins</b>: a runtime that set `activeTool` asked for that relation, and a
+   * target it does not admit is refused rather than quietly drawn as something else. And a
+   * definition whose pressed relation already admits every target it meets - every module before
+   * this existed - never reaches the search, so for them nothing changed.
+   */
+  const relationOnto = useCallback(
+    (pressed: RelationTypeDefinition, source: DiagramModelElement, anchor: string | undefined, target: DiagramModelElement): RelationTypeDefinition => {
+      if (pressed.endpoints.target.elementTypes.includes(target.type) || pressed.id === config?.activeTool) {
+        return pressed;
+      }
+      return definition.relationTypes.find(
+        (relation) => sourceAdmits(relation, source, anchor) && relation.endpoints.target.elementTypes.includes(target.type),
+      ) ?? pressed;
+    },
+    [config?.activeTool, definition.relationTypes],
   );
 
   const draggingEnabled = useCallback(
@@ -773,14 +791,15 @@ export function DiagramCanvasCore({
           // Per-frame COMPUTATION, deliberately kept: the hit-test and the verdict are what
           // make refusal render under the pointer; the requirement governs rendering.
           const candidate = elementAt(point);
-          const valid = candidate !== undefined && connectVerdict(relation, target.element.id, candidate);
+          const drawn = candidate !== undefined ? relationOnto(relation, target.element, target.anchor, candidate) : relation;
+          const valid = candidate !== undefined && connectVerdict(drawn, target.element.id, candidate);
           frame.move({
-            relation,
+            relation: drawn,
             sourceId: target.element.id,
             sourceAnchor: target.anchor,
             from: target.at,
             point,
-            target: valid && candidate !== undefined ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, relation) } : undefined,
+            target: valid && candidate !== undefined ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn) } : undefined,
             valid,
           });
           break;
@@ -1067,18 +1086,19 @@ export function DiagramCanvasCore({
     const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
     const point = { x: active.from.x + (event.clientX - active.pressX) * scale, y: active.from.y + (event.clientY - active.pressY) * scale };
     const candidate = elementAt(point);
-    const valid = candidate !== undefined && candidate.id !== active.element.id && connectVerdict(active.relation, active.element.id, candidate);
+    const drawn = candidate !== undefined ? relationOnto(active.relation, active.element, undefined, candidate) : active.relation;
+    const valid = candidate !== undefined && candidate.id !== active.element.id && connectVerdict(drawn, active.element.id, candidate);
     frame.move({
-      relation: active.relation,
+      relation: drawn,
       sourceId: active.element.id,
       from: active.from,
       point,
       target: valid && candidate !== undefined
-        ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, active.relation) }
+        ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn) }
         : undefined,
       valid,
     });
-  }, [surfaceRectAtGestureStart, connectValue, elementAt, connectVerdict, elementTypes, boundsOf]);
+  }, [surfaceRectAtGestureStart, connectValue, elementAt, connectVerdict, relationOnto, elementTypes, boundsOf]);
 
   const endRightConnect = useCallback((event: React.PointerEvent) => {
     const active = rightConnectRef.current;
@@ -2805,6 +2825,20 @@ function connectionEnds(
 }
 
 /** Every anchor an anchor set declares, resolved into the element's bounds. */
+/**
+ * Whether a connect gesture may leave this element as this relation. The anchor it starts from is
+ * part of the gesture's meaning: skos files a concept under another from its TOP anchor and
+ * cross-links from its SIDE, so a source constraint naming anchors admits only drags that began on
+ * one of them.
+ */
+function sourceAdmits(relation: RelationTypeDefinition, element: DiagramModelElement, anchor: string | undefined): boolean {
+  if (!relation.endpoints.source.elementTypes.includes(element.type)) {
+    return false;
+  }
+  const allowed = relation.endpoints.source.anchors;
+  return !Array.isArray(allowed) || (anchor !== undefined && allowed.includes(anchor));
+}
+
 export function anchorPoints(anchors: AnchorSet, bounds: ConnectorBox): readonly { name?: string; point: Point }[] {
   switch (anchors.kind) {
     case "edge":

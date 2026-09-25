@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
@@ -22,8 +23,11 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// entry with an id, so a document repeating an id selects what the canvas drew.
 /// </para>
 /// <para>
-/// <b>Not yet here: the placement ids</b> a drop or a connect-to-empty-space carries. They name an
-/// element about to exist, and exist only for task 12's commands, which arrive with them.
+/// <b>A placement or a finished connect gesture resolves too</b> (task 13): <c>new:x,y</c> names the
+/// element a drop is about to create and <c>rel:from-&gt;to</c> the connection a gesture proposes,
+/// through a channel with one element id per call and no field for a position. Each resolves to a
+/// target the action provider reads back out, and lives for one execution: never selected, tracked
+/// or written.
 /// </para>
 /// </remarks>
 public sealed class FdgContextSourceResolver : IContextSourceResolver
@@ -74,6 +78,27 @@ public sealed class FdgContextSourceResolver : IContextSourceResolver
 
         var model = _documents.GetOrLoad(bodyPath).Model;
         var elementId = id.ElementId.Value;
+
+        if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _))
+        {
+            var proposed = GestureIds.IsPlacement(elementId) ? "New element" : "New connection";
+            return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
+                source,
+                id,
+                [proposed],
+                ContextScope.DiagramElement,
+                new ContextTarget(
+                    ContextScope.DiagramElement,
+                    bodyPath,
+                    IsContainer: false,
+                    SourceId: default,
+                    rootPath,
+                    watchId,
+                    elementId,
+                    routed.Definition.Origin),
+                new ContextLevelDetail { Element = new ElementDetail { Text = proposed } },
+                this)));
+        }
 
         var described = Describe(model, elementId);
         if (described is null)
