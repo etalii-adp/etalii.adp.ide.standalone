@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -61,7 +61,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         Assert.NotEmpty(store.WorkspaceOf(body).Elements);
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(body);
+        store.Save(body, store.GetOrLoad(body));
 
         // Assert: the real model is still on disk.
         var onDisk = File.ReadAllText(body);
@@ -84,7 +84,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
             Assert.Empty(store.WorkspaceOf(body).Elements); // the arrangement: the first read failed
         }
 
-        var answer = store.Save(body);
+        var answer = store.Save(body, store.GetOrLoad(body));
 
         Assert.NotEqual("", answer);
         Assert.Equal(Model, File.ReadAllText(body));
@@ -161,7 +161,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         for (var i = 0; i < 50; i++)
         {
-            Documents.AdpFileWriter.Save(body, Model);
+            AdpFileWriter.Save(body, Model);
             await Task.Delay(5, TestContext.Current.CancellationToken);
         }
 
@@ -181,7 +181,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         var store = new C4DocumentStore();
 
         Assert.Empty(store.WorkspaceOf(body).Elements);
-        var answer = store.Save(body);
+        var answer = store.Save(body, store.GetOrLoad(body));
 
         Assert.Equal("", answer);
         Assert.True(File.Exists(body), "A new, empty model was not saved.");
@@ -197,7 +197,11 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         // keeps the last good model, so zero is the only passing answer rather than a lucky one.
         var body = IoPath.Combine(_root, "model.dsl");
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
-        var store = new C4DocumentStore();
+        // The retry's wait taken away, and only here: every reload that finds the body renamed away
+        // mid-publish now waits between attempts, and at 50 ms this test went from 0.9 s to 15.3 s
+        // (2026-09-25). What it guards is that the model is never lost, which keep-last-good decides,
+        // not how long a retry waits; the store's own attempts are kept.
+        var store = new C4DocumentStore(SharedDocumentReader.ReadAllText, C4DocumentStore.DefaultReadAttempts, TimeSpan.Zero);
         Assert.NotEmpty(store.WorkspaceOf(body).Elements);
 
         using var stop = new CancellationTokenSource();
@@ -208,7 +212,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
             {
                 try
                 {
-                    Documents.AdpFileWriter.Save(body, Model);
+                    AdpFileWriter.Save(body, Model);
                     Interlocked.Increment(ref publishes);
                 }
                 catch (IOException)

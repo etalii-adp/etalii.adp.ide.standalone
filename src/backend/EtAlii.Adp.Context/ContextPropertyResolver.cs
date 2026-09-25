@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents.Wire;
 using Serilog;
 
 namespace EtAlii.Adp.Context;

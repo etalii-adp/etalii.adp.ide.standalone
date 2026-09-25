@@ -2,7 +2,7 @@ using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
 using Serilog;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Projects;
 
 public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase

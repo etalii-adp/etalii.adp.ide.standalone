@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
 
 /// <summary>Vendor sorts first, type sorts last - ordering is by vendor before type.</summary>

@@ -1,6 +1,6 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -61,7 +61,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
@@ -116,11 +116,11 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             new ContextService.ContextServiceClient(channel));
     }
 
-    private static Task<Common.Wire.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name) =>
+    private static Task<Documents.Wire.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name) =>
         // A registration is a child of its subject now, so the lookup follows the nesting.
         NestedEntryLookup.EntryIdOfAsync(session.Hierarchy, session.ProjectId, session.WatchId, session.Headers, name);
 
-    private static ContextSelection Selection(Common.Wire.ShortGuid entryId, params string[] path)
+    private static ContextSelection Selection(Documents.Wire.ShortGuid entryId, params string[] path)
     {
         var selection = new ContextSelection
         {

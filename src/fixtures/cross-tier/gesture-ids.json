@@ -1,0 +1,61 @@
+{
+  "reason": "A canvas gesture that places something new, or proposes a relation between two things, sends an id for an element that does not exist yet. Both tiers build and parse those ids one way (backend-centralization R11). A placement is 'new:' then two comma-separated components: 'new:{x},{y}' on a free canvas (causal-loop, databricks, rdf), or 'new:{x},{row}' on a row canvas (timeline, dependency-graph), where the row is a whole number the client has already rounded to. A relation is 'rel:{from}->{to}', split at the FIRST arrow, and both ends must be non-empty (R11.2). Numbers are invariant-culture and may carry a sign and a decimal point. The 'valid' cases round-trip on both tiers: parsing the id gives its components, and building from the components gives the id back. So every value here is one that .NET and JavaScript format identically. Exponents parse on both tiers but format differently ('1E-07' against '1e-7'), so none appear here. NaN and Infinity also parse today, because every copy this grammar replaces accepted them, but they are deliberately not listed as valid.",
+  "placements": {
+    "xy": {
+      "valid": [
+        { "id": "new:120,48", "x": 120, "y": 48 },
+        { "id": "new:0,0", "x": 0, "y": 0 },
+        { "id": "new:12.5,-3.25", "x": 12.5, "y": -3.25 },
+        { "id": "new:-40,7.5", "x": -40, "y": 7.5 },
+        { "id": "new:12,2.5", "x": 12, "y": 2.5 }
+      ],
+      "invalid": [
+        { "id": "", "why": "empty" },
+        { "id": "new:", "why": "no components" },
+        { "id": "new:1", "why": "one component" },
+        { "id": "new:1,2,3", "why": "three components" },
+        { "id": "new:1,2,", "why": "trailing separator" },
+        { "id": "new:,2", "why": "empty x" },
+        { "id": "new:1,", "why": "empty y" },
+        { "id": "new:a,2", "why": "x is not a number" },
+        { "id": "new:1,b", "why": "y is not a number" },
+        { "id": "place:1,2", "why": "wrong prefix" },
+        { "id": "rel:a->b", "why": "a relation, not a placement" }
+      ]
+    },
+    "row": {
+      "valid": [
+        { "id": "new:120,3", "x": 120, "row": 3 },
+        { "id": "new:0,0", "x": 0, "row": 0 },
+        { "id": "new:37.5,12", "x": 37.5, "row": 12 }
+      ],
+      "invalid": [
+        { "id": "new:12,2.5", "why": "the row is not a whole number - valid as a point, refused as a row" },
+        { "id": "new:1", "why": "one component" },
+        { "id": "new:1,2,3", "why": "three components" },
+        { "id": "new:1,2,", "why": "trailing separator" },
+        { "id": "new:,2", "why": "empty x" },
+        { "id": "new:1,", "why": "empty row" },
+        { "id": "new:1,row", "why": "row is not a number" }
+      ]
+    }
+  },
+  "relations": {
+    "valid": [
+      { "id": "rel:a->b", "from": "a", "to": "b" },
+      { "id": "rel:variable-a->variable-b", "from": "variable-a", "to": "variable-b" },
+      { "id": "rel:new:120,3->b", "from": "new:120,3", "to": "b", "why": "a relation may start at a placement that does not exist yet, as dependency-graph proposes" },
+      { "id": "rel:a->b->c", "from": "a", "to": "b->c", "why": "split at the FIRST arrow, so a target may contain '->' but a source may not" }
+    ],
+    "invalid": [
+      { "id": "", "why": "empty" },
+      { "id": "rel:", "why": "no ends" },
+      { "id": "rel:->", "why": "both ends empty" },
+      { "id": "rel:->b", "why": "empty source" },
+      { "id": "rel:a->", "why": "empty target - the case causal-loop once wrote as 'link a ->  +'" },
+      { "id": "rel:ab", "why": "missing arrow" },
+      { "id": "a->b", "why": "missing prefix" },
+      { "id": "new:1,2", "why": "a placement, not a relation" }
+    ]
+  }
+}

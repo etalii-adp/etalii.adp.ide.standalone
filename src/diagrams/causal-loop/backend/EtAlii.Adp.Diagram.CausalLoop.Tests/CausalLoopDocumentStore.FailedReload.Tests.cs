@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -54,7 +54,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         Assert.True(held.IsUsable, $"The failed reload replaced the last good diagram: {held.Error}");
 
         // Act: whatever triggers the next save, once the file is readable again.
-        store.Save(path);
+        store.Save(path, held);
 
         // Assert: the real diagram is still on disk.
         Assert.Equal(Text, File.ReadAllText(path));
@@ -113,7 +113,11 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         // confirmed before it counts as gone, so the diagram must never be lost.
         var path = IoPath.Combine(_workspace, "loop.cld");
         await File.WriteAllTextAsync(path, Text, TestContext.Current.CancellationToken);
-        var store = new CausalLoopDocumentStore();
+        // The retry's wait taken away, and only here: every reload that finds the body renamed away
+        // mid-publish now waits between attempts, and at 50 ms this test went from 0.8 s to 8.4 s
+        // (2026-09-25). What it guards is that the diagram is never lost, which keep-last-good decides,
+        // not how long a retry waits; the store's own attempts are kept.
+        var store = new CausalLoopDocumentStore(SharedDocumentReader.ReadAllText, CausalLoopDocumentStore.DefaultReadAttempts, TimeSpan.Zero);
         Assert.True(store.GetOrLoad(path).IsUsable);
 
         using var stop = new CancellationTokenSource();
@@ -124,7 +128,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
             {
                 try
                 {
-                    Documents.AdpFileWriter.Save(path, Text);
+                    AdpFileWriter.Save(path, Text);
                     Interlocked.Increment(ref publishes);
                 }
                 catch (IOException)
@@ -172,7 +176,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
             Assert.False(store.GetOrLoad(path).IsUsable, "The arrangement failed: the first read succeeded.");
         }
 
-        var answer = store.Save(path);
+        var answer = store.Save(path, store.GetOrLoad(path));
 
         Assert.NotEqual("", answer);
         Assert.Equal(Text, File.ReadAllText(path));
