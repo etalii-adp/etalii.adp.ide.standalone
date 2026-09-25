@@ -104,7 +104,7 @@
   - Seen to fail against: a connect command that trusts the client (a cycle-closing request then lands).
   - _Waits on: `backend-centralization` task 17's piece (the restore-lines edit, R6), task 18's piece (the YAML node range, R7, which an edit uses to find its entry's lines and which this line omitted), and task 21 (the gesture grammar, R11) (the user's chat ruling of 2026-09-25)_
   - _Requirements: 3.1, 3.2, 3.3, 6.3, 8.2, 8.3, 7.4_
-- [ ] 13. Toolbox and property providers
+- [x] 13. Toolbox and property providers
   - File: `.../FdgToolboxProvider.cs`, `.../FdgContextPropertyProvider.cs`, `.../FdgContextActionProvider.cs` (new), tests. `FdgContextSourceResolver` moved to task 11 (the user's chat ruling of 2026-09-25).
   - The toolbox describes the five element types as data. The property grid offers a Description for all five types and every connection, a Name for the four named types, and a connection's Name. Every property change is a command (task 12).
   - Guard: each of the five types and a connection offers a Description row; a Comment offers no Name row; a property set through the grid reaches the document and undoes.

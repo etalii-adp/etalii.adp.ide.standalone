@@ -179,6 +179,20 @@ describe("the functional decomposition graph canvas answers each library event t
     expect(executed).toEqual([{ actionId: "fdg.add.action", targetId: "new:300,700" }]);
   });
 
+  it("a drop from the backend's toolbox, which carries its add action, adds that type", async () => {
+    // The backend's toolbox item names `fdg.add.<type>` as its DropActionId, and that is the drop's
+    // payload - as for every module. Ignoring it would make every palette drop do nothing.
+    const events = renderCanvas();
+
+    // Act.
+    events.onElementDropped!({ kind: "element-dropped", elementType: "fdg.add.comment", position: { x: 40, y: 60 } });
+    events.onElementDropped!({ kind: "element-dropped", elementType: "fdg.add.nonsense", position: { x: 1, y: 2 } });
+    await settle();
+
+    // Assert.
+    expect(executed).toEqual([{ actionId: "fdg.add.comment", targetId: "new:40,60" }]);
+  });
+
   it("a drop of something that is not one of the five sends nothing", async () => {
     // Arrange.
     const events = renderCanvas();
