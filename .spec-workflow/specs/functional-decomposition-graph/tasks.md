@@ -95,7 +95,7 @@
   - _Waits on: `backend-centralization` tasks 2 (the save result), 3 (its discard guard), 5 (the store lifecycle), 11 (the change-detecting diff) and 13 (the change handler), each checked on develop by ancestry (the user's chat ruling of 2026-09-25)_
   - _Requirements: 7.1, 3.1_
 
-- [ ] 12. The commands, each with its inverse
+- [x] 12. The commands, each with its inverse
   - File: `.../Commands/*.cs` (new), tests
   - Add, remove (with the connections to and from it, in one edit), move, resize, connect, disconnect, rename or edit text, set a Description, set a connection's name. Each inverse is a restore-lines command, as `dependency-graph` and `timeline` undo. The connect command refuses on the same three checks the canvas makes — type, cardinality, cycle — so a stale or scripted request cannot write what the canvas would not offer, and the refusal names which check failed.
   - **Snap: declare nothing.** The library's snap applies as it stands when this is built (Requirement 3.3); read its semantics from `SnapDeclaration` in the code rather than restating them here, since they were in flight when the requirements were written.
