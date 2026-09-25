@@ -92,7 +92,7 @@ The skips are declared per project in a `.csproj.DotSettings` file, and `Namespa
 
 ## Where tests and fixtures live
 
-A test project sits beside its subject as `<Project>.Tests`. Inside one, `Fixtures/**` is **test input, not product** — and for the modules whose round-trip requirement compares bytes, those fixtures are marked `-text` in `.gitattributes` so git does not rewrite their line endings and turn the test into a test of git.
+A test project sits beside its subject as `<Project>.Tests`. **Where there is no single subject project, it is named for its purpose instead**: `EtAlii.Adp.Client.Tests` runs the client's vitest suite from `dotnet test`, and `EtAlii.Adp.Repository.Tests` holds the guards whose subject is the repository itself - its documents, scripts and conventions. Inside one, `Fixtures/**` is **test input, not product** — and for the modules whose round-trip requirement compares bytes, those fixtures are marked `-text` in `.gitattributes` so git does not rewrite their line endings and turn the test into a test of git.
 
 `src/fixtures/cross-tier/` is a different thing with a similar name: **one JSON file per rule the backend and the client must agree on**, each carrying its cases and the rule's own statement in a `reason` field, and read by both suites. It sits outside both because a client test reaching into the backend's folders would invert the dependency the whole tree is arranged to avoid.
 
