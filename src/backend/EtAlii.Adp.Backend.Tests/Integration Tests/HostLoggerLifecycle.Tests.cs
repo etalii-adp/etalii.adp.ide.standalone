@@ -98,7 +98,7 @@ public class HostLoggerLifecycleTests : IDisposable
     }
 
     [Fact]
-    public void TwoHostsStoppingAtOnce_LeaveTheThirdLogging()
+    public async Task TwoHostsStoppingAtOnce_LeaveTheThirdLogging()
     {
         // Released together by a barrier rather than by timing, so the two releases really overlap.
         var (a, _) = Start();
@@ -107,21 +107,21 @@ public class HostLoggerLifecycleTests : IDisposable
         AssertArrives(sinkC, "control");
         using var together = new Barrier(2);
 
-        Task.WaitAll(
+        await Task.WhenAll(
             Task.Run(() =>
             {
                 // ReSharper disable once AccessToDisposedClosure
                 // Reason: both tasks are awaited before the barrier is disposed.
                 together.SignalAndWait(Settle);
                 a.Dispose();
-            }),
+            }, TestContext.Current.CancellationToken),
             Task.Run(() =>
             {
                 // ReSharper disable once AccessToDisposedClosure
                 // Reason: both tasks are awaited before the barrier is disposed.
                 together.SignalAndWait(Settle);
                 b.Dispose();
-            }));
+            }, TestContext.Current.CancellationToken));
 
         AssertStillLogging(sinkC);
     }
@@ -129,16 +129,16 @@ public class HostLoggerLifecycleTests : IDisposable
     [Fact]
     public void StartingAHost_DoesNotReplaceALiveHostsPipelineWithABootstrapLogger()
     {
-        // Observed from inside C's build, which is where a class first used would bind.
-        var (b, sinkB) = Start();
+        // Written from inside C's build, which is where a class first used would bind. Asserted by
+        // where the line ARRIVES rather than by which logger instance is global: the old code set
+        // the raw pipeline, the fix sets its DI wrapper, and an identity check would fail on that
+        // difference alone, bootstrap or not.
+        var (_, sinkB) = Start();
         AssertArrives(sinkB, "control");
-        var liveHostLogger = b.Services.GetRequiredService<ILogger>();
 
-        ILogger? duringBuild = null;
-        Start(onBuild: () => duringBuild = Log.Logger);
+        Start(onBuild: () => Log.ForContext("SourceContext", "HostLoggerGuard").Warning("during-build"));
 
-        Assert.NotNull(duringBuild);
-        Assert.Same(liveHostLogger, duringBuild);
+        Assert.Contains("during-build", sinkB.Guarded);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public class HostLoggerLifecycleTests : IDisposable
 
         Assert.NotNull(duringBuild);
         Assert.NotSame(sentinel, duringBuild);
-        Assert.IsNotType<SilentLogger>(duringBuild);
+        AssertNotSilent(duringBuild);
     }
 
     [Fact]
@@ -207,12 +207,16 @@ public class HostLoggerLifecycleTests : IDisposable
         Assert.Contains(text, sink.Guarded);
     }
 
+    // By name: Serilog's SilentLogger is internal, which is also how the measurements read it.
+    private static void AssertNotSilent(ILogger logger) =>
+        Assert.NotEqual("SilentLogger", logger.GetType().Name);
+
     private static void AssertStillLogging(RecordingSink sink)
     {
         // The old code's closer ran on the stopping host's thread a little after Dispose returned,
         // so the check is made once the global has had time to change.
         Thread.Sleep(TimeSpan.FromMilliseconds(250));
-        Assert.IsNotType<SilentLogger>(Log.Logger);
+        AssertNotSilent(Log.Logger);
         Assert.False(sink.Disposed, "a live host's pipeline was disposed by another host stopping");
         AssertArrives(sink, "after");
     }
