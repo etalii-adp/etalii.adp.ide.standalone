@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Code, ConnectError, createClient, type Client } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
+import { reportedCall, useCanvasRefusalReporter } from "@client/canvas/library/surface/canvasRefusals";
 import type { Delta } from "@client/generated/deltas_pb";
 import { DiagramService } from "@client/generated/diagrams_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
@@ -162,21 +163,28 @@ export function useDiagramStream<TModel>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, projectId, watchId, pathKey, editorId]);
 
+  // Inside a canvas, a move reports to its refusal line like every other gesture that reaches the
+  // backend (client-centralization Requirement 2); the sentence is still returned to the caller.
+  const refusals = useCanvasRefusalReporter();
+
   const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
-    try {
-      const response = await client.moveElement({
-        projectId: { value: projectId },
-        watchId: { value: watchId },
-        path: { segments: [...path] },
-        elementId,
-        // The position is what makes this an arrangement rather than a re-parenting; the backend
-        // routes on its presence.
-        position: { x, y },
-      });
-      return response.error;
-    } catch (error) {
-      return error instanceof Error ? error.message : "The move could not be sent.";
-    }
+    const outcome = await reportedCall(refusals, async () => {
+      try {
+        const response = await client.moveElement({
+          projectId: { value: projectId },
+          watchId: { value: watchId },
+          path: { segments: [...path] },
+          elementId,
+          // The position is what makes this an arrangement rather than a re-parenting; the backend
+          // routes on its presence.
+          position: { x, y },
+        });
+        return { accepted: response.error === "", error: response.error };
+      } catch (error) {
+        return { accepted: false, error: error instanceof Error ? error.message : "The move could not be sent." };
+      }
+    });
+    return outcome.error;
   };
 
   return { model, loading, failed, client, moveElementTo };

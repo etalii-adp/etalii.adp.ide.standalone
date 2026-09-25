@@ -13,6 +13,7 @@ import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { useAuth } from "../../auth/AuthContext";
+import { reportedCall, useCanvasRefusalReporter } from "../../canvas/library/surface/canvasRefusals";
 import { ContextSourceSchema } from "../../generated/context-contract_pb";
 import { ContextService, ContextSelectionSchema } from "../../generated/context_pb";
 import type { ContextActionGroup, ContextLevelDetail, ContextShortcut, ContextSource } from "../../generated/context-contract_pb";
@@ -561,12 +562,31 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   );
 }
 
+/**
+ * The workspace's context connection. <b>Inside a canvas</b> its three gesture calls -
+ * `executeAction`, `executeShortcut` and `setProperty` - also report to that canvas's refusal line,
+ * so a refusal is shown by the library whoever sent the call (client-centralization Requirement 2).
+ * Outside one, and for every other member, the value is the provider's own, unchanged.
+ */
 export function useContextConnection(): ContextConnectionValue {
   const value = useContext(ConnectionContext);
   if (!value) {
     throw new Error("useContextConnection must be used within a ContextConnectionProvider.");
   }
-  return value;
+  const reporter = useCanvasRefusalReporter();
+  return useMemo(
+    () =>
+      reporter === null
+        ? value
+        : {
+            ...value,
+            executeAction: (actionId, source) => reportedCall(reporter, () => value.executeAction(actionId, source)),
+            executeShortcut: (shortcut, source) => reportedCall(reporter, () => value.executeShortcut(shortcut, source)),
+            setProperty: (propertyId, newValue, source) =>
+              reportedCall(reporter, () => value.setProperty(propertyId, newValue, source)),
+          },
+    [value, reporter],
+  );
 }
 
 export function useContextSelection(): ContextSelectionValue {
