@@ -52,24 +52,24 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 
 ## Group 1 — The save result, first because every later step touches saving
 
-- [ ] 1. Add the seven project references the user's placement ruling costs
+- [x] 1. Add the seven project references the user's placement ruling costs
   - Files: the seven module backend `.csproj` files that do not yet reference `EtAlii.Adp.Documents`
   - The user ruled placement **(b) `EtAlii.Adp.Documents`** on 2026-09-22, at a stated cost of seven new project references, one line each. Add exactly those seven and nothing else; a module that already references it is left alone.
   - **A fresh worktree is built before anything else is trusted**, because every other gate reads `obj/` and a generated-code break is invisible to them by construction.
   - _Requirements: 8.1_
 
-- [ ] 2. The shared save result type
+- [x] 2. The shared save result type
   - Files: new in `EtAlii.Adp.Documents`, plus its tests
   - One result type carrying an error and enough for a caller to decide, returned by every store's save. **The type is named and shaped once here and not changed again**, which is why this group is first.
   - _Requirements: 3.1_
 
-- [ ] 3. A guard that a discarded save result fails the build
+- [x] 3. A guard that a discarded save result fails the build
   - Files: a new test in `EtAlii.Adp.Backend.Tests`, beside `GuardInventory.Tests.cs`
   - A discarded result anywhere in backend or module code reddens. **The guard is seen to fail against a planted discard before it is trusted**, and the planted defect and the message it produced are recorded in the implementation log.
   - **Sabotage the call site, not only the helper**: a unit guard over the result type cannot see a caller that drops it, which is where the regression a later reader would actually cause lives.
   - _Requirements: 3.3_
 
-- [ ] 4. mindmap's `Save` stops throwing, and the edit survives a failure
+- [x] 4. mindmap's `Save` stops throwing, and the edit survives a failure
   - Files: mindmap's store and its tests
   - `Save` returns the shared result rather than throwing for a failed write. **On failure the edit stays in memory**, as the other stores already do, so a user can retry rather than lose work.
   - A test asserts the edit is still present after a failed save. **It is seen to fail against the current throwing path.**
@@ -77,16 +77,17 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 
 ## Group 2 — The document-store lifecycle, the largest single reduction
 
-- [ ] 5. The shared lifecycle
+- [x] 5. The shared lifecycle
   - Files: new in `EtAlii.Adp.Documents`, plus its tests
   - Load, return, forget and reload, with the per-destination turn the writer already takes. **A first load whose file cannot be read produces a shared failure rather than each store's own**, and a parse that throws is reported as that document's problem so one document's failure never costs another's reload.
   - **THE SAVE PATH TAKES THE DOCUMENT AND NEVER READS THE CACHE.** This is a property of the signature rather than a rule to remember: the lifecycle's save accepts the `TDocument` the caller edited, and no cache read is reachable from it, so the defect cannot be written. **Amended into this task on 2026-09-24 because the defect it forbids was live in six stores that morning** - `Save(path)` re-fetched from the cache while `Reload` evicted, so a reload landing between a command's edit and its save discarded the edit **and reported success**, which put the command's inverse on the undo stack for a change that never happened. Fixed at `6c4f90d6`. **A shared lifecycle whose save reads the cache would reproduce that in all ten stores at once, from one line, and it would arrive looking like consolidation rather than like a regression.**
   - Guard: the signature is the enforcement; the backstop is **behaviour, not structure** - interleave a `Reload` between a command's edit and its save and assert the edit survives, which is the exact sequence that lost data. **Seen red against a save that re-fetches**, or it is a green that means nothing.
   - **The central per-behaviour tests REPLACE evidence this group destroys, rather than adding to it.** R2.3, R2.4 and R2.5 are satisfied today by ten separate implementations, so the ten per-store suites are ten independent witnesses. Afterwards they all exercise the same code: **nine of them stop being evidence, because they agree only because they cannot disagree.** So this task carries one shared test per behaviour - self-write suppression, last-good-on-failure, and absence confirmed through `BodyDeleted` - and those tests are the suite's only real witnesses to them from then on. "We added some shared tests as well" and "the shared tests are now the only real witnesses" are different claims about what the suite proves.
   - _Requirements: 2.1, 2.2_
-- [ ] 6. Convert the ten writable stores onto it
-  - Files: the ten module stores and their tests
+- [ ] 6. Convert the nine writable stores onto it
+  - Files: the nine writable module stores - azure-pipeline, c4, causal-loop, databricks, dependency-graph, mindmap, rdf, timeline and wardley-map - and their tests. Nine, not the ten this line first said, because sparql was counted here and again as task 7's read-only store (the user's chat ruling, 2026-09-25).
   - One store at a time, each landing independently. **Each converted module's existing session tests are the proof**, plus the c4 removal guard that `350b8f9e` landed.
+  - **R2.4 and R2.5 land in the same change for each store, never R2.4 across the stores first.** `IDiagramDocumentReloader.BodyDeleted` defaults to a reload, which is right only while a failed read installs an empty document. A store given keep-last-good without forwarding `BodyDeleted` to the lifecycle keeps a deleted diagram forever (the user's chat ruling, 2026-09-25).
   - _Requirements: 2.1_
 - [ ] 7. The read-only store (sparql) uses the same lifecycle without a save path
   - Files: sparql's store and tests
@@ -97,7 +98,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
   - _Requirements: 2.6_
 - [ ] 9. The three watchers that cannot hear everything the writer does
   - Files: `SolutionWatcher.cs`, `MarkdownEditorSession.cs`, `PlainEditorSession.cs`, and their tests
-  - `SolutionWatcher` gains `Error`; the two editor sessions gain `Deleted` and `Error`. **A publish arrives as `Renamed`**, which all three already handle, so this closes the deletion and lost-events halves rather than the publish half.
+  - The three components learn of a deletion and of a lost-events window, and **on `Error` they read again rather than only logging**. The subscriptions this bullet first asked for landed at `a2318531`, but all three handlers only logged, so a lost-events window was still unlearned while the wiring guard called them compliant. **A publish arrives as `Renamed`**, which all three already handle (the user's chat ruling, 2026-09-25).
   - **The obligation is the criterion and the event set is today's mechanism**: a test asserts the component learns of a deletion and of a lost-events window, not that it subscribes to two named events, so a writer that publishes by other means fails rather than passes by habit.
   - _Requirements: 2.9_
 - [ ] 10. mindmap keeps its two documented departures
@@ -107,16 +108,16 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 
 ## Group 3 — The diff and the change handler, which the lifecycle's change event feeds
 
-- [ ] 11. The shared change-detecting diff
-  - Files: new in `EtAlii.Adp.Documents`, plus its tests
+- [x] 11. The shared change-detecting diff
+  - Files: new in `EtAlii.Adp.Diagram`, plus its tests. The diff works on `DiagramElement` and `DiagramDelta`, which `Diagram` declares, and `Diagram` already references `Documents`, so placing it there would be a cycle (the user's chat ruling, 2026-09-25).
   - Equality is equal position, type and payload. **Removals first, then additions**, settled by the design.
   - A table-driven test over add, remove, move, retype and payload-change. **Seen to fail against an equality that ignores payload.**
   - _Requirements: 4.1, 4.4, 4.5_
 - [ ] 12. Convert the five modules that compute their own deltas
   - Files: ansible-structure, helm-charts, azure-pipeline, c4 and causal-loop sessions, and their tests
   - _Requirements: 4.2_
-- [ ] 13. The shared document-change handler
-  - Files: new in `EtAlii.Adp.Documents`, plus its tests
+- [x] 13. The shared document-change handler
+  - Files: new in `EtAlii.Adp.Diagram`, plus its tests. It raises diagram deltas, for the same reason as task 11 (the user's chat ruling, 2026-09-25).
   - A session ignores changes to other paths. **A test drives two sessions on two paths and asserts the second hears nothing**, seen to fail against a handler that ignores the path.
   - _Requirements: 5.1_
 - [ ] 14. Convert azure-pipeline, c4 and causal-loop onto the handler
@@ -138,8 +139,9 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 
 ## Group 5 — The two small shared edits
 
-- [ ] 17. One restore-lines edit, and three modules onto it
-  - Files: `EtAlii.Adp.Documents`, plus causal-loop, databricks and rdf, and their tests
+- [ ] 17. One restore-document edit, and three modules onto it
+  - Files: the command and its handler in `EtAlii.Adp.History`, `IReloadableDocumentStore` in `EtAlii.Adp.Documents` - no new references, since History already references Documents - plus causal-loop, databricks and rdf, and their tests (the user's chat ruling, 2026-09-25, replacing the earlier Documents → History reference, which the Common dissolution made a cycle).
+  - The command is generic over the module's store, because the dispatcher finds a handler by the command's type: one non-generic restore registered by several modules would reach whichever registered last, and reload the wrong store.
   - Usable by a fourth module without copying, which the criterion requires and a second consumer proves.
   - _Requirements: 6.1, 6.2_
 - [ ] 18. One YAML node range, and four modules onto it
@@ -157,7 +159,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
   - **Padding, minimum and maximum stay each module's own decision**; only the metric is shared, so a module that sizes a box differently is not made wrong by this task.
   - _Requirements: 10.1, 10.2, 10.3_
 - [ ] 21. The gesture id grammar, with its golden fixture
-  - Files: the shared grammar, the fixture, backend tests
+  - Files: the shared grammar, the fixture, backend tests, and the five modules that build or parse gesture ids today - causal-loop, databricks, dependency-graph, rdf and timeline - moved onto it, as R11.1 requires (the user's chat ruling, 2026-09-25).
   - Building and parsing `new:` and `rel:` ids. R11.2's refusal of an empty end is already on `develop`; this task adopts it rather than reimplementing it.
   - _Requirements: 11.1, 11.3_
 - [ ] 22. The element and relation type strings, with their fixture
@@ -173,6 +175,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 - [ ] 24. Behaviour changes only where a criterion says so
   - Files: the implementation log, and whichever tests changed
   - **Every existing test that changed in this work is listed with the criterion that permitted it.** A test that changed for convenience rather than for a criterion is a finding, and the log says which it was.
+  - **R2.4 authorises sparql's one behaviour change, and the log names it.** Before: a reload that could not read replaced a good query with an error entry. After: the last good query is kept, because keep-last-good on reload applies to every store and a module's declared state governs only the first open (the user's chat ruling, 2026-09-25).
   - _Requirements: 8.1_
 - [ ] 25. The closing gate on a fresh tree, and the coverage diff traced to code
   - Files: the implementation log

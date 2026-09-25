@@ -2,144 +2,144 @@ timeline: 1
 elements:
   - id: discovery
     label: Discovery
-    begin: 2024-11-21
-    end: 2025-02-04
+    begin: 2023-11-27
+    end: 2024-06-28
     row: 9
   - id: build
     label: Private beta
-    begin: 2025-09-12
+    begin: 2025-04-11
     end: 2025-10-27
     row: 10
   - id: launch
     label: Launch
-    begin: 2026-01-06
+    begin: 2026-04-10
     row: 11
   - id: 467lu0vgaiudevamnkpl6k052
     label: Enterprise tier
     begin: 2026-06-07
-    end: 2026-08-11
+    end: 2026-11-23
     row: 8
   - id: a0p2gj4xxf8feve0nn8cxd1tz
     label: Connector framework
-    begin: 2025-05-21
+    begin: 2025-02-07
     end: 2025-08-31
     row: 6
   - id: 6ez55ypjmbp2zawzfvphb4rbr
     label: Architecture spike
-    begin: 2025-02-13
-    end: 2025-05-18
+    begin: 2024-02-09
+    end: 2024-05-13
     row: 16
   - id: 1x5mmoj5j4ia9i8w95tfm8x40
     label: Mobile dashboards
     begin: 2026-08-08
-    end: 2026-10-19
+    end: 2027-03-03
     row: 10
   - id: 18g3b7b6kp2icm9vzi5ncd91a
     label: Analytics suite
-    begin: 2026-08-13
+    begin: 2026-02-19
     end: 2026-10-23
     row: 13
   - id: 9s462vri4qn9ww06akis5rqli
     label: Performance tuning
-    begin: 2025-11-19
+    begin: 2025-08-14
     end: 2026-02-16
     row: 8
   - id: elvtk68a6tc7nniqgonud96zx
     label: Onboarding revamp
-    begin: 2026-10-22
-    end: 2026-12-17
+    begin: 2027-04-13
+    end: 2027-10-24
     row: 7
   - id: 1rat1anz81doeib7uhti0fbsb
     label: Version 2.0
-    begin: 2026-06-26
+    begin: 2026-10-24
     row: 16
   - id: f04p21twx6o8vgy6vkxq12oru
     label: Access controls
-    begin: 2025-10-23
-    end: 2026-01-08
+    begin: 2025-03-24
+    end: 2025-09-02
     row: 4
   - id: blxyj64aqw2gv7mo51khc0pup
     label: Query engine
-    begin: 2025-10-10
-    end: 2026-01-10
+    begin: 2025-12-11
+    end: 2026-06-05
     row: 7
   - id: 1yoofipmb80poy0knnhwmn3r0
     label: Ingestion prototype
-    begin: 2025-05-01
-    end: 2025-07-05
+    begin: 2023-07-01
+    end: 2024-02-12
     row: 2
   - id: 7qp4wkg8ez95o53xqfbtcvsi9
     label: Streaming pipeline
-    begin: 2025-08-02
-    end: 2025-09-28
+    begin: 2024-06-22
+    end: 2024-12-23
     row: 3
   - id: ao5vz88mqzrxap6rff1vfhup6
     label: Self-service portal
-    begin: 2026-02-22
-    end: 2026-05-16
+    begin: 2025-10-17
+    end: 2026-05-02
     row: 4
   - id: 1bvqv3kk00uwn15axvimuy77k
     label: Workflow automation
-    begin: 2026-03-02
-    end: 2026-06-14
+    begin: 2025-09-05
+    end: 2026-04-26
     row: 2
   - id: 7nfswch3u37qyph97blf3ubt3
     label: Scalability programme
     begin: 2026-07-03
-    end: 2026-09-12
+    end: 2027-02-02
     row: 4
   - id: e24m8v3gkdpmlkjfts0q8h0nf
     label: Multi-region rollout
-    begin: 2026-10-24
-    end: 2026-12-31
+    begin: 2027-06-04
+    end: 2028-02-20
     row: 4
   - id: 2ii6hszbmt05zu9gipab7qkds
     label: Marketplace integrations
-    begin: 2026-10-25
-    end: 2026-12-29
+    begin: 2027-06-10
+    end: 2028-02-25
     row: 5
   - id: 05fhm8rdmgccnxhkoc7sbimff
     label: Cost optimisation
-    begin: 2026-10-24
-    end: 2026-12-31
+    begin: 2027-06-07
+    end: 2028-02-20
     row: 3
   - id: 639eq50hz31rf9cmoyotnrkeq
     label: Audit logging
-    begin: 2026-10-25
-    end: 2026-12-30
+    begin: 2027-05-30
+    end: 2028-02-09
     row: 1
   - id: 4khjd4qzeirw1y94ufnbop8f9
     label: Compliance review
-    begin: 2025-07-10
-    end: 2025-09-30
+    begin: 2025-01-05
+    end: 2025-07-14
     row: 8
   - id: 3vhbnpa7zzitrxc6t93nc584v
     label: Project kick-off
-    begin: 2024-09-24
-    row: 7
+    begin: 2022-10-05
+    row: 6
   - id: 2qghim1my3ekkmliufk5yk2w5
     label: Version 3.0
-    begin: 2027-08-23
+    begin: 2028-10-26
     row: 7
   - id: 3wcctm69gg5exkr4ofyct04bv
     label: Data model design
-    begin: 2025-04-30
-    end: 2025-07-09
-    row: 11
+    begin: 2025-05-25
+    end: 2026-01-15
+    row: 12
   - id: 3s7wp03sk5lipmr05cvl63o4n
     label: Predictive insights
-    begin: 2027-04-30
-    end: 2027-08-10
+    begin: 2027-05-20
+    end: 2027-12-31
     row: 14
   - id: 34m16sooctj2idd2klzpkba6t
     label: Platform consolidation
-    begin: 2027-08-28
-    end: 2027-12-19
+    begin: 2028-07-05
+    end: 2029-01-26
     row: 3
   - id: 4fq9mkfgiazha5cbsf56a1d98
     label: Next-gen storage
-    begin: 2028-03-07
-    end: 2028-06-16
+    begin: 2029-06-22
+    end: 2030-02-08
     row: 5
 connections:
   - id: c1

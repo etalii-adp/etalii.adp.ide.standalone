@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Documents.Wire;
 namespace EtAlii.Adp.Context;
 
 /// <summary>One provider's contribution: a set of actions the consumer renders together.</summary>

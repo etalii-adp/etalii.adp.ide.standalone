@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>

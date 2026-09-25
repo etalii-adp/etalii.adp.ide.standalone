@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -155,7 +155,7 @@ public class C4SessionTests : IDisposable
         var document = _documents.GetOrLoad(body);
         var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"Banking\"", "\"Renamed\"", StringComparison.Ordinal));
-        _documents.Save(body);
+        _documents.Save(body, document);
 
         // Assert.
         Assert.NotNull(pushedToContext);
@@ -246,7 +246,7 @@ public class C4SessionTests : IDisposable
         await session.DisposeAsync();
 
         // Act.
-        _documents.Save(body);
+        _documents.Save(body, _documents.GetOrLoad(body));
 
         // Assert.
         Assert.Equal(0, pushes);

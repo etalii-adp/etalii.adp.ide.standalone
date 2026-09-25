@@ -57,6 +57,31 @@
 # taken as a tidy-up.
 src/client/src/generated/**   text eol=lf
 
+# The `.proto` sources that output is generated FROM, for the same reason one step upstream.
+#
+# `protoc-gen-es` copies a `.proto`'s doc comments into the `*_pb.ts` it writes, byte for byte -
+# carriage return included - while writing everything else itself with LF. So under the CRLF rule
+# above, every generate run left each output of a commented `.proto` with MIXED endings: measured on
+# 2026-09-25, 19 of the 26 `*_pb.ts` in a tree were mixed (`c4_pb.ts`: 25 CRLF lines among 340 LF),
+# identically in the main checkout and a worktree, and the exemption above cannot fix that, because
+# a file git never checks out - most of `generated/` is ignored - is never converted by git at all.
+# Developer 1 found it. The only place the stray CR can be removed is its source.
+#
+# So `.proto` follows the ending of the output made from it rather than the house style. Every
+# tool that reads these files - buf, protoc and Grpc.Tools - reads LF, and none of them writes one.
+# `src/.editorconfig` carries the matching `end_of_line = lf` under `[*.proto]`.
+#
+# **An existing tree does not convert by itself.** Git rewrites a working file only when a checkout
+# changes it, and the index content of every `.proto` is identical before and after this rule, so a
+# tree that already holds CRLF protos keeps them until they are checked out again - delete them and
+# `git checkout -- '*.proto'`. A fresh worktree is LF from the start. A tree whose protos disagree
+# with the ones the tracked `*_pb.ts` were generated from shows those modified after a generate run,
+# containing no work - a blank doc-comment line gains or loses a trailing space. Check with
+# `git ls-files --eol`; for the ignored `*_pb.ts`, add `--others --ignored --exclude-standard`.
+#
+# The user ruled this on 2026-09-25.
+*.proto   text eol=lf
+
 # ---------------------------------------------------------------------------------------------
 # Documents whose *bytes* are the test subject rather than its input.
 #
@@ -82,6 +107,12 @@ src/client/src/generated/**   text eol=lf
 *.dsl   -text
 *.tml   -text
 *.dgr   -text
+# `.fdg` is the functional-decomposition-graph module's document. Its Requirement 2.3 is a
+# byte-identical round trip, and its fixtures include the `crlf-line-endings.fdg` /
+# `lf-line-endings.fdg` pair that collapses into one file under conversion - the exact pair the
+# comment above exists to protect. Added BEFORE the first fixture was written, because a fixture
+# committed under `text=auto` has already been normalised and the pair is already lost.
+*.fdg   -text
 # `.ttl` and `.nt` belong to the RDF family, whose round-trip requirement byte-compares them -
 # and unlike `.yml`, these extensions mean Turtle and N-Triples everywhere in the tree, so the
 # by-extension rule applies exactly as written above: the guarantee follows the format.
