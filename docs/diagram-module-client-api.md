@@ -29,6 +29,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 - [`src/client/src/diagrams/readme.md`](../src/client/src/diagrams/readme.md) — the stream, the view report and the module-side hooks
 - [`src/client/src/canvas/elements/readme.md`](../src/client/src/canvas/elements/readme.md) — element geometry and shapes
+- [`src/client/src/canvas/library/shapes/readme.md`](../src/client/src/canvas/library/shapes/readme.md) — the built-in shapes' outlines: which shapes have one, the text region and edge point each derives from it, and how to add a shape
 - [`src/client/src/canvas/label/readme.md`](../src/client/src/canvas/label/readme.md) — label measurement and placement
 - [`src/client/src/canvas/gesture/readme.md`](../src/client/src/canvas/gesture/readme.md) — the shared gesture layer
 - [`src/client/src/canvas/scroll/readme.md`](../src/client/src/canvas/scroll/readme.md) — scrolling and the viewport
@@ -216,6 +217,43 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
       ],
 ```
 
+**Three shapes whose text stays inside them.** `BuiltInShape` includes `"superellipse"`, a squircle that reads as a box with its corners taken off; `"trapezoid"`, narrower at the bottom than the top; and `"diode"`, a rectangle closed on the right by a semicircle, so the shape points the way its relations run. Each has an outline, and its text region and edge point come from that outline rather than from the bounding box - which is what keeps a wrapped label off a slanted or curved edge and makes a connection meet the drawn line. How the outline works, and how to add a shape, is in [`src/client/src/canvas/library/shapes/readme.md`](../src/client/src/canvas/library/shapes/readme.md).
+
+**Height resize.** `resize` is read only when `sizing` is `"user"`. **Omitted means `"width"`**: left and right handles, which is what every user-sizable type had before. `"both"` adds top and bottom handles, for an element whose height is its own content rather than a shared constant. The drag arrives as `ElementResized`, whose `side` - a `ResizedSide` - is then `"top"` or `"bottom"` as well as `"left"` or `"right"`, and whose `bounds` are the whole resized rectangle. A handler that assumed a horizontal edge has to read `side` once a type declares `"both"`.
+
+**The functional decomposition graph is the first module to declare them** (read at `04cc58df`). Three of its four named types are drawn as the three shapes, the fourth as a `"parallelogram"`:
+
+Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx)
+
+```ts
+const SHAPES: Readonly<Record<FdgElementType, ElementTypeDefinition["shape"]>> = {
+  [FdgElementTypes.uiElement]: "superellipse",
+  [FdgElementTypes.dataElement]: "parallelogram",
+  [FdgElementTypes.action]: "trapezoid",
+  [FdgElementTypes.function]: "diode",
+  [FdgElementTypes.comment]: "box",
+};
+```
+
+Its Comment is the only type sized in both directions, and its one label wraps inside it - so it is also the first declarer of the multiline editor [below](#labels-and-bindings):
+
+Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx)
+
+```ts
+const COMMENT_TYPE: ElementTypeDefinition = {
+  id: FdgElementTypes.comment,
+  shape: SHAPES[FdgElementTypes.comment],
+  classNames: [
+    { className: "canvas-element fdg-element", on: "element" },
+    { className: `canvas-node fdg-${FdgElementTypes.comment}`, on: "shape" },
+  ],
+  labels: [{ text: { path: "payload.text" }, editable: true, wrap: true, className: "fdg-comment-text" }],
+  anchors: { kind: "edge", enabled: false, visible: false },
+  sizing: "user",
+  resize: "both",
+};
+```
+
 **The guards.** `assertValidDiagramDefinition` rejects a type whose shape and anchors disagree. An element whose `type` matches no declared id draws a visible fallback box rather than vanishing.
 
 **Their members.** `AnchorEnablement` carries `visible`, `enabled`, `edgeSides`; `NamedAnchorPoint` carries `x`, `y`, `name`; `SideFraction` carries `side`, `at`, `name`; `ShapeSelection` carries `path`, `cases`, `fallback`; `CustomShapeState` carries `selected`, `dragging`, `connectTarget`; `ElementStyle` carries `fill`, `stroke`, `strokeWidth`, `dash`, `cornerRadius`, `labelTypography`; `BoundElementStyle` carries `fill`, `stroke`, `labelColor`, `silhouette`; `ClassDeclaration` carries `className`, `when`, `on`; `DecorationDeclaration` carries `glyph`, `anchor`, `each`, `step`, `from`, `to`, `radius`, `width`, `height`, `d`, `marker`, `text`, `textAt`, `textAnchor`, `typography`, `className`, `markerEnd`, `tooltip`, `data`, `accessibility`, `when`.
@@ -252,6 +290,8 @@ Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../
   // The four ownership relations form a forest; Shows is navigation and may loop (Requirement 5.4).
   acyclic: [{ relationTypes: FDG_OWNERSHIP_RELATIONS }],
 ```
+
+**Which relation a connect gesture draws.** The press sees only the source, so it starts with the `activeTool` relation if the runtime names one, and otherwise with the first relation whose source admits the element. Over a target, the canvas keeps that relation if it admits the target's type. If it does not, and no `activeTool` is named, it draws the first relation that admits BOTH ends - the source's anchor included - and the connect checks then run on the relation actually drawn. So a notation whose relations are told apart by what they point at can draw each of them from the same element: the functional decomposition graph's screen owns a child screen, an action, data or a function through four different relations. **A named `activeTool` still wins**: a target it does not admit is refused, not drawn as some other relation. A definition whose starting relation already admits every target it meets never reaches the search, so it draws exactly what it did before this behaviour arrived (`5ce04fbc`).
 
 **Their members.** `RouteEnds` carries `source`, `target`; `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`.
 
@@ -298,6 +338,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 **Whether a module needs it.** Any module whose elements carry text. A binding reads a value from the model instead of repeating a constant, which is what keeps a label tracking the document.
 
 **Its shape.** A label is declared with a placement and a typography; its text is a `Binding` — a literal template, a field read by path, a collection, or parts assembled together — optionally gated by a `Condition` and formatted by a number or temporal format.
+
+**A wrapped label is edited in a multiline editor.** A label declaring `wrap: true` is laid out as wrapped text inside the shape's text region, and when it is editable its inline editor opens over that same region as a text area rather than a one-line field. There, **Enter types a newline**; Ctrl+Enter or Cmd+Enter commits; Escape cancels; and blur commits, as it does in the one-line field. The commit is the same `LabelCommitRequested`, so a module's handler does not change - but its `value` can now contain newlines, and a module whose document keeps a label on one line has to decide what a newline means there. The functional decomposition graph's Comment is the first to declare it (read at `04cc58df`); its declaration is excerpted under [Element types and shapes](#element-types-and-shapes). The mechanism is [`src/client/src/canvas/label/readme.md`](../src/client/src/canvas/label/readme.md)'s.
 
 **Their members.** `LabelColumn` carries `text`, `insetX`, `align`, `className`, `truncate`; `LabelDeclaration` carries `wrap`, `text`, `placement`, `slot`, `offset`, `anchorTo`, `stack`, `typography`, `editable`, `truncate`, `when`, `tooltip`, `className`, `align`, `insetX`, `editorBox`, `columns`; `LabelRule` carries `placement`, `insetTop`, `insetHeight`, `insetX`, `truncate`, `editable`; `LabelStack` carries `lineHeight`, `start`; `LabelTypography` carries `fontSize`, `fontWeight`, `fontStyle`, `color`, `scaleWithView`; `CollectionBinding` carries `path`, `each`, `when`, `join`; `FieldBinding` carries `path`, `when`, `plural`, `number`; `NumberFormat` carries `times`, `plus`, `modulo`, `round`, `format`; `PartsBinding` carries `parts`, `join`, `when`; `TemplateBinding` carries `template`, `when`.
 
