@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -117,7 +117,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         // mid-publish now waits between attempts, and at 50 ms this test went from 0.8 s to 8.4 s
         // (2026-09-25). What it guards is that the diagram is never lost, which keep-last-good decides,
         // not how long a retry waits; the store's own attempts are kept.
-        var store = new CausalLoopDocumentStore(Documents.SharedDocumentReader.ReadAllText, CausalLoopDocumentStore.DefaultReadAttempts, TimeSpan.Zero);
+        var store = new CausalLoopDocumentStore(SharedDocumentReader.ReadAllText, CausalLoopDocumentStore.DefaultReadAttempts, TimeSpan.Zero);
         Assert.True(store.GetOrLoad(path).IsUsable);
 
         using var stop = new CancellationTokenSource();
@@ -128,7 +128,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
             {
                 try
                 {
-                    Documents.AdpFileWriter.Save(path, Text);
+                    AdpFileWriter.Save(path, Text);
                     Interlocked.Increment(ref publishes);
                 }
                 catch (IOException)

@@ -1,4 +1,6 @@
-namespace EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
+
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// Judges the documents of one diagram type - the one seam a diagram-type module implements

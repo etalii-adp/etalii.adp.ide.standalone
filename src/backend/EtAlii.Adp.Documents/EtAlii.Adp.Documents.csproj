@@ -1,12 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    The shared document machinery, extracted from Common on the user's decision
-    (post-decomposition backlog item 5): the Line document family every diagram
-    module parses with, AdpFileWriter and its result model, and the shared reader.
-    The extraction relocates a widely shared dependency rather than decoupling one
-    - nearly every consumer of Common references this project too, by design.
-    No protos live here: no proto names a document type.
+    The bottom of the backend's shared layer, directly above the universal core.
+    Extracted from Common on the user's decision (post-decomposition backlog item 5)
+    with the Line document family every diagram module parses with, AdpFileWriter and
+    its result model, and the shared reader - and it took the rest of Common when
+    Common was dissolved (items 8 and 11): the diagram DEFINITION contract
+    (DiagramDefinition, DiagramOrigin, DiagramSubject, the catalog and the document
+    factories) and the generation of the five shared wire protos. The VALIDATION
+    contract went to EtAlii.Adp.Diagram instead, because DiagramValidators references
+    IDiagramValidator and Diagram already references this project. Nothing here may
+    reference any other project but the core: every area sits above it.
   -->
 
   <ItemGroup>
@@ -15,16 +19,36 @@
          needs the node and mark types it reads (backend-centralization R7). A package, not a project,
          so it adds no edge to the project graph; every module that reads YAML references it already. -->
     <PackageReference Include="YamlDotNet" />
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the linked protos at build.
+         Hosting.Abstractions is for DiagramDefinition.Build's IHostApplicationBuilder. -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- AdpFileWriter.Save takes its replace through an internal overload, so a guard can stop a
          save inside its replace and prove concurrent saves take turns without relying on timing. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Documents.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The .proto files stay in src/api/ and are LINKED here, as they were into Common: this project
+      owns generation for the wire types many areas share, in the EtAlii.Adp.Documents.Wire
+      namespace the files themselves declare. They carry no service, so only messages are emitted.
+    -->
+    <Protobuf Include="..\..\api\shared.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\shared.proto" />
+    <Protobuf Include="..\..\api\problems.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\problems.proto" />
+    <Protobuf Include="..\..\api\context-contract.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\context-contract.proto" />
+    <Protobuf Include="..\..\api\connection.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\connection.proto" />
+    <Protobuf Include="..\..\api\elements.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\elements.proto" />
   </ItemGroup>
 
 </Project>

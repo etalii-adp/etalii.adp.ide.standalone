@@ -1,8 +1,7 @@
 using Google.Protobuf;
-using ShortGuidContract = EtAlii.Adp.Common.Wire.ShortGuid;
+using ShortGuidContract = EtAlii.Adp.Documents.Wire.ShortGuid;
 
-// ReSharper disable once CheckNamespace
-namespace EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Documents.Wire;
 
 // C# doesn't allow a user-defined conversion operator to be declared in an
 // extension block (CS9282) - only the type itself may declare one, and we
