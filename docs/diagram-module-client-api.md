@@ -351,21 +351,23 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **Whether a module needs it.** Eight of the 14 declare `actions` on the definition (read at `5b44878d`); others declare them per element type, which is where the reference module puts them.
 
-**Its shape.** An `ActionDeclaration` carries `id`, `invokedBy`, `appliesTo`, `enabled`, `label` and `when`. **A shortcut is described as data, never wired by hand**: the module says which key invokes which action id, and the library derives the key set and dispatches.
+**Its shape.** An `ActionDeclaration` carries `id`, `invokedBy`, `appliesTo`, `enabled`, `label`, `when` and `backendKey`. **A shortcut is described as data, never wired by hand**: the module says which key invokes which action id, and the library derives the key set and dispatches.
+
+**`backendKey` is the key the backend knows the action by, and the library sends it.** The backend's context table is keyed by keystroke, so an action the backend carries out names its key here; when the action is invoked — by its key, by a gesture or from the shared menu — the library sends that key against the target, shows nothing itself, and raises `action-refused` if the backend says no. **It is the declared key that travels, not the pressed one**: `mindmap` fires `add-child` on both Insert and Tab and declares `backendKey: "Insert"`, because Insert is the key the backend knows. A module does not build or send a keystroke itself, and a guard forbids it.
 
 Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 
 ```ts
       actions: [
-        { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-        { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
-        { id: "add-right", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
-        { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
-        { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+        { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+        { id: "insert", backendKey: "Insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-right", backendKey: "Tab", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-below", backendKey: "Enter", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+        { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
       ],
 ```
 
-**`{ kind: "menu" }` is an invocation a module must read carefully.** `centralized-selection` gave an existing name a new meaning: an action invoked from the shared menu reaches the module as `action-invoked` and **never reaches the backend**. The declaration is unchanged and the member names are unchanged, so no check keyed on declarations or members can demand an entry for it — which is exactly why it is written out here.
+**`{ kind: "menu" }` is an invocation a module must read carefully.** `centralized-selection` gave an existing name a new meaning: an action invoked from the shared menu reaches the module as `action-invoked`, and **reaches the backend only if its declaration names a `backendKey`**. Without one, the module's own handler is the whole of what happens. The declaration is unchanged and the member names are unchanged, so no check keyed on declarations or members can demand an entry for it — which is exactly why it is written out here.
 
 ### The toolbox declaration
 
@@ -454,16 +456,15 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ```tsx
   const events: DiagramEventHandlers = {
-    // The declared actions, answered as the shortcuts the backend has always known them by.
-    onActionInvoked: ({ actionId, targetId }) => {
-      const key = BACKEND_KEYS[actionId];
-      if (key === undefined || targetId === undefined) {
-        return;
+    // Selection is the library's (centralized-selection), and so is sending a declared action:
+    // one the backend refused, from the menu or from a key, comes back here for the same
+    // rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
 ```
 
 **`SelectionChanged` is declared here because it is a member of the `DiagramEvent` union, and it is NOT a module's to handle.** It is the library's own event, raised to the library's selection wrapper and to nobody else; there is no handler a module can supply for it, and a handler map that names one is a type error. It appears in this document only so that a reader who meets it in the union knows it is the library's.
 
-**`ActionRefused` is how a refusal arrives.** The library runs the shared menu's actions against the backend, so a refusal comes back to the library rather than to the module, and is handed on as `action-refused` with the `actionId` and a `message`.
+**`ActionRefused` is how a refusal arrives.** The library sends every action that declares a `backendKey`, however it was invoked, so a refusal comes back to the library rather than to the module, and is handed on as `action-refused` with the `actionId` and a `message`. **A module that does not answer it drops the backend's reason on the floor**; the reference module's handler map begins with it.
 
 ```mermaid
 sequenceDiagram
@@ -514,20 +515,22 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## The context channel
 
-**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `contextShortcutOf`, `inlineLabelElementIdOf`, `ActionOutcome`, `useContextProblems`, `ContextShortcut`, `Problem`, `ProblemSeverity`
+**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `inlineLabelElementIdOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`
 
 **What it is for.** Running an action against the backend, and answering a prompt it asks in return.
 
-**Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction` and `executeShortcut`; `useContextPrompt` gives the inline-edit prompt and its propose, submit and cancel callbacks.
+**Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction`, which is how a module runs an action it answers itself — a drawn connection, a drop; `useContextPrompt` gives the inline-edit prompt and its propose, submit and cancel callbacks.
 
-**Its shape.** `elementSourceOf` builds the source an action is run against. `contextShortcutOf` maps a gesture to the shortcut it travels as. `inlineLabelElementIdOf` says which element an open label prompt belongs to.
+**Its shape.** `elementSourceOf` builds the source an action is run against. `inlineLabelElementIdOf` says which element an open label prompt belongs to.
+
+**A keystroke is not a module's to send.** The same connection also offers `executeShortcut`, and it is the library's: a declared action names its key in `backendKey` (see [Actions, shortcuts and enablement](#actions-shortcuts-and-enablement)) and the library sends it. `contextShortcutOf` and `ContextShortcut`, which built that request, have no entry here for that reason, and `noModuleSendsAKeystroke.test.ts` fails on a module that names either, or `executeShortcut`.
 
 **The channel resolves and never rejects.** A refusal comes back as a value — a message to show — not as a thrown error. **So a module that wraps these in a try/catch is writing a branch that cannot be reached**, and a module that ignores the returned value silently drops the reason the backend gave.
 
 Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 
 ```tsx
-  const { executeAction, executeShortcut } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
@@ -620,7 +623,7 @@ sequenceDiagram
 
 **The shared helpers.** `expectLibrarySelection`, in `src/client/src/canvas/library/testing/`, asserts that a press produced the library's own selection rather than a module's idea of one. It is the one library folder a module's TEST files may import from, and imports from it are part of the module-facing surface for that reason.
 
-**The guards that walk module clients — fourteen of them, measured rather than recalled:**
+**The guards that walk module clients — fifteen of them, measured rather than recalled:**
 
 | Guard | What it forbids | The shared mechanism instead |
 | --- | --- | --- |
@@ -637,11 +640,12 @@ sequenceDiagram
 | `highlightSurvivesModuleStyles.test.tsx` | module styles that defeat the shared highlight | class composition |
 | `themeTokens.test.ts` | a custom property defined nowhere, or a palette declaring one mode | a theme token, or a local palette declaring both |
 | `fileUrlPaths.test.ts` | a hand-built file URL | the shared path helpers |
+| `noModuleSendsAKeystroke.test.ts` | a module sending the backend a keystroke, or building one to send | `backendKey` on the action's declaration |
 | `diagramModuleClientApi.test.ts` | this document drifting from the module-facing surface — an undocumented name, a stale entry, a changed excerpt, a diagram naming nothing real | an entry here |
 
-**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; fourteen is what the tree holds now, so that figure is a timestamp rather than a count.
+**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; fifteen is what the tree holds now, with `client-centralization` task 6 adding `noModuleSendsAKeystroke.test.ts`, so that figure is a timestamp rather than a count.
 
-**The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the thirteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
+**The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the fourteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
 
 ## A minimal module client, end to end
 
@@ -657,7 +661,7 @@ sequenceDiagram
 8. **Register.** `client/register.ts` exporting `registrations`, importing the shared stylesheet and your own beside it. See [Registration and discovery](#registration-and-discovery).
 9. **Write the canvas test**, calling the shared helper rather than asserting your own selection. See [Tests a module writes, and what a module must not do](#tests-a-module-writes-and-what-a-module-must-not-do).
 
-**What you never write:** selection, scrollbars, gestures, an inline label editor, a viewport report of your own, or a second stream. Each has a guard, and each guard names the shared mechanism instead.
+**What you never write:** selection, scrollbars, gestures, an inline label editor, a viewport report of your own, a second stream, or a keystroke sent to the backend. Each has a guard, and each guard names the shared mechanism instead.
 
 ## Library-internal exports
 
@@ -665,7 +669,7 @@ sequenceDiagram
 
 **The list is computed, not maintained.** It is exactly the library's exports that appear in neither set, so it cannot drift from the code: a name that leaves the library fails the test, and a name a module starts importing leaves this list and must gain an entry above.
 
-**65 names**, at `48137847`:
+**67 names**: the 65 read at `48137847`, and `ActionDeclaring` and `backendKeyOf`, which `client-centralization` task 6 added for the library's own use:
 
-`ActionLookup`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
+`ActionDeclaring`, `ActionLookup`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
 

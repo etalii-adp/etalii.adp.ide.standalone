@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { elementSourceOf } from "@client/canvas/selection";
-import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
@@ -10,7 +9,6 @@ import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/a
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { useSkosStream } from "./useSkosStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { ALTERNATE, HIERARCHY, IRI_FALLBACK, MAPPING, type SkosCollection, type SkosConcept, type SkosModel, type SkosScheme } from "./skosModel";
@@ -25,13 +23,6 @@ const CONCEPT_HEIGHT = 44;
 const REGION_WIDTH = 260;
 const REGION_HEIGHT = 40;
 
-/**
- * Which key the backend knows each declared action by.
- *
- * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
- * in one place, rather than a keystroke built at each call site.
- */
-const BACKEND_KEYS: Readonly<Record<string, string>> = { rename: "F2", delete: "Delete" };
 
 /** An element as the library carries it here: the model element plus what it draws. */
 type ConceptElement = DiagramModelElement & { concept: SkosConcept };
@@ -227,8 +218,8 @@ const SKOS_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   // id; the backend still holds the key-to-action table, which is why the handler says which
   // shortcut each action travels as.
   actions: [
-    { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-    { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+    { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+    { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
   ],
   layout: { modes: ["manual"] },
   dragging: "enabled",
@@ -243,7 +234,7 @@ const SKOS_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  */
 export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useSkosStream(projectId, path);
-  const { executeAction, executeShortcut } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
@@ -303,23 +294,7 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     })();
   };
 
-  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
-  };
-
   const events: DiagramEventHandlers = {
-    // The declared actions, answered as the shortcuts the backend has always known them by.
-    onActionInvoked: ({ actionId, targetId }) => {
-      const key = BACKEND_KEYS[actionId];
-      if (key !== undefined && targetId !== undefined) {
-        runShortcut(contextShortcutOf(key), targetId);
-      }
-    },
     // Selection is the library's (centralized-selection); a menu action it ran and the backend
     // refused comes back here, for the same rejection line every other refusal uses.
     onActionRefused: ({ message }) => setRejection(message),
