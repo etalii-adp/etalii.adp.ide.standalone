@@ -1,0 +1,205 @@
+using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Hierarchy;
+using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
+
+namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+
+/// <summary>
+/// Resolves an element or connection of an <c>.fdg</c> document to a selection.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Brought forward from task 13 to land with task 11</b> (the user's chat ruling of 2026-09-25):
+/// registering task 11's session factory makes the host's <c>DrawnConnections</c> guard open FDG's
+/// example, and every connection it draws must resolve to a selection.
+/// </para>
+/// <para>
+/// <b>The element a selection describes is the one the canvas was sent.</b> Its payload comes from
+/// <see cref="FdgElementMapper"/> rather than being assembled here, so the stream and the selection
+/// can never describe one element two ways. The element resolved is also the mapper's: the FIRST
+/// entry with an id, so a document repeating an id selects what the canvas drew.
+/// </para>
+/// <para>
+/// <b>Not yet here: the placement ids</b> a drop or a connect-to-empty-space carries. They name an
+/// element about to exist, and exist only for task 12's commands, which arrive with them.
+/// </para>
+/// </remarks>
+public sealed class FdgContextSourceResolver : IContextSourceResolver
+{
+    private readonly DiagramFileRouter _router;
+    private readonly IFdgDocumentStore _documents;
+    private readonly FdgElementMapper _mapper;
+
+    public FdgContextSourceResolver(DiagramFileRouter router, IFdgDocumentStore documents, FdgElementMapper mapper)
+    {
+        ArgumentNullException.ThrowIfNull(router);
+        ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(mapper);
+        _router = router;
+        _documents = documents;
+        _mapper = mapper;
+    }
+
+    /// <inheritdoc />
+    public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.ElementId;
+
+    /// <inheritdoc />
+    public ValueTask<ContextLevelResolution> ResolveAsync(
+        ShortGuid watchId,
+        string rootPath,
+        ContextSelectionSource source,
+        ContextSource id,
+        IReadOnlyList<string> clientPath,
+        ContextResolvedLevel? parent,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // An element is only ever selected inside a diagram: with no file level above it there is
+        // nothing to verify it against, and an unverifiable selection is never recorded.
+        if (parent is null || parent.Scope != ContextScope.Hierarchy)
+        {
+            return Rejected("A diagram element must be selected within its diagram.");
+        }
+
+        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
+            routed.Definition.Origin != Diagram.FunctionalDecompositionGraph.Origin ||
+            routed.BodyPath is not { Length: > 0 } bodyPath)
+        {
+            return Rejected("The selected file is not a functional decomposition graph.");
+        }
+
+        var model = _documents.GetOrLoad(bodyPath).Model;
+        var elementId = id.ElementId.Value;
+
+        var described = Describe(model, elementId);
+        if (described is null)
+        {
+            return Rejected("That element is no longer in this graph.");
+        }
+
+        var (path, text) = described.Value;
+
+        // The client's path is checked, never trusted: it is what the client believes it selected,
+        // and the id is what it actually selected.
+        if (clientPath.Count > 0 && !clientPath.SequenceEqual(path, StringComparer.Ordinal))
+        {
+            return Rejected("The path does not match the element.");
+        }
+
+        var detail = new ContextLevelDetail
+        {
+            Element = new ElementDetail
+            {
+                Text = text,
+                HasChildren = false,
+                Folded = false,
+                Linked = false,
+            },
+        };
+
+        var drawn = _mapper.Visible(model, DiagramViewport.Unbounded).FirstOrDefault(candidate => candidate.Id == elementId);
+        if (drawn is not null)
+        {
+            detail.Element.ElementType = drawn.Type;
+            detail.Element.Payload = new Any
+            {
+                TypeUrl = drawn.PayloadTypeUrl,
+                Value = ByteString.CopyFrom(drawn.Payload.Span),
+            };
+        }
+
+        var level = new ContextResolvedLevel(
+            source,
+            id,
+            path,
+            ContextScope.DiagramElement,
+            new ContextTarget(
+                ContextScope.DiagramElement,
+                bodyPath,
+                IsContainer: false,
+                SourceId: default,
+                rootPath,
+                watchId,
+                elementId,
+                routed.Definition.Origin),
+            detail,
+            this);
+
+        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
+    }
+
+    /// <inheritdoc />
+    public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
+
+    /// <inheritdoc />
+    public IDisposable Track(
+        ShortGuid watchId,
+        string rootPath,
+        ContextResolvedLevel level,
+        Action<IReadOnlyList<string>?> onChange)
+    {
+        ArgumentNullException.ThrowIfNull(level);
+        ArgumentNullException.ThrowIfNull(onChange);
+        _ = watchId;
+        _ = rootPath;
+
+        var bodyPath = level.Target.ResolvedFullPath;
+        var elementId = level.Target.ElementId;
+
+        void OnChanged(object? sender, FdgDocumentChangedEventArgs args)
+        {
+            if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            // Re-read rather than carrying the previous reading: a rename keeps the id while changing
+            // everything shown, and a removal clears the selection.
+            onChange(Describe(_documents.GetOrLoad(bodyPath).Model, elementId)?.Path);
+        }
+
+        _documents.Changed += OnChanged;
+        return new Unsubscriber(() => _documents.Changed -= OnChanged);
+    }
+
+    /// <summary>What a selection of <paramref name="id"/> shows, or null when nothing drawn has that id.</summary>
+    private static (IReadOnlyList<string> Path, string Text)? Describe(FdgModel model, string id)
+    {
+        // The first entry with the id, element before connection, as the mapper draws it.
+        var element = model.Elements.FirstOrDefault(candidate => candidate.Id == id);
+        if (element is not null)
+        {
+            var text = element.IsComment ? FirstLineOf(element.Text, "Comment") : Named(element.Name, element.Id);
+            return ([text], text);
+        }
+
+        var connection = model.Connections.FirstOrDefault(candidate => candidate.Id == id);
+        if (connection is not null)
+        {
+            var text = connection.Name.Length > 0 ? connection.Name : $"{connection.From} → {connection.To}";
+            return ([text], text);
+        }
+
+        return null;
+    }
+
+    private static string Named(string name, string id) => name.Length > 0 ? name : id;
+
+    private static string FirstLineOf(string text, string otherwise)
+    {
+        var first = text.Split('\n', 2)[0].TrimEnd('\r').Trim();
+        return first.Length > 0 ? first : otherwise;
+    }
+
+    private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
+        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
+
+    private sealed class Unsubscriber(Action dispose) : IDisposable
+    {
+        public void Dispose() => dispose();
+    }
+}
