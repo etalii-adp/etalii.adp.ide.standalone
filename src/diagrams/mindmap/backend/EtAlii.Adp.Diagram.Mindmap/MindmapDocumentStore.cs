@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Documents;
 using Serilog;
 using IoPath = System.IO.Path;
@@ -47,11 +46,31 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     public MindmapDocument? Get(string bodyPath) =>
         _documents.TryGetValue(bodyPath, out var document) ? document : null;
 
-    public void Save(string bodyPath, MindmapChange change)
+    public DocumentSaveResult Save(string bodyPath, MindmapDocument document, MindmapChange change)
     {
+        ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(change);
-        if (!_documents.TryGetValue(bodyPath, out var document))
+
+        // THE DOCUMENT WRITTEN IS THE ONE THE CALLER EDITED, never one re-fetched from the cache.
+        // This signature already took a second argument and so looked as though it did that - but
+        // the argument is the change to ANNOUNCE, not the document to write, and the document was
+        // looked up here. Reload assigns _documents[bodyPath] = Load(bodyPath), so a reload landing
+        // between a command's edit and its save wrote the re-read map and returned Ok - the
+        // command's inverse then went onto the undo stack for a change the file never received,
+        // and mindmap's inverses carry state, so a subtree that was never removed gets restored.
+        // Measured in six other stores and fixed at 6c4f90d6; this store, c4 and causal-loop were
+        // missed there because their saves re-fetch by some route other than GetOrLoad.
+        //
+        // The "never loaded" refusal STAYS, and it is deliberately a membership test rather than a
+        // fetch: it asks whether this path is loaded without making the answer the thing written.
+        // Task 4 pinned this throw with a test and task 10 owns whether it should remain, so the
+        // lost-edit fix leaves that decision exactly where it was rather than settling it in
+        // passing.
+        if (!_documents.ContainsKey(bodyPath))
         {
+            // Still an exception, and deliberately: saving a map this store never loaded is a
+            // programming error rather than an outcome a user can act on. R2.8's "skips documents
+            // it never loaded" is about Reload, which returns early below.
             throw new InvalidOperationException($"No document is loaded for {bodyPath}.");
         }
 
@@ -68,13 +87,32 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         {
             AdpFileWriter.Save(bodyPath, document.ToText());
         }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // THE EDIT STAYS IN MEMORY, which is the whole of this change (R3.2, R3.4). Until now a
+            // refused write threw out of here, out of the command handler and out to the caller as an
+            // exception rather than a sentence - so a user whose file was held open by another program
+            // was told nothing they could act on, and the command reported no failure a caller could
+            // read. The document is left as the command edited it, so retrying once the file is
+            // writable saves the same edit rather than asking the user to make it again.
+            Logger.Warning(exception, "Could not write {BodyPath}; the change is kept in memory", bodyPath);
+            return DocumentSaveResult.Failure($"{IoPath.GetFileName(bodyPath)} could not be written. The change is still here to try again.");
+        }
         finally
         {
             _selfWrites.TryRemove(bodyPath, out _);
         }
 
+        // The document just written becomes the cached one, so the cache and the bytes on disk
+        // cannot disagree. Ordinarily this is a no-op - the caller's document IS the cached object -
+        // and it earns its place only in the raced case the argument above exists for: a reload
+        // that replaced the entry mid-edit would otherwise leave the cache holding the re-read map
+        // while the file holds the edit that was actually saved.
+        _documents[bodyPath] = document;
+
         Logger.Debug("Saved {BodyPath} after {Change}", bodyPath, change.GetType().Name);
         Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, change));
+        return DocumentSaveResult.Ok;
     }
 
     /// <summary>Drops a loaded document, so the next ask re-reads the file - after an external edit, or when its last viewer left.</summary>

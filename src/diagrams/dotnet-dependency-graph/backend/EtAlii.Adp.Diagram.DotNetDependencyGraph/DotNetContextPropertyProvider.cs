@@ -1,5 +1,5 @@
-﻿using EtAlii.Adp.Common.Wire;
-using EtAlii.Adp.Context;
+﻿using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents.Wire;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
@@ -65,7 +65,12 @@ public sealed class DotNetContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (target.ElementId.Length == 0)
+        // Every provider in this scope is consulted for every element selection in ANY diagram, so
+        // the first question is whether the file is one of ours - the question every sibling
+        // provider asks. Unasked, a Wardley selection made this one parse tea.owm as a solution.
+        // An element's target is the routed solution body (DotNetContextSourceResolver passes it),
+        // so the solution extensions are the whole test; a registration path never arrives here.
+        if (target.ElementId.Length == 0 || !IsSolution(target.ResolvedFullPath))
         {
             return Empty;
         }
@@ -80,6 +85,14 @@ public sealed class DotNetContextPropertyProvider : IContextPropertyProvider
 
         var package = graph.Packages.FirstOrDefault(candidate => string.Equals(candidate.Id, target.ElementId, StringComparison.Ordinal));
         return package is null ? Empty : ValueTask.FromResult(Describe(package));
+    }
+
+    private static bool IsSolution(string path)
+    {
+        // Qualified: EtAlii.Adp.Documents.Wire.Path, the proto message, shadows System.IO.Path here.
+        var extension = System.IO.Path.GetExtension(path);
+        return extension.Equals(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(Diagram.AlternateDocumentExtension, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Refuses, always, with the reason every row already carries.</summary>

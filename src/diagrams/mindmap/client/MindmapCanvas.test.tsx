@@ -175,17 +175,19 @@ describe("MindmapCanvas", () => {
     expect(document.activeElement).toBe(container.querySelector(".library-canvas-surface"));
   });
 
-  it("says the diagram is no longer available, naming its path, when the stream failed for good", () => {
-    // Arrange.
-    // diagram-workspace-tabs Requirement 5.1: the tab remains and explains itself - never a
-    // crash, a spinner, or a silently frozen canvas.
+  it("when the stream failed for good, draws no diagram and no status of its own", () => {
+    // Arrange: diagram-workspace-tabs Requirement 5.1 - the tab remains and explains itself - is now
+    // met by the library's frame around every canvas, which says it in the backend's words
+    // (client-centralization Requirement 2.3). This canvas no longer draws its own block.
     currentFailed = true;
+    currentModel = emptyModel;
 
     // Act.
     const { container } = render(<MindmapCanvas {...props} />);
 
     // Assert.
-    expect(container.textContent).toContain("This diagram is no longer available at docs/map.adp.");
+    expect(container.textContent).not.toContain("no longer available");
+    expect(container.querySelector('[role="alert"], [role="status"]')).toBeNull();
     expect(container.querySelectorAll(".mindmap-node")).toHaveLength(0);
   });
 
@@ -222,19 +224,22 @@ describe("MindmapCanvas", () => {
     expect(source.source.value.value).toBe("root");
   });
 
-  it("shows the backend's refusal of a shortcut on the canvas rather than nothing", async () => {
-    // Arrange: the backend refuses the structural edit. Until this was fixed the canvas
-    // discarded the outcome, so a refusal looked like a key that did nothing.
+  it("draws no refusal line of its own: the library shows a refused shortcut", async () => {
+    // Arrange: the backend refuses the structural edit. The library sends the declared key and its
+    // call reports the refusal to the one line drawn around every canvas (client-centralization
+    // Requirement 2; contextConnectionReportsToCanvas.test.tsx holds the report of a keystroke).
     currentSelection = pushedSelection("root");
     executeShortcut.mockResolvedValueOnce({ accepted: false, error: "The root has no sibling to insert beside." });
-    const { container, findByText } = render(<MindmapCanvas {...props} />);
+    const { container } = render(<MindmapCanvas {...props} />);
 
     // Act.
     fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Insert" });
+    await act(async () => {});
 
-    // Assert: the sentence shows, on the rejection line every other canvas uses.
-    const line = await findByText("The root has no sibling to insert beside.");
-    expect(line.classList.contains("canvas-rejection")).toBe(true);
+    // Assert.
+    expect(executeShortcut).toHaveBeenCalledTimes(1);
+    expect(container.textContent).not.toContain("The root has no sibling to insert beside.");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
   });
 
   it("maps Tab to the child action's Insert key, not to an action", () => {

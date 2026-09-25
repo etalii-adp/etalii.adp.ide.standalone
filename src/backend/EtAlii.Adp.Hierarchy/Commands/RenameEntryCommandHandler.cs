@@ -1,4 +1,3 @@
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Serilog;

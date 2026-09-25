@@ -6,6 +6,7 @@ using EtAlii.Adp.Diagram.CausalLoop;
 using EtAlii.Adp.Diagram.Databricks;
 using EtAlii.Adp.Diagram.DependencyGraph;
 using EtAlii.Adp.Diagram.DotNetDependencyGraph;
+using EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 using EtAlii.Adp.Diagram.HelmCharts;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
@@ -61,7 +62,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<DiagramValidators>()));
             });
         });
 
@@ -114,6 +115,9 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("dotnet-dependency-graph", new(
             [DependencyElementMapper.EdgeType],
             [DependencyElementMapper.ProjectType, DependencyElementMapper.PackageType])),
+        new("functional-decomposition-graph", new(
+            [FdgElementMapper.UiChildType, FdgElementMapper.OwnsActionType, FdgElementMapper.OwnsDataType, FdgElementMapper.OwnsFunctionType, FdgElementMapper.ShowsType],
+            [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType])),
         new("helm-charts", new(
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),

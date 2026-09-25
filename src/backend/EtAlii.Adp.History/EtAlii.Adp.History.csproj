@@ -3,7 +3,7 @@
   <ItemGroup>
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

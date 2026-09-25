@@ -69,9 +69,14 @@ public sealed class SolutionWatcher : IDisposable
 
             // Error is the only signal FileSystemWatcher gives when its internal buffer overflows
             // and it has silently dropped events. Unsubscribed, an overflow looks exactly like a
-            // quiet solution. RootFolderWatcher and the two WatchedFolders already log it.
+            // quiet solution - and LOGGED ONLY, it still does, because the graph is never marked
+            // stale. Which watched file changed is unknowable, so the graph goes stale as though one
+            // had (backend-centralization R2.9).
             watcher.Error += (_, args) =>
-                _logger.Warning(args.GetException(), "The watcher for {Directory} stumbled", directory);
+            {
+                _logger.Warning(args.GetException(), "The watcher for {Directory} stumbled; treating the graph as stale", directory);
+                ScheduleSettle();
+            };
 
             // Enabled AFTER the handlers, as RootFolderWatcher and the two WatchedFolders do:
             // a watcher live before its handlers exist raises into nothing.
@@ -98,6 +103,12 @@ public sealed class SolutionWatcher : IDisposable
             return;
         }
 
+        ScheduleSettle();
+    }
+
+    // One settle per burst: a change to a watched file, or an overflow that may have hidden one.
+    private void ScheduleSettle()
+    {
         lock (_gate)
         {
             if (_disposed)

@@ -1,7 +1,7 @@
 import { AdpMark } from "./AdpMark";
 import { useBypassedSession } from "../auth/developerSession";
 
-const REPO_URL = "https://github.com/vrenken/EtAlii.Adp";
+const REPO_URL = "https://github.com/etalii-adp/etalii.adp.ide.standalone";
 
 /** Shared credit line shown atop the login, projects, and diagram/workspace views. */
 export function AppHeader() {

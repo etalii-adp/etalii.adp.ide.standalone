@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Valid;
 
 /// <summary>The shape every real diagram-type module exposes; discovery must find this one.</summary>

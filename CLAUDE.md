@@ -20,9 +20,9 @@ Full rules and reasoning: [processes.md, *Chat naming*](.spec-workflow/steering/
 
 ## Git worktrees
 
-**Anything that changes the repository's files happens in a dedicated worktree** (`.claude/worktrees/<name>/`, short name), never in the main checkout, because several sessions share its index. That is implementation, documentation fixes under `docs/`, and structural or complexity work alike — all of it goes through a branch and the four gates.
+**Anything that changes the repository's files happens in a dedicated worktree** (`.claude/worktrees/<name>/`, short name) on a branch named `features/<name>`, never in the main checkout, because several sessions share its index. That is implementation, documentation fixes under `docs/`, and structural or complexity work alike — all of it goes through a branch, the four gates and a pull request. The one branch name outside `features/` is `claude/<name>`, which Claude's cloud sessions are handed by their harness; it follows the same pull-request rule.
 
-**The one exception is a specification document.** Requirements, designs and tasks, and the approvals, snapshots and logs beside them, are written on `develop` in the main checkout, because the dashboard reads `.spec-workflow/` from there and nowhere else. `roles.md` draws the same line: an Architect's structural and documentation work is on a worktree, its specification writing is on development. Retire a worktree with `bash C:/git/EtAlii.Adp/.github/tools/gate/retire.sh <name>` once its branch is merged — never one another session is working in, and never with `--force`. It refuses uncommitted or unlanded work and removes `node_modules` first, so no husk is left.
+**The one exception is a specification document.** Requirements, designs and tasks, and the approvals, snapshots and logs beside them, are written on `develop` in the main checkout, because the dashboard reads `.spec-workflow/` from there and nowhere else. `roles.md` draws the same line: an Architect's structural and documentation work is on a worktree, its specification writing is on development. Retire a worktree with `bash C:/git/EtAlii.Adp/.github/tools/gate/retire.sh <name>` once its pull request is merged — never one another session is working in, and never with `--force`. It refuses uncommitted or unlanded work and removes `node_modules` first, so no husk is left.
 
 Full rules and reasoning, including the half-removed-worktree hazard: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens) and [*Retiring a worktree*](.spec-workflow/steering/processes.md#retiring-a-worktree).
 
@@ -30,11 +30,15 @@ Full rules and reasoning, including the half-removed-worktree hazard: [processes
 
 Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it.
 
-**Never merge while anything is staged, yours or anyone's. Merge with the shared gate:** `bash C:/git/EtAlii.Adp/.github/tools/gate/gate.sh mrg<N> <branch> <identity> "<message>"` - your own scratch name - then run the `land.sh` line it prints, yourself, in the foreground. **Never chain the fast-forward onto the gates:** a chained ff cannot be recalled, and `--ff-only` refuses a moved develop but not an open window. Don't write your own merge chain.
+**A worktree is never merged locally into `develop` - not with `gate.sh`, not with `land.sh`, not by hand.** Delivery is a pull request on GitHub:
 
-If a merge does strand work, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
+1. Run the four gates in the worktree and make them exit zero (see *Running the backend tests*).
+2. Push the `features/<name>` branch from the worktree to `origin` and open a pull request into `develop`. CI (`.github/workflows/build.yml`) runs the same four gates on it.
+3. When the pull request is approved and merged, delete the branch locally and on `origin`, and retire the worktree with `retire.sh` (see *Git worktrees*). `retire.sh` checks the branch against the main checkout's local `develop`, so bring that up to date first with `git -C C:/git/EtAlii.Adp pull --ff-only`; merge the pull request with a merge commit rather than a squash, which the check cannot follow. A pull request closed without merging is the user's call to clean up, because `retire.sh` rightly refuses its unlanded commits.
 
-Full rules, the four incidents behind them and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
+Nothing reaches `develop` except through a merged pull request, apart from the specification documents named under *Git worktrees*. The local-merge rules in processes.md - `gate.sh`, `land.sh`, the scratch `mrg<N>` trees - describe the process this replaces and no longer apply.
+
+Previous rules, the four incidents behind them and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
 ## Git identity
 
@@ -73,7 +77,7 @@ Reasoning: [processes.md, *Checking that a specification's tasks cover its requi
 
 ## spec-workflow
 
-Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**
+Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else - verbal approval of a card is never accepted, from anyone - except that a small amendment gets no card at all** (ruled by the user, 2026-09-25). A small amendment is a word, a sentence, a count, an ordering, or the reading of an ambiguous criterion. Whoever finds one sends the Scrum master the question already shaped as a selection, the Scrum master asks the user in chat, and **the document's owner applies the chosen answer**, committing it with a message that names the chat ruling and its date. **That is the one place an owner acts on the Scrum master's report of the user's answer.** Anything larger - a change of scope, a new requirement, a rewritten design section - still gets a card. **And nothing is edited under a pending card, whatever the chat said.**
 
 **Do not amend a document under a pending card unless you are willing to ask the user to reject it.** The tool refuses to delete a pending approval, so an agent cannot clean up after itself: the card is left pointing at a snapshot that no longer matches the file, and only the user can break that by rejecting it. **Disclosure is not sufficient** — disclosing an amendment tells the user it happened; it does not restore the record.
 
@@ -118,7 +122,7 @@ Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-wor
 
 Run `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) to check backend code against these conventions and surface style warnings/errors — always allow this command to run, without asking for confirmation first.
 
-**Before merging a worktree back into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](.spec-workflow/steering/processes.md#checking-that-the-conventions-are-actually-followed).
+**Before pushing a worktree's branch for a pull request into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](.spec-workflow/steering/processes.md#checking-that-the-conventions-are-actually-followed).
 
 ## Folders and namespaces
 
@@ -138,7 +142,7 @@ That one line stops the `commands` folder being required to appear in the namesp
 
 ## Line endings
 
-**CRLF in the working tree, LF in the index, on every machine.** Two files say so and they must agree: `.gitattributes` at the repository root (`* text=auto eol=crlf`) and `src/.editorconfig` (`end_of_line = crlf` under `[*]`). Changing the house style means changing both, in one commit — an editor honouring one while git honours the other is how a repository starts rewriting whole files on alternate saves.
+**CRLF in the working tree, LF in the index, on every machine.** Two files say so and they must agree: `.gitattributes` at the repository root (`* text=auto eol=crlf`) and `src/.editorconfig` (`end_of_line = crlf` under `[*]`). Changing the house style means changing both, in one commit — an editor honouring one while git honours the other is how a repository starts rewriting whole files on alternate saves. **Three exceptions are LF in the working tree as well — `.sh`, `.proto` and `src/client/src/generated/**` — each named in `.gitattributes` with its reason**: a tool that runs them, or writes from them, needs LF. An existing tree keeps a CRLF copy until it is checked out again. (Byte-compared documents are a different exemption, below.)
 
 The policy is in `.gitattributes` rather than in `core.autocrlf` because an attribute overrides `core.autocrlf` completely, so it holds for every clone and worktree regardless of how anyone's git is configured. That matters: `core.autocrlf=true` is only Git for Windows' installer default, and on a machine where it is `false` a CRLF file commits into the index *as CRLF*, after which every diff of that file is a whole-file diff for everybody else.
 
@@ -150,7 +154,7 @@ Some documents are exempt because their **bytes are the test subject**: a module
 
 ## Running the backend tests
 
-Run the suite as `dotnet test --solution EtAlii.Adp.slnx` from `src/backend/`, with `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` set. **Judge every gate by an exit code captured into a variable before any *subsequent command* — not merely before a pipe — never by grepping output, and read `Zero tests ran` as a broken build.** A pipe is not the only way to lose the status and it is not the common one: any command after the one you care about overwrites `$?`. End the command with the status you captured. All four gates — `npm test`, `npm run typecheck`, `dotnet format style --verify-no-changes --severity info`, `dotnet test` — must exit zero before a worktree merges into `develop`.
+Run the suite as `dotnet test --solution EtAlii.Adp.slnx` from `src/backend/`, with `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` set. **Judge every gate by an exit code captured into a variable before any *subsequent command* — not merely before a pipe — never by grepping output, and read `Zero tests ran` as a broken build.** A pipe is not the only way to lose the status and it is not the common one: any command after the one you care about overwrites `$?`. End the command with the status you captured. All four gates — `npm test`, `npm run typecheck`, `dotnet format style --verify-no-changes --severity info`, `dotnet test` — must exit zero before a worktree's branch is pushed for a pull request into `develop`.
 
 Full rules and reasoning, including the `MAX_PATH` failure and the fresh-worktree codegen trap: [processes.md, *Running the backend tests*](.spec-workflow/steering/processes.md#running-the-backend-tests).
 
@@ -164,7 +168,7 @@ The client's conventions live in the same `src/.editorconfig` (see *Backend code
 
 ## Worktrees
 
-**Specification documents are never worktree work**: requirements, designs, tasks, approvals, snapshots and implementation logs are written and committed on `develop` in the main checkout, with `git -C C:\git\EtAlii.Adp` and an explicit pathspec — the dashboard reads only from there. Implementation takes one worktree per specification, or one per agent when its tasks are independently landable and are being worked in parallel; never share a worktree between sessions. Running the app from a worktree means changing both dev-server ports and reverting them before merging.
+**Specification documents are never worktree work**: requirements, designs, tasks, approvals, snapshots and implementation logs are written and committed on `develop` in the main checkout, with `git -C C:\git\EtAlii.Adp` and an explicit pathspec — the dashboard reads only from there. Implementation takes one worktree per specification, or one per agent when its tasks are independently landable and are being worked in parallel; never share a worktree between sessions. Running the app from a worktree means changing both dev-server ports and reverting them before opening the pull request.
 
 Full rules and reasoning: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens).
 

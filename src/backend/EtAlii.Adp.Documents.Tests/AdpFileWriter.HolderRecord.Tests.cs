@@ -45,6 +45,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     [Fact]
     public void AFailedPublish_NamesAnotherProcessHoldingTheFile()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "The holders of a file are asked only on Windows.");
         // The case the gate hit: the other party is not in this process, so nothing in this process
         // can name it. A real second process holds the file; the record must carry its pid.
         var path = IoPath.Combine(_folder, "tea.owm");
@@ -83,6 +84,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     [Fact]
     public void AFailedPublish_SaysSoWhenThisProcessIsTheHolder()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // The other half of naming: a handle held here is ours, and a record that did not say so
         // would send the next reader hunting for a process that was never involved.
         var path = IoPath.Combine(_folder, "tea.owm");
@@ -189,11 +191,24 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     [Fact]
     public void AFileNobodyHolds_IsReportedAsNobodyHoldingIt_NotAsAFailedQuery()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "The holders of a file are asked only on Windows.");
         // The limit, asserted rather than described: the dominant producer of 0x80070497 is an
         // actor that has already released, and the record must say "nobody now" in words a reader
         // cannot mistake for "the query broke".
         var path = IoPath.Combine(_folder, "tea.owm");
         File.WriteAllText(path, "before");
+
+        // THE BUDGET ITS TWO SIBLINGS ALREADY HAVE, for the reason they give: this guard is about what
+        // the RECORD SAYS, and the timeout is pinned by AHolderQueryThatHangs_DoesNotHoldTheSaveOpen.
+        // At the production two seconds a full parallel gate timed the real query out and this read
+        // "holders not yet known after 2s" (FDG task 12's gate, 2026-09-25, found by Developer 1) - the
+        // third test in this class to meet that, and the one the first two fixes missed.
+        //
+        // NOT an injected answer through FileHolders.Query, which would be deterministic and would test
+        // the wrong thing: the subject includes the REAL Restart Manager saying nobody, and the mapping
+        // of its zero-holder answer to None rather than to "could not be determined". Injected, that
+        // mapping would go unexercised and this would test only how a supplied string is formatted.
+        FileHolders.Budget = TimeSpan.FromSeconds(30);
 
         var described = FileHolders.Describe(path);
 

@@ -23,7 +23,7 @@ The role and number together are an identity other sessions address; the topic i
 
 ## Where work happens
 
-**Implementation work happens in a dedicated git worktree (`.claude/worktrees/<name>/`), never in the main checkout.** Several sessions use this repository at once, and the main checkout's index and working tree are shared between them. A `git add` there can stage another session's files.
+**Implementation work happens in a dedicated git worktree (`.claude/worktrees/<name>/`) on a `features/<name>` branch, delivered to `develop` by a pull request,, never in the main checkout.** Several sessions use this repository at once, and the main checkout's index and working tree are shared between them. A `git add` there can stage another session's files.
 
 **Specification documents are the exception, and they are not worktree work at all.** Requirements, designs and tasks documents — and every approval, snapshot and implementation log beside them under `.spec-workflow/` — are written and committed **on `develop` in the main checkout**, using `git -C C:\git\EtAlii.Adp` and an explicit pathspec. This holds for the whole document phase: drafting, revising after a rejection, and the bookkeeping that marks a task complete. Never create a worktree to write a spec, and never write one from inside a worktree held for other work.
 
@@ -55,6 +55,8 @@ Four rules make that safe, and none is optional.
 **Before a recursive delete, list the links in the directory and where they point, and stop on any target outside it.** `find <dir> -type l -printf '%p -> %l\n'` in Git Bash lists junctions with their targets. npm's workspace links under `src/node_modules` are junctions with absolute targets inside their own tree, so in a husk from a fresh removal they point at the husk's own files, which the delete removes anyway; **what can reach real source is a link whose target lies outside the directory being deleted.** Measured on this machine on 2026-09-10 against a junction to an outside folder: Git Bash `rm -rf` and Windows PowerShell 5.1 `Remove-Item -Recurse -Force` both removed the link without following it, and `Get-ChildItem -Recurse` did not descend into it. **That is today's builds, not a guarantee**, which is why the rule is a check rather than trust in the tool. Found by Developer 1, removing four husks that held 37 such links, every one pointing back inside its own husk.
 
 ## Committing and merging in the shared main checkout
+
+> **Superseded on 2026-09-26 for merging.** A worktree is no longer merged locally into `develop`: its `features/<name>` branch is pushed and delivered by a pull request on GitHub, where CI runs the four gates, and the branch and worktree are removed once it is merged. See *Committing and merging in the shared main checkout* in `CLAUDE.md`. The staging hazard below still holds for anything committed in the main checkout; the parts about `gate.sh`, `land.sh` and the scratch `mrg<N>` trees are kept as the record of the process this replaced.
 
 Two distinct hazards, and the rule for one does not cover the other.
 
@@ -229,6 +231,71 @@ acceptable to.**
 **The transferable half: the existing rule READS AS COMPLETE.** It is correct about the case it describes, so
 a reader in the other case follows it confidently into a refused landing - which is why each half here names
 the operation it is about rather than only the order.
+
+## When to land
+
+> **Since 2026-09-26, landing is merging a pull request on GitHub** (see the note under *Committing and merging in the shared main checkout*). The rules below about when to land still apply to when a pull request is opened and merged.
+
+**Ruled by the user on 2026-09-24.** The section above is about HOW a change reaches `develop`; this one is
+about WHEN. The rules were in force by message the same evening, and are written here because a rule that
+lives in five sessions' transcripts is gone within the week.
+
+**Land at coherent milestones: not per task, and not per specification.** The test is one question about
+the state you leave behind - **after this lands, is `develop` consistent, and is nothing half-done
+exposed?** Two worked instances:
+
+- **`backend-centralization`'s R2.4 and R2.5 land together, per store.** Each half alone leaves that store
+  inconsistent: keeping the last good document on a failed reload without confirming that a missing file is
+  really gone would stop a deleted body from ever becoming an empty diagram.
+- **`client-centralization`'s task 3 lands only after tasks 6 and 8.** Task 3 gives refusals one surface in
+  place of **sixteen rejection surfaces across thirteen modules** - three that replace the library's and
+  thirteen that compose it, counted by parsing class attributes as tokens. Landed before 6 and 8, the
+  refusals that feed those surfaces would have had nowhere to go, and would have gone silent.
+
+**A task is the wrong unit because it is the implementer's unit, not the user's**: a task can be complete and
+leave `develop` exposing a half-built behaviour. **A specification is the wrong unit because it is too big**,
+for the reasons recorded under *What was rejected* below.
+
+**Defect fixes land immediately, on their own branch, named for the defect.** A defect does not wait for a
+milestone, and a branch named for the defect is one a later reader can find from the symptom. **The one
+exception is a fix that depends on unlanded work**: it rides with that work, and the landing message says so,
+so the fix is findable in the log rather than buried under an unrelated subject.
+
+**Before asking for a slot, merge `develop` into the worktree, resolve there, and run the cheap checks** -
+build, typecheck, format, and the tests the change touches. **The full suite stays the gate's.** A local green
+never replaces it: a scoped run cannot reproduce the suite's parallelism, and this board has watched a change
+go 117 of 117 alone and fail seven in the gate. **And running the full suite twice doubles the cost on a
+machine that is memory-bound** - measured on 2026-09-24 at 6257 MB free of 64617, with a single gate run
+taking about twenty minutes. The cheap checks exist to make the gate's red rare, not to pre-empt it.
+
+**Read the tell before committing to `develop`, and hold while a naming is outstanding even if the tell says
+free.** Most of this is already written in the section above - *a develop commit competes with a running gate
+exactly as another gate does*, *read it immediately before the commit*, and *the board is serialised by a
+decision, not by a lock* - and it is cited there rather than restated here. **The one mechanism it adds: the
+lock is written when a run STARTS, not when the go is GIVEN.** Between a naming and the named session's
+launch the tell reads `GATING=none` and is correct, and the board is nonetheless taken. So a quiet tell during
+an outstanding naming is not a free board; it is the gap between a decision and its first write.
+
+### What was rejected, so it is not proposed again
+
+**Holding every branch until its whole specification is done.** Considered by the user and rejected, for
+four reasons:
+
+- **Merging `develop` in often shows nothing if nobody lands.** The practice that keeps branches mergeable
+  depends on other branches arriving; if every branch waits, every branch integrates against a `develop` that
+  has not moved, and the conflicts all arrive at once at the end.
+- **Dependent specifications would wait for every task.** `functional-decomposition-graph` would wait for
+  all 25 of `backend-centralization`'s, including tasks it does not depend on.
+- **A red after 25 tasks has no obvious culprit.** A milestone's red points at a milestone's worth of change;
+  a specification's red points at all of it.
+- **"Complete means on `develop`" would show 0 done until the end.** Task status is marked only once
+  `merge-base --is-ancestor` says the code is on `develop`, so a specification landed in one piece reads as
+  untouched for its whole life, which makes progress invisible to everyone reading the dashboard.
+
+**Batched landings** - collecting several ready branches into one landing - were offered and not chosen.
+**No reason was recorded for that choice**, and this line says so deliberately: a reader who meets a rejection
+without its reason tends to supply one, and a supplied reason is argued against later as though somebody had
+given it.
 
 ## Git identity
 
@@ -547,7 +614,9 @@ This repository plans and tracks work in `.spec-workflow/` — steering document
 
 - **A set of files added or removed under `.spec-workflow/` is committed immediately, in its own commit.** Not left uncommitted, not bundled with unrelated changes. This covers the logs `log-implementation` writes, not only the documents you author by hand.
 - **When a requirements, design or tasks document is approved through the dashboard, commit it and its approval-lifecycle files at that point** — even though approval changes or removes files rather than adding a fresh set.
-- **Approval is granted through the dashboard and nowhere else.** Verbal approval is never accepted, including from the user in chat and including from another agent relaying that the card has cleared. Poll the card and read the verdict before proceeding.
+- **A card's verdict comes from the dashboard and nowhere else.** It is never accepted from the user in chat and never from another agent relaying that the card has cleared. Poll the card and read the verdict before proceeding.
+- **Small amendments are the one exception, and it is an exception to CARDING, not to that rule: they never get a card at all** (ruled by the user, 2026-09-25). A small amendment is **a word, a sentence, a count, an ordering, or the reading of an ambiguous criterion.** Whoever finds one sends the Scrum master the question already shaped as a selection; the Scrum master asks the user in chat; **the document's owner applies the chosen answer** and commits it with a message naming the chat ruling and its date, so the decision is findable from the change. **Anything larger still gets a card** - a change of scope, a new requirement, a rewritten design section. **And nothing is edited under a pending card, whatever the chat said**, because the card would be left pointing at text that no longer matches.
+  **This is the one place an owner acts on the Scrum master's report of the user's answer**, which the bullet above forbids for a card. The two are written as one rule with a boundary rather than side by side, because an absolute sentence standing next to an exception is a contradiction a careful reader resolves by refusing the exception.
 - Use a short, descriptive commit message in the style already in the history ("Bumped approvals.", "Added gRPC core communication specs: requirements and design documents.").
 
 ## Checking that a specification's tasks cover its requirements
@@ -866,7 +935,7 @@ A change that makes a document untrue fixes it in the same change. Four artefact
 - **`.proto` files** are the primary API documentation for the public gRPC contracts and must stay self-explanatory: clear message and field naming, comments for non-obvious constraints.
 - **Non-obvious architectural decisions belong in `tech.md`'s decision log**, not scattered through the code as comments. A decision recorded where it was implemented is findable only by whoever already knows where that is.
 
-(`docs/dependencies.md` needs no rule here — its guard is a test.)
+(`docs/dependencies.md` needs no rule here — its guard is a test. `docs/diagram-module-client-api.md` is half guarded: `diagramModuleClientApi.test.ts` holds its declarations, excerpts, diagrams and guard table against the code, but not its prose, which falls under this section's first sentence - the change that makes one of its sentences untrue fixes it, as a change moving a shared hook's move call must rewrite the sentence saying modules build their own.)
 
 **AND THE OPPOSITE POLARITY IS THE ONE NOBODY TRIPS OVER: A SUMMARY OUTLIVING THE RULE IT SUMMARISES.** Everything
 above is about a document going FALSE, which somebody eventually meets and fixes. This is a document staying

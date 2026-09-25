@@ -1,11 +1,18 @@
 import { useEffect, useRef } from "react";
-import { elementIdOfKey, elementSelectionOf } from "@client/canvas/selection";
+import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { contextShortcutOf } from "@client/canvas/interaction";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
-import { actionForMenuEntry, type ActionLookup } from "./definition/actions";
+import { actionForMenuEntry, backendKeyOf, type ActionLookup } from "./definition/actions";
 import type { DiagramModel } from "./api/diagramModel";
-import { dispatchDiagramEvent, type DiagramEventHandlers, type DiagramSelection, type LibraryEventHandlers } from "./api/diagramEvents";
+import {
+  dispatchDiagramEvent,
+  type ActionInvoked,
+  type DiagramEventHandlers,
+  type DiagramSelection,
+  type LibraryEventHandlers,
+} from "./api/diagramEvents";
 import type { ContextActionGroup } from "@client/generated/context-contract_pb";
 
 /**
@@ -105,7 +112,10 @@ export interface LibrarySelection {
  *
  * <b>The menu</b> - the key, the pushed actions, the context-menu push and the action run are
  * built here. An entry the definition declares `invokedBy: [{ kind: "menu" }]` is the module's to
- * run: it is raised as `action-invoked` and never sent (see {@link actionForMenuEntry}). Every
+ * run: it is raised as `action-invoked` (see {@link actionForMenuEntry}), and it is sent to the
+ * backend only if its declaration names a `backendKey` - which is a module choosing to send it,
+ * so databricks' simulated runs, which declare none, still never reach a command. This used to say
+ * "and never sent", which held until task 6 let a declaration carry its key. Every
  * other entry runs against the backend's CURRENT selection, with no source of its own:
  * the menu opens only once the pushed selection is the item it was opened on, and a source
  * naming that same item would say nothing the backend does not already hold. A refused action
@@ -123,7 +133,7 @@ export function useLibrarySelection(
   definition: DiagramDefinition,
   events: DiagramEventHandlers,
 ): LibrarySelection {
-  const { select, executeAction } = useContextConnection();
+  const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection: pushed, actions } = useContextSelection();
 
   const selectionKey = innermostKey(pushed) ?? undefined;
@@ -153,6 +163,35 @@ export function useLibrarySelection(
   const push = (id: string | null, gesture?: ContextSelectionAction) =>
     select(id === null ? null : elementSelectionOf(source.entryId, source.path, id, gesture));
 
+  /**
+   * A declared action, raised to the module - and, where it declares a `backendKey`, sent to the
+   * backend as that keystroke by the library itself (client-centralization Requirement 5).
+   *
+   * <b>Why the library sends it rather than handing the module a shortcut to send.</b> Requirement
+   * 5.1 says the library derives the keystroke and no module builds a `ContextShortcut`; it does not
+   * say who sends it, and a library that derived the shortcut and passed it along would satisfy the
+   * letter while the module still awaited the call and still owned the refusal. Sending it here
+   * follows the call beside it - `executeAction`, which this hook already makes itself for an
+   * undeclared menu entry - and it is what lets a refused shortcut reach the library at all, which
+   * task 3's single refusal surface depends on.
+   *
+   * <b>The module's own handler is still called</b>, so a module that observes an action loses
+   * nothing; it only no longer builds the keystroke, which its guard forbids. The refusal comes back
+   * as `action-refused`, the event a refused menu action already raises.
+   */
+  const invokeDeclared = (invoked: ActionInvoked) => {
+    const key = backendKeyOf(definition, invoked.actionId);
+    if (key !== undefined && invoked.targetId !== undefined) {
+      void executeShortcut(contextShortcutOf(key), elementSourceOf(invoked.targetId)).then((outcome) => {
+        if (!outcome.accepted && outcome.error) {
+          dispatchDiagramEvent(events, { kind: "action-refused", actionId: invoked.actionId, message: outcome.error });
+        }
+      });
+    }
+
+    dispatchDiagramEvent(events, invoked);
+  };
+
   return {
     selection,
     context: {
@@ -162,7 +201,7 @@ export function useLibrarySelection(
       executeAction: async (actionId) => {
         const declared = actionForMenuEntry(menuLookup(selection, model, definition), actionId);
         if (declared !== null) {
-          dispatchDiagramEvent(events, { kind: "action-invoked", ...declared });
+          invokeDeclared({ kind: "action-invoked", ...declared });
           return;
         }
 
@@ -175,6 +214,9 @@ export function useLibrarySelection(
     events: {
       ...events,
       onSelectionChanged: ({ selection: next }) => push(next.length > 0 ? next[0].id : null),
+      // The canvas raises every declared action through here, so this is the one place a declared
+      // backend key is sent - a key, a gesture and a menu entry alike.
+      onActionInvoked: invokeDeclared,
     },
   };
 }

@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { ArcBow, arcBetween, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { useCanvasRefusal } from "@client/canvas/library/surface/useCanvasRefusal";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramDefinition, RelationTypeDefinition, RouteEnds, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
@@ -268,19 +269,16 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   const { executeAction } = useContextConnection();
   const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState<string | null>(null);
+  // The one refusal this canvas decides on the client, before anything is sent; every other refusal
+  // is the backend's, and the call that got it reports it to the library's line itself.
+  const { refuse } = useCanvasRefusal();
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const editingId = inlineLabelElementIdOf(prompt);
 
-  /** Runs a backend action, threading its source and surfacing any refusal. */
+  /** Runs a backend action, threading its source; a refusal reaches the library's line by itself. */
   const runAction = (actionId: string, sourceId?: string) => {
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId !== undefined ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    void executeAction(actionId, sourceId !== undefined ? elementSourceOf(sourceId) : undefined);
   };
 
   const definition = useMemo(() => definitionOf(), []);
@@ -329,20 +327,14 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     return { elements: [...variables, ...loops], connections: links };
   }, [model]);
 
+  // Selection is the library's (centralized-selection), and so is the refusal line: every call
+  // below, and every menu action the library runs, reports its own refusal there.
   const events: DiagramEventHandlers = {
-    // Selection is the library's (centralized-selection); a menu action it ran and the backend
-    // refused comes back here, for the rejection line.
-    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       if (!model.variables.has(elementId)) {
         return; // a loop badge has no position of its own; the definition already refuses the drag
       }
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x, position.y);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x, position.y);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
     // A toolbox drop carries the backend action its item names; the placement carries where it
@@ -358,7 +350,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
       if (variableId !== null) {
         runAction(elementType, variableId);
       } else {
-        setRejection("Drop a link or a loop onto a variable.");
+        refuse("Drop a link or a loop onto a variable.");
       }
     },
     // A link drawn by right-dragging between two variables: the shared gesture layer raises this,
@@ -425,25 +417,13 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     lastClickRef.current = { id, at: now };
   };
 
-  if (failed) {
-    return <div className="causal-loop-message">This causal loop diagram could not be opened.</div>;
-  }
-
-  if (loading) {
-    return <div className="causal-loop-message">Reading the diagram…</div>;
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div
       className="causal-loop-frame canvas-host"
       onClick={onFrameClick}
     >
-      {rejection !== null && (
-        <div className="canvas-rejection" role="status" onClick={() => setRejection(null)}>
-          {rejection}
-        </div>
-      )}
-      {model.variables.size === 0 ? (
+      {!loading && !failed && model.variables.size === 0 ? (
         <div className="causal-loop-message">This causal loop diagram states no variables yet.</div>
       ) : (
         <DiagramCanvas

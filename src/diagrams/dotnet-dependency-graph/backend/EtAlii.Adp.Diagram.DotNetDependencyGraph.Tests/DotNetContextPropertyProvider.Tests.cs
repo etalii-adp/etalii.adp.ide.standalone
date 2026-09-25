@@ -1,5 +1,5 @@
-using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents.Wire;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests;
@@ -180,5 +180,60 @@ public class DotNetContextPropertyProviderTests
 
         // Assert.
         Assert.Empty(rows);
+    }
+
+    /// <summary>Counts which files the provider asked the store to read.</summary>
+    private sealed class CountingStore : IDependencyGraphStore
+    {
+        public List<string> Asked { get; } = [];
+
+        public DependencyGraphModel GetOrLoad(string diagramPath)
+        {
+            Asked.Add(diagramPath);
+            return DependencyGraphModel.Empty;
+        }
+    }
+
+    [Fact]
+    public async Task AnElementOfAnotherTypesDiagram_IsNotAnswered_AndItsFileIsNeverRead()
+    {
+        // The resolver consults every provider in this scope for every element selection in any
+        // diagram, so the first question is whether the file is ours. Unasked, a Wardley element
+        // made this provider parse tea.owm as a solution ("named 0 projects") in a gate log.
+        // "No rows" alone would pass against that defect - an unknown id finds nothing either way -
+        // so what is asserted is that the file was never read.
+
+        // Arrange.
+        var store = new CountingStore();
+        var foreign = new ContextTarget(
+            ContextScope.DiagramElement, @"C:\project\wardley-project\tea.owm", IsContainer: false, ShortGuid.NewShortGuid(), ElementId: "component-1");
+
+        // Act.
+        var rows = await new DotNetContextPropertyProvider(store).DescribeAsync(foreign, CancellationToken.None);
+
+        // Assert.
+        Assert.Empty(rows);
+        Assert.Empty(store.Asked);
+    }
+
+    [Theory]
+    [InlineData(@"C:\solution\Solution.sln")]
+    [InlineData(@"C:\solution\Solution.slnx")]
+    [InlineData(@"C:\solution\LEGACY.SLN")]
+    public async Task EitherSolutionFormat_IsStillAnswered(string solutionPath)
+    {
+        // The other half: the ownership question must not turn away the module's own files, in
+        // either serialization or either case - and it shows the counting store counts.
+
+        // Arrange.
+        var store = new CountingStore();
+        var own = new ContextTarget(
+            ContextScope.DiagramElement, solutionPath, IsContainer: false, ShortGuid.NewShortGuid(), ElementId: "project:A.csproj");
+
+        // Act.
+        await new DotNetContextPropertyProvider(store).DescribeAsync(own, CancellationToken.None);
+
+        // Assert.
+        Assert.Equal([solutionPath], store.Asked);
     }
 }

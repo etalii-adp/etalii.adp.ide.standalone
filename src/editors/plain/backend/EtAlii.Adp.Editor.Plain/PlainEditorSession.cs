@@ -76,11 +76,17 @@ public sealed class PlainEditorSession : IEditorSession
             // to be swallowed. That ordering is a hard dependency rather than a preference.
             //
             // Error: the one signal FileSystemWatcher gives when its internal buffer overflows and
-            // it has silently dropped events. Unsubscribed, an overflow is invisible. Four other
-            // watchers in this tree log it; these two did not.
+            // it has silently dropped events. Unsubscribed, an overflow is invisible - and LOGGED
+            // ONLY, it is still unlearned: the log hears of it while the editor keeps showing what it
+            // held before. Which events were dropped is unknowable, so the file is read again
+            // (backend-centralization R2.9). Subscribing alone satisfied the wiring guard and not
+            // the obligation, which is what the obligation tests caught.
             _watcher.Deleted += (_, _) => OnExternalChange();
             _watcher.Error += (_, args) =>
-                Logger.Warning(args.GetException(), "The watcher for {Path} stumbled", _path);
+            {
+                Logger.Warning(args.GetException(), "The watcher for {Path} stumbled; reading it again", _path);
+                OnExternalChange();
+            };
 
             // Subscribed BEFORE the watcher is enabled. Four other watchers in this tree do it
             // this way - RootFolderWatcher, TrackedProblemRoot, AnsibleWatchedFolder and
@@ -125,7 +131,23 @@ public sealed class PlainEditorSession : IEditorSession
 
     private void OnExternalChange()
     {
-        var result = ReadWithRetry(() => TextFileBuffer.Open(_path), ReadAttempts, BetweenReadAttempts);
+        var reads = 0;
+        var result = ReadWithRetry(
+            () =>
+            {
+                reads++;
+                return TextFileBuffer.Open(_path);
+            },
+            ReadAttempts,
+            BetweenReadAttempts);
+        if (result.Buffer is not null && reads > 1)
+        {
+            // How long a real refusal lasts is not known, and three attempts 20 ms apart is a choice.
+            // This line is how it gets measured, worded as the c4 and causal-loop stores word theirs
+            // so that one search finds every retried read in the tree.
+            Logger.Information("Read {Path} on attempt {Attempt} of {Attempts}", _path, reads, ReadAttempts);
+        }
+
         if (result.Buffer is null)
         {
             // Out of attempts: the file is genuinely unreadable rather than mid-replace. Worth a
