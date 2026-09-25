@@ -1,4 +1,5 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Problems.Tests;
 

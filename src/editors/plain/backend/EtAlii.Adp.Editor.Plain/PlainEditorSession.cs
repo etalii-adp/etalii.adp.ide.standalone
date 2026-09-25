@@ -131,7 +131,23 @@ public sealed class PlainEditorSession : IEditorSession
 
     private void OnExternalChange()
     {
-        var result = ReadWithRetry(() => TextFileBuffer.Open(_path), ReadAttempts, BetweenReadAttempts);
+        var reads = 0;
+        var result = ReadWithRetry(
+            () =>
+            {
+                reads++;
+                return TextFileBuffer.Open(_path);
+            },
+            ReadAttempts,
+            BetweenReadAttempts);
+        if (result.Buffer is not null && reads > 1)
+        {
+            // How long a real refusal lasts is not known, and three attempts 20 ms apart is a choice.
+            // This line is how it gets measured, worded as the c4 and causal-loop stores word theirs
+            // so that one search finds every retried read in the tree.
+            Logger.Information("Read {Path} on attempt {Attempt} of {Attempts}", _path, reads, ReadAttempts);
+        }
+
         if (result.Buffer is null)
         {
             // Out of attempts: the file is genuinely unreadable rather than mid-replace. Worth a

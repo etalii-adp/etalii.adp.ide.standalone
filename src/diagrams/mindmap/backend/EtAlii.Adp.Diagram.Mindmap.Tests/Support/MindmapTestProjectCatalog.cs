@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 
 internal sealed class MindmapTestProjectCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog

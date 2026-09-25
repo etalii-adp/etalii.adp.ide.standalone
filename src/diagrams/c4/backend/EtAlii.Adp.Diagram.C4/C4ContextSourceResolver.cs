@@ -1,6 +1,6 @@
-﻿using EtAlii.Adp.Common;
-using EtAlii.Adp.Common.Wire;
-using EtAlii.Adp.Context;
+﻿using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.C4;

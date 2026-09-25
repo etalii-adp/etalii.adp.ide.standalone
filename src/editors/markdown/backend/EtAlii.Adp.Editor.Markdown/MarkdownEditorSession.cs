@@ -14,15 +14,27 @@ public sealed class MarkdownEditorSession : IEditorSession
     private static readonly ILogger _logger = Log.ForContext<MarkdownEditorSession>();
 
     private readonly string _path;
+    private readonly Func<string, TextFileBufferOpenResult> _open;
     private readonly FileSystemWatcher? _watcher;
     private TextFileBuffer? _buffer;
 
     public MarkdownEditorSession(string path)
+        : this(path, TextFileBuffer.Open)
+    {
+    }
+
+    /// <summary>
+    /// With the open supplied, so a test can refuse a re-read exactly as often as it chooses - the
+    /// window the retry exists for is too narrow to land in on purpose with a real file.
+    /// </summary>
+    internal MarkdownEditorSession(string path, Func<string, TextFileBufferOpenResult> open)
     {
         ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(open);
         _path = path;
+        _open = open;
 
-        var result = TextFileBuffer.Open(path);
+        var result = _open(path);
         _buffer = result.Buffer;
         Refusal = result.Refusal;
 
@@ -47,9 +59,12 @@ public sealed class MarkdownEditorSession : IEditorSession
             //
             // Deleted: File.Replace and File.Move can present the destination name's transition as
             // a Deleted, and RootFolderWatcher takes all five where this took three. Subscribing it
-            // is only safe BECAUSE the refused re-read now retries - a Deleted callback finds the
-            // name absent by construction, and before the retry landed its only possible fate was
-            // to be swallowed. That ordering is a hard dependency rather than a preference.
+            // is only safe BECAUSE the refused re-read retries (OnExternalChange) - a Deleted
+            // callback finds the name absent by construction, and without the retry its only
+            // possible fate is to be swallowed. That ordering is a hard dependency rather than a
+            // preference. THIS PARAGRAPH WAS FALSE HERE FOR A WHILE: it arrived with Plain's in
+            // a2318531, where the retry already existed, while this session still re-read once. A
+            // premise copied between siblings has to be checked in the sibling it lands in.
             //
             // Error: the one signal FileSystemWatcher gives when its internal buffer overflows and
             // it has silently dropped events. Unsubscribed, an overflow is invisible - and LOGGED
@@ -82,12 +97,52 @@ public sealed class MarkdownEditorSession : IEditorSession
 
     public event EventHandler<EditorContentChangedEventArgs>? Changed;
 
-    private void OnExternalChange()
+    /// <summary>
+    /// How many times a re-read is tried before the notification is given up on, and how long
+    /// between attempts - <c>PlainEditorSession</c>'s figures, mirrored exactly.
+    /// </summary>
+    /// <remarks>
+    /// <b>A refusal must not consume the change.</b> A publish is a temp-then-replace, and
+    /// <see cref="TextFileBuffer.Open"/> refuses a name in transit before any exception handling, so
+    /// a single read that lands in the window logs, returns, and throws the only notification for
+    /// that write away. So does a read refused by another holder on a write's last event - the
+    /// defect traced in c4's store as the EditorResolution 60-second flake. The two editor sessions
+    /// agree on the figures on purpose, so that whether they need changing is one question, and the
+    /// attempt line below is what answers it. <b>A retry narrows the window and does not close
+    /// it</b>: a hold longer than the attempts still loses the change.
+    /// </remarks>
+    private const int ReadAttempts = 3;
+
+    private static readonly TimeSpan BetweenReadAttempts = TimeSpan.FromMilliseconds(20);
+
+    /// <summary>Internal for the guard, which calls it as the watcher would.</summary>
+    internal void OnExternalChange()
     {
-        var result = TextFileBuffer.Open(_path);
+        var reads = 0;
+        var result = ReadWithRetry(
+            () =>
+            {
+                reads++;
+                return _open(_path);
+            },
+            ReadAttempts,
+            BetweenReadAttempts);
+        if (result.Buffer is not null && reads > 1)
+        {
+            // Worded as the c4 and causal-loop stores and the plain editor word theirs, so that one
+            // search finds every retried read in the tree.
+            _logger.Information("Read {Path} on attempt {Attempt} of {Attempts}", _path, reads, ReadAttempts);
+        }
+
         if (result.Buffer is null)
         {
-            _logger.Warning("The externally changed {Path} no longer opens: {Refusal}", _path, result.Refusal);
+            // Out of attempts: the file is genuinely unreadable rather than mid-replace. Worth a
+            // line, and the last good content stays in place rather than being replaced by nothing.
+            _logger.Warning(
+                "The externally changed {Path} no longer opens after {Attempts} attempts: {Refusal}",
+                _path,
+                ReadAttempts,
+                result.Refusal);
             Refusal = result.Refusal;
             return;
         }
@@ -95,6 +150,29 @@ public sealed class MarkdownEditorSession : IEditorSession
         _buffer = result.Buffer;
         Refusal = "";
         Changed?.Invoke(this, new EditorContentChangedEventArgs(result.Buffer.Content));
+    }
+
+    /// <summary>
+    /// Reads until it succeeds or runs out of attempts - <c>PlainEditorSession.ReadWithRetry</c>,
+    /// copied rather than shared because the two modules reference nothing of each other's.
+    /// </summary>
+    internal static TextFileBufferOpenResult ReadWithRetry(
+        Func<TextFileBufferOpenResult> read,
+        int attempts,
+        TimeSpan between)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var result = read();
+            if (result.Buffer is not null || attempt >= attempts)
+            {
+                return result;
+            }
+
+            Thread.Sleep(between);
+        }
     }
 
     public ValueTask DisposeAsync()

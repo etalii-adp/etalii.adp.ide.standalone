@@ -38,7 +38,7 @@ internal static class CausalLoopEdits
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var error = documents.Save(bodyPath);
+        var error = documents.Save(bodyPath, entry);
         if (error.Length > 0)
         {
             return Task.FromResult(CommandResult.Failure(error));
