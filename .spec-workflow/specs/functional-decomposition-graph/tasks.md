@@ -85,9 +85,10 @@
   - Seen to fail against: a cycle check that includes `shows` — the navigation round trip is then reported, which is the ruling this specification exists to honour.
   - _Requirements: 5.1, 5.5_
 
-- [ ] 11. Store, session and mapper, on the shared pieces
-  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
-  - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type, centre, width and height, and the payloads `FdgElementPayload { name, text }` and `FdgConnectionPayload { name }`. **A Description is never sent.**
+- [x] 11. Store, session and mapper, on the shared pieces
+  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../FdgContextSourceResolver.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
+  - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type and centre, and the payloads `FdgElementPayload { name, text, width, height }` and `FdgConnectionPayload { from_element_id, to_element_id, name }`: the core element carries only a position, a type and a payload. **A Description is never sent.**
+  - **Lands as one milestone with task 15's registration half and `FdgContextSourceResolver`, brought forward from task 13** (the user's chat ruling of 2026-09-25). Registering this task's session factory makes the host's `DrawnConnections` guard require an FDG example in `src/examples`, and every connection that example draws must resolve to a selection. So the three land together or none of them can.
   - **The module's backend `DiagramDefinition`**, in `Diagram.cs` as every module's is, whose `Build` registers the store, session and session factory. Without it FDG never reaches the diagram catalog, and task 15's example cannot register. No task in 11–19 claimed it until the user's chat ruling of 2026-09-25; Developer 1 found the gap.
   - Guard: a session over the example delivers every element at the shared height; a Description set through the property grid never appears in any delta; **the backend `DiagramDefinition` is discovered into the diagram catalog**.
   - Seen to fail against: a mapper that packs `description` into the payload — the delta assertion then finds it; and a module without the definition — discovery then finds no FDG type (the user's chat ruling of 2026-09-25).
@@ -104,7 +105,7 @@
   - _Waits on: `backend-centralization` task 17's piece (the restore-lines edit, R6), task 18's piece (the YAML node range, R7, which an edit uses to find its entry's lines and which this line omitted), and task 21 (the gesture grammar, R11) (the user's chat ruling of 2026-09-25)_
   - _Requirements: 3.1, 3.2, 3.3, 6.3, 8.2, 8.3, 7.4_
 - [ ] 13. Toolbox and property providers
-  - File: `.../FdgToolboxProvider.cs`, `.../FdgContextPropertyProvider.cs`, `.../FdgContextActionProvider.cs`, `.../FdgContextSourceResolver.cs` (new), tests
+  - File: `.../FdgToolboxProvider.cs`, `.../FdgContextPropertyProvider.cs`, `.../FdgContextActionProvider.cs` (new), tests. `FdgContextSourceResolver` moved to task 11 (the user's chat ruling of 2026-09-25).
   - The toolbox describes the five element types as data. The property grid offers a Description for all five types and every connection, a Name for the four named types, and a connection's Name. Every property change is a command (task 12).
   - Guard: each of the five types and a connection offers a Description row; a Comment offers no Name row; a property set through the grid reaches the document and undoes.
   - Seen to fail against: a provider that omits the Description for one type, which the per-type assertion then reports.
@@ -113,13 +114,13 @@
 
 - [ ] 14. The client module: registration, definition, handlers
   - File: `src/diagrams/functional-decomposition-graph/client/register.ts`, `FdgCanvas.tsx`, `fdg.css`, `readme.md` (new), tests
-  - The definition the design states: five element types on the shapes of task 1, all `sizing: "user"` with `resize: "both"` on the Comment, one editable label each (the Comment's wrapped), a class per type for its fill, and no anchors on the Comment. Five relation types with `route: "cubic-bezier"`, an arrow end marker only, a midpoint editable label, endpoints and cardinality exactly as the rules table, `allowSelf: false`. `acyclic` naming the four ownership relations and **not** `shows`. Layout `manual`; the toolbox derived. Handlers turn each library event into one context action and nothing else.
+  - The definition the design states: five element types on the shapes of task 1, all `sizing: "user"` with `resize: "both"` on the Comment, one editable label each (the Comment's wrapped), a class per type for its fill, and no anchors on the Comment. Five relation types with `route: "cubic-bezier"`, an arrow end marker only, a midpoint editable label, endpoints and cardinality exactly as the rules table, `allowSelf: false`. `acyclic` naming the four ownership relations and **not** `shows`. Layout `manual`; the toolbox derived. Handlers turn each library event into its one route and nothing else: a move through `moveElementTo`, a resize through `setProperty`, and a drop, connection, deletion or rename through a context action or shortcut (the user's chat ruling of 2026-09-25). The ids are defined once, in the client, for tasks 12 and 13 to answer.
   - Guard: the definition passes `validateDiagramDefinition`; `declarativeModules` passes against this module unchanged; each library event produces its one action; a connect gesture over the example highlights an allowed target, refuses a forbidden pair, refuses a second parent, refuses a cycle-closing target, and **does** offer the Shows round trip.
   - Seen to fail against: a module that answers a gesture itself rather than through an action — the `declarativeModules` guard reports it.
   - _Waits on: task 11 (the `.proto` its payload types are generated from). Not on `client-centralization`: the stream hook is already shared on develop, and the delta fold is the module's own `applyDelta`, as in the other 13 modules (the user's chat ruling of 2026-09-25)_
   - _Requirements: 1.1, 1.3, 5.2, 5.3, 6.1, 6.2, 10.1, 10.2_
 
-- [ ] 15. The field-service example
+- [x] 15. The field-service example
   - File: `src/diagrams/functional-decomposition-graph/examples/field-service/field-service.fdg`, `.adp`, `readme.md`, the seeded copy under `src/examples/`, tests
   - The graph the design lists: Planning owning a Task list and Task row; Task detail with a Step list and Step row; Open task, Back to list, Tick step, Complete task; Task with a nested Step and Location; Planning day; Sync queue calling Upload photos; Offline cache; **Shows** Open task → Task detail and Back to list → Task list, the navigation round trip; named connections, Descriptions, two Comments.
   - The readme says **why it is hand-authored** — a new notation, so no published corpus can exist, per the user's ruling — and what it does not demonstrate: a document with breaches, Base36 ids, an empty Name, more than one Shows per Action.

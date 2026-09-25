@@ -177,7 +177,7 @@ connections:
 - **`FdgParser`** - text to `FdgModel` (elements, connections, parse problems, and each entry's line range).
 - **`FdgWriter`** - one pure function per edit: add, remove, move, resize, rename, set text, set description, connect, disconnect, and set a connection's name. Each returns the splice or a refusal sentence.
 - **`FdgDocumentStore`**, **`FdgDocumentReloader`**, **`FdgSession`**, **`FdgSessionFactory`** - lifecycle and view, as thin uses of `backend-centralization`'s shared store lifecycle (R2), save result (R3), diff (R4) and change handler (R5), with its restore edit (R6), YAML node range (R7) and gesture grammar (R11).
-- **`FdgElementMapper`** - model to library elements. It sends the type, centre, width and height, the payload `FdgElementPayload { name, text }`, and for connections `FdgConnectionPayload { name }` (new, `api/functional-decomposition-graph.proto`). **Descriptions are never sent**, so none can be drawn (Requirement 7.1).
+- **`FdgElementMapper`** - model to library elements. It sends the type and centre, the payload `FdgElementPayload { name, text, width, height }`, and for connections `FdgConnectionPayload { from_element_id, to_element_id, name }` (new, `api/functional-decomposition-graph.proto`). **Size and endpoints travel in the payload because the core element carries only a position, a type and a payload.** They must be there too: the shared diff compares position, type and payload bytes, so a size held anywhere else would let a resize raise no delta (the user's chat ruling of 2026-09-25). **Descriptions are never sent**, so none can be drawn (Requirement 7.1).
 - **`FdgRuleSet`** and **`FdgValidator`** - Requirement 5.5, below.
 - **`FdgContextActionProvider`**, **`FdgContextPropertyProvider`**, **`FdgToolboxProvider`** and **`FdgContextSourceResolver`** - editing, properties, toolbox and selection resolution (Requirements 7 and 8).
 - **`FdgRelations`** (new) - the rules table as data: for each relation id, its allowed source and target element types and its limits. **The one backend statement of Requirement 5's table**, read by the rule set and by the connect command's refusal.
@@ -240,7 +240,12 @@ Every edit is a context action producing a command whose inverse is a **restore-
 - **`acyclic`:** `[{ relationTypes: ["ui-child", "owns-action", "owns-data", "owns-function"] }]`. `shows` is deliberately absent (Requirement 5.4).
 - **Layout** `manual` only; dragging enabled; the toolbox derived from the element types.
 
-**Handlers** answer the library's events through the module's own transport, and nothing else. `element-dropped`, `element-moved`, `element-resized`, `connection-drawn`, `element-deleted`, `connection-deleted` and `label-commit-requested` each become one context action. The module has **no rendering, gesture, selection or label code** (Requirement 1.1). Selection is the library's (Requirement 10.1).
+**Handlers** answer the library's events through the module's own transport, and nothing else. Each library event takes the one route that can carry it, because the context channel carries no position or size (the user's chat ruling of 2026-09-25):
+  - **`element-moved`** goes through the stream's `moveElementTo`, answered by `FdgSession.MoveElementToAsync` (task 12), as `dependency-graph`'s move does.
+  - **`element-resized`** goes through `setProperty`, answered by a property provider (task 13), as `timeline`'s resize does.
+  - **`element-dropped`, `connection-drawn`, `element-deleted`, `connection-deleted` and `label-commit-requested`** go through context actions and shortcuts. A drop or connection carries its data in the element id it acts on (`new:x,y`, `rel:a->b`).
+
+The action, property and shortcut ids these use are defined once, in the client module, and tasks 12 and 13 answer exactly those. The module has **no rendering, gesture, selection or label code** (Requirement 1.1). Selection is the library's (Requirement 10.1).
 
 ### Colours (Requirement 4.5, 4.6)
 
