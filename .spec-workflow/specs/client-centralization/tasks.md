@@ -55,7 +55,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - **Where the backend computes the box** (c4 clamps at 240) the metric is Architect 1's and this task cites its fixture. **`c4`'s word wrap is not re-implemented here**; it belongs to `functional-decomposition-graph`'s `wrap`.
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 12.1_
 
-- [ ] 6. The backend keystroke comes from the declaration
+- [x] 6. The backend keystroke comes from the declaration
   - Files: `definition/actions.ts` (`backendKey?`), `DiagramCanvas.tsx`, the 11 `BACKEND_KEYS` maps
   - The library derives the `ContextShortcut` from the declaration that fired the action; a gesture-invoked action carries a **declared** backend key instead of a manufactured `"Delete"` — the synthesised keystroke `declarative-diagram-modules` said must disappear. **Nothing on the wire changes.** `backendKey` is a new module-facing name → tell Architect 1 in the same change.
   - **Guard: no module constructs a `ContextShortcut` or maps an action id to a key.**
