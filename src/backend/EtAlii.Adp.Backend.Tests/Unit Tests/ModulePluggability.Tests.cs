@@ -1,5 +1,5 @@
 using System.Reflection;
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -50,9 +50,11 @@ public class ModulePluggabilityTests
         // Assert.
         // Backend disappeared from this list when backend-project-decomposition moved the
         // contracts the module consumes into Common - which is that specification's whole
-        // aim showing up in the metadata. Common is the floor that keeps this test
-        // meaningful rather than vacuous.
-        Assert.Contains("EtAlii.Adp.Common", referencedNames);
+        // aim showing up in the metadata. Common has since been dissolved: the definition
+        // contract (DiagramDefinition, DiagramOrigin) lives in Documents and the validation
+        // contract in Diagram, so Documents is now the floor that keeps this test meaningful
+        // rather than vacuous.
+        Assert.Contains("EtAlii.Adp.Documents", referencedNames);
         Assert.Contains("EtAlii.Adp.Diagram", referencedNames);
     }
 

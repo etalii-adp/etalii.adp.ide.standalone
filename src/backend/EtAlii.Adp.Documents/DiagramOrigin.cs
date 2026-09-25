@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// A diagram type's origin, expressed the same MIME-type-style way as docs/diagrams.md's own

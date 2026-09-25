@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.NetworkTopology;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `network/topology`.</summary>

@@ -18,20 +18,20 @@
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <!--
-      YamlDotNet is used for reading only, by the ansible-structure, azure-pipeline and timeline
-      modules. Its event stream and representation model give correct handling of anchors,
-      aliases, block scalars, flow collections and quoting, plus a line number on every node -
-      which is what lets a problem point at the line that declared it, and what lets an element
-      record the lines that declare it. None of the three ever serialises back through it:
-      ansible-structure never writes at all, while azure-pipeline and timeline each write line by
-      line through their own document, so their round-trip guarantees do not depend on this
-      package.
+      YamlDotNet is used for reading only, by the modules that read YAML documents and by
+      EtAlii.Adp.Documents for YamlNodeRange - not listed by name here, because a list of three was
+      found stale at seven. Its event stream and representation model give correct handling of
+      anchors, aliases, block scalars, flow collections and quoting, plus a line number on every
+      node - which is what lets a problem point at the line that declared it, and what lets an
+      element record the lines that declare it. Nothing serialises back through it: the modules
+      that write do so line by line through their own document, so their round-trip guarantees do
+      not depend on this package.
 
-      Worth knowing before adding a fourth reader: a block collection has no closing token, so a
-      node's own end mark lands at the start of whatever follows it. Taking it literally gives
+      Worth knowing before reading YAML in a new module: a block collection has no closing token,
+      so a node's own end mark lands at the start of whatever follows it. Taking it literally gives
       every element a range one line long, or one that runs into the next element - and a writer
-      then edits the wrong declaration. Both azure-pipeline and timeline correct for it by taking
-      the furthest end mark in the node's subtree and stepping back off a mark in column one.
+      then edits the wrong declaration. The correction is written once, in
+      EtAlii.Adp.Documents.YamlNodeRange: use it rather than writing another copy.
     -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.0" />

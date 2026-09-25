@@ -46,17 +46,17 @@ Declared anchors cannot fix it: `points` anchors are absolute offsets, so they s
 
 ### Sequencing with the two centralization specifications
 
-The module half would otherwise write fresh copies of exactly what `backend-centralization` (requirements pending) and `client-centralization` (in progress) are centralizing:
+The module half would otherwise write fresh copies of exactly what `backend-centralization` (requirements pending) is centralizing, and of the one client piece already shared:
 
 - **Backend:** the store lifecycle (R2), the save result (R3), the change-detecting diff (R4), the change handler (R5), the restore-lines edit (R6), the YAML node range (R7), and the `new:` / `rel:` grammar (R11).
-- **Client:** the stream hook and delta fold.
+- **Client:** the stream hook, already shared on develop as `useDiagramStream`. **The delta fold is not centralized by any specification:** every one of the 13 modules writes its own `applyDelta`, and FDG does too (the user's chat ruling of 2026-09-25).
 
 Each copy written now is a fourteenth instance that those specifications then have to convert.
 
 **The user's ruling, given as a selection via the Scrum master on 2026-09-15: build the library half now, and the module half after those shared pieces have landed.** It was the recommended option. The alternative offered was building both halves now as copies of `dependency-graph` and converting them later.
 
-- **So nothing below writes a fourteenth copy.** The module's store, reloader, session, diff, change handler, restore edit, YAML range, gesture grammar, stream hook and delta fold are the shared ones.
-- **The tasks document states the ordering**, naming the `backend-centralization` and `client-centralization` work each module task waits on. Those specifications have no tasks yet, so the waits are named by requirement until they do.
+- **So nothing below writes a fourteenth copy, with one exception.** The module's store, reloader, session, diff, change handler, restore edit, YAML range, gesture grammar and stream hook are the shared ones. **The exception is the client's delta fold, which stays per-module**, because no specification centralizes it (the user's chat ruling of 2026-09-25).
+- **The tasks document states the ordering**, naming the `backend-centralization` work each module task waits on **by that specification's task number**, now that it has tasks, rather than by requirement. A requirement read literally includes converting nine other modules, which FDG does not wait for (the user's chat ruling of 2026-09-25).
 - **Everything the module half needs that neither specification provides** is designed here in full: the `.fdg` format, parser, writer, rules, commands, providers, mapper, definition and examples.
 
 ## Architecture
@@ -220,7 +220,7 @@ Every edit is a context action producing a command whose inverse is a **restore-
 
 ## Client
 
-**Files**, following `dependency-graph`'s: `register.ts`, `FdgCanvas.tsx`, `fdg.css` and `readme.md`. The stream hook and delta fold are `client-centralization`'s shared ones, so the module writes neither.
+**Files**, following `dependency-graph`'s: `register.ts`, `FdgCanvas.tsx`, `fdg.css` and `readme.md`. The stream hook is the shared `useDiagramStream`, so the module does not write one. **The delta fold is the module's own `applyDelta`**, as in the other 13 modules: an upsert keyed on id, removing only on a remove delta. No specification centralizes it (the user's chat ruling of 2026-09-25).
 
 **The definition** (in `FdgCanvas.tsx`):
 
