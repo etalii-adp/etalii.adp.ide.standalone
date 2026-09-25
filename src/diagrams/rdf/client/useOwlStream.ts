@@ -26,22 +26,7 @@ export interface OwlStream {
  */
 export function useOwlStream(projectId: Uint8Array, path: readonly string[]): OwlStream {
   const { watchId } = useContextConnection();
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyOwlModel, applyOwlDelta);
-
-  const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
-    try {
-      const response = await client.moveElement({
-        projectId: { value: projectId },
-        watchId: { value: watchId },
-        path: { segments: [...path] },
-        elementId,
-        position: { x, y },
-      });
-      return response.error;
-    } catch (error) {
-      return error instanceof Error ? error.message : "The move could not be sent.";
-    }
-  };
+  const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyOwlModel, applyOwlDelta);
 
   const reportView = viewReportOf(client, projectId, watchId, path);
 

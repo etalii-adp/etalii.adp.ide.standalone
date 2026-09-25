@@ -42,7 +42,7 @@ Every library event takes the one route that can carry it (the user's chat rulin
 
 | Library event | Route | Id |
 | --- | --- | --- |
-| `element-moved` | the stream's `moveElement`, as the top-left | — |
+| `element-moved` | the stream's `moveElementTo`, as the top-left | — |
 | `element-resized` | `setProperty` on the element | `fdg.width`, `fdg.height` |
 | `element-dropped` | context action on `new:x,y` (the drop's centre) | `fdg.add.<type>` |
 | `connection-drawn` | context action on `rel:from->to` | `fdg.connect.<relation>` |
