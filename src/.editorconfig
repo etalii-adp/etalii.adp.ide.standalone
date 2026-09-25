@@ -94,6 +94,12 @@ ij_typescript_spaces_within_imports = true
 [client/src/generated/*.ts]
 end_of_line = lf
 
+# The `.proto` sources of that output are LF too, because `protoc-gen-es` copies their doc comments
+# into it byte for byte, and a CRLF source leaves the generated file with mixed endings. The
+# matching `*.proto text eol=lf` and its reasoning are in the root `.gitattributes`.
+[*.proto]
+end_of_line = lf
+
 [*.css]
 indent_size = 2
 
