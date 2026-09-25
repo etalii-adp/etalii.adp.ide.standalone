@@ -85,7 +85,7 @@
   - Seen to fail against: a cycle check that includes `shows` — the navigation round trip is then reported, which is the ruling this specification exists to honour.
   - _Requirements: 5.1, 5.5_
 
-- [ ] 11. Store, session and mapper, on the shared pieces
+- [x] 11. Store, session and mapper, on the shared pieces
   - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../FdgContextSourceResolver.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
   - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type and centre, and the payloads `FdgElementPayload { name, text, width, height }` and `FdgConnectionPayload { from_element_id, to_element_id, name }`: the core element carries only a position, a type and a payload. **A Description is never sent.**
   - **Lands as one milestone with task 15's registration half and `FdgContextSourceResolver`, brought forward from task 13** (the user's chat ruling of 2026-09-25). Registering this task's session factory makes the host's `DrawnConnections` guard require an FDG example in `src/examples`, and every connection that example draws must resolve to a selection. So the three land together or none of them can.
@@ -120,7 +120,7 @@
   - _Waits on: task 11 (the `.proto` its payload types are generated from). Not on `client-centralization`: the stream hook is already shared on develop, and the delta fold is the module's own `applyDelta`, as in the other 13 modules (the user's chat ruling of 2026-09-25)_
   - _Requirements: 1.1, 1.3, 5.2, 5.3, 6.1, 6.2, 10.1, 10.2_
 
-- [ ] 15. The field-service example
+- [x] 15. The field-service example
   - File: `src/diagrams/functional-decomposition-graph/examples/field-service/field-service.fdg`, `.adp`, `readme.md`, the seeded copy under `src/examples/`, tests
   - The graph the design lists: Planning owning a Task list and Task row; Task detail with a Step list and Step row; Open task, Back to list, Tick step, Complete task; Task with a nested Step and Location; Planning day; Sync queue calling Upload photos; Offline cache; **Shows** Open task → Task detail and Back to list → Task list, the navigation round trip; named connections, Descriptions, two Comments.
   - The readme says **why it is hand-authored** — a new notation, so no published corpus can exist, per the user's ruling — and what it does not demonstrate: a document with breaches, Base36 ids, an empty Name, more than one Shows per Action.
