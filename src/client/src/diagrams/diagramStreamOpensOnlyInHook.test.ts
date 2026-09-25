@@ -118,3 +118,94 @@ describe("the diagram stream is opened only by useDiagramStream", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * The move, by the same argument and the same instrument (client-centralization Requirement 7).
+ *
+ * Fourteen modules each built their own `moveElementTo` on the stream's client - kept per module
+ * deliberately by technical-debt-cleanup R3.2, reversed by the user on 2026-09-20. Thirteen bodies
+ * were identical; the fourteenth had drifted in the way copies do, catching the failure and
+ * returning a fixed "The position could not be saved." in place of the backend's own reason. That
+ * is the drift this guard exists to stop recurring: one call, so there is nothing to drift from.
+ *
+ * Same limits as the open guard above, stated for the same reason: it recognises the `MoveElement`
+ * request by its shape, and the positive control proves the pattern still sees the one call that
+ * is allowed, so a pattern that stopped matching fails rather than reporting a clean tree.
+ *
+ * <b>It polices the ARRANGEMENT move only, and that distinction is the backend's, not this file's.</b>
+ * One `MoveElement` request carries two operations: with a `position` it arranges an element where it
+ * was dropped, and with a `newParentId` it re-parents it - "the backend routes on its presence", as the
+ * shared body says. Task 8 consolidated the arrangement move, which fourteen modules each built.
+ * `mindmap`'s `useMindmapStream` builds the other one, a drag-to-reparent with `newParentId` and an
+ * index, and no position at all - its own operation, outside task 8. <b>The first version of this
+ * guard matched any `MoveElement` request</b> and so fired on mindmap's legitimate call; it was red on
+ * its own branch from the commit that introduced it, and unnoticed because nothing had run it yet. A
+ * request is therefore an arrangement only when its object carries `position`.
+ */
+const DIAGRAM_MOVE_CALL = /\.moveElement\(\s*\{/g;
+
+/** The request objects passed to `.moveElement({...})` in a source, braces balanced. */
+function moveRequestsIn(source: string): string[] {
+  const requests: string[] = [];
+  for (const call of source.matchAll(DIAGRAM_MOVE_CALL)) {
+    const open = (call.index ?? 0) + call[0].length - 1;
+    let depth = 0;
+    for (let at = open; at < source.length; at++) {
+      if (source[at] === "{") {
+        depth++;
+      } else if (source[at] === "}" && --depth === 0) {
+        requests.push(source.slice(open, at + 1));
+        break;
+      }
+    }
+  }
+  return requests;
+}
+
+/** Whether a source builds an ARRANGEMENT move: a `MoveElement` request carrying a `position`. */
+function buildsAnArrangementMove(source: string): boolean {
+  return moveRequestsIn(source).some((request) => /\bposition\s*:/.test(request) && /\bprojectId\s*:/.test(request));
+}
+
+describe("an element is moved only by useDiagramStream", () => {
+  it("tells an arrangement from a re-parenting - the distinction this guard was narrowed to", () => {
+    // Arrange: the two operations one request can carry, as text, so the narrowing is exercised
+    // directly rather than inferred from whatever the tree happens to hold today.
+    const arrangement = `await client.moveElement({ projectId: { value: p }, elementId, position: { x, y } });`;
+    const reparenting = `await client.moveElement({
+      projectId: { value: p },
+      elementId,
+      newParentId,
+      index: -1,
+    });`;
+
+    // Act & assert: the one it must catch, and the one it was narrowed to leave alone.
+    expect(buildsAnArrangementMove(arrangement)).toBe(true);
+    expect(buildsAnArrangementMove(reparenting)).toBe(false);
+  });
+
+  it("recognises the one allowed call - the pattern still matches what it polices", () => {
+    // Arrange.
+    const root = sourceRoot();
+
+    // Act.
+    const hookSource = readFileSync(join(root, THE_HOOK), "utf8");
+
+    // Assert: the control. Without it, an offender list of [] could mean a pattern gone blind.
+    expect(buildsAnArrangementMove(hookSource)).toBe(true);
+  });
+
+  it("finds no other file building its own move", () => {
+    // Arrange.
+    const root = sourceRoot();
+
+    // Act.
+    const offenders = sourcesUnder(clientDirectories(root))
+      .map((file) => relative(root, file).replaceAll("\\", "/"))
+      .filter((file) => file !== THE_HOOK)
+      .filter((file) => buildsAnArrangementMove(readFileSync(join(root, file), "utf8")));
+
+    // Assert: a module takes `moveElementTo` from useDiagramStream's result and passes it on.
+    expect(offenders).toEqual([]);
+  });
+});
