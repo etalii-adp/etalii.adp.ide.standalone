@@ -105,8 +105,8 @@ const DEPENDENCY_GRAPH_DEFINITION: DiagramDefinition = assertValidDiagramDefinit
       // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The four keys were a hand-written list in
       // this canvas and the delete was a keystroke it built by hand to describe a gesture the
       // library had already handed it. Declared, the library derives the key set and dispatches
-      // an action id; the backend still holds the key-to-action table, which is why the handler
-      // below says which shortcut each action travels as.
+      // an action id; the backend still holds the key-to-action table, so each declaration names
+      // the key it travels as in `backendKey`, and the library sends that key itself.
       actions: [
         { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
         { id: "insert", backendKey: "Insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
@@ -165,7 +165,6 @@ function nearestRow(y: number): number {
   const exact = y / ROW_HEIGHT;
   return exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
 }
-
 
 /** The placement id a gesture carries when it lands on empty canvas: `new:{x},{row}`. */
 function newPlacementId(x: number, row: number): string {
@@ -231,8 +230,9 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     sourceAnchor === "left" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
 
   const events: DiagramEventHandlers = {
-    // Selection is the library's (centralized-selection); a menu action it ran and the backend
-    // refused comes back here, for the same rejection line every other refusal uses.
+    // Selection is the library's (centralized-selection), and so is sending a declared action:
+    // one the backend refused, from the menu or from a key, comes back here for the same
+    // rejection line every other refusal uses.
     onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
       setRejection("");
