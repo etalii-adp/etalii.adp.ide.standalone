@@ -342,6 +342,21 @@ public static class AdpFileWriter
             // turns the next red gate into a name instead of another day of inference. It cannot
             // name an actor that has already released - see FileHolders - so "no process was
             // holding it when asked" is an answer rather than the absence of one.
+            //
+            // THE DESTINATION IS READ FIRST, AT THE MOMENT OF FAILURE. It used to be the last
+            // argument, and C# evaluates arguments in order, so it ran AFTER FileHolders.Describe -
+            // which waits up to its budget and answered in 728, 1,132 and 1,166 ms in the three
+            // field records that time it. The folder was therefore described most of a second after
+            // the replace failed, and a competing ADP publish - one of the two things 0x80070497 can
+            // be, a delete of the destination being the other - creates its ~adp-*.tmp, replaces and
+            // deletes it well inside that. It left nothing, and the record read "only our own" for
+            // exactly the case the sibling scan exists to catch. Reading the folder
+            // before the holder query makes "in flight" mean what the record always claimed: in
+            // flight when this publish failed. The record's wording and field order are unchanged,
+            // so records written before and after this line stay comparable - but a pre-fix
+            // "only our own" is the weaker claim, and the evidence README says which records are.
+            var destination = DestinationState.Describe(path, temporary);
+            var holders = FileHolders.Describe(path);
             Logger.Warning(
                 "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}, destination: {Destination}",
                 path,
@@ -349,8 +364,8 @@ public static class AdpFileWriter
                 $"0x{exception.HResult:X8}",
                 exception.Message,
                 Environment.ProcessId,
-                FileHolders.Describe(path),
-                DestinationState.Describe(path, temporary));
+                holders,
+                destination);
             DeleteQuietly(temporary);
             throw;
         }

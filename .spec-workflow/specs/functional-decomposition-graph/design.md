@@ -240,7 +240,12 @@ Every edit is a context action producing a command whose inverse is a **restore-
 - **`acyclic`:** `[{ relationTypes: ["ui-child", "owns-action", "owns-data", "owns-function"] }]`. `shows` is deliberately absent (Requirement 5.4).
 - **Layout** `manual` only; dragging enabled; the toolbox derived from the element types.
 
-**Handlers** answer the library's events through the module's own transport, and nothing else. `element-dropped`, `element-moved`, `element-resized`, `connection-drawn`, `element-deleted`, `connection-deleted` and `label-commit-requested` each become one context action. The module has **no rendering, gesture, selection or label code** (Requirement 1.1). Selection is the library's (Requirement 10.1).
+**Handlers** answer the library's events through the module's own transport, and nothing else. Each library event takes the one route that can carry it, because the context channel carries no position or size (the user's chat ruling of 2026-09-25):
+  - **`element-moved`** goes through the stream's `moveElementTo`, answered by `FdgSession.MoveElementToAsync` (task 12), as `dependency-graph`'s move does.
+  - **`element-resized`** goes through `setProperty`, answered by a property provider (task 13), as `timeline`'s resize does.
+  - **`element-dropped`, `connection-drawn`, `element-deleted`, `connection-deleted` and `label-commit-requested`** go through context actions and shortcuts. A drop or connection carries its data in the element id it acts on (`new:x,y`, `rel:a->b`).
+
+The action, property and shortcut ids these use are defined once, in the client module, and tasks 12 and 13 answer exactly those. The module has **no rendering, gesture, selection or label code** (Requirement 1.1). Selection is the library's (Requirement 10.1).
 
 ### Colours (Requirement 4.5, 4.6)
 
