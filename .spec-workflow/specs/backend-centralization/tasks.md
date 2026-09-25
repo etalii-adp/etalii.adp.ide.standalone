@@ -96,7 +96,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
   - Files: the shared lifecycle's tests
   - The guard drives the real reload path rather than calling the helper directly, because a wiring regression is what a later reader would cause. **Seen to fail against a planted install-on-unreadable.**
   - _Requirements: 2.6_
-- [ ] 9. The three watchers that cannot hear everything the writer does
+- [x] 9. The three watchers that cannot hear everything the writer does
   - Files: `SolutionWatcher.cs`, `MarkdownEditorSession.cs`, `PlainEditorSession.cs`, and their tests
   - The three components learn of a deletion and of a lost-events window, and **on `Error` they read again rather than only logging**. The subscriptions this bullet first asked for landed at `a2318531`, but all three handlers only logged, so a lost-events window was still unlearned while the wiring guard called them compliant. **A publish arrives as `Renamed`**, which all three already handle (the user's chat ruling, 2026-09-25).
   - **The obligation is the criterion and the event set is today's mechanism**: a test asserts the component learns of a deletion and of a lost-events window, not that it subscribes to two named events, so a writer that publishes by other means fails rather than passes by habit.
