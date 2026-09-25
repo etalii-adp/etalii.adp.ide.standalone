@@ -3,6 +3,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
 using Xunit;
+using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 
@@ -12,7 +13,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests;
 /// </summary>
 public sealed class FdgProvidersTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "EtAlii.Adp.FdgProvidersTests", Guid.NewGuid().ToString("N"));
+    private readonly string _folder = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.FdgProvidersTests", Guid.NewGuid().ToString("N"));
     private readonly FdgDocumentStore _store = new();
     private readonly HistoryStackStore _historyStacks;
     private readonly FdgContextPropertyProvider _properties;
@@ -29,7 +30,7 @@ public sealed class FdgProvidersTests : IDisposable
         _actions = new FdgContextActionProvider(_historyStacks, _store);
     }
 
-    private string Body => Path.Combine(_folder, "field-service.fdg");
+    private string Body => IoPath.Combine(_folder, "field-service.fdg");
 
     public void Dispose()
     {
@@ -149,6 +150,31 @@ public sealed class FdgProvidersTests : IDisposable
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(_original, File.ReadAllBytes(Body));
+    }
+
+    /// <summary>
+    /// A canvas resize goes through the context service, which lets a set reach a provider ONLY for a
+    /// property it describes as editable - so the width row, and a Comment's height row, are what make
+    /// a resize possible at all. Calling the provider directly would skip exactly that check.
+    /// </summary>
+    [Fact]
+    public async Task ACanvasResize_PassesTheServicesOwnCheck_ForAWidth_AndForACommentsHeightOnly()
+    {
+        // Arrange.
+        var resolver = new ContextPropertyResolver([_properties]);
+
+        // Act.
+        var width = await resolver.SetAsync(Target("planning"), FdgContextPropertyProvider.WidthProperty, "220", TestContext.Current.CancellationToken);
+        var height = await resolver.SetAsync(Target("note-offline"), FdgContextPropertyProvider.HeightProperty, "140", TestContext.Current.CancellationToken);
+        var noHeight = await resolver.SetAsync(Target("planning"), FdgContextPropertyProvider.HeightProperty, "140", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(width.IsSuccess, width.Error);
+        Assert.True(height.IsSuccess, height.Error);
+        Assert.False(noHeight.IsSuccess);
+        var model = Parse();
+        Assert.Equal(220d, model.Elements.Single(element => element.Id == "planning").Width);
+        Assert.Equal(140d, model.Elements.Single(element => element.Id == "note-offline").Height);
     }
 
     [Theory]
