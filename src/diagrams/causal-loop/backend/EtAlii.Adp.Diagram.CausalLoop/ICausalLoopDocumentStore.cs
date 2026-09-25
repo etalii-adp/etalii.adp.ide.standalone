@@ -10,12 +10,18 @@ public interface ICausalLoopDocumentStore
     CausalLoopDocumentEntry GetOrLoad(string path);
 
     /// <summary>
-    /// Writes the loaded document back and re-parses it. The entry's own
+    /// Writes <paramref name="entry"/> back and re-parses it. The entry's own
     /// <see cref="CausalLoopDocumentEntry.Document"/> is the thing saved, so an edit is a splice
     /// into the lines that were read rather than a reserialization of the model.
     /// </summary>
+    /// <param name="entry">
+    /// The entry to write - **the one the caller edited**, passed in rather than looked up again.
+    /// A save that re-fetched from the cache lost the edit whenever a reload landed between the
+    /// edit and the save, and reported success for it; the argument is what makes that
+    /// unwritable rather than merely discouraged.
+    /// </param>
     /// <returns>An error to report, or empty when it was written.</returns>
-    string Save(string path);
+    string Save(string path, CausalLoopDocumentEntry entry);
 
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);

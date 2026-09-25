@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/client-centralization/tasks.md",
-  "currentVersion": 4,
+  "currentVersion": 5,
   "snapshots": [
     {
       "version": 1,
@@ -33,6 +33,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790258122916_mseynmljx",
       "approvalTitle": "Tasks amendment, seven corrections (8bded116). Two were wrong numbers of mine: the causal-loop label contrast is 1.17:1 on a label painted from --color-text, not 1.37:1 on a black label — my probe had taken an unscoped text node and hit one of the eight unclassed EMPTY text nodes every declared element renders, so the browser and the stylesheet never disagreed, one was reading a different population; and \"at least 44 undefined names\" becomes 32, marked as the pre-fix tree, reconciling exactly with Developer 4's count (44 - 16 + 4 = 32, mine counted task 1's names and omitted editors.css's four). The acceptance criterion now names its element AND its order: painted from a --color-* token first, ratio second, because an inherited black is a state to forbid rather than a colour to measure. Three findings from the widened walk are recorded, none reachable by a colour-only guard: the library had come to depend on a MODULE's private palette (DiagramCanvas defaulted to dotnet-dependency-graph's --canvas-node-fill); a local palette must declare both colour schemes or neither; and helm read fifteen names, declared three, and reached the rest as literals through a var() indirection while its own comment claimed a palette — a fallback chain can simulate a design system. Finally the ccen worktree name is withdrawn: a tasks document cannot enforce which directory a session works in."
+    },
+    {
+      "version": 5,
+      "filename": "snapshot-005.json",
+      "timestamp": "2026-09-24T22:00:48.499Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790277203417_e9n8mioqx",
+      "approvalTitle": "tasks amendment 8, task 3 only: a fourth guard condition (a REPLACED surface passes all three existing ones - three modules do it), PLUS two substring-counting corrections beyond it, fifteen surfaces to sixteen and three status blocks to four, which are strikable on their own"
     }
   ]
 }

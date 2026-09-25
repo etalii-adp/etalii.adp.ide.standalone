@@ -105,8 +105,8 @@ public class MindmapSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args;
 
         // Act.
-        _documents.GetOrLoad(_bodyPath); // ensure loaded, as the service would have
-        _documents.Save(_bodyPath, new MindmapNodeUpdated("ID_88117420"));
+        var document = _documents.GetOrLoad(_bodyPath); // ensure loaded, as the service would have
+        _documents.Save(_bodyPath, document, new MindmapNodeUpdated("ID_88117420"));
 
         // Assert.
         Assert.NotNull(pushed);

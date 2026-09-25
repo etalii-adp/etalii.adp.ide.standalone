@@ -13,6 +13,7 @@ flowchart LR
     src --> diagrams["diagrams/<br/>one folder per diagram type"]
     src --> editors["editors/<br/>one folder per editor type"]
     src --> examples["examples/<br/>the showcase documents"]
+    src --> fixtures["fixtures/<br/>test data both suites read"]
     src --> testsupport["TestSupport/<br/>sources compiled into every test project"]
 ```
 
@@ -20,19 +21,19 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **105** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **106** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
-| core | **27** |
-| diagram | **74** |
+| core | **26** |
+| diagram | **76** |
 | editor | **4** |
 | production | **78** |
-| test | **27** |
+| test | **28** |
 
-Those are **two different splits of the same 105**, and the coincidence that 78 and 27 appear in both is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 106**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **121** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "121 projects" would be wrong in the confident direction.**
+There are **122** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "122 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -42,21 +43,21 @@ Classifying by path segment — "count the ones containing `backend`" — yields
 
 ## The core projects
 
-**15** production:
+**14** production:
 
 | Concern | Project |
 | --- | --- |
-| Shared primitives | `EtAlii.Adp`, `EtAlii.Adp.Common` |
+| Shared primitives | `EtAlii.Adp` |
 | Host and composition | `EtAlii.Adp.Backend`, `EtAlii.Adp.Backend.Service` |
 | Sign-in | `EtAlii.Adp.Authentication` |
-| Open documents | `EtAlii.Adp.Documents` |
+| Open documents, the shared wire vocabulary, and the diagram definition contract | `EtAlii.Adp.Documents` |
 | Selection, actions, properties, prompts | `EtAlii.Adp.Context` |
 | Commands and undo/redo | `EtAlii.Adp.History` |
 | Errors and warnings | `EtAlii.Adp.Problems` |
 | Known projects and workspace roots | `EtAlii.Adp.Projects` |
 | Connection lifetime | `EtAlii.Adp.Sessions` |
 | Workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
-| Diagram-type abstractions | `EtAlii.Adp.Diagram` |
+| Diagram-type abstractions, including the validation contract | `EtAlii.Adp.Diagram` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Test helpers shipped as a project | `EtAlii.Adp.TestSupport` |
 
@@ -92,6 +93,8 @@ The skips are declared per project in a `.csproj.DotSettings` file, and `Namespa
 ## Where tests and fixtures live
 
 A test project sits beside its subject as `<Project>.Tests`. Inside one, `Fixtures/**` is **test input, not product** — and for the modules whose round-trip requirement compares bytes, those fixtures are marked `-text` in `.gitattributes` so git does not rewrite their line endings and turn the test into a test of git.
+
+`src/fixtures/cross-tier/` is a different thing with a similar name: **one JSON file per rule the backend and the client must agree on**, each carrying its cases and the rule's own statement in a `reason` field, and read by both suites. It sits outside both because a client test reaching into the backend's folders would invert the dependency the whole tree is arranged to avoid.
 
 Showcase documents live in `src/examples/`, not in a module's `Fixtures/`. The two look alike and are not: one is read by tests, the other is opened by a person.
 
