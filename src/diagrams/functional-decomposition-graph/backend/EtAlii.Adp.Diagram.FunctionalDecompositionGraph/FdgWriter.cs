@@ -60,14 +60,39 @@ public static class FdgWriter
         return FdgEdit.Applied;
     }
 
-    /// <summary>Rewrites an element's description - prose the client is never sent.</summary>
+    /// <summary>
+    /// Rewrites an element's description - prose the client is never sent. An empty one removes the
+    /// key rather than writing <c>description: ""</c>, as the design's command table asks.
+    /// </summary>
     public static FdgEdit SetDescription(LineDocument document, FdgElement element, string description)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
 
-        LineSplice.SetKey(document, element.Range, "description", LineSplice.Quote(description));
+        SetOrRemove(document, element.Range, "description", description);
         return FdgEdit.Applied;
+    }
+
+    /// <summary>Rewrites a connection's description, the same way an element's is.</summary>
+    public static FdgEdit SetConnectionDescription(LineDocument document, FdgConnection connection, string description)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(connection);
+
+        SetOrRemove(document, connection.Range, "description", description);
+        return FdgEdit.Applied;
+    }
+
+    private static void SetOrRemove(LineDocument document, LineRange range, string key, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            LineSplice.RemoveKey(document, range, key);
+        }
+        else
+        {
+            LineSplice.SetKey(document, range, key, LineSplice.Quote(value));
+        }
     }
 
     /// <summary>
