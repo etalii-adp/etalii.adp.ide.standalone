@@ -29,9 +29,11 @@ public sealed record ClientTest(string File, string FullName, string Status, IRe
 /// its own verdict out of it.
 /// </para>
 /// <para>
-/// <b>vitest is asked for JSON</b> (<c>--reporter=json</c>), which carries per-file status and, inside
-/// each file, every test with its status and failure messages. That is what lets the .NET suite
-/// report the client suite test by test instead of as one opaque pass or fail.
+/// <b>vitest is asked for JSON</b>, which carries per-file status and, inside each file, every test
+/// with its status and failure messages. That is what lets the .NET suite report the client suite
+/// test by test instead of as one opaque pass or fail. The reporter is vitest's own JSON reporter
+/// wrapped by <c>failure-message-reporter.mjs</c>, because the plain one reports a timed-out test as
+/// <c>STACK_TRACE_ERROR</c> with no message at all.
 /// </para>
 /// <para>
 /// <b>`npx vitest run`, not `npm test`.</b> `npm test` would first run `npm run generate`, which
@@ -141,10 +143,21 @@ public static class ClientTestRun
                 + ". Run `npm install` in src/ - the gate does this before it tests.");
         }
 
+        return Drive(client, "");
+    }
+
+    /// <summary>
+    /// One vitest run in <paramref name="client"/>, read into results. <paramref name="arguments"/>
+    /// go to vitest as they are - empty for the client suite, a <c>--root</c> and <c>--config</c> for a
+    /// fixture suite, which is how a failure can be produced on purpose without the real suite
+    /// failing.
+    /// </summary>
+    internal static ClientRunResult Drive(string client, string arguments)
+    {
         var report = IoPath.Combine(IoPath.GetTempPath(), "adp-client-vitest-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
-            var (exitCode, output) = Execute(client, report);
+            var (exitCode, output) = Execute(client, report, arguments);
             if (!File.Exists(report))
             {
                 return ClientRunResult.NotRun($"vitest wrote no report (exit code {exitCode}). Its output was:{Environment.NewLine}{output}");
@@ -166,7 +179,7 @@ public static class ClientTestRun
         }
     }
 
-    private static (int ExitCode, string Output) Execute(string client, string report)
+    private static (int ExitCode, string Output) Execute(string client, string report, string arguments)
     {
         // npx through the shell on Windows: npx is a .cmd, which Process cannot start directly.
         var windows = OperatingSystem.IsWindows();
@@ -178,7 +191,7 @@ public static class ClientTestRun
             RedirectStandardError = true,
             UseShellExecute = false,
         };
-        var command = $"npx vitest run --reporter=json --outputFile=\"{report}\"";
+        var command = $"npx vitest run {arguments} --reporter=\"{Reporter()}\" --outputFile=\"{report}\"";
         start.ArgumentList.Add(windows ? "/c" : "-c");
         start.ArgumentList.Add(command);
 
@@ -203,6 +216,13 @@ public static class ClientTestRun
 
         return (process.ExitCode, (Read(stdout) + Environment.NewLine + Read(stderr)).Trim());
     }
+
+    /// <summary>
+    /// vitest's JSON reporter with each failure's message put back, beside this file. See its own
+    /// header for the defect it closes: a timed-out test reported only <c>STACK_TRACE_ERROR</c>.
+    /// </summary>
+    private static string Reporter() =>
+        IoPath.Combine(RepositoryRoot(), "src", "backend", "EtAlii.Adp.Client.Tests", "failure-message-reporter.mjs");
 
     /// <summary>How long a client run may take before it is treated as hung. See <see cref="Execute"/>.</summary>
     private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(10);
