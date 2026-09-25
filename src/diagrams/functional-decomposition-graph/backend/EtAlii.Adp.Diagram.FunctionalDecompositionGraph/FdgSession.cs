@@ -1,3 +1,5 @@
+using EtAlii.Adp.History;
+
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
 /// <summary>
@@ -14,8 +16,10 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// cover all three.
 /// </para>
 /// <para>
-/// <b>Moving by drag is not here yet.</b> It is a command, and the commands are task 12's, so until
-/// then a drag is answered by <see cref="IDiagramSession"/>'s own refusal.
+/// <b>A drag is a move through the stream, not a context action</b> (the user's chat ruling of
+/// 2026-09-25): the context channel carries no position, so the canvas sends the new top-left
+/// through <see cref="MoveElementToAsync"/>, which runs <see cref="SetFdgPlacementCommand"/> on the
+/// project's history - one undo away, like every other edit.
 /// </para>
 /// </remarks>
 public sealed class FdgSession : IDiagramSession
@@ -23,10 +27,11 @@ public sealed class FdgSession : IDiagramSession
     private readonly string _bodyPath;
     private readonly IFdgDocumentStore _documents;
     private readonly FdgElementMapper _mapper;
+    private readonly IHistoryStack? _history;
     private readonly DiagramDocumentChangeHandler _changes;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
-    public FdgSession(string bodyPath, IFdgDocumentStore documents, FdgElementMapper mapper)
+    public FdgSession(string bodyPath, IFdgDocumentStore documents, FdgElementMapper mapper, IHistoryStack? history = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(documents);
@@ -35,6 +40,7 @@ public sealed class FdgSession : IDiagramSession
         _bodyPath = bodyPath;
         _documents = documents;
         _mapper = mapper;
+        _history = history;
         _changes = new DiagramDocumentChangeHandler(bodyPath, Render, Raise);
         _documents.Changed += OnDocumentChanged;
     }
@@ -64,6 +70,32 @@ public sealed class FdgSession : IDiagramSession
         _ = index;
         cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult("An element here has no parent to move it under; its parent is a connection, drawn from the parent to it.");
+    }
+
+    /// <summary>Moves an element so its top-left is (<paramref name="x"/>, <paramref name="y"/>).</summary>
+    /// <remarks>
+    /// The canvas sends the top-left, not the centre it drew from: it knows the element's width, and
+    /// the document holds the top-left. A connection's id is refused - a curve follows its ends and
+    /// has no position of its own.
+    /// </remarks>
+    public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_history is null)
+        {
+            return "This graph is read-only.";
+        }
+
+        var model = _documents.GetOrLoad(_bodyPath).Model;
+        if (FdgEdits.ElementOf(model, elementId) is null)
+        {
+            return "That is not something this graph can move.";
+        }
+
+        var result = await _history.ExecuteAsync(new SetFdgPlacementCommand(_bodyPath, elementId, x, y), cancellationToken);
+        return result.IsSuccess ? "" : result.Error;
     }
 
     /// <inheritdoc />

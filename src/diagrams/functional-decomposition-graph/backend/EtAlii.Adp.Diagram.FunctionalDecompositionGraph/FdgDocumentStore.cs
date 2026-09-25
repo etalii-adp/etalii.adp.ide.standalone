@@ -20,10 +20,17 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// <see cref="Changed"/> for it would only make every session re-render and diff to no effect.
 /// </para>
 /// <para>
-/// <b>Writable, although nothing here writes yet.</b> Task 12's commands save through this
-/// lifecycle's <c>Save</c>. Holding the writable lifecycle from the start means a reload is already
-/// checked against the store's own writes, so a save arriving later cannot bounce back as an
-/// external change.
+/// <b>A save writes the document the command edited, never one looked up here</b>, which is the
+/// shared lifecycle's own rule, and it refuses outright a document that could not be read - see
+/// <see cref="FdgDocumentEntry.Unreadable"/>.
+/// </para>
+/// <para>
+/// <b>The sessions hear about a save whether or not it reached the disk.</b> The lifecycle caches the
+/// edited document either way: on a failed write it keeps the edit in memory to be retried, and the
+/// next successful save writes it too. So after a failed write the cache already holds the edit,
+/// and the canvas showing it is what the failure's own sentence - "the change is still here to try
+/// again" - promises. Hiding it would leave the canvas and the cache disagreeing until the next
+/// edit revealed both changes at once.
 /// </para>
 /// </remarks>
 public sealed class FdgDocumentStore : IFdgDocumentStore
@@ -38,6 +45,24 @@ public sealed class FdgDocumentStore : IFdgDocumentStore
 
     /// <inheritdoc />
     public FdgDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
+
+    /// <inheritdoc />
+    public DocumentSaveResult Save(string path, LineDocument document)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(document);
+
+        var current = _lifecycle.Get(path);
+        if (current is { IsUsable: false })
+        {
+            return DocumentSaveResult.Failure(
+                $"{System.IO.Path.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
+        }
+
+        var result = _lifecycle.Save(path, new FdgDocumentEntry(document, FdgParser.Parse(document)));
+        Changed?.Invoke(this, new FdgDocumentChangedEventArgs(path));
+        return result;
+    }
 
     /// <inheritdoc />
     public void Forget(string path) => _lifecycle.Forget(path);
