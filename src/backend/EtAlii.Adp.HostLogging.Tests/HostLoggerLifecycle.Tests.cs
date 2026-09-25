@@ -10,22 +10,7 @@ using Serilog.Events;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
-
-/// <summary>
-/// Runs with nothing else in the process, because its subject is process-global: which host's
-/// pipeline <see cref="Log.Logger"/> points at.
-/// </summary>
-/// <remarks>
-/// In parallel with the other integration tests, their hosts starting and stopping would move the
-/// global under these assertions, and a check such as "B's write reaches B's sink" would pass or
-/// fail on somebody else's timing.
-/// </remarks>
-[CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class HostLoggerGlobal
-{
-    public const string Name = "Host logger global";
-}
+namespace EtAlii.Adp.HostLogging.Tests;
 
 /// <summary>
 /// Stopping one host leaves every other live host logging, and starting one does not replace a
@@ -46,8 +31,16 @@ public sealed class HostLoggerGlobal
 /// <c>ReadFrom.Services</c>), so a line that arrives names the pipeline that carried it. Every case
 /// first shows its sink receiving a line, so a later absence is a finding and not a dead sink.
 /// </para>
+/// <para>
+/// <b>The only class in its project, on purpose.</b> Its subject, <see cref="Log.Logger"/>, is
+/// process-wide, and a test assembly runs as its own process. So here no other class's host can move
+/// the global under these assertions, and each red against the old code is deterministic. Beside the
+/// other integration tests, a check such as "B's write reaches B's sink" would pass or fail on their
+/// timing. A serial collection in <c>EtAlii.Adp.Backend.Tests</c> would have bought the same
+/// determinism, but only after every parallel class there had finished, on every gate's critical
+/// path. A second class here that starts a host ends the guarantee.
+/// </para>
 /// </remarks>
-[Collection(HostLoggerGlobal.Name)]
 public class HostLoggerLifecycleTests : IDisposable
 {
     private static readonly TimeSpan Settle = TimeSpan.FromSeconds(5);
