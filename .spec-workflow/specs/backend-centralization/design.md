@@ -12,7 +12,7 @@ Thirteen diagram-module backends each carry their own copy of the same six or se
 
 ### Technical Standards (tech.md)
 
-- **Decision 7**, commands for every state change: the restore-lines edit (R6) is one command with one inverse, shared, rather than three copies.
+- **Decision 7**, commands for every state change: the restore-document edit (R6) is one command with one inverse, shared, rather than three copies.
 - **Decision 11**, concurrent saves take turns and are not retried: the shared save (R3) inherits the per-destination turn without knowing about it, and **deletes now take the same turn** (below).
 - **Diagram storage**: the backend owns reading and writing; a module supplies how its own document parses, and nothing else.
 
@@ -105,7 +105,7 @@ One shape: ignore changes to other paths, render, diff (S4), raise if there is a
 - **causal-loop stops catching every exception.** What reaches the caller instead: the handler catches read failures only, and anything else propagates to the reload bridge, **which already guards each document's reload separately** (`DiagramDocumentReloadBridge`'s per-document `try` on the watcher-error path). So an unexpected failure costs that document's reload and is logged with its path, rather than being swallowed with a generic message.
 - **mindmap keeps its structure-aware reaction** (R5.3): it shares the path filter, the raise and the failure handling, and supplies its own body.
 
-### S6 — One restore-lines edit (R6)
+### S6 — One restore-document edit (R6)
 
 The undoable edit that puts a document's whole text back, shared by `causal-loop`, `databricks` and `rdf` today and available to any module. One command, one handler, one inverse.
 
