@@ -37,7 +37,7 @@ internal static class FdgEdits
         if (!entry.IsUsable)
         {
             return Task.FromResult(CommandResult.Failure(
-                $"{System.IO.Path.GetFileName(bodyPath)} could not be read, so nothing can be edited until it can: {entry.Unreadable}"));
+                $"{Path.GetFileName(bodyPath)} could not be read, so nothing can be edited until it can: {entry.Unreadable}"));
         }
 
         var before = entry.Document.Text;

@@ -56,7 +56,7 @@ public sealed class FdgDocumentStore : IFdgDocumentStore
         if (current is { IsUsable: false })
         {
             return DocumentSaveResult.Failure(
-                $"{System.IO.Path.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
+                $"{Path.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
         }
 
         var result = _lifecycle.Save(path, new FdgDocumentEntry(document, FdgParser.Parse(document)));
