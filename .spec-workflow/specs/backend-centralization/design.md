@@ -4,7 +4,7 @@
 
 Thirteen diagram-module backends each carry their own copy of the same six or seven jobs: loading and reloading a document, saving it, working out what changed, reacting to a change on disk, restoring lines for an undo, turning a YAML node into a line range, and parsing the ids a canvas gesture sends. The requirements measured which copies are the same job and which have drifted. This design says what each shared piece is, where the module's own part of it stays, and in what order the thirteen move onto it.
 
-**Four of the requirements' criteria are already satisfied on `develop`**, because the user ruled the defects the scan found fixed ahead of the specification rather than inside it. They are cited here rather than re-designed (*What landed ahead*).
+**Four of the requirements' criteria are satisfied ahead of this work on `develop`**, because the user ruled the defects the scan found fixed ahead of the specification rather than inside it. They are cited here rather than re-designed (*What landed ahead*). **Two of the four hold in two stores rather than across the tree** - R2.4 and R2.5, corrected here on 2026-09-24 after measurement - and between them they are the largest behavioural change group 2 still has to make. That section now says so, because "already satisfied" read as tree-wide **grants a reader permission to skip it**, which is the worst thing a traceability claim can do.
 
 **One thing is deliberately not decided here: where the shared types live.** Placement is the user's judgement, so it is asked with the reference counts as cost (*Placement*). Everything else below is the same under every answer: only the namespace and project of each shared type change.
 
@@ -12,7 +12,7 @@ Thirteen diagram-module backends each carry their own copy of the same six or se
 
 ### Technical Standards (tech.md)
 
-- **Decision 7**, commands for every state change: the restore-lines edit (R6) is one command with one inverse, shared, rather than three copies.
+- **Decision 7**, commands for every state change: the restore-document edit (R6) is one command with one inverse, shared, rather than three copies.
 - **Decision 11**, concurrent saves take turns and are not retried: the shared save (R3) inherits the per-destination turn without knowing about it, and **deletes now take the same turn** (below).
 - **Diagram storage**: the backend owns reading and writing; a module supplies how its own document parses, and nothing else.
 
@@ -22,14 +22,22 @@ Thirteen diagram-module backends each carry their own copy of the same six or se
 
 ## What landed ahead
 
-The user ruled three defects found by the scan fixed immediately rather than inside this work. They are on `develop`, and each satisfies a criterion this design therefore does not restate:
+The user ruled three defects found by the scan fixed immediately rather than inside this work. They are on `develop`. **Read the third column for the scope: two of these rows satisfy their criterion in the tree, and one satisfies it in two stores.**
 
 | Criterion | Landed as | What it does |
 | --- | --- | --- |
 | R4.3 (a removal is always sent) | `350b8f9e`, merged at `88c26d44` | c4 sends removals when a document changes, so an element deleted in a text editor leaves the canvas. |
-| R2.3 (a store ignores a reload of its own save) | `350b8f9e` | causal-loop no longer marks its own diagram unreadable while saving. |
-| R2.4 (a failed reload keeps the last good document) | `350b8f9e` | and R2.5's confirmation of absence arrives as **`IDiagramDocumentReloader.BodyDeleted`**: the bridge sends it on a `Deleted` event, on a rename to anything but `<body>~RF<hex>.TMP`, and for a body missing after a watcher overflow. **This design adopts that signal rather than re-deciding it.** |
+| R2.3 (a store ignores a reload of its own save) | `350b8f9e` | causal-loop no longer marks its own diagram unreadable while saving. **Tree-wide: all nine writable stores suppress their own writes** - measured 2026-09-24 as a `_selfWrites` set plus an early return in `Reload`, in nine of nine. |
+| R2.4 (a failed reload keeps the last good document), and R2.5's signal | `350b8f9e`, **in c4 and causal-loop only - two of ten stores** | R2.5's confirmation of absence arrives as **`IDiagramDocumentReloader.BodyDeleted`**: the bridge sends it on a `Deleted` event, on a rename to anything but `<body>~RF<hex>.TMP`, and for a body missing after a watcher overflow. **This design adopts that signal rather than re-deciding it.** **But the signal being sent tree-wide is not the same as a store acting on it, and the difference is the note below.** |
 | R11.2 (an empty relation end is refused) | `d2fb4e7e` | causal-loop's parser refuses an empty variable id and its relation parser refuses an empty end, closing a path that silently wrote `link a ->  +`. |
+
+**R2.4 and R2.5 are two of ten, and they are COUPLED - so the conversion order is a correctness property rather than a preference.** Measured 2026-09-24: **c4 and causal-loop** keep the last good document on a failed reload, and both override `BodyDeleted`; the other eight do neither. The two facts are not independent, because **`IDiagramDocumentReloader.BodyDeleted` has a default implementation - `=> Reload(rootPath, bodyPath)`** - whose own comment states the condition: *"A store with no such rule gets a reload, which is what a delete always was."*
+
+That default is correct **only while a store turns a MISSING body into the empty document**, which all eight do today: six install an empty document, mindmap opens an empty map, and sparql names the absence. On a PRESENT-BUT-UNREADABLE body they differ: six install empty, mindmap throws, and sparql names a state. The four-way table is in task 5's implementation log (`240e0b90`). So a deletion reaches `Reload`, the missing body becomes empty, and the deletion looks right by accident. (Count and wording corrected by the user's chat ruling, 2026-09-25: this sentence first said "the other eight install an empty document on a failed read".)
+
+**Give a store keep-last-good (R2.4) without giving it `BodyDeleted` (R2.5) in the same change, and a deleted body stops emptying the diagram - it keeps the last good one forever**, which is the exact outcome R2.5's sentence forbids ("a deleted body is an empty diagram, not the last one kept alive"). **Nothing in the type system expresses that coupling**: the module compiles, satisfies the interface, and is silently wrong. **So R2.4 and R2.5 land together, per store, and never R2.4 across ten followed by R2.5 across ten** - the intermediate state is not a smaller version of the defect being fixed, it is a new one. R2.6 already asks for both guards, each seen to fail, which is the check; this note is about the order that decides whether the second guard is protecting anything.
+
+**How the two-of-ten figure was reached, since it is uneven.** Read behaviourally: c4's and causal-loop's `Reload` each have an explicit branch returning without installing when the read fails, and timeline's `Load` swallows `IOException` into `text = ""`. **Inferred for the remaining seven** from three corroborating absences - no keep-last-good branch, no `BodyDeleted` override, and no `*DocumentStore.FailedReload.Tests.cs` - all three landing on the same two stores. Those seven are to be read before conversion rather than assumed.
 
 **Two more changes belong to the same discipline and are in flight rather than landed:**
 
@@ -46,9 +54,9 @@ Every shared piece below has to live somewhere, and the reference graph makes th
 | --- | --- | --- |
 | **(a) `EtAlii.Adp.Diagram`** | **none** — every module already references it | Cheapest by a wide margin. The cost is conceptual: that project is the diagram *contract* (elements, deltas, sessions), and the store lifecycle is about documents on disk. A reader looking for "how a module saves" would not look there first. |
 | **(b) `EtAlii.Adp.Documents`** | **7** (the implemented modules that do not reference it yet) | Where `LineDocument`, `LineSplice`, `AdpFileWriter` and `SharedDocumentReader` already live, so the store lifecycle, the save result and the YAML range sit beside the primitives they use. The seven references are one line each. |
-| **(c) a new project** | **13**, plus a project | The cleanest boundary and the worst fit with the backlog: the user's post-decomposition list asks whether `EtAlii.Adp.Common` can be *removed*, so adding a project runs the other way. |
+| **(c) a new project** | **13**, plus a project | The cleanest boundary, and when this was weighed the worst fit with the backlog: the user's post-decomposition list asked whether `EtAlii.Adp.Common` could be *removed*, so adding a project ran the other way. Common has since been removed (`77b80a51`), and the placement holds without that reason: the ruling below gives its own reasons for (b). (Put in the past tense by the user's chat ruling of 2026-09-25.) |
 
-**THE USER RULED (b), `EtAlii.Adp.Documents`**, given as a selection via the Scrum master on 2026-09-22. **The stated cost is seven new project references**, one line each, in the implemented modules that do not reference it yet. The reason recorded with the ruling: the pieces are about documents, the primitives they compose are already there, and seven one-line references is a smaller cost than a reader looking in the wrong place for years. **So every shared type below lives in `EtAlii.Adp.Documents`**, and the options are kept above rather than deleted, so a later reader meets the cost of the answer that was not taken rather than re-deriving it. The cross-tier fixtures (R9–R13) are a separate question, answered below.
+**THE USER RULED (b), `EtAlii.Adp.Documents`**, given as a selection via the Scrum master on 2026-09-22. **The stated cost is seven new project references**, one line each, in the implemented modules that do not reference it yet. The reason recorded with the ruling: the pieces are about documents, the primitives they compose are already there, and seven one-line references is a smaller cost than a reader looking in the wrong place for years. **So every shared type below lives in `EtAlii.Adp.Documents`, except the change-detecting diff (S4) and the change handler (S5), which live in `EtAlii.Adp.Diagram`.** That exception is the user's chat ruling of 2026-09-25. Measurement found that both work on `DiagramElement` and `DiagramDelta`, which `Diagram` declares, and `Diagram` already references `Documents`, so placing them in `Documents` would be a cycle. The first ruling priced module-to-project references and never what each piece itself references. The same answer approved a YamlDotNet package reference in `Documents` for the YAML range (S7). It also approved a `Documents` → `History` reference for the restore edit (S6), which the Common dissolution then made a cycle, because History now references Documents. So by a second chat ruling of 2026-09-25 the restore command and its handler live in `EtAlii.Adp.History`, and the one-method `IReloadableDocumentStore` they need lives in `Documents`, with no new reference. The options are kept above rather than deleted, so a later reader meets the cost of the answer that was not taken rather than re-deriving it. The cross-tier fixtures (R9–R13) are a separate question, answered below.
 
 **Where the shared fixtures live** was mine to take rather than ask, and the user let it stand. They must be readable by the backend suite and by the client suite, so they belong outside both: **`src/fixtures/cross-tier/`**, one JSON file per rule (`row-rounding.json`, `text-metric.json`, `gesture-ids.json`, `element-types.json`, `permanent-statuses.json`), each carrying its cases and the rule's own statement in a `reason` field. The alternative — keeping each beside its backend owner and having the client reach across — was rejected: a client test reading `src/backend/...` inverts the dependency the whole tree is arranged to avoid. That reason is why it stands; it is not a preference.
 
@@ -66,11 +74,11 @@ Every shared piece below has to live somewhere, and the reference graph makes th
 One shared implementation of `GetOrLoad`, `Forget`, `Load`'s read-or-open-empty opening, `Reload` and `Save`'s bookkeeping. A module supplies two things and nothing else: **how its text parses into its own entry**, and **what its change event carries**.
 
 - **Self-write suppression (R2.3) is in the shared piece**, so no store can lack it.
-- **A failed reload keeps the last good document (R2.4)**, and a missing body is confirmed through **`BodyDeleted`** (R2.5) rather than by timing.
+- **A failed reload keeps the last good document (R2.4)**, and a missing body is confirmed through **`BodyDeleted`** (R2.5) rather than by timing. **These two hold in two of ten stores today, and they are coupled** - the lifecycle brings both to a store in one change, never one without the other, because `BodyDeleted`'s default routes to `Reload` and is correct only for a store that installs empty on a failed read (*What landed ahead*). **A reload that cannot read is retried first**, five tries 50 ms apart, logging when a retry was needed, because a refusal on a write's last event has no later event to re-read it and the change would be lost for good (`61e71c02`, Developer 5's finding) (the user's chat ruling, 2026-09-25).
 - **Read-only stores** (sparql) use the same lifecycle without a save (R2.7).
 - **mindmap keeps two differences** and they are declared rather than tolerated (R2.8): it skips documents it never loaded, and its change event names the kind of structural change. Both are expressed by the module's own event type, not by an override of the lifecycle.
 - **Deletes take the writer's turn**, as above.
-- **The shared lifecycle is where the watcher obligation (R2.9) is INTENDED to be met**, so that a module cannot get it wrong by omission - which is how two editor sessions came to hear `Changed` and not `Renamed` while the writer's own 106 tests stayed green. **As of today it is not met there: both editor sessions construct their own `FileSystemWatcher` and now subscribe correctly by themselves, and nothing in R2.9 requires the subscription to move.** So this is a direction for the shared piece rather than a property the tree currently has. Known gap recorded rather than fixed here: `SolutionWatcher` has no `Error` handler; it belongs to its own module and is in `dotnet-dependency-graph/findings.md`.
+- **The shared lifecycle is where the watcher obligation (R2.9) is INTENDED to be met**, so that a module cannot get it wrong by omission - which is how two editor sessions came to hear `Changed` and not `Renamed` while the writer's own 106 tests stayed green. **As of today it is not met there: both editor sessions construct their own `FileSystemWatcher` and now subscribe correctly by themselves, and nothing in R2.9 requires the subscription to move.** So this is a direction for the shared piece rather than a property the tree currently has. **The gap this paragraph used to record is closed: `SolutionWatcher` gained its `Error` handler at `a2318531` on `develop`, and all seven production watchers now subscribe to all five events** - re-measured 2026-09-24 by reading each subscription's receiver, after a first pass that matched `.Error +=` on any object in the file and so could not have told the difference. **What task 9 still owes is the other half of its own wording**: `WatcherWiring.Tests.cs` asserts the subscriptions and its own sweep's liveness, which is the shape R2.9 rules out - *"a reviewer SHALL be able to check it by asking what the watcher would miss rather than by counting subscriptions."* The obligation tests, that a component learns of a deletion and of a lost-events window, are not written.
 
 ### S3 — One save result, and a guard against ignoring it (R3)
 
@@ -97,9 +105,9 @@ One shape: ignore changes to other paths, render, diff (S4), raise if there is a
 - **causal-loop stops catching every exception.** What reaches the caller instead: the handler catches read failures only, and anything else propagates to the reload bridge, **which already guards each document's reload separately** (`DiagramDocumentReloadBridge`'s per-document `try` on the watcher-error path). So an unexpected failure costs that document's reload and is logged with its path, rather than being swallowed with a generic message.
 - **mindmap keeps its structure-aware reaction** (R5.3): it shares the path filter, the raise and the failure handling, and supplies its own body.
 
-### S6 — One restore-lines edit (R6)
+### S6 — One restore-document edit (R6)
 
-The undoable edit that puts a line range back, shared by `causal-loop`, `databricks` and `rdf` today and available to any module. One command, one handler, one inverse.
+The undoable edit that puts a document's whole text back, shared by `causal-loop`, `databricks` and `rdf` today and available to any module. One command, one handler, one inverse.
 
 ### S7 — One YAML node range (R7)
 
@@ -179,7 +187,7 @@ Every guard is seen to fail against a stated planted defect before it is trusted
 | Requirement | Where |
 | --- | --- |
 | R1 one line document | S1 |
-| R2 store lifecycle | S2; R2.3–R2.5 landed ahead (`350b8f9e`) |
+| R2 store lifecycle | S2; R2.3 landed ahead tree-wide (`350b8f9e`), R2.4 and R2.5 in **two of ten stores only** - see *What landed ahead* |
 | R3 save result and its guard | S3 |
 | R4 diff, and delta order | S4; R4.3 landed ahead |
 | R5 change handler | S5 |

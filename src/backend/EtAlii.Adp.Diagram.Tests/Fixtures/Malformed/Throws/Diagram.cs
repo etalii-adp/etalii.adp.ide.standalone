@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.Throws;
 
 /// <summary>A getter that throws - must be skipped with the cause in the warning, never propagated.</summary>

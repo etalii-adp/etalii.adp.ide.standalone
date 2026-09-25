@@ -96,7 +96,34 @@
   display: block;
 }
 
-.canvas-status,
+/*
+ * THE STATUS SITS WHERE SOMEBODY LOOKING AT A BLANK CANVAS WILL SEE IT, which is the middle -
+ * not the corner it used to share with the rejection. A large SKOS vocabulary takes about
+ * twenty seconds to arrive on a cold backend (measured: business-economics, 17,683 triples,
+ * blank until ~20 s, then 1,151 nodes; geographic-names, 5,083 triples, ~2.5 s). Through all of
+ * that the canvas drew nothing and this element said "Opening..." at 12px in the bottom-left,
+ * occupying 0.9% OF THE CANVAS AREA - present, visible, and missed by a careful session which
+ * filed the result as a diagram that renders empty. Telling somebody where nobody looks is not
+ * telling them.
+ *
+ * Safe to centre for every canvas that uses it: all seven render it as `{loading ? ... : null}`,
+ * and useDiagramStream empties the model whenever loading becomes true - on the first open and
+ * again before each reconnect - so the status never covers a drawn diagram.
+ */
+.canvas-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 4px;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-muted, #5a6376);
+  font-size: 15px;
+}
+
+/* The rejection stays in the corner: it answers a gesture, and the canvas behind it is drawn. */
 .canvas-rejection {
   position: absolute;
   bottom: 32px;

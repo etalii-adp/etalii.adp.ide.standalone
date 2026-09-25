@@ -5,7 +5,7 @@
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
   </ItemGroup>

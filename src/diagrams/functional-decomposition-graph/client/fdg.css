@@ -1,0 +1,38 @@
+/*
+ * What this notation needs that the shared appearance has no opinion about: the fill of each of
+ * the five element types. Everything else - the host, nodes, labels, connections, arrowheads, the
+ * selected state, the rejection line and the scrollbars - comes from canvas.css and is composed
+ * rather than restated.
+ *
+ * The fills are theme tokens from index.css, with their dark values beside them there, so a
+ * colour is never chosen here. Text on every fill is the shared --color-text (Requirement 4.6),
+ * which canvas.css already paints labels with. The two-class selectors outrank `.canvas-node`,
+ * which paints every shape with the surface colour.
+ */
+
+.canvas-node.fdg-ui-element {
+  fill: var(--color-diagram-fdg-ui-element);
+}
+
+.canvas-node.fdg-data-element {
+  fill: var(--color-diagram-fdg-data-element);
+}
+
+.canvas-node.fdg-action {
+  fill: var(--color-diagram-fdg-action);
+}
+
+.canvas-node.fdg-function {
+  fill: var(--color-diagram-fdg-function);
+}
+
+.canvas-node.fdg-comment {
+  fill: var(--color-diagram-fdg-comment);
+}
+
+/* A Comment's text reads as prose: left-aligned lines, in the shared text colour. */
+.fdg-comment-text {
+  fill: var(--color-text, #1c2333);
+  font-size: 12px;
+  pointer-events: none;
+}

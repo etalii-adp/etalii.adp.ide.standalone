@@ -10,7 +10,6 @@
     <ProjectReference Include="..\EtAlii.Adp.Authentication\EtAlii.Adp.Authentication.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
