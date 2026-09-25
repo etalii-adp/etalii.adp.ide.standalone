@@ -107,7 +107,7 @@ One shape: ignore changes to other paths, render, diff (S4), raise if there is a
 
 ### S6 — One restore-lines edit (R6)
 
-The undoable edit that puts a line range back, shared by `causal-loop`, `databricks` and `rdf` today and available to any module. One command, one handler, one inverse.
+The undoable edit that puts a document's whole text back, shared by `causal-loop`, `databricks` and `rdf` today and available to any module. One command, one handler, one inverse.
 
 ### S7 — One YAML node range (R7)
 
