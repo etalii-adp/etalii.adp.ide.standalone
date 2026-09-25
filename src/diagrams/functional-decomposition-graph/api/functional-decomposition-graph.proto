@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package etalii.adp.functionaldecompositiongraph;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.FunctionalDecompositionGraph";
+
+// One element: a UI Element, Action, Data Element, Function or Comment. Which of the five it is
+// travels in the core Element's type, not here.
+//
+// WIDTH AND HEIGHT ARE IN THE PAYLOAD BECAUSE THE CORE ELEMENT HAS NOWHERE ELSE FOR THEM. It carries
+// a position, a type and this payload, nothing more. They also MUST be here: the shared diff
+// compares position, type and payload bytes, so a size kept anywhere else would let a resize
+// produce no delta at all.
+//
+// A DESCRIPTION IS NEVER SENT, so none can be drawn (Requirement 7.1). There is no field for it,
+// which is how that is enforced rather than remembered.
+message FdgElementPayload {
+  // The Name of the four named types; empty for a Comment.
+  string name = 1;
+  // A Comment's text; empty for the other four.
+  string text = 2;
+  double width = 3;
+  // The shared height for the four; the author's own height for a Comment.
+  double height = 4;
+}
+
+// One connection, of one of the five relation types, which also travels in the core Element's type.
+// The endpoints are here because the client cannot draw an edge without them, as in every module.
+message FdgConnectionPayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+  string name = 3;
+}

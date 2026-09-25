@@ -1,7 +1,8 @@
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Documents;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -157,6 +158,25 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         Assert.Equal(
             ["c4/code", "c4/component", "c4/container", "c4/context", "c4/deployment", "c4/dynamic", "c4/system-landscape"],
             c4);
+    }
+
+    [Fact]
+    public void AfterStartup_TheFunctionalDecompositionGraphIsCataloged()
+    {
+        // Arrange.
+        // FDG task 11's guard (the user's chat ruling of 2026-09-25). It names the origin because the
+        // every-module comparison above cannot catch this: a module that declares NO definitions is
+        // missing from both of its sides and the sets still match. FDG's assembly was deployed beside
+        // the host from task 9 onwards and declared none, so that test was green the whole time FDG
+        // could not be opened. The key is a string rather than the module's own constant so that
+        // removing the definition fails this test when it runs, instead of breaking the build.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+
+        // Assert.
+        Assert.Contains("etalii/functional-decomposition-graph", catalog.All.Select(definition => definition.Origin.Key));
     }
 
     [Fact]

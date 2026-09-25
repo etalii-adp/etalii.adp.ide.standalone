@@ -1,11 +1,11 @@
 ﻿using System.Threading.Channels;
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Diagram;
 
 public sealed partial class DiagramService
@@ -98,6 +98,7 @@ public sealed partial class DiagramService
                 watchId,
                 KindsOf(args.Deltas));
 
+            // MUST STAY NON-BLOCKING: DiagramDocumentChangeHandler raises into this while holding its lock.
             foreach (var delta in args.Deltas)
             {
                 channel.Writer.TryWrite(ToProto(delta));
@@ -158,7 +159,7 @@ public sealed partial class DiagramService
     }
 
     private bool TryResolveBody(
-        Common.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,

@@ -1,5 +1,5 @@
-using EtAlii.Adp.Common;
-using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Documents.Wire;
 using Xunit;
 using IoPath = System.IO.Path;
 

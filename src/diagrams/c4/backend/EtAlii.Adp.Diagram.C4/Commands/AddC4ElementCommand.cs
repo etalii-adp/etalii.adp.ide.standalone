@@ -60,7 +60,7 @@ internal sealed class AddC4ElementCommandHandler(IC4DocumentStore documents) : I
             return Task.FromResult(CommandResult.Failure(error));
         }
 
-        var writeError = documents.Save(command.BodyPath);
+        var writeError = documents.Save(command.BodyPath, document);
         return Task.FromResult(writeError.Length == 0
             ? CommandResult.Success(
                 new RemoveC4ElementCommand(command.BodyPath, identifier, openedBlock ? command.ParentId : ""))
@@ -108,7 +108,7 @@ internal sealed class RemoveC4ElementCommandHandler(IC4DocumentStore documents) 
             C4Placement.TryCollapseEmptyBlock(document, parent);
         }
 
-        var writeError = documents.Save(command.BodyPath);
+        var writeError = documents.Save(command.BodyPath, document);
         return Task.FromResult(writeError.Length == 0
             ? CommandResult.Success(inverse)
             : CommandResult.Failure(writeError));

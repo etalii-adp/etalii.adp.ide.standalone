@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -58,7 +58,7 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
@@ -127,7 +127,7 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(30));
 
-        var delivered = new List<Common.Wire.Element>();
+        var delivered = new List<Documents.Wire.Element>();
         using var stream = diagrams.Open(
             new OpenDiagramRequest
             {
@@ -184,7 +184,7 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         cts.CancelAfter(TimeSpan.FromSeconds(30));
 
         // Act.
-        var delivered = new List<Common.Wire.Element>();
+        var delivered = new List<Documents.Wire.Element>();
         using var stream = diagrams.Open(
             new OpenDiagramRequest
             {

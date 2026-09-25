@@ -1,9 +1,9 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
@@ -18,7 +18,7 @@ using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -77,7 +77,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
@@ -305,7 +305,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     /// Every entry of the project, by name - one nested level deep, because a registration is a
     /// child of the subject it names.
     /// </summary>
-    private static async Task<IReadOnlyDictionary<string, Common.Wire.ShortGuid>> EntriesAsync(
+    private static async Task<IReadOnlyDictionary<string, Documents.Wire.ShortGuid>> EntriesAsync(
         GrpcChannel channel,
         Metadata headers,
         ShortGuid projectId,
@@ -332,7 +332,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     }
 
     /// <summary>The canvas's own selection shape: the <c>.adp</c> file, then the element as its child.</summary>
-    private static ContextSelection ElementChain(Common.Wire.ShortGuid entryId, string elementId) =>
+    private static ContextSelection ElementChain(Documents.Wire.ShortGuid entryId, string elementId) =>
         new()
         {
             Source = ContextSelectionSource.Explorer,
@@ -348,8 +348,8 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
-        Common.Wire.ShortGuid projectId,
-        Common.Wire.ShortGuid watchId,
+        Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid watchId,
         Metadata headers,
         string actionId) =>
         contextClient.ExecuteActionAsync(

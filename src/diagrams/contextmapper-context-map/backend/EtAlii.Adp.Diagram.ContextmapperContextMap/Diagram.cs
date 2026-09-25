@@ -1,4 +1,4 @@
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.ContextmapperContextMap;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `contextmapper/context-map`.</summary>
