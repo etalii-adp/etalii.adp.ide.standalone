@@ -1,6 +1,6 @@
 import { holds, resolveEntries, resolveMany, resolveNumber, resolveOneAt, type Binding, type BindingSource } from "./binding";
 import type { BuiltInShape, DeclaredNumber, LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
-import { textRegionOf } from "../shapes/outline";
+import { outlineOf, textRegionOf } from "../shapes/outline";
 
 /**
  * `labels` — what an element says, declared rather than drawn.
@@ -146,12 +146,47 @@ function fittedWrap(
 const SLOT_FRACTION: Record<LabelSlot, number> = { header: 0.28, body: 0.5, footer: 0.78 };
 
 function trimmedToWidth(text: string, width: number): string {
-  const capacity = Math.floor(Math.max(width - 8, 0) / CHAR_WIDTH);
+  return trimmedToCapacity(text, Math.floor(Math.max(width - 8, 0) / CHAR_WIDTH));
+}
+
+/** The text cut to so many characters, the last of them an ellipsis when anything was cut. */
+function trimmedToCapacity(text: string, capacity: number): string {
   if (text.length <= capacity) {
     return text;
   }
 
   return capacity <= 1 ? "…" : `${text.slice(0, capacity - 1)}…`;
+}
+
+/**
+ * The text region a TRUNCATED single line is fitted to, or null to keep trimming to the box.
+ *
+ * <b>Only where the region is the right answer.</b> A shape with an outline is narrower than its
+ * box somewhere - a parallelogram's slanted sides, a diode's curved end - and a line trimmed to the
+ * box put its ink within a unit or two of that edge, where a wrapped label in the same shape keeps
+ * the region's padding. So a truncated, middle-aligned line in the body of such a shape is trimmed
+ * to the region and centred in it, as a wrapped one is. Everything else keeps the box, and that is
+ * deliberate rather than unfinished: a box's region is only the box less padding, so fitting there
+ * would narrow the truncated label of every module that draws boxes; the region is measured around
+ * the vertical centre, so it describes the body slot and not the header or footer; and a line
+ * aligned to a side, or placed outside the shape, is not inside the outline at all.
+ */
+function fittedRegionOf(declaration: LabelDeclaration, bounds: ShapeBounds, shape: BuiltInShape, lineHeight: number): ShapeBounds | null {
+  const inside = (declaration.placement ?? "inside") === "inside" || declaration.placement === "inset";
+  const fits =
+    declaration.truncate === true &&
+    inside &&
+    declaration.offset === undefined &&
+    (declaration.align === undefined || declaration.align === "middle") &&
+    (declaration.slot ?? "body") === "body" &&
+    outlineOf(shape, bounds).length > 0;
+  if (!fits) {
+    return null;
+  }
+
+  const region = textRegionOf(shape, bounds, lineHeight);
+  // A band the shape cannot hold collapses the region; the box's trim is the better answer there.
+  return region.width > 0 ? region : null;
 }
 
 /** A class stated outright, or resolved against the root a line came from. */
@@ -387,6 +422,8 @@ export function layoutLabels(
     }
 
     const base = baselineOf(declaration, bounds, source.element);
+    const typography = scaledTypography(declaration.typography, viewScale);
+    const region = fittedRegionOf(declaration, bounds, shape, declaration.stack?.lineHeight ?? Math.round((typography?.fontSize ?? 12) * 1.4));
     const stackStart = numberOf(declaration.stack?.start, source, 0);
     const tooltip = declaration.tooltip ? (resolveMany(declaration.tooltip, source)[0] ?? undefined) : undefined;
     const stack = declaration.stack;
@@ -417,8 +454,10 @@ export function layoutLabels(
       }
 
       laidOut.push({
-        text: declaration.truncate ? trimmedToWidth(line, roomOf(declaration.align, bounds, declaration.insetX)) : line,
-        x: base.x,
+        text: region !== null
+          ? trimmedToCapacity(line, capacityOf(region.width))
+          : declaration.truncate ? trimmedToWidth(line, roomOf(declaration.align, bounds, declaration.insetX)) : line,
+        x: region !== null ? region.x + (region.width / 2) : base.x,
         y,
         anchor: base.anchor,
         typography: scaledTypography(declaration.typography, viewScale),
