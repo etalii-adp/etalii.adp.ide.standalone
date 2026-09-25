@@ -135,14 +135,14 @@ import "./dependency-graph.css";
 
 **Whether a module needs it.** Always, and **only through this hook**. `diagramStreamOpensOnlyInHook.test.ts` forbids opening a diagram's delta stream anywhere else and names any offender. A module wraps the hook rather than calling the transport, so reconnection, teardown on identity change, and the loading and failed states are the same everywhere.
 
-**Its shape.** The hook takes the project, the path, an empty model and a delta-folding function, and returns the model with `loading`, `failed` and the client. A module's wrapper adds whatever its canvas needs on top — a move call, a view report — built on the client it returns.
+**Its shape.** The hook takes the project, the path, an empty model and a delta-folding function, and returns the model with `loading`, `failed`, the client, and `moveElementTo` — the one call that arranges an element where it was dropped, which resolves to the backend's refusal as a sentence or to `""` when the move was accepted. A module's wrapper adds whatever else its canvas needs on top — a view report — built on the client it returns. **A module does not build its own arrangement move:** until client-centralization task 8 each of fourteen modules did, one had drifted to report a fixed sentence in place of the backend's reason, and `diagramStreamOpensOnlyInHook.test.ts` now names any module that builds one again. **Re-parenting is a different operation on the same request** — a `newParentId` in place of a position — and a module that re-parents, as `mindmap` does, still builds that call itself.
 
 Source: [`src/diagrams/dependency-graph/client/useDependencyGraphStream.ts`](../src/diagrams/dependency-graph/client/useDependencyGraphStream.ts)
 
 ```ts
 export function useDependencyGraphStream(projectId: Uint8Array, path: readonly string[]): DependencyGraphStream {
   const { watchId } = useContextConnection();
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
+  const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
 
 ```
 

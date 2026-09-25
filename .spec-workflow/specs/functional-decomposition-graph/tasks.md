@@ -134,13 +134,13 @@
   - Guard: the documentation-links test passes; the catalog row's origin matches the `.adp` registration and the client registration's mime match, asserted rather than read.
   - _Requirements: 12.1, 12.2_
 
-- [ ] 17. The coverage diff, before the tasks card and again after implementing
+- [x] 17. The coverage diff, before the tasks card and again after implementing
   - File: the implementation log only
   - Run the criterion-to-claim diff over this document and the approved requirements: 49 criteria, and every one claimed or explained. Run it again when the work is done, traced to files and strings rather than to a task's promise.
   - **Both directions matter**: a criterion nobody claims is a gap, and a claim naming a criterion that does not exist is a reference to nothing.
   - _Requirements: 12.3_
 
-- [ ] 18. The browser pass
+- [x] 18. The browser pass
   - File: `.spec-workflow/steering/tests.md`
   - A `tests.md` entry covering, in a real browser: all five shapes in both themes; text inside each shape at the shared height, at a minimum and a generous width, and a Comment with more text than fits; width resize on the four and width and height on a Comment; each allowed link drawn and each forbidden one refused, including a second parent and a cycle-closing target, with no highlight on any refused target; a connection name appearing and disappearing; a Description never appearing.
   - **jsdom is not evidence for any of these**: it applies no CSS and lays out no text.

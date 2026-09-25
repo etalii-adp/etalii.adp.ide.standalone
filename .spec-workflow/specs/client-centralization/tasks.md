@@ -66,7 +66,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - `useContextPrompt` moves inside the library, which already knows the selection the prompt applies to; the `editing` prop leaves the contract, so **typecheck refuses a module that still wires it**.
   - _Requirements: 6.1, 6.2, 6.3, 12.1_
 
-- [ ] 8. One move call
+- [x] 8. One move call
   - Files: `useDiagramStream.ts`, the 14 `moveElementTo` wrappers
   - The hook returns `moveElementTo`; the wrappers go, and with them `ansible-structure`'s swallowed message — **the backend's own sentence is reported**, which is this specification's one other permitted visible change.
   - **Record the reversal in the commit**: archived `technical-debt-cleanup` R3.2 kept the call per module deliberately, and the user reversed it on 2026-09-20 because all 14 bodies are the same call.

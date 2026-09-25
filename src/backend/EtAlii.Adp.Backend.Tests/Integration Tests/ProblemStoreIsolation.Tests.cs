@@ -29,6 +29,12 @@ namespace EtAlii.Adp.Backend.Tests;
 /// without turning this red.
 /// </para>
 /// <para>
+/// <b>It sweeps every test project under <c>src/backend</c>, not only this folder.</b> The
+/// host-logger guard boots the host from a project of its own, <c>EtAlii.Adp.HostLogging.Tests</c>,
+/// because its subject is process-wide. A sweep of this folder alone would have lost it from the
+/// population without a sound, which is the one way this guard can be switched off by a move.
+/// </para>
+/// <para>
 /// It reads sources rather than services because the choice being guarded is made inside a
 /// <c>ConfigureServices</c> lambda that no assembly metadata exposes; nothing can be reflected
 /// over to find it, and a runtime check would only ever prove the one host it booted itself.
@@ -55,7 +61,9 @@ public class ProblemStoreIsolationTests
         // Arrange.
         // This file itself is skipped: it names the fixture type and the override in its own
         // text, so it would answer both questions about itself and prove nothing.
-        var sources = Directory.EnumerateFiles(IntegrationTestsFolder, "*.cs")
+        var sources = Directory.EnumerateDirectories(BackendFolder, "*.Tests")
+            .SelectMany(project => Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories))
+            .Where(source => !IsBuildOutput(source))
             .Where(source => !IoPath.GetFileName(source).Equals(ThisFile, StringComparison.OrdinalIgnoreCase))
             .Order(StringComparer.Ordinal)
             .ToArray();
@@ -87,23 +95,30 @@ public class ProblemStoreIsolationTests
     }
 
     /// <summary>
-    /// The suite's own source folder, found by walking up from the test binary rather than by
-    /// counting `..` segments - the count changes with the build layout, the folder name does
-    /// not. The same walk <see cref="ExampleRegistrationTests"/> uses, for the same reason.
+    /// <c>src/backend</c>, found by walking up from the test binary rather than by counting `..`
+    /// segments - the count changes with the build layout, the folder name does not. The same walk
+    /// <see cref="ExampleRegistrationTests"/> uses, for the same reason.
     /// </summary>
-    private static string IntegrationTestsFolder { get; } = Locate();
+    private static string BackendFolder { get; } = Locate();
+
+    private static bool IsBuildOutput(string source)
+    {
+        var separator = IoPath.DirectorySeparatorChar;
+        return source.Contains($"{separator}bin{separator}", StringComparison.Ordinal)
+               || source.Contains($"{separator}obj{separator}", StringComparison.Ordinal);
+    }
 
     private static string Locate()
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
         {
-            var candidate = IoPath.Combine(directory.FullName, "src", "backend", "EtAlii.Adp.Backend.Tests", "Integration Tests");
-            if (Directory.Exists(candidate))
+            var candidate = IoPath.Combine(directory.FullName, "src", "backend");
+            if (Directory.Exists(IoPath.Combine(candidate, "EtAlii.Adp.Backend.Tests")))
             {
                 return candidate;
             }
         }
 
-        throw new InvalidOperationException("The integration tests folder was not found above the test binary.");
+        throw new InvalidOperationException("src/backend was not found above the test binary.");
     }
 }

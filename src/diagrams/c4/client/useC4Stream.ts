@@ -35,26 +35,9 @@ export interface C4Stream {
  */
 export function useC4Stream(projectId: Uint8Array, path: readonly string[]): C4Stream {
   const { watchId } = useContextConnection();
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
+  const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
 
   const reportView = viewReportOf(client, projectId, watchId, path);
-
-  const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
-    try {
-      const response = await client.moveElement({
-        projectId: { value: projectId },
-        watchId: { value: watchId },
-        path: { segments: [...path] },
-        elementId,
-        // The position is what makes this an arrangement rather than a re-parenting; the
-        // backend routes on its presence.
-        position: { x, y },
-      });
-      return response.error;
-    } catch (error) {
-      return error instanceof Error ? error.message : "The move could not be sent.";
-    }
-  };
 
   return { model, loading, failed, reportView, moveElementTo };
 }

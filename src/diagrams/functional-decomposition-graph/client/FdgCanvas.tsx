@@ -158,12 +158,12 @@ function isElementType(value: string): value is FdgElementType {
 /**
  * A functional decomposition graph: screens, actions, data and functions, each owned by one parent,
  * drawn through the shared canvas library. Every library event takes the one route that can carry
- * it (the user's chat ruling of 2026-09-25): a move through the stream's `moveElement`, a resize
+ * it (the user's chat ruling of 2026-09-25): a move through the stream's `moveElementTo`, a resize
  * through `setProperty`, and everything else through a context action on one target id.
  */
 export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { watchId, executeAction, setProperty } = useContextConnection();
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
+  const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
@@ -220,21 +220,14 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     return outcome.accepted;
   };
 
+  // A move takes the stream's one `moveElementTo` (client-centralization task 8) and reports what it
+  // resolves to - the backend's refusal, or "" when accepted. The position passed is the TOP-LEFT,
+  // which is what the document holds; a position is what makes this an arrangement rather than a
+  // re-parenting. This built its own `MoveElement` request until task 8 landed after FDG task 14 -
+  // the same request and the same catch text the shared call now carries, so nothing a user sees
+  // changes.
   const moveTo = async (elementId: string, left: number, top: number) => {
-    try {
-      const response = await client.moveElement({
-        projectId: { value: projectId },
-        watchId: { value: watchId },
-        path: { segments: [...path] },
-        elementId,
-        // The position is what makes this an arrangement rather than a re-parenting; the backend
-        // routes on its presence. It is the TOP-LEFT, which is what the document holds.
-        position: { x: left, y: top },
-      });
-      report(response.error);
-    } catch (error) {
-      report(error instanceof Error ? error.message : "The move could not be sent.");
-    }
+    report(await moveElementTo(elementId, left, top));
   };
 
   const events: DiagramEventHandlers = {

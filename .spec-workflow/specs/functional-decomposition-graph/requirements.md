@@ -222,7 +222,7 @@ So the library work is exactly five items: **three shapes, height resize, wrappe
 #### Acceptance Criteria
 
 1. WHEN the toolbox is shown for this diagram THEN it SHALL offer the five element types, described by the backend as data, and each SHALL be draggable onto the canvas, where dropping it creates the element at the drop position through a command. The drop hold SHALL apply as for every diagram.
-2. WHEN a user edits a graph THEN every change SHALL be a command with an inverse, offered through the context-action provider: add and delete an element, move it, change its width (and a Comment's height), connect and disconnect, rename, and set a Description. Undo SHALL restore exactly the lines the change rewrote.
+2. WHEN a user edits a graph THEN every change SHALL be a command with an inverse, offered through the context-action provider: add and delete an element, move it, change its width (and a Comment's height), connect and disconnect, rename, and set a Description. Undo SHALL restore the document as it was before the change. (Read so by the user's chat ruling of 2026-09-25: this is the shared restore every migrated module uses. It differs from restoring only the rewritten lines just when the file was edited outside ADP between a change and its undo.)
 3. WHEN the backend refuses a command THEN the user SHALL see the refusal's sentence, and the document SHALL be unchanged.
 
 ### Requirement 9 — The library work this diagram needs
