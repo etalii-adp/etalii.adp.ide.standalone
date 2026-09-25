@@ -244,60 +244,12 @@ public static class FdgParser
     /// The lines an entry occupies - what an edit rewrites, and nothing else.
     /// </summary>
     /// <remarks>
-    /// YamlDotNet's end mark sits at the start of whatever follows, so a range taken raw swallows
-    /// the next entry's first line; column 1 is the tell, and the end is pulled back one. Trailing
-    /// blank lines and comments are then walked back off the end, because they belong to the
-    /// author rather than to the entry - splicing over them is how a comment between two entries
-    /// disappears on the first edit.
+    /// <b>The shared node range</b> (backend-centralization R7, <see cref="YamlNodeRange"/>). This
+    /// parser used to carry its own copy, converted by the user's chat ruling of 2026-09-25. The copy was
+    /// identical line for line - the subtree's furthest end mark, because a mapping's own end does not
+    /// cover its children; the step back off a column-one mark, which is the next entry's first line;
+    /// and the walk back over trailing blanks and comments, which belong to the author - so the
+    /// conversion changes no range. Task 9's byte-identical round-trip fixtures hold it to that.
     /// </remarks>
-    private static LineRange Range(YamlNode node, LineDocument document)
-    {
-        var last = document.Lines.Count - 1;
-        var extent = EndMark(node);
-        var start = Math.Clamp((int)node.Start.Line - 1, 0, last);
-        var end = Math.Clamp((int)extent.Line - 1, start, last);
-        if (extent.Column == 1 && end > start)
-        {
-            end--;
-        }
-
-        while (end > start && (document.Lines[end].IsBlank || document.Lines[end].IsComment))
-        {
-            end--;
-        }
-
-        return new LineRange(start, end);
-    }
-
-    /// <summary>The furthest end mark anywhere in a node's subtree.</summary>
-    /// <remarks>
-    /// <b>A mapping's own <c>End</c> does not cover its children</b>, so a range taken from it
-    /// alone stops short - and a short range is not a harmless approximation: <c>SetKey</c> then
-    /// fails to find the key inside it and INSERTS a second one, which is how an edit that should
-    /// have rewritten two lines added two instead and left the document with two <c>x:</c> keys.
-    /// Measured here before it was fixed, and it is why the counterpart carries this same walk.
-    /// An alias resolves to a node YAML requires to have been declared earlier, so following one
-    /// can only look backwards and never stretches a range past where the entry really ends.
-    /// </remarks>
-    private static Mark EndMark(YamlNode node)
-    {
-        var end = node.End;
-        foreach (var child in Descend(node))
-        {
-            var childEnd = EndMark(child);
-            if (childEnd.Line > end.Line)
-            {
-                end = childEnd;
-            }
-        }
-
-        return end;
-    }
-
-    private static IEnumerable<YamlNode> Descend(YamlNode node) => node switch
-    {
-        YamlMappingNode mapping => mapping.Children.Keys.Concat(mapping.Children.Values),
-        YamlSequenceNode sequence => sequence.Children,
-        _ => [],
-    };
+    private static LineRange Range(YamlNode node, LineDocument document) => YamlNodeRange.Of(node, document.Lines);
 }
