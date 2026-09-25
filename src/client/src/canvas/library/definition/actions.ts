@@ -75,6 +75,24 @@ export interface ActionDeclaration {
   /** What a menu calls it. */
   label?: string;
   when?: Condition;
+  /**
+   * The keystroke the backend's shortcut table knows this action by - `"F2"`, `"Delete"`, `"Tab"`.
+   * Declared, the library sends it itself whenever the action is invoked, however it was invoked:
+   * a key, a gesture or a menu entry all reach the backend as this one keystroke (client-centralization
+   * Requirement 5).
+   *
+   * <b>Declared, not manufactured.</b> Eleven modules each kept a `BACKEND_KEYS` map from action id to
+   * key and built a `ContextShortcut` out of it in their own `onActionInvoked`. A gesture-invoked
+   * `delete` therefore still became a synthesised `"Delete"` keystroke - which
+   * `declarative-diagram-modules` said must disappear; it had moved from the call sites into those
+   * maps rather than gone away. This is where it goes instead.
+   *
+   * <b>Nothing on the wire changes</b> (the user's ruling of 2026-09-15): the backend receives the same
+   * shortcut it always has. What changes is who sends it and who hears the refusal - the library,
+   * which is what lets a refused shortcut reach the library's own surface rather than sixteen private
+   * ones.
+   */
+  backendKey?: string;
 }
 
 /** One action the library has decided to dispatch. */
@@ -116,6 +134,29 @@ export function shortcutKeysOf(actions: readonly ActionDeclaration[] | undefined
   }
 
   return [...keys];
+}
+
+/** The places a definition declares actions: its own list, and each element type's. */
+export interface ActionDeclaring {
+  actions?: readonly ActionDeclaration[];
+  elementTypes: readonly { actions?: readonly ActionDeclaration[] }[];
+}
+
+/**
+ * The backend keystroke an action is declared with, or undefined when it is sent by id or not
+ * sent at all.
+ *
+ * <b>Looked up by action id alone</b>, because that is exactly what the eleven `BACKEND_KEYS` maps
+ * this replaces did: one key per action id per module, whatever invoked it and whatever element it
+ * landed on. An id declared on several element types carries the same key on each - `rename` is
+ * `F2` wherever a module offers it - so the first declaration found answers for all of them.
+ *
+ * Structural rather than typed as `DiagramDefinition`, so this file need not import the one that
+ * already imports it.
+ */
+export function backendKeyOf(declaring: ActionDeclaring, actionId: string): string | undefined {
+  const declarations = [...(declaring.actions ?? []), ...declaring.elementTypes.flatMap((type) => type.actions ?? [])];
+  return declarations.find((action) => action.id === actionId && action.backendKey !== undefined)?.backendKey;
 }
 
 /** Whether a target declaration admits this element type or relation type. */

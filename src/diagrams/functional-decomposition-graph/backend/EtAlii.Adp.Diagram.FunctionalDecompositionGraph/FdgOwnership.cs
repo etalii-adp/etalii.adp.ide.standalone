@@ -101,6 +101,55 @@ public static class FdgOwnership
     }
 
     /// <summary>
+    /// Whether an ownership link <paramref name="from"/> → <paramref name="to"/> would close a cycle:
+    /// whether <paramref name="from"/> is already reachable from <paramref name="to"/> along ownership links.
+    /// </summary>
+    /// <remarks>
+    /// <b>A reachability question, asked here rather than of <see cref="CyclesIn"/>.</b> That function
+    /// reports the cycles a document HAS, through a walk that visits each element once; asked of a
+    /// document that is already broken, it can report an old loop and never reach the new one. A link
+    /// closes a cycle exactly when its target already leads back to its source, and that has one
+    /// exact answer. Kept in this file so the ownership rule stays in one place: the same four
+    /// relations, `shows` excluded, and self-edges excluded as <see cref="CyclesIn"/> excludes them.
+    /// </remarks>
+    public static bool WouldClose(FdgModel model, string from, string to)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (string.Equals(from, to, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var edges = model.Connections
+            .Where(connection => FdgRelations.ById(connection.Type) is { IsOwnership: true })
+            .Where(connection => !string.Equals(connection.From, connection.To, StringComparison.Ordinal))
+            .GroupBy(connection => connection.From, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Select(connection => connection.To).ToList(), StringComparer.Ordinal);
+
+        HashSet<string> seen = new(StringComparer.Ordinal) { to };
+        Stack<string> pending = new([to]);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            if (string.Equals(node, from, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (edges.TryGetValue(node, out var next))
+            {
+                foreach (var child in next.Where(seen.Add))
+                {
+                    pending.Push(child);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// One cycle written the same way whichever member it was found from: rotated so its smallest
     /// id leads. Two traversals of one loop then produce one finding rather than two.
     /// </summary>

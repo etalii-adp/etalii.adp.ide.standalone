@@ -95,7 +95,7 @@
   - _Waits on: `backend-centralization` tasks 2 (the save result), 3 (its discard guard), 5 (the store lifecycle), 11 (the change-detecting diff) and 13 (the change handler), each checked on develop by ancestry (the user's chat ruling of 2026-09-25)_
   - _Requirements: 7.1, 3.1_
 
-- [ ] 12. The commands, each with its inverse
+- [x] 12. The commands, each with its inverse
   - File: `.../Commands/*.cs` (new), tests
   - Add, remove (with the connections to and from it, in one edit), move, resize, connect, disconnect, rename or edit text, set a Description, set a connection's name. Each inverse is a restore-lines command, as `dependency-graph` and `timeline` undo. The connect command refuses on the same three checks the canvas makes — type, cardinality, cycle — so a stale or scripted request cannot write what the canvas would not offer, and the refusal names which check failed.
   - **Snap: declare nothing.** The library's snap applies as it stands when this is built (Requirement 3.3); read its semantics from `SnapDeclaration` in the code rather than restating them here, since they were in flight when the requirements were written.
@@ -104,7 +104,7 @@
   - Seen to fail against: a connect command that trusts the client (a cycle-closing request then lands).
   - _Waits on: `backend-centralization` task 17's piece (the restore-lines edit, R6), task 18's piece (the YAML node range, R7, which an edit uses to find its entry's lines and which this line omitted), and task 21 (the gesture grammar, R11) (the user's chat ruling of 2026-09-25)_
   - _Requirements: 3.1, 3.2, 3.3, 6.3, 8.2, 8.3, 7.4_
-- [ ] 13. Toolbox and property providers
+- [x] 13. Toolbox and property providers
   - File: `.../FdgToolboxProvider.cs`, `.../FdgContextPropertyProvider.cs`, `.../FdgContextActionProvider.cs` (new), tests. `FdgContextSourceResolver` moved to task 11 (the user's chat ruling of 2026-09-25).
   - The toolbox describes the five element types as data. The property grid offers a Description for all five types and every connection, a Name for the four named types, and a connection's Name. Every property change is a command (task 12).
   - Guard: each of the five types and a connection offers a Description row; a Comment offers no Name row; a property set through the grid reaches the document and undoes.
@@ -112,7 +112,7 @@
   - _Waits on: task 12 (every property change is one of its commands)_
   - _Requirements: 7.1, 7.2, 7.3, 8.1_
 
-- [ ] 14. The client module: registration, definition, handlers
+- [x] 14. The client module: registration, definition, handlers
   - File: `src/diagrams/functional-decomposition-graph/client/register.ts`, `FdgCanvas.tsx`, `fdg.css`, `readme.md` (new), tests
   - The definition the design states: five element types on the shapes of task 1, all `sizing: "user"` with `resize: "both"` on the Comment, one editable label each (the Comment's wrapped), a class per type for its fill, and no anchors on the Comment. Five relation types with `route: "cubic-bezier"`, an arrow end marker only, a midpoint editable label, endpoints and cardinality exactly as the rules table, `allowSelf: false`. `acyclic` naming the four ownership relations and **not** `shows`. Layout `manual`; the toolbox derived. Handlers turn each library event into its one route and nothing else: a move through `moveElementTo`, a resize through `setProperty`, and a drop, connection, deletion or rename through a context action or shortcut (the user's chat ruling of 2026-09-25). The ids are defined once, in the client, for tasks 12 and 13 to answer.
   - Guard: the definition passes `validateDiagramDefinition`; `declarativeModules` passes against this module unchanged; each library event produces its one action; a connect gesture over the example highlights an allowed target, refuses a forbidden pair, refuses a second parent, refuses a cycle-closing target, and **does** offer the Shows round trip.
@@ -128,19 +128,19 @@
   - Seen to fail against: an example missing one relation type, which the per-relation assertion reports.
   - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 16. Catalog and authoring documentation
+- [x] 16. Catalog and authoring documentation
   - File: `docs/diagrams.md`, `docs/creating-a-diagram-module.md`
   - Move the type's row to its new state as the work lands, keeping the `etalii/functional-decomposition-graph` origin. Document the six library capabilities where module authors are pointed for a definition: the three shapes and their text regions, `resize: "both"`, `wrap`, the multiline editor, `acyclic`, and outline attachment.
   - Guard: the documentation-links test passes; the catalog row's origin matches the `.adp` registration and the client registration's mime match, asserted rather than read.
   - _Requirements: 12.1, 12.2_
 
-- [ ] 17. The coverage diff, before the tasks card and again after implementing
+- [x] 17. The coverage diff, before the tasks card and again after implementing
   - File: the implementation log only
   - Run the criterion-to-claim diff over this document and the approved requirements: 49 criteria, and every one claimed or explained. Run it again when the work is done, traced to files and strings rather than to a task's promise.
   - **Both directions matter**: a criterion nobody claims is a gap, and a claim naming a criterion that does not exist is a reference to nothing.
   - _Requirements: 12.3_
 
-- [ ] 18. The browser pass
+- [x] 18. The browser pass
   - File: `.spec-workflow/steering/tests.md`
   - A `tests.md` entry covering, in a real browser: all five shapes in both themes; text inside each shape at the shared height, at a minimum and a generous width, and a Comment with more text than fits; width resize on the four and width and height on a Comment; each allowed link drawn and each forbidden one refused, including a second parent and a cycle-closing target, with no highlight on any refused target; a connection name appearing and disappearing; a Description never appearing.
   - **jsdom is not evidence for any of these**: it applies no CSS and lays out no text.

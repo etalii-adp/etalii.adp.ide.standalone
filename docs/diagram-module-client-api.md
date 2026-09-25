@@ -29,6 +29,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 - [`src/client/src/diagrams/readme.md`](../src/client/src/diagrams/readme.md) — the stream, the view report and the module-side hooks
 - [`src/client/src/canvas/elements/readme.md`](../src/client/src/canvas/elements/readme.md) — element geometry and shapes
+- [`src/client/src/canvas/library/shapes/readme.md`](../src/client/src/canvas/library/shapes/readme.md) — the built-in shapes' outlines: which shapes have one, the text region and edge point each derives from it, and how to add a shape
 - [`src/client/src/canvas/label/readme.md`](../src/client/src/canvas/label/readme.md) — label measurement and placement
 - [`src/client/src/canvas/gesture/readme.md`](../src/client/src/canvas/gesture/readme.md) — the shared gesture layer
 - [`src/client/src/canvas/scroll/readme.md`](../src/client/src/canvas/scroll/readme.md) — scrolling and the viewport
@@ -134,14 +135,14 @@ import "./dependency-graph.css";
 
 **Whether a module needs it.** Always, and **only through this hook**. `diagramStreamOpensOnlyInHook.test.ts` forbids opening a diagram's delta stream anywhere else and names any offender. A module wraps the hook rather than calling the transport, so reconnection, teardown on identity change, and the loading and failed states are the same everywhere.
 
-**Its shape.** The hook takes the project, the path, an empty model and a delta-folding function, and returns the model with `loading`, `failed` and the client. A module's wrapper adds whatever its canvas needs on top — a move call, a view report — built on the client it returns.
+**Its shape.** The hook takes the project, the path, an empty model and a delta-folding function, and returns the model with `loading`, `failed`, the client, and `moveElementTo` — the one call that arranges an element where it was dropped, which resolves to the backend's refusal as a sentence or to `""` when the move was accepted. A module's wrapper adds whatever else its canvas needs on top — a view report — built on the client it returns. **A module does not build its own arrangement move:** until client-centralization task 8 each of fourteen modules did, one had drifted to report a fixed sentence in place of the backend's reason, and `diagramStreamOpensOnlyInHook.test.ts` now names any module that builds one again. **Re-parenting is a different operation on the same request** — a `newParentId` in place of a position — and a module that re-parents, as `mindmap` does, still builds that call itself.
 
 Source: [`src/diagrams/dependency-graph/client/useDependencyGraphStream.ts`](../src/diagrams/dependency-graph/client/useDependencyGraphStream.ts)
 
 ```ts
 export function useDependencyGraphStream(projectId: Uint8Array, path: readonly string[]): DependencyGraphStream {
   const { watchId } = useContextConnection();
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
+  const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
 
 ```
 
@@ -165,7 +166,7 @@ export function useDependencyGraphStream(projectId: Uint8Array, path: readonly s
 
 **Its shape.** `elementTypes`, `relationTypes`, `toolbox`, `layout`, `dragging`, `extent`, `snap`, `dropTarget`, `background`, `chrome`, `actions`, `backgroundMenu`, `connectOnRightDrag`, `dragBounds` and `acyclic`. Only `elementTypes` and `relationTypes` are structural; the rest declare behaviour and may be omitted.
 
-**Which of these are actually used, measured rather than assumed.** Parsing all 13 modules that declare a definition — in both shapes it is written in, a typed constant and a function returning one — `elementTypes`, `relationTypes`, `layout` and `dragging` are set by all 13; `actions` by 7; `snap` by 2; `background`, `backgroundMenu`, `connectOnRightDrag`, `dragBounds`, `dropTarget` and `extent` by one each. **`toolbox`, `chrome` and `acyclic` are set by none**, and their entries below say so and excerpt a type-checked example instead of an invented one.
+**Which of these are actually used, measured rather than assumed.** Parsing all 14 modules that declare a definition — in both shapes it is written in, a typed constant and a function returning one — `elementTypes`, `relationTypes`, `layout` and `dragging` are set by all 14; `actions` by 8; `snap` by 2; `connectOnRightDrag` by 2; `acyclic`, `background`, `backgroundMenu`, `dragBounds`, `dropTarget` and `extent` by one each (read at `5b44878d`, when the functional decomposition graph became the fourteenth, and the first to declare `acyclic`). **`toolbox` and `chrome` are set by none**, and their entries below say so and excerpt a type-checked example instead of an invented one.
 
 **It is validated at declaration, not at draw time.** A module wraps its definition in `assertValidDiagramDefinition`, so a contradictory declaration fails where it is written rather than as a blank canvas later.
 
@@ -196,7 +197,7 @@ classDiagram
 
 **What it is for.** What kinds of thing the diagram has, and how each is drawn.
 
-**Whether a module needs it.** Always — all 13 modules declare it, and it is the only member with no useful default.
+**Whether a module needs it.** Always — all 14 modules declare it (read at `5b44878d`), and it is the only member with no useful default.
 
 **Its shape.** An `ElementTypeDefinition` carries `id`, `shape`, `style`, `boundStyle`, `classNames`, `data`, `tooltip`, `label`, `labels`, `decorations`, `actions`, `anchors`, `sizing`, `resize`, `draggable`, `deletable`, `selectable` and `beneathConnections`. A type whose shape is not one of the built-ins names a `CustomShapeRef` instead, which carries `customShape`, `render`, `edgePoint` and `anchors`; a renderer is handed `ShapeBounds` — `x`, `y`, `width`, `height`.
 
@@ -216,6 +217,43 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
       ],
 ```
 
+**Three shapes whose text stays inside them.** `BuiltInShape` includes `"superellipse"`, a squircle that reads as a box with its corners taken off; `"trapezoid"`, narrower at the bottom than the top; and `"diode"`, a rectangle closed on the right by a semicircle, so the shape points the way its relations run. Each has an outline, and its text region and edge point come from that outline rather than from the bounding box - which is what keeps a wrapped label off a slanted or curved edge and makes a connection meet the drawn line. How the outline works, and how to add a shape, is in [`src/client/src/canvas/library/shapes/readme.md`](../src/client/src/canvas/library/shapes/readme.md).
+
+**Height resize.** `resize` is read only when `sizing` is `"user"`. **Omitted means `"width"`**: left and right handles, which is what every user-sizable type had before. `"both"` adds top and bottom handles, for an element whose height is its own content rather than a shared constant. The drag arrives as `ElementResized`, whose `side` - a `ResizedSide` - is then `"top"` or `"bottom"` as well as `"left"` or `"right"`, and whose `bounds` are the whole resized rectangle. A handler that assumed a horizontal edge has to read `side` once a type declares `"both"`.
+
+**The functional decomposition graph is the first module to declare them** (read at `04cc58df`). Three of its four named types are drawn as the three shapes, the fourth as a `"parallelogram"`:
+
+Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx)
+
+```ts
+const SHAPES: Readonly<Record<FdgElementType, ElementTypeDefinition["shape"]>> = {
+  [FdgElementTypes.uiElement]: "superellipse",
+  [FdgElementTypes.dataElement]: "parallelogram",
+  [FdgElementTypes.action]: "trapezoid",
+  [FdgElementTypes.function]: "diode",
+  [FdgElementTypes.comment]: "box",
+};
+```
+
+Its Comment is the only type sized in both directions, and its one label wraps inside it - so it is also the first declarer of the multiline editor [below](#labels-and-bindings):
+
+Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx)
+
+```ts
+const COMMENT_TYPE: ElementTypeDefinition = {
+  id: FdgElementTypes.comment,
+  shape: SHAPES[FdgElementTypes.comment],
+  classNames: [
+    { className: "canvas-element fdg-element", on: "element" },
+    { className: `canvas-node fdg-${FdgElementTypes.comment}`, on: "shape" },
+  ],
+  labels: [{ text: { path: "payload.text" }, editable: true, wrap: true, className: "fdg-comment-text" }],
+  anchors: { kind: "edge", enabled: false, visible: false },
+  sizing: "user",
+  resize: "both",
+};
+```
+
 **The guards.** `assertValidDiagramDefinition` rejects a type whose shape and anchors disagree. An element whose `type` matches no declared id draws a visible fallback box rather than vanishing.
 
 **Their members.** `AnchorEnablement` carries `visible`, `enabled`, `edgeSides`; `NamedAnchorPoint` carries `x`, `y`, `name`; `SideFraction` carries `side`, `at`, `name`; `ShapeSelection` carries `path`, `cases`, `fallback`; `CustomShapeState` carries `selected`, `dragging`, `connectTarget`; `ElementStyle` carries `fill`, `stroke`, `strokeWidth`, `dash`, `cornerRadius`, `labelTypography`; `BoundElementStyle` carries `fill`, `stroke`, `labelColor`, `silhouette`; `ClassDeclaration` carries `className`, `when`, `on`; `DecorationDeclaration` carries `glyph`, `anchor`, `each`, `step`, `from`, `to`, `radius`, `width`, `height`, `d`, `marker`, `text`, `textAt`, `textAnchor`, `typography`, `className`, `markerEnd`, `tooltip`, `data`, `accessibility`, `when`.
@@ -226,7 +264,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **What it is for.** What connects to what, how the line is routed, and what connections are forbidden.
 
-**Whether a module needs it.** `relationTypes` is declared by all 13 modules. `acyclic` is declared by none.
+**Whether a module needs it.** `relationTypes` is declared by all 14 modules. `acyclic` is declared by one, the functional decomposition graph (both read at `5b44878d`).
 
 **Its shape.** A `RelationTypeDefinition` carries `id`, `route`, `style`, `label`, `adjustable`, `selectable`, `className`, `lineClassName`, `hitClassName` and `emptyRelease`. A route the built-ins do not cover is a `CustomRouteRef` — `customRoute` and `path`. An `AcyclicRule` carries `relationTypes`: the relation ids a cycle may not be formed from, so a "depends on" edge can refuse a cycle while other relation types stay free to form one.
 
@@ -244,13 +282,16 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
       hitClassName: "dependency-graph-relation-hit",
 ```
 
-**No shipped module declares `acyclic`**, so its example is a type-checked file rather than an excerpt passed off as shipped code:
+**The functional decomposition graph is the first module to declare `acyclic`** (read at `5b44878d`): its four ownership relations may form no cycle among themselves, while `shows`, which is navigation, is deliberately left out so a navigation loop stays drawable:
 
-Source: [`src/client/src/canvas/library/examples/acyclic.example.ts`](../src/client/src/canvas/library/examples/acyclic.example.ts)
+Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx)
 
 ```ts
- */
+  // The four ownership relations form a forest; Shows is navigation and may loop (Requirement 5.4).
+  acyclic: [{ relationTypes: FDG_OWNERSHIP_RELATIONS }],
 ```
+
+**Which relation a connect gesture draws.** The press sees only the source, so it starts with the `activeTool` relation if the runtime names one, and otherwise with the first relation whose source admits the element. Over a target, the canvas keeps that relation if it admits the target's type. If it does not, and no `activeTool` is named, it draws the first relation that admits BOTH ends - the source's anchor included - and the connect checks then run on the relation actually drawn. So a notation whose relations are told apart by what they point at can draw each of them from the same element: the functional decomposition graph's screen owns a child screen, an action, data or a function through four different relations. **A named `activeTool` still wins**: a target it does not admit is refused, not drawn as some other relation. A definition whose starting relation already admits every target it meets never reaches the search, so it draws exactly what it did before this behaviour arrived (`5ce04fbc`).
 
 **Their members.** `RouteEnds` carries `source`, `target`; `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`.
 
@@ -262,7 +303,7 @@ Source: [`src/client/src/canvas/library/examples/acyclic.example.ts`](../src/cli
 
 **What it is for.** Where elements may go and how they move.
 
-**Whether a module needs it.** `layout` and `dragging` are declared by all 13 modules; `snap` by 2, `dropTarget`, `extent` and `dragBounds` by one each. Omitted, a diagram lays out by its default mode and drags freely.
+**Whether a module needs it.** `layout` and `dragging` are declared by all 14 modules (read at `5b44878d`); `snap` by 2, `dropTarget`, `extent` and `dragBounds` by one each. Omitted, a diagram lays out by its default mode and drags freely.
 
 **Its shape.** A `SnapDeclaration` carries `x` and `y`. A `DropTargetDeclaration` carries `parentPath`, `ring`, `preview` and `group`. `dragging` is a policy rather than an object, and the runtime config can override it per render without a remount.
 
@@ -282,7 +323,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **What it is for.** What sits behind the elements rather than among them — the axes, bands, gridlines, regions and marks of a diagram whose space means something, such as a Wardley map's evolution axis.
 
-**Whether a module needs it.** One of the 13 modules declares a background. A diagram whose position carries no meaning declares none, and the canvas draws plain ground.
+**Whether a module needs it.** One of the 14 modules declares a background (read at `5b44878d`). A diagram whose position carries no meaning declares none, and the canvas draws plain ground.
 
 **Its shape.** A background binds against the model's own `background` value by a path the module declares, so the library draws it without learning the diagram's schema.
 
@@ -298,6 +339,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **Its shape.** A label is declared with a placement and a typography; its text is a `Binding` — a literal template, a field read by path, a collection, or parts assembled together — optionally gated by a `Condition` and formatted by a number or temporal format.
 
+**A wrapped label is edited in a multiline editor.** A label declaring `wrap: true` is laid out as wrapped text inside the shape's text region, and when it is editable its inline editor opens over that same region as a text area rather than a one-line field. There, **Enter types a newline**; Ctrl+Enter or Cmd+Enter commits; Escape cancels; and blur commits, as it does in the one-line field. The commit is the same `LabelCommitRequested`, so a module's handler does not change - but its `value` can now contain newlines, and a module whose document keeps a label on one line has to decide what a newline means there. The functional decomposition graph's Comment is the first to declare it (read at `04cc58df`); its declaration is excerpted under [Element types and shapes](#element-types-and-shapes). The mechanism is [`src/client/src/canvas/label/readme.md`](../src/client/src/canvas/label/readme.md)'s.
+
 **Their members.** `LabelColumn` carries `text`, `insetX`, `align`, `className`, `truncate`; `LabelDeclaration` carries `wrap`, `text`, `placement`, `slot`, `offset`, `anchorTo`, `stack`, `typography`, `editable`, `truncate`, `when`, `tooltip`, `className`, `align`, `insetX`, `editorBox`, `columns`; `LabelRule` carries `placement`, `insetTop`, `insetHeight`, `insetX`, `truncate`, `editable`; `LabelStack` carries `lineHeight`, `start`; `LabelTypography` carries `fontSize`, `fontWeight`, `fontStyle`, `color`, `scaleWithView`; `CollectionBinding` carries `path`, `each`, `when`, `join`; `FieldBinding` carries `path`, `when`, `plural`, `number`; `NumberFormat` carries `times`, `plus`, `modulo`, `round`, `format`; `PartsBinding` carries `parts`, `join`, `when`; `TemplateBinding` carries `template`, `when`.
 
 ### Actions, shortcuts and enablement
@@ -306,23 +349,25 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **What it is for.** What a user may do to an element, a connection or the diagram, and how each is invoked.
 
-**Whether a module needs it.** Seven of the 13 declare `actions` on the definition; others declare them per element type, which is where the reference module puts them.
+**Whether a module needs it.** Eight of the 14 declare `actions` on the definition (read at `5b44878d`); others declare them per element type, which is where the reference module puts them.
 
-**Its shape.** An `ActionDeclaration` carries `id`, `invokedBy`, `appliesTo`, `enabled`, `label` and `when`. **A shortcut is described as data, never wired by hand**: the module says which key invokes which action id, and the library derives the key set and dispatches.
+**Its shape.** An `ActionDeclaration` carries `id`, `invokedBy`, `appliesTo`, `enabled`, `label`, `when` and `backendKey`. **A shortcut is described as data, never wired by hand**: the module says which key invokes which action id, and the library derives the key set and dispatches.
+
+**`backendKey` is the key the backend knows the action by, and the library sends it.** The backend's context table is keyed by keystroke, so an action the backend carries out names its key here; when the action is invoked — by its key, by a gesture or from the shared menu — the library sends that key against the target, shows nothing itself, and raises `action-refused` if the backend says no. **It is the declared key that travels, not the pressed one**: `mindmap` fires `add-child` on both Insert and Tab and declares `backendKey: "Insert"`, because Insert is the key the backend knows. A module does not build or send a keystroke itself, and a guard forbids it.
 
 Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 
 ```ts
       actions: [
-        { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-        { id: "insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
-        { id: "add-right", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
-        { id: "add-below", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
-        { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+        { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+        { id: "insert", backendKey: "Insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-right", backendKey: "Tab", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
+        { id: "add-below", backendKey: "Enter", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
+        { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
       ],
 ```
 
-**`{ kind: "menu" }` is an invocation a module must read carefully.** `centralized-selection` gave an existing name a new meaning: an action invoked from the shared menu reaches the module as `action-invoked` and **never reaches the backend**. The declaration is unchanged and the member names are unchanged, so no check keyed on declarations or members can demand an entry for it — which is exactly why it is written out here.
+**`{ kind: "menu" }` is an invocation a module must read carefully.** `centralized-selection` gave an existing name a new meaning: an action invoked from the shared menu reaches the module as `action-invoked`, and **reaches the backend only if its declaration names a `backendKey`**. Without one, the module's own handler is the whole of what happens. The declaration is unchanged and the member names are unchanged, so no check keyed on declarations or members can demand an entry for it — which is exactly why it is written out here.
 
 ### The toolbox declaration
 
@@ -411,16 +456,15 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ```tsx
   const events: DiagramEventHandlers = {
-    // The declared actions, answered as the shortcuts the backend has always known them by.
-    onActionInvoked: ({ actionId, targetId }) => {
-      const key = BACKEND_KEYS[actionId];
-      if (key === undefined || targetId === undefined) {
-        return;
+    // Selection is the library's (centralized-selection), and so is sending a declared action:
+    // one the backend refused, from the menu or from a key, comes back here for the same
+    // rejection line every other refusal uses.
+    onActionRefused: ({ message }) => setRejection(message),
 ```
 
 **`SelectionChanged` is declared here because it is a member of the `DiagramEvent` union, and it is NOT a module's to handle.** It is the library's own event, raised to the library's selection wrapper and to nobody else; there is no handler a module can supply for it, and a handler map that names one is a type error. It appears in this document only so that a reader who meets it in the union knows it is the library's.
 
-**`ActionRefused` is how a refusal arrives.** The library runs the shared menu's actions against the backend, so a refusal comes back to the library rather than to the module, and is handed on as `action-refused` with the `actionId` and a `message`.
+**`ActionRefused` is how a refusal arrives.** The library sends every action that declares a `backendKey`, however it was invoked, so a refusal comes back to the library rather than to the module, and is handed on as `action-refused` with the `actionId` and a `message`. **A module that does not answer it drops the backend's reason on the floor**; the reference module's handler map begins with it.
 
 ```mermaid
 sequenceDiagram
@@ -471,20 +515,22 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## The context channel
 
-**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `contextShortcutOf`, `inlineLabelElementIdOf`, `ActionOutcome`, `useContextProblems`, `ContextShortcut`, `Problem`, `ProblemSeverity`
+**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `inlineLabelElementIdOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`
 
 **What it is for.** Running an action against the backend, and answering a prompt it asks in return.
 
-**Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction` and `executeShortcut`; `useContextPrompt` gives the inline-edit prompt and its propose, submit and cancel callbacks.
+**Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction`, which is how a module runs an action it answers itself — a drawn connection, a drop; `useContextPrompt` gives the inline-edit prompt and its propose, submit and cancel callbacks.
 
-**Its shape.** `elementSourceOf` builds the source an action is run against. `contextShortcutOf` maps a gesture to the shortcut it travels as. `inlineLabelElementIdOf` says which element an open label prompt belongs to.
+**Its shape.** `elementSourceOf` builds the source an action is run against. `inlineLabelElementIdOf` says which element an open label prompt belongs to.
+
+**A keystroke is not a module's to send.** The same connection also offers `executeShortcut`, and it is the library's: a declared action names its key in `backendKey` (see [Actions, shortcuts and enablement](#actions-shortcuts-and-enablement)) and the library sends it. `contextShortcutOf` and `ContextShortcut`, which built that request, have no entry here for that reason, and `noModuleSendsAKeystroke.test.ts` fails on a module that names either, or `executeShortcut`.
 
 **The channel resolves and never rejects.** A refusal comes back as a value — a message to show — not as a thrown error. **So a module that wraps these in a try/catch is writing a branch that cannot be reached**, and a module that ignores the returned value silently drops the reason the backend gave.
 
 Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 
 ```tsx
-  const { executeAction, executeShortcut } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
@@ -577,7 +623,7 @@ sequenceDiagram
 
 **The shared helpers.** `expectLibrarySelection`, in `src/client/src/canvas/library/testing/`, asserts that a press produced the library's own selection rather than a module's idea of one. It is the one library folder a module's TEST files may import from, and imports from it are part of the module-facing surface for that reason.
 
-**The guards that walk module clients — fourteen of them, measured rather than recalled:**
+**The guards that walk module clients — fifteen of them, measured rather than recalled:**
 
 | Guard | What it forbids | The shared mechanism instead |
 | --- | --- | --- |
@@ -594,11 +640,12 @@ sequenceDiagram
 | `highlightSurvivesModuleStyles.test.tsx` | module styles that defeat the shared highlight | class composition |
 | `themeTokens.test.ts` | a custom property defined nowhere, or a palette declaring one mode | a theme token, or a local palette declaring both |
 | `fileUrlPaths.test.ts` | a hand-built file URL | the shared path helpers |
+| `noModuleSendsAKeystroke.test.ts` | a module sending the backend a keystroke, or building one to send | `backendKey` on the action's declaration |
 | `diagramModuleClientApi.test.ts` | this document drifting from the module-facing surface — an undocumented name, a stale entry, a changed excerpt, a diagram naming nothing real | an entry here |
 
-**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; fourteen is what the tree holds now, so that figure is a timestamp rather than a count.
+**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; fifteen is what the tree holds now, with `client-centralization` task 6 adding `noModuleSendsAKeystroke.test.ts`, so that figure is a timestamp rather than a count.
 
-**The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the thirteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
+**The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the fourteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
 
 ## A minimal module client, end to end
 
@@ -614,7 +661,7 @@ sequenceDiagram
 8. **Register.** `client/register.ts` exporting `registrations`, importing the shared stylesheet and your own beside it. See [Registration and discovery](#registration-and-discovery).
 9. **Write the canvas test**, calling the shared helper rather than asserting your own selection. See [Tests a module writes, and what a module must not do](#tests-a-module-writes-and-what-a-module-must-not-do).
 
-**What you never write:** selection, scrollbars, gestures, an inline label editor, a viewport report of your own, or a second stream. Each has a guard, and each guard names the shared mechanism instead.
+**What you never write:** selection, scrollbars, gestures, an inline label editor, a viewport report of your own, a second stream, or a keystroke sent to the backend. Each has a guard, and each guard names the shared mechanism instead.
 
 ## Library-internal exports
 
@@ -622,7 +669,7 @@ sequenceDiagram
 
 **The list is computed, not maintained.** It is exactly the library's exports that appear in neither set, so it cannot drift from the code: a name that leaves the library fails the test, and a name a module starts importing leaves this list and must gain an entry above.
 
-**65 names**, at `48137847`:
+**67 names**: the 65 read at `48137847`, and `ActionDeclaring` and `backendKeyOf`, which `client-centralization` task 6 added for the library's own use:
 
-`ActionLookup`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
+`ActionDeclaring`, `ActionLookup`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
 

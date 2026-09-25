@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    ONE CLASS, ON PURPOSE. HostLoggerLifecycleTests asserts which host's pipeline Log.Logger points
+    at, and Log.Logger is process-wide: a test assembly runs as its own process, so here no other
+    class's host can move it under the assertions. Add a second class that starts a host and that
+    guarantee is gone. Host-booting tests belong in EtAlii.Adp.Backend.Tests.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />
+  </ItemGroup>
+
+</Project>
