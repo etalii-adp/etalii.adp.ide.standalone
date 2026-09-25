@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, fireEvent, waitFor } from "@testing-library/react";
+import { render, fireEvent, waitFor, act } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
 import { ProblemSchema, ProblemSeverity } from "@client/generated/problems_pb";
@@ -558,26 +558,21 @@ describe("PipelineCanvas", () => {
     expect(view.container.querySelectorAll(".pipeline-problem-mark")).toHaveLength(0);
   });
 
-  it("says it is loading rather than showing an empty pipeline", () => {
-    // Arrange.
-    currentLoading = true;
+  it.each([
+    ["loading", () => (currentLoading = true)],
+    ["unavailable", () => (currentFailed = true)],
+  ])("while %s, draws no status of its own: the library's frame says it", (_state, arrange) => {
+    // Arrange: client-centralization Requirement 2.3 - one appearance, drawn by the library around
+    // every canvas. This canvas had its own loading and unavailable blocks.
+    arrange();
 
     // Act.
     const view = draw();
 
     // Assert.
-    expect(view.getByRole("status").textContent).toContain("Loading");
-  });
-
-  it("says so when the diagram is no longer there", () => {
-    // Arrange.
-    currentFailed = true;
-
-    // Act.
-    const view = draw();
-
-    // Assert.
-    expect(view.getByRole("alert").textContent).toContain("no longer available");
+    expect(view.queryByRole("status")).toBeNull();
+    expect(view.queryByRole("alert")).toBeNull();
+    expect(view.container.querySelector(".pipeline-canvas-loading, .pipeline-canvas-unavailable")).toBeNull();
   });
 
   // ---- inline renaming and the F2 it gained ------------------------------------------------
@@ -619,20 +614,24 @@ describe("PipelineCanvas", () => {
     expect((source as { source: { value: { value: string } } }).source.value.value).toBe("Build");
   });
 
-  it("shows the backend's refusal of a shortcut on the canvas rather than nothing", async () => {
-    // Arrange: the backend refuses the rename. Until this was fixed the canvas discarded the
-    // outcome, so a refusal looked like a key that did nothing.
+  it("draws no refusal line of its own: the library shows a refused shortcut", async () => {
+    // Arrange: the backend refuses the rename. The library sends the declared key and its call
+    // reports the refusal to the one line drawn around every canvas (client-centralization
+    // Requirement 2; contextConnectionReportsToCanvas.test.tsx holds the report of a keystroke).
+    // Here: none of its own.
     currentModel = applyDelta(emptyModel, add(stage("Build", "Build it")));
     currentSelectionKey = "element:Build";
     executeShortcut.mockResolvedValueOnce({ accepted: false, error: "A template's stage is renamed in its template." });
-    const { container, findByText } = draw();
+    const { container } = draw();
 
     // Act.
     fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "F2" });
+    await act(async () => {});
 
-    // Assert: the sentence shows, on the rejection line every other canvas uses.
-    const line = await findByText("A template's stage is renamed in its template.");
-    expect(line.classList.contains("canvas-rejection")).toBe(true);
+    // Assert.
+    expect(executeShortcut).toHaveBeenCalledTimes(1);
+    expect(container.textContent).not.toContain("A template's stage is renamed in its template.");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
   });
 
   it("forwards nothing while no element is selected", () => {

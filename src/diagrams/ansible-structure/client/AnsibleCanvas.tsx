@@ -178,15 +178,12 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   // This type's palette is empty by design - the module registers no toolbox provider,
   // because it edits nothing. Registering the backend's empty answer makes the panel say
   // exactly that, instead of claiming no diagram is open - registered HERE as well as by
-  // the library canvas, because the loading/empty states return before the canvas mounts.
+  // the library canvas, because the empty state returns before the canvas mounts.
   const toolboxItems = useToolboxItems(projectId, path);
   useRegisterDiagramToolbox(toolboxItems);
   const { revealPath } = useContextConnection();
 
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-  // A refused move is the backend's sentence, shown on the rejection line every other canvas
-  // uses. This canvas used to discard it, so a refused drag just snapped back without a word.
-  const [rejection, setRejection] = useState("");
 
   const nodes = useMemo(() => nodesOf(model), [model]);
   const edges = useMemo(() => edgesOf(model), [model]);
@@ -290,13 +287,9 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
         return;
       }
       // The write goes to the .adp's layout block; the change comes back through the folder's
-      // own watcher, so nothing is echoed locally.
-      setRejection("");
-      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2).then((error) => {
-        if (error) {
-          setRejection(error);
-        }
-      });
+      // own watcher, so nothing is echoed locally. A refusal is the backend's sentence, which the
+      // move reports to the library's refusal line itself.
+      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
@@ -313,15 +306,9 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
     ready: !loading && !failed && viewport !== null,
   });
 
-  if (failed) {
-    return <div className="ansible-canvas-message canvas-host canvas-host-message">This Ansible project structure diagram could not be opened.</div>;
-  }
-
-  if (loading) {
-    return <div className="ansible-canvas-message canvas-host canvas-host-message">Reading the folder…</div>;
-  }
-
-  if (nodes.length === 0) {
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas;
+  // the empty explanation is this module's own, and only true once the folder has been read.
+  if (!loading && !failed && nodes.length === 0) {
     return (
       <div className="ansible-canvas-message canvas-host canvas-host-message">
         Nothing here is laid out the way Ansible expects, so there is nothing to draw. Playbooks at the folder root or
@@ -342,7 +329,6 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
         className="ansible-canvas-viewport"
         scrollbarsClassName="ansible-scrollbars"
       />
-      {rejection ? <p className="ansible-rejection canvas-rejection" role="status">{rejection}</p> : null}
     </div>
   );
 }

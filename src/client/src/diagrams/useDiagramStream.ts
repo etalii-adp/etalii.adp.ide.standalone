@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Code, ConnectError, createClient, type Client } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
 import { reportedCall, useCanvasRefusalReporter } from "@client/canvas/library/surface/canvasRefusals";
+import { useCanvasStatusReporter } from "@client/canvas/library/surface/canvasStatus";
 import type { Delta } from "@client/generated/deltas_pb";
 import { DiagramService } from "@client/generated/diagrams_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
@@ -20,8 +21,8 @@ export interface DiagramStreamResult<TModel> {
   /**
    * True once the backend answered with a permanent error - the diagram cannot be opened at
    * this path any more (deleted, moved, unroutable, or a type without a session). The
-   * reconnect loop has stopped; the canvas shows an unavailable state instead
-   * (diagram-workspace-tabs Requirement 5.1).
+   * reconnect loop has stopped, and the library's frame around the canvas says so, in the backend's
+   * own words (diagram-workspace-tabs Requirement 5.1, client-centralization Requirement 2.3).
    */
   failed: boolean;
   /**
@@ -90,6 +91,13 @@ export function useDiagramStream<TModel>(
   const [model, setModel] = useState<TModel>(emptyModel);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  // The backend's own sentence when it says this diagram cannot be opened here, for the library's
+  // unavailable status; and whether this open ever had a model, which is what makes a return to
+  // loading a reconnect rather than a first open. STATE, not a ref: a delta and the drop that follows
+  // it can land in one batch, the model returning to the same empty object, and only a state change
+  // of its own then renders "reconnecting" rather than leaving "opening" up.
+  const [failure, setFailure] = useState("");
+  const [hadModel, setHadModel] = useState(false);
   // One shape for acquiring a service client, `useMemo` on the transport - the same at every
   // site that needs one. The `useRef` this replaced was safe, and it is worth saying why so
   // the next reader does not have to re-derive it: `transport` is memoised on a `[]`-stable
@@ -105,7 +113,9 @@ export function useDiagramStream<TModel>(
     let active = true;
     setModel(emptyModel);
     setFailed(false);
+    setFailure("");
     setLoading(true);
+    setHadModel(false);
 
     void (async () => {
       while (active) {
@@ -118,6 +128,7 @@ export function useDiagramStream<TModel>(
             if (!active) {
               return;
             }
+            setHadModel(true);
             setLoading(false);
             setModel((current) => applyDelta(current, delta));
           }
@@ -135,6 +146,7 @@ export function useDiagramStream<TModel>(
               error.code === Code.NotFound ||
               error.code === Code.Unimplemented)
           ) {
+            setFailure(error.rawMessage);
             setFailed(true);
             setLoading(false);
             return;
@@ -162,6 +174,19 @@ export function useDiagramStream<TModel>(
     // applyDelta are a module's own constants, stable by construction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, projectId, watchId, pathKey, editorId]);
+
+  // Inside a canvas, the stream reports what the canvas is doing, and the library's surface says it
+  // in one appearance (client-centralization Requirement 2.3). A module draws no status of its own.
+  const status = useCanvasStatusReporter();
+  const streamRef = useRef(Symbol("diagram stream"));
+  const stateKind = failed ? "unavailable" : loading ? (hadModel ? "reconnecting" : "opening") : "open";
+  useEffect(() => {
+    status?.report(streamRef.current, stateKind === "unavailable" ? { kind: stateKind, reason: failure } : { kind: stateKind });
+  }, [status, stateKind, failure]);
+  useEffect(() => {
+    const stream = streamRef.current;
+    return () => status?.forget(stream);
+  }, [status]);
 
   // Inside a canvas, a move reports to its refusal line like every other gesture that reaches the
   // backend (client-centralization Requirement 2); the sentence is still returned to the caller.

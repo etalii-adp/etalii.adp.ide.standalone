@@ -203,15 +203,15 @@ describe("the dependency graph canvas", () => {
     expect(container.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 
-  it("shows the unavailable state when the backend answered permanently", () => {
-    // Arrange.
+  it("leaves the unavailable state to the library's frame rather than saying it itself", () => {
+    // Arrange: client-centralization Requirement 2.3 - one appearance, drawn by the library.
     currentFailed = true;
 
     // Act.
     const { container } = renderCanvas();
 
     // Assert.
-    expect(container.textContent).toContain("could not be opened");
+    expect(container.textContent).not.toContain("could not be opened");
   });
 
   it("treats a motionless press as a selection, never an edit", () => {

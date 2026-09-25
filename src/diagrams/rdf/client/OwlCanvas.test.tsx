@@ -269,15 +269,17 @@ describe("the owl canvas", () => {
     expect(moves[0].x).toBe(80);
     expect(moves[0].y).toBe(50);
 
-    // And a refusal from the backend is shown rather than swallowed (Requirement 3.2).
+    // And a refusal from the backend is shown rather than swallowed (Requirement 3.2) - by the
+    // move itself, on the one line the library draws around every canvas (client-centralization
+    // Requirement 2; useDiagramStream.move.test.ts). This canvas draws no line of its own.
     moveError = "That is an anonymous class expression, whose identity does not survive an edit to the file.";
     const expression = elementWithId(container, EXPRESSION_ID);
     fireEvent(expression, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
     fireEvent(expression, new MouseEvent("pointermove", { bubbles: true, clientX: 90, clientY: 60 }));
     fireEvent(expression, new MouseEvent("pointerup", { bubbles: true, clientX: 90, clientY: 60 }));
-    await vi.waitFor(() => {
-      expect(container.querySelector(".owl-rejection")!.textContent).toContain("does not survive an edit");
-    });
+    await vi.waitFor(() => expect(moves).toHaveLength(2));
+    expect(container.textContent).not.toContain("does not survive an edit");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
   });
 
   it("sends a toolbox drop as a placement and a gesture as one rel: call", () => {
