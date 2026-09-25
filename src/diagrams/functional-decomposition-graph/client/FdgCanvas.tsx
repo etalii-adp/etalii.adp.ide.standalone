@@ -20,6 +20,7 @@ import { viewReportOf } from "@client/diagrams/viewReport";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import {
   FDG_ACTION_IDS,
+  FDG_ADD_ACTION_PREFIX,
   FDG_ELEMENT_TYPES,
   FDG_OWNERSHIP_RELATIONS,
   FdgActions,
@@ -276,12 +277,15 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       runAction(FdgActions.connect(relationType as FdgRelationType), `rel:${sourceElementId}->${targetElementId}`);
     },
     // A toolbox drop carries the element type; the placement is the drop's centre.
+    // The backend's toolbox drops its add action (`fdg.add.<type>`), as every module's does; a toolbox
+    // the library derived from the definition drops the bare type. Both mean the same add.
     onElementDropped: ({ elementType, position }) => {
-      if (!isElementType(elementType)) {
+      const type = elementType.startsWith(FDG_ADD_ACTION_PREFIX) ? elementType.slice(FDG_ADD_ACTION_PREFIX.length) : elementType;
+      if (!isElementType(type)) {
         return;
       }
       setRejection("");
-      runAction(FdgActions.add(elementType), `new:${position.x},${position.y}`);
+      runAction(FdgActions.add(type), `new:${position.x},${position.y}`);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
