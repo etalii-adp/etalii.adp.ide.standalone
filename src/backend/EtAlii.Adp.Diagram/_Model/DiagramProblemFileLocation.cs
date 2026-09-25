@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// The problem sits in a file other than the diagram's own, named relative to the project root,

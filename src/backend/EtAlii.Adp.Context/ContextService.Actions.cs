@@ -1,9 +1,9 @@
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
+using EtAlii.Adp.Documents.Wire;
 using Grpc.Core;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 
 namespace EtAlii.Adp.Context;
 
@@ -268,8 +268,8 @@ public sealed partial class ContextService
     /// explorer's empty space reads, and the root is what that space is.
     /// </summary>
     private async ValueTask<ContextTarget?> TryResolveTargetAsync(
-        Common.Wire.ShortGuid projectId,
-        Common.Wire.ShortGuid watchId,
+        Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid watchId,
         ContextSource? source,
         ServerCallContext context)
     {

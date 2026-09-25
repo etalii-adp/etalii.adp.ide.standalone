@@ -1,9 +1,9 @@
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
@@ -16,7 +16,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Path = EtAlii.Adp.Common.Wire.Path;
+using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -117,7 +117,7 @@ public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Common.DiagramValidators>()));
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
@@ -407,7 +407,7 @@ public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         return null;
     }
 
-    private static async Task<IReadOnlyDictionary<string, Common.Wire.ShortGuid>> EntriesAsync(
+    private static async Task<IReadOnlyDictionary<string, Documents.Wire.ShortGuid>> EntriesAsync(
         GrpcChannel channel,
         Metadata headers,
         ShortGuid projectId,
@@ -422,7 +422,7 @@ public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     }
 
     /// <summary>The canvas's own selection shape: the body file, then the element as its child.</summary>
-    private static ContextSelection ElementChain(Common.Wire.ShortGuid entryId, string elementId) =>
+    private static ContextSelection ElementChain(Documents.Wire.ShortGuid entryId, string elementId) =>
         new()
         {
             Source = ContextSelectionSource.Explorer,
@@ -438,8 +438,8 @@ public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
-        Common.Wire.ShortGuid projectId,
-        Common.Wire.ShortGuid watchId,
+        Documents.Wire.ShortGuid projectId,
+        Documents.Wire.ShortGuid watchId,
         Metadata headers,
         string actionId) =>
         contextClient.ExecuteActionAsync(

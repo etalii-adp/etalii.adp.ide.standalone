@@ -41,7 +41,6 @@
   <Project Path="EtAlii.Adp.Hierarchy/EtAlii.Adp.Hierarchy.csproj" />
   <Project Path="EtAlii.Adp.Hierarchy.Tests/EtAlii.Adp.Hierarchy.Tests.csproj" />
   <Project Path="EtAlii.Adp.Projects/EtAlii.Adp.Projects.csproj" />
-  <Project Path="EtAlii.Adp.Common/EtAlii.Adp.Common.csproj" />
   <Project Path="EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj" />
   <Folder Name="/Diagrams/">
     <Project Path="../diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/EtAlii.Adp.Diagram.AnsibleStructure.csproj" />

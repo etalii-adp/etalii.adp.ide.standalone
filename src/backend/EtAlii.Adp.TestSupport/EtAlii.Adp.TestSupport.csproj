@@ -14,7 +14,6 @@
   <ItemGroup>
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <!-- DrawnConnections: a module's sessions and resolvers, driven through core's own seams. -->
