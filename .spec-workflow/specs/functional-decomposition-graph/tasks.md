@@ -86,8 +86,9 @@
   - _Requirements: 5.1, 5.5_
 
 - [ ] 11. Store, session and mapper, on the shared pieces
-  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
-  - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type, centre, width and height, and the payloads `FdgElementPayload { name, text }` and `FdgConnectionPayload { name }`. **A Description is never sent.**
+  - File: `.../FdgDocumentStore.cs`, `.../FdgDocumentReloader.cs`, `.../FdgSession.cs`, `.../FdgSessionFactory.cs`, `.../FdgElementMapper.cs`, `.../Diagram.cs`, `.../FdgContextSourceResolver.cs`, `.../api/functional-decomposition-graph.proto` (new), tests
+  - Lifecycle and view through `backend-centralization`'s shared store lifecycle, save result, diff and change handler. The mapper sends type and centre, and the payloads `FdgElementPayload { name, text, width, height }` and `FdgConnectionPayload { from_element_id, to_element_id, name }`: the core element carries only a position, a type and a payload. **A Description is never sent.**
+  - **Lands as one milestone with task 15's registration half and `FdgContextSourceResolver`, brought forward from task 13** (the user's chat ruling of 2026-09-25). Registering this task's session factory makes the host's `DrawnConnections` guard require an FDG example in `src/examples`, and every connection that example draws must resolve to a selection. So the three land together or none of them can.
   - **The module's backend `DiagramDefinition`**, in `Diagram.cs` as every module's is, whose `Build` registers the store, session and session factory. Without it FDG never reaches the diagram catalog, and task 15's example cannot register. No task in 11–19 claimed it until the user's chat ruling of 2026-09-25; Developer 1 found the gap.
   - Guard: a session over the example delivers every element at the shared height; a Description set through the property grid never appears in any delta; **the backend `DiagramDefinition` is discovered into the diagram catalog**.
   - Seen to fail against: a mapper that packs `description` into the payload — the delta assertion then finds it; and a module without the definition — discovery then finds no FDG type (the user's chat ruling of 2026-09-25).
@@ -104,7 +105,7 @@
   - _Waits on: `backend-centralization` task 17's piece (the restore-lines edit, R6), task 18's piece (the YAML node range, R7, which an edit uses to find its entry's lines and which this line omitted), and task 21 (the gesture grammar, R11) (the user's chat ruling of 2026-09-25)_
   - _Requirements: 3.1, 3.2, 3.3, 6.3, 8.2, 8.3, 7.4_
 - [ ] 13. Toolbox and property providers
-  - File: `.../FdgToolboxProvider.cs`, `.../FdgContextPropertyProvider.cs`, `.../FdgContextActionProvider.cs`, `.../FdgContextSourceResolver.cs` (new), tests
+  - File: `.../FdgToolboxProvider.cs`, `.../FdgContextPropertyProvider.cs`, `.../FdgContextActionProvider.cs` (new), tests. `FdgContextSourceResolver` moved to task 11 (the user's chat ruling of 2026-09-25).
   - The toolbox describes the five element types as data. The property grid offers a Description for all five types and every connection, a Name for the four named types, and a connection's Name. Every property change is a command (task 12).
   - Guard: each of the five types and a connection offers a Description row; a Comment offers no Name row; a property set through the grid reaches the document and undoes.
   - Seen to fail against: a provider that omits the Description for one type, which the per-type assertion then reports.

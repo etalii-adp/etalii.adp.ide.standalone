@@ -55,6 +55,21 @@ namespace EtAlii.Adp.Editor.Plain.Tests;
 /// something a loop can do. Worth knowing before the deferred conversion is picked up, because the
 /// cheap version of that guard cannot work.
 /// </para>
+/// <para>
+/// <b>And the warm-up was timed rather than ordered, which made this flaky in both directions.</b>
+/// It slept 300 ms and hoped its refusal had been logged. Under a loaded gate it had not: the
+/// warm-up's refusal about <c>warm-up.txt</c> landed AFTER the late pipeline was installed, the wait
+/// loop - which stopped on any "no longer opens" line - took it for the one it was waiting for, and
+/// the <c>notes.txt</c> assertion failed (Developer 2's task 18 gate, 2026-09-25; Developer 2's
+/// diagnosis). The same late arrival had a quieter cost: a warm-up that logs after the swap binds a
+/// cached logger to the NEW pipeline, so on exactly those runs this test could not have caught the
+/// shape it exists to reject. And two separate assertions - one line saying "no longer opens",
+/// any line saying <c>notes.txt</c> - could be satisfied by two different lines. So the warm-up now
+/// logs to a pipeline of its own and the test WAITS until that pipeline has heard it before the late
+/// one exists, and the wait and the assertion both ask for ONE line naming <c>notes.txt</c>. The
+/// warm-up refusal stays: it is load-bearing, as the paragraph above says (Architect 3, who wrote
+/// this test and its warm-up).
+/// </para>
 /// </remarks>
 public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
 {
@@ -91,20 +106,23 @@ public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
         // until the first warning, which is after the replacement, and the test would pass against
         // the very shape it exists to reject. Forcing a refusal here is what makes the binding
         // happen on the old pipeline. (Found by reverting the property and watching this pass.)
+        //
+        // ORDERED, NOT TIMED. The warm-up logs to a pipeline of its own - the host's bootstrap one -
+        // and the test waits until that pipeline has HEARD the refusal before the late pipeline is
+        // installed. A sleep only hoped for that, and a warm-up logging after the swap both confused
+        // the wait below and bound a cached logger to the new pipeline, where it would pass.
+        var early = ConfigureSerilog();
         var warmUp = IoPath.Combine(_folder, "warm-up.txt");
         await File.WriteAllTextAsync(warmUp, "before", TestContext.Current.CancellationToken);
-        await using (var warming = new PlainEditorSession(warmUp))
+        await using (new PlainEditorSession(warmUp))
         {
-            using var bound = new ManualResetEventSlim(false);
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: Used in a test case which is acceptable.
-            warming.Changed += (_, _) => bound.Set();
             File.Delete(warmUp);
-
-            // The refusal that binds a cached logger. Waiting on the Changed that does NOT come is
-            // pointless, so give the retry its window and move on - the binding is the point.
-            await Task.Delay(300, TestContext.Current.CancellationToken);
+            await UntilRefusalOf(early, "warm-up.txt");
         }
+
+        Assert.True(
+            early.Any(line => IsRefusalOf(line, "warm-up.txt")),
+            "The arrangement failed: the warm-up's refusal never reached the first pipeline, so nothing was bound to it before the pipeline moved.");
 
         var path = IoPath.Combine(_folder, "notes.txt");
         await File.WriteAllTextAsync(path, "before", TestContext.Current.CancellationToken);
@@ -112,7 +130,7 @@ public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
         Assert.Equal("before", session.Content);
 
         // Only then is a new pipeline installed - a host that opens a file before it builds logging.
-        var heard = ConfigureSerilogLate();
+        var heard = ConfigureSerilog();
 
         // Act. The file goes away for good, so the retry runs out and the refusal is recorded. This
         // also exercises the Deleted subscription: without it nothing would even be notified.
@@ -120,15 +138,25 @@ public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
 
         // Assert. The record arrived HERE, on the new pipeline. A cached logger would still be
         // writing to the old one, and nothing else about the run would look different - which is
-        // exactly how the absence of this line was read as the absence of the event.
+        // exactly how the absence of this line was read as the absence of the event. ONE line
+        // saying both: the warm-up may still add a late refusal of its own, and a "no longer opens"
+        // about another file is not this one.
+        await UntilRefusalOf(heard, "notes.txt");
+
+        Assert.Contains(heard, line => IsRefusalOf(line, "notes.txt"));
+    }
+
+    private static bool IsRefusalOf(string line, string fileName) =>
+        line.Contains("no longer opens", StringComparison.Ordinal)
+        && line.Contains(fileName, StringComparison.Ordinal);
+
+    private static async Task UntilRefusalOf(ConcurrentQueue<string> heard, string fileName)
+    {
         var deadline = DateTime.UtcNow + Patience;
-        while (DateTime.UtcNow < deadline && !heard.Any(line => line.Contains("no longer opens", StringComparison.Ordinal)))
+        while (DateTime.UtcNow < deadline && !heard.Any(line => IsRefusalOf(line, fileName)))
         {
             await Task.Delay(25, TestContext.Current.CancellationToken);
         }
-
-        Assert.Contains(heard, line => line.Contains("no longer opens", StringComparison.Ordinal));
-        Assert.Contains(heard, line => line.Contains("notes.txt", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -136,7 +164,7 @@ public class PlainEditorSessionSpeaksAfterLateConfigurationTests : IDisposable
     /// captures already open in other tests - a bare replacement starves every capture in the
     /// assembly, which cost a gate once already and is recorded on the writer's equivalent.
     /// </summary>
-    private static ConcurrentQueue<string> ConfigureSerilogLate()
+    private static ConcurrentQueue<string> ConfigureSerilog()
     {
         var heard = new ConcurrentQueue<string>();
         Log.Logger = new LoggerConfiguration()

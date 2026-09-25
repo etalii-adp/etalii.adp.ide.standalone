@@ -140,7 +140,8 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
 ## Group 5 — The two small shared edits
 
 - [ ] 17. One restore-lines edit, and three modules onto it
-  - Files: `EtAlii.Adp.Documents`, which gains a reference to `EtAlii.Adp.History` for the command, plus causal-loop, databricks and rdf, and their tests (the user's chat ruling, 2026-09-25)
+  - Files: the command and its handler in `EtAlii.Adp.History`, `IReloadableDocumentStore` in `EtAlii.Adp.Documents` - no new references, since History already references Documents - plus causal-loop, databricks and rdf, and their tests (the user's chat ruling, 2026-09-25, replacing the earlier Documents → History reference, which the Common dissolution made a cycle).
+  - The command is generic over the module's store, because the dispatcher finds a handler by the command's type: one non-generic restore registered by several modules would reach whichever registered last, and reload the wrong store.
   - Usable by a fourth module without copying, which the criterion requires and a second consumer proves.
   - _Requirements: 6.1, 6.2_
 - [ ] 18. One YAML node range, and four modules onto it
