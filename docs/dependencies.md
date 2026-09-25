@@ -55,6 +55,7 @@ One row per distinct package across the npm workspace manifests: `src/package.js
 | `codemirror` | ^6.0.2 | The CodeMirror 6 umbrella package bundling the editor's baseline extensions for the editor modules. | MIT |
 | `jsdom` | ^25.0.1 | The DOM implementation Vitest runs the component tests in, since there is no browser in the test gate. | MIT |
 | `marked` | ^18.0.11 | Renders markdown to HTML for the markdown editor's preview pane. | MIT |
+| `mermaid` | 11.17.2 | Parses the diagrams in the module client-API readme so a test can assert each block is the kind it claims to be — `parse` returns the diagram type. Pinned exactly, not ranged: the architecture pages were authored against 11 and npm resolves 12, and both parse identically as measured, so the pin stops a divergence arriving unnoticed rather than avoiding a known one. Dev-only; never in the client bundle. | MIT |
 | `react` | ^18.3.1 | The UI framework of the shell and of every diagram module's canvas — which is why each module client declares it. | MIT |
 | `react-dom` | ^18.3.1 | React's DOM renderer, mounting the shell into the page. | MIT |
 | `typescript` | ^5.7.2 | The compiler behind the `npm run typecheck` gate and the language everything client-side is written in. | Apache-2.0 |

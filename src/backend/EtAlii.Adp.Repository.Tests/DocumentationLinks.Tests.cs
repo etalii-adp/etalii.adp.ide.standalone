@@ -92,6 +92,7 @@ public partial class DocumentationLinksTests
         "docs/screenshots/readme.md",
         "docs/diagrams.md",
         "docs/architecture.md",
+        "docs/diagram-module-client-api.md",
         "docs/solution-structure.md",
         "CLAUDE.md",
         ".spec-workflow/steering/structure.md",

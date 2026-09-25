@@ -1,5 +1,5 @@
 using System.Text;
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 

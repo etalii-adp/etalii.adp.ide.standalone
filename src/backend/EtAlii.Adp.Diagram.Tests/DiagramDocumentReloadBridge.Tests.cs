@@ -1,5 +1,5 @@
 using System.Threading.Channels;
-using EtAlii.Adp.Common;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -108,7 +108,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
 
         for (var i = 0; i < 20; i++)
         {
-            Documents.AdpFileWriter.Save(bodyPath, $"body {i}");
+            AdpFileWriter.Save(bodyPath, $"body {i}");
         }
 
         var (_, reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);

@@ -610,7 +610,9 @@ This repository plans and tracks work in `.spec-workflow/` — steering document
 
 - **A set of files added or removed under `.spec-workflow/` is committed immediately, in its own commit.** Not left uncommitted, not bundled with unrelated changes. This covers the logs `log-implementation` writes, not only the documents you author by hand.
 - **When a requirements, design or tasks document is approved through the dashboard, commit it and its approval-lifecycle files at that point** — even though approval changes or removes files rather than adding a fresh set.
-- **Approval is granted through the dashboard and nowhere else.** Verbal approval is never accepted, including from the user in chat and including from another agent relaying that the card has cleared. Poll the card and read the verdict before proceeding.
+- **A card's verdict comes from the dashboard and nowhere else.** It is never accepted from the user in chat and never from another agent relaying that the card has cleared. Poll the card and read the verdict before proceeding.
+- **Small amendments are the one exception, and it is an exception to CARDING, not to that rule: they never get a card at all** (ruled by the user, 2026-09-25). A small amendment is **a word, a sentence, a count, an ordering, or the reading of an ambiguous criterion.** Whoever finds one sends the Scrum master the question already shaped as a selection; the Scrum master asks the user in chat; **the document's owner applies the chosen answer** and commits it with a message naming the chat ruling and its date, so the decision is findable from the change. **Anything larger still gets a card** - a change of scope, a new requirement, a rewritten design section. **And nothing is edited under a pending card, whatever the chat said**, because the card would be left pointing at text that no longer matches.
+  **This is the one place an owner acts on the Scrum master's report of the user's answer**, which the bullet above forbids for a card. The two are written as one rule with a boundary rather than side by side, because an absolute sentence standing next to an exception is a contradiction a careful reader resolves by refusing the exception.
 - Use a short, descriptive commit message in the style already in the history ("Bumped approvals.", "Added gRPC core communication specs: requirements and design documents.").
 
 ## Checking that a specification's tasks cover its requirements
@@ -929,7 +931,7 @@ A change that makes a document untrue fixes it in the same change. Four artefact
 - **`.proto` files** are the primary API documentation for the public gRPC contracts and must stay self-explanatory: clear message and field naming, comments for non-obvious constraints.
 - **Non-obvious architectural decisions belong in `tech.md`'s decision log**, not scattered through the code as comments. A decision recorded where it was implemented is findable only by whoever already knows where that is.
 
-(`docs/dependencies.md` needs no rule here — its guard is a test.)
+(`docs/dependencies.md` needs no rule here — its guard is a test. `docs/diagram-module-client-api.md` is half guarded: `diagramModuleClientApi.test.ts` holds its declarations, excerpts, diagrams and guard table against the code, but not its prose, which falls under this section's first sentence - the change that makes one of its sentences untrue fixes it, as a change moving a shared hook's move call must rewrite the sentence saying modules build their own.)
 
 **AND THE OPPOSITE POLARITY IS THE ONE NOBODY TRIPS OVER: A SUMMARY OUTLIVING THE RULE IT SUMMARISES.** Everything
 above is about a document going FALSE, which somebody eventually meets and fixes. This is a document staying

@@ -43,7 +43,6 @@
   <Project Path="EtAlii.Adp.Hierarchy/EtAlii.Adp.Hierarchy.csproj" />
   <Project Path="EtAlii.Adp.Hierarchy.Tests/EtAlii.Adp.Hierarchy.Tests.csproj" />
   <Project Path="EtAlii.Adp.Projects/EtAlii.Adp.Projects.csproj" />
-  <Project Path="EtAlii.Adp.Common/EtAlii.Adp.Common.csproj" />
   <Project Path="EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj" />
   <Folder Name="/Diagrams/">
     <Project Path="../diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/EtAlii.Adp.Diagram.AnsibleStructure.csproj" />
@@ -93,6 +92,9 @@
     <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/EtAlii.Adp.Diagram.DotNetDependencyGraph.csproj" />
     <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.csproj" />
     <Project Path="../diagrams/erd-entity-relationship/backend/EtAlii.Adp.Diagram.ErdEntityRelationship/EtAlii.Adp.Diagram.ErdEntityRelationship.csproj" />
+    <!-- The functional decomposition graph: UI elements, data, actions and functions, and what owns what. -->
+    <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.csproj" />
+    <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.csproj" />
     <Project Path="../diagrams/gcp-architecture/backend/EtAlii.Adp.Diagram.GcpArchitecture/EtAlii.Adp.Diagram.GcpArchitecture.csproj" />
     <Project Path="../diagrams/generic-swimlane/backend/EtAlii.Adp.Diagram.GenericSwimlane/EtAlii.Adp.Diagram.GenericSwimlane.csproj" />
     <Project Path="../diagrams/iso-flowchart/backend/EtAlii.Adp.Diagram.IsoFlowchart/EtAlii.Adp.Diagram.IsoFlowchart.csproj" />
