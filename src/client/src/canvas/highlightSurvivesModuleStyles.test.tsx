@@ -9,7 +9,6 @@ import type { DiagramModel } from "./library/api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { sourceFiles } from "@client/sourceFiles";
-import { sourceFiles } from "@client/sourceFiles";
 
 SVGElement.prototype.setPointerCapture ??= () => {};
 SVGElement.prototype.releasePointerCapture ??= () => {};

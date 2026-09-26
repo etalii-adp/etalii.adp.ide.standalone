@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { sourceFiles } from "@client/sourceFiles";
-import { sourceFiles } from "@client/sourceFiles";
 
 /**
  * A file URL's pathname always begins with a slash. Stripping that slash by hand looks
