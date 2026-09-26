@@ -299,7 +299,6 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useTimelineStream(projectId, path);
   const { executeAction, setProperty } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<DiagramViewport | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const surfaceWidthPx = useMeasuredWidth(hostRef);
@@ -359,12 +358,8 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   }, [model, scale]);
 
   const runAction = (actionId: string, sourceId?: string) => {
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    // A refusal needs nothing here: the call reports it to the library's refusal line.
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
   };
 
   /** A drag from the begin anchor arrives reversed: what precedes an element points into it. */
@@ -372,43 +367,32 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     sourceAnchor === "begin" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
 
   const events: DiagramEventHandlers = {
-    // Selection is the library's (centralized-selection); a menu action it ran and the backend
-    // refused comes back here, for the same rejection line every other refusal uses.
-    onActionRefused: ({ message }) => setRejection(message),
+    // Selection is the library's (centralized-selection), and so is the refusal line: every call
+    // here, and every menu action the library runs, reports its own refusal there
+    // (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
       const element = model.elements.get(elementId);
       if (element === undefined) {
         return;
       }
-      setRejection("");
       const width = element.isPeriod ? Math.max((endSecondsOf(element) - element.x) / scale.secondsPerUnit, 2) : MOMENT_RADIUS * 2;
       const beginSeconds = toSeconds(position.x - width / 2);
       const row = nearestRow(toModuleY(position.y - ELEMENT_HEIGHT / 2));
-      void (async () => {
-        const error = await moveElementTo(elementId, beginSeconds, row * ROW_HEIGHT);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, beginSeconds, row * ROW_HEIGHT);
     },
     onElementResized: ({ elementId, side, bounds }) => {
       const element = model.elements.get(elementId);
       if (element === undefined || !element.isPeriod) {
         return;
       }
-      setRejection("");
       // The moving edge stops at the other rather than crossing it; the handler clamps again
       // server-side, this copy is what the user feels.
       let edgeSeconds = toSeconds(side === "left" ? bounds.x : bounds.x + bounds.width);
       const limit = side === "left" ? endSecondsOf(element) : element.x;
       edgeSeconds = side === "left" ? Math.min(edgeSeconds, limit) : Math.max(edgeSeconds, limit);
       const property = side === "left" ? "timeline.begin" : "timeline.end";
-      void (async () => {
-        const outcome = await setProperty(property, formatSeconds(edgeSeconds, element.dateOnly));
-        if (!outcome.accepted) {
-          setRejection(outcome.error);
-        }
-      })();
+      // A refusal needs nothing here: the call reports it to the library's refusal line.
+      void setProperty(property, formatSeconds(edgeSeconds, element.dateOnly));
     },
     // One stateless call carries the whole gesture - the payload the context channel cannot
     // (Requirement 7.3). Direction follows the anchor the drag lifted from.
@@ -442,14 +426,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const editingId = inlineLabelElementIdOf(prompt);
 
 
-  if (failed) {
-    return (
-      <div className="timeline-canvas canvas-host timeline-canvas-message canvas-host-message">
-        <p>This timeline could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   // The view-fixed ruler, derived from the same view the report observes - and from the width
   // the surface really has, so a label sits over the elements it dates rather than over the
   // ones a 1200px-wide surface would have put there.
@@ -477,8 +454,6 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         scrollbarsClassName="timeline-scrollbars"
       />
       <TimelineRuler startSeconds={rulerStartSeconds} secondsPerPixel={rulerSecondsPerPixel} widthPx={surfaceWidthPx} />
-      {loading ? <p className="timeline-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="timeline-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

@@ -476,7 +476,6 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   const { model, loading, failed, moveElementTo, reportView } = useWardleyStream(projectId, path);
   const {  } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
@@ -575,22 +574,16 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
 
   const events: DiagramEventHandlers = {
     // Selection is the library's (centralized-selection); which types select is declared above.
-    // A menu action the backend refuses comes back here, for the rejection line.
-    onActionRefused: ({ message }) => setRejection(message),
+    // A refused menu action or move is shown on the one line the library draws around every canvas,
+    // by the call that got it (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
       if (!model.elements.has(elementId)) {
         return;
       }
-      setRejection("");
       // A drag is a DOCUMENT EDIT here, not a view change: the backend converts the point
       // back into the document's axes and the new position returns as an ordinary delta. The
       // library already clamped to the map's edge; the division puts it back into 0..1.
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x / scale.width, position.y / scale.height);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x / scale.width, position.y / scale.height);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
     // Deliberately unanswered: element-dropped (the hand-built canvas never wired toolbox
@@ -612,14 +605,7 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   });
 
 
-  if (failed) {
-    return (
-      <div className="wardley-canvas wardley-canvas-message">
-        <p>This map could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="wardley-canvas" role="application" aria-label={model.axis?.title ? `Wardley map: ${model.axis.title}` : "Wardley map"}>
       <DiagramCanvas
@@ -633,7 +619,6 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         scrollbarsClassName="wardley-scrollbars"
         ariaLabel={model.axis?.title ? `Wardley map: ${model.axis.title}` : "Wardley map"}
       />
-      {rejection ? <p className="wardley-rejection">{rejection}</p> : null}
     </div>
   );
 }

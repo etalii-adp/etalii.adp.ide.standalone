@@ -370,7 +370,6 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useOwlStream(projectId, path);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
 
@@ -415,30 +414,20 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   }, [model]);
 
   const runAction = (actionId: string, sourceId?: string) => {
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    // A refusal needs nothing here: the call reports it to the library's refusal line.
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
   };
 
   const events: DiagramEventHandlers = {
-    // Selection is the library's (centralized-selection); a menu action it ran and the backend
-    // refused comes back here, for the same rejection line every other refusal uses.
-    onActionRefused: ({ message }) => setRejection(message),
+    // Selection is the library's (centralized-selection), and so is the refusal line: every call
+    // here, and every menu action the library runs, reports its own refusal there
+    // (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
-      setRejection("");
       const node = model.nodes.get(elementId);
       const size = node ? nodeSizeOf(node) : { width: 0, height: 0 };
       // The authored position, raw. An expression node's refusal comes back from the backend
       // carrying the identity boundary's sentence (Requirement 3.2).
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x - size.width / 2, position.y - size.height / 2);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x - size.width / 2, position.y - size.height / 2);
     },
     // The whole gesture in one stateless rel: call. Between two classes the backend offers
     // the subclass axiom; anything else asks for a predicate (Requirement 6.1).
@@ -462,14 +451,7 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   });
 
 
-  if (failed) {
-    return (
-      <div className="owl-canvas canvas-host owl-canvas-message canvas-host-message">
-        <p>This diagram could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="owl-canvas canvas-host" role="application" aria-label="OWL ontology">
       <DiagramCanvas
@@ -487,8 +469,6 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
           {`Showing ${model.truncation.shown} of ${model.truncation.total} elements — edits are withheld on this truncated view`}
         </p>
       ) : null}
-      {loading ? <p className="owl-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="owl-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

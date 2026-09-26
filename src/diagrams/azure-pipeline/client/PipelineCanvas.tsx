@@ -253,10 +253,6 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   const problems = useContextProblems()?.problems ?? [];
 
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-  // A refusal is the backend's sentence, and it is shown on the rejection line every other canvas
-  // uses. This canvas used to discard the outcome, so a refused shortcut or drop looked like one
-  // that simply did nothing.
-  const [rejection, setRejection] = useState("");
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -312,12 +308,9 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
     return { elements, connections };
   }, [model, problems, path]);
 
+  // The library sends the declared keystroke and shows its refusal on the one line it draws around
+  // every canvas, clearing it when the next gesture is sent (client-centralization Requirement 2).
   const events: DiagramEventHandlers = {
-    // A new action clears the last refusal before the backend answers - what this canvas did
-    // before task 6 moved the shortcut into the library, kept so that task changes nothing visible.
-    onActionInvoked: () => setRejection(""),
-    // The library sends the declared keystroke now, so its refusal arrives here.
-    onActionRefused: ({ message }) => setRejection(message),
     // Selection is the library's (centralized-selection), and so is its highlight: this canvas
     // used to draw a private `focusedId` it set on a press, beside the backend's selection -
     // two answers to "what is selected", with the drawing following the wrong one.
@@ -337,36 +330,20 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   });
 
 
-  if (failed) {
-    return (
-      <div className="pipeline-canvas" data-testid="pipeline-canvas">
-        <div className="pipeline-canvas-unavailable" role="alert">
-          This pipeline is no longer available at {path.join("/")}.
-        </div>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="pipeline-canvas" data-testid="pipeline-canvas">
-      {loading ? (
-        <div className="pipeline-canvas-loading" role="status">
-          Loading…
-        </div>
-      ) : (
-        <DiagramCanvas
-          definition={PIPELINE_DEFINITION}
-          model={diagramModel}
-          events={events}
-          source={{ entryId, path }}
-          toolboxItems={toolboxItems}
-          editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
-          ariaLabel={`Pipeline ${path.join("/")}`}
-          className="pipeline-canvas-surface"
-          scrollbarsClassName="pipeline-scrollbars"
-        />
-      )}
-      {rejection ? <p className="pipeline-rejection canvas-rejection" role="status">{rejection}</p> : null}
+      <DiagramCanvas
+        definition={PIPELINE_DEFINITION}
+        model={diagramModel}
+        events={events}
+        source={{ entryId, path }}
+        toolboxItems={toolboxItems}
+        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+        ariaLabel={`Pipeline ${path.join("/")}`}
+        className="pipeline-canvas-surface"
+        scrollbarsClassName="pipeline-scrollbars"
+      />
     </div>
   );
 }

@@ -160,13 +160,12 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useHelmStream(projectId, path);
 
   // This type's palette is empty by design - registered here as well as by the library
-  // canvas, because the loading/empty states return before the canvas mounts, and the panel
+  // canvas, because the empty state returns before the canvas mounts, and the panel
   // must say "offers nothing" rather than "no diagram is open".
   const toolboxItems = useToolboxItems(projectId, path);
   useRegisterDiagramToolbox(toolboxItems);
   const { revealPath } = useContextConnection();
 
-  const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const nodes = useMemo(() => nodesOf(model), [model]);
@@ -266,9 +265,9 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
       }
     },
     // Selection is the library's (centralized-selection): a node and an edge alike, and a
-    // background press clears - the two things this canvas never did. A menu action the
-    // backend refuses comes back here, for the rejection line.
-    onActionRefused: ({ message }) => setRejection(message),
+    // background press clears - the two things this canvas never did. A refused menu action or
+    // move is shown on the one line the library draws around every canvas, by the call that got it
+    // (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
       const node = model.elements.get(elementId);
       if (!node) {
@@ -276,12 +275,7 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
       }
       // The authored position, raw: the layout block stores what the author placed, and
       // rounding it here would quietly turn the canvas into a grid.
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
@@ -298,15 +292,9 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
     ready: !loading && !failed && viewport !== null,
   });
 
-  if (failed) {
-    return <div className="helm-canvas-message">This helm chart diagram could not be opened.</div>;
-  }
-
-  if (loading) {
-    return <div className="helm-canvas-message">Reading the chart…</div>;
-  }
-
-  if (nodes.length === 0) {
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas;
+  // the empty explanation is this module's own, and only true once the chart has been read.
+  if (!loading && !failed && nodes.length === 0) {
     return (
       <div className="helm-canvas-message">
         This folder is not a Helm chart: it has no <code>Chart.yaml</code>, so there is nothing to draw.
@@ -316,11 +304,6 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
 
   return (
     <div className="helm-canvas-frame" role="application" aria-label="Helm chart anatomy">
-      {rejection ? (
-        <div className="helm-canvas-rejection" role="status" onClick={() => setRejection(null)}>
-          {rejection}
-        </div>
-      ) : null}
       <DiagramCanvas
         definition={HELM_DEFINITION}
         model={diagramModel}

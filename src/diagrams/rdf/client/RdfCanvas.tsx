@@ -180,7 +180,6 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useRdfStream(projectId, path);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<DiagramViewport | null>(null);
 
 
@@ -215,32 +214,22 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   }, [model]);
 
   const runAction = (actionId: string, sourceId?: string) => {
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    // A refusal needs nothing here: the call reports it to the library's refusal line.
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
   };
 
   const events: DiagramEventHandlers = {
-    // Selection is the library's (centralized-selection); a menu action it ran and the backend
-    // refused comes back here, for the same rejection line every other refusal uses.
-    onActionRefused: ({ message }) => setRejection(message),
+    // Selection is the library's (centralized-selection), and so is the refusal line: every call
+    // here, and every menu action the library runs, reports its own refusal there
+    // (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
       const node = model.nodes.get(elementId);
       if (node === undefined) {
         return;
       }
-      setRejection("");
       // The authored position, raw: the layout block stores what the author placed, and a
       // blank node's refusal comes back from the backend with its sentence.
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x - NODE_WIDTH / 2, position.y - nodeHeightOf(node) / 2);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x - NODE_WIDTH / 2, position.y - nodeHeightOf(node) / 2);
     },
     // The whole gesture in one stateless rel: call; the predicate is asked in a dialog -
     // the event carries the payload the context channel cannot (Requirement 7.3).
@@ -268,14 +257,7 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   });
 
 
-  if (failed) {
-    return (
-      <div className="rdf-canvas canvas-host rdf-canvas-message canvas-host-message">
-        <p>This diagram could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="rdf-canvas canvas-host" role="application" aria-label="RDF graph">
       <DiagramCanvas
@@ -292,8 +274,6 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
           {`Showing ${model.truncation.shown} of ${model.truncation.total} resources — edits are withheld on this truncated view`}
         </p>
       ) : null}
-      {loading ? <p className="rdf-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="rdf-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

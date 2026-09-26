@@ -1,6 +1,20 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { useEffect, useRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";
+import { render } from "@testing-library/react";
+import { CanvasFrame } from "./library/surface/CanvasFrame";
+import { useCanvasStatusReporter } from "./library/surface/canvasStatus";
+
+/** A stand-in diagram stream that has not answered yet, as every canvas's does while it opens. */
+function OpeningStream() {
+  const status = useCanvasStatusReporter();
+  const stream = useRef(Symbol("opening stream"));
+  useEffect(() => {
+    status?.report(stream.current, { kind: "opening" });
+  }, [status]);
+  return null;
+}
 
 /**
  * The "Opening…" status sits in the middle of the canvas, where somebody looking at a blank one
@@ -18,12 +32,13 @@ import { afterEach, describe, expect, it } from "vitest";
  *
  * ## Why this is not a skos change
  *
- * `.canvas-status` is declared once, in `canvas.css`, and SEVEN canvases render it: databricks,
- * dependency-graph, owl, rdf, skos, sparql and timeline. Every one uses the identical
- * `{loading ? … : null}`, and `useDiagramStream` empties the model whenever `loading` becomes true —
- * on the first open and again before each reconnect — so the status never covers a drawn diagram
- * and all seven can be centred safely. Fixing skos alone would have left the same corner behind the
- * other six and the next large document would have filed the same report.
+ * `.canvas-status` is declared once, in `canvas.css`. When this was written SEVEN canvases rendered
+ * it - databricks, dependency-graph, owl, rdf, skos, sparql and timeline - each with the identical
+ * `{loading ? … : null}`, and shacl an eighth status of its own. Since client-centralization task 3
+ * none of them does: the library's frame around every canvas renders the one status, so the case
+ * below mounts that frame rather than reading any module. `useDiagramStream` empties the model
+ * whenever `loading` becomes true - on the first open and again before each reconnect - so the
+ * status never covers a drawn diagram and can be centred safely.
  *
  * ## What this test can and cannot see
  *
@@ -60,7 +75,7 @@ describe("the canvas status", () => {
   it("is centred on the canvas, not parked in a corner", () => {
     withCanvasCss((host) => {
       const status = document.createElement("p");
-      status.className = "skos-status canvas-status";
+      status.className = "canvas-status";
       status.textContent = "Opening…";
       host.appendChild(status);
 
@@ -77,32 +92,26 @@ describe("the canvas status", () => {
     });
   });
 
-  it("reaches shacl too, whose status was outside the shared rule entirely", () => {
-    // THE EIGHTH CANVAS. Seven render `<module>-status canvas-status`; shacl rendered its own
-    // `shacl-loading canvas-hint` saying "Loading...". canvas-hint is an SVG TEXT rule - fill and
-    // text-anchor - so on an HTML paragraph it did nothing, and the centring above could not reach
-    // an element that was not using the shared class. One cause, two symptoms.
-    //
-    // The class is READ FROM THE COMPONENT rather than written here, so this cannot drift into
-    // asserting about a string the source no longer renders - and the extraction asserts itself
-    // first, because a regex that matches nothing would otherwise make the whole case vacuous.
-    const source = readFileSync(
-      join(__dirname, "..", "..", "..", "diagrams", "rdf", "client", "ShaclCanvas.tsx"),
-      "utf-8",
-    );
-    const rendered = /loading && model\.shapes\.size === 0 \? <p className="([^"]+)"/.exec(source);
-    expect(rendered, "shacl's loading branch was not found, so this case would prove nothing").not.toBeNull();
-
+  it("reaches every canvas, because the one status the library renders is the one centred", () => {
+    // THE EIGHTH CANVAS was why this case exists: shacl rendered its own `shacl-loading canvas-hint`,
+    // an SVG text rule that did nothing on an HTML paragraph, so the centring above never reached it.
+    // Since client-centralization task 3 no module renders a status at all, so the question becomes
+    // whether the ONE element the library renders is the one the rule centres. The element is
+    // RENDERED, not written here, so this cannot drift into asserting about a class nothing draws -
+    // and it asserts it found one first, because an absent element would make the case vacuous.
     withCanvasCss((host) => {
-      const status = document.createElement("p");
-      status.className = rendered![1];
-      host.appendChild(status);
+      render(
+        <CanvasFrame>
+          <OpeningStream />
+        </CanvasFrame>,
+        { container: host },
+      );
+      const status = host.querySelector('[data-canvas-surface="status"]');
+      expect(status, "the frame rendered no status while opening, so this case would prove nothing").not.toBeNull();
 
-      const computed = getComputedStyle(status);
-      expect(
-        computed.top,
-        `shacl renders class "${rendered![1]}", which resolves to no status placement - it is outside the shared rule`,
-      ).toBe("50%");
+      const computed = getComputedStyle(status!);
+      expect(computed.top, "the library's status resolves to no centred placement").toBe("50%");
+      expect(computed.left).toBe("50%");
       expect(computed.transform).toContain("translate(-50%, -50%)");
     });
   });
@@ -112,7 +121,7 @@ describe("the canvas status", () => {
     // worse defect than the one being fixed. This says the split was deliberate.
     withCanvasCss((host) => {
       const rejection = document.createElement("p");
-      rejection.className = "skos-rejection canvas-rejection";
+      rejection.className = "canvas-rejection";
       rejection.textContent = "That edit was refused.";
       host.appendChild(rejection);
 

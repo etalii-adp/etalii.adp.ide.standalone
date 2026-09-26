@@ -5,6 +5,7 @@ import { DeltaSchema } from "@client/generated/deltas_pb";
 import { isTabDirty, markTabDirty } from "@client/shell/panels/dirtyTabs";
 import { applyEditorDelta, emptyEditorText, type EditorTextModel } from "./useEditorText";
 import { TextEditorPanel } from "./TextEditorPanel";
+import { CanvasFrame } from "@client/canvas/library/surface/CanvasFrame";
 
 // The panel's logic - dirty state, conflict presentation, save flow - is what is under test;
 // CodeMirror's own rendering is not, so the base editor becomes a plain textarea with the
@@ -152,16 +153,24 @@ describe("TextEditorPanel", () => {
     expect(isTabDirty("notes.txt")).toBe(false);
   });
 
-  it("keeps the dirty state and shows the reason when a save fails", async () => {
-    // Arrange.
-    render(<TextEditorPanel {...props} onSave={() => Promise.resolve("disk is full")} />);
+  it("keeps the dirty state and shows the reason when a save fails, on the library's one refusal line", async () => {
+    // Arrange: client-centralization Requirement 2.5 - a failed save reaches the same surface every
+    // other refusal does, the line the library's frame draws around the panel.
+    const { container } = render(
+      <CanvasFrame>
+        <TextEditorPanel {...props} onSave={() => Promise.resolve("disk is full")} />
+      </CanvasFrame>,
+    );
     fireEvent.change(screen.getByTestId("base-text-editor"), { target: { value: "x" } });
 
     // Act.
     fireEvent.click(screen.getByTestId("save-gesture"));
 
-    // Assert.
-    await screen.findByText("disk is full");
+    // Assert: shown once, by the library, and the edit is kept.
+    const line = await screen.findByText("disk is full");
+    expect(line.getAttribute("data-canvas-surface")).toBe("refusal");
+    expect(screen.getAllByText("disk is full")).toHaveLength(1);
+    expect(container.querySelector(".text-editor-save-error")).toBeNull();
     expect(screen.getByTestId("dirty-indicator").textContent).toContain("Unsaved");
   });
 
