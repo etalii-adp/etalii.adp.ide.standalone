@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, type Dirent } from "node:fs";
 import path from "node:path";
 import { themeTokens, tokensRead } from "./themeContrast";
 
@@ -65,35 +65,60 @@ describe("theme colour tokens", () => {
   const theme = themeTokens(themeCss);
   const defined = new Set([...theme.light.keys(), ...theme.dark.keys()]);
 
-  /** Every source a running client pulls in: the shell's own, and every module's. */
-  function sources(extensions: string[]): string[] {
+  /** Folders no source lives in: build output and installed packages, never entered. */
+  const notSources = new Set(["node_modules", "dist", "bin", "obj"]);
+
+  /**
+   * Every file a running client could pull in - the shell's own and every module's - found by ONE
+   * walk, shared by every test in this file.
+   *
+   * <b>Why once, and without a stat per entry.</b> This walk visits about 2,900 entries. The file
+   * used to start five of them, and stat every entry of each; in a gate, where the client suite runs
+   * on a loaded machine, that pushed "finds the sources it is meant to be guarding" past vitest's
+   * 5-second limit (7157 ms, where the same test takes under a second on a quiet one). The directory
+   * entry already says what it is, so nothing is statted - the same shape as Architect 1's fix to the
+   * library-class guard, 7887db33.
+   */
+  let everyFileFound: string[] | null = null;
+
+  function everyFile(): string[] {
+    if (everyFileFound !== null) {
+      return everyFileFound;
+    }
+
     const roots = [clientSrc, path.join(repoSrc, "diagrams"), path.join(repoSrc, "editors")];
     const found: string[] = [];
 
     function walk(directory: string) {
-      let entries: string[];
+      let entries: Dirent[];
       try {
-        entries = readdirSync(directory);
+        entries = readdirSync(directory, { withFileTypes: true });
       } catch {
         return; // a root that does not exist yet - editors/ predates nothing, but be tolerant
       }
 
       for (const entry of entries) {
-        if (entry === "node_modules" || entry === "dist" || entry === "bin" || entry === "obj") {
+        if (notSources.has(entry.name)) {
           continue;
         }
 
-        const full = path.join(directory, entry);
-        if (statSync(full).isDirectory()) {
+        const full = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
           walk(full);
-        } else if (extensions.some((extension) => entry.endsWith(extension))) {
+        } else if (entry.isFile()) {
           found.push(full);
         }
       }
     }
 
     roots.forEach(walk);
+    everyFileFound = found;
     return found;
+  }
+
+  /** Every source a running client pulls in with one of these extensions. */
+  function sources(extensions: string[]): string[] {
+    return everyFile().filter((file) => extensions.some((extension) => file.endsWith(extension)));
   }
 
   const stylesheets = () => sources([".css"]);
@@ -137,6 +162,20 @@ describe("theme colour tokens", () => {
     const own = declaredIn(source);
     return [...new Set(tokensRead(source))].filter((token) => !defined.has(token) && !own.has(token));
   }
+
+  it("walks the trees once for the whole file, however many tests ask", () => {
+    // The walk crossed vitest's 5 s limit in a gate when this file started five of them. A clock
+    // cannot tell one walk from five on a quiet machine, so the property is asserted directly: every
+    // caller gets the SAME list, which a walk per call could never return.
+    // Act.
+    const first = everyFile();
+    const second = everyFile();
+
+    // Assert: one walk, and the two filters that every test uses draw from it.
+    expect(second).toBe(first);
+    expect(stylesheets().every((file) => first.includes(file))).toBe(true);
+    expect(painters().every((file) => first.includes(file))).toBe(true);
+  });
 
   it("finds the sources it is meant to be guarding, and reads names out of them", () => {
     // Arrange & act: a walk that silently found nothing would pass every assertion below, and a
