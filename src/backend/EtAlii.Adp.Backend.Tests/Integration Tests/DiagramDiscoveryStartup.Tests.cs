@@ -180,6 +180,21 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
+    public void AfterStartup_TheGartnerHypeCycleGraphIsCataloged()
+    {
+        // Arrange.
+        // The same guard as FDG's above, for the same reason: a module that declares no definitions is
+        // missing from both sides of the every-module comparison, so only a named origin catches it.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+
+        // Assert.
+        Assert.Contains("gartner/hypecycle-graph", catalog.All.Select(definition => definition.Origin.Key));
+    }
+
+    [Fact]
     public void AfterStartup_EveryDeployedDefinitionCarriesADescription()
     {
         // Arrange.
