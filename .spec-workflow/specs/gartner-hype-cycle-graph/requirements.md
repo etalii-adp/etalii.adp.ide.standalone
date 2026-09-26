@@ -23,7 +23,7 @@ The Notion description leaves these open. Each is put to the user as a selection
 
 | # | Question | Options | Criteria affected |
 | --- | --- | --- | --- |
-| Q1 | The colour list names Trough twice (Light Gray and Orange) and Plateau not at all. Which colour does each phase take? | **(default) By position:** Peak yellow, Trough light gray, Slope orange, Plateau lime green. · **By name, Plateau added:** Peak yellow, Trough orange, Slope lime green, Plateau light gray. · Other. | 4.5 |
+| Q1 | The colour list names Trough twice (Light Gray and Orange) and Plateau not at all. Which colour does each phase take? | **Ruled by the user in chat, 2026-09-26:** Peak yellow, Trough light gray, Slope orange, Plateau lime green. | 4.5 |
 | Q2 | How is a trend's time span divided between its visible phases? | **(default) Equal shares:** the visible phases split the span from start to stop date equally, so one date pair is all a trend stores. · **Dated phases:** each phase has its own end date, dragged separately. · Other. | 3.3, 4.3 |
 | Q3 | "Each trend can only influence each other trend once": does that allow both A→B and B→A? | **(default) One influence per pair, either direction:** once A influences B, B cannot influence A. · **One per direction:** A→B and B→A may both exist. · Other. | 6.4 |
 | Q4 | What does a tag filter do to trends that do not match? | **(default) Hidden,** with every influence touching them. · **Dimmed,** still visible but faded. · Other. | 8.3 |
@@ -104,7 +104,7 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 2. WHEN a trend with all four phases is drawn THEN three right-pointing chevrons inside the banner SHALL divide it into four segments, one per phase, left to right Peak, Trough, Slope and Plateau.
 3. WHEN a trend shows fewer than four phases THEN only those phases SHALL be drawn, always the earliest ones, and the banner SHALL end in its point after the last visible phase: a trend is a Peak; a Peak and Trough; a Peak, Trough and Slope; or all four. A trend with N visible phases has N - 1 chevrons.
 4. WHEN the pointer rests on a segment THEN a tooltip SHALL name the phase in full as Gartner does: *Peak of Inflated Expectations*, *Trough of Disillusionment*, *Slope of Enlightenment*, *Plateau of Productivity*.
-5. WHEN a segment is filled THEN its colour SHALL be a bland (muted) variant of the phase's colour as Q1 rules (default: Peak yellow, Trough light gray, Slope orange, Plateau lime green), each a theme token defined in both modes, `--color-diagram-hype-peak`, `--color-diagram-hype-trough`, `--color-diagram-hype-slope` and `--color-diagram-hype-plateau`, never a literal in the module's stylesheet. Where text or a chevron is drawn on a fill, the contrast SHALL be checked by `theme.contrast.test.ts` in both modes.
+5. WHEN a segment is filled THEN its colour SHALL be a bland (muted) variant of the phase's colour as the user ruled (Q1): Peak yellow, Trough light gray, Slope orange, Plateau lime green, each a theme token defined in both modes, `--color-diagram-hype-peak`, `--color-diagram-hype-trough`, `--color-diagram-hype-slope` and `--color-diagram-hype-plateau`, never a literal in the module's stylesheet. Where text or a chevron is drawn on a fill, the contrast SHALL be checked by `theme.contrast.test.ts` in both modes.
 
 ### Requirement 5 — The trend's name and vertical placement
 
