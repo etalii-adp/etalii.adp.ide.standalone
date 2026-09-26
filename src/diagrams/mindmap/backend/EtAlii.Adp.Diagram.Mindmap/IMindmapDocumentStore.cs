@@ -38,11 +38,22 @@ public interface IMindmapDocumentStore
 
     /// <summary>
     /// Re-reads a map an external tool changed on disk and announces it (Requirement 11.8).
-    /// A no-op for a map nothing loaded, and while the store's own save of that path is in
-    /// flight - its own write is not an external change, and must not bounce back as one.
+    /// A no-op for a map nothing loaded (a permitted departure, R2.8), and while the store's own
+    /// save of that path is in flight - its own write is not an external change, and must not
+    /// bounce back as one. A reload that cannot read keeps the last good map and tells nobody (R2.4).
     /// </summary>
     void Reload(string bodyPath);
 
-    /// <summary>Raised after every save, with what changed, so the open connections can be told.</summary>
+    /// <summary>
+    /// The watcher saw the body deleted: the map becomes what a first open of a missing body
+    /// shows, and the sessions are told (R2.5). The one call that clears a map a reload kept. A
+    /// no-op for a map nothing loaded, as for <see cref="Reload"/>.
+    /// </summary>
+    void BodyDeleted(string bodyPath);
+
+    /// <summary>
+    /// Raised after every save, with what changed, so the open connections can be told; and after a
+    /// reload or a deletion installed a map, with <see cref="MindmapReloaded"/>.
+    /// </summary>
     event EventHandler<MindmapChangedEventArgs>? Changed;
 }
