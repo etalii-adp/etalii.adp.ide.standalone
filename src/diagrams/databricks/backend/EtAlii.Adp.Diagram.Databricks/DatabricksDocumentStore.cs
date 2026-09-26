@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using EtAlii.Adp.Documents;
 using Serilog;
 using YamlDotNet.Core;
@@ -7,26 +6,37 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <inheritdoc cref="IDatabricksDocumentStore" />
+/// <remarks>
+/// <para>
+/// <b>A thin use of the shared lifecycle (backend-centralization task 6).</b> Opening, the retries
+/// before a refused read is believed, keeping the last good document through a reload that cannot
+/// read (R2.4), clearing it only on the watcher's delete (R2.5) and ignoring this store's own save
+/// (R2.3), and creating the folder a first save needs, are all
+/// <see cref="WritableDocumentLifecycle{TDocument}"/>'s. What stays here is what is this module's: how
+/// a body's text becomes the family's three readings, the refusal to write one that does not parse,
+/// and telling the sessions.
+/// </para>
+/// <para>
+/// <b>The sessions hear about a reload only when the lifecycle installed a document.</b> One that
+/// kept the last good document changed nothing a session shows.
+/// </para>
+/// </remarks>
 public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
 {
     private static readonly ILogger _logger = Log.ForContext<DatabricksDocumentStore>();
 
-    private readonly ConcurrentDictionary<string, DatabricksDocumentEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
-
-    // The paths this store is writing, and what it last wrote to each, so its own save does not
-    // bounce back through Reload as an "external" change - the per-path saving guard every sibling
-    // store carries.
-    private readonly SelfWriteGuard _selfWrites = new();
+    // A first open that cannot read opens as empty with a warning naming the path, which is the
+    // lifecycle's own default and what this store did before it (R2.2) - so no unavailable document
+    // is declared here.
+    private readonly WritableDocumentLifecycle<DatabricksDocumentEntry> _lifecycle = new(
+        (path, text) => Parse(path, DatabricksDocument.Parse(text)),
+        entry => entry.Document.Text);
 
     /// <inheritdoc />
     public event EventHandler<DatabricksDocumentChangedEventArgs>? Changed;
 
     /// <inheritdoc />
-    public DatabricksDocumentEntry GetOrLoad(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return _entries.GetOrAdd(path, Load);
-    }
+    public DatabricksDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
     public string Save(string path, DatabricksDocumentEntry entry)
@@ -42,87 +52,39 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
             return $"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}";
         }
 
-        _selfWrites.Begin(path, entry.Document.Text);
-        try
-        {
-            var directory = IoPath.GetDirectoryName(path);
-            if (directory is { Length: > 0 } && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            AdpFileWriter.Save(path, entry.Document.Text);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // The edit stays in memory: losing it because the disk refused would be worse than a
-            // save the user can retry once the file is writable again.
-            _logger.Warning(exception, "Could not write {Path}; the change is kept in memory", path);
-            return $"{IoPath.GetFileName(path)} could not be written. The change is still here to try again.";
-        }
-        finally
-        {
-            _selfWrites.End(path);
-        }
-
         // The document's own lines are authoritative and unchanged by writing them out, but what
-        // they mean has changed - so the models are rebuilt from the document rather than re-read.
+        // they mean has changed - so the models are rebuilt from the document before it is saved,
+        // and the lifecycle caches exactly that entry, whether or not the write lands.
         var reparsed = Parse(path, entry.Document);
-        // Also re-establishes the cache from what was just written, which is a second job this
-        // line now does: where a reload evicted the entry mid-command, the cache and the file agree
-        // afterwards. Do not optimise it away as a redundant reassignment - that reopens half of the
-        // lost-edit window this signature closed.
-        _entries[path] = reparsed;
+        var result = _lifecycle.Save(path, reparsed);
+        if (result.Failed)
+        {
+            return result.Error;
+        }
+
         Changed?.Invoke(this, new DatabricksDocumentChangedEventArgs(path, reparsed));
         return "";
     }
 
     /// <inheritdoc />
-    public void Forget(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        _entries.TryRemove(path, out _);
-        _selfWrites.Forget(path);
-    }
+    public void Forget(string path) => _lifecycle.Forget(path);
 
     /// <inheritdoc />
     public void Reload(string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        if (_selfWrites.IsOwnWrite(path))
+        if (_lifecycle.Reload(path))
         {
-            // The change on disk is this store's own save, in flight or already landed; Save
-            // reparses and tells the sessions itself.
-            return;
+            Changed?.Invoke(this, new DatabricksDocumentChangedEventArgs(path, _lifecycle.GetOrLoad(path)));
         }
-
-        _entries.TryRemove(path, out _);
-        var entry = GetOrLoad(path);
-        Changed?.Invoke(this, new DatabricksDocumentChangedEventArgs(path, entry));
     }
 
-    private DatabricksDocumentEntry Load(string path)
+    /// <inheritdoc />
+    public void BodyDeleted(string path)
     {
-        string text;
-        try
+        if (_lifecycle.BodyDeleted(path))
         {
-            // A file that does not exist yet is an empty document, not an error: it may have
-            // been created a moment ago, and a diagram that cannot open at all is the worse
-            // answer. The File.Exists check is what produces that, and it is load-bearing:
-            // SharedDocumentReader opens with FileMode.Open and throws on a missing file, so
-            // deleting the check would turn every open of a not-yet-created body into an
-            // exception - caught below, and so still empty, but logged as a failure to read
-            // what is an ordinary state.
-            text = File.Exists(path) ? SharedDocumentReader.ReadAllText(path) : "";
+            Changed?.Invoke(this, new DatabricksDocumentChangedEventArgs(path, _lifecycle.GetOrLoad(path)));
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _logger.Warning(exception, "Could not read {Path}; opening it as empty", path);
-            text = "";
-        }
-
-        return Parse(path, DatabricksDocument.Parse(text));
     }
 
     /// <summary>
