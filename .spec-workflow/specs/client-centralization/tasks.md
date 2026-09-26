@@ -87,7 +87,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - **The grammar and its parsers are Architect 1's**; this task cites its fixture and tests the empty and unprefixed ids.
   - _Requirements: 9.1, 9.2, 9.3_
 
-- [ ] 11. One canvas test harness
+- [x] 11. One canvas test harness
   - Files: `test-setup.ts`, `canvas/library/testing/canvasHarness.ts` (new), the 18–20 copies across canvas tests
   - The pointer-capture stubs move to `test-setup.ts`; the pointer-event factory, the `pushedIds` adapter and **one fake context connection with every member** replace 20 partial fakes. `renderCanvas` **stays per module** — its props differ, so it is not a duplicate.
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
