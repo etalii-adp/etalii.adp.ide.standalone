@@ -1,29 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { GESTURE_MOVEMENT_THRESHOLD_PX, usePointerGesture } from "./usePointerGesture";
-
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined - which the
- * arbiter reads as not-the-primary-button, correctly. A MouseEvent typed "pointerdown"
- * bubbles the same way and carries the button, which is what a real browser delivers.
- * The idiom is AnsibleCanvas.test.tsx's, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit & { pointerId?: number }) {
-  const event = new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-  if (init.pointerId !== undefined) {
-    Object.defineProperty(event, "pointerId", { value: init.pointerId });
-  }
-  return event;
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it so a release
-// outside the surface still ends the gesture. Stubbed rather than feature-detected in the
-// module, so the production path stays the one that ships.
-beforeEach(() => {
-  SVGElement.prototype.setPointerCapture ??= () => {};
-  SVGElement.prototype.releasePointerCapture ??= () => {};
-});
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 type Target = { kind: "element" | "relation" | "background"; id: string };
 

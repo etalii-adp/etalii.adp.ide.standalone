@@ -9,9 +9,9 @@ import {
 } from "@client/generated/helm-charts_pb";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type HelmModel } from "./helmModel";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { elementSelectionOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 const revealPath = vi.fn();
@@ -39,10 +39,12 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     // The library reads the inline-edit prompt itself where it owns the canvas (client-centralization
     // task 7), so a sourced canvas needs one here even though this module never renames inline.
     useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select, revealPath }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: currentSelection }),
   };
 });
+
+const connection = fakeContextConnection({ select, revealPath });
 
 const emptyPalette: never[] = [];
 
@@ -378,7 +380,7 @@ describe("selection, as every canvas has it", () => {
         currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["helm-chart.adp"], id);
         return renderCanvas();
       },
-      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(select),
       element: "chart",
       connection: "e1",
     });

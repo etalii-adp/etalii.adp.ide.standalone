@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DatabricksModel } from "./databricksModel";
+import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: DatabricksModel = emptyModel;
 let moves: { elementId: string; x: number; y: number }[] = [];
@@ -25,13 +26,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => null,
   useContextPrompt: () => ({ prompt: currentPrompt, onPropose: vi.fn(), onSubmit: submitLabel, onCancel: vi.fn() }),
   useContextSelection: () => ({ selection: null, levels: [], actions: [] }),
-  useContextConnection: () => ({
-    select: () => undefined,
-    executeAction: () => Promise.resolve({ accepted: true, error: "" }),
-    executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
-    setProperty: () => Promise.resolve({ accepted: true, error: "" }),
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection();
 
 vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
   useRegisterInlineLabelPlacement: () => undefined,

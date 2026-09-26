@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { elementSelectionOf } from "@client/canvas/selection";
 import { DiagramCanvas, DiagramCanvasCore } from "../DiagramCanvas";
 import type { DiagramDefinition } from "../definition/diagramDefinition";
 import type { DiagramModel } from "../api/diagramModel";
@@ -9,6 +8,7 @@ import type { DiagramSelection } from "../api/diagramEvents";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { expectLibrarySelection, type LibrarySelectionHarness } from "./expectLibrarySelection";
+import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * The shared assertion is itself a guard, so it is held to the same rule: seen red against each
@@ -25,13 +25,12 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     // The library reads the inline-edit prompt itself where it owns the canvas (client-centralization
     // task 7), so a sourced canvas needs one here even though this module never renames inline.
     useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
-    useContextConnection: () => ({ select: (selection: unknown) => channel.pushes.push(selection), executeAction: () => Promise.resolve({ accepted: true, error: "" }) }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: channel.pushed, levels: [], actions: [] }),
   };
 });
 
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
+const connection = fakeContextConnection({ select: (selection: unknown) => channel.pushes.push(selection) });
 
 const ENTRY = new Uint8Array([7]);
 const PATH = ["system.adp"];
@@ -53,8 +52,6 @@ const model: DiagramModel = {
   connections: [{ id: "a->b", type: "calls", sourceId: "a", targetId: "b" }],
 };
 
-const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null));
-
 function wrap(canvas: React.ReactElement) {
   return render(
     <DiagramViewProvider>
@@ -71,7 +68,7 @@ function ownedHarness(overrides: Partial<LibrarySelectionHarness> = {}): Library
       channel.pushed = id === null ? null : elementSelectionOf(ENTRY, PATH, id);
       return wrap(<DiagramCanvas definition={definition} model={model} events={{}} source={{ entryId: ENTRY, path: PATH }} />);
     },
-    pushedIds: () => channel.pushes.map(idOf),
+    pushedIds: () => idsPushed(channel.pushes),
     element: "a",
     connection: "a->b",
     ...overrides,

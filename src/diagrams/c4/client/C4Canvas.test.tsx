@@ -12,9 +12,9 @@ import { applyDelta, emptyModel, BOUNDARY_TYPE, NODE_TYPE, RELATIONSHIP_TYPE, VI
 import { ContextPromptSchema } from "@client/generated/context_pb";
 import type { ContextPrompt } from "@client/generated/context_pb";
 import { act } from "@testing-library/react";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { elementSelectionOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 let currentModel: C4Model = emptyModel;
@@ -53,18 +53,19 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({
-      watchId: new Uint8Array(16),
-      select,
-      executeAction: (actionId: string) => {
-        executed.push(actionId);
-        return Promise.resolve({ accepted: true, error: "" });
-      },
-      executeShortcut: () => Promise.resolve(shortcutOutcome),
-    }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: currentSelection, actions: [] }),
     useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   };
+});
+
+const connection = fakeContextConnection({
+  select,
+  executeAction: (actionId: string) => {
+    executed.push(actionId);
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+  executeShortcut: () => Promise.resolve(shortcutOutcome),
 });
 
 // The palette comes from the backend over its own call; this canvas only registers what it
@@ -116,26 +117,11 @@ function seed(...elements: ReturnType<typeof element>[]): C4Model {
 
 const props = { projectId: new Uint8Array(16), entryId: new Uint8Array(16).fill(3), path: ["docs", "model.adp"] };
 
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined. A MouseEvent typed
- * "pointerdown" bubbles the same way and carries the button - usePointerGesture.test.tsx's
- * idiom, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
 /** A click in the pointer vocabulary the canvas listens to: press and release, unmoved. */
 function press(target: Element, init: MouseEventInit = {}) {
   fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
   fireEvent(target, pointer("pointerup", { ...init }));
 }
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it so a release
-// outside the surface still ends the gesture.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 describe("C4Canvas", () => {
   beforeEach(() => {
@@ -638,7 +624,6 @@ describe("C4Canvas", () => {
     expect(container.querySelector(".context-menu")).toBeNull();
   });
 
-
   // ---- dragging an element ----------------------------------------------------------------
 
   /**
@@ -922,7 +907,6 @@ describe("C4Canvas", () => {
 });
 
 describe("selection, as every canvas has it", () => {
-  const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null));
 
   it("highlights a pushed element and relationship, and clears on a background press (centralized-selection 9.2)", () => {
     expectLibrarySelection({
@@ -930,7 +914,7 @@ describe("selection, as every canvas has it", () => {
         currentSelection = id === null ? null : elementSelectionOf(props.entryId, props.path, id);
         return render(<C4Canvas {...props} />);
       },
-      pushedIds: () => select.mock.calls.map(([push]) => idOf(push)),
+      pushedIds: () => idsPushed(select),
       element: "a",
       connection: "a->b",
     });
@@ -956,7 +940,7 @@ describe("selection, as every canvas has it", () => {
     fireEvent(boundary, new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 }));
     fireEvent(boundary, new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
 
-    expect(select.mock.calls.map(([push]) => idOf(push))).toEqual([null]);
+    expect(idsPushed(select)).toEqual([null]);
   });
 });
 

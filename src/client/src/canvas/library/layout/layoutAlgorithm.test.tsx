@@ -6,13 +6,7 @@ import type { DiagramDefinition } from "../definition/diagramDefinition";
 import type { DiagramModel } from "../api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
-
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 const box = (id: string, x: number, y: number, parentId?: string) => ({ id, x, y, width: 100, height: 40, parentId });
 

@@ -2,9 +2,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { emptyModel, type RdfModel, type RdfNode } from "./rdfModel";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: RdfModel = emptyModel;
 let currentLoading = false;
@@ -35,16 +34,16 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   innermostKey: () => currentSelectionKey,
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
-  useContextConnection: () => ({
-    select: (selection: unknown) => selections.push(selection),
-    executeAction: (actionId: string, source?: unknown) => {
-      executed.push({ actionId, source });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-    executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
-    setProperty: () => Promise.resolve({ accepted: true, error: "" }),
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({
+  select: (selection: unknown) => selections.push(selection),
+  executeAction: (actionId: string, source?: unknown) => {
+    executed.push({ actionId, source });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+});
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
@@ -60,15 +59,6 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
 }));
 
 const { RdfCanvas, nodeHeightOf, NODE_WIDTH } = await import("./RdfCanvas");
-
-// jsdom implements no pointer capture on SVG elements; the library's arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
-
-/** A pointer event jsdom can carry - usePointerGesture.test.tsx's idiom, for the same reason. */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
 
 function press(target: Element, init: MouseEventInit = {}) {
   fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
@@ -320,7 +310,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas();
       },
-      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(selections),
       element: ALICE,
       connection: EDGE,
     });

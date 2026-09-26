@@ -1,14 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import {
   FdgConnectionPayloadSchema,
   FdgElementPayloadSchema,
 } from "@client/generated/functional-decomposition-graph_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { emptyModel, type FdgModel } from "./fdgModel";
+import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * The REAL canvas, mounted: what the library draws from this module's definition and model, and
@@ -40,13 +39,13 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
   useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: [] }),
-  useContextConnection: () => ({
-    watchId: new Uint8Array([9]),
-    select: (selection: unknown) => selections.push(selection),
-    executeAction: () => Promise.resolve({ accepted: true, error: "" }),
-    setProperty: () => Promise.resolve({ accepted: true, error: "" }),
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({
+  watchId: new Uint8Array([9]),
+  select: (selection: unknown) => selections.push(selection),
+});
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({ useRegisterDiagramView: () => undefined }));
 vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({ useRegisterInlineLabelPlacement: () => undefined }));
@@ -101,7 +100,7 @@ describe("the functional decomposition graph canvas, mounted", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas();
       },
-      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(selections),
       element: "planning",
       connection: "c-1",
     });

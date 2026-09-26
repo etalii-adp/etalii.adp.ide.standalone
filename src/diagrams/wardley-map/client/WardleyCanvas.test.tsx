@@ -19,6 +19,7 @@ import {
 import { applyDelta, emptyModel, type WardleyModel } from "./wardleyModel";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: WardleyModel = emptyModel;
 let currentLoading = false;
@@ -59,10 +60,12 @@ const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
-  useContextConnection: () => ({ select, executeAction, executeShortcut }),
+  useContextConnection: () => connection,
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
   useContextPrompt: () => ({ prompt: currentPrompt, onPropose: vi.fn(async () => ({ accepted: true, error: "" })), onSubmit: submitLabel, onCancel: vi.fn() }),
 }));
+
+const connection = fakeContextConnection({ select, executeAction, executeShortcut });
 
 vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
   useRegisterInlineLabelPlacement: () => undefined,
@@ -936,7 +939,6 @@ describe("WardleyCanvas selection", () => {
 });
 
 describe("selection, as every canvas has it", () => {
-  const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null));
 
   /** Two components joined by a link - the link is what this notation deliberately does not select. */
   function linkedPair(): WardleyModel {
@@ -953,7 +955,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas(linkedPair());
       },
-      pushedIds: () => select.mock.calls.map(([push]) => idOf(push)),
+      pushedIds: () => idsPushed(select),
       element: "a",
     });
   });
@@ -968,6 +970,6 @@ describe("selection, as every canvas has it", () => {
     fireEvent(line!, new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 }));
     fireEvent(line!, new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
 
-    expect(select.mock.calls.map(([push]) => idOf(push))).toEqual([null]);
+    expect(idsPushed(select)).toEqual([null]);
   });
 });
