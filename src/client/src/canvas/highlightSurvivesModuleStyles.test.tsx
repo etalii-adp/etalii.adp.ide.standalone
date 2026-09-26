@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
@@ -8,6 +8,8 @@ import type { DiagramDefinition } from "./library/definition/diagramDefinition";
 import type { DiagramModel } from "./library/api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { sourceFiles } from "@client/sourceFiles";
+import { sourceFiles } from "@client/sourceFiles";
 
 SVGElement.prototype.setPointerCapture ??= () => {};
 SVGElement.prototype.releasePointerCapture ??= () => {};
@@ -82,22 +84,8 @@ function sourceRoot(): string {
 
 /** Every .css file under the client and the modules, node_modules and build output excluded. */
 function stylesheets(root: string): string[] {
-  const found: string[] = [];
-  const walk = (directory: string) => {
-    for (const child of readdirSync(directory, { withFileTypes: true })) {
-      const path = join(directory, child.name);
-      if (child.isDirectory()) {
-        if (!["node_modules", "bin", "obj", "dist"].includes(child.name)) {
-          walk(path);
-        }
-      } else if (child.name.endsWith(".css")) {
-        found.push(path);
-      }
-    }
-  };
-  walk(join(root, "client", "src"));
-  walk(join(root, "diagrams"));
-  return found;
+  return [join(root, "client", "src"), join(root, "diagrams")]
+    .flatMap((directory) => sourceFiles(directory).filter((path) => path.endsWith(".css")));
 }
 
 /** What wears the highlight: the element's own shape, and its anchors. */

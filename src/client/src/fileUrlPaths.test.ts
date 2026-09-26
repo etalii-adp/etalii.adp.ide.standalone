@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { sourceFiles } from "@client/sourceFiles";
+import { sourceFiles } from "@client/sourceFiles";
 
 /**
  * A file URL's pathname always begins with a slash. Stripping that slash by hand looks
@@ -18,16 +20,13 @@ describe("file URL to path conversion", () => {
   const self = fileURLToPath(import.meta.url);
   const here = path.dirname(self);
   const roots = [path.resolve(here, ".."), path.resolve(here, "../../diagrams")];
-  const skipped = new Set(["node_modules", "dist", "coverage", ".vite", ".turbo"]);
-
-  /** Every TypeScript/JavaScript source below `directory`, build output excluded. */
+  /**
+   * Every TypeScript/JavaScript source below `directory`, build output excluded. Its own walk
+   * skipped `dist` and the tool caches but not `bin` or `obj`, so it read every module backend's
+   * build output - the walk that timed two other guards out in a gate.
+   */
   function sources(directory: string): string[] {
-    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-      if (entry.isDirectory()) {
-        return skipped.has(entry.name) ? [] : sources(path.join(directory, entry.name));
-      }
-      return /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(entry.name) ? [path.join(directory, entry.name)] : [];
-    });
+    return sourceFiles(directory).filter((file) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(file));
   }
 
   it("no client source strips a file URL root by hand", () => {
