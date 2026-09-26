@@ -163,6 +163,20 @@ describe("theme colour tokens", () => {
     return [...new Set(tokensRead(source))].filter((token) => !defined.has(token) && !own.has(token));
   }
 
+  it("walks the trees once for the whole file, however many tests ask", () => {
+    // The walk crossed vitest's 5 s limit in a gate when this file started five of them. A clock
+    // cannot tell one walk from five on a quiet machine, so the property is asserted directly: every
+    // caller gets the SAME list, which a walk per call could never return.
+    // Act.
+    const first = everyFile();
+    const second = everyFile();
+
+    // Assert: one walk, and the two filters that every test uses draw from it.
+    expect(second).toBe(first);
+    expect(stylesheets().every((file) => first.includes(file))).toBe(true);
+    expect(painters().every((file) => first.includes(file))).toBe(true);
+  });
+
   it("finds the sources it is meant to be guarding, and reads names out of them", () => {
     // Arrange & act: a walk that silently found nothing would pass every assertion below, and a
     // `tokensRead` that stopped matching would report the same clean zero as a clean tree.
