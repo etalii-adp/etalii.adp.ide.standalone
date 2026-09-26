@@ -24,8 +24,8 @@ The Notion description leaves these open. Each is put to the user as a selection
 | # | Question | Options | Criteria affected |
 | --- | --- | --- | --- |
 | Q1 | The colour list names Trough twice (Light Gray and Orange) and Plateau not at all. Which colour does each phase take? | **Ruled by the user in chat, 2026-09-26:** Peak yellow, Trough light gray, Slope orange, Plateau lime green. | 4.5 |
-| Q2 | How is a trend's time span divided between its visible phases? | **(default) Equal shares:** the visible phases split the span from start to stop date equally, so one date pair is all a trend stores. · **Dated phases:** each phase has its own end date, dragged separately. · Other. | 3.3, 4.3 |
-| Q3 | "Each trend can only influence each other trend once": does that allow both A→B and B→A? | **(default) One influence per pair, either direction:** once A influences B, B cannot influence A. · **One per direction:** A→B and B→A may both exist. · Other. | 6.4 |
+| Q2 | How is a trend's time span divided between its visible phases? | **Ruled by the user in chat, 2026-09-26:** evenly spread until the user drags one of the inner phase boundaries. How that ruling applies to a span resize and a phase-count change is this document's reading, stated in 3.3 to 3.5. | 2.2, 3.3 to 3.5, 4.6 |
+| Q3 | "Each trend can only influence each other trend once": does that allow both A→B and B→A? | **Ruled by the user in chat, 2026-09-26: one per direction.** A→B and B→A may both exist, but never a second A→B. | 6.4, 7.3, 10.4 |
 | Q4 | What does a tag filter do to trends that do not match? | **(default) Hidden,** with every influence touching them. · **Dimmed,** still visible but faded. · Other. | 8.3 |
 | Q5 | File extension. | **(default) `.hcg`** (hype cycle graph). · `.hype`. · Other. | 2.1 |
 
@@ -77,9 +77,9 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 #### Acceptance Criteria
 
 1. WHEN a graph is saved THEN it SHALL be written to a body file with the extension `.hcg` (Q5), registered by an `.adp` file whose origin line is `gartner/hypecycle-graph`. The body SHALL be ADP's own YAML schema in the style of the timeline's `.tml`: a version header, then a `trends` list and an `influences` list. No established format carries trends, phases and phase-anchored influences, so ADP owns the schema, as it does for `.tml`, `.dgr` and `.fdg`.
-2. WHEN a trend is stored THEN it SHALL carry an id, its Name, a start and a stop date as ISO dates at month precision (`2007-06`), its vertical position, the number of visible phases (1 to 4), its Tags, and its Description.
+2. WHEN a trend is stored THEN it SHALL carry an id, its Name, a start and a stop date as ISO dates at month precision (`2007-06`), its vertical position, the number of visible phases (1 to 4), the inner phase boundaries the user has dragged (each as a month-precision date, and only those: a boundary never dragged is not stored), its Tags, and its Description.
 3. WHEN an influence is stored THEN it SHALL carry an id, its source and target trend, and at each end the phase it is attached to, the edge (top or bottom) and the position along that phase as a fraction from 0 to 1 (Requirement 6.3).
-4. WHEN a document is read THEN the parser SHALL never throw. What it does not understand SHALL be passed over and survive, and a document breaking a rule of this specification (a second influence between one pair, a stop date before a start date, a phase count outside 1 to 4) SHALL still open, with each breach reported by the validator to the Errors and Warnings panel.
+4. WHEN a document is read THEN the parser SHALL never throw. What it does not understand SHALL be passed over and survive, and a document breaking a rule of this specification (a second influence from one trend to another, a stop date before a start date, a phase count outside 1 to 4) SHALL still open, with each breach reported by the validator to the Errors and Warnings panel.
 5. WHEN ADP did not change a document THEN it SHALL be written back byte-identical, and WHEN a trend or influence changes THEN only the lines that change SHALL be rewritten.
 6. WHEN the type is registered THEN its `IDiagramDocumentFactory` SHALL produce an empty, valid document.
 
@@ -91,8 +91,10 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 
 1. WHEN a trend is drawn THEN its left edge SHALL be at its start date and its right edge at its stop date on the diagram's time scale. Positions SHALL be the author's, never computed.
 2. WHEN a trend is dragged horizontally or its left or right border is dragged THEN its start and stop dates SHALL change through a command, and both SHALL snap to the start of a calendar month, during the gesture and on release. A trend SHALL be at least one month long.
-3. WHEN a trend's span changes THEN its visible phases SHALL keep dividing the span as Q2 rules (default: in equal shares).
-4. WHEN a trend is resized THEN it SHALL NOT be resizable vertically: every trend has one shared height.
+3. WHEN no inner phase boundary of a trend has been dragged THEN its visible phases SHALL divide its span from start to stop date evenly (Q2).
+4. WHEN a boundary has been dragged THEN it SHALL stay where it was put, and every boundary not dragged SHALL spread evenly between its nearest dragged neighbours or the trend's ends. The last visible phase SHALL always end at the stop date; a dragged boundary beyond it SHALL be kept in the document, not drawn, and apply again when that phase is shown.
+5. WHEN a trend's span changes, by moving it or dragging its left or right border THEN dragged boundaries SHALL keep their proportion of the span, snapped to a month, and a move SHALL keep them exactly. A command that clears the dragged boundaries, returning the trend to even phases, SHALL be offered.
+6. WHEN a trend is resized THEN it SHALL NOT be resizable vertically: every trend has one shared height.
 
 ### Requirement 4 — The trend's shape
 
@@ -105,6 +107,7 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 3. WHEN a trend shows fewer than four phases THEN only those phases SHALL be drawn, always the earliest ones, and the banner SHALL end in its point after the last visible phase: a trend is a Peak; a Peak and Trough; a Peak, Trough and Slope; or all four. A trend with N visible phases has N - 1 chevrons.
 4. WHEN the pointer rests on a segment THEN a tooltip SHALL name the phase in full as Gartner does: *Peak of Inflated Expectations*, *Trough of Disillusionment*, *Slope of Enlightenment*, *Plateau of Productivity*.
 5. WHEN a segment is filled THEN its colour SHALL be a bland (muted) variant of the phase's colour as the user ruled (Q1): Peak yellow, Trough light gray, Slope orange, Plateau lime green, each a theme token defined in both modes, `--color-diagram-hype-peak`, `--color-diagram-hype-trough`, `--color-diagram-hype-slope` and `--color-diagram-hype-plateau`, never a literal in the module's stylesheet. Where text or a chevron is drawn on a fill, the contrast SHALL be checked by `theme.contrast.test.ts` in both modes.
+6. WHEN the pointer is over a chevron between two visible phases THEN the chevron SHALL be draggable horizontally, moving that inner phase boundary through a command with an inverse, snapped to the start of a month, and no phase SHALL become shorter than one month (Requirement 3.4).
 
 ### Requirement 5 — The trend's name and vertical placement
 
@@ -125,7 +128,7 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 1. WHEN an influence is drawn THEN it SHALL be a cubic bezier from the source trend to the target trend, with an arrowhead at the target end only.
 2. WHEN an influence is started or ended THEN it SHALL attach only to the **top or bottom edge** of a trend, never its left end or its point, and SHALL attach to one visible phase of that trend: the phase whose part of the edge the pointer is over.
 3. WHEN an influence is attached THEN it MAY attach **anywhere along that phase's top or bottom edge**, not at a fixed set of anchor points, and its position SHALL be stored as a fraction of that phase's span. WHEN the trend's span changes THEN the attachment point SHALL keep its fraction, so it moves proportionally with the phase.
-4. WHEN a trend already influences another THEN a second influence between the two SHALL NOT be offered or highlighted while drawing (Q3; default: in either direction). A trend SHALL NOT influence itself.
+4. WHEN a trend already influences another THEN a second influence **in the same direction** SHALL NOT be offered or highlighted while drawing. An influence in the opposite direction SHALL be allowed, so A→B and B→A may both exist (Q3). A trend SHALL NOT influence itself.
 5. WHEN anchors are drawn THEN they SHALL be invisible. The edge under the pointer SHALL still show where an influence would attach while one is being drawn, through the library's existing valid-target highlight, so the gesture is not blind.
 6. WHEN an influence is created, moved to another attachment point or removed THEN each SHALL be a command with an inverse.
 
@@ -137,7 +140,7 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 
 1. WHEN a trend is selected THEN the property grid SHALL offer **Phases** as a slider with four stops, Peak; Peak and Trough; Peak, Trough and Slope; and all four. A value outside that sequence, such as a Trough without a Peak, SHALL NOT be expressible.
 2. WHEN the number of visible phases changes THEN influences attached to a phase that becomes hidden SHALL be hidden, and SHALL reappear when the phase is shown again. **Hiding is visual only:** a hidden influence SHALL be kept in the document unchanged and persisted exactly as when it was visible.
-3. WHEN a hidden influence exists between two trends THEN it SHALL still count towards Requirement 6.4, so a phase being hidden never allows a second influence between the same pair.
+3. WHEN a hidden influence exists between two trends THEN it SHALL still count towards Requirement 6.4, so a phase being hidden never allows a second influence in the same direction.
 4. WHEN the phase count changes THEN it SHALL be one command with an inverse.
 
 ### Requirement 8 — Tags and filtering
@@ -177,7 +180,8 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 8. WHEN the canvas is given a **filter** over element properties THEN it SHALL hide the elements that do not match and every connection touching them, without changing the model.
 9. WHEN the property grid is given a **slider** editor over an ordered set of values THEN it SHALL render one, added to `ContextPropertyEditor` in the contract, with unknown editors still shown read-only as today.
 10. WHEN `AnchorEnablement.visible` is set to false THEN anchors SHALL NOT be drawn, so the field stops being declared and unread.
-11. WHEN any of these is added THEN it SHALL be proven by a library test that was seen to fail before the change, and no module name SHALL appear in its declaration.
+11. WHEN a shape declares its segment boundaries **draggable** THEN the library SHALL offer a horizontal drag handle on each inner boundary, snapped as the element's snap declares, and SHALL raise an event naming the boundary and its new position for the module to answer with a command.
+12. WHEN any of these is added THEN it SHALL be proven by a library test that was seen to fail before the change, and no module name SHALL appear in its declaration.
 
 ### Requirement 11 — Toolbox and commands
 
@@ -186,7 +190,7 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 #### Acceptance Criteria
 
 1. WHEN the toolbox is shown for this diagram THEN it SHALL offer a Trend, described by the backend as data, and dropping it SHALL create a trend at the drop position, snapped as in Requirements 3.2 and 5.3, one year long with all four phases.
-2. WHEN a user edits a graph THEN every change SHALL be a command with an inverse, offered through the context-action provider: add and delete a trend (deleting its influences with it, restored by undo), move it, change its span, rename it, change its phases, change its tags and Description, and add, move and delete an influence.
+2. WHEN a user edits a graph THEN every change SHALL be a command with an inverse, offered through the context-action provider: add and delete a trend (deleting its influences with it, restored by undo), move it, change its span, drag an inner phase boundary, return its phases to even, rename it, change its phases, change its tags and Description, and add, move and delete an influence.
 3. WHEN the backend refuses a command THEN the user SHALL see the refusal's sentence, and the document SHALL be unchanged.
 4. WHEN the diagram is read-only THEN no command that edits it SHALL be offered; filtering SHALL still be available.
 
@@ -236,7 +240,7 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 
 #### Acceptance Criteria
 
-1. WHEN the work completes THEN a `tests.md` entry SHALL cover, in a real browser: the banner and chevrons at each phase count in both themes; the phase tooltips; the name to the left, right-aligned; month snapping on drag and resize and row snapping vertically; drawing an influence on each phase's top and bottom edge and seeing it keep its place when the trend is resized; refusal of a second influence between one pair; influences hiding and reappearing as phases are toggled, and still present in the saved file while hidden; tag filtering with and, or and parentheses; and the time axis staying at the bottom of the view while scrolling and zooming.
+1. WHEN the work completes THEN a `tests.md` entry SHALL cover, in a real browser: the banner and chevrons at each phase count in both themes; the phase tooltips; the name to the left, right-aligned; month snapping on drag and resize and row snapping vertically; phases spread evenly until an inner boundary is dragged, the dragged boundary staying put and scaling with a resize; drawing an influence on each phase's top and bottom edge and seeing it keep its place when the trend is resized; refusal of a second influence in the same direction, and acceptance of one in the opposite direction; influences hiding and reappearing as phases are toggled, and still present in the saved file while hidden; tag filtering with and, or and parentheses; and the time axis staying at the bottom of the view while scrolling and zooming.
 2. THEN jsdom SHALL NOT be taken as evidence of any of these, since it applies no CSS and lays out no text.
 
 ## Non-Functional Requirements
