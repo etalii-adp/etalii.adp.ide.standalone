@@ -27,7 +27,7 @@ The Notion description leaves these open. Each is put to the user as a selection
 | Q2 | How is a trend's time span divided between its visible phases? | **Ruled by the user in chat, 2026-09-26:** evenly spread until the user drags one of the inner phase boundaries. How that ruling applies to a span resize and a phase-count change is this document's reading, stated in 3.3 to 3.5. | 2.2, 3.3 to 3.5, 4.6 |
 | Q3 | "Each trend can only influence each other trend once": does that allow both A→B and B→A? | **Ruled by the user in chat, 2026-09-26: one per direction.** A→B and B→A may both exist, but never a second A→B. | 6.4, 7.3, 10.4 |
 | Q4 | What does a tag filter do to trends that do not match? | **(default) Hidden,** with every influence touching them. · **Dimmed,** still visible but faded. · Other. | 8.3 |
-| Q5 | File extension. | **(default) `.hcg`** (hype cycle graph). · `.hype`. · Other. | 2.1 |
+| Q5 | File extension. | **Ruled by the user in chat, 2026-09-26: `.ghg`** (Gartner hype cycle graph). | 2.1 |
 
 ## What was measured
 
@@ -76,7 +76,7 @@ The diagram is the first in the catalog aimed squarely at **(constructive) techn
 
 #### Acceptance Criteria
 
-1. WHEN a graph is saved THEN it SHALL be written to a body file with the extension `.hcg` (Q5), registered by an `.adp` file whose origin line is `gartner/hypecycle-graph`. The body SHALL be ADP's own YAML schema in the style of the timeline's `.tml`: a version header, then a `trends` list and an `influences` list. No established format carries trends, phases and phase-anchored influences, so ADP owns the schema, as it does for `.tml`, `.dgr` and `.fdg`.
+1. WHEN a graph is saved THEN it SHALL be written to a body file with the extension `.ghg` (Q5), registered by an `.adp` file whose origin line is `gartner/hypecycle-graph`. The body SHALL be ADP's own YAML schema in the style of the timeline's `.tml`: a version header, then a `trends` list and an `influences` list. No established format carries trends, phases and phase-anchored influences, so ADP owns the schema, as it does for `.tml`, `.dgr` and `.fdg`.
 2. WHEN a trend is stored THEN it SHALL carry an id, its Name, a start and a stop date as ISO dates at month precision (`2007-06`), its vertical position, the number of visible phases (1 to 4), the inner phase boundaries the user has dragged (each as a month-precision date, and only those: a boundary never dragged is not stored), its Tags, and its Description.
 3. WHEN an influence is stored THEN it SHALL carry an id, its source and target trend, and at each end the phase it is attached to, the edge (top or bottom) and the position along that phase as a fraction from 0 to 1 (Requirement 6.3).
 4. WHEN a document is read THEN the parser SHALL never throw. What it does not understand SHALL be passed over and survive, and a document breaking a rule of this specification (a second influence from one trend to another, a stop date before a start date, a phase count outside 1 to 4) SHALL still open, with each breach reported by the validator to the Errors and Warnings panel.
