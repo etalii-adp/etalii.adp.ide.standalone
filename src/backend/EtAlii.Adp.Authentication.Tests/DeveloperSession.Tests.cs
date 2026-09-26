@@ -52,7 +52,7 @@ public class DeveloperSessionTests
         DeveloperSessionDisabled = disabled,
     };
 
-    private static Authentication.AuthenticationService Service(
+    private static AuthenticationService Service(
         ISessionStore store,
         LocalAuthenticatorOptions options,
         string environmentName = "Development") =>

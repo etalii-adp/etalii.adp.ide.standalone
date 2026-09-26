@@ -13,6 +13,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
+    <!--
+      Directory.Build.targets compiles the shared LogCapture into every *.Tests project, and it is
+      written against Serilog. This project references no production project to bring it in
+      transitively, so it names the package itself, as Client.Tests does.
+    -->
+    <PackageReference Include="Serilog" />
   </ItemGroup>
 
 </Project>
