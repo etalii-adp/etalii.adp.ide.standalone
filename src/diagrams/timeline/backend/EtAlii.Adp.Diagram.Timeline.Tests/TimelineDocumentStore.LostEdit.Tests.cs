@@ -17,14 +17,14 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 /// integration flow failed.
 /// </para>
 /// <para>
-/// <b>The window is real and it is in <c>Save</c>'s shape.</b> A command does
+/// <b>The window is real and it was in <c>Save</c>'s shape.</b> A command does
 /// <c>GetOrLoad</c> - splice through <c>TimelineWriter</c> - <c>Save</c>, and <c>Save(path)</c>
-/// calls <c>GetOrLoad(path)</c> AGAIN rather than writing the entry it was handed. <c>Reload</c>
-/// removes the cached entry, so a reload landing between those two steps means the object the
-/// command spliced is no longer the object that gets written, and the save persists the re-read
-/// file. The `_selfWrites` guard does not cover it: it is cleared in <c>Save</c>'s <c>finally</c>,
-/// before the reparse, so the notification for the store's OWN write can arrive after the guard
-/// has gone and is then treated as external.
+/// used to call <c>GetOrLoad(path)</c> AGAIN rather than write an entry it was handed.
+/// <c>Reload</c> removes the cached entry, so a reload landing between those two steps meant the
+/// object the command spliced was no longer the object that got written, and the save persisted
+/// the re-read file. <c>Save</c> now takes the entry, which closes it. The self-write guard never
+/// covered it and still would not: a reload for an EARLIER write, as here, is somebody else's
+/// change as far as the guard can tell.
 /// </para>
 /// <para>
 /// <b>Deterministic on purpose.</b> The integration symptom - an undo that reports success and

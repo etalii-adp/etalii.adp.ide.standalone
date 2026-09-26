@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Documents.Wire.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -23,9 +22,10 @@ public sealed class WritableDocumentLifecycle<TDocument>
     private readonly Func<TDocument, string> _serialize;
     private readonly Action<string, string> _write;
 
-    // The paths this lifecycle is writing right now, so its own save does not come back through
-    // Reload as an external change - per path, as every writable store kept it before.
-    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+    // The paths this lifecycle is writing, and what it last wrote to each, so its own save does not
+    // come back through Reload as an external change - per path, as every writable store kept it
+    // before.
+    private readonly SelfWriteGuard _selfWrites = new();
 
     /// <param name="parse">As for <see cref="DocumentLifecycle{TDocument}"/>.</param>
     /// <param name="serialize">The text a document is saved as.</param>
@@ -59,7 +59,11 @@ public sealed class WritableDocumentLifecycle<TDocument>
     public TDocument? Get(string path) => _lifecycle.Get(path);
 
     /// <inheritdoc cref="DocumentLifecycle{TDocument}.Forget"/>
-    public void Forget(string path) => _lifecycle.Forget(path);
+    public void Forget(string path)
+    {
+        _lifecycle.Forget(path);
+        _selfWrites.Forget(path);
+    }
 
     /// <summary>
     /// Re-reads a body changed on disk - unless the change is this lifecycle's own save in flight,
@@ -69,14 +73,14 @@ public sealed class WritableDocumentLifecycle<TDocument>
     public bool Reload(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return !_selfWrites.ContainsKey(path) && _lifecycle.Reload(path);
+        return !_selfWrites.IsOwnWrite(path) && _lifecycle.Reload(path);
     }
 
     /// <inheritdoc cref="DocumentLifecycle{TDocument}.BodyDeleted"/>
     public bool BodyDeleted(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return !_selfWrites.ContainsKey(path) && _lifecycle.BodyDeleted(path);
+        return !_selfWrites.IsWriting(path) && _lifecycle.BodyDeleted(path);
     }
 
     /// <summary>Writes <paramref name="document"/> to <paramref name="path"/> and caches it.</summary>
@@ -106,7 +110,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         ArgumentNullException.ThrowIfNull(document);
 
         var text = _serialize(document);
-        _selfWrites[path] = 1;
+        _selfWrites.Begin(path, text);
         try
         {
             _write(path, text);
@@ -124,7 +128,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         }
         finally
         {
-            _selfWrites.TryRemove(path, out _);
+            _selfWrites.End(path);
         }
     }
 }

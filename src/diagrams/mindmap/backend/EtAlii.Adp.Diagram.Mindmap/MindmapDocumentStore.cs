@@ -17,9 +17,10 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 
     private readonly ConcurrentDictionary<string, MindmapDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
 
-    // The paths this store is writing right now, so its own save does not bounce back through
-    // Reload as an "external" change - PlainEditorSession's saving guard, per path.
-    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+    // The paths this store is writing, and what it last wrote to each, so its own save does not
+    // bounce back through Reload as an "external" change - PlainEditorSession's saving guard, per
+    // path.
+    private readonly SelfWriteGuard _selfWrites = new();
 
     private readonly IDiagramDocumentFactory _factory;
 
@@ -82,10 +83,11 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         //
         // The self-write guard stays here rather than moving: it is this store's own
         // arrangement with its file watcher, not part of publishing a file.
-        _selfWrites[bodyPath] = 1;
+        var text = document.ToText();
+        _selfWrites.Begin(bodyPath, text);
         try
         {
-            AdpFileWriter.Save(bodyPath, document.ToText());
+            AdpFileWriter.Save(bodyPath, text);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -100,7 +102,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         }
         finally
         {
-            _selfWrites.TryRemove(bodyPath, out _);
+            _selfWrites.End(bodyPath);
         }
 
         // The document just written becomes the cached one, so the cache and the bytes on disk
@@ -116,14 +118,19 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     }
 
     /// <summary>Drops a loaded document, so the next ask re-reads the file - after an external edit, or when its last viewer left.</summary>
-    public void Release(string bodyPath) => _documents.TryRemove(bodyPath, out _);
+    public void Release(string bodyPath)
+    {
+        _documents.TryRemove(bodyPath, out _);
+        _selfWrites.Forget(bodyPath);
+    }
 
     /// <summary>Re-reads a map changed on disk outside ADP and announces it (Requirement 11.8).</summary>
     public void Reload(string bodyPath)
     {
-        if (_selfWrites.ContainsKey(bodyPath))
+        if (_selfWrites.IsOwnWrite(bodyPath))
         {
-            // The change on disk is this store's own save, mid-write; Save announces it itself.
+            // The change on disk is this store's own save, in flight or already landed; Save
+            // announces it itself.
             return;
         }
 

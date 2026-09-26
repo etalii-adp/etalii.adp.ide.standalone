@@ -39,8 +39,9 @@ public interface ITimelineDocumentStore
 
     /// <summary>
     /// Re-reads a document something outside changed, and tells the sessions on it. A no-op
-    /// while the store's own save of that path is in flight: its own write on disk is not an
-    /// external change, and must not bounce back as one.
+    /// while the store's own save of that path is in flight, and afterwards while the file still
+    /// holds what that save wrote: its own write on disk is not an external change, and must not
+    /// bounce back as one however late the watcher reports it.
     /// </summary>
     void Reload(string path);
 

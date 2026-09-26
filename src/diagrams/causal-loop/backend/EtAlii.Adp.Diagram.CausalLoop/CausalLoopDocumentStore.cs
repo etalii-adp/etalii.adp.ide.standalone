@@ -29,12 +29,13 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
     private readonly ConcurrentDictionary<string, CausalLoopDocumentEntry> _entries =
         new(StringComparer.OrdinalIgnoreCase);
 
-    // The paths this store is writing right now, so its own save does not bounce back through
-    // Reload as an "external" change - timeline's and c4's saving guard, per path. Without it a
-    // reload landing inside the store's own File.Replace found the body missing and installed an
-    // Unreadable entry: 18429 of 141188 reloads racing 2000 saves damaged the document in
-    // CausalLoopDocumentStoreSelfWriteTests, on a develop that already serialised the saves.
-    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+    // The paths this store is writing, and what it last wrote to each, so its own save does not
+    // bounce back through Reload as an "external" change - timeline's and c4's saving guard, per
+    // path. Without it a reload landing inside the store's own File.Replace found the body missing
+    // and installed an Unreadable entry: 18429 of 141188 reloads racing 2000 saves damaged the
+    // document in CausalLoopDocumentStoreSelfWriteTests, on a develop that already serialised the
+    // saves.
+    private readonly SelfWriteGuard _selfWrites = new();
 
     private readonly Func<string, string> _read;
     private readonly int _readAttempts;
@@ -92,7 +93,7 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
             return $"This causal loop diagram could not be read, so it was not written. {entry.Error}";
         }
 
-        _selfWrites[path] = 1;
+        _selfWrites.Begin(path, entry.Document.Text);
         try
         {
             // The central writer rather than a raw write: it publishes through a scratch file so
@@ -105,7 +106,7 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
         }
         finally
         {
-            _selfWrites.TryRemove(path, out _);
+            _selfWrites.End(path);
         }
 
         // Re-parsed from the document just written, so the model and the bytes cannot disagree.
@@ -122,6 +123,7 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _entries.TryRemove(path, out _);
+        _selfWrites.Forget(path);
     }
 
     /// <inheritdoc />
@@ -129,10 +131,10 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (_selfWrites.ContainsKey(path))
+        if (_selfWrites.IsOwnWrite(path))
         {
-            // The change on disk is this store's own save, mid-write; Save has already re-parsed
-            // the document it wrote, so there is nothing to re-read.
+            // The change on disk is this store's own save, in flight or already landed; Save has
+            // already re-parsed the document it wrote, so there is nothing to re-read.
             return;
         }
 

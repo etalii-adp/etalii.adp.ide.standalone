@@ -27,9 +27,10 @@ public sealed class C4DocumentStore : IC4DocumentStore
 
     private readonly ConcurrentDictionary<string, C4DocumentEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
 
-    // The paths this store is writing right now, so its own save does not bounce back through
-    // Reload as an "external" change - PlainEditorSession's saving guard, per path.
-    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+    // The paths this store is writing, and what it last wrote to each, so its own save does not
+    // bounce back through Reload as an "external" change - PlainEditorSession's saving guard, per
+    // path.
+    private readonly SelfWriteGuard _selfWrites = new();
 
     // The paths whose last read FAILED - not missing, which is a new document, but present and
     // refused. Their entry is an empty document standing in for content nobody could read, so
@@ -95,7 +96,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         }
 
         var text = document.ToText();
-        _selfWrites[path] = 1;
+        _selfWrites.Begin(path, text);
         try
         {
             var directory = Path.GetDirectoryName(path);
@@ -119,7 +120,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         }
         finally
         {
-            _selfWrites.TryRemove(path, out _);
+            _selfWrites.End(path);
         }
 
         // This also re-establishes the cache around the document that was just written, so the
@@ -140,6 +141,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _entries.TryRemove(path, out _);
+        _selfWrites.Forget(path);
     }
 
     /// <summary>Re-reads a document an external tool changed, and tells the sessions on it.</summary>
@@ -147,10 +149,10 @@ public sealed class C4DocumentStore : IC4DocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (_selfWrites.ContainsKey(path))
+        if (_selfWrites.IsOwnWrite(path))
         {
-            // The change on disk is this store's own save, mid-write; Save reparses and tells
-            // the sessions itself.
+            // The change on disk is this store's own save, in flight or already landed; Save
+            // reparses and tells the sessions itself.
             return;
         }
 
