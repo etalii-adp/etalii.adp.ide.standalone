@@ -43,7 +43,7 @@ One worktree for the whole specification, one Developer owning it until every ta
 
 ## Group 2 — The causes behind the looks
 
-- [ ] 4. A module stylesheet stops reaching library-drawn shapes
+- [x] 4. A module stylesheet stops reaching library-drawn shapes
   - Files: the 21 descendant rules in `c4.css` (8), `sparql.css` (5), `mindmap.css` (3), `causal-loop.css` (2), `databricks.css` (1), `wardley.css` (2); the declared `classNames … on: "shape"` replacements
   - **The live instance this prevents:** `.mindmap-node rect` matched the library's own ring and painted an opaque box over the label (`59f1ed3a`). **The latent one Developer 1 found:** `.wardley-annotation circle` also matches the library's own anchors, setting them to the colour they already have — invisible today, which is exactly why a structural guard rather than an eye is the instrument.
   - **Guard: no module stylesheet selects an SVG element type by descendant.** It absorbs `highlightSurvivesModuleStyles`, which stays as the rendered half.
@@ -61,7 +61,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - **Guard: no module constructs a `ContextShortcut` or maps an action id to a key.**
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 12.1_
 
-- [ ] 7. The library owns inline-rename wiring
+- [x] 7. The library owns inline-rename wiring
   - Files: `DiagramCanvas.tsx`, the 8 identical `editing={{ … }}` wirings
   - `useContextPrompt` moves inside the library, which already knows the selection the prompt applies to; the `editing` prop leaves the contract, so **typecheck refuses a module that still wires it**.
   - _Requirements: 6.1, 6.2, 6.3, 12.1_
