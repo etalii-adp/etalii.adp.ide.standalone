@@ -6,7 +6,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextPrompt, type ActionOutcome } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
@@ -184,18 +184,6 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-  // A refusal is the backend's sentence, and it is shown on the rejection line every other canvas
-  // uses. This canvas used to discard the outcome, so a refused shortcut or drop looked like one
-  // that simply did nothing.
-  const [rejection, setRejection] = useState("");
-  const surfaceRefusal = (pending: Promise<ActionOutcome>) => {
-    setRejection("");
-    void pending.then((outcome) => {
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    });
-  };
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
@@ -238,12 +226,10 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     return { elements, connections };
   }, [model]);
 
+  // Every refusal - a drop, a re-parenting, a declared keystroke the library sends - is shown on the
+  // one line the library draws around every canvas, by the call that got it (client-centralization
+  // Requirement 2), and the next gesture clears it.
   const events: DiagramEventHandlers = {
-    // A new action clears the last refusal before the backend answers - what this canvas did
-    // before task 6 moved the shortcut into the library, kept so that task changes nothing visible.
-    onActionInvoked: () => setRejection(""),
-    // The library sends the declared keystroke now, so its refusal arrives here.
-    onActionRefused: ({ message }) => setRejection(message),
     // Selection is the library's (centralized-selection); a press on a branch is a background
     // press because the branch type declares `selectable: false`.
     onElementMoved: ({ elementId, position }) => {
@@ -264,7 +250,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         return Math.abs(position.x - element.x) <= width / 2 && Math.abs(position.y - element.y) <= height / 2;
       });
       if (target !== undefined) {
-        surfaceRefusal(executeAction(elementType, elementSourceOf(target.id)));
+        void executeAction(elementType, elementSourceOf(target.id));
       }
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
@@ -282,35 +268,19 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     ready: !loading && !failed && viewport !== null,
   });
 
-  if (failed) {
-    return (
-      <div className="mindmap-canvas" data-testid="mindmap-canvas">
-        <div className="mindmap-canvas-unavailable" role="alert">
-          This diagram is no longer available at {path.join("/")}.
-        </div>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="mindmap-canvas" data-testid="mindmap-canvas">
-      {loading ? (
-        <div className="mindmap-canvas-loading" role="status">
-          Loading…
-        </div>
-      ) : (
-        <DiagramCanvas
-          definition={definition}
-          model={diagramModel}
-          events={events}
-          source={{ entryId, path }}
-          toolboxItems={toolboxItems}
-          editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
-          className="mindmap-canvas-host"
-          ariaLabel="Mind map"
-        />
-      )}
-      {rejection ? <p className="mindmap-rejection canvas-rejection" role="status">{rejection}</p> : null}
+      <DiagramCanvas
+        definition={definition}
+        model={diagramModel}
+        events={events}
+        source={{ entryId, path }}
+        toolboxItems={toolboxItems}
+        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+        className="mindmap-canvas-host"
+        ariaLabel="Mind map"
+      />
     </div>
   );
 }

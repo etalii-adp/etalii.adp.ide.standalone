@@ -1,6 +1,7 @@
 import { PanelPlaceholder } from "./PanelPlaceholder";
 import { canvasFor } from "./diagramCanvases";
 import { ResolvedTextEditorPanel } from "@client/editors/ResolvedTextEditorPanel";
+import { CanvasFrame } from "@client/canvas/library/surface/CanvasFrame";
 
 /** Which diagram a panel shows: its project, the `.adp` entry's id, its project-relative path, and its type. */
 export interface OpenDiagram {
@@ -47,28 +48,35 @@ export function DiagramPanel({ diagram }: DiagramPanelProps) {
   // registry, because it is the shell's own gesture rather than any module's claim.
   if (diagram.mimeType === "editor/*") {
     return (
-      <ResolvedTextEditorPanel
-        projectId={diagram.projectId}
-        entryId={diagram.entryId}
-        path={diagram.path}
-        editorId={diagram.editorId}
-        initialLine={diagram.initialLine}
-      />
+      <CanvasFrame>
+        <ResolvedTextEditorPanel
+          projectId={diagram.projectId}
+          entryId={diagram.entryId}
+          path={diagram.path}
+          editorId={diagram.editorId}
+          initialLine={diagram.initialLine}
+        />
+      </CanvasFrame>
     );
   }
 
   const registration = canvasFor(diagram.mimeType);
 
+  // Every module canvas sits inside the library's frame, which is the one place a refusal is shown
+  // and the one appearance of opening, reconnecting and unavailable (client-centralization
+  // Requirement 2). The shell places it, so no module declares or wires one.
   if (registration?.Canvas !== undefined) {
     const Canvas = registration.Canvas;
     return (
-      <Canvas
-        projectId={diagram.projectId}
-        entryId={diagram.entryId}
-        path={diagram.path}
-        editorId={diagram.editorId}
-        initialLine={diagram.initialLine}
-      />
+      <CanvasFrame>
+        <Canvas
+          projectId={diagram.projectId}
+          entryId={diagram.entryId}
+          path={diagram.path}
+          editorId={diagram.editorId}
+          initialLine={diagram.initialLine}
+        />
+      </CanvasFrame>
     );
   }
 

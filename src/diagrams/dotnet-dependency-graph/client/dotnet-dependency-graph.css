@@ -53,19 +53,6 @@
   color: var(--color-text-muted);
 }
 
-.dotnet-dependency-canvas-rejection {
-  position: absolute;
-  top: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  background: var(--color-warning-bg);
-  color: var(--color-text);
-  cursor: pointer;
-}
-
 /*
   The ambient-package notice. Anchored bottom-left rather than centred at the top, so it does
   not sit under the rejection banner when both are up - a hidden-node notice that a rejection

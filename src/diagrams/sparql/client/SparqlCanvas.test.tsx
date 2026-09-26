@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, act } from "@testing-library/react";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { selectedElementIdOf } from "@client/canvas/selection";
 import type { ContextSelection } from "@client/generated/context_pb";
@@ -220,10 +220,11 @@ describe("SparqlCanvas", () => {
     expect(moves[0].x).toBeGreaterThan(0);
   });
 
-  it("shows the backend's refusal when a move is declined", async () => {
-    // Arrange.
+  it("leaves the backend's refusal of a move to the library's line", async () => {
+    // Arrange: the move itself reports the refusal to the one line the library draws around every
+    // canvas (client-centralization Requirement 2; useDiagramStream.move.test.ts).
     moveError = "That is an anonymous variable - it takes its computed place.";
-    const { container, findByText } = renderCanvas();
+    const { container } = renderCanvas();
     const target = container.querySelector('[data-element-id="anon:0"]')!;
 
     // Act.
@@ -231,8 +232,12 @@ describe("SparqlCanvas", () => {
     fireEvent(target, new MouseEvent("pointermove", { bubbles: true, clientX: 90, clientY: 60 }));
     fireEvent(target, new MouseEvent("pointerup", { bubbles: true, clientX: 90, clientY: 60 }));
 
-    // Assert: the reason reaches the user where they are looking.
-    expect(await findByText(/anonymous variable/)).toBeTruthy();
+    await act(async () => {});
+
+    // Assert: the move was sent, and this canvas drew no line of its own.
+    expect(moves).toHaveLength(1);
+    expect(container.textContent).not.toContain("anonymous variable - it takes");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
   });
 
   it("treats a press without movement as a selection", () => {
@@ -302,15 +307,15 @@ describe("SparqlCanvas", () => {
     }
   });
 
-  it("says so when the query could not be opened", () => {
-    // Arrange.
+  it("leaves the unavailable state to the library's frame rather than saying it itself", () => {
+    // Arrange: client-centralization Requirement 2.3 - one appearance, drawn by the library.
     currentFailed = true;
 
     // Act.
     const { container } = renderCanvas();
 
     // Assert.
-    expect(container.textContent).toContain("could not be opened");
+    expect(container.textContent).not.toContain("could not be opened");
   });
 });
 

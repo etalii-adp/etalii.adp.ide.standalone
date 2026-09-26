@@ -266,15 +266,15 @@ describe("the job canvas", () => {
     expect(source.source.value.value).toMatch(/^new:/);
   });
 
-  it("shows the unavailable state when the backend answered permanently", () => {
-    // Arrange.
+  it("leaves the unavailable state to the library's frame rather than saying it itself", () => {
+    // Arrange: client-centralization Requirement 2.3 - one appearance, drawn by the library.
     currentFailed = true;
 
     // Act.
     const { container } = renderCanvas();
 
     // Assert.
-    expect(container.textContent).toContain("could not be opened");
+    expect(container.textContent).not.toContain("could not be opened");
   });
 
   it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {

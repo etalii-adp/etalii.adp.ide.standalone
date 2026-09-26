@@ -236,7 +236,6 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useSkosStream(projectId, path);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
 
@@ -286,30 +285,20 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   }, [model]);
 
   const runAction = (actionId: string, sourceId?: string) => {
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    // A refusal needs nothing here: the call reports it to the library's refusal line.
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
   };
 
   const events: DiagramEventHandlers = {
-    // Selection is the library's (centralized-selection); a menu action it ran and the backend
-    // refused comes back here, for the same rejection line every other refusal uses.
-    onActionRefused: ({ message }) => setRejection(message),
+    // Selection is the library's (centralized-selection), and so is the refusal line: every call
+    // here, and every menu action the library runs, reports its own refusal there
+    // (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
-      setRejection("");
       const width = model.concepts.has(elementId) ? CONCEPT_WIDTH : REGION_WIDTH;
       const height = model.concepts.has(elementId) ? CONCEPT_HEIGHT : REGION_HEIGHT;
       // The authored position, raw: the layout block stores what the author placed. A blank
       // node's refusal comes back from the backend with its sentence.
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
     },
     // Which anchor the drag began at is which gesture it is - one stateless rel: id either
     // way, and the backend refuses ends that are not both asserted concepts.
@@ -333,14 +322,7 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   });
 
 
-  if (failed) {
-    return (
-      <div className="skos-canvas canvas-host skos-canvas-message canvas-host-message">
-        <p>This diagram could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="skos-canvas canvas-host" role="application" aria-label="SKOS concept scheme">
       <DiagramCanvas
@@ -358,8 +340,6 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
           {`Showing ${model.truncation.shown} of ${model.truncation.total} terms — edits are withheld on this truncated view`}
         </p>
       ) : null}
-      {loading ? <p className="skos-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="skos-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

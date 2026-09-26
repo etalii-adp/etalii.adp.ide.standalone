@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
 import { renderHook } from "@testing-library/react";
+import { CanvasRefusalContext } from "@client/canvas/library/surface/canvasRefusals";
 import { useDiagramStream } from "./useDiagramStream";
 
 /**
@@ -93,6 +95,28 @@ describe("useDiagramStream's move", () => {
     // Assert.
     expect(refusal).toBe("The server closed the connection.");
     expect(refusal).not.toBe("The position could not be saved.");
+  });
+
+  it.each([
+    ["a refused move", () => moveElement.mockResolvedValue({ error: "That element is locked." }), ["attempted", "refused: That element is locked."]],
+    ["an accepted move", () => moveElement.mockResolvedValue({ error: "" }), ["attempted"]],
+    ["a move whose call failed", () => moveElement.mockRejectedValue(new Error("The server closed the connection.")), ["attempted", "refused: The server closed the connection."]],
+  ])("inside a canvas, %s reports to the canvas's refusal line", async (_case, arrange, expected) => {
+    // Client-centralization Requirement 2: a move is a gesture that reaches the backend, so it clears
+    // the one refusal line when sent and fills it when refused - whichever module moved.
+    arrange();
+    const told: string[] = [];
+    const reporter = { attempted: () => told.push("attempted"), refused: (message: string) => told.push(`refused: ${message}`) };
+    const { result } = renderHook(() => useDiagramStream(projectId, path, { empty: true }, (current) => current), {
+      wrapper: ({ children }) => createElement(CanvasRefusalContext.Provider, { value: reporter }, children),
+    });
+
+    // Act.
+    const sentence = await result.current.moveElementTo("element:a", 10, 20);
+
+    // Assert: the line was told, and the caller still gets the sentence it always did.
+    expect(told).toEqual(expected);
+    expect(sentence).toBe(expected[1]?.slice("refused: ".length) ?? "");
   });
 
   it("asks for the move at the position given, on this diagram, for this watcher", async () => {
