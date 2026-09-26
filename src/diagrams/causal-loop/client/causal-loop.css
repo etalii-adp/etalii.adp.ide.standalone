@@ -64,8 +64,12 @@
   pointer-events: none;
 }
 
-/* The delay mark: two short strokes across the link. */
-.causal-loop-delay line {
+/* The delay mark: two short strokes across the link, by their own class. NOTE, measured in
+   Chromium on 2026-09-26: a rule on the strokes outranks the highlight the canvas paints inline
+   on their GROUP, so a selected delayed link keeps these strokes in the text colour - as it did
+   under `.causal-loop-delay line`. Kept as rendered, because client-centralization permits no
+   visible change this one is not; moving the rule to the group would let the highlight through. */
+.causal-loop-delay-stroke {
   stroke: var(--color-text, #0f172a);
   stroke-width: 1.5;
 }

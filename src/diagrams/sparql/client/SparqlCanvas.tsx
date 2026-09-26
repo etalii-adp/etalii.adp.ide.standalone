@@ -45,6 +45,9 @@ const SPARQL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       shape: "frame",
       classNames: [
         { className: "sparql-region canvas-element", on: "element" },
+        // The frame's own class: the stylesheet reaches the outline by it, never by a descendant
+        // `rect` (client-centralization Requirement 3.1).
+        { className: "sparql-region-outline" },
         { className: { template: "sparql-region-{payload.kind}" }, on: "element" },
       ],
       labels: [{ text: { path: "payload.label" }, placement: "above", className: "sparql-region-label canvas-hint" }],

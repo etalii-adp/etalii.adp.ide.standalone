@@ -39,12 +39,6 @@
   cursor: pointer;
 }
 
-.c4-node rect,
-.c4-node circle,
-.c4-node ellipse {
-  stroke: none;
-}
-
 /* An element being dragged. Semi-transparent so whatever it passes over stays readable, and
    the pointer keeps the grabbing cursor for as long as the button is down. */
 .c4-node-dragging {
@@ -54,17 +48,6 @@
 
 .c4-node {
   cursor: grab;
-}
-
-/* The element a toolbox entry is held over, so the drop's outcome is visible before the button
-   is released. After the focused rule on purpose: the two have equal specificity, and a drop
-   target that is also focused should read as a drop target. The mindmap learned this the hard
-   way - see its stylesheet and the entry in tests.md. */
-.c4-node-drop-target rect,
-.c4-node-drop-target ellipse {
-  stroke: var(--color-success, #2e7d32);
-  stroke-width: 3;
-  stroke-dasharray: 6 3;
 }
 
 .c4-node-name {
@@ -79,10 +62,9 @@
 }
 
 /* Relationships are dashed, unidirectional and labelled - the notation C4 shows. */
-/* The connection is a <path> (the shared StraightConnection draws one); this selector
-   briefly said `line` after the shape changed, and every relationship went invisible -
-   labels and arrowheads floating with no line between them. */
-.c4-relationship path,
+/* By the line's own declared class, never by element type: `.c4-relationship line` once went
+   stale when the shared StraightConnection started drawing a <path>, and every relationship
+   went invisible - labels and arrowheads floating with no line between them. */
 .c4-relationship-line {
   stroke: var(--color-border);
   stroke-width: 1.5;
@@ -108,7 +90,7 @@
 }
 
 /* A boundary is a dashed rectangle labelled with what it encloses. */
-.c4-boundary rect {
+.c4-boundary-outline {
   fill: none;
   stroke: var(--color-text-muted);
   stroke-width: 1.5;

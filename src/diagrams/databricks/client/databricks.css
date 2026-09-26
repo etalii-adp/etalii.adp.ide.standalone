@@ -29,7 +29,7 @@
 
 /* ---- Target frames ----------------------------------------------------------------- */
 
-.databricks-frame rect {
+.databricks-frame-outline {
   fill: transparent;
   stroke: var(--color-border, #8892a6);
   stroke-dasharray: 6 4;

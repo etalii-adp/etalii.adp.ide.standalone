@@ -143,6 +143,12 @@ export interface BackgroundDeclaration {
  */
 export interface BackgroundMark {
   className?: string;
+  /**
+   * The class the drawn glyph - the circle or the rule - carries, suffixed like the label's so a
+   * module's stylesheet reaches it by a class of its own rather than by `.wardley-annotation
+   * circle`, a descendant selector that reaches whatever else the group holds.
+   */
+  glyphClassName?: string;
   circle?: { cx: number; cy: number; r: number };
   line?: { x1: number; y1: number; x2: number; y2: number };
   text?: { x: number; y: number; text: string; anchor: "start" | "middle" | "end"; className?: string; typography?: LabelTypography };
@@ -422,6 +428,7 @@ export function resolveBackground(
 
       marks.push({
         className,
+        glyphClassName: mark.glyph === "circle" || mark.glyph === "rule" ? suffixed(className, "glyph") : undefined,
         ...(mark.glyph === "circle" ? { circle: { cx: x, cy: y, r: itemNumberOf(mark.radius, item, 8) } } : {}),
         ...(mark.glyph === "rule" ? { line: { x1: x - half, y1: y, x2: x + half, y2: y } } : {}),
         ...(label === null

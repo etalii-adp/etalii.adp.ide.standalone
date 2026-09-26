@@ -45,18 +45,18 @@
 }
 
 /* A group construct's frame: OPTIONAL dashed, the rest solid, each labelled with what it is. */
-.sparql-region rect {
+.sparql-region-outline {
   fill: none;
   stroke: var(--color-border);
 }
 
-.sparql-region-optional rect,
-.sparql-region-minus rect {
+.sparql-region-optional .sparql-region-outline,
+.sparql-region-minus .sparql-region-outline {
   stroke-dasharray: 4 4;
 }
 
-.sparql-region-service rect,
-.sparql-region-graph rect {
+.sparql-region-service .sparql-region-outline,
+.sparql-region-graph .sparql-region-outline {
   stroke-dasharray: 2 3;
 }
 

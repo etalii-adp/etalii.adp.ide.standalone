@@ -2348,8 +2348,8 @@ function declaredBackground(
       {resolved.marks.map((mark) => (
         <g key={mark.key} className={mark.className}>
           {mark.tooltip !== undefined ? <title>{mark.tooltip}</title> : null}
-          {mark.circle ? <circle cx={mark.circle.cx} cy={mark.circle.cy} r={mark.circle.r} /> : null}
-          {mark.line ? <line x1={mark.line.x1} y1={mark.line.y1} x2={mark.line.x2} y2={mark.line.y2} /> : null}
+          {mark.circle ? <circle className={mark.glyphClassName} cx={mark.circle.cx} cy={mark.circle.cy} r={mark.circle.r} /> : null}
+          {mark.line ? <line className={mark.glyphClassName} x1={mark.line.x1} y1={mark.line.y1} x2={mark.line.x2} y2={mark.line.y2} /> : null}
           {mark.text ? (
             <text
               className={mark.text.className}
@@ -2627,14 +2627,14 @@ function renderShapeBody(
     case "pill":
       return <BoxElement x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} rx={bounds.height / 2} label={label} boxClassName={shapeClass} style={paint} />;
     case "centered-box":
-      return <CenteredBoxElement className={declared || undefined} x={element.x} y={element.y} halfWidth={bounds.width / 2} halfHeight={bounds.height / 2} text={label} style={paint} />;
+      return <CenteredBoxElement boxClassName={declared || undefined} x={element.x} y={element.y} halfWidth={bounds.width / 2} halfHeight={bounds.height / 2} text={label} style={paint} />;
     case "ellipse":
       return <EllipseElement x={element.x} y={element.y} radiusX={bounds.width / 2} radiusY={bounds.height / 2} text={label} ellipseClassName={shapeClass} style={paint} />;
     case "frame":
       // FrameElement is centre-based like the other shared elements; the corner-based bounds
       // shifted every boundary by half its box (the third corner/centre instance, caught by
       // the c4 migration's frame test before one ever mounted).
-      return <FrameElement className={["library-frame", declared].filter(Boolean).join(" ")} x={element.x} y={element.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
+      return <FrameElement className="library-frame" frameClassName={declared || undefined} x={element.x} y={element.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
     case "span":
       return <SpanElement box={{ x: element.x, y: element.y, width: bounds.width, height: bounds.height }} label={label} classes={{ span: ["library-shape library-span", declared].filter(Boolean).join(" "), moment: "library-span-moment", label: "library-span-label", hint: "library-span-hint", adorner: "library-span-adorner", anchor: "library-span-anchor", anchorHit: "library-span-anchor-hit" }} style={paint} />;
     case "styled-box":

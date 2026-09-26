@@ -96,9 +96,14 @@ const PAINT = ["fill", "stroke", "stroke-width", "stroke-dasharray", "stroke-opa
 /**
  * What is compared for each part. <b>An anchor's FILL is deliberately not the highlight's business</b>:
  * the highlight states an anchor's stroke, and a module may legitimately dress the dots its own
- * notation draws - wardley's `.wardley-annotation circle` sets the same surface colour the anchor
- * already has, written without its fallback. Its stroke, and whether it is shown at all, are still
- * compared, because those are what a module could take away.
+ * notation draws. Its stroke, and whether it is shown at all, are still compared, because those are
+ * what a module could take away.
+ *
+ * <b>The rendered half of a structural rule.</b> `noModuleReachesLibraryShapes.test.ts` forbids a
+ * module stylesheet from naming an SVG element type at all (client-centralization Requirement 3),
+ * which is the cause every repaint this file ever caught shared. This stays as the belt: it proves
+ * the highlight survives whatever rules exist, where that one proves none can reach a library shape
+ * by its type.
  */
 const COMPARED: Record<string, readonly string[]> = {
   // The highlight states a STROKE and a WIDTH; the notation keeps everything else, and a module may

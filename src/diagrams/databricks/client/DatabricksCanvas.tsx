@@ -170,6 +170,9 @@ function definitionFor(connectable: boolean): DiagramDefinition {
         shape: "frame",
         classNames: [
           { className: "databricks-frame", on: "element" },
+          // The dashed outline's own class: the stylesheet reaches the frame by it, never by a
+          // descendant `rect` (client-centralization Requirement 3.1).
+          { className: "databricks-frame-outline" },
         ],
         labels: [
           { text: { path: "payload.label" }, placement: "above", className: "databricks-frame-label" },

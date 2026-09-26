@@ -99,16 +99,19 @@ function linkAdornment(route: { ends?: RouteEnds; highlighted?: boolean }, rawCo
       {connection.link.payload.delayed && (
         // The conventional delay mark: two short strokes ACROSS the link, along the curve's
         // own normal - drawn vertically they would lie along a near-vertical arc.
-        // Highlighted, the delay strokes take the selection colour with the line they cross: the
-        // library paints its highlight inline, so an adorner it does not draw itself must carry it.
+        // Highlighted, the group carries the selection colour inline - but the strokes' own class
+        // rule outranks an inherited stroke, so today they stay in the text colour (measured in
+        // Chromium on 2026-09-26; see causal-loop.css). Kept as rendered by client-centralization.
         <g className="causal-loop-delay" style={route.highlighted === true ? { stroke: "var(--color-selected, #7c3aed)" } : undefined}>
           <line
+            className="causal-loop-delay-stroke"
             x1={pointAlong(arc, 0.44).x - arc.apexNormal.x * 8}
             y1={pointAlong(arc, 0.44).y - arc.apexNormal.y * 8}
             x2={pointAlong(arc, 0.44).x + arc.apexNormal.x * 8}
             y2={pointAlong(arc, 0.44).y + arc.apexNormal.y * 8}
           />
           <line
+            className="causal-loop-delay-stroke"
             x1={pointAlong(arc, 0.56).x - arc.apexNormal.x * 8}
             y1={pointAlong(arc, 0.56).y - arc.apexNormal.y * 8}
             x2={pointAlong(arc, 0.56).x + arc.apexNormal.x * 8}
