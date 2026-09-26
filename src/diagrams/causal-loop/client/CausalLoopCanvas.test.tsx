@@ -15,19 +15,7 @@ import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selectio
 import { ContextSelectionAction, type ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { CanvasFrame } from "@client/canvas/library/surface/CanvasFrame";
-
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
- * usePointerGesture.test.tsx's idiom, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 const moveElementTo = vi.fn(() => Promise.resolve(""));
@@ -53,7 +41,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction }),
+    useContextConnection: () => connection,
     // The canvas reads `actions` to decide whether a context menu has anything to show, so the
     // mock has to carry them: a shape that is missing here is a crash there, which is what this
     // suite caught the moment the menu was wired.
@@ -63,6 +51,8 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   };
 });
+
+const connection = fakeContextConnection({ select, executeAction });
 
 const emptyPalette: never[] = [];
 
@@ -581,7 +571,7 @@ describe("selection, as every canvas has it", () => {
         currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["feedback.adp"], id);
         return renderCanvas();
       },
-      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(select),
       element: "variable:a",
       connection: "link:a|b",
     });

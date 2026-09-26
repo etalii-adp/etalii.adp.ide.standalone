@@ -12,6 +12,7 @@ import type { DiagramModel } from "./api/diagramModel";
 import type { DiagramEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { fakeContextConnection, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * The selection a canvas owns once it passes `source` (centralized-selection tasks 2 and 3).
@@ -35,13 +36,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({
-      select: (selection: unknown) => channel.pushes.push(selection),
-      executeAction: (actionId: string, source?: unknown) => {
-        channel.executed.push({ actionId, source });
-        return Promise.resolve(channel.outcome);
-      },
-    }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: channel.pushed, levels: [], actions: channel.actions }),
     // The shell's inline-edit prompt, which the library now reads itself (client-centralization task 7).
     useContextPrompt: () => ({
@@ -56,8 +51,13 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   };
 });
 
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
+const connection = fakeContextConnection({
+  select: (selection: unknown) => channel.pushes.push(selection),
+  executeAction: (actionId: string, source?: unknown) => {
+    channel.executed.push({ actionId, source });
+    return Promise.resolve(channel.outcome);
+  },
+});
 
 const ENTRY = new Uint8Array([1, 2, 3]);
 const PATH = ["diagrams", "system.adp"];
@@ -121,10 +121,6 @@ function mount(events: DiagramEventHandlers = {}, definition = definitionOf(), m
   );
   const view = render(tree(model));
   return { ...view, redraw: (m: DiagramModel) => view.rerender(tree(m)) };
-}
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
 }
 
 function press(target: Element, init: MouseEventInit = {}) {

@@ -7,9 +7,7 @@ import type { DiagramModel } from "./api/diagramModel";
 import type { DiagramSelection, LibraryEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
-
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * The one look, and what carries it (centralized-selection tasks 5 and 28).
@@ -53,10 +51,6 @@ function mount(selection: DiagramSelection, events: LibraryEventHandlers = {}) {
       </DiagramToolboxProvider>
     </DiagramViewProvider>,
   );
-}
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
 }
 
 const elementOn = (container: HTMLElement, id: string) => container.querySelector(`[data-element-id="${id}"]`)!;

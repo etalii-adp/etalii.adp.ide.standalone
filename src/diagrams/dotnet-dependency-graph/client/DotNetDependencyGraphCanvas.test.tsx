@@ -7,9 +7,9 @@ import {
   DependencyElementPayloadSchema,
 } from "@client/generated/dotnet-dependency-graph_pb";
 import { applyDelta, emptyModel, type DotNetDependencyGraphModel } from "./dotnetDependencyGraphModel";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { elementSelectionOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 /** The backend's pushed selection - null for every test but the shared selection assertion. */
@@ -38,10 +38,12 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     // The library reads the inline-edit prompt itself where it owns the canvas (client-centralization
     // task 7), so a sourced canvas needs one here even though this module never renames inline.
     useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select, revealPath }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: currentSelection }),
   };
 });
+
+const connection = fakeContextConnection({ select, revealPath });
 
 const emptyPalette: never[] = [];
 
@@ -255,7 +257,7 @@ describe("selection, as every canvas has it", () => {
           currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["PipelineToolkit.adp"], id);
           return renderCanvas();
         },
-        pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+        pushedIds: () => idsPushed(select),
         element: "project:src/Pipeline.Core/Pipeline.Core.csproj",
         // A project reference: the kind of line this canvas used to draw as if it named an element.
         connection: "depends:project:src/Pipeline.Storage/Pipeline.Storage.csproj->project:src/Pipeline.Core/Pipeline.Core.csproj",

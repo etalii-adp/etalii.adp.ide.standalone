@@ -1,9 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { emptyOwlModel, type OwlModel, type OwlNode, type OwlNodeKind } from "./owlModel";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: OwlModel = emptyOwlModel;
 let currentLoading = false;
@@ -34,16 +33,16 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   innermostKey: () => currentSelectionKey,
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
-  useContextConnection: () => ({
-    select: (selection: unknown) => selections.push(selection),
-    executeAction: (actionId: string, source?: unknown) => {
-      executed.push({ actionId, source });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-    executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
-    setProperty: () => Promise.resolve({ accepted: true, error: "" }),
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({
+  select: (selection: unknown) => selections.push(selection),
+  executeAction: (actionId: string, source?: unknown) => {
+    executed.push({ actionId, source });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+});
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
@@ -318,7 +317,6 @@ describe("the owl canvas", () => {
     expect(container.querySelector(".owl-truncation-banner")!.textContent).toContain("Showing 4 of 10");
   });
 
-
   it("keeps a label inside its shape, with the full name still reachable", () => {
     // The guard behind "this looks chaotic": local names and Manchester expressions run long,
     // and drawn whole they smear across their neighbours.
@@ -361,7 +359,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas();
       },
-      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(selections),
       element: `res:${NS}Pizza`,
       connection: "edge:subclass",
     });

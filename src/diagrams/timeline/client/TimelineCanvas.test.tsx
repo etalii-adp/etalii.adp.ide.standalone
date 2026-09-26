@@ -1,9 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type TimelineModel } from "./timelineModel";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: TimelineModel = emptyModel;
 let currentLoading = false;
@@ -38,22 +37,24 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
   useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
-  useContextConnection: () => ({
-    select: (selection: unknown) => selections.push(selection),
-    executeAction: (actionId: string, source?: unknown) => {
-      executed.push({ actionId, source });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-    executeShortcut: (shortcut: { key: string }, source?: unknown) => {
-      shortcuts.push({ key: shortcut.key, source });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-    setProperty: (propertyId: string, value: string) => {
-      properties.push({ propertyId, value });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({
+  select: (selection: unknown) => selections.push(selection),
+  executeAction: (actionId: string, source?: unknown) => {
+    executed.push({ actionId, source });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+  executeShortcut: (shortcut: { key: string }, source?: unknown) => {
+    shortcuts.push({ key: shortcut.key, source });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+  setProperty: (propertyId: string, value: string) => {
+    properties.push({ propertyId, value });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+});
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
@@ -136,15 +137,6 @@ beforeEach(() => {
   currentReportView = null;
 });
 
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
- * usePointerGesture.test.tsx's idiom, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
 function press(target: Element, init: MouseEventInit = {}) {
   fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
   fireEvent(target, pointer("pointerup", { ...init }));
@@ -155,10 +147,6 @@ function drag(target: Element, fromX: number, fromY: number, toX: number, toY: n
   fireEvent(target, pointer("pointermove", { clientX: toX, clientY: toY }));
   fireEvent(target, pointer("pointerup", { clientX: toX, clientY: toY }));
 }
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 const elementOn = (container: HTMLElement, id: string) => container.querySelector(`[data-element-id="${id}"]`)!;
 const anchorOn = (container: HTMLElement, id: string, name: string) =>
@@ -703,7 +691,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas();
       },
-      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(selections),
       element: "aaa",
       connection: "ccc",
     });

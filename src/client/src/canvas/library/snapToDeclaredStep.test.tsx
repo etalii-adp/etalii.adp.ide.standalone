@@ -5,9 +5,7 @@ import type { DiagramDefinition, SnapDeclaration } from "./definition/diagramDef
 import type { DiagramModel, DiagramModelElement } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
-
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * A dragged element comes to rest on the lattice its diagram type declares.
@@ -52,10 +50,6 @@ function definitionWith(snap: SnapDeclaration): DiagramDefinition {
 
 // Top edge on 0 and left edge on 0: the centre sits half the box further in on each axis.
 const resting: DiagramModelElement = { id: "a", type: "node", x: 50, y: HEIGHT / 2, width: 100, height: HEIGHT };
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, button: 0, ...init });
-}
 
 function mount(definition: DiagramDefinition, elements: DiagramModelElement[], onMoved?: (id: string, x: number, y: number) => void) {
   const model: DiagramModel = { elements, connections: [] };

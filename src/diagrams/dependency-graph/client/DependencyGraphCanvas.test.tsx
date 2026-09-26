@@ -1,9 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DependencyGraphModel } from "./dependencyGraphModel";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: DependencyGraphModel = emptyModel;
 let currentLoading = false;
@@ -38,22 +37,24 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
   useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
-  useContextConnection: () => ({
-    select: (selection: unknown) => selections.push(selection),
-    executeAction: (actionId: string, source?: unknown) => {
-      executed.push({ actionId, source });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-    executeShortcut: (shortcut: { key: string }, source?: unknown) => {
-      shortcuts.push({ key: shortcut.key, source });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-    setProperty: (propertyId: string, value: string) => {
-      properties.push({ propertyId, value });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({
+  select: (selection: unknown) => selections.push(selection),
+  executeAction: (actionId: string, source?: unknown) => {
+    executed.push({ actionId, source });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+  executeShortcut: (shortcut: { key: string }, source?: unknown) => {
+    shortcuts.push({ key: shortcut.key, source });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+  setProperty: (propertyId: string, value: string) => {
+    properties.push({ propertyId, value });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+});
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
@@ -111,19 +112,6 @@ beforeEach(() => {
   properties = [];
   shortcuts = [];
 });
-
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
- * usePointerGesture.test.tsx's idiom, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 describe("the dependency graph canvas", () => {
   it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
@@ -865,7 +853,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas();
       },
-      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(selections),
       element: "aaa",
       connection: "ccc",
     });

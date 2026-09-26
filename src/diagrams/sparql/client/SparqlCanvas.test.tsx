@@ -1,8 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, act } from "@testing-library/react";
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import {
   emptyModel,
@@ -12,6 +10,7 @@ import {
   type SparqlNode,
   type SparqlRegion,
 } from "./sparqlModel";
+import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: SparqlModel = emptyModel;
 let currentLoading = false;
@@ -43,13 +42,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   innermostKey: () => currentSelectionKey,
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
-  useContextConnection: () => ({
-    select: (selection: unknown) => selections.push(selection),
-    executeAction: () => Promise.resolve({ accepted: true, error: "" }),
-    executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
-    setProperty: () => Promise.resolve({ accepted: true, error: "" }),
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({ select: (selection: unknown) => selections.push(selection) });
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
@@ -332,7 +328,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas();
       },
-      pushedIds: () => selections.map((push) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(selections),
       element: "var:person",
       connection: "edge:knows",
     });

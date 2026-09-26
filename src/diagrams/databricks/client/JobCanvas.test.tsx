@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DatabricksModel } from "./databricksModel";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 let currentModel: DatabricksModel = emptyModel;
 let currentLoading = false;
@@ -32,16 +33,16 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
   useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
-  useContextConnection: () => ({
-    select: (selection: unknown) => selections.push(selection),
-    executeAction: (actionId: string, source?: unknown) => {
-      executed.push({ actionId, source });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-    executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
-    setProperty: () => Promise.resolve({ accepted: true, error: "" }),
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({
+  select: (selection: unknown) => selections.push(selection),
+  executeAction: (actionId: string, source?: unknown) => {
+    executed.push({ actionId, source });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+});
 
 vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
   useRegisterInlineLabelPlacement: () => undefined,
@@ -60,24 +61,8 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: () => [],
 }));
 
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
-
 const { JobCanvas } = await import("./JobCanvas");
-const { selectedElementIdOf } = await import("@client/canvas/selection");
 const { expectLibrarySelection } = await import("@client/canvas/library/testing/expectLibrarySelection");
-
-/** The id a push names, or null for a clear. */
-const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as never) ?? null));
 
 function task(id: string, label: string, x: number, y: number, badges: string[] = [], unresolved = false, kind = "notebook") {
   return { id, x, y, kind, label, badges, unresolved, runIf: "" };
@@ -173,7 +158,7 @@ describe("the job canvas", () => {
     fireEvent(edge, pointer("pointerup", { clientX: 300, clientY: 28 }));
 
     // Assert: the edge's own id travels, as a connection's does on every canvas.
-    expect(selections.map(idOf)).toEqual(["edge:ingest->publish"]);
+    expect(idsPushed(selections)).toEqual(["edge:ingest->publish"]);
   });
 
   it("commits a drag as one move in raw module coordinates - the layout path, never a grid", () => {
@@ -446,7 +431,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return renderCanvas();
       },
-      pushedIds: () => selections.map(idOf),
+      pushedIds: () => idsPushed(selections),
       element: "task:ingest",
       connection: "edge:ingest->publish",
     });

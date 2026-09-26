@@ -10,9 +10,9 @@ import {
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type AnsibleModel } from "./ansibleModel";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { elementSelectionOf } from "@client/canvas/selection";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 const revealPath = vi.fn();
@@ -41,10 +41,12 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     // The library reads the inline-edit prompt itself where it owns the canvas (client-centralization
     // task 7), so a sourced canvas needs one here even though this module never renames inline.
     useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select, revealPath }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: currentSelection }),
   };
 });
+
+const connection = fakeContextConnection({ select, revealPath });
 
 // Imported after the mocks so the component picks them up.
 let toolboxRequests: (readonly string[])[] = [];
@@ -99,23 +101,7 @@ function renderCanvas() {
   return render(<AnsibleCanvas projectId={new Uint8Array(16)} entryId={new Uint8Array(16)} path={["infrastructure.adp"]} />);
 }
 
-/**
- * A pointer event jsdom can actually carry. jsdom implements no PointerEvent at all, so
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined - and the canvas
- * checks `button !== 0` so a right-drag never repositions anything. A MouseEvent typed
- * "pointerdown" bubbles the same way and carries the button, which is what a real browser
- * delivers. The guard is right; the environment is what is missing.
- */
-const pointer = (type: string, init: MouseEventInit) =>
-  new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-
-// jsdom implements no pointer capture on SVG elements. The canvas uses it so a drag whose
-// pointer leaves the svg still delivers its pointerup, which every real browser supports -
-// stubbed here rather than feature-detected in the component, so the production path stays
-// the one that actually ships.
 beforeEach(() => {
-  SVGElement.prototype.setPointerCapture ??= () => {};
-  SVGElement.prototype.releasePointerCapture ??= () => {};
   select.mockClear();
   revealPath.mockClear();
   reportView.mockClear();
@@ -176,7 +162,6 @@ describe("AnsibleCanvas", () => {
       .filter((property) => !geometry.has(property));
     expect(inline).toEqual([]);
   });
-
 
   // ---- scrollbars and drag (Requirements 1.1, 1.2, 6.1-6.3) --------------------------------
 
@@ -269,7 +254,6 @@ describe("AnsibleCanvas", () => {
     // Assert: an edge carries no drag handler at all, so nothing is written.
     expect(moveElementTo).not.toHaveBeenCalled();
   });
-
 
   it("captures the pointer on the node, never on the svg", () => {
     // The regression this pins, found in the manual verification pass: a pointer capture
@@ -621,7 +605,7 @@ describe("selection, as every canvas has it", () => {
         currentSelection = id === null ? null : elementSelectionOf(new Uint8Array(16), ["infrastructure.adp"], id);
         return renderCanvas();
       },
-      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(select),
       element: "role:r",
       connection: "edge:uses",
     });

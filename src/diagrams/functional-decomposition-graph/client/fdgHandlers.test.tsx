@@ -5,6 +5,7 @@ import { FdgElementPayloadSchema } from "@client/generated/functional-decomposit
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel } from "@client/canvas/library/api/diagramModel";
 import { emptyModel, type FdgModel } from "./fdgModel";
+import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * Task 14's handler guard: each library event produces its ONE route and nothing else - a move
@@ -57,18 +58,20 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({ useToolboxItems: () => 
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
-  useContextConnection: () => ({
-    watchId: new Uint8Array([9]),
-    executeAction: (actionId: string, source?: unknown) => {
-      executed.push({ actionId, targetId: idOf(source) });
-      return Promise.resolve(refuse ? { accepted: false, error: refuse } : { accepted: true, error: "" });
-    },
-    setProperty: (propertyId: string, value: string, source?: unknown) => {
-      properties.push({ propertyId, value, targetId: idOf(source) });
-      return Promise.resolve({ accepted: true, error: "" });
-    },
-  }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({
+  watchId: new Uint8Array([9]),
+  executeAction: (actionId: string, source?: unknown) => {
+    executed.push({ actionId, targetId: idOf(source) });
+    return Promise.resolve(refuse ? { accepted: false, error: refuse } : { accepted: true, error: "" });
+  },
+  setProperty: (propertyId: string, value: string, source?: unknown) => {
+    properties.push({ propertyId, value, targetId: idOf(source) });
+    return Promise.resolve({ accepted: true, error: "" });
+  },
+});
 
 const { FdgCanvas } = await import("./FdgCanvas");
 

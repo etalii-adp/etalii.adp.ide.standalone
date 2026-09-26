@@ -22,7 +22,7 @@ import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * The library's three standing guards (diagram-library Requirement 10.1), each mounting
@@ -30,13 +30,6 @@ import { fileURLToPath } from "node:url";
  * databricks canvases as offenders here - and each carrying a named-member canary so its
  * population can never quietly go empty (Requirement 10.2).
  */
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 function definitionOf(): DiagramDefinition {
   return {
