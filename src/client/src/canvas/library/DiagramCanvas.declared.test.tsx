@@ -5,6 +5,7 @@ import type { DiagramDefinition, ElementTypeDefinition } from "./definition/diag
 import type { DiagramModel } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "./testing/canvasHarness";
 
 /**
  * THE ELEMENT-LEVEL GAPS THE SUFFICIENCY TABLE FOUND, mounted.
@@ -91,8 +92,8 @@ describe("declared classes — the gap every one of the 28 rows had (G1)", () =>
 
     expect(shapeIn(container).getAttribute("class")).not.toContain("node-selected");
 
-    fireEvent(shapeIn(container), new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 }));
-    fireEvent(shapeIn(container), new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
+    fireEvent(shapeIn(container), pointer("pointerdown", { button: 0 }));
+    fireEvent(shapeIn(container), pointer("pointerup"));
 
     expect(shapeIn(container).getAttribute("class")).toContain("node-selected");
   });
@@ -296,8 +297,6 @@ describe("invisible anchors", () => {
       </DiagramViewProvider>,
     );
   }
-
-  const pointer = (type: string, init: MouseEventInit) => new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
 
   it("draws no anchor dot, at rest or while the pointer rests on the element", () => {
     // Arrange, act.

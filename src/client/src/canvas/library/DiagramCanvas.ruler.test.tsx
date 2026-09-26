@@ -5,6 +5,7 @@ import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "./testing/canvasHarness";
 
 /**
  * A declared bottom ruler, drawn by the library.
@@ -15,15 +16,6 @@ import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxConte
  * browser pass is where its pixels are checked. What jsdom CAN check exactly is the arithmetic:
  * a tick's position as a share of the strip, against the view the drawing is using.
  */
-
-/** A pointer event jsdom can carry: it implements no PointerEvent (DiagramCanvas.resize.test.tsx's idiom). */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 /** Canvas x of the first of a month on the declared scale: four units a month from 1900-01. */
 const x = (year: number, month: number) => ((year * 12) + (month - 1) - (1900 * 12)) * 4;

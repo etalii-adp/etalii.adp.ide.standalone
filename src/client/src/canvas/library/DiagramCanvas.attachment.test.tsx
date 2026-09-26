@@ -6,6 +6,7 @@ import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "
 import { isInsideOutline, outlineOf } from "./shapes/outline";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "./testing/canvasHarness";
 
 /**
  * Where a connector touches a shape that is not a rectangle.
@@ -247,11 +248,3 @@ describe("a connection attached along an edge", () => {
   });
 });
 
-/** A pointer event jsdom can carry: it implements no PointerEvent (DiagramCanvas.resize.test.tsx's idiom). */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};

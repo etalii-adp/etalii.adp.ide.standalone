@@ -7,6 +7,7 @@ import type { LibraryEventHandlers } from "./api/diagramEvents";
 import { isInsideOutline, outlineOf } from "./shapes/outline";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "./testing/canvasHarness";
 
 /**
  * An arrow banner cut into segments, read off what the canvas DRAWS.
@@ -164,15 +165,6 @@ describe("a banner without segments", () => {
     expect(container.querySelector("polygon.library-shape")).not.toBeNull();
   });
 });
-
-/** A pointer event jsdom can carry: it implements no PointerEvent (DiagramCanvas.resize.test.tsx's idiom). */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 /** Draggable boundaries on a lattice of 4, the way a time axis snaps whole months. */
 function draggableDefinition(): DiagramDefinition {

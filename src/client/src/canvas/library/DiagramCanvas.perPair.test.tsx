@@ -5,6 +5,7 @@ import type { Cardinality, DiagramDefinition } from "./definition/diagramDefinit
 import type { DiagramModel, DiagramModelConnection } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "./testing/canvasHarness";
 
 /**
  * One connection per pair, refused under the pointer.
@@ -13,15 +14,6 @@ import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxConte
  * on its own - so the last test here drives a refusal each of the others alone explains, with
  * `perPair` declared, to show declaring it took none of them away.
  */
-
-/** A pointer event jsdom can carry: it implements no PointerEvent (DiagramCanvas.acyclic.test.tsx's idiom). */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 /** Three nodes at centres 0, 300 and 600, 100 wide: every east anchor 50 right of centre, every west 50 left. */
 function modelOf(connections: readonly DiagramModelConnection[]): DiagramModel {
