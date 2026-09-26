@@ -11,9 +11,10 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// <b>A thin use of the shared lifecycle (backend-centralization task 6).</b> Opening, the retries
 /// before a refused read is believed, keeping the last good document through a reload that cannot
 /// read (R2.4), clearing it only on the watcher's delete (R2.5) and ignoring this store's own save
-/// (R2.3) are all <see cref="WritableDocumentLifecycle{TDocument}"/>'s. What stays here is what is
-/// this module's: how a body's text becomes an entry, the refusal to write one that does not parse,
-/// the folder a first save needs, and telling the sessions.
+/// (R2.3), and creating the folder a first save needs, are all
+/// <see cref="WritableDocumentLifecycle{TDocument}"/>'s. What stays here is what is this module's: how
+/// a body's text becomes an entry, the refusal to write one that does not parse, and telling the
+/// sessions.
 /// </para>
 /// <para>
 /// <b>The sessions hear about a reload only when the lifecycle installed a document.</b> One that
@@ -49,22 +50,6 @@ public sealed class DependencyGraphDocumentStore : IDependencyGraphDocumentStore
             // file somebody can still fix with one this module invented.
             _logger.Warning("Refusing to write {Path}: it does not parse ({Error})", path, entry.Error);
             return $"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}";
-        }
-
-        try
-        {
-            // The folder is this store's precondition rather than the writer's: a scratch file has
-            // nowhere to land if the directory is not there yet.
-            var directory = IoPath.GetDirectoryName(path);
-            if (directory is { Length: > 0 } && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _logger.Warning(exception, "Could not write {Path}; the change is kept in memory", path);
-            return $"{IoPath.GetFileName(path)} could not be written. The change is still here to try again.";
         }
 
         // The document's own lines are authoritative and unchanged by writing them out, but what

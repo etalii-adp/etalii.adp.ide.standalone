@@ -59,8 +59,9 @@ public sealed class DependencyGraphDocumentReloaderTests : IDisposable
         // Act: a reload that finds no file.
         reloader.Reload(_folder, Body);
 
-        // Assert: kept (R2.4). A body missing on a reload is far more often a publish in flight
-        // than a deletion, so the last good document stays.
+        // Assert: kept until the absence is confirmed (R2.5's first half). A body missing on a
+        // reload is far more often a publish in flight than a deletion, so the last good document
+        // stays. This is NOT R2.4, which is a body present but unreadable - see the next test.
         Assert.NotEmpty(store.GetOrLoad(Body).Model.Elements);
 
         // Act: the watcher's evidence that it is gone.
