@@ -4,6 +4,7 @@ import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { markTabDirty } from "@client/shell/panels/dirtyTabs";
 import { BaseTextEditor, scrollToLine } from "./BaseTextEditor";
 import { useEditorText } from "./useEditorText";
+import { useCanvasRefusal } from "@client/canvas/library/surface/useCanvasRefusal";
 import "./editors.css";
 
 /**
@@ -42,7 +43,9 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
   const { model, loading, failed, save: streamSave } = useEditorText(projectId, path, editorId);
   const [localText, setLocalText] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
-  const [saveError, setSaveError] = useState("");
+  // A refused save is shown on the library's one refusal line around this panel, not on a line of
+  // the editor's own (client-centralization Requirement 2.5); the save clears it when sent.
+  const refusal = useCanvasRefusal();
   const [lineNotice, setLineNotice] = useState("");
   const baselineRevision = useRef(0);
   const appliedInitialLine = useRef<number | undefined>(undefined);
@@ -99,19 +102,20 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
       return;
     }
 
+    refusal.attempted();
     const error = await performSave(localText);
-    setSaveError(error);
     if (error === "") {
       setLocalText(null);
+    } else {
+      refusal.refuse(error);
     }
-  }, [onSave, streamSave, localText]);
+  }, [onSave, streamSave, localText, refusal]);
 
-  if (failed) {
-    return <p className="text-editor-unavailable">This file cannot be opened as text any more.</p>;
-  }
-
-  if (loading && !model.loaded) {
-    return <p className="text-editor-loading">Loading…</p>;
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this panel.
+  // Nothing is drawn meanwhile - above all no editor over text that has not arrived, which could be
+  // typed into and saved over the file.
+  if (failed || (loading && !model.loaded)) {
+    return null;
   }
 
   const shown = localText ?? baseText;
@@ -134,11 +138,6 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
           <button type="button" onClick={() => setConflict(false)}>
             Keep my changes
           </button>
-        </div>
-      )}
-      {saveError !== "" && (
-        <div className="text-editor-save-error" role="alert">
-          {saveError}
         </div>
       )}
       {lineNotice !== "" && (

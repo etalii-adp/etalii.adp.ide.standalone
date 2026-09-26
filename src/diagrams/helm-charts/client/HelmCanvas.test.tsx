@@ -331,13 +331,20 @@ describe("HelmCanvas", () => {
     expect(container.textContent).toContain("not a Helm chart");
   });
 
-  it("shows loading and failure states", () => {
-    // Arrange & act & assert.
+  it("leaves loading and failure to the library's frame, and does not call an unread chart empty", () => {
+    // Opening and unavailable are the library's to say, around every canvas (client-centralization
+    // Requirement 2.3). Without its early returns this canvas must still not claim "not a Helm
+    // chart" over a folder it has not read.
+    currentModel = emptyModel;
     currentLoading = true;
-    expect(renderCanvas().container.textContent).toContain("Reading the chart");
+    const loading = renderCanvas().container.textContent;
+    expect(loading).not.toContain("Reading the chart");
+    expect(loading).not.toContain("not a Helm chart");
     currentLoading = false;
     currentFailed = true;
-    expect(renderCanvas().container.textContent).toContain("could not be opened");
+    const failed = renderCanvas().container.textContent;
+    expect(failed).not.toContain("could not be opened");
+    expect(failed).not.toContain("not a Helm chart");
   });
 });
 

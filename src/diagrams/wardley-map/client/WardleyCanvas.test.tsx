@@ -281,13 +281,16 @@ describe("WardleyCanvas chrome", () => {
     expect(container.querySelectorAll(".wardley-band")).toHaveLength(0);
   });
 
-  it("says so when the map cannot be opened", () => {
+  it("when the map cannot be opened, draws nothing of it and no status of its own", () => {
+    // Opening and unavailable are the library's to say, in the frame around every canvas
+    // (client-centralization Requirement 2.3).
+
     // Act.
     const { container } = renderCanvas(emptyModel, { failed: true });
 
     // Assert.
-    expect(container.textContent).toContain("could not be opened");
-    expect(container.querySelector("svg")).toBeNull();
+    expect(container.textContent).not.toContain("could not be opened");
+    expect(container.querySelectorAll(".wardley-band")).toHaveLength(0);
   });
 
   it("names the map for a screen reader when the document gave it a title", () => {
@@ -700,8 +703,11 @@ describe("WardleyCanvas dragging", () => {
     expect(container.querySelector(".wardley-link")?.getAttribute("d")).not.toBe(before);
   });
 
-  it("shows a refusal rather than swallowing it", async () => {
-    // Arrange. Requirement 7.5 - a read-only map refuses, and the user is told why.
+  it("sends the move and leaves its refusal to the library's line, rather than drawing its own", async () => {
+    // Arrange. Requirement 7.5 - a read-only map refuses, and the user is told why: by the move
+    // itself, on the one line the library draws around every canvas (client-centralization
+    // Requirement 2; useDiagramStream.move.test.ts). This canvas once replaced that line with its
+    // own `wardley-rejection`; it draws none now.
     const { container } = renderDraggable();
     moveAnswer = "This map is read-only.";
     const surface = container.querySelector("svg")!;
@@ -713,8 +719,11 @@ describe("WardleyCanvas dragging", () => {
     fireEvent(mark, new MouseEvent("pointerup", { bubbles: true, clientX: 600, clientY: 500 }));
     void surface;
 
-    // Assert. The shape snaps back because the model never changed, and the reason is visible.
-    await waitFor(() => expect(container.textContent).toContain("This map is read-only."));
+    // Assert. The shape snaps back because the model never changed; the move was sent, and the
+    // reason is not drawn by this canvas.
+    await waitFor(() => expect(moves).toHaveLength(1));
+    expect(container.textContent).not.toContain("This map is read-only.");
+    expect(container.querySelector(".wardley-rejection, .canvas-rejection")).toBeNull();
   });
 
   it("does not pan the surface while an element is being dragged", () => {

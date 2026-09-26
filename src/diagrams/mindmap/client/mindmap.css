@@ -20,19 +20,6 @@
   background: var(--color-surface);
 }
 
-.mindmap-canvas-loading {
-  margin: auto;
-  color: var(--color-text-muted);
-}
-
-/* A diagram whose file is gone or moved: the tab stays, saying so plainly. */
-.mindmap-canvas-unavailable {
-  margin: auto;
-  padding: 0 1.5rem;
-  color: var(--color-text-muted);
-  text-align: center;
-}
-
 .mindmap-canvas-surface {
   width: 100%;
   height: 100%;

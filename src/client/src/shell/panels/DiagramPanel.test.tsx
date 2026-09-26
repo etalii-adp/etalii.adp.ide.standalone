@@ -42,6 +42,16 @@ describe("DiagramPanel", () => {
     expect(screen.getByTestId("fixture-canvas")).toBeTruthy();
   });
 
+  it("puts every module canvas inside the library's frame, the one place refusals and status show", () => {
+    // client-centralization Requirement 2, as the user ruled it: the shell places the frame, so no
+    // module declares or wires one. A canvas mounted outside it would show its refusals nowhere.
+    // Act.
+    const { container } = render(<DiagramPanel diagram={diagram("fixture/drawable")} />);
+
+    // Assert.
+    expect(container.querySelector(".canvas-frame [data-testid='fixture-canvas']")).not.toBeNull();
+  });
+
   it("shows a claiming module's own explanation when it has no canvas", async () => {
     // Act.
     // A module that knows a type but cannot draw it explains why itself, rather than falling
