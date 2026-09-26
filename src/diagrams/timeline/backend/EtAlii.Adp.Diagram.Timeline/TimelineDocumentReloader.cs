@@ -29,4 +29,5 @@ public sealed class TimelineDocumentReloader : IDiagramDocumentReloader
 
     public void Reload(string rootPath, string bodyPath) => _documents.Reload(bodyPath);
 
+    public void BodyDeleted(string rootPath, string bodyPath) => _documents.BodyDeleted(bodyPath);
 }
