@@ -20,9 +20,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// </summary>
     private readonly ConcurrentDictionary<string, PipelineTemplates> _templates = new(StringComparer.OrdinalIgnoreCase);
 
-    // The paths this store is writing right now, so its own save does not bounce back through
-    // Reload as an "external" change - PlainEditorSession's saving guard, per path.
-    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+    // The paths this store is writing, and what it last wrote to each, so its own save does not
+    // bounce back through Reload as an "external" change - PlainEditorSession's saving guard, per
+    // path.
+    private readonly SelfWriteGuard _selfWrites = new();
 
     public event EventHandler<PipelineDocumentChangedEventArgs>? Changed;
 
@@ -47,7 +48,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             return $"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}";
         }
 
-        _selfWrites[path] = 1;
+        _selfWrites.Begin(path, entry.Document.Text);
         try
         {
             var directory = IoPath.GetDirectoryName(path);
@@ -67,7 +68,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         }
         finally
         {
-            _selfWrites.TryRemove(path, out _);
+            _selfWrites.End(path);
         }
 
         // The document's own lines are authoritative and unchanged by writing them out, but what it
@@ -93,6 +94,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _entries.TryRemove(path, out _);
+        _selfWrites.Forget(path);
     }
 
     public void Reload(string rootPath, string path)
@@ -100,10 +102,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (_selfWrites.ContainsKey(path))
+        if (_selfWrites.IsOwnWrite(path))
         {
-            // The change on disk is this store's own save, mid-write; Save reparses and tells
-            // the sessions itself.
+            // The change on disk is this store's own save, in flight or already landed; Save
+            // reparses and tells the sessions itself.
             return;
         }
 

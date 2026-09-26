@@ -70,6 +70,63 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     [Fact]
+    public void AReloadForItsOwnSave_ArrivingAfterTheSaveReturned_IsIgnored()
+    {
+        // The ordering the watcher actually produces: it reports a write after it lands, on its own
+        // thread, so the notification for a save nearly always arrives once the save has returned.
+        // A guard held only for the length of the write took that notification for an external
+        // change, and every save was followed by a reload of the file it had just written.
+        var path = Write("plan.note", "before");
+        var lifecycle = Lifecycle();
+        var note = lifecycle.GetOrLoad(path);
+        note.Text = "edited";
+        lifecycle.Save(path, note);
+
+        var reloaded = lifecycle.Reload(path);
+
+        Assert.False(reloaded);
+        Assert.Same(note, lifecycle.Get(path));
+    }
+
+    [Fact]
+    public void AnExternalEditAfterItsOwnSave_IsTaken()
+    {
+        // The control for the test above: a guard that ignored every reload after a save would pass
+        // that one and leave the store deaf to the next person who edits the file.
+        var path = Write("plan.note", "before");
+        var lifecycle = Lifecycle();
+        var note = lifecycle.GetOrLoad(path);
+        note.Text = "edited";
+        lifecycle.Save(path, note);
+        File.WriteAllText(path, "changed elsewhere");
+
+        var reloaded = lifecycle.Reload(path);
+
+        Assert.True(reloaded);
+        Assert.Equal("changed elsewhere", lifecycle.GetOrLoad(path).Text);
+    }
+
+    [Fact]
+    public void AnExternalEditThatRestoresItsOwnSave_IsTaken()
+    {
+        // What the guard remembers is dropped the first time the file differs, so the text of an old
+        // save cannot mask a later external change back to it while the cache holds something else.
+        var path = Write("plan.note", "before");
+        var lifecycle = Lifecycle();
+        var note = lifecycle.GetOrLoad(path);
+        note.Text = "edited";
+        lifecycle.Save(path, note);
+        File.WriteAllText(path, "changed elsewhere");
+        Assert.True(lifecycle.Reload(path));
+        File.WriteAllText(path, "edited");
+
+        var reloaded = lifecycle.Reload(path);
+
+        Assert.True(reloaded);
+        Assert.Equal("edited", lifecycle.GetOrLoad(path).Text);
+    }
+
+    [Fact]
     public void AReloadWithNoSaveInFlight_IsTaken()
     {
         // The control for the test above: a Reload that ignored everything would pass that one.

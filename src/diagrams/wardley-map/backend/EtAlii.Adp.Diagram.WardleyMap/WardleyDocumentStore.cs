@@ -17,9 +17,10 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
 
     private readonly WardleyIdentities _sidecar = new();
 
-    // The paths this store is writing right now, so its own save does not bounce back through
-    // Reload as an "external" change - PlainEditorSession's saving guard, per path.
-    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+    // The paths this store is writing, and what it last wrote to each, so its own save does not
+    // bounce back through Reload as an "external" change - PlainEditorSession's saving guard, per
+    // path.
+    private readonly SelfWriteGuard _selfWrites = new();
 
     public event EventHandler<WardleyDocumentChangedEventArgs>? Changed;
 
@@ -65,10 +66,11 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         // next GetOrLoad re-reads a file that now HAS the edit. What mattered was writing the
         // caller's document rather than whatever the cache held at this moment.
         string warning;
-        _selfWrites[path] = 1;
+        var text = document.ToText();
+        _selfWrites.Begin(path, text);
         try
         {
-            if (!WriteAtomically(path, document.ToText()))
+            if (!WriteAtomically(path, text))
             {
                 // Reported, not swallowed. This was a bare `return` out of a `void` method, so a
                 // publish that could not land - an editor holding the file, a transient sharing
@@ -90,7 +92,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         }
         finally
         {
-            _selfWrites.TryRemove(path, out _);
+            _selfWrites.End(path);
         }
 
         Changed?.Invoke(this, new WardleyDocumentChangedEventArgs(path));
@@ -107,6 +109,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _documents.TryRemove(path, out _);
+        _selfWrites.Forget(path);
         _identities.TryRemove(path, out _);
     }
 
@@ -114,10 +117,10 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (_selfWrites.ContainsKey(path))
+        if (_selfWrites.IsOwnWrite(path))
         {
-            // The change on disk is this store's own save, mid-write; Save reconciles and
-            // tells the sessions itself.
+            // The change on disk is this store's own save, in flight or already landed; Save
+            // reconciles and tells the sessions itself.
             return;
         }
 
