@@ -1,22 +1,24 @@
 # ADP — A Different Perspective
 
-Architecture that lives in the repository, as files, beside the code it describes.
+Specialized diagram, designer and editor experiences, each tuned to one task, backed by plain files that live beside the work they describe. This repository is the standalone web workspace host.
 
 [![Build](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml/badge.svg)](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml)
 
 ## Why
 
-Software architecture tooling stands at a crossroad. The large enterprise modelling suites enforce strong, strict principles — and pay for them by slowing development down, which makes them steadily less tenable in a landscape where AI-assisted development keeps raising the pace. The usual escape is to stop doing architecture deliberately at all, and lose the shared picture just when a team (and its AI tools) needs it most.
+Some things are understood better as a picture than as prose, and better as a picture made for that one task than as a general-purpose one. General-purpose drawing tools can draw anything, but they know nothing about what is being drawn, and so they help with none of it. ADP — "A Different Perspective" — is a family of specialized designers for every situation in which a specialized visualization serves better than a generalized one or a textual description. Architecture is where ADP began, and its notations are well represented here; the designers now being introduced target (constructive) technology assessment, collaboration between humans and agents, and bringing clarity to textual data.
 
-ADP — "A Different Perspective" — takes a different stance: architectural artifacts belong **in the solution repository**, as plain, diffable files, under the same version control as the code they describe. A diagram here is not a picture exported from a modelling database; it is a text document you can review in a pull request, branch, merge, and blame — and open in ADP's web workspace to view and edit it as a live diagram. Where a well-known notation or file format already exists, ADP embraces it rather than inventing its own: a mindmap is a Freeplane file, a C4 model is a Structurizr DSL workspace, a Wardley map is an OnlineWardleyMaps document — each still openable by the tool that owns the format, byte-for-byte, after ADP has edited it.
+What a designer shows lives **in the repository**, as plain, diffable files, under the same version control as the work it describes. A diagram here is not a picture exported from a modelling database; it is a text document you can review in a pull request, branch, merge, and blame — and open in ADP to view and edit it live. Where a well-known notation or file format already exists, ADP embraces it rather than inventing its own: a mindmap is a Freeplane file, a C4 model is a Structurizr DSL workspace, a Wardley map is an OnlineWardleyMaps document — each still openable by the tool that owns the format, byte-for-byte, after ADP has edited it.
 
-Because the artifacts sit beside the code, they can do more than illustrate: diagram elements can link to the code they represent, so the architecture stays legible — to humans reading the repository, and to the AI tools increasingly discussing it — as the code evolves. The editing surface is a web workspace deliberately close to VS Code (an explorer, tabs, panels, a property grid), so adopting ADP does not mean learning a new tool from scratch. Changes to the underlying files — from ADP itself, another editor, or a `git pull` — are pushed live into open views.
+Because the files sit beside the work, diagram elements can do more than illustrate: they can link to what they represent, so the picture stays legible — to humans reading the repository, and to the agents working beside them — as its subject evolves. Changes to the underlying files — from ADP itself, another editor, or a `git pull` — are pushed live into open views.
 
-And it starts small on purpose: one process, one repository, local files, no server infrastructure to roll out. ADP should already be worth having in a single repository, before any wider adoption decision is made. The full product thinking lives in [`product.md`](.spec-workflow/steering/product.md).
+**ADP is not one application.** Each diagram, designer and editor is described by a markup-language definition, specified in [`etalii.adp`](https://github.com/etalii-adp/etalii.adp), and interpreted by a core plugin in each supported IDE: this standalone web workspace, IntelliJ Platform IDEs, VS Code and Eclipse, each in its own repository. Where a definition alone is not enough, that host's plugin adds the code to support it. This repository's technical shape describes this host only, not the standard the others follow.
+
+And it starts small on purpose: one repository, local files, no server infrastructure to roll out. ADP should already be worth having in a single repository, before any wider adoption decision is made. The full product thinking lives in [`product.md`](.spec-workflow/steering/product.md).
 
 ## What it looks like
 
-The workspace, with a C4 architecture diagram open from the bundled examples:
+The workspace, with a C4 diagram open from the bundled examples:
 
 ![The ADP workspace](docs/screenshots/workspace.png)
 
