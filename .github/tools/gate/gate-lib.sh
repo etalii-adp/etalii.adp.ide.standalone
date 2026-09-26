@@ -346,8 +346,59 @@ gate_selftest_report() {
   fi
 }
 
+# gate_awaiting_land_write <gitdir> <scratch> <base> <merged> - a GREEN gate's claim on develop, written
+# before the gate's lock is released and cleared by land.sh. 1 when it could not be written.
+#
+# THE LOCK ENDS WHEN THE PROCESS DOES, AND DEVELOP'S PROMISE DOES NOT. gate.sh's finish() removes the
+# lock on every exit, green included, so the moment a green gate's process ended the tell read
+# GATING=none while develop was still promised to it until land.sh fast-forwarded. At 11:58:50Z on
+# 2026-09-25 a spec commit landed ten seconds after Developer 3's green gate: the tell read free, the
+# commit went ahead, and the gate lost its landing. The board's rule for that window was prose, which
+# depends on vigilance at the moment nobody is looking; this makes it a state the tell can read.
+#
+# One line, in the scratch tree's own git directory beside the lock, so a temp clean-up cannot take it
+# and each scratch tree holds at most one claim. The line ends in the FULL merged SHA, because that is
+# what land.sh is handed and matches exactly. Its ignore-after is an hour from the verdict: a landing
+# takes minutes, and a claim nobody landed within the hour is a slot that died with its session, whose
+# base will have moved - see the expiry note in gate_who_is_gating for why it is dropped, not flagged.
+gate_awaiting_land_write() {
+  local gitdir=${1:-} scratch=${2:-} base=${3:-} merged=${4:-} tmp
+  [ -n "$gitdir" ] && [ -d "$gitdir" ] && [ -n "$merged" ] || return 1
+  tmp="$gitdir/adp-gate.awaiting-land.$$"
+  printf '%s green, awaiting land on base %s since %s ignore-after %s merged %s\n' \
+    "$scratch" "$(printf '%s' "$base" | cut -c1-8)" \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    "$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ 2> /dev/null || echo unknown)" \
+    "$merged" > "$tmp" 2> /dev/null || {
+    rm -f "$tmp" 2> /dev/null
+    return 1
+  }
+  mv -f "$tmp" "$gitdir/adp-gate.awaiting-land" 2> /dev/null || {
+    rm -f "$tmp" 2> /dev/null
+    return 1
+  }
+}
+
+# gate_awaiting_land_clear <worktrees-dir> <merged> - removes every claim for EXACTLY this merged commit
+# and prints how many it removed. A claim for any other commit is left alone: it is somebody else's
+# green gate, and releasing it would open the board under their landing.
+gate_awaiting_land_clear() {
+  local dir=${1:-} merged=${2:-} marker n=0
+  if [ -z "$dir" ] || [ ! -d "$dir" ] || [ -z "$merged" ]; then
+    printf '0\n'
+    return 1
+  fi
+  for marker in "$dir"/*/adp-gate.awaiting-land; do
+    [ -f "$marker" ] || continue
+    case "$(sed -n '1p' "$marker" | tr -d '\r')" in
+      *" merged $merged") rm -f "$marker" && n=$((n + 1)) ;;
+    esac
+  done
+  printf '%s\n' "$n"
+}
+
 gate_who_is_gating() {
-  local dir=${1:-} mode=${2:-} lock owner found=0 scratch line ignore now
+  local dir=${1:-} mode=${2:-} lock owner found=0 scratch line ignore now marker
   if [ -z "$dir" ] || [ ! -d "$dir" ]; then
     printf 'TELL_UNREADABLE=%s\n' "${dir:-<no directory named>}"
     return 2
@@ -374,6 +425,32 @@ gate_who_is_gating() {
       scratch=${lock%/adp-gate.lock}
       scratch=${scratch##*/}
       printf '%s gating (owner not written yet)\n' "$scratch"
+    fi
+  done
+  # A GREEN gate's claim on develop, from its verdict until land.sh lands it or refuses it for good (see
+  # gate_awaiting_land_write). It holds the board exactly as a running gate does.
+  #
+  # UNLIKE A LOCK, A CLAIM PAST ITS IGNORE-AFTER IS DROPPED RATHER THAN LABELLED ASK, and the difference
+  # is deliberate. An EXPIRED lock may be a gate that is still running, which nobody can see, so it stays
+  # a question. An expired claim is a green verdict that nobody landed within the hour: its base will
+  # have moved, and land.sh already refuses a moved base on its own. Holding the board for it would trade
+  # a refusal that already exists for a board nobody can clear. An unknown expiry is held, as with a lock:
+  # the direction that cannot be recovered is releasing a slot somebody still owns.
+  for marker in "$dir"/*/adp-gate.awaiting-land; do
+    [ -f "$marker" ] || continue
+    line=$(sed -n '1p' "$marker" | tr -d '\r')
+    [ -n "$line" ] || continue
+    ignore=${line##*ignore-after }
+    ignore=${ignore%% *}
+    now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    if [ "$ignore" != unknown ] && [ -n "$ignore" ] && [ "$ignore" \< "$now" ]; then
+      continue
+    fi
+    found=1
+    if [ "$ignore" = unknown ]; then
+      printf '%s (expiry unknown - treat as live)\n' "$line"
+    else
+      printf '%s\n' "$line"
     fi
   done
   if [ "$found" = 0 ]; then

@@ -84,7 +84,7 @@ fi
 
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "RESULT=aborted-cannot-locate-script"; exit 3; }
 . "$HERE/gate-lib.sh" 2>/dev/null
-if ! type gate_main_checkout gate_is_develops gate_blocking_paths > /dev/null 2>&1; then
+if ! type gate_main_checkout gate_is_develops gate_blocking_paths gate_awaiting_land_clear > /dev/null 2>&1; then
   echo "RESULT=aborted-library-missing ($HERE/gate-lib.sh)"
   exit 3
 fi
@@ -97,17 +97,38 @@ fi
 BASE=$(git -C "$MAIN" rev-parse --verify -q "$1^{commit}") || { echo "RESULT=unknown-base ($1)"; exit 1; }
 MERGED=$(git -C "$MAIN" rev-parse --verify -q "$2^{commit}") || { echo "RESULT=unknown-merged-commit ($2)"; exit 1; }
 
+# THE GREEN GATE'S CLAIM ON DEVELOP (gate_awaiting_land_write) IS RELEASED ONLY WHEN THIS LANDING IS OVER
+# FOR GOOD - landed, or refused in a way no retry of this same line can fix: develop moved, the commit
+# does not descend from the base, or develop ended up somewhere other than the gated commit.
+#
+# IT IS KEPT ON A RETRYABLE REFUSAL, deliberately, and that is the half a plain "release on any refusal"
+# gets wrong. ff-refused tells its operator that develop has NOT moved and to re-run this same line;
+# main-checkout-not-on-develop is cured by switching back and re-running. Releasing the claim on either
+# would open the board under a landing that is about to be retried - somebody commits in the gap, and
+# the retry fails develop-moved-regate: the exact loss this claim exists to prevent. The unknown-* and
+# aborted-* refusals keep it too, since they cannot even name the commit whose claim they would release.
+COMMON=$(git -C "$MAIN" rev-parse --path-format=absolute --git-common-dir 2> /dev/null || true)
+release() {
+  echo "AWAITING_LAND_RELEASED=$(gate_awaiting_land_clear "$COMMON/worktrees" "$MERGED")"
+}
+keep() {
+  echo "AWAITING_LAND=still-held (this refusal is retryable - the board stays yours until this same line lands, or is refused for good)"
+}
+
 ON=$(git -C "$MAIN" symbolic-ref -q --short HEAD || true)
 if [ "$ON" != develop ]; then
+  keep
   echo "RESULT=main-checkout-not-on-develop (it is on '${ON:-a detached HEAD}' - a fast-forward would move that instead)"
   exit 1
 fi
 NOW=$(git -C "$MAIN" rev-parse --verify -q develop || true)
 if [ -z "$NOW" ] || [ "$NOW" != "$BASE" ]; then
+  release
   echo "RESULT=develop-moved-regate (develop is ${NOW:-unreadable}; the gates merged onto $BASE and never saw what arrived since)"
   exit 1
 fi
 if ! git -C "$MAIN" merge-base --is-ancestor "$BASE" "$MERGED"; then
+  release
   echo "RESULT=not-a-descendant ($MERGED does not descend from $BASE)"
   exit 1
 fi
@@ -128,12 +149,15 @@ if ! git -C "$MAIN" merge --ff-only "$MERGED"; then
   else
     echo "BLOCKED_BY=<nothing: no locally changed path is one this fast-forward would update, so the index is not the cause. Read git's own message above - this is not the case the diagnosis covers.>"
   fi
+  keep
   echo "RESULT=ff-refused"
   exit 1
 fi
 AFTER=$(git -C "$MAIN" rev-parse --verify -q develop || true)
 if [ "$AFTER" != "$MERGED" ]; then
+  release
   echo "RESULT=develop-is-not-the-gated-commit (develop is ${AFTER:-unreadable}, gated $MERGED)"
   exit 1
 fi
+release
 echo "RESULT=landed ($MERGED)"

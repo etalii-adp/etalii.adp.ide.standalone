@@ -60,7 +60,7 @@ trap finish EXIT
 
 HERE=$(cd "$(dirname "$0")" && pwd) || { echo "RESULT=aborted-cannot-locate-script"; exit 3; }
 . "$HERE/gate-lib.sh" 2>/dev/null
-if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head gate_run_logs_dir gate_keep_logs_red gate_prune_logs gate_remove_legacy_flat_logs gate_undeleted_folders gate_tell_write gate_who_is_gating > /dev/null 2>&1; then
+if ! type extract_guard gate_main_checkout gate_is_develops gate_verdict gate_tree_matches_head gate_run_logs_dir gate_keep_logs_red gate_prune_logs gate_remove_legacy_flat_logs gate_undeleted_folders gate_tell_write gate_who_is_gating gate_awaiting_land_write > /dev/null 2>&1; then
   echo "RESULT=aborted-library-missing ($HERE/gate-lib.sh)"
   exit 3
 fi
@@ -99,6 +99,10 @@ if ! mkdir "$GITDIR/adp-gate.lock" 2> /dev/null; then
   exit 1
 fi
 LOCK="$GITDIR/adp-gate.lock"
+# A new run in this scratch tree supersedes any green claim an earlier run left in it - a refold of the
+# same branch, or the next one - so that claim will never be landed, and holding the board for it would
+# block the very run that replaces it. Other trees' claims are theirs and are not touched.
+rm -f "$GITDIR/adp-gate.awaiting-land"
 gate_tell_write "$LOCK" "$SCRATCH_NAME" "$BRANCH" pending
 echo "TELL=bash .github/tools/gate/who-is-gating.sh (reads this run; base follows below)"
 
@@ -206,6 +210,15 @@ if [ -z "$NOW" ] || [ "$NOW" != "$BASE" ]; then
   echo "DEVELOP_MOVED_DURING_GATES=${NOW:-unreadable} (gated on $BASE)"
   echo "RESULT=gates-green-but-base-stale-refold-needed"
   exit 1
+fi
+# THE CLAIM IS WRITTEN HERE, BEFORE THE LOCK IS RELEASED, so there is no instant in which the tell reads
+# free between the verdict and the landing: finish() removes the lock only when this process exits,
+# after these lines. Only a green verdict writes one - a red run, and a green whose base already moved,
+# have nothing to land and so hold nothing.
+if gate_awaiting_land_write "$GITDIR" "$SCRATCH_NAME" "$BASE" "$MERGED"; then
+  echo "AWAITING_LAND=held (the tell reports this slot until land.sh lands it, or refuses it for good)"
+else
+  echo "AWAITING_LAND=NOT-WRITTEN (the tell will read free before you land - hold the board by word)"
 fi
 echo "RESULT=gates-green-ff-withheld"
 echo "TO_LAND=bash \"$MAIN/.github/tools/gate/land.sh\" $BASE $MERGED"

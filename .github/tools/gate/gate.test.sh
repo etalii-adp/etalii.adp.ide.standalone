@@ -429,6 +429,35 @@ bash "$HERE/who-is-gating.sh" --require-free extra > /dev/null 2>&1; report 3 "$
 REFUSED=$(bash "$HERE/who-is-gating.sh" --typo-for-the-probe > /dev/null 2>&1; echo $?)
 report distinct "$([ "$REFUSED" != 2 ] && echo distinct || echo SHARED-WITH-UNREADABLE)" "refusal does not share the unreadable code, which is what lets a probe require it"
 
+echo "== the tell holds a GREEN gate until it lands: an awaiting-land claim is a holder"
+# At 11:58:50Z on 2026-09-25 a spec commit landed ten seconds after a green gate, because the lock goes
+# with the gate's process and the tell read GATING=none while develop was still promised. The claim is a
+# FILE beside the lock that outlives the process; these cases drive the library directly, since the
+# harness's own gate can never go green (it has no src/). The claim's TWO SHAs differ on purpose, so a
+# clear that matched the wrong one could not pass.
+AL=$(mktemp -d)/worktrees
+mkdir -p "$AL/mrgw1" || broken "cannot build the awaiting-land tell directory"
+M1=1111111111111111111111111111111111111111
+M2=2222222222222222222222222222222222222222
+gate_awaiting_land_write "$AL/mrgw1" mrgw1 abcdef1234567890 "$M1"
+report 0 "$?" "a green gate's claim is written"
+[ -f "$AL/mrgw1/adp-gate.awaiting-land" ] || broken "the claim is not on disk, so every case below would test nothing"
+[ -e "$AL/mrgw1/adp-gate.lock" ] && broken "a lock exists beside the claim, so the claim alone is not what is being tested"
+report 1 "$(gate_who_is_gating "$AL" | grep -c '^mrgw1 green, awaiting land on base abcdef12 ')" "BETWEEN GREEN AND LAND THE TELL IS NOT NONE, with no lock at all - the window that lost a landing"
+gate_who_is_gating "$AL" --require-free > /dev/null
+report 1 "$?" "... and --require-free says NOT free, so a chain over it holds"
+report 0 "$(gate_awaiting_land_clear "$AL" "$M2")" "clearing ANOTHER commit's claim removes nothing - that is somebody else's green gate"
+report 1 "$(gate_who_is_gating "$AL" | grep -c '^mrgw1 green')" "... and the claim still holds the board"
+report 1 "$(gate_awaiting_land_clear "$AL" "$M1")" "clearing THIS commit's claim removes exactly one"
+report "GATING=none" "$(gate_who_is_gating "$AL")" "AFTER THE LANDING THE TELL IS NONE"
+gate_who_is_gating "$AL" --require-free > /dev/null
+report 0 "$?" "... and --require-free says free again"
+printf 'mrgw1 green, awaiting land on base abcdef12 since 2020-01-01T00:00:00Z ignore-after 2020-01-01T01:00:00Z merged %s\n' "$M1" > "$AL/mrgw1/adp-gate.awaiting-land"
+report "GATING=none" "$(gate_who_is_gating "$AL")" "A STALE CLAIM EXPIRES: dropped, not held as ASK, because land.sh already refuses its moved base"
+printf 'mrgw1 green, awaiting land on base abcdef12 since 2020-01-01T00:00:00Z ignore-after unknown merged %s\n' "$M1" > "$AL/mrgw1/adp-gate.awaiting-land"
+report 1 "$(gate_who_is_gating "$AL" | grep -c 'expiry unknown - treat as live')" "an uncomputable expiry is HELD, as with a lock: releasing a live slot is the unrecoverable direction"
+rm -f "$AL/mrgw1/adp-gate.awaiting-land"
+
 echo "== gate_blocking_paths: the paths a fast-forward can actually refuse over"
 # A pure function, so it is tested here rather than through a repository. It produces the CAUSE a
 # refused landing prints, and a confident wrong cause is worse than none - it is what sends the
@@ -518,23 +547,40 @@ out=$(gate2 mrgt1 topic)
 report "1:scratch-busy" "$?:$(result_of "$out")" "a scratch tree whose lock is held is refused"
 report yes "$([ -d "$GD/adp-gate.lock" ] && echo yes || echo no)" "... and the refused run left the other gate's lock alone"
 rm -rf "$GD/adp-gate.lock"
+# THE GREEN GATE'S CLAIM, planted rather than produced, because this harness's gate can never go green
+# (it has no src/). The library writes and clears it; these cases check who else touches it and when.
+claim() { gate_awaiting_land_write "$GD" mrgt1 "$DEV0" "$(git -C "$R2" rev-parse "$1")" || broken "cannot plant a claim for $1"; }
+claim_state() { [ -f "$GD/adp-gate.awaiting-land" ] && echo held || echo released; }
+claim "$DEV0"
+[ "$(claim_state)" = held ] || broken "the planted claim is not on disk, so the supersede case would test nothing"
 out=$(gate2 mrgt1 clash)
 report "1:merge-conflict" "$?:$(result_of "$out")" "a conflicting branch is refused"
+report released "$(claim_state)" "... and a NEW RUN IN THE SAME SCRATCH TREE supersedes any claim an earlier run left there"
 report no "$(git -C "$WT2/mrgt1" rev-parse -q --verify MERGE_HEAD > /dev/null && echo yes || echo no)" "... and the half-merge was aborted"
 
 out=$(bash "$L2" "$DEV0" 2>&1)
 report "1:missing-arguments" "$?:$(result_of "$out")" "land.sh without its two arguments"
+claim "$MERGED"
 out=$(bash "$L2" "$DEV0~1" "$MERGED" 2>&1)
 report "1:develop-moved-regate" "$?:$(result_of "$out")" "land.sh on a base develop has moved past"
+report released "$(claim_state)" "... and that TERMINAL refusal releases the green gate's claim: this landing can never happen now"
+claim clash
 out=$(bash "$L2" "$DEV0" clash 2>&1)
 report "1:not-a-descendant" "$?:$(result_of "$out")" "land.sh with a commit that does not descend from the base"
+report released "$(claim_state)" "... and that terminal refusal releases the claim too"
 # Cut from develop so the branch carries the gate: switching to one that predates it would take
 # land.sh out of the working tree, and the case would test a missing file instead.
 git -C "$R2" switch -q -c elsewhere develop || broken "cannot switch the main checkout to another branch"
 ELSE0=$(git -C "$R2" rev-parse elsewhere)
+claim "$MERGED"
 out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
 report "1:main-checkout-not-on-develop" "$?:$(result_of "$out")" "land.sh with the main checkout on another branch"
 report "$ELSE0" "$(git -C "$R2" rev-parse elsewhere)" "... and that branch was not moved"
+# RETRYABLE: switching back and re-running this same line cures it, so releasing the claim here would open
+# the board under a landing that is about to be retried - somebody commits in the gap, and the retry fails
+# develop-moved-regate. That is the loss the claim exists to prevent, arriving through the claim.
+report held "$(claim_state)" "... and this RETRYABLE refusal KEEPS the claim, so the board stays held for the retry"
+report 1 "$(printf '%s\n' "$out" | grep -c '^AWAITING_LAND=still-held')" "... and says so in its output"
 git -C "$R2" switch -q develop
 # A dirty shared index, in both of the only two shapes there are. The refusal case FIRST, because it
 # leaves develop untouched and so the landing case below still has something to land.
@@ -545,8 +591,10 @@ git -C "$R2" switch -q develop
 echo staged > "$R2/f.txt" && git -C "$R2" add f.txt || broken "cannot stage a colliding path"
 [ -n "$(git -C "$R2" diff --name-only "$DEV0" "$MERGED" -- f.txt)" ] ||
   broken "f.txt is not a path this fast-forward touches, so the collision case would test nothing"
+claim "$MERGED"
 out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
 report "1:ff-refused" "$?:$(result_of "$out")" "a staged path the fast-forward would touch is refused by git, as it always was"
+report held "$(claim_state)" "... and ff-refused KEEPS the claim, because its own remedy is to re-run this same line"
 report 1 "$(printf '%s\n' "$out" | grep -c '^BLOCKED_BY=f.txt')" "... and land.sh now NAMES the path, instead of a bare ff-refused"
 report 1 "$(printf '%s\n' "$out" | grep -c 'develop has NOT moved')" "... and says the base is still good, which is the sentence that stops the reach for git stash"
 report "$DEV0" "$(git -C "$R2" rev-parse develop)" "... and develop did not move"
@@ -557,6 +605,8 @@ echo staged > "$R2/unrelated.txt" && git -C "$R2" add unrelated.txt || broken "c
   broken "unrelated.txt IS touched by this fast-forward, so the safe case would test the wrong thing"
 out=$(bash "$L2" "$DEV0" "$MERGED" 2>&1)
 report "0:landed" "$?:$(result_of "$out")" "land.sh lands the gated commit - a staged path the fast-forward does not touch is SAFE and is not refused"
+report released "$(claim_state)" "... and THE LANDING RELEASES THE CLAIM, so the tell reads free once develop has what it was promised"
+report 1 "$(printf '%s\n' "$out" | grep -c '^AWAITING_LAND_RELEASED=1$')" "... exactly one claim, the one for this commit"
 report "$MERGED" "$(git -C "$R2" rev-parse develop)" "... and develop is exactly that commit"
 report 1 "$(printf '%s\n' "$out" | grep -c '^STAGED_IN_MAIN_CHECKOUT=unrelated.txt')" "... and the staged path was named as a warning rather than acted on"
 report "unrelated.txt" "$(git -C "$R2" diff --cached --name-only)" "... and the staged entry survived the landing, which is why it must be committed straight after"

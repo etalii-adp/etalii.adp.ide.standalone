@@ -23,7 +23,15 @@
 # develop's format gate was red. Neither the tell nor the check would have answered alone, which is
 # why this is one line rather than two commands. (Observed by Developer 3, from using it.)
 #   mrga1 gating (owner not written yet)       a holder whose line is not on disk yet
+#   mrga1 green, awaiting land on base X ...   a GREEN gate whose landing has not happened yet
 #   TELL_UNREADABLE=<dir>  (exit 2)            the path this reader expects does not exist
+#
+# THE AWAITING-LAND LINE HOLDS THE BOARD JUST AS A RUNNING GATE DOES, from the green verdict until
+# land.sh lands that commit or refuses it for good. Without it this reader dropped to GATING=none the
+# moment a green gate's process ended, while develop was still promised to it: at 11:58:50Z on 2026-09-25
+# a spec commit landed ten seconds after a green gate on exactly that reading, and the gate lost its
+# landing. A retryable refusal (ff-refused, main checkout not on develop) keeps the line; a claim nobody
+# lands within the hour is dropped - its base will have moved, and land.sh refuses a moved base itself.
 #
 # EXIT CODES, AND WHY THE DEFAULT IS THE PERMISSIVE ONE. By default this exits 0 for a free board
 # AND for a holder, because its job is to print the board and a caller that prints must not fail.
