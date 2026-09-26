@@ -143,6 +143,7 @@ public class AdpFileWriterConcurrentSavesTests : IDisposable
     [Fact]
     public async Task TwoSpellingsOfOneDestination_ContendForTheSameTurn()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Two spellings name one file only on a case-insensitive Windows file system.");
         // Condition 1: the key is the normalised full path, compared ignoring case on Windows. Two
         // spellings taking two locks would race exactly as before the fix.
         var path = IoPath.Combine(_folder, "roadmap.mm");

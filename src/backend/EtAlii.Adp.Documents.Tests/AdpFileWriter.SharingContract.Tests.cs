@@ -103,6 +103,7 @@ public class AdpFileWriterSharingContractTests : IDisposable
     [Fact]
     public void AReaderSharingOnlyRead_DeniesTheReplaceAndTheSaveSaysSo()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: what File.ReadAllText opens - no Delete.
         var path = IoPath.Combine(_folder, "document.tml");
         File.WriteAllText(path, "before");
@@ -123,6 +124,7 @@ public class AdpFileWriterSharingContractTests : IDisposable
     [Fact]
     public void ADeniedSave_LeavesNoTemporaryBehind()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // The other half of a failed publish: the scratch file is cleaned up before the failure
         // is allowed out, or the project folder fills with ~adp- debris nobody owns.
         var path = IoPath.Combine(_folder, "document.tml");

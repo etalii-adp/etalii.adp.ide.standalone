@@ -47,6 +47,7 @@ public class MindmapDocumentStoreFailedSaveTests : IDisposable
     [Fact]
     public void ARefusedWrite_IsReported_AndTheEditIsStillThereToRetry()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: a loaded map, an edit made in memory, and the file held open so the write fails.
         var bodyPath = IoPath.Combine(_root, "design.mm");
         File.WriteAllText(bodyPath, Map);
