@@ -117,6 +117,7 @@ enum ContextPropertyEditor {
   // are the other stages. `candidates` carries them and `value` is whichever is current, so
   // this stays a single-valued editor like the three above.
   CONTEXT_PROPERTY_EDITOR_CHOICE = 3;
+  CONTEXT_PROPERTY_EDITOR_SLIDER = 4; // an ordered set of stops: `candidates` in order, `value` one of them
 }
 
 message EntryDetail {
