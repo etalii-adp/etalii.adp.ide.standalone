@@ -1,0 +1,3893 @@
+gartner-hypecycle-graph: 1
+# A hand-authored history of about two hundred technological and societal trends.
+# Dates and influences are illustrative, not a historical claim: see readme.md.
+trends:
+  - id: industrial-revolution
+    name: Industrial Revolution
+    start: 1760-01
+    stop: 1840-01
+    row: 0
+    phases: 4
+    tags: [industry, society]
+    description: The shift from hand production to machines, first in British textiles.
+  - id: iron-smelting
+    name: Coke iron smelting
+    start: 1760-01
+    stop: 1830-01
+    row: 1
+    phases: 4
+    tags: [industry, energy]
+  - id: mechanised-textiles
+    name: Mechanised textiles
+    start: 1764-01
+    stop: 1850-01
+    row: 2
+    phases: 4
+    tags: [industry]
+    description: The spinning jenny, the water frame and the power loom.
+  - id: factory-system
+    name: Factory system
+    start: 1771-01
+    stop: 1860-01
+    row: 3
+    phases: 4
+    tags: [industry, society]
+    description: Arkwright's Cromford mill and its many imitators.
+  - id: interchangeable-parts
+    name: Interchangeable parts
+    start: 1798-01
+    stop: 1880-01
+    row: 4
+    phases: 4
+    tags: [industry]
+  - id: machine-tools
+    name: Machine tools
+    start: 1800-01
+    stop: 1900-01
+    row: 5
+    phases: 4
+    tags: [industry]
+  - id: bessemer-steel
+    name: Bessemer steel
+    start: 1856-01
+    stop: 1920-01
+    row: 0
+    phases: 4
+    tags: [industry, energy]
+    description: Cheap steel, and with it rails, ships and skyscrapers.
+  - id: chemical-industry
+    name: Industrial chemistry
+    start: 1856-01
+    stop: 1950-01
+    row: 1
+    phases: 4
+    tags: [industry, science]
+    description: From synthetic dyes onwards.
+  - id: second-industrial-revolution
+    name: Second Industrial Revolution
+    start: 1870-01
+    stop: 1914-01
+    row: 2
+    phases: 4
+    tags: [industry, society]
+    description: Steel, chemicals, electricity and mass markets.
+  - id: scientific-management
+    name: Scientific management
+    start: 1890-01
+    stop: 1940-01
+    row: 3
+    phases: 4
+    tags: [industry, society]
+  - id: plastics
+    name: Plastics
+    start: 1907-01
+    stop: 1990-01
+    row: 4
+    phases: 4
+    tags: [industry, science]
+    description: From Bakelite onwards.
+  - id: mass-production
+    name: Mass production
+    start: 1908-01
+    stop: 1970-01
+    row: 5
+    phases: 4
+    tags: [industry, transport]
+    description: The moving assembly line at Highland Park.
+  - id: synthetic-fertiliser
+    name: Synthetic fertiliser
+    start: 1913-01
+    stop: 1970-01
+    row: 6
+    phases: 4
+    tags: [industry, science, health]
+    description: The Haber-Bosch process.
+  - id: fordism
+    name: Fordism
+    start: 1914-01
+    stop: 1973-01
+    row: 7
+    phases: 4
+    tags: [industry, society]
+  - id: green-revolution
+    name: Green Revolution
+    start: 1950-01
+    stop: 1990-01
+    row: 0
+    phases: 4
+    tags: [society, science, health]
+  - id: lean-manufacturing
+    name: Lean manufacturing
+    start: 1950-01
+    stop: 2000-01
+    row: 2
+    phases: 4
+    tags: [industry]
+  - id: automation
+    name: Workplace automation
+    start: 1955-01
+    stop: 2030-01
+    row: 1
+    phases: 3
+    tags: [industry, computing, society]
+  - id: industrial-robots
+    name: Industrial robots
+    start: 1961-01
+    stop: 2010-01
+    row: 3
+    phases: 4
+    tags: [industry, computing]
+    description: Unimate on a General Motors line.
+  - id: just-in-time
+    name: Just-in-time logistics
+    start: 1970-01
+    stop: 2005-01
+    row: 8
+    phases: 4
+    tags: [industry, transport]
+  - id: globalisation
+    name: Globalisation
+    start: 1980-01
+    stop: 2020-01
+    row: 5
+    phases: 4
+    tags: [society, industry, finance]
+  - id: offshoring
+    name: Offshoring
+    start: 1985-01
+    stop: 2015-01
+    row: 6
+    phases: 4
+    tags: [industry, society]
+  - id: 3d-printing
+    name: 3D printing
+    start: 1986-01
+    stop: 2030-01
+    row: 7
+    phases: 3
+    tags: [industry, computing]
+  - id: industry-4
+    name: Industry 4.0
+    start: 2011-01
+    stop: 2030-01
+    row: 0
+    phases: 2
+    tags: [industry, computing]
+  - id: circular-economy
+    name: Circular economy
+    start: 2012-01
+    stop: 2040-01
+    row: 2
+    phases: 2
+    tags: [industry, society, energy]
+  - id: reshoring
+    name: Reshoring
+    start: 2018-01
+    stop: 2035-01
+    row: 3
+    phases: 1
+    tags: [industry, society]
+  - id: coal
+    name: Coal power
+    start: 1760-01
+    stop: 1960-01
+    row: 10
+    phases: 4
+    tags: [energy, industry]
+    description: The fuel of the first two industrial revolutions.
+  - id: steam-engine
+    name: Steam engine
+    start: 1765-01
+    stop: 1900-01
+    row: 11
+    phases: 4
+    trough-end: 1800-01
+    tags: [energy, industry]
+    description: Watt's separate condenser onwards.
+  - id: electric-battery
+    name: Electric battery
+    start: 1800-01
+    stop: 1880-01
+    row: 12
+    phases: 4
+    tags: [energy, science]
+    description: Volta's pile.
+  - id: gas-lighting
+    name: Gas lighting
+    start: 1807-01
+    stop: 1910-01
+    row: 13
+    phases: 4
+    tags: [energy, society]
+  - id: electromagnetism
+    name: Electromagnetism
+    start: 1820-01
+    stop: 1880-01
+    row: 14
+    phases: 4
+    tags: [science, energy]
+    description: Oersted, Faraday and Maxwell.
+  - id: oil
+    name: Petroleum
+    start: 1859-01
+    stop: 2030-01
+    row: 15
+    phases: 4
+    tags: [energy, transport]
+    description: From Drake's well in Titusville.
+  - id: dynamo
+    name: Dynamo
+    start: 1866-01
+    stop: 1910-01
+    row: 16
+    phases: 4
+    tags: [energy]
+  - id: internal-combustion
+    name: Internal combustion engine
+    start: 1876-01
+    stop: 1950-01
+    row: 17
+    phases: 4
+    tags: [energy, transport]
+  - id: electric-light
+    name: Electric light
+    start: 1879-01
+    stop: 1930-01
+    row: 18
+    phases: 4
+    tags: [energy, society]
+  - id: electricity-grid
+    name: Electricity grid
+    start: 1882-01
+    stop: 1960-01
+    row: 12
+    phases: 4
+    tags: [energy, society]
+    description: Pearl Street Station, then the war of the currents.
+  - id: hydroelectric
+    name: Hydroelectric power
+    start: 1882-01
+    stop: 1970-01
+    row: 14
+    phases: 4
+    tags: [energy]
+  - id: steam-turbine
+    name: Steam turbine
+    start: 1884-01
+    stop: 1950-01
+    row: 19
+    phases: 4
+    tags: [energy, transport]
+  - id: alternating-current
+    name: Alternating current
+    start: 1886-01
+    stop: 1920-01
+    row: 20
+    phases: 4
+    tags: [energy]
+  - id: diesel-engine
+    name: Diesel engine
+    start: 1893-01
+    stop: 1960-01
+    row: 21
+    phases: 4
+    tags: [energy, transport]
+  - id: rural-electrification
+    name: Rural electrification
+    start: 1930-01
+    stop: 1960-01
+    row: 11
+    phases: 4
+    tags: [energy, society]
+  - id: nuclear-fission
+    name: Nuclear fission
+    start: 1938-12
+    stop: 1955-01
+    row: 13
+    phases: 4
+    tags: [energy, science]
+  - id: natural-gas
+    name: Natural gas
+    start: 1950-01
+    stop: 2030-01
+    row: 16
+    phases: 4
+    tags: [energy]
+  - id: fusion
+    name: Nuclear fusion
+    start: 1951-01
+    stop: 2050-01
+    row: 18
+    phases: 1
+    tags: [energy, science]
+    description: Always thirty years away.
+  - id: nuclear-power
+    name: Nuclear power
+    start: 1954-01
+    stop: 2030-01
+    row: 17
+    phases: 4
+    peak-end: 1974-01
+    trough-end: 1995-01
+    tags: [energy]
+    description: Too cheap to meter, then Three Mile Island, then a slow plateau.
+  - id: solar-pv
+    name: Solar photovoltaics
+    start: 1954-01
+    stop: 2035-01
+    row: 19
+    phases: 4
+    trough-end: 1985-01
+    slope-end: 2010-01
+    tags: [energy, science]
+    description: Bell Labs' silicon cell to the cheapest electricity in history.
+  - id: oil-crisis
+    name: Oil crises
+    start: 1973-10
+    stop: 1986-01
+    row: 10
+    phases: 3
+    tags: [energy, finance, society]
+  - id: wind-power
+    name: Wind power
+    start: 1980-01
+    stop: 2035-01
+    row: 11
+    phases: 4
+    tags: [energy]
+  - id: lithium-ion
+    name: Lithium-ion batteries
+    start: 1991-01
+    stop: 2035-01
+    row: 10
+    phases: 4
+    tags: [energy, computing]
+  - id: hydrogen-economy
+    name: Hydrogen economy
+    start: 2000-01
+    stop: 2040-01
+    row: 12
+    phases: 2
+    tags: [energy, transport]
+    description: Twice hyped, twice disappointed.
+  - id: fracking
+    name: Shale gas and fracking
+    start: 2005-01
+    stop: 2030-01
+    row: 13
+    phases: 3
+    tags: [energy]
+  - id: carbon-capture
+    name: Carbon capture
+    start: 2005-01
+    stop: 2040-01
+    row: 14
+    phases: 2
+    tags: [energy, science]
+  - id: energy-transition
+    name: Energy transition
+    start: 2006-01
+    stop: 2050-01
+    row: 20
+    phases: 2
+    tags: [energy, society]
+  - id: grid-storage
+    name: Grid-scale storage
+    start: 2015-01
+    stop: 2035-01
+    row: 21
+    phases: 2
+    tags: [energy]
+  - id: small-modular-reactors
+    name: Small modular reactors
+    start: 2015-01
+    stop: 2040-01
+    row: 22
+    phases: 1
+    tags: [energy]
+  - id: canals
+    name: Canals
+    start: 1761-01
+    stop: 1840-01
+    row: 24
+    phases: 4
+    tags: [transport, industry]
+    description: The Bridgewater Canal.
+  - id: steamboats
+    name: Steamboats
+    start: 1807-01
+    stop: 1870-01
+    row: 25
+    phases: 4
+    tags: [transport, energy]
+  - id: railways
+    name: Railways
+    start: 1825-09
+    stop: 1930-01
+    row: 26
+    phases: 4
+    tags: [transport, industry]
+    description: From Stockton and Darlington.
+  - id: steamships
+    name: Ocean steamships
+    start: 1838-01
+    stop: 1920-01
+    row: 27
+    phases: 4
+    tags: [transport, energy]
+  - id: railway-mania
+    name: Railway mania
+    start: 1843-01
+    stop: 1850-01
+    row: 24
+    phases: 3
+    peak-end: 1846-01
+    tags: [transport, finance]
+    description: A speculative bubble in railway shares.
+  - id: transcontinental-railroad
+    name: Transcontinental railroad
+    start: 1863-01
+    stop: 1900-01
+    row: 24
+    phases: 4
+    tags: [transport, society]
+  - id: underground-railways
+    name: Underground railways
+    start: 1863-01
+    stop: 1930-01
+    row: 28
+    phases: 4
+    tags: [transport, society]
+  - id: bicycle
+    name: Bicycle
+    start: 1867-01
+    stop: 1910-01
+    row: 29
+    phases: 4
+    tags: [transport, society]
+    description: The safety bicycle and the boom of the 1890s.
+  - id: tram
+    name: Electric tram
+    start: 1881-01
+    stop: 1950-01
+    row: 25
+    phases: 4
+    tags: [transport, energy]
+  - id: automobile
+    name: Automobile
+    start: 1886-01
+    stop: 1960-01
+    row: 30
+    phases: 4
+    tags: [transport, industry]
+    description: Benz's Patent-Motorwagen.
+  - id: aviation
+    name: Aviation
+    start: 1903-12
+    stop: 1960-01
+    row: 24
+    phases: 4
+    tags: [transport, science]
+    description: Kitty Hawk.
+  - id: commercial-aviation
+    name: Commercial aviation
+    start: 1919-01
+    stop: 1990-01
+    row: 29
+    phases: 4
+    tags: [transport]
+  - id: motorways
+    name: Motorways
+    start: 1924-01
+    stop: 1980-01
+    row: 27
+    phases: 4
+    tags: [transport, society]
+  - id: jet-engine
+    name: Jet engine
+    start: 1937-01
+    stop: 1975-01
+    row: 26
+    phases: 4
+    tags: [transport, energy]
+  - id: suburbanisation
+    name: Suburbanisation
+    start: 1945-01
+    stop: 1990-01
+    row: 28
+    phases: 4
+    tags: [society, transport]
+  - id: jet-age
+    name: Jet age
+    start: 1952-01
+    stop: 1990-01
+    row: 25
+    phases: 4
+    tags: [transport, society]
+  - id: container-shipping
+    name: Container shipping
+    start: 1956-01
+    stop: 2000-01
+    row: 31
+    phases: 4
+    tags: [transport, industry, finance]
+    description: Malcom McLean's Ideal X.
+  - id: space-flight
+    name: Space flight
+    start: 1957-10
+    stop: 2000-01
+    row: 32
+    phases: 4
+    tags: [transport, science]
+    description: Sputnik and the space race.
+  - id: high-speed-rail
+    name: High-speed rail
+    start: 1964-01
+    stop: 2020-01
+    row: 24
+    phases: 4
+    tags: [transport]
+    description: The Shinkansen.
+  - id: satellite-navigation
+    name: Satellite navigation
+    start: 1973-01
+    stop: 2020-01
+    row: 30
+    phases: 4
+    tags: [transport, computing, communication]
+  - id: autonomous-vehicles
+    name: Autonomous vehicles
+    start: 2004-01
+    stop: 2040-01
+    row: 25
+    phases: 2
+    tags: [transport, computing]
+    description: From the DARPA Grand Challenge.
+  - id: electric-vehicles
+    name: Electric vehicles
+    start: 2008-01
+    stop: 2040-01
+    row: 26
+    phases: 3
+    tags: [transport, energy]
+    description: The Roadster, then everything else.
+  - id: commercial-space
+    name: Commercial space flight
+    start: 2008-01
+    stop: 2040-01
+    row: 27
+    phases: 3
+    tags: [transport, science]
+    description: Reusable rockets.
+  - id: ride-hailing
+    name: Ride-hailing
+    start: 2009-01
+    stop: 2030-01
+    row: 28
+    phases: 3
+    tags: [transport, computing]
+  - id: drones
+    name: Consumer and delivery drones
+    start: 2010-01
+    stop: 2035-01
+    row: 29
+    phases: 2
+    tags: [transport, computing]
+  - id: urban-air-mobility
+    name: Urban air mobility
+    start: 2016-01
+    stop: 2040-01
+    row: 31
+    phases: 1
+    tags: [transport, energy]
+  - id: electric-telegraph
+    name: Electric telegraph
+    start: 1837-01
+    stop: 1920-01
+    row: 34
+    phases: 4
+    tags: [communication, energy]
+    description: Cooke and Wheatstone, then Morse.
+  - id: photography
+    name: Photography
+    start: 1839-01
+    stop: 1930-01
+    row: 35
+    phases: 4
+    tags: [communication, science]
+  - id: submarine-cable
+    name: Submarine telegraph cable
+    start: 1858-01
+    stop: 1920-01
+    row: 36
+    phases: 4
+    tags: [communication]
+  - id: mass-newspapers
+    name: Mass-circulation newspapers
+    start: 1860-01
+    stop: 1960-01
+    row: 37
+    phases: 4
+    tags: [communication, society]
+  - id: typewriter
+    name: Typewriter
+    start: 1868-01
+    stop: 1980-01
+    row: 38
+    phases: 4
+    tags: [communication, industry]
+  - id: telephone
+    name: Telephone
+    start: 1876-03
+    stop: 1980-01
+    row: 39
+    phases: 4
+    tags: [communication]
+    description: Bell's patent.
+  - id: phonograph
+    name: Phonograph
+    start: 1877-01
+    stop: 1950-01
+    row: 40
+    phases: 4
+    tags: [communication, society]
+  - id: cinema
+    name: Cinema
+    start: 1895-01
+    stop: 1960-01
+    row: 41
+    phases: 4
+    tags: [communication, society]
+  - id: radio
+    name: Radio
+    start: 1895-01
+    stop: 1960-01
+    row: 42
+    phases: 4
+    tags: [communication, science]
+    description: Marconi, then broadcasting.
+  - id: vacuum-tube
+    name: Vacuum tube
+    start: 1904-01
+    stop: 1960-01
+    row: 43
+    phases: 4
+    tags: [communication, computing, science]
+  - id: broadcast-radio
+    name: Broadcast radio
+    start: 1920-01
+    stop: 1960-01
+    row: 44
+    phases: 4
+    tags: [communication, society]
+  - id: television
+    name: Television
+    start: 1927-01
+    stop: 1990-01
+    row: 34
+    phases: 4
+    tags: [communication, society]
+  - id: magnetic-tape
+    name: Magnetic tape
+    start: 1935-01
+    stop: 1990-01
+    row: 35
+    phases: 4
+    tags: [communication, computing]
+  - id: radar
+    name: Radar
+    start: 1935-01
+    stop: 1960-01
+    row: 36
+    phases: 4
+    tags: [communication, science]
+  - id: colour-television
+    name: Colour television
+    start: 1954-01
+    stop: 1990-01
+    row: 40
+    phases: 4
+    tags: [communication, society]
+  - id: communication-satellites
+    name: Communication satellites
+    start: 1962-07
+    stop: 2000-01
+    row: 36
+    phases: 4
+    tags: [communication, science]
+    description: Telstar.
+  - id: cable-television
+    name: Cable television
+    start: 1970-01
+    stop: 2010-01
+    row: 37
+    phases: 4
+    tags: [communication, finance]
+  - id: fibre-optics
+    name: Fibre optics
+    start: 1970-01
+    stop: 2020-01
+    row: 41
+    phases: 4
+    tags: [communication, computing]
+  - id: email
+    name: Email
+    start: 1971-01
+    stop: 2010-01
+    row: 42
+    phases: 4
+    tags: [communication, computing]
+  - id: mobile-phones
+    name: Mobile phones
+    start: 1983-01
+    stop: 2010-01
+    row: 38
+    phases: 4
+    tags: [communication]
+    description: The DynaTAC.
+  - id: internet
+    name: Internet
+    start: 1983-01
+    stop: 2020-01
+    row: 39
+    phases: 4
+    tags: [communication, computing]
+    description: TCP/IP on the ARPANET.
+  - id: video-conferencing
+    name: Video conferencing
+    start: 1990-01
+    stop: 2030-01
+    row: 43
+    phases: 4
+    tags: [communication, computing]
+  - id: world-wide-web
+    name: World Wide Web
+    start: 1991-08
+    stop: 2015-01
+    row: 44
+    phases: 4
+    tags: [communication, computing]
+  - id: sms
+    name: Text messaging
+    start: 1992-12
+    stop: 2015-01
+    row: 34
+    phases: 4
+    tags: [communication]
+  - id: search-engines
+    name: Search engines
+    start: 1994-01
+    stop: 2015-01
+    row: 35
+    phases: 4
+    tags: [communication, computing]
+  - id: dot-com
+    name: Dot-com bubble
+    start: 1995-01
+    stop: 2004-01
+    row: 40
+    phases: 4
+    peak-end: 2000-03
+    trough-end: 2002-10
+    tags: [communication, computing, finance]
+  - id: wifi
+    name: Wi-Fi
+    start: 1997-01
+    stop: 2020-01
+    row: 45
+    phases: 4
+    tags: [communication, computing]
+  - id: broadband
+    name: Broadband
+    start: 1999-01
+    stop: 2020-01
+    row: 46
+    phases: 4
+    tags: [communication, computing]
+  - id: blogs
+    name: Blogs
+    start: 1999-01
+    stop: 2015-01
+    row: 47
+    phases: 4
+    tags: [communication, society]
+  - id: mobile-internet
+    name: Mobile internet
+    start: 2001-01
+    stop: 2025-01
+    row: 48
+    phases: 4
+    tags: [communication, computing]
+  - id: social-media
+    name: Social media
+    start: 2004-01
+    stop: 2030-01
+    row: 36
+    phases: 4
+    tags: [communication, computing, society]
+  - id: video-streaming
+    name: Video streaming
+    start: 2005-01
+    stop: 2030-01
+    row: 49
+    phases: 4
+    tags: [communication, computing, society]
+  - id: smartphones
+    name: Smartphones
+    start: 2007-06
+    stop: 2030-01
+    row: 40
+    phases: 4
+    tags: [communication, computing]
+    description: The iPhone.
+  - id: app-stores
+    name: App stores
+    start: 2008-07
+    stop: 2025-01
+    row: 50
+    phases: 4
+    tags: [communication, computing, finance]
+  - id: 4g
+    name: 4G mobile networks
+    start: 2009-01
+    stop: 2025-01
+    row: 51
+    phases: 4
+    tags: [communication]
+  - id: messaging-apps
+    name: Messaging apps
+    start: 2009-01
+    stop: 2030-01
+    row: 52
+    phases: 4
+    tags: [communication, computing]
+  - id: creator-economy
+    name: Creator economy
+    start: 2014-01
+    stop: 2035-01
+    row: 37
+    phases: 2
+    tags: [communication, finance, society]
+  - id: misinformation
+    name: Online misinformation
+    start: 2016-01
+    stop: 2035-01
+    row: 38
+    phases: 2
+    tags: [communication, society]
+  - id: 5g
+    name: 5G mobile networks
+    start: 2019-01
+    stop: 2035-01
+    row: 34
+    phases: 2
+    tags: [communication, computing]
+  - id: satellite-internet
+    name: Satellite internet constellations
+    start: 2019-01
+    stop: 2035-01
+    row: 35
+    phases: 2
+    tags: [communication, transport]
+  - id: metaverse
+    name: Metaverse
+    start: 2021-10
+    stop: 2035-01
+    row: 42
+    phases: 2
+    tags: [communication, computing]
+  - id: jacquard-loom
+    name: Jacquard loom
+    start: 1804-01
+    stop: 1880-01
+    row: 54
+    phases: 4
+    tags: [computing, industry]
+    description: Punched cards control a loom.
+  - id: mechanical-calculators
+    name: Mechanical calculators
+    start: 1820-01
+    stop: 1970-01
+    row: 55
+    phases: 4
+    tags: [computing, industry]
+    description: The arithmometer.
+  - id: difference-engine
+    name: Difference engine
+    start: 1822-01
+    stop: 1871-01
+    row: 56
+    phases: 2
+    tags: [computing, science]
+    description: Babbage's, never completed.
+  - id: boolean-logic
+    name: Boolean logic
+    start: 1854-01
+    stop: 1940-01
+    row: 57
+    phases: 4
+    tags: [computing, science]
+  - id: punched-cards
+    name: Punched-card tabulation
+    start: 1890-01
+    stop: 1970-01
+    row: 54
+    phases: 4
+    tags: [computing, finance]
+    description: Hollerith and the US census.
+  - id: turing-machine
+    name: Computability theory
+    start: 1936-01
+    stop: 1960-01
+    row: 56
+    phases: 4
+    tags: [computing, science]
+  - id: electronic-computers
+    name: Electronic computers
+    start: 1945-01
+    stop: 1960-01
+    row: 57
+    phases: 4
+    tags: [computing, science]
+    description: ENIAC.
+  - id: transistor
+    name: Transistor
+    start: 1947-12
+    stop: 1980-01
+    row: 58
+    phases: 4
+    tags: [computing, science]
+    description: Bell Labs.
+  - id: cybernetics
+    name: Cybernetics
+    start: 1948-01
+    stop: 1975-01
+    row: 59
+    phases: 4
+    tags: [computing, science, society]
+  - id: mainframes
+    name: Mainframes
+    start: 1951-01
+    stop: 1990-01
+    row: 60
+    phases: 4
+    tags: [computing, finance]
+    description: UNIVAC, then System/360.
+  - id: symbolic-ai
+    name: Symbolic AI
+    start: 1956-06
+    stop: 1974-01
+    row: 61
+    phases: 3
+    peak-end: 1970-01
+    tags: [computing, science]
+    description: The Dartmouth workshop's optimism, then the first AI winter.
+  - id: programming-languages
+    name: High-level programming languages
+    start: 1957-01
+    stop: 1990-01
+    row: 62
+    phases: 4
+    tags: [computing]
+    description: Fortran and COBOL.
+  - id: integrated-circuit
+    name: Integrated circuit
+    start: 1958-09
+    stop: 1985-01
+    row: 63
+    phases: 4
+    tags: [computing, science]
+  - id: time-sharing
+    name: Time-sharing
+    start: 1961-01
+    stop: 1985-01
+    row: 64
+    phases: 4
+    tags: [computing]
+  - id: minicomputers
+    name: Minicomputers
+    start: 1965-01
+    stop: 1990-01
+    row: 56
+    phases: 4
+    tags: [computing]
+  - id: arpanet
+    name: ARPANET
+    start: 1969-10
+    stop: 1990-01
+    row: 57
+    phases: 4
+    tags: [computing, communication]
+  - id: databases
+    name: Relational databases
+    start: 1970-01
+    stop: 2010-01
+    row: 65
+    phases: 4
+    tags: [computing, finance]
+  - id: microprocessor
+    name: Microprocessor
+    start: 1971-11
+    stop: 2000-01
+    row: 66
+    phases: 4
+    tags: [computing]
+    description: The Intel 4004.
+  - id: video-games
+    name: Video games
+    start: 1972-01
+    stop: 2020-01
+    row: 54
+    phases: 4
+    tags: [computing, society]
+  - id: gui
+    name: Graphical user interfaces
+    start: 1973-01
+    stop: 2000-01
+    row: 55
+    phases: 4
+    tags: [computing]
+    description: The Alto, then the Macintosh.
+  - id: personal-computers
+    name: Personal computers
+    start: 1975-01
+    stop: 2010-01
+    row: 67
+    phases: 4
+    tags: [computing, society]
+    description: The Altair, then the Apple II and the IBM PC.
+  - id: spreadsheets
+    name: Spreadsheets
+    start: 1979-01
+    stop: 2000-01
+    row: 59
+    phases: 4
+    tags: [computing, finance]
+    description: VisiCalc.
+  - id: expert-systems
+    name: Expert systems
+    start: 1980-01
+    stop: 1993-01
+    row: 61
+    phases: 3
+    tags: [computing, science]
+    description: The second AI boom and its winter.
+  - id: open-source
+    name: Open source
+    start: 1983-09
+    stop: 2020-01
+    row: 58
+    phases: 4
+    tags: [computing, society]
+    description: The GNU project, then Linux.
+  - id: laptops
+    name: Laptops
+    start: 1985-01
+    stop: 2015-01
+    row: 68
+    phases: 4
+    tags: [computing]
+  - id: client-server
+    name: Client-server computing
+    start: 1985-01
+    stop: 2005-01
+    row: 69
+    phases: 4
+    tags: [computing]
+  - id: neural-networks
+    name: Neural networks
+    start: 1986-01
+    stop: 2006-01
+    row: 70
+    phases: 3
+    tags: [computing, science]
+    description: Backpropagation, then a long trough.
+  - id: pdas
+    name: Personal digital assistants
+    start: 1993-01
+    stop: 2007-01
+    row: 56
+    phases: 3
+    tags: [computing, communication]
+    description: The Newton, then the Palm Pilot.
+  - id: e-commerce
+    name: E-commerce
+    start: 1995-01
+    stop: 2025-01
+    row: 57
+    phases: 4
+    tags: [computing, finance]
+  - id: virtualisation
+    name: Virtualisation
+    start: 1998-01
+    stop: 2020-01
+    row: 60
+    phases: 4
+    tags: [computing]
+  - id: agile
+    name: Agile software development
+    start: 2001-02
+    stop: 2025-01
+    row: 61
+    phases: 4
+    tags: [computing, society]
+    description: The manifesto.
+  - id: big-data
+    name: Big data
+    start: 2005-01
+    stop: 2020-01
+    row: 55
+    phases: 4
+    tags: [computing, finance]
+  - id: machine-learning
+    name: Machine learning
+    start: 2006-01
+    stop: 2030-01
+    row: 59
+    phases: 4
+    tags: [computing, science]
+  - id: cloud-computing
+    name: Cloud computing
+    start: 2006-03
+    stop: 2030-01
+    row: 62
+    phases: 4
+    tags: [computing, finance]
+    description: AWS launches S3 and EC2.
+  - id: gpus
+    name: GPU computing
+    start: 2007-01
+    stop: 2030-01
+    row: 63
+    phases: 4
+    tags: [computing, science]
+    description: CUDA.
+  - id: devops
+    name: DevOps
+    start: 2009-01
+    stop: 2030-01
+    row: 56
+    phases: 4
+    tags: [computing]
+  - id: iot
+    name: Internet of Things
+    start: 2009-01
+    stop: 2035-01
+    row: 64
+    phases: 3
+    tags: [computing, communication]
+  - id: blockchain
+    name: Blockchain
+    start: 2009-01
+    stop: 2035-01
+    row: 66
+    phases: 2
+    tags: [computing, finance]
+    description: Bitcoin's genesis block.
+  - id: cryptocurrency
+    name: Cryptocurrency
+    start: 2010-01
+    stop: 2035-01
+    row: 69
+    phases: 2
+    tags: [finance, computing]
+  - id: vr
+    name: Virtual reality
+    start: 2012-08
+    stop: 2035-01
+    row: 65
+    phases: 2
+    trough-end: 2024-01
+    tags: [computing, communication]
+    description: The Oculus Kickstarter.
+  - id: deep-learning
+    name: Deep learning
+    start: 2012-09
+    stop: 2035-01
+    row: 67
+    phases: 3
+    tags: [computing, science]
+    description: AlexNet.
+  - id: edge-computing
+    name: Edge computing
+    start: 2014-01
+    stop: 2035-01
+    row: 70
+    phases: 2
+    tags: [computing, communication]
+  - id: transformers
+    name: Transformer models
+    start: 2017-06
+    stop: 2035-01
+    row: 68
+    phases: 2
+    tags: [computing, science]
+    description: Attention is all you need.
+  - id: large-language-models
+    name: Large language models
+    start: 2020-05
+    stop: 2040-01
+    row: 71
+    phases: 2
+    slope-end: 2030-01
+    tags: [computing, communication, society]
+    description: GPT-3, then ChatGPT.
+  - id: ai-regulation
+    name: AI regulation
+    start: 2021-04
+    stop: 2040-01
+    row: 72
+    phases: 1
+    tags: [society, computing]
+  - id: generative-ai
+    name: Generative AI
+    start: 2022-08
+    stop: 2040-01
+    row: 54
+    phases: 2
+    tags: [computing, communication, society]
+  - id: ai-agents
+    name: AI agents
+    start: 2024-01
+    stop: 2040-01
+    row: 55
+    phases: 1
+    tags: [computing, society]
+  - id: urbanisation
+    name: Urbanisation
+    start: 1760-01
+    stop: 1950-01
+    row: 74
+    phases: 4
+    tags: [society, industry]
+  - id: vaccination
+    name: Vaccination
+    start: 1796-05
+    stop: 1900-01
+    row: 75
+    phases: 4
+    tags: [health, science, society]
+    description: Jenner's smallpox vaccine.
+  - id: labour-movement
+    name: Labour movement
+    start: 1830-01
+    stop: 1950-01
+    row: 76
+    phases: 4
+    tags: [society, industry]
+  - id: public-health
+    name: Public health reform
+    start: 1848-01
+    stop: 1920-01
+    row: 77
+    phases: 4
+    tags: [society, health, science]
+    description: Sanitation after the cholera epidemics.
+  - id: womens-suffrage
+    name: Women's suffrage
+    start: 1848-07
+    stop: 1930-01
+    row: 78
+    phases: 4
+    tags: [society]
+  - id: department-stores
+    name: Department stores
+    start: 1852-01
+    stop: 1960-01
+    row: 79
+    phases: 4
+    tags: [society, finance]
+  - id: germ-theory
+    name: Germ theory
+    start: 1861-01
+    stop: 1910-01
+    row: 80
+    phases: 4
+    tags: [science, health]
+    description: Pasteur and Koch.
+  - id: mass-education
+    name: Mass education
+    start: 1870-01
+    stop: 1950-01
+    row: 81
+    phases: 4
+    tags: [society]
+  - id: refrigeration
+    name: Refrigeration
+    start: 1870-01
+    stop: 1960-01
+    row: 82
+    phases: 4
+    tags: [society, energy, health]
+  - id: advertising
+    name: Mass advertising
+    start: 1880-01
+    stop: 1970-01
+    row: 83
+    phases: 4
+    tags: [society, communication, finance]
+  - id: welfare-state
+    name: Welfare state
+    start: 1883-01
+    stop: 1980-01
+    row: 84
+    phases: 4
+    tags: [society, finance]
+  - id: consumerism
+    name: Consumer society
+    start: 1920-01
+    stop: 1990-01
+    row: 75
+    phases: 4
+    tags: [society, finance]
+  - id: household-appliances
+    name: Household appliances
+    start: 1920-01
+    stop: 1970-01
+    row: 80
+    phases: 4
+    tags: [society, energy]
+  - id: antibiotics
+    name: Antibiotics
+    start: 1928-09
+    stop: 1970-01
+    row: 77
+    phases: 4
+    tags: [health, science]
+    description: Penicillin.
+  - id: credit-cards
+    name: Credit cards
+    start: 1958-01
+    stop: 2000-01
+    row: 74
+    phases: 4
+    tags: [finance, society]
+  - id: environmentalism
+    name: Environmental movement
+    start: 1962-01
+    stop: 2010-01
+    row: 76
+    phases: 4
+    tags: [society, energy]
+    description: Silent Spring.
+  - id: atm
+    name: Cash machines
+    start: 1967-06
+    stop: 2000-01
+    row: 78
+    phases: 4
+    tags: [finance, computing]
+  - id: electronic-trading
+    name: Electronic trading
+    start: 1971-01
+    stop: 2010-01
+    row: 79
+    phases: 4
+    tags: [finance, computing]
+  - id: globalised-finance
+    name: Global financial markets
+    start: 1971-08
+    stop: 2008-09
+    row: 81
+    phases: 4
+    tags: [finance, society]
+    description: The end of Bretton Woods.
+  - id: climate-awareness
+    name: Climate change awareness
+    start: 1988-06
+    stop: 2030-01
+    row: 77
+    phases: 3
+    tags: [society, energy, science]
+  - id: genomics
+    name: Genomics
+    start: 1990-10
+    stop: 2030-01
+    row: 80
+    phases: 4
+    tags: [science, health, computing]
+    description: The Human Genome Project.
+  - id: mobile-payments
+    name: Mobile payments
+    start: 2007-03
+    stop: 2030-01
+    row: 74
+    phases: 4
+    tags: [finance, communication, computing]
+    description: M-Pesa.
+  - id: financial-crisis
+    name: 2008 financial crisis
+    start: 2007-08
+    stop: 2015-01
+    row: 75
+    phases: 3
+    tags: [finance, society]
+  - id: sharing-economy
+    name: Sharing economy
+    start: 2008-01
+    stop: 2025-01
+    row: 78
+    phases: 3
+    tags: [society, finance]
+  - id: gig-economy
+    name: Gig economy
+    start: 2009-01
+    stop: 2030-01
+    row: 82
+    phases: 2
+    tags: [society, computing]
+  - id: fintech
+    name: Fintech
+    start: 2010-01
+    stop: 2030-01
+    row: 83
+    phases: 3
+    tags: [finance, computing]
+  - id: telemedicine
+    name: Telemedicine
+    start: 2010-01
+    stop: 2035-01
+    row: 84
+    phases: 3
+    tags: [health, communication]
+  - id: crispr
+    name: CRISPR gene editing
+    start: 2012-06
+    stop: 2040-01
+    row: 76
+    phases: 2
+    tags: [science, health]
+  - id: wearables
+    name: Wearables
+    start: 2013-01
+    stop: 2030-01
+    row: 79
+    phases: 2
+    tags: [health, computing]
+  - id: digital-privacy
+    name: Digital privacy
+    start: 2013-06
+    stop: 2035-01
+    row: 81
+    phases: 2
+    tags: [society, computing]
+    description: The Snowden disclosures, then the GDPR.
+  - id: remote-work
+    name: Remote work
+    start: 2020-03
+    stop: 2035-01
+    row: 75
+    phases: 3
+    tags: [society, computing, communication]
+    description: The pandemic's forced experiment.
+  - id: mrna-vaccines
+    name: mRNA vaccines
+    start: 2020-12
+    stop: 2040-01
+    row: 85
+    phases: 2
+    tags: [health, science]
+influences:
+  - id: iron-smelting--steam-engine
+    from: iron-smelting
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.31
+    to: steam-engine
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Cheap iron made engine cylinders affordable.
+  - id: coal--steam-engine
+    from: coal
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.11
+    to: steam-engine
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Pumping water from coal mines was the first market for engines.
+  - id: steam-engine--coal
+    from: steam-engine
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: coal
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.11
+    description: Engines drained deeper mines, and coal output soared.
+  - id: steam-engine--factory-system
+    from: steam-engine
+    from-phase: peak
+    from-edge: top
+    from-at: 0.37
+    to: factory-system
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+    description: Mills moved from rivers to towns once steam could drive them.
+  - id: mechanised-textiles--factory-system
+    from: mechanised-textiles
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.35
+    to: factory-system
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: mechanised-textiles--industrial-revolution
+    from: mechanised-textiles
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: industrial-revolution
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.23
+  - id: steam-engine--industrial-revolution
+    from: steam-engine
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: industrial-revolution
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.28
+  - id: coal--industrial-revolution
+    from: coal
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: industrial-revolution
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: iron-smelting--industrial-revolution
+    from: iron-smelting
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: industrial-revolution
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: canals--industrial-revolution
+    from: canals
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: industrial-revolution
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.07
+    description: Coal moved at half the price by canal.
+  - id: industrial-revolution--urbanisation
+    from: industrial-revolution
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: urbanisation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: factory-system--labour-movement
+    from: factory-system
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.67
+    to: labour-movement
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: urbanisation--public-health
+    from: urbanisation
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.86
+    to: public-health
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Crowded cities made cholera a political problem.
+  - id: steam-engine--steamboats
+    from: steam-engine
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.15
+    to: steamboats
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: steam-engine--railways
+    from: steam-engine
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.50
+    to: railways
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Locomotion needed a dependable engine first.
+  - id: iron-smelting--railways
+    from: iron-smelting
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.78
+    to: railways
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: railways--railway-mania
+    from: railways
+    from-phase: slope
+    from-edge: top
+    from-at: 0.50
+    to: railway-mania
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.17
+  - id: railways--transcontinental-railroad
+    from: railways
+    from-phase: trough
+    from-edge: top
+    from-at: 0.45
+    to: transcontinental-railroad
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: railways--electric-telegraph
+    from: railways
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.45
+    to: electric-telegraph
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Railways needed signalling along the line, and gave the telegraph its wayleaves.
+  - id: railways--mass-newspapers
+    from: railways
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.34
+    to: mass-newspapers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Overnight distribution made national newspapers possible.
+  - id: steamboats--steamships
+    from: steamboats
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.05
+    to: steamships
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: steam-engine--steamships
+    from: steam-engine
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.77
+    to: steamships
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: steamships--submarine-cable
+    from: steamships
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.05
+    to: submarine-cable
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Only a steamship could lay a transatlantic cable.
+  - id: electric-telegraph--submarine-cable
+    from: electric-telegraph
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.05
+    to: submarine-cable
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electric-battery--electric-telegraph
+    from: electric-battery
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.88
+    to: electric-telegraph
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electromagnetism--electric-telegraph
+    from: electromagnetism
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.17
+    to: electric-telegraph
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electromagnetism--dynamo
+    from: electromagnetism
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.10
+    to: dynamo
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electric-telegraph--telephone
+    from: electric-telegraph
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.50
+    to: telephone
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Bell was improving the telegraph when he found the telephone.
+  - id: electromagnetism--radio
+    from: electromagnetism
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.90
+    to: radio
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electric-telegraph--typewriter
+    from: electric-telegraph
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.52
+    to: typewriter
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: telephone--radio
+    from: telephone
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.74
+    to: radio
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: dynamo--electric-light
+    from: dynamo
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.23
+    to: electric-light
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: dynamo--electricity-grid
+    from: dynamo
+    from-phase: trough
+    from-edge: top
+    from-at: 0.50
+    to: electricity-grid
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: electric-light--electricity-grid
+    from: electric-light
+    from-phase: peak
+    from-edge: top
+    from-at: 0.27
+    to: electricity-grid
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+    description: A market for electricity justified the first power stations.
+  - id: alternating-current--electricity-grid
+    from: alternating-current
+    from-phase: peak
+    from-edge: top
+    from-at: 0.06
+    to: electricity-grid
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.23
+  - id: electricity-grid--tram
+    from: electricity-grid
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: tram
+    to-phase: peak
+    to-edge: top
+    to-at: 0.09
+  - id: electricity-grid--underground-railways
+    from: electricity-grid
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: underground-railways
+    to-phase: trough
+    to-edge: top
+    to-at: 0.16
+  - id: electricity-grid--household-appliances
+    from: electricity-grid
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.95
+    to: household-appliances
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electricity-grid--rural-electrification
+    from: electricity-grid
+    from-phase: slope
+    from-edge: top
+    from-at: 0.49
+    to: rural-electrification
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.07
+  - id: electricity-grid--refrigeration
+    from: electricity-grid
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: refrigeration
+    to-phase: peak
+    to-edge: top
+    to-at: 0.56
+  - id: hydroelectric--electricity-grid
+    from: hydroelectric
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: electricity-grid
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: steam-turbine--electricity-grid
+    from: steam-turbine
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: electricity-grid
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.13
+  - id: steam-turbine--steamships
+    from: steam-turbine
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: steamships
+    to-phase: slope
+    to-edge: top
+    to-at: 0.27
+  - id: coal--gas-lighting
+    from: coal
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.95
+    to: gas-lighting
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: gas-lighting--electric-light
+    from: gas-lighting
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.82
+    to: electric-light
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Edison priced electric light against gas.
+  - id: machine-tools--interchangeable-parts
+    from: machine-tools
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: interchangeable-parts
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.12
+  - id: interchangeable-parts--bicycle
+    from: interchangeable-parts
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.39
+    to: bicycle
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: interchangeable-parts--mass-production
+    from: interchangeable-parts
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.90
+    to: mass-production
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: bicycle--automobile
+    from: bicycle
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.81
+    to: automobile
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Bicycle makers supplied the chains, bearings and pneumatic tyres.
+  - id: bicycle--aviation
+    from: bicycle
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.48
+    to: aviation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+    description: The Wright brothers were bicycle makers.
+  - id: internal-combustion--automobile
+    from: internal-combustion
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.57
+    to: automobile
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: internal-combustion--aviation
+    from: internal-combustion
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.54
+    to: aviation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: oil--internal-combustion
+    from: oil
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.41
+    to: internal-combustion
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: oil--automobile
+    from: oil
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.64
+    to: automobile
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: automobile--mass-production
+    from: automobile
+    from-phase: peak
+    from-edge: top
+    from-at: 0.50
+    to: mass-production
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+    description: The Model T needed a cheaper way to be built.
+  - id: scientific-management--mass-production
+    from: scientific-management
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.48
+    to: mass-production
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: mass-production--fordism
+    from: mass-production
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.42
+    to: fordism
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: fordism--consumerism
+    from: fordism
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.44
+    to: consumerism
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: automobile--motorways
+    from: automobile
+    from-phase: slope
+    from-edge: top
+    from-at: 0.08
+    to: motorways
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: automobile--suburbanisation
+    from: automobile
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.22
+    to: suburbanisation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: motorways--suburbanisation
+    from: motorways
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.54
+    to: suburbanisation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: bessemer-steel--railways
+    from: bessemer-steel
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: railways
+    to-phase: slope
+    to-edge: top
+    to-at: 0.50
+    description: Steel rails lasted where iron wore out.
+  - id: bessemer-steel--second-industrial-revolution
+    from: bessemer-steel
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.91
+    to: second-industrial-revolution
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: chemical-industry--second-industrial-revolution
+    from: chemical-industry
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.62
+    to: second-industrial-revolution
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electricity-grid--second-industrial-revolution
+    from: electricity-grid
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: second-industrial-revolution
+    to-phase: trough
+    to-edge: bottom
+    to-at: 0.14
+  - id: second-industrial-revolution--mass-production
+    from: second-industrial-revolution
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.50
+    to: mass-production
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: chemical-industry--plastics
+    from: chemical-industry
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.19
+    to: plastics
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: chemical-industry--synthetic-fertiliser
+    from: chemical-industry
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.45
+    to: synthetic-fertiliser
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: synthetic-fertiliser--green-revolution
+    from: synthetic-fertiliser
+    from-phase: slope
+    from-edge: top
+    from-at: 0.63
+    to: green-revolution
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: diesel-engine--container-shipping
+    from: diesel-engine
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.79
+    to: container-shipping
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: aviation--commercial-aviation
+    from: aviation
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.11
+    to: commercial-aviation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: jet-engine--jet-age
+    from: jet-engine
+    from-phase: trough
+    from-edge: top
+    from-at: 0.63
+    to: jet-age
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: jet-engine--commercial-aviation
+    from: jet-engine
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: commercial-aviation
+    to-phase: slope
+    to-edge: top
+    to-at: 0.50
+    description: Jets rescued airlines from piston-engine economics.
+  - id: commercial-aviation--jet-age
+    from: commercial-aviation
+    from-phase: trough
+    from-edge: top
+    from-at: 0.89
+    to: jet-age
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: jet-age--globalisation
+    from: jet-age
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.05
+    to: globalisation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: container-shipping--globalisation
+    from: container-shipping
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.50
+    to: globalisation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+    description: Shipping stopped being a reason to make things nearby.
+  - id: globalisation--offshoring
+    from: globalisation
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.55
+    to: offshoring
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: container-shipping--just-in-time
+    from: container-shipping
+    from-phase: trough
+    from-edge: top
+    from-at: 0.32
+    to: just-in-time
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.06
+  - id: lean-manufacturing--just-in-time
+    from: lean-manufacturing
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.64
+    to: just-in-time
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: just-in-time--offshoring
+    from: just-in-time
+    from-phase: trough
+    from-edge: top
+    from-at: 0.77
+    to: offshoring
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.07
+  - id: offshoring--reshoring
+    from: offshoring
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.90
+    to: reshoring
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: space-flight--communication-satellites
+    from: space-flight
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.50
+    to: communication-satellites
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: space-flight--satellite-navigation
+    from: space-flight
+    from-phase: trough
+    from-edge: top
+    from-at: 0.49
+    to: satellite-navigation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: radar--jet-age
+    from: radar
+    from-phase: slope
+    from-edge: top
+    from-at: 0.80
+    to: jet-age
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: radio--radar
+    from: radio
+    from-phase: slope
+    from-edge: top
+    from-at: 0.49
+    to: radar
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.08
+  - id: radio--broadcast-radio
+    from: radio
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.57
+    to: broadcast-radio
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: vacuum-tube--radio
+    from: vacuum-tube
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: radio
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.58
+  - id: vacuum-tube--broadcast-radio
+    from: vacuum-tube
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.18
+    to: broadcast-radio
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: vacuum-tube--television
+    from: vacuum-tube
+    from-phase: trough
+    from-edge: top
+    from-at: 0.68
+    to: television
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: vacuum-tube--electronic-computers
+    from: vacuum-tube
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.95
+    to: electronic-computers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.13
+  - id: broadcast-radio--television
+    from: broadcast-radio
+    from-phase: peak
+    from-edge: top
+    from-at: 0.75
+    to: television
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: broadcast-radio--advertising
+    from: broadcast-radio
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: advertising
+    to-phase: trough
+    to-edge: top
+    to-at: 0.80
+  - id: cinema--television
+    from: cinema
+    from-phase: slope
+    from-edge: top
+    from-at: 0.05
+    to: television
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: photography--cinema
+    from: photography
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.48
+    to: cinema
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: phonograph--magnetic-tape
+    from: phonograph
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.21
+    to: magnetic-tape
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: television--colour-television
+    from: television
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.75
+    to: colour-television
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: television--cable-television
+    from: television
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.76
+    to: cable-television
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: communication-satellites--cable-television
+    from: communication-satellites
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.85
+    to: cable-television
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: television--consumerism
+    from: television
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: consumerism
+    to-phase: peak
+    to-edge: top
+    to-at: 0.43
+  - id: advertising--consumerism
+    from: advertising
+    from-phase: trough
+    from-edge: top
+    from-at: 0.80
+    to: consumerism
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: department-stores--consumerism
+    from: department-stores
+    from-phase: slope
+    from-edge: top
+    from-at: 0.54
+    to: consumerism
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: boolean-logic--electronic-computers
+    from: boolean-logic
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.90
+    to: electronic-computers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.13
+  - id: turing-machine--electronic-computers
+    from: turing-machine
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.58
+    to: electronic-computers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.13
+  - id: punched-cards--mainframes
+    from: punched-cards
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.07
+    to: mainframes
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: jacquard-loom--punched-cards
+    from: jacquard-loom
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.90
+    to: punched-cards
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: mechanical-calculators--punched-cards
+    from: mechanical-calculators
+    from-phase: trough
+    from-edge: top
+    from-at: 0.88
+    to: punched-cards
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: difference-engine--turing-machine
+    from: difference-engine
+    from-phase: trough
+    from-edge: top
+    from-at: 0.90
+    to: turing-machine
+    to-phase: peak
+    to-edge: top
+    to-at: 0.08
+    description: "Remembered, not used: Babbage was rediscovered in the 1940s."
+  - id: electronic-computers--mainframes
+    from: electronic-computers
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.73
+    to: mainframes
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: transistor--integrated-circuit
+    from: transistor
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.40
+    to: integrated-circuit
+    to-phase: peak
+    to-edge: top
+    to-at: 0.08
+  - id: transistor--mainframes
+    from: transistor
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.45
+    to: mainframes
+    to-phase: slope
+    to-edge: top
+    to-at: 0.50
+    description: Transistors made the second generation of mainframes reliable.
+  - id: integrated-circuit--microprocessor
+    from: integrated-circuit
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.08
+    to: microprocessor
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: integrated-circuit--minicomputers
+    from: integrated-circuit
+    from-phase: trough
+    from-edge: top
+    from-at: 0.05
+    to: minicomputers
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.08
+  - id: radar--transistor
+    from: radar
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.15
+    to: transistor
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+    description: Wartime radar work gave Bell Labs its semiconductor physics.
+  - id: mainframes--programming-languages
+    from: mainframes
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.67
+    to: programming-languages
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: mainframes--time-sharing
+    from: mainframes
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.08
+    to: time-sharing
+    to-phase: peak
+    to-edge: top
+    to-at: 0.08
+  - id: time-sharing--arpanet
+    from: time-sharing
+    from-phase: trough
+    from-edge: top
+    from-at: 0.54
+    to: arpanet
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.10
+  - id: time-sharing--email
+    from: time-sharing
+    from-phase: trough
+    from-edge: top
+    from-at: 0.75
+    to: email
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: arpanet--email
+    from: arpanet
+    from-phase: peak
+    from-edge: top
+    from-at: 0.34
+    to: email
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: arpanet--internet
+    from: arpanet
+    from-phase: slope
+    from-edge: top
+    from-at: 0.72
+    to: internet
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: cybernetics--symbolic-ai
+    from: cybernetics
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.32
+    to: symbolic-ai
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electronic-computers--symbolic-ai
+    from: electronic-computers
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.18
+    to: symbolic-ai
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: symbolic-ai--expert-systems
+    from: symbolic-ai
+    from-phase: slope
+    from-edge: top
+    from-at: 0.90
+    to: expert-systems
+    to-phase: peak
+    to-edge: top
+    to-at: 0.12
+  - id: microprocessor--personal-computers
+    from: microprocessor
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.52
+    to: personal-computers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: microprocessor--video-games
+    from: microprocessor
+    from-phase: peak
+    from-edge: top
+    from-at: 0.09
+    to: video-games
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: microprocessor--industrial-robots
+    from: microprocessor
+    from-phase: peak
+    from-edge: top
+    from-at: 0.07
+    to: industrial-robots
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.93
+  - id: personal-computers--spreadsheets
+    from: personal-computers
+    from-phase: peak
+    from-edge: top
+    from-at: 0.51
+    to: spreadsheets
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.10
+  - id: gui--personal-computers
+    from: gui
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.37
+    to: personal-computers
+    to-phase: trough
+    to-edge: top
+    to-at: 0.50
+    description: The Macintosh made the personal computer usable by anyone.
+  - id: spreadsheets--personal-computers
+    from: spreadsheets
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.10
+    to: personal-computers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.51
+    description: The first killer application.
+  - id: personal-computers--laptops
+    from: personal-computers
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.20
+    to: laptops
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: personal-computers--client-server
+    from: personal-computers
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.20
+    to: client-server
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: minicomputers--client-server
+    from: minicomputers
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.28
+    to: client-server
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: databases--client-server
+    from: databases
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.55
+    to: client-server
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: mainframes--databases
+    from: mainframes
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.05
+    to: databases
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: personal-computers--world-wide-web
+    from: personal-computers
+    from-phase: trough
+    from-edge: top
+    from-at: 0.95
+    to: world-wide-web
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.09
+  - id: internet--world-wide-web
+    from: internet
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.95
+    to: world-wide-web
+    to-phase: peak
+    to-edge: top
+    to-at: 0.09
+  - id: world-wide-web--search-engines
+    from: world-wide-web
+    from-phase: peak
+    from-edge: top
+    from-at: 0.50
+    to: search-engines
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.10
+  - id: world-wide-web--e-commerce
+    from: world-wide-web
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.67
+    to: e-commerce
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: world-wide-web--dot-com
+    from: world-wide-web
+    from-phase: peak
+    from-edge: top
+    from-at: 0.67
+    to: dot-com
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.10
+  - id: world-wide-web--blogs
+    from: world-wide-web
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.35
+    to: blogs
+    to-phase: peak
+    to-edge: top
+    to-at: 0.12
+  - id: dot-com--e-commerce
+    from: dot-com
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.50
+    to: e-commerce
+    to-phase: trough
+    to-edge: top
+    to-at: 0.50
+    description: The crash sorted the durable businesses from the rest.
+  - id: e-commerce--just-in-time
+    from: e-commerce
+    from-phase: peak
+    from-edge: top
+    from-at: 0.07
+    to: just-in-time
+    to-phase: slope
+    to-edge: bottom
+    to-at: 0.91
+  - id: internet--broadband
+    from: internet
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.78
+    to: broadband
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: fibre-optics--broadband
+    from: fibre-optics
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.36
+    to: broadband
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: fibre-optics--internet
+    from: fibre-optics
+    from-phase: trough
+    from-edge: top
+    from-at: 0.08
+    to: internet
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: broadband--video-streaming
+    from: broadband
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.24
+    to: video-streaming
+    to-phase: peak
+    to-edge: top
+    to-at: 0.08
+  - id: broadband--social-media
+    from: broadband
+    from-phase: trough
+    from-edge: top
+    from-at: 0.05
+    to: social-media
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.08
+  - id: blogs--social-media
+    from: blogs
+    from-phase: trough
+    from-edge: top
+    from-at: 0.38
+    to: social-media
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.08
+  - id: open-source--internet
+    from: open-source
+    from-phase: peak
+    from-edge: top
+    from-at: 0.06
+    to: internet
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.13
+  - id: open-source--cloud-computing
+    from: open-source
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.53
+    to: cloud-computing
+    to-phase: peak
+    to-edge: top
+    to-at: 0.08
+  - id: virtualisation--cloud-computing
+    from: virtualisation
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.58
+    to: cloud-computing
+    to-phase: peak
+    to-edge: top
+    to-at: 0.08
+  - id: client-server--cloud-computing
+    from: client-server
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.90
+    to: cloud-computing
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.08
+  - id: cloud-computing--big-data
+    from: cloud-computing
+    from-phase: peak
+    from-edge: top
+    from-at: 0.08
+    to: big-data
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.44
+  - id: cloud-computing--devops
+    from: cloud-computing
+    from-phase: peak
+    from-edge: top
+    from-at: 0.56
+    to: devops
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.10
+  - id: agile--devops
+    from: agile
+    from-phase: trough
+    from-edge: top
+    from-at: 0.40
+    to: devops
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.10
+  - id: big-data--machine-learning
+    from: big-data
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.40
+    to: machine-learning
+    to-phase: peak
+    to-edge: top
+    to-at: 0.08
+  - id: gpus--deep-learning
+    from: gpus
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.07
+    to: deep-learning
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+    description: Graphics cards made training large networks practical.
+  - id: neural-networks--deep-learning
+    from: neural-networks
+    from-phase: trough
+    from-edge: top
+    from-at: 0.50
+    to: deep-learning
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.07
+    description: Backpropagation waited twenty years for the data and the hardware.
+  - id: video-games--gpus
+    from: video-games
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.95
+    to: gpus
+    to-phase: peak
+    to-edge: top
+    to-at: 0.09
+    description: Games paid for the chips machine learning would use.
+  - id: machine-learning--deep-learning
+    from: machine-learning
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.19
+    to: deep-learning
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: deep-learning--transformers
+    from: deep-learning
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.71
+    to: transformers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: transformers--large-language-models
+    from: transformers
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.39
+    to: large-language-models
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: large-language-models--generative-ai
+    from: large-language-models
+    from-phase: peak
+    from-edge: top
+    from-at: 0.28
+    to: generative-ai
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.06
+  - id: generative-ai--ai-agents
+    from: generative-ai
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.22
+    to: ai-agents
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: generative-ai--ai-regulation
+    from: generative-ai
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.06
+    to: ai-regulation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: cloud-computing--large-language-models
+    from: cloud-computing
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.46
+    to: large-language-models
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: gpus--large-language-models
+    from: gpus
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.41
+    to: large-language-models
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: large-language-models--misinformation
+    from: large-language-models
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: misinformation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.51
+  - id: mobile-phones--sms
+    from: mobile-phones
+    from-phase: trough
+    from-edge: top
+    from-at: 0.54
+    to: sms
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.09
+  - id: mobile-phones--smartphones
+    from: mobile-phones
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.69
+    to: smartphones
+    to-phase: peak
+    to-edge: top
+    to-at: 0.09
+  - id: pdas--smartphones
+    from: pdas
+    from-phase: slope
+    from-edge: top
+    from-at: 0.90
+    to: smartphones
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.09
+  - id: smartphones--app-stores
+    from: smartphones
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.28
+    to: app-stores
+    to-phase: peak
+    to-edge: top
+    to-at: 0.12
+  - id: smartphones--mobile-internet
+    from: smartphones
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.09
+    to: mobile-internet
+    to-phase: trough
+    to-edge: top
+    to-at: 0.15
+  - id: smartphones--social-media
+    from: smartphones
+    from-phase: peak
+    from-edge: top
+    from-at: 0.09
+    to: social-media
+    to-phase: slope
+    to-edge: bottom
+    to-at: 0.50
+    description: Social media moved into everyone's pocket.
+  - id: smartphones--ride-hailing
+    from: smartphones
+    from-phase: peak
+    from-edge: top
+    from-at: 0.37
+    to: ride-hailing
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.07
+  - id: smartphones--mobile-payments
+    from: smartphones
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.09
+    to: mobile-payments
+    to-phase: peak
+    to-edge: top
+    to-at: 0.13
+  - id: smartphones--messaging-apps
+    from: smartphones
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.37
+    to: messaging-apps
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: sms--messaging-apps
+    from: sms
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.05
+    to: messaging-apps
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: mobile-internet--4g
+    from: mobile-internet
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.42
+    to: 4g
+    to-phase: peak
+    to-edge: top
+    to-at: 0.12
+  - id: 4g--video-streaming
+    from: 4g
+    from-phase: peak
+    from-edge: top
+    from-at: 0.12
+    to: video-streaming
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.72
+  - id: 4g--5g
+    from: 4g
+    from-phase: slope
+    from-edge: top
+    from-at: 0.62
+    to: 5g
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.06
+  - id: 5g--edge-computing
+    from: 5g
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.06
+    to: edge-computing
+    to-phase: peak
+    to-edge: top
+    to-at: 0.52
+  - id: iot--edge-computing
+    from: iot
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.63
+    to: edge-computing
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: wifi--iot
+    from: wifi
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.17
+    to: iot
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: smartphones--wearables
+    from: smartphones
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.07
+    to: wearables
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: lithium-ion--smartphones
+    from: lithium-ion
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.54
+    to: smartphones
+    to-phase: peak
+    to-edge: top
+    to-at: 0.09
+  - id: lithium-ion--laptops
+    from: lithium-ion
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: laptops
+    to-phase: peak
+    to-edge: top
+    to-at: 0.87
+  - id: lithium-ion--electric-vehicles
+    from: lithium-ion
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.59
+    to: electric-vehicles
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: lithium-ion--grid-storage
+    from: lithium-ion
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.23
+    to: grid-storage
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: lithium-ion--drones
+    from: lithium-ion
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.77
+    to: drones
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electric-vehicles--grid-storage
+    from: electric-vehicles
+    from-phase: peak
+    from-edge: top
+    from-at: 0.70
+    to: grid-storage
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: solar-pv--grid-storage
+    from: solar-pv
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.22
+    to: grid-storage
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: wind-power--grid-storage
+    from: wind-power
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.58
+    to: grid-storage
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: solar-pv--energy-transition
+    from: solar-pv
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.86
+    to: energy-transition
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: wind-power--energy-transition
+    from: wind-power
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.93
+    to: energy-transition
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electric-vehicles--energy-transition
+    from: electric-vehicles
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: energy-transition
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.11
+  - id: climate-awareness--energy-transition
+    from: climate-awareness
+    from-phase: trough
+    from-edge: top
+    from-at: 0.31
+    to: energy-transition
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: energy-transition--circular-economy
+    from: energy-transition
+    from-phase: peak
+    from-edge: top
+    from-at: 0.30
+    to: circular-economy
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: environmentalism--climate-awareness
+    from: environmentalism
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.24
+    to: climate-awareness
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: environmentalism--nuclear-power
+    from: environmentalism
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: nuclear-power
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.42
+    description: Opposition turned nuclear's peak into a long trough.
+  - id: oil-crisis--solar-pv
+    from: oil-crisis
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.12
+    to: solar-pv
+    to-phase: trough
+    to-edge: top
+    to-at: 0.31
+    description: High oil prices funded the first serious solar research.
+  - id: oil-crisis--wind-power
+    from: oil-crisis
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.65
+    to: wind-power
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: oil-crisis--nuclear-power
+    from: oil-crisis
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.12
+    to: nuclear-power
+    to-phase: trough
+    to-edge: top
+    to-at: 0.05
+  - id: oil--oil-crisis
+    from: oil
+    from-phase: slope
+    from-edge: top
+    from-at: 0.70
+    to: oil-crisis
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.12
+  - id: natural-gas--fracking
+    from: natural-gas
+    from-phase: slope
+    from-edge: top
+    from-at: 0.78
+    to: fracking
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.06
+  - id: fracking--natural-gas
+    from: fracking
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.06
+    to: natural-gas
+    to-phase: slope
+    to-edge: top
+    to-at: 0.78
+    description: Shale revived a plateaued industry.
+  - id: nuclear-fission--nuclear-power
+    from: nuclear-fission
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.88
+    to: nuclear-power
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: nuclear-fission--fusion
+    from: nuclear-fission
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.12
+    to: fusion
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: nuclear-power--small-modular-reactors
+    from: nuclear-power
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.17
+    to: small-modular-reactors
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: hydrogen-economy--fusion
+    from: hydrogen-economy
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.05
+    to: fusion
+    to-phase: peak
+    to-edge: top
+    to-at: 0.50
+  - id: carbon-capture--energy-transition
+    from: carbon-capture
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.09
+    to: energy-transition
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: space-flight--commercial-space
+    from: space-flight
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.90
+    to: commercial-space
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: commercial-space--satellite-internet
+    from: commercial-space
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.08
+    to: satellite-internet
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: satellite-navigation--ride-hailing
+    from: satellite-navigation
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.11
+    to: ride-hailing
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.07
+  - id: satellite-navigation--drones
+    from: satellite-navigation
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.19
+    to: drones
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: autonomous-vehicles--urban-air-mobility
+    from: autonomous-vehicles
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.50
+    to: urban-air-mobility
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: "Expected to act from its Slope, which this trend has not reached: the influence is hidden until the phase count is raised, and kept in the file meanwhile."
+  - id: drones--urban-air-mobility
+    from: drones
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.52
+    to: urban-air-mobility
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electric-vehicles--autonomous-vehicles
+    from: electric-vehicles
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: autonomous-vehicles
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.25
+  - id: ride-hailing--autonomous-vehicles
+    from: ride-hailing
+    from-phase: peak
+    from-edge: top
+    from-at: 0.07
+    to: autonomous-vehicles
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.31
+  - id: ride-hailing--gig-economy
+    from: ride-hailing
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.07
+    to: gig-economy
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: sharing-economy--gig-economy
+    from: sharing-economy
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.26
+    to: gig-economy
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: smartphones--sharing-economy
+    from: smartphones
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.19
+    to: sharing-economy
+    to-phase: peak
+    to-edge: top
+    to-at: 0.09
+  - id: internet--remote-work
+    from: internet
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.90
+    to: remote-work
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: video-conferencing--remote-work
+    from: video-conferencing
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.07
+    to: remote-work
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: cloud-computing--remote-work
+    from: cloud-computing
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.43
+    to: remote-work
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10
+  - id: broadband--video-conferencing
+    from: broadband
+    from-phase: peak
+    from-edge: top
+    from-at: 0.10
+    to: video-conferencing
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.95
+  - id: remote-work--telemedicine
+    from: remote-work
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.10
+    to: telemedicine
+    to-phase: trough
+    to-edge: top
+    to-at: 0.28
+  - id: video-conferencing--telemedicine
+    from: video-conferencing
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.05
+    to: telemedicine
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: genomics--crispr
+    from: genomics
+    from-phase: slope
+    from-edge: top
+    from-at: 0.26
+    to: crispr
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: genomics--mrna-vaccines
+    from: genomics
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.13
+    to: mrna-vaccines
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: vaccination--mrna-vaccines
+    from: vaccination
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.90
+    to: mrna-vaccines
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+    description: Two centuries of vaccine science under a new platform.
+  - id: germ-theory--public-health
+    from: germ-theory
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: public-health
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.75
+  - id: germ-theory--antibiotics
+    from: germ-theory
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.90
+    to: antibiotics
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: vaccination--germ-theory
+    from: vaccination
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.51
+    to: germ-theory
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: blockchain--cryptocurrency
+    from: blockchain
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.12
+    to: cryptocurrency
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: social-media--creator-economy
+    from: social-media
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.62
+    to: creator-economy
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: video-streaming--creator-economy
+    from: video-streaming
+    from-phase: trough
+    from-edge: top
+    from-at: 0.52
+    to: creator-economy
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: social-media--misinformation
+    from: social-media
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.92
+    to: misinformation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: social-media--digital-privacy
+    from: social-media
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.53
+    to: digital-privacy
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: digital-privacy--ai-regulation
+    from: digital-privacy
+    from-phase: peak
+    from-edge: top
+    from-at: 0.77
+    to: ai-regulation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: vr--metaverse
+    from: vr
+    from-phase: peak
+    from-edge: top
+    from-at: 0.86
+    to: metaverse
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.07
+  - id: social-media--metaverse
+    from: social-media
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.81
+    to: metaverse
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: industrial-robots--automation
+    from: industrial-robots
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: automation
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.26
+  - id: automation--industry-4
+    from: automation
+    from-phase: slope
+    from-edge: top
+    from-at: 0.26
+    to: industry-4
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: iot--industry-4
+    from: iot
+    from-phase: peak
+    from-edge: top
+    from-at: 0.29
+    to: industry-4
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: 3d-printing--industry-4
+    from: 3d-printing
+    from-phase: trough
+    from-edge: top
+    from-at: 0.74
+    to: industry-4
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: industry-4--reshoring
+    from: industry-4
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.79
+    to: reshoring
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: electronic-trading--globalised-finance
+    from: electronic-trading
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.11
+    to: globalised-finance
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: globalised-finance--financial-crisis
+    from: globalised-finance
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.94
+    to: financial-crisis
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.20
+  - id: financial-crisis--cryptocurrency
+    from: financial-crisis
+    from-phase: trough
+    from-edge: top
+    from-at: 0.17
+    to: cryptocurrency
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+    description: Bitcoin's genesis block quotes a bailout headline.
+  - id: financial-crisis--sharing-economy
+    from: financial-crisis
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.37
+    to: sharing-economy
+    to-phase: peak
+    to-edge: top
+    to-at: 0.09
+  - id: credit-cards--atm
+    from: credit-cards
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.94
+    to: atm
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: atm--electronic-trading
+    from: atm
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.50
+    to: electronic-trading
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: mainframes--credit-cards
+    from: mainframes
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.77
+    to: credit-cards
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: mobile-payments--fintech
+    from: mobile-payments
+    from-phase: peak
+    from-edge: bottom
+    from-at: 0.58
+    to: fintech
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: e-commerce--fintech
+    from: e-commerce
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.07
+    to: fintech
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: labour-movement--welfare-state
+    from: labour-movement
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.78
+    to: welfare-state
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: womens-suffrage--welfare-state
+    from: womens-suffrage
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.72
+    to: welfare-state
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: mass-education--mass-newspapers
+    from: mass-education
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: mass-newspapers
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.42
+  - id: typewriter--personal-computers
+    from: typewriter
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.84
+    to: personal-computers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.06
+  - id: urbanisation--department-stores
+    from: urbanisation
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.95
+    to: department-stores
+    to-phase: peak
+    to-edge: top
+    to-at: 0.05
+  - id: welfare-state--consumerism
+    from: welfare-state
+    from-phase: trough
+    from-edge: top
+    from-at: 0.55
+    to: consumerism
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: household-appliances--consumerism
+    from: household-appliances
+    from-phase: peak
+    from-edge: top
+    from-at: 0.05
+    to: consumerism
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+  - id: railways--high-speed-rail
+    from: railways
+    from-phase: plateau
+    from-edge: top
+    from-at: 0.90
+    to: high-speed-rail
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.05
+    description: "Rail's revival: the Shinkansen answered the motorway and the airliner."
