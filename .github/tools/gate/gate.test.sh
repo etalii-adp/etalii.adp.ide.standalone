@@ -56,11 +56,12 @@ esac
 [ $# -le 1 ] || { echo "RESULT=selftest-broken (expected one argument at most; got $#)"; exit 2; }
 # MEASURED on Git Bash: quick runs 120 of the 178 cases in about 17 s, against 1274 s for the full
 # suite. BOTH msys numbers were run here - 120 in quick and 178 in full - rather than one being
-# derived from the other. 168 and 110 are NOT measured: msys-gated cases sit in both the cheap and
-# the skipped regions, so the 58-case difference cannot simply be carried across, and those two
-# assume it can. A wrong pin fails LOUDLY with the true count in the same line, so the first run on
-# another platform corrects it rather than passing quietly.
-if [ "$MSYS" = 1 ]; then EXPECTED=178; EXPECTED_QUICK=120; else EXPECTED=168; EXPECTED_QUICK=110; fi
+# derived from the other. On Linux, 116 in quick was MEASURED on 2026-09-26 (Ubuntu 24.04), where
+# the carried-across 110 had failed every push to develop in CI with "cases=116 expected=110"; 168
+# in full is confirmed only by pull-request CI going green, which runs the full suite. A wrong pin
+# fails LOUDLY with the true count in the same line, so the first run on another platform corrects
+# it rather than passing quietly.
+if [ "$MSYS" = 1 ]; then EXPECTED=178; EXPECTED_QUICK=120; else EXPECTED=168; EXPECTED_QUICK=116; fi
 [ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
