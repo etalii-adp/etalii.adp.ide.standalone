@@ -138,8 +138,9 @@ public class CausalLoopDocumentStoreRefusedReadTests : IDisposable
     public void AFirstOpenThatFindsTheBodyMissing_IsNotRetried()
     {
         // The must-not-catch half: on a first open a missing body is not a publish in flight, and
-        // retrying it would delay every new diagram. One read, and it reports itself unreadable in
-        // the reader's own words, as it always has.
+        // retrying it would delay every new diagram. One read, and it reports itself unreadable as a
+        // missing body - in the store's own words since task 6, not the reader's exception message,
+        // by the user's ruling on the decision card (2026-09-26).
         var path = IoPath.Combine(_workspace, "loop.cld");
         File.WriteAllText(path, Text);
         var store = Store();
@@ -150,7 +151,7 @@ public class CausalLoopDocumentStoreRefusedReadTests : IDisposable
         Assert.Equal(1, _reader.Reads);
         Assert.Equal(1, _reader.Refused);
         Assert.False(entry.IsUsable);
-        Assert.Contains("Not there when opened.", entry.Error, StringComparison.Ordinal);
+        Assert.Contains(CausalLoopDocumentStore.MissingReason, entry.Error, StringComparison.Ordinal);
     }
 
     private (CausalLoopDocumentStore Store, string Path) Opened()
