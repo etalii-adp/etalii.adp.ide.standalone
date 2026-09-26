@@ -10,8 +10,7 @@ import type {
 } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useContextConnection, useContextPrompt, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
@@ -254,9 +253,6 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
 
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
   const diagramModel = useMemo<DiagramModel>(() => {
     const nodes = [...model.nodes.values()];
     // Stages first so the jobs inside them draw on top; the stage type's beneathConnections
@@ -339,7 +335,6 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         ariaLabel={`Pipeline ${path.join("/")}`}
         className="pipeline-canvas-surface"
         scrollbarsClassName="pipeline-scrollbars"

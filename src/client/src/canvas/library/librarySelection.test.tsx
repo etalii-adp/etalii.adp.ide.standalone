@@ -27,6 +27,8 @@ const channel = vi.hoisted(() => ({
   pushes: [] as unknown[],
   executed: [] as { actionId: string; source?: unknown }[],
   outcome: { accepted: true, error: "" },
+  prompt: null as unknown,
+  submitted: [] as unknown[],
 }));
 
 vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
@@ -41,6 +43,16 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
       },
     }),
     useContextSelection: () => ({ selection: channel.pushed, levels: [], actions: channel.actions }),
+    // The shell's inline-edit prompt, which the library now reads itself (client-centralization task 7).
+    useContextPrompt: () => ({
+      prompt: channel.prompt,
+      onPropose: async (revision: number) => ({ revision, valid: true, reason: "" }),
+      onSubmit: async (...args: unknown[]) => {
+        channel.submitted.push(args[0]);
+        return { completed: true, error: "" };
+      },
+      onCancel: () => {},
+    }),
   };
 });
 
@@ -56,6 +68,8 @@ afterEach(() => {
   channel.pushes = [];
   channel.executed = [];
   channel.outcome = { accepted: true, error: "" };
+  channel.prompt = null;
+  channel.submitted = [];
 });
 
 function definitionOf(overrides: { boundarySelectable?: boolean; noteSelectable?: boolean; actions?: ActionDeclaration[]; backgroundMenu?: boolean } = {}): DiagramDefinition {
@@ -466,5 +480,52 @@ describe("the background menu, where a definition declares one", () => {
     fireEvent.contextMenu(elementOn(container, "a"), { clientX: 10, clientY: 10 });
 
     expect(channel.pushes.map(asked)).toEqual([{ id: "a", menu: true }]);
+  });
+});
+
+describe("inline rename, which the library owns once it owns the canvas", () => {
+  /** The prompt the backend sends when it opens an inline editor over an element's label. */
+  const inlineEditFor = (elementId: string) => ({ prompt: { case: "inputDialog", value: { inlineLabelEdit: { elementId: { value: elementId } } } } });
+
+  const editableDefinition = () => {
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { label?: unknown }).label = { placement: "inside", editable: true };
+    return definition;
+  };
+
+  it("opens the shared editor over the element the backend's prompt names, with nothing from the module", () => {
+    // client-centralization Requirement 6: nine modules each passed `editing` built from the same
+    // three lines; the prop is gone from the contract, and the library reads the prompt itself.
+    channel.prompt = inlineEditFor("a");
+
+    const { container } = mount({}, editableDefinition());
+
+    expect(container.querySelector("foreignObject input")).not.toBeNull();
+  });
+
+  it("opens no editor while the backend has asked for none", () => {
+    const { container } = mount({}, editableDefinition());
+
+    expect(container.querySelector("foreignObject input")).toBeNull();
+  });
+
+  it("carries the commit to the prompt, after raising it as an event", async () => {
+    // Arrange.
+    channel.prompt = inlineEditFor("a");
+    const onLabelCommitRequested = vi.fn();
+    const { container } = mount({ onLabelCommitRequested }, editableDefinition());
+    const field = container.querySelector("foreignObject input") as HTMLInputElement;
+
+    // Act.
+    fireEvent.change(field, { target: { value: "Alpha Prime" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    // Assert: one editor, one commit - the event first, then the shell's own prompt flow.
+    expect(onLabelCommitRequested).toHaveBeenCalledExactlyOnceWith({
+      kind: "label-commit-requested",
+      target: { kind: "element", id: "a" },
+      value: "Alpha Prime",
+    });
+    expect(channel.submitted).toEqual(["Alpha Prime"]);
   });
 });

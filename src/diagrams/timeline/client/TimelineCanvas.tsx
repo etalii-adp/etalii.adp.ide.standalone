@@ -1,8 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { forwardBezierPath, horizontalBezierPath } from "@client/canvas/connectors";
 import { elementSourceOf } from "@client/canvas/selection";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
@@ -422,11 +421,6 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     ready: !loading && !failed && viewport !== null,
   });
 
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
-
-  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   // The view-fixed ruler, derived from the same view the report observes - and from the width
   // the surface really has, so a label sits over the elements it dates rather than over the
   // ones a 1200px-wide surface would have put there.
@@ -440,6 +434,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     }
   };
 
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div ref={hostRef} className="timeline-canvas canvas-host" role="application" aria-label="Timeline" onContextMenu={onContextMenu}>
       <DiagramCanvas
@@ -448,7 +443,6 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         ariaLabel="Timeline"
         className="timeline-surface canvas-viewport"
         scrollbarsClassName="timeline-scrollbars"

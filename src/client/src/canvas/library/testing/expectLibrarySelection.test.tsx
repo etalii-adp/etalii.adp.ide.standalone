@@ -22,6 +22,9 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
+    // The library reads the inline-edit prompt itself where it owns the canvas (client-centralization
+    // task 7), so a sourced canvas needs one here even though this module never renames inline.
+    useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
     useContextConnection: () => ({ select: (selection: unknown) => channel.pushes.push(selection), executeAction: () => Promise.resolve({ accepted: true, error: "" }) }),
     useContextSelection: () => ({ selection: channel.pushed, levels: [], actions: [] }),
   };
