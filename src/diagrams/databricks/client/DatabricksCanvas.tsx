@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { elementSourceOf } from "@client/canvas/selection";
-import { contextShortcutOf } from "@client/canvas/interaction";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type {
@@ -15,7 +14,6 @@ import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt"
 import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { type ContextShortcut } from "@client/generated/context-contract_pb";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDatabricksStream } from "./useDatabricksStream";
 import { SIMULATED_ACTION_IDS, SIMULATED_MARKER, useSimulatedRun } from "./useSimulatedRun";
@@ -45,13 +43,6 @@ export interface DatabricksCanvasConfig {
   interceptAction?: (actionId: string) => boolean;
 }
 
-/**
- * Which key the backend knows each declared action by.
- *
- * The library dispatches an id; the backend's context table is keyed by keystroke. One map,
- * in one place, rather than a keystroke built at each call site.
- */
-const BACKEND_KEYS: Readonly<Record<string, string>> = { "rename": "F2", "delete": "Delete" };
 
 /** An element as the library carries it here: the model element plus what it draws. */
 type NodeElement = DiagramModelElement & { node: DatabricksNode; simulated: string | undefined };
@@ -247,8 +238,8 @@ function definitionFor(connectable: boolean): DiagramDefinition {
     // and the delete was a keystroke it built to describe a gesture the library had already
     // handed it. Declared, the library derives the key set and dispatches an action id.
     actions: [
-      { id: "rename", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-      { id: "delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
+      { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
+      { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
       // THE SIMULATED RUNS ARE THIS CANVAS'S TO RUN (Requirements 8.6, 11.6). The backend offers
       // them in the shared menu; declared here as menu entries, the library hands them to this
       // module's handler and sends nothing - so a simulation never reaches a command, the history
@@ -282,9 +273,8 @@ export function DatabricksCanvas({
 }: DiagramCanvasProps & DatabricksCanvasConfig) {
   const { model, loading, failed, moveElementTo, reportView } = useDatabricksStream(projectId, path);
   const simulation = useSimulatedRun(model);
-  const { executeAction, executeShortcut } = useContextConnection();
+  const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
@@ -352,54 +342,29 @@ export function DatabricksCanvas({
       return;
     }
 
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
-  };
-
-  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
-    void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    // A refusal needs nothing here: the call reports it to the library's refusal line.
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
   };
 
   const events: DiagramEventHandlers = {
     // The declared actions, answered as the shortcuts the backend has always known them by.
-    onActionInvoked: ({ actionId, targetId }) => {
+    onActionInvoked: ({ actionId }) => {
       // A simulated entry chosen from the shared menu: the show plays here, and nothing travels.
+      // Every other declared action is sent by the library, from its declared backendKey.
       if (actionId.includes(SIMULATED_MARKER)) {
         (interceptAction ?? simulation.intercept)(actionId);
-        return;
-      }
-
-      const key = BACKEND_KEYS[actionId];
-      if (key !== undefined && targetId !== undefined) {
-        runShortcut(contextShortcutOf(key), targetId);
       }
     },
     // Selection is the library's (centralized-selection), edges included: this family's edges
-    // were pending, not exempt, and the backend has always resolved them. A menu action the
-    // backend refuses comes back here, for the rejection line.
-    onActionRefused: ({ message }) => setRejection(message),
+    // were pending, not exempt, and the backend has always resolved them. So is the refusal line:
+    // every call here, and every menu action the library runs, reports its own refusal to it.
     onElementMoved: ({ elementId, position }) => {
-      setRejection("");
       const isFrame = model.frames.has(elementId);
       const width = isFrame ? FRAME_WIDTH : NODE_WIDTH;
       const height = isFrame ? FRAME_HEIGHT : NODE_HEIGHT;
       // The authored position, raw: the layout block stores what the author placed, and
       // rounding it here would quietly turn the canvas into a grid.
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
     },
     // The whole gesture in one stateless rel: call - the dragged task becomes the dependency
     // the landing task waits for. Released on nothing, the library raises nothing: this
@@ -424,14 +389,7 @@ export function DatabricksCanvas({
   });
 
 
-  if (failed) {
-    return (
-      <div className="databricks-canvas canvas-host databricks-canvas-message canvas-host-message">
-        <p>This diagram could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="databricks-canvas canvas-host" role="application" aria-label={ariaLabel}>
       <DiagramCanvas
@@ -450,8 +408,6 @@ export function DatabricksCanvas({
           {simulation.marker} · dismiss
         </button>
       ) : null}
-      {loading ? <p className="databricks-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="databricks-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

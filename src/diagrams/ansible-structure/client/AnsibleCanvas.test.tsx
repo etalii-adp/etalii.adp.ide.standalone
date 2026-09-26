@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
 import {
@@ -213,22 +213,26 @@ describe("AnsibleCanvas", () => {
     expect(moveElementTo.mock.calls[0][0]).toBe("role:nginx");
   });
 
-  it("shows the backend's refusal of a move on the canvas rather than nothing", async () => {
-    // Arrange: the backend refuses to record the position. Until this was fixed the canvas
-    // discarded the answer, so a refused drag just snapped back without a word.
+  it("draws no refusal line of its own: the move reports a refusal to the library's", async () => {
+    // Arrange: the backend refuses to record the position. This canvas once discarded the answer,
+    // then drew it on a line of its own; now the move itself reports it to the one line the
+    // library draws around every canvas (client-centralization Requirement 2), which
+    // useDiagramStream.move.test.ts and canvasRefusals.test.ts hold. Here: the module adds none.
     moveElementTo.mockClear();
     moveElementTo.mockResolvedValueOnce("This node's position cannot be saved here.");
-    const { container, findByText } = renderCanvas();
+    const { container } = renderCanvas();
     const role = container.querySelector('[data-element-id="role:nginx"]')!;
 
     // Act.
     fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
     fireEvent(role, pointer("pointermove", { clientX: 90, clientY: 70 }));
     fireEvent(role, pointer("pointerup", { clientX: 90, clientY: 70 }));
+    await act(async () => {});
 
-    // Assert: the sentence shows, on the rejection line every other canvas uses.
-    const line = await findByText("This node's position cannot be saved here.");
-    expect(line.classList.contains("canvas-rejection")).toBe(true);
+    // Assert.
+    expect(moveElementTo).toHaveBeenCalledTimes(1);
+    expect(container.textContent).not.toContain("This node's position cannot be saved here.");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
   });
 
   it("does not reposition on a click that barely moves", () => {
@@ -485,26 +489,24 @@ describe("AnsibleCanvas", () => {
 
   // ---- the states before there is anything to draw ----------------------------------------------
 
-  it("says it is reading rather than showing an empty canvas", () => {
-    // Arrange.
-    currentLoading = true;
+  it.each([
+    ["still reading", () => (currentLoading = true)],
+    ["unavailable", () => (currentFailed = true)],
+  ])("while %s, says nothing of its own and does not claim the layout is unrecognised", (_state, arrange) => {
+    // Arrange: opening and unavailable are the library's to say, in the frame around the canvas
+    // (client-centralization Requirement 2.3). Without its early returns this canvas must still
+    // not show its empty explanation over a folder it has not read - so the model is empty, exactly as
+    // useDiagramStream leaves it while opening; with nodes in it the explanation could never show.
+    arrange();
+    currentModel = emptyModel;
 
     // Act.
     const { container } = renderCanvas();
 
     // Assert.
-    expect(container.textContent).toContain("Reading the folder");
-  });
-
-  it("says so when the diagram cannot be opened", () => {
-    // Arrange.
-    currentFailed = true;
-
-    // Act.
-    const { container } = renderCanvas();
-
-    // Assert.
-    expect(container.textContent).toContain("could not be opened");
+    expect(container.textContent).not.toContain("Reading the folder");
+    expect(container.textContent).not.toContain("could not be opened");
+    expect(container.textContent).not.toContain("Nothing here is laid out");
   });
 
   it("explains an unrecognised layout rather than showing a blank canvas", () => {

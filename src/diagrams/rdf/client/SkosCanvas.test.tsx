@@ -252,11 +252,12 @@ describe("SkosCanvas", () => {
     expect(container.querySelector(".skos-truncation-banner")?.textContent).toContain("Showing 1000 of 75736 terms");
   });
 
-  it("says so when the diagram cannot be opened", () => {
+  it("leaves the unavailable state to the library's frame rather than saying it itself", () => {
+    // client-centralization Requirement 2.3 - one appearance, drawn by the library.
     currentFailed = true;
     const { container } = renderCanvas();
 
-    expect(container.textContent).toContain("could not be opened");
+    expect(container.textContent).not.toContain("could not be opened");
   });
 });
 

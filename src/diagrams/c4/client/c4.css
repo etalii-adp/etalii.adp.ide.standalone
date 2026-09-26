@@ -35,12 +35,6 @@
   color: var(--color-text);
 }
 
-.c4-canvas-loading,
-.c4-canvas-unavailable {
-  padding: 16px;
-  color: var(--color-text-muted);
-}
-
 .c4-node {
   cursor: pointer;
 }

@@ -9,7 +9,7 @@ describe("AppHeader", () => {
 
     // Act and assert, step by step.
     const link = screen.getByRole("link", { name: "Peter Vrenken" });
-    expect(link.getAttribute("href")).toBe("https://github.com/vrenken/EtAlii.Adp");
+    expect(link.getAttribute("href")).toBe("https://github.com/etalii-adp/etalii.adp.ide.standalone");
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
   });

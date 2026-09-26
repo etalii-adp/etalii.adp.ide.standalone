@@ -397,27 +397,22 @@ describe("C4Canvas", () => {
     expect(select).toHaveBeenCalledWith(null);
   });
 
-  it("says the diagram is no longer available, naming its path, when the stream failed", () => {
-    // Arrange.
-    currentFailed = true;
+  it.each([
+    ["unavailable", () => (currentFailed = true)],
+    ["loading", () => (currentLoading = true)],
+  ])("while %s, draws no status of its own and no diagram: the library's frame says it", (_state, arrange) => {
+    // Arrange: client-centralization Requirement 2.3 - one appearance, drawn by the library around
+    // every canvas. This canvas had its own loading and unavailable blocks.
+    arrange();
+    currentModel = emptyModel;
 
     // Act.
     const { container } = render(<C4Canvas {...props} />);
 
     // Assert.
-    expect(container.textContent).toContain("This diagram is no longer available at docs/model.adp.");
+    expect(container.textContent).not.toContain("no longer available");
+    expect(container.querySelector('[role="status"], [role="alert"]')).toBeNull();
     expect(container.querySelectorAll(".c4-node")).toHaveLength(0);
-  });
-
-  it("shows it is loading rather than an empty diagram", () => {
-    // Arrange.
-    currentLoading = true;
-
-    // Act.
-    const { container } = render(<C4Canvas {...props} />);
-
-    // Assert.
-    expect(container.querySelector('[role="status"]')).not.toBeNull();
   });
 
   // ---- pan, zoom and the reported viewport ---------------------------------------------
@@ -677,11 +672,12 @@ describe("C4Canvas", () => {
     expect(move.y).toBeCloseTo(0, 5);
   });
 
-  it("shows the backend's refusal of a move on the canvas rather than nothing", async () => {
-    // Arrange: the backend refuses to record the position. Until this was fixed the canvas
-    // discarded the answer, so a refused drag just snapped back without a word.
+  it("draws no refusal line of its own for a refused move: the move reports it to the library's", async () => {
+    // Arrange: the backend refuses to record the position. The move itself reports the sentence to
+    // the one line the library draws around every canvas (client-centralization Requirement 2;
+    // useDiagramStream.move.test.ts). Here: this canvas adds none.
     moveOutcome = "An element inside a boundary is placed by its boundary.";
-    const { container, findByText } = render(<C4Canvas {...props} />);
+    const { container } = render(<C4Canvas {...props} />);
     withSurfaceWidth(container, 500);
     const alpha = container.querySelectorAll(".c4-node")[0];
 
@@ -690,9 +686,12 @@ describe("C4Canvas", () => {
     fireEvent(alpha, pointer("pointermove", { clientX: 150, clientY: 100 }));
     fireEvent(alpha, pointer("pointerup", { clientX: 150, clientY: 100 }));
 
-    // Assert: the sentence shows, on the rejection line the canvas's other refusals use.
-    const line = await findByText("An element inside a boundary is placed by its boundary.");
-    expect(line.classList.contains("canvas-rejection")).toBe(true);
+    await act(async () => {});
+
+    // Assert.
+    expect(moves).toHaveLength(1);
+    expect(container.textContent).not.toContain("An element inside a boundary is placed by its boundary.");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
 
     moveOutcome = "";
   });
@@ -962,20 +961,23 @@ describe("selection, as every canvas has it", () => {
 });
 
 describe("a refused action", () => {
-  it("shows the backend's refusal on the canvas rather than nothing", async () => {
-    // Arrange: an element is selected, and the backend refuses what is asked of it. Until
-    // this was fixed the canvas discarded the outcome, so a refusal looked like a no-op.
+  it("draws no refusal line of its own: the library shows a refused keystroke", async () => {
+    // Arrange: an element is selected, and the backend refuses what is asked of it. The library
+    // sends the declared key and its call reports the refusal to the one line drawn around every
+    // canvas (client-centralization Requirement 2; contextConnectionReportsToCanvas.test.tsx holds
+    // the report of a keystroke). Here: none.
     currentModel = seed(node("a", "Alpha", 0, 0));
     currentSelection = elementSelectionOf(props.entryId, props.path, "a");
     shortcutOutcome = { accepted: false, error: "Nothing can be inserted inside a person." };
-    const { container, findByText } = render(<C4Canvas {...props} />);
+    const { container } = render(<C4Canvas {...props} />);
 
     // Act.
     fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Insert" });
+    await act(async () => {});
 
-    // Assert: the sentence shows, on the rejection line every other canvas uses.
-    const line = await findByText("Nothing can be inserted inside a person.");
-    expect(line.classList.contains("canvas-rejection")).toBe(true);
+    // Assert.
+    expect(container.textContent).not.toContain("Nothing can be inserted inside a person.");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
 
     shortcutOutcome = { accepted: true, error: "" };
   });

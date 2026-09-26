@@ -158,14 +158,13 @@ function isElementType(value: string): value is FdgElementType {
 /**
  * A functional decomposition graph: screens, actions, data and functions, each owned by one parent,
  * drawn through the shared canvas library. Every library event takes the one route that can carry
- * it (the user's chat ruling of 2026-09-25): a move through the stream's `moveElement`, a resize
+ * it (the user's chat ruling of 2026-09-25): a move through the stream's `moveElementTo`, a resize
  * through `setProperty`, and everything else through a context action on one target id.
  */
 export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { watchId, executeAction, setProperty } = useContextConnection();
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
+  const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
@@ -196,69 +195,42 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     return { elements, connections };
   }, [model]);
 
-  /** Surfaces a refusal, whichever route it came back on. */
-  const report = (error: string) => {
-    if (error) {
-      setRejection(error);
-    }
-  };
-
+  // Every route below - an action, a property, a move - reports its own refusal to the one line the
+  // library draws around every canvas, and clears it when sent (client-centralization Requirement 2).
   const runAction = (actionId: string, targetId: string) => {
-    void (async () => {
-      const outcome = await executeAction(actionId, elementSourceOf(targetId));
-      if (!outcome.accepted) {
-        report(outcome.error);
-      }
-    })();
+    void executeAction(actionId, elementSourceOf(targetId));
   };
 
   const runProperty = async (propertyId: string, value: number, targetId: string): Promise<boolean> => {
     const outcome = await setProperty(propertyId, String(Math.round(value)), elementSourceOf(targetId));
-    if (!outcome.accepted) {
-      report(outcome.error);
-    }
     return outcome.accepted;
   };
 
+  // A move takes the stream's one `moveElementTo` (client-centralization task 8). The position passed
+  // is the TOP-LEFT, which is what the document holds; a position is what makes this an arrangement
+  // rather than a re-parenting.
   const moveTo = async (elementId: string, left: number, top: number) => {
-    try {
-      const response = await client.moveElement({
-        projectId: { value: projectId },
-        watchId: { value: watchId },
-        path: { segments: [...path] },
-        elementId,
-        // The position is what makes this an arrangement rather than a re-parenting; the backend
-        // routes on its presence. It is the TOP-LEFT, which is what the document holds.
-        position: { x: left, y: top },
-      });
-      report(response.error);
-    } catch (error) {
-      report(error instanceof Error ? error.message : "The move could not be sent.");
-    }
+    await moveElementTo(elementId, left, top);
   };
 
   const events: DiagramEventHandlers = {
     // Rename, delete and disconnect, as the library dispatched them from their declarations.
     onActionInvoked: ({ actionId, targetId }) => {
       if (targetId !== undefined && FORWARDED_ACTIONS.has(actionId)) {
-        setRejection("");
         runAction(actionId, targetId);
       }
     },
-    onActionRefused: ({ message }) => setRejection(message),
     // The library reports the CENTRE it drew the element at; the document holds the top-left.
     onElementMoved: ({ elementId, position }) => {
       const element = model.elements.get(elementId);
       if (element === undefined) {
         return;
       }
-      setRejection("");
       void moveTo(elementId, position.x - element.payload.width / 2, position.y - element.payload.height / 2);
     },
     // A resize is a size. Dragging the left or top edge also moves the top-left, because the far
     // edge stays put - and a property carries one value, so that edge is a size and then a move.
     onElementResized: ({ elementId, side, bounds }) => {
-      setRejection("");
       const horizontal = side === "left" || side === "right";
       void (async () => {
         const sized = await runProperty(
@@ -273,7 +245,6 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     },
     // The whole gesture in one stateless call: the relation in the action id, both ends in the target.
     onConnectionDrawn: ({ relationType, sourceElementId, targetElementId }) => {
-      setRejection("");
       runAction(FdgActions.connect(relationType as FdgRelationType), `rel:${sourceElementId}->${targetElementId}`);
     },
     // A toolbox drop carries the element type; the placement is the drop's centre.
@@ -284,7 +255,6 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       if (!isElementType(type)) {
         return;
       }
-      setRejection("");
       runAction(FdgActions.add(type), `new:${position.x},${position.y}`);
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
@@ -302,14 +272,7 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     ready: !loading && !failed && viewport !== null,
   });
 
-  if (failed) {
-    return (
-      <div className="fdg-canvas canvas-host canvas-host-message">
-        <p>This functional decomposition graph could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="fdg-canvas canvas-host" role="application" aria-label="Functional decomposition graph">
       <DiagramCanvas
@@ -322,8 +285,6 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         ariaLabel="Functional decomposition graph"
         className="fdg-surface"
       />
-      {loading ? <p className="fdg-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="fdg-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

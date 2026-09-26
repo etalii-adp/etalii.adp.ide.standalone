@@ -26,6 +26,17 @@
   background: var(--color-surface);
 }
 
+/*
+ * The library's frame around a module canvas (CanvasFrame): the box the refusal line and the
+ * status are positioned in. It is the same box the canvas's own .canvas-host fills, so both lines
+ * sit where they sat when each module drew its own.
+ */
+.canvas-frame {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
 .canvas-host-message {
   align-items: center;
   justify-content: center;
@@ -106,9 +117,11 @@
  * filed the result as a diagram that renders empty. Telling somebody where nobody looks is not
  * telling them.
  *
- * Safe to centre for every canvas that uses it: all seven render it as `{loading ? ... : null}`,
- * and useDiagramStream empties the model whenever loading becomes true - on the first open and
- * again before each reconnect - so the status never covers a drawn diagram.
+ * Safe to centre: only the library draws it now, in CanvasFrame, for every canvas alike
+ * (client-centralization Requirement 2.3), and only while the stream is opening, reconnecting or
+ * unavailable. useDiagramStream empties the model whenever loading becomes true - on the first
+ * open and again before each reconnect - and an unavailable diagram has no model, so the status
+ * never covers a drawn diagram.
  */
 .canvas-status {
   position: absolute;
@@ -123,7 +136,10 @@
   font-size: 15px;
 }
 
-/* The rejection stays in the corner: it answers a gesture, and the canvas behind it is drawn. */
+/*
+ * The rejection stays in the corner: it answers a gesture, and the canvas behind it is drawn. Only
+ * the library draws it (CanvasFrame), and a click dismisses it, so it says so with the cursor.
+ */
 .canvas-rejection {
   position: absolute;
   bottom: 32px;
@@ -134,6 +150,7 @@
   background: var(--color-surface, #ffffff);
   color: var(--color-text-muted, #5a6376);
   font-size: 12px;
+  cursor: pointer;
 }
 
 .canvas-rejection {

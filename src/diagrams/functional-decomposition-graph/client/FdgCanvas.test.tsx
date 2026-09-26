@@ -26,6 +26,8 @@ vi.mock("@client/diagrams/useDiagramStream", () => ({
     loading: false,
     failed: false,
     client: { moveElement: () => Promise.resolve({ error: "" }) },
+    // The stream's one move (client-centralization task 8), which FdgCanvas now takes from here.
+    moveElementTo: () => Promise.resolve(""),
   }),
 }));
 

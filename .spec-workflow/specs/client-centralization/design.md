@@ -46,12 +46,14 @@ Every `var(--x)` in client CSS must resolve to a token the theme defines, or one
 
 ### B. One surface for refusals and status (Requirement 2)
 
-`DiagramCanvas` gains **no new module-facing prop**. It already receives everything needed: the stream's `loading` and `failed` reach it through the module, and refusals arrive from the library's own `executeAction`. So the library renders:
+**The library wraps each module's canvas where `DiagramPanel` mounts it** - option 1, chosen by the user in the Scrum master's chat on 2026-09-25. That wrapper draws the one refusal line and the loading, reconnecting and unavailable status, and provides a **per-canvas context**:
 
-- **a refusal line**, fed by every refusal path in one place: a shared-menu action, a declared action, a shortcut, a move, and a failed save (the last is the client half of Architect 1's backend requirement that a save returns a result the caller inspects);
-- **the loading, reconnecting and unavailable states**, replacing three styles across sixteen canvases.
+- **`executeAction`, `executeShortcut`, `setProperty` and `moveElementTo` report into it**: an attempt clears the line, a refusal shows it, and a click dismisses it - the clearing rule task 3 records;
+- **`useDiagramStream` reports its state** into the same context, so loading, reconnecting and unavailable are drawn by the wrapper, replacing three styles across sixteen canvases;
+- **a failed save arrives as the refusal of the call that wrote**, which is the client half of Architect 1's backend requirement that a save returns a result the caller inspects;
+- **modules delete their rejection and status blocks and their early returns, and add no prop and no call - with one exception, ruled by the user: `useCanvasRefusal()`**, used only where a refusal starts **inside** a module rather than coming back from the backend. It returns `{ attempted(), refuse(message) }`, with its type inlined rather than exported, so it is a name to call and not a type to build on. It has two users: `causal-loop`, for a drop it refuses on the client before anything is sent, and `mindmap`, for its own re-parenting move, whose refusal the canvas used to discard.
 
-The four canvases with no `onActionRefused` handler — `ansible-structure`, `azure-pipeline`, `c4`, `mindmap` — need no handler afterwards, because the library consumes its own event. `action-refused` **stays** in the contract for a module that wants to add something of its own, but nothing is required to listen.
+The canvas with no `onActionRefused` handler — `ansible-structure` — needs none afterwards, and the three that task 6 gave one (`azure-pipeline`, `c4`, `mindmap`) need theirs no longer, because every refusal reaches the wrapper's line. `action-refused` **stays** in the contract for a module that wants to add something of its own, but nothing is required to listen.
 
 **Guard:** mounted. Every registered canvas is rendered, a refusal is pushed, and the check fails if the message does not appear, if more than one surface shows it, or if a module declares a rejection or status element of its own.
 

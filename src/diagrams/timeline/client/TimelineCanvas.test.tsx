@@ -238,11 +238,12 @@ describe("the timeline canvas, on the library", () => {
     expect(container.textContent).toContain("gates");
   });
 
-  it("shows the unavailable state when the backend answered permanently", () => {
+  it("leaves the unavailable state to the library's frame rather than saying it itself", () => {
+    // client-centralization Requirement 2.3 - one appearance, drawn by the library.
     currentFailed = true;
     const { container } = renderCanvas();
 
-    expect(container.textContent).toContain("could not be opened");
+    expect(container.textContent).not.toContain("could not be opened");
   });
 
   it("treats a motionless press as a selection, never an edit", () => {

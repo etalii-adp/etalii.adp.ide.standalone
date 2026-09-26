@@ -17,12 +17,6 @@
   background: var(--color-surface);
 }
 
-.wardley-canvas-message {
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
-}
-
 /* The library's host div fills the wrapper; its svg carries the map cursor. */
 .wardley-surface {
   flex: 1;
@@ -162,16 +156,6 @@
   fill: var(--color-text);
   font-family: var(--font-sans);
   font-size: 15px;
-}
-
-/* A refusal - read-only, or an element that has gone - shown rather than swallowed. */
-.wardley-rejection {
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  background: var(--color-surface-raised);
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: 0.8125rem;
 }
 
 /*

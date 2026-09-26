@@ -10,13 +10,13 @@ One worktree for the whole specification (`.claude/worktrees/bcen`, per CLAUDE.m
 
 ## What is already satisfied, verified against `develop` rather than recalled
 
-**Five criteria are met by work that landed ahead of this specification, so no task below claims them.** Each was checked with `git merge-base --is-ancestor` or by reading the file on `develop` on 2026-09-23, not taken from the design's own table:
+**Five criteria were met, in whole or in part, by work that landed ahead of this specification.** Three landed whole and no task below claims them. **R2.4 and R2.5 held only at c4 and causal-loop**, so task 6 claims them for the other stores (the user's chat ruling, 2026-09-26). Each was checked with `git merge-base --is-ancestor` or by reading the file on `develop` on 2026-09-23, not taken from the design's own table:
 
 | Criterion | Landed as | Verified how |
 | --- | --- | --- |
 | R2.3 a store ignores a reload of its own save | `350b8f9e` | ancestor of `develop` |
-| R2.4 a failed reload keeps the last good document | `350b8f9e` | ancestor of `develop` |
-| R2.5 absence is confirmed before installing an empty document | `350b8f9e`, via `IDiagramDocumentReloader.BodyDeleted` | ancestor of `develop` |
+| R2.4 a failed reload keeps the last good document | c4 and causal-loop only, `350b8f9e`; the rest by task 6 | ancestor of `develop` |
+| R2.5 absence is confirmed before installing an empty document | c4 and causal-loop only, `350b8f9e`, via `IDiagramDocumentReloader.BodyDeleted`; the rest by task 6 | ancestor of `develop` |
 | R4.3 a removal is always sent | `350b8f9e`, merged at `88c26d44` | ancestor of `develop` |
 | R11.2 an empty relation end is refused | `d2fb4e7e` | ancestor of `develop` |
 
@@ -42,9 +42,9 @@ One worktree for the whole specification (`.claude/worktrees/bcen`, per CLAUDE.m
 
 ## The coverage diff, run before this document was raised
 
-**43 acceptance criteria in the requirements; 38 claimed by the tasks below; 5 unclaimed and none claimed that is not a criterion.**
+**43 acceptance criteria in the requirements; 40 claimed by the tasks below; 3 unclaimed and none claimed that is not a criterion.**
 
-The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five in the *already satisfied* table above, each verified against `develop` rather than taken from the design. **That is the third kind of unclaimed criterion**, beside *no task claimed it* (a real gap) and *no task can claim it* (satisfied by the document's own shape): **satisfied before the work began.** Saying which kind it is finishes the job, because all three look identical in the diff's output, and a reader meeting an unexplained silence will either add pointless claims or write the diff off as noisy.
+The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *already satisfied* table above that landed whole, each verified against `develop` rather than taken from the design. **R2.4 and R2.5 were counted here as five until (the user's chat ruling, 2026-09-26)**: they landed at c4 and causal-loop only, so the count balanced while the evidence named covered two stores of nine, and task 6 now claims them. **That is the third kind of unclaimed criterion**, beside *no task claimed it* (a real gap) and *no task can claim it* (satisfied by the document's own shape): **satisfied before the work began.** Saying which kind it is finishes the job, because all three look identical in the diff's output, and a reader meeting an unexplained silence will either add pointless claims or write the diff off as noisy.
 
 **The diff is run again at task 25**, traced to files and strings rather than to a task's promise, because *did anybody claim this?* and *does the code show this?* are different questions and the second has found gaps the first did not.
 
@@ -88,7 +88,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
   - Files: the nine writable module stores - azure-pipeline, c4, causal-loop, databricks, dependency-graph, mindmap, rdf, timeline and wardley-map - and their tests. Nine, not the ten this line first said, because sparql was counted here and again as task 7's read-only store (the user's chat ruling, 2026-09-25).
   - One store at a time, each landing independently. **Each converted module's existing session tests are the proof**, plus the c4 removal guard that `350b8f9e` landed.
   - **R2.4 and R2.5 land in the same change for each store, never R2.4 across the stores first.** `IDiagramDocumentReloader.BodyDeleted` defaults to a reload, which is right only while a failed read installs an empty document. A store given keep-last-good without forwarding `BodyDeleted` to the lifecycle keeps a deleted diagram forever (the user's chat ruling, 2026-09-25).
-  - _Requirements: 2.1_
+  - _Requirements: 2.1, 2.4, 2.5_
 - [ ] 7. The read-only store (sparql) uses the same lifecycle without a save path
   - Files: sparql's store and tests
   - _Requirements: 2.7_
@@ -96,7 +96,7 @@ The five unclaimed are **R2.3, R2.4, R2.5, R4.3 and R11.2** — exactly the five
   - Files: the shared lifecycle's tests
   - The guard drives the real reload path rather than calling the helper directly, because a wiring regression is what a later reader would cause. **Seen to fail against a planted install-on-unreadable.**
   - _Requirements: 2.6_
-- [ ] 9. The three watchers that cannot hear everything the writer does
+- [x] 9. The three watchers that cannot hear everything the writer does
   - Files: `SolutionWatcher.cs`, `MarkdownEditorSession.cs`, `PlainEditorSession.cs`, and their tests
   - The three components learn of a deletion and of a lost-events window, and **on `Error` they read again rather than only logging**. The subscriptions this bullet first asked for landed at `a2318531`, but all three handlers only logged, so a lost-events window was still unlearned while the wiring guard called them compliant. **A publish arrives as `Renamed`**, which all three already handle (the user's chat ruling, 2026-09-25).
   - **The obligation is the criterion and the event set is today's mechanism**: a test asserts the component learns of a deletion and of a lost-events window, not that it subscribes to two named events, so a writer that publishes by other means fails rather than passes by habit.

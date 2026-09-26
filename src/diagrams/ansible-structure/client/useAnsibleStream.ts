@@ -40,26 +40,9 @@ export interface AnsibleStream {
  */
 export function useAnsibleStream(projectId: Uint8Array, path: readonly string[]): AnsibleStream {
   const { watchId } = useContextConnection();
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
+  const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
 
   const reportView = viewReportOf(client, projectId, watchId, path);
-
-  const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
-    try {
-      const response = await client.moveElement({
-        projectId: { value: projectId },
-        watchId: { value: watchId },
-        path: { segments: [...path] },
-        elementId,
-        // The position is what makes this an arrangement rather than a re-parenting; the
-        // backend routes on its presence.
-        position: { x, y },
-      });
-      return response.error;
-    } catch {
-      return "The position could not be saved.";
-    }
-  };
 
   return { model, loading, failed, reportView, moveElementTo };
 }
