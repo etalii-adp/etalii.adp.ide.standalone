@@ -66,11 +66,12 @@ esac
 # load first, and do not treat this paragraph as a new pin: no quiet-machine figure has been taken
 # since.
 #
-# 195 and 120 are NOT measured: msys-gated cases sit in both the cheap and
-# the skipped regions, so the case difference cannot simply be carried across, and those two
-# assume it can. A wrong pin fails LOUDLY with the true count in the same line, so the first run on
-# another platform corrects it rather than passing quietly.
-if [ "$MSYS" = 1 ]; then EXPECTED=205; EXPECTED_QUICK=130; else EXPECTED=195; EXPECTED_QUICK=120; fi
+# On Linux, 126 in quick was MEASURED on 2026-09-26 (Ubuntu 24.04): develop's 116 plus the ten
+# who-owns cases, the same ten msys adds. 195 in full is NOT measured: msys-gated cases sit in both
+# the cheap and the skipped regions, so the case difference cannot simply be carried across, and
+# that pin assumes it can. A wrong pin fails LOUDLY with the true count in the same line, so the
+# first run on another platform corrects it rather than passing quietly.
+if [ "$MSYS" = 1 ]; then EXPECTED=205; EXPECTED_QUICK=130; else EXPECTED=195; EXPECTED_QUICK=126; fi
 [ "$QUICK" = 1 ] && EXPECTED=$EXPECTED_QUICK
 
 W=$(mktemp -d) || { echo "RESULT=selftest-broken (no temp dir)"; exit 2; }
