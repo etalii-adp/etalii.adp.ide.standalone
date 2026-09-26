@@ -28,7 +28,7 @@ public interface IRdfDocumentStore
     /// <remarks>
     /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
     /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
-    /// in the cache at save time - and <see cref="Reload"/> evicts. A reload landing between a
+    /// in the cache at save time - and a <see cref="Reload"/> replaced that entry. A reload landing between a
     /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
@@ -41,9 +41,16 @@ public interface IRdfDocumentStore
     /// <summary>
     /// Re-reads a document something outside changed, and tells the sessions on it. A no-op
     /// while the store's own save of that path is in flight: its own write on disk is not an
-    /// external change, and must not bounce back as one.
+    /// external change, and must not bounce back as one. A reload that cannot read keeps the last
+    /// good document and tells nobody (R2.4).
     /// </summary>
     void Reload(string path);
+
+    /// <summary>
+    /// The watcher saw the body deleted: the document becomes what a first open of a missing body
+    /// shows, and the sessions are told (R2.5). The one call that clears a document a reload kept.
+    /// </summary>
+    void BodyDeleted(string path);
 
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<RdfDocumentChangedEventArgs>? Changed;
