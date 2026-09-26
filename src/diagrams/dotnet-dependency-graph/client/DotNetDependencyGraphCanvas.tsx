@@ -165,14 +165,13 @@ const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefini
 export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useDotNetDependencyGraphStream(projectId, path);
 
-  // Registered here as well as by the library canvas, because the loading and empty states
-  // return before the canvas mounts, and the panel must say "offers nothing" rather than
+  // Registered here as well as by the library canvas, because the empty state returns before
+  // the canvas mounts, and the panel must say "offers nothing" rather than
   // "no diagram is open".
   const toolboxItems = useToolboxItems(projectId, path);
   useRegisterDiagramToolbox(toolboxItems);
   const { revealPath } = useContextConnection();
 
-  const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   // Ambient packages are hidden by DEFAULT - the scale answer is on unless the reader turns it
@@ -253,14 +252,10 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
   const events: DiagramEventHandlers = {
     // Selection is the library's (centralized-selection). A pushed reference used to be drawn as
     // if it named an element, so it highlighted nothing; the library looks it up in the model.
-    // A menu action the backend refuses comes back here, for the rejection line.
-    onActionRefused: ({ message }) => setRejection(message),
+    // A refused menu action or move is shown on the one line the library draws around every
+    // canvas, by the call that got it (client-centralization Requirement 2).
     onElementMoved: ({ elementId, position }) => {
-      void moveElementTo(elementId, position.x, position.y).then((error) => {
-        if (error) {
-          setRejection(error);
-        }
-      });
+      void moveElementTo(elementId, position.x, position.y);
     },
     // The two gestures the rendered element used to answer itself. Same behaviour, reached by
     // action id: the module still decides what "activate" means, and no longer needs a shape
@@ -295,21 +290,11 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
     ready: !loading && !failed && viewport !== null,
   });
 
-  if (failed) {
-    return (
-      <div className="dotnet-dependency-canvas-message">
-        This diagram could not be opened. Its registration names a solution ADP cannot read.
-      </div>
-    );
-  }
-
-  if (loading) {
-    return <div className="dotnet-dependency-canvas-message">Reading the solution…</div>;
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   // Emptiness is judged on the whole graph, never on what the filter left: a solution whose
-  // every node was ambient would otherwise report itself as having no projects at all.
-  if (everyNode.length === 0) {
+  // every node was ambient would otherwise report itself as having no projects at all - and only
+  // once the solution has been read.
+  if (!loading && !failed && everyNode.length === 0) {
     return (
       <div className="dotnet-dependency-canvas-message">
         This solution has no projects ADP could resolve. Any reason is reported in the problems panel.
@@ -319,11 +304,6 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: Diagra
 
   return (
     <div className="dotnet-dependency-canvas-frame" role="application" aria-label=".NET dependency graph">
-      {rejection ? (
-        <div className="dotnet-dependency-canvas-rejection" role="status" onClick={() => setRejection(null)}>
-          {rejection}
-        </div>
-      ) : null}
       {/*
         Filtering that cannot be seen is just a wrong diagram, so the notice is part of the
         feature rather than a nicety: it says how many were hidden, names them, says on what

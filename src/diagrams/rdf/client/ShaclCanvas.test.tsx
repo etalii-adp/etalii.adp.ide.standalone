@@ -223,7 +223,7 @@ describe("ShaclCanvas", () => {
     expect(container.textContent).toContain("anonymous shape");
   });
 
-  it("sends a drag as a layout edit, and shows the backend's refusal rather than deciding it", async () => {
+  it("sends a drag as a layout edit, and leaves the backend's refusal to the library's line", async () => {
     moveError = "This constraint is written as a blank node…";
     const { container } = renderCanvas();
     const card = container.querySelector(`[data-element-id="${PERSON}"]`)!;
@@ -235,8 +235,11 @@ describe("ShaclCanvas", () => {
     expect(moves).toHaveLength(1);
     expect(moves[0].elementId).toBe(PERSON);
 
-    // The canvas reports the refusal; it does not decide it - the backend is the authority.
-    expect(await screenText(container)).toContain("written as a blank node");
+    // The canvas does not decide the refusal - the backend is the authority - and it does not draw
+    // it either: the move reports it to the one line the library draws around every canvas
+    // (client-centralization Requirement 2; useDiagramStream.move.test.ts).
+    expect(await screenText(container)).not.toContain("written as a blank node");
+    expect(container.querySelector(".canvas-rejection")).toBeNull();
   });
 
   it("shows the truncation banner with the real totals", () => {
@@ -277,14 +280,15 @@ describe("ShaclCanvas", () => {
     expect((executed.at(-1)?.source as { source: { value: { value: string } } }).source.value.value).toContain("new:");
   });
 
-  it("says so when the diagram cannot be opened", () => {
+  it("leaves the unavailable state to the library's frame rather than saying it itself", () => {
+    // client-centralization Requirement 2.3 - one appearance, drawn by the library.
     currentFailed = true;
 
-    expect(renderCanvas().container.textContent).toContain("could not be opened");
+    expect(renderCanvas().container.textContent).not.toContain("could not be opened");
   });
 });
 
-/** The rejection is rendered after the move promise settles. */
+/** The screen after the move promise settles, when a refusal would have been drawn. */
 async function screenText(container: HTMLElement): Promise<string> {
   await Promise.resolve();
   await Promise.resolve();

@@ -185,7 +185,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
   const { model, loading, failed, moveElementTo, reportView } = useDependencyGraphStream(projectId, path);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
@@ -212,13 +211,9 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     return { elements, connections };
   }, [model]);
 
+  // A refusal needs nothing here: the call reports it to the library's refusal line.
   const runAction = (actionId: string, sourceId?: string) => {
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
   };
 
   /**
@@ -229,23 +224,15 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
   const dependencyGesture = (sourceId: string, landing: string, sourceAnchor?: string): string =>
     sourceAnchor === "left" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
 
+  // Selection is the library's (centralized-selection), and so are sending a declared action and
+  // showing a refusal: every call below reports its own to the library's one refusal line.
   const events: DiagramEventHandlers = {
-    // Selection is the library's (centralized-selection), and so is sending a declared action:
-    // one the backend refused, from the menu or from a key, comes back here for the same
-    // rejection line every other refusal uses.
-    onActionRefused: ({ message }) => setRejection(message),
     onElementMoved: ({ elementId, position }) => {
-      setRejection("");
       // The x is free; the y lands on the nearest row, matching DependencyGraphRows. The
       // conversion subtracts the centre offset first, so the snapped row is the authored one.
       const x = position.x - NODE_WIDTH / 2;
       const row = nearestRow(position.y - NODE_HEIGHT / 2);
-      void (async () => {
-        const error = await moveElementTo(elementId, x, row * ROW_HEIGHT);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, x, row * ROW_HEIGHT);
     },
     // The whole gesture in one call - source and landing together in a rel: id. Deliberately
     // stateless: the two-call protocol this replaces kept an armed source in the backend
@@ -276,14 +263,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     ready: !loading && !failed && viewport !== null,
   });
 
-  if (failed) {
-    return (
-      <div className="dependency-graph-canvas canvas-host dependency-graph-canvas-message canvas-host-message">
-        <p>This dependency graph could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div
       className="dependency-graph-canvas canvas-host"
@@ -301,8 +281,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
         className="dependency-graph-surface"
         scrollbarsClassName="dependency-graph-scrollbars"
       />
-      {loading ? <p className="dependency-graph-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="dependency-graph-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

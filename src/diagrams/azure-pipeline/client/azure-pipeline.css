@@ -22,12 +22,6 @@
   cursor: grabbing;
 }
 
-.pipeline-canvas-loading,
-.pipeline-canvas-unavailable {
-  padding: 1rem;
-  color: var(--color-text-muted, #64748b);
-}
-
 /* A stage: the container everything else sits inside. */
 .pipeline-stage-box {
   fill: var(--color-bg, #f8fafc);

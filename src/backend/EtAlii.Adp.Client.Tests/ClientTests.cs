@@ -109,10 +109,15 @@ public class ClientTests
 
         // Assert.
         Assert.True(reported is not null, $"{file}: vitest reported no result for \"{fullName}\".");
-        Assert.True(
-            reported.Status != "failed",
-            $"{file} > {fullName}:{Environment.NewLine}{Indent(string.Join(Environment.NewLine, reported.FailureMessages))}");
+        Assert.True(reported.Status != "failed", Describe(reported));
     }
+
+    /// <summary>
+    /// What a failed client test prints in the .NET output. Its own method so that
+    /// <see cref="ClientTestRunFailureMessageTests"/> can assert on exactly this text.
+    /// </summary>
+    internal static string Describe(ClientTest test) =>
+        $"{test.File} > {test.FullName}:{Environment.NewLine}{Indent(string.Join(Environment.NewLine, test.FailureMessages))}";
 
     [Fact]
     public void TheDiscoveryReadsTheWholeTree()

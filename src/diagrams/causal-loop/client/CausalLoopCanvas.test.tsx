@@ -14,6 +14,7 @@ import { applyDelta, emptyModel, type CausalLoopModel } from "./causalLoopModel"
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { ContextSelectionAction, type ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { CanvasFrame } from "@client/canvas/library/surface/CanvasFrame";
 
 /**
  * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
@@ -531,13 +532,37 @@ describe("CausalLoopCanvas", () => {
     expect(reportView).not.toHaveBeenCalled();
   });
 
-  it("says so when the diagram cannot be opened, and when it states nothing", () => {
+  it("leaves unavailable to the library's frame, and says only when the diagram states nothing", () => {
+    // Opening and unavailable are the library's to say (client-centralization Requirement 2.3); the
+    // empty explanation is this module's own, and must not claim an unread diagram is empty.
     currentFailed = true;
-    expect(renderCanvas().container.textContent).toContain("could not be opened");
+    currentModel = emptyModel;
+    const unavailable = renderCanvas().container.textContent;
+    expect(unavailable).not.toContain("could not be opened");
+    expect(unavailable).not.toContain("states no variables");
 
     currentFailed = false;
-    currentModel = emptyModel;
     expect(renderCanvas().container.textContent).toContain("states no variables");
+  });
+
+  it("refuses a link dropped on no variable on the library's one refusal line", () => {
+    // The one refusal this canvas decides itself, before anything is sent - so it has no call to
+    // report it and says it through useCanvasRefusal, onto the line the frame draws.
+    const { container } = render(
+      <CanvasFrame>
+        <CausalLoopCanvas projectId={new Uint8Array(16)} entryId={new Uint8Array(16)} path={["feedback.adp"]} />
+      </CanvasFrame>,
+    );
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const data = new Map<string, string>([["application/x-adp-toolbox-item", "causal-loop.add-link"]]);
+    const dataTransfer = { getData: (type: string) => data.get(type) ?? "", dropEffect: "", types: [...data.keys()] };
+
+    fireEvent.dragOver(surface, { dataTransfer });
+    fireEvent.drop(surface, { dataTransfer, clientX: 100000, clientY: 100000 });
+
+    const line = container.querySelector('[data-canvas-surface="refusal"]');
+    expect(line?.textContent).toBe("Drop a link or a loop onto a variable.");
+    expect(container.querySelectorAll(".canvas-rejection")).toHaveLength(1);
   });
 });
 

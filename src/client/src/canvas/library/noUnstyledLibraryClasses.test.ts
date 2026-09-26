@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ts from "typescript";
 
@@ -191,19 +192,47 @@ describe("no unstyled library classes", () => {
     return names;
   }
 
-  /** Every source the library ships, minus its tests. */
+  /**
+   * Folders no source lives in: build output and installed packages. Under `src/diagrams` they
+   * are nine in ten of all entries, and entering them is what made the module walk time out.
+   */
+  const notSources = new Set(["bin", "obj", "node_modules"]);
+
+  /**
+   * Every source under `dir`, minus its tests. The directory entry says what it is, so nothing is
+   * statted, and a folder in `notSources` is never entered.
+   */
   function sources(dir: string, extensions: string[]): string[] {
     const paths: string[] = [];
-    for (const entry of readdirSync(dir)) {
-      const path = join(dir, entry);
-      if (statSync(path).isDirectory()) {
-        paths.push(...sources(path, extensions));
-      } else if (extensions.some((extension) => entry.endsWith(extension)) && !entry.includes(".test.")) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!notSources.has(entry.name)) paths.push(...sources(path, extensions));
+      } else if (extensions.some((extension) => entry.name.endsWith(extension)) && !entry.name.includes(".test.")) {
         paths.push(path);
       }
     }
     return paths;
   }
+
+  let moduleClassesOnce: Set<string> | undefined;
+
+  /**
+   * What every diagram module emits, walked and parsed once for this file rather than once per
+   * test that asks - two do. Read-only: callers spread it rather than change it.
+   */
+  function moduleClasses(): Set<string> {
+    return (moduleClassesOnce ??= emittedClasses(sources(modulesRoot, [".ts", ".tsx"])));
+  }
+
+  /**
+   * The budget for a test that walks the module tree, set rather than inherited from vitest's 5 s
+   * default so that the number is chosen and its reason is here. Walk and parse together measured
+   * 87-127 ms on a quiet machine after the fix, and a gate has shown an elevenfold slowdown on
+   * this file, which puts them near 1.4 s; three seconds is twice that. A test crossing it means
+   * the walk has grown again - read `notSources` first - not that the machine is busy.
+   */
+  const moduleTreeBudgetMs = 3_000;
 
   function read(dir: string, extension: string): string {
     let text = "";
@@ -279,7 +308,7 @@ describe("no unstyled library classes", () => {
    */
   it("keeps the library- prefix to the library", () => {
     // Act.
-    const trespassing = [...emittedClasses(sources(modulesRoot, [".ts", ".tsx"]))].sort();
+    const trespassing = [...moduleClasses()].sort();
 
     // Assert.
     expect(
@@ -289,6 +318,39 @@ describe("no unstyled library classes", () => {
         + `would let a module grow the library's contract surface from outside it. Name them for `
         + `the module instead: ${trespassing.join(", ")}`,
     ).toEqual([]);
+  }, moduleTreeBudgetMs);
+
+  /**
+   * The module walk timed out in a gate (5522 ms against vitest's 5 s default, 2026-09-26) while
+   * the same tree measured 484 ms quiet. The cause was the walk, not the parse: it entered every
+   * backend's `bin/` and `obj/`, statting **9,294** entries under `src/diagrams` to find **74**
+   * sources, and build output is largest and busiest exactly while a gate runs. Skipping build
+   * output and installed packages visits 2,542 and finds the same 74.
+   *
+   * **Checked on a tree built here rather than on the repository**, because a timing budget cannot
+   * tell the two walks apart on a quiet machine, and a fresh checkout has no `bin/` or `obj/` at
+   * all - a guard reading the real tree would pass on the old walk wherever nothing was built.
+   */
+  it("never walks into build output or installed packages", () => {
+    // Arrange: one real source, and one source inside each folder the walk must not enter.
+    const root = mkdtempSync(join(tmpdir(), "library-walk-"));
+    try {
+      for (const folder of ["client", "backend/bin/Debug", "backend/obj", "node_modules/some-package"]) {
+        mkdirSync(join(root, folder), { recursive: true });
+        writeFileSync(join(root, folder, "source.ts"), "export {};\n");
+      }
+      // The premise: started INSIDE a skipped folder the walk does find its file, so an empty
+      // answer below is the folder being skipped, not the walk being blind.
+      expect(sources(join(root, "backend", "bin"), [".ts"]), "the walk cannot read the fixture").toHaveLength(1);
+
+      // Act.
+      const found = sources(root, [".ts"]);
+
+      // Assert.
+      expect(found, "the walk entered build output or installed packages").toEqual([join(root, "client", "source.ts")]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   /**
@@ -306,11 +368,11 @@ describe("no unstyled library classes", () => {
     expect(moduleText, "no module comment mentions library-internal any more").toContain("library-internal");
 
     // Act.
-    const emitted = emittedClasses(sources(modulesRoot, [".ts", ".tsx"]));
+    const emitted = moduleClasses();
 
     // Assert.
     expect([...emitted], "a comment was read as an emitted class").not.toContain("library-internal");
-  });
+  }, moduleTreeBudgetMs);
 
   /**
    * The specific rule that stops the wedge. A curve with a fill paints the region between itself

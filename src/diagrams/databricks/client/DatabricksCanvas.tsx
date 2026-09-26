@@ -275,7 +275,6 @@ export function DatabricksCanvas({
   const simulation = useSimulatedRun(model);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
-  const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
@@ -343,12 +342,8 @@ export function DatabricksCanvas({
       return;
     }
 
-    void (async () => {
-      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    // A refusal needs nothing here: the call reports it to the library's refusal line.
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
   };
 
   const events: DiagramEventHandlers = {
@@ -361,22 +356,15 @@ export function DatabricksCanvas({
       }
     },
     // Selection is the library's (centralized-selection), edges included: this family's edges
-    // were pending, not exempt, and the backend has always resolved them. A menu action the
-    // backend refuses comes back here, for the rejection line.
-    onActionRefused: ({ message }) => setRejection(message),
+    // were pending, not exempt, and the backend has always resolved them. So is the refusal line:
+    // every call here, and every menu action the library runs, reports its own refusal to it.
     onElementMoved: ({ elementId, position }) => {
-      setRejection("");
       const isFrame = model.frames.has(elementId);
       const width = isFrame ? FRAME_WIDTH : NODE_WIDTH;
       const height = isFrame ? FRAME_HEIGHT : NODE_HEIGHT;
       // The authored position, raw: the layout block stores what the author placed, and
       // rounding it here would quietly turn the canvas into a grid.
-      void (async () => {
-        const error = await moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
-        if (error) {
-          setRejection(error);
-        }
-      })();
+      void moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
     },
     // The whole gesture in one stateless rel: call - the dragged task becomes the dependency
     // the landing task waits for. Released on nothing, the library raises nothing: this
@@ -401,14 +389,7 @@ export function DatabricksCanvas({
   });
 
 
-  if (failed) {
-    return (
-      <div className="databricks-canvas canvas-host databricks-canvas-message canvas-host-message">
-        <p>This diagram could not be opened.</p>
-      </div>
-    );
-  }
-
+  // Opening, reconnecting and unavailable are the library's to say, in the frame around this canvas.
   return (
     <div className="databricks-canvas canvas-host" role="application" aria-label={ariaLabel}>
       <DiagramCanvas
@@ -427,8 +408,6 @@ export function DatabricksCanvas({
           {simulation.marker} · dismiss
         </button>
       ) : null}
-      {loading ? <p className="databricks-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="databricks-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }

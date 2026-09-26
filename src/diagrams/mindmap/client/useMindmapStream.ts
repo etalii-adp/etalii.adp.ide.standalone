@@ -2,6 +2,7 @@ import { useContextConnection } from "@client/shell/context/ContextConnectionPro
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
 import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
+import { useCanvasRefusal } from "@client/canvas/library/surface/useCanvasRefusal";
 
 /** Re-exported so the module's own files keep one name for it; the shape is the shared one. */
 export type { Viewport };
@@ -38,8 +39,14 @@ export function useMindmapStream(projectId: Uint8Array, path: readonly string[])
   const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
 
   const reportView = viewReportOf(client, projectId, watchId, path);
+  // The re-parenting move is this module's own call, so it tells the canvas's one refusal line
+  // itself - cleared when sent, filled when refused - exactly as the stream's arrangement move does
+  // (client-centralization Requirement 2). Its refusal used to be discarded by the canvas.
+  const refusal = useCanvasRefusal();
 
   const moveElement = async (elementId: string, newParentId: string): Promise<string> => {
+    refusal.attempted();
+    let error: string;
     try {
       const response = await client.moveElement({
         projectId: { value: projectId },
@@ -49,10 +56,14 @@ export function useMindmapStream(projectId: Uint8Array, path: readonly string[])
         newParentId,
         index: -1, // append as the last child - where a drop lands
       });
-      return response.error;
-    } catch (error) {
-      return error instanceof Error ? error.message : "The move could not be sent.";
+      error = response.error;
+    } catch (caught) {
+      error = caught instanceof Error ? caught.message : "The move could not be sent.";
     }
+    if (error !== "") {
+      refusal.refuse(error);
+    }
+    return error;
   };
 
   return { model, loading, failed, reportView, moveElement };
