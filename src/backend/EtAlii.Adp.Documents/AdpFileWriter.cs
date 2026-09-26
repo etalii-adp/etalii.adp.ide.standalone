@@ -284,6 +284,11 @@ public static class AdpFileWriter
         var folder = directory is { Length: > 0 } ? directory : ".";
         var temporary = IoPath.Combine(folder, $"{TempPrefix}{Guid.NewGuid():N}{TempExtension}");
 
+        // Which file the destination was just before the replace - so a failure can say whether it
+        // is still that file, gone, or recreated. Not default: that would claim "present, file 0".
+        var before = new DestinationIdentity(
+            DestinationIdentity.State.Unknown, 0, 0, "the publish failed before the replace was reached");
+
         try
         {
             if (bytes is not null)
@@ -317,6 +322,12 @@ public static class AdpFileWriter
             // flakiness rather than as a defect. A reader sharing only Read still denies the
             // replace and must: that reader has asked for the file not to change under it.
             // AdpFileWriter.SharingContract.Tests pins both directions.
+            //
+            // READ ON EVERY SAVE, because "before" must be taken before the outcome is known: one
+            // attributes-only open that can neither block nor be blocked, and one metadata call -
+            // microseconds, not nothing. See DestinationIdentity for why it is the file index and
+            // never the creation time.
+            before = DestinationIdentity.Of(path);
             if (File.Exists(path))
             {
                 replace(temporary, path);
@@ -355,17 +366,24 @@ public static class AdpFileWriter
             // flight when this publish failed. The record's wording and field order are unchanged,
             // so records written before and after this line stay comparable - but a pre-fix
             // "only our own" is the weaker claim, and the evidence README says which records are.
+            //
+            // THE IDENTITY IS READ WITH THE FOLDER, before the holder query, for the same reason:
+            // "recreated" means recreated by the time this publish failed, not a second later. It is
+            // the LAST field, so every field before it keeps its position and older records stay
+            // comparable; a record without it predates this line.
             var destination = DestinationState.Describe(path, temporary);
+            var identity = DestinationIdentity.Describe(before, path);
             var holders = FileHolders.Describe(path);
             Logger.Warning(
-                "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}, destination: {Destination}",
+                "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}, destination: {Destination}, identity: {Identity}",
                 path,
                 exception.GetType().Name,
                 $"0x{exception.HResult:X8}",
                 exception.Message,
                 Environment.ProcessId,
                 holders,
-                destination);
+                destination,
+                identity);
             DeleteQuietly(temporary);
             throw;
         }

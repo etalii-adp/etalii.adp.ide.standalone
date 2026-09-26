@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DiagramModelElement } from "../api/diagramModel";
 import type { BindingSource } from "./binding";
-import type { LabelDeclaration } from "./diagramDefinition";
+import type { BuiltInShape, LabelDeclaration } from "./diagramDefinition";
 import { estimatedTextWidth, layoutLabels } from "./labels";
 import { textRegionOf } from "../shapes/outline";
 
@@ -442,5 +442,42 @@ describe("a wrapped label is laid out inside the shape, not inside its bounding 
     const out = layoutLabels([{ text: { path: "payload.note" } }], withText(label), box, 1, "trapezoid");
     expect(out).toHaveLength(1);
     expect(out[0]!.text).toBe(label);
+  });
+});
+
+describe("a truncated line inside an outlined shape is fitted to the shape, not to its bounding box", () => {
+  // Found by Developer 1 in the functional decomposition graph's browser pass: on a parallelogram
+  // 80 wide, a truncated name's ink came within about 1.3 units of the slanted edge - the box's
+  // corner sits past it - where a wrapped label in the same shape keeps the region's padding.
+  // Trimmed to the BOUNDING BOX, a single line cannot know the shape is narrower at its band.
+  const small = { x: 0, y: 0, width: 80, height: 40 };
+  const long = "Reconcile the ledger";
+  const lineHeight = Math.round(12 * 1.4);
+
+  const truncatedIn = (shape: BuiltInShape) =>
+    layoutLabels([{ text: { path: "payload.n" }, truncate: true }], source({ n: long }), small, 1, shape)[0]!;
+
+  it.each(["parallelogram", "trapezoid", "diamond", "hexagon", "superellipse", "diode"] as const)(
+    "keeps a %s's truncated line inside its text region",
+    (shape) => {
+      const region = textRegionOf(shape, small, lineHeight);
+      const line = truncatedIn(shape);
+      const half = estimatedTextWidth(line.text) / 2;
+
+      // The arrangement, asserted: a line that was never cut proves nothing about cutting.
+      expect(line.text.endsWith("…"), "the line was not long enough to be truncated").toBe(true);
+      expect(line.x - half, "the ink starts left of the text region").toBeGreaterThanOrEqual(region.x);
+      expect(line.x + half, "the ink runs past the text region").toBeLessThanOrEqual(region.x + region.width);
+    },
+  );
+
+  it("leaves a box's truncated line exactly as it was", () => {
+    // The must-not-catch half. A box has no outline, so its region is only the box less padding,
+    // and fitting it there would narrow every truncated label every module draws today. Pinned to
+    // the value the bounding-box trim has always given.
+    const line = truncatedIn("box");
+
+    expect(line.text).toBe("Reconcile…");
+    expect(line.x).toBe(40);
   });
 });
