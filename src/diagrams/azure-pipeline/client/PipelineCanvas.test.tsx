@@ -18,9 +18,8 @@ import {
 } from "./pipelineModel";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
 
 const select = vi.fn();
 const executeShortcut = vi.fn(async () => ({ accepted: true, error: "" }));
@@ -46,13 +45,15 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeShortcut }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: currentSelectionKey, actions: [] }),
     innermostKey: () => currentSelectionKey,
     useContextPrompt: () => ({ prompt: currentPrompt, onPropose: vi.fn(async () => ({ accepted: true, error: "" })), onSubmit: submitLabel, onCancel: vi.fn() }),
     useContextProblems: () => currentProblems,
   };
 });
+
+const connection = fakeContextConnection({ select, executeShortcut });
 
 let currentToolboxItems: ToolboxItem[] = [];
 let toolboxRequests: (readonly string[])[] = [];
@@ -142,24 +143,11 @@ function draw() {
   );
 }
 
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
- * usePointerGesture.test.tsx's idiom, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
 /** A click in the pointer vocabulary the surface listens to: press and release, unmoved. */
 function press(target: Element, init: MouseEventInit = {}) {
   fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
   fireEvent(target, pointer("pointerup", { ...init }));
 }
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 describe("PipelineCanvas", () => {
   beforeEach(() => {
@@ -729,7 +717,7 @@ describe("selection, as every canvas has it", () => {
         currentSelectionKey = id === null ? null : `element:${id}`;
         return draw();
       },
-      pushedIds: () => select.mock.calls.map(([push]) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null))),
+      pushedIds: () => idsPushed(select),
       element: "Build",
       connection: "s-edge",
     });

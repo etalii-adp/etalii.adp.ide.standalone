@@ -36,6 +36,12 @@
     <!-- AdpFileWriter.Save takes its replace through an internal overload, so a guard can stop a
          save inside its replace and prove concurrent saves take turns without relying on timing. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Documents.Tests" />
+    <!-- WritableDocumentLifecycle takes its read and retry through an internal constructor, so the
+         c4 and causal-loop stores, converted onto it by backend-centralization task 6, can hand it the
+         scripted read their existing refused-read and reload-race guards supply. Those two only: every
+         other store uses the public constructor and the lifecycle's own retry. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.C4" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.CausalLoop" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,6 +6,7 @@ import { act, cleanup, render } from "@testing-library/react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { CanvasFrame } from "./CanvasFrame";
 import { useCanvasRefusalReporter, type CanvasRefusalReporter } from "./canvasRefusals";
+import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * EVERY REGISTERED CANVAS SHOWS A REFUSAL AND ITS STATUS IN ONE PLACE, AND IT IS THE LIBRARY'S
@@ -64,19 +65,9 @@ vi.mock("@client/auth/AuthContext", () => {
 const watchId = new Uint8Array(16);
 vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
-  const accepted = () => Promise.resolve({ accepted: true, error: "" });
   return {
     ...actual,
-    useContextConnection: () => ({
-      watchId,
-      select: () => {},
-      executeAction: accepted,
-      executeShortcut: accepted,
-      setProperty: accepted,
-      describeProperties: () => Promise.resolve([]),
-      clearReveal: () => {},
-      revealPath: () => {},
-    }),
+    useContextConnection: () => connection,
     useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
     useContextSelection: () => ({ selection: null, levels: [], actions: [] }),
     useContextProblems: () => null,
@@ -84,6 +75,8 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     useContextNotices: () => ({ notices: [], dismiss: () => {} }),
   };
 });
+
+const connection = fakeContextConnection({ watchId });
 
 vi.mock("@client/shell/panels/useToolboxItems", () => ({ useToolboxItems: () => [] }));
 

@@ -6,17 +6,17 @@ import { ContextPromptSchema, ContextSelectionAction } from "@client/generated/c
 import type { ContextPrompt } from "@client/generated/context_pb";
 import { MindmapNodePayloadSchema } from "@client/generated/mindmap_pb";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
-import { selectedElementIdOf } from "@client/canvas/selection";
-import type { ContextSelection } from "@client/generated/context_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { InlineLabelPlacementProvider } from "@client/shell/panels/InlineLabelPlacementContext";
 import { ShellPromptHost } from "@client/shell/context/ShellPromptHost";
+import { fakeContextConnection, idsPushed, pointer } from "@client/canvas/library/testing/canvasHarness";
+import type { ContextConnectionValue } from "@client/shell/context/ContextConnectionProvider";
 
 const select = vi.fn();
-const executeShortcut = vi.fn<(shortcut: { key: string }, source: { source: { value: { value: string } } }) => Promise<{ accepted: boolean; error: string }>>(async () => ({ accepted: true, error: "" }));
+const executeShortcut = vi.fn<ContextConnectionValue["executeShortcut"]>(async () => ({ accepted: true, error: "" }));
 const moveElement = vi.fn(async () => "");
-const executeAction = vi.fn(async () => "");
+const executeAction = vi.fn<ContextConnectionValue["executeAction"]>(async () => ({ accepted: true, error: "" }));
 let currentReportView: ((viewport: unknown) => void) | null = null;
 let currentModel: MindmapModel = emptyModel;
 let currentFailed = false;
@@ -43,11 +43,13 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut }),
+    useContextConnection: () => connection,
     useContextSelection: () => ({ selection: currentSelection, actions: currentActions }),
     useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   };
 });
+
+const connection = fakeContextConnection({ select, executeAction, executeShortcut });
 
 // Imported after the mocks so the component picks them up.
 const { MindmapCanvas } = await import("./MindmapCanvas");
@@ -78,26 +80,11 @@ function pushedSelection(nodeId: string) {
   };
 }
 
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined. A MouseEvent typed
- * "pointerdown" bubbles the same way and carries the button - usePointerGesture.test.tsx's
- * idiom, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
 /** A click in the pointer vocabulary the canvas listens to: press and release, unmoved. */
 function press(target: Element, init: MouseEventInit = {}) {
   fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
   fireEvent(target, pointer("pointerup", { ...init }));
 }
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it so a release
-// outside the surface still ends the gesture.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 describe("MindmapCanvas", () => {
   beforeEach(() => {
@@ -219,7 +206,7 @@ describe("MindmapCanvas", () => {
 
     // Assert.
     expect(executeShortcut).toHaveBeenCalledTimes(1);
-    const [shortcut, source] = executeShortcut.mock.calls[0];
+    const [shortcut, source] = executeShortcut.mock.calls[0] as unknown as [{ key: string }, { source: { value: { value: string } } }];
     expect(shortcut.key).toBe("Insert");
     expect(source.source.value.value).toBe("root");
   });
@@ -885,7 +872,6 @@ describe("MindmapCanvas", () => {
 });
 
 describe("selection, as every canvas has it", () => {
-  const idOf = (push: unknown) => (push === null ? null : (selectedElementIdOf(push as ContextSelection) ?? null));
 
   it("highlights a pushed node, and clears on a background press (centralized-selection 9.2)", () => {
     // No connection: a branch is not selectable in this notation (Requirement 2.4, readme).
@@ -896,7 +882,7 @@ describe("selection, as every canvas has it", () => {
         currentSelection = id === null ? null : pushedSelection(id);
         return render(<MindmapCanvas {...props} />);
       },
-      pushedIds: () => select.mock.calls.map(([push]) => idOf(push)),
+      pushedIds: () => idsPushed(select),
       element: "a",
     });
   });
@@ -912,6 +898,6 @@ describe("selection, as every canvas has it", () => {
 
     press(branch!);
 
-    expect(select.mock.calls.map(([push]) => idOf(push))).toEqual([null]);
+    expect(idsPushed(select)).toEqual([null]);
   });
 });

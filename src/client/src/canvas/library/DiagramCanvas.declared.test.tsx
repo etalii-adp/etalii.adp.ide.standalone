@@ -15,10 +15,6 @@ import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxConte
  * never called any of it.
  */
 
-// jsdom implements no pointer capture on SVG elements; the gesture arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
-
 function canvasOf(type: Partial<ElementTypeDefinition>, payload?: unknown, model?: DiagramModel) {
   const definition: DiagramDefinition = {
     elementTypes: [

@@ -10,9 +10,6 @@ import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { sourceFiles } from "@client/sourceFiles";
 
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
-
 /**
  * No stylesheet in the application can repaint the library's two rings.
  *

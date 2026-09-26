@@ -44,10 +44,51 @@ public sealed class WritableDocumentLifecycle<TDocument>
         Func<TDocument, string> serialize,
         Func<string, DocumentUnavailability, string, TDocument>? unavailable,
         Action<string, string> write)
+        : this(new DocumentLifecycle<TDocument>(parse, unavailable), serialize, write)
+    {
+    }
+
+    /// <summary>
+    /// With the read and its retry supplied, so a module's own tests can refuse exactly as often as
+    /// they choose and wait for nothing - deterministic rather than patient.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is for a converted store's EXISTING tests, not for a module to tune its retries.</b>
+    /// c4 and causal-loop copied this lifecycle's retry before task 6 (<c>350b8f9e</c>), and their
+    /// stores took the read and the retry through an internal constructor so their guards could
+    /// script a refusal - one refused read, then a read count asserted - and so the 3000-reload race
+    /// guard could drop the wait between attempts, which at 50 ms took it from about a second to
+    /// fifteen. Task 6 says those tests are the proof of the conversion, unchanged; without this the
+    /// converted store has nowhere to hand the read, and the tests would have to race a real handle
+    /// instead, which proves less and waits more.
+    /// </para>
+    /// <para>
+    /// <b>Internal, and visible only to the two modules whose tests need it</b> - see the
+    /// <c>InternalsVisibleTo</c> entries in this project file. Production stores use the public
+    /// constructor and the lifecycle's own numbers; a module that passed its own here would be
+    /// choosing a retry R2.1 leaves no module room to choose.
+    /// </para>
+    /// </remarks>
+    internal WritableDocumentLifecycle(
+        Func<string, string, TDocument> parse,
+        Func<TDocument, string> serialize,
+        Func<string, DocumentUnavailability, string, TDocument>? unavailable,
+        Func<string, string> read,
+        int readAttempts,
+        TimeSpan betweenReadAttempts)
+        : this(new DocumentLifecycle<TDocument>(parse, unavailable, read, readAttempts, betweenReadAttempts), serialize, AdpFileWriter.Save)
+    {
+    }
+
+    private WritableDocumentLifecycle(
+        DocumentLifecycle<TDocument> lifecycle,
+        Func<TDocument, string> serialize,
+        Action<string, string> write)
     {
         ArgumentNullException.ThrowIfNull(serialize);
         ArgumentNullException.ThrowIfNull(write);
-        _lifecycle = new DocumentLifecycle<TDocument>(parse, unavailable);
+        _lifecycle = lifecycle;
         _serialize = serialize;
         _write = write;
     }

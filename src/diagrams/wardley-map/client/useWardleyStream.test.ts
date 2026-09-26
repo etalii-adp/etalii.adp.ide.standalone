@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { Code, ConnectError } from "@connectrpc/connect";
+import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 
 const open = vi.fn();
 const moveElement = vi.fn(async () => ({ error: "" }));
@@ -26,8 +27,10 @@ vi.mock("@client/auth/AuthContext", () => {
 // would churn the effect and reset the very state under test.
 const watchId = new Uint8Array(16);
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
-  useContextConnection: () => ({ watchId }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({ watchId });
 
 // Imported after the mocks so the hook picks them up.
 const { useWardleyStream } = await import("./useWardleyStream");

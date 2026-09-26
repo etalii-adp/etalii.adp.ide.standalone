@@ -8,15 +8,7 @@ import type { DiagramModel } from "./api/diagramModel";
 import type { LibraryEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider, useDiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider, useDiagramToolbox, TOOLBOX_DRAG_TYPE } from "@client/shell/panels/DiagramToolboxContext";
-
-/**
- * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
- * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
- * usePointerGesture.test.tsx's idiom, for the same reason.
- */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /** A click in the pointer vocabulary the canvas listens to: press and release, unmoved. */
 function press(target: Element, init: MouseEventInit = {}) {
@@ -30,10 +22,6 @@ function drag(target: Element, fromX: number, fromY: number, toX: number, toY: n
   fireEvent(target, pointer("pointermove", { clientX: toX, clientY: toY }));
   fireEvent(target, pointer("pointerup", { clientX: toX, clientY: toY }));
 }
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 /**
  * A definition with the enforcement the tests probe: services connect to services and only

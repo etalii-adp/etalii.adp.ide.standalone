@@ -5,10 +5,7 @@ import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * The guard on drag-and-drop-centralization's Requirement 1: a gesture's per-frame cost is
@@ -96,10 +93,6 @@ function mountCanvas(counts: Map<string, number>, count: number) {
       </DiagramToolboxProvider>
     </DiagramViewProvider>,
   );
-}
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, button: 0, ...init });
 }
 
 /** An unmoved press - what selects an element or a connection before a handle can exist. */
