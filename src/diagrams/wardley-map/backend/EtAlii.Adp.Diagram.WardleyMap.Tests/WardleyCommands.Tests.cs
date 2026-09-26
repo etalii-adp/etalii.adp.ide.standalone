@@ -600,6 +600,7 @@ public sealed class WardleyCommandsTests : IDisposable
     [Fact]
     public async Task AWriteThatCannotLand_IsReportedRatherThanAnsweredWithSuccess()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: a holder that shares Read only, which denies the replace a publish performs.
         // An external editor with the file open looks exactly like this to us.
         Write("component Alpha [0.5, 0.5]\n");
@@ -619,6 +620,7 @@ public sealed class WardleyCommandsTests : IDisposable
     [Fact]
     public async Task AnEditWhoseIdentitiesCannotBeSaved_SucceedsButSaysSo()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: one edit so the identity sidecar exists, then hold it so it cannot be
         // replaced. A missing sidecar is re-derived and succeeds, so it has to exist here.
         Write("component Alpha [0.5, 0.5]\n");
