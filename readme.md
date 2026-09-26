@@ -2,7 +2,7 @@
 
 Architecture that lives in the repository, as files, beside the code it describes.
 
-[![Build](https://github.com/vrenken/EtAlii.Adp/actions/workflows/build.yml/badge.svg)](https://github.com/vrenken/EtAlii.Adp/actions/workflows/build.yml)
+[![Build](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml/badge.svg)](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml)
 
 ## Why
 
@@ -39,7 +39,7 @@ Every screenshot is taken from the [`src/examples/`](src/examples/) project — 
 
 ### From a release
 
-Each green build of `develop` publishes a versioned ZIP on the [Releases page](https://github.com/vrenken/EtAlii.Adp/releases). It is platform-neutral and needs the .NET 10 runtime:
+Each green build of `develop` publishes a versioned ZIP on the [Releases page](https://github.com/etalii-adp/etalii.adp.ide.standalone/releases). It is platform-neutral and needs the .NET 10 runtime:
 
 1. Unpack the ZIP.
 2. Set a username and credential under `LocalAuthenticator` in `appsettings.json` — the shipped values are deliberately empty.

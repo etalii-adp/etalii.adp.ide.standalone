@@ -23,7 +23,7 @@ The role and number together are an identity other sessions address; the topic i
 
 ## Where work happens
 
-**Implementation work happens in a dedicated git worktree (`.claude/worktrees/<name>/`), never in the main checkout.** Several sessions use this repository at once, and the main checkout's index and working tree are shared between them. A `git add` there can stage another session's files.
+**Implementation work happens in a dedicated git worktree (`.claude/worktrees/<name>/`) on a `features/<name>` branch, delivered to `develop` by a pull request,, never in the main checkout.** Several sessions use this repository at once, and the main checkout's index and working tree are shared between them. A `git add` there can stage another session's files.
 
 **Specification documents are the exception, and they are not worktree work at all.** Requirements, designs and tasks documents — and every approval, snapshot and implementation log beside them under `.spec-workflow/` — are written and committed **on `develop` in the main checkout**, using `git -C C:\git\EtAlii.Adp` and an explicit pathspec. This holds for the whole document phase: drafting, revising after a rejection, and the bookkeeping that marks a task complete. Never create a worktree to write a spec, and never write one from inside a worktree held for other work.
 
@@ -55,6 +55,8 @@ Four rules make that safe, and none is optional.
 **Before a recursive delete, list the links in the directory and where they point, and stop on any target outside it.** `find <dir> -type l -printf '%p -> %l\n'` in Git Bash lists junctions with their targets. npm's workspace links under `src/node_modules` are junctions with absolute targets inside their own tree, so in a husk from a fresh removal they point at the husk's own files, which the delete removes anyway; **what can reach real source is a link whose target lies outside the directory being deleted.** Measured on this machine on 2026-09-10 against a junction to an outside folder: Git Bash `rm -rf` and Windows PowerShell 5.1 `Remove-Item -Recurse -Force` both removed the link without following it, and `Get-ChildItem -Recurse` did not descend into it. **That is today's builds, not a guarantee**, which is why the rule is a check rather than trust in the tool. Found by Developer 1, removing four husks that held 37 such links, every one pointing back inside its own husk.
 
 ## Committing and merging in the shared main checkout
+
+> **Superseded on 2026-09-26 for merging.** A worktree is no longer merged locally into `develop`: its `features/<name>` branch is pushed and delivered by a pull request on GitHub, where CI runs the four gates, and the branch and worktree are removed once it is merged. See *Committing and merging in the shared main checkout* in `CLAUDE.md`. The staging hazard below still holds for anything committed in the main checkout; the parts about `gate.sh`, `land.sh` and the scratch `mrg<N>` trees are kept as the record of the process this replaced.
 
 Two distinct hazards, and the rule for one does not cover the other.
 
@@ -231,6 +233,8 @@ a reader in the other case follows it confidently into a refused landing - which
 the operation it is about rather than only the order.
 
 ## When to land
+
+> **Since 2026-09-26, landing is merging a pull request on GitHub** (see the note under *Committing and merging in the shared main checkout*). The rules below about when to land still apply to when a pull request is opened and merged.
 
 **Ruled by the user on 2026-09-24.** The section above is about HOW a change reaches `develop`; this one is
 about WHEN. The rules were in force by message the same evening, and are written here because a rule that
