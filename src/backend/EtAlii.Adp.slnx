@@ -96,6 +96,9 @@
     <!-- The functional decomposition graph: UI elements, data, actions and functions, and what owns what. -->
     <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.csproj" />
     <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.csproj" />
+    <!-- The Gartner hype cycle graph: trends on a time axis, their phases, and the influences between them. -->
+    <Project Path="../diagrams/gartner-hypecycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.csproj" />
+    <Project Path="../diagrams/gartner-hypecycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.csproj" />
     <Project Path="../diagrams/gcp-architecture/backend/EtAlii.Adp.Diagram.GcpArchitecture/EtAlii.Adp.Diagram.GcpArchitecture.csproj" />
     <Project Path="../diagrams/generic-swimlane/backend/EtAlii.Adp.Diagram.GenericSwimlane/EtAlii.Adp.Diagram.GenericSwimlane.csproj" />
     <Project Path="../diagrams/iso-flowchart/backend/EtAlii.Adp.Diagram.IsoFlowchart/EtAlii.Adp.Diagram.IsoFlowchart.csproj" />
