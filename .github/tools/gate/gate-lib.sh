@@ -361,3 +361,361 @@ gate_who_is_gating() {
   fi
   return 0
 }
+
+# gate_who_owns <main-checkout> <spec-name> - is anybody on this specification?
+#
+# THREE STATES, NEVER TWO, and each one is a different string:
+#
+#   OWNER=<identity> EVIDENCE=<worktree|unlanded-branch|recent-authorship>   (return 0)
+#   OWNERSHIP=unowned REASON=every-task-marked                               (return 0)
+#   OWNERSHIP_UNREADABLE=<what could not be read>                            (return 2)
+#
+# WHY UNREADABLE IS A STATE RATHER THAN A FAILURE. A Developer was placed on client-centralization
+# while its owner was offline; the owner came back with complete, gated work and the carry branch had
+# to be deleted rather than abandoned. Nothing readable at the time said that specification had an
+# owner - the session list showed an idle roster and the tasks document showed unmarked boxes, and
+# NEITHER IS EVIDENCE OF ABSENCE. An instrument that answered `unowned` there would have been
+# confidently wrong in exactly the way that caused the loss. So `unowned` is the state that must be
+# positively REACHED: the verdict starts unreadable and only a search that ran and found nothing can
+# change it. A missing input can therefore never read as a free specification.
+#
+# WHAT IT READS, strongest first. All of it is on disk, and none of it is a session's self-report:
+#
+#   worktree           a live worktree whose branch carries unlanded commits touching this
+#                      specification's folder, or whose branch NAME carries the specification's
+#                      name. Its identity comes from that worktree's own `user.name`, set when the
+#                      tree was created - a fact a chat title cannot change.
+#   unlanded-branch    the same two links, on a branch with no worktree: work set aside, not absent.
+#   recent-authorship  who last committed this specification's own files on develop, and when. This
+#                      is the signal that caught the client-centralization error after the fact, and
+#                      the only one that survives its owner going offline.
+#
+# WHAT IT REFUSES TO READ. A session title, because a session renames itself Idle and keeps a
+# worktree. And an UNMARKED task, because an unmarked task is not an unstarted one. The tasks
+# document is read in ONE direction only: every box marked can END ownership, since a specification's
+# owner holds it until every task is done. No box count is ever read as evidence that nobody started.
+#
+# WHY A MISSING TASKS DOCUMENT IS UNREADABLE RATHER THAN UNOWNED. Without it the completion question
+# has no answer, and `I cannot tell` is the honest one. multi-select is exactly this shape - design
+# and requirements, no tasks document, last touched three weeks ago - and it is in fact parked by a
+# decision that no file in the tree records. An instrument calling it free would be repeating the
+# original error on the one specification where the evidence is thinnest.
+#
+# WHAT IT CANNOT DO, so a clear read is never taken for more than it is:
+#   - OWNED MEANS CLAIMED, NEVER ACTIVE. A specification with an open task and a claimant reads as
+#     owned however long its owner has been gone, and releasing one is a human decision this reader
+#     does not make. That is the exact mirror of the failure it was built for: an offline owner was
+#     treated as an absent one, and refusing that inference necessarily also refuses the true case
+#     where an owner really has left. Ask the board, not this.
+#   - It cannot see a session that is thinking about a specification and has touched nothing. The
+#     earliest moment ownership becomes visible is the first worktree or the first commit.
+#   - A branch-NAME link is a strong hint and not a proof: a branch may be named for a specification
+#     it only touches, and a branch may work one without naming it. Which link fired is printed for
+#     that reason, so a reader can weigh it rather than take a verdict on trust.
+#   - It reports; it never authorises. Placement is the board's decision.
+gate_who_owns() {
+  local main=${1:-} spec=${2:-}
+  local specdir tasks last line path branch short identity dirty authors link ahead counts logdir logs lastlog logauthor
+  local verdict=unreadable reason='' owner='' evidence=''
+  local open_tasks=0 marked_tasks=0 searched_trees=0 searched_history=0 contested=0 owner_time=0 committed
+
+  if [ -z "$main" ] || [ ! -d "$main" ]; then
+    printf 'OWNERSHIP_UNREADABLE=%s\n' "${main:-<no main checkout named>}"
+    return 2
+  fi
+  case "$spec" in
+    '')
+      printf 'OWNERSHIP_UNREADABLE=<no specification named>\n'
+      return 2
+      ;;
+    */* | .* | *' '*)
+      printf 'OWNERSHIP_UNREADABLE=<refusing a specification name that is a path: %s>\n' "$spec"
+      return 2
+      ;;
+  esac
+  specdir="$main/.spec-workflow/specs/$spec"
+  if [ ! -d "$specdir" ]; then
+    printf 'OWNERSHIP_UNREADABLE=<no specification folder at .spec-workflow/specs/%s>\n' "$spec"
+    return 2
+  fi
+  # Everything below is expressed as `unlanded relative to develop`, so a repository without it can
+  # answer nothing rather than answering wrongly.
+  if ! git -C "$main" rev-parse --verify --quiet refs/heads/develop > /dev/null 2>&1; then
+    printf 'OWNERSHIP_UNREADABLE=<no develop branch, so nothing can be called unlanded>\n'
+    return 2
+  fi
+
+  printf 'SPEC=%s\n' "$spec"
+
+  # THE TWO BRANCH POPULATIONS ARE COMPUTED ONCE, WHICH IS A CORRECTNESS MATTER AS MUCH AS A SPEED
+  # ONE. The first draft asked `does this branch touch the specification` of every branch in turn.
+  # This repository has 298 branches, the question costs about 0.7 s each, and --all over eight
+  # specifications came to roughly half an hour - so the instrument would simply not have been run,
+  # which is the same outcome as not having it. Both lists are single commands and both are space
+  # delimited, which is safe because a git branch name cannot contain a space.
+  local unlanded pathbranches trees
+  unlanded=$(git -C "$main" for-each-ref --format='%(refname:short)' --no-merged refs/heads/develop refs/heads 2> /dev/null) || {
+    printf 'OWNERSHIP_UNREADABLE=<could not enumerate branches>\n'
+    return 2
+  }
+  unlanded=" $(printf '%s' "$unlanded" | tr '\n' ' ') "
+  pathbranches=" $(gate_who_owns_path_branches "$main" "$specdir" | tr '\n' ' ') "
+  if ! trees=$(git -C "$main" worktree list --porcelain 2> /dev/null); then
+    printf 'OWNERSHIP_UNREADABLE=<could not enumerate worktrees>\n'
+    return 2
+  fi
+  searched_trees=1
+
+  # The worktrees first: a worktree is the stronger evidence because it is somebody's working copy.
+  # It carries an identity written when the tree was made, and it can be dirty.
+  local seen_branches=' '
+  path=''
+  branch=''
+  while IFS= read -r line; do
+    case "$line" in
+      'worktree '*)
+        path=${line#worktree }
+        branch=''
+        ;;
+      'branch '*) branch=${line#branch } ;;
+      '')
+        if [ -n "$path" ] && [ -n "$branch" ]; then
+          short=${branch#refs/heads/}
+          seen_branches="$seen_branches$short "
+          # A worktree's own branch is name-matched whether or not it is still unlanded, because
+          # here the WORKTREE is the evidence rather than the branch: a finished agent retires its
+          # tree, so one left standing is either somebody working or somebody who did not clean up,
+          # and a reader placing work needs to be told about both.
+          link=''
+          case "$pathbranches" in *" $short "*) link=spec-paths ;; esac
+          if [ -z "$link" ]; then
+            case "$short" in *"$spec"*) link=branch-name ;; esac
+          fi
+          if [ -n "$link" ]; then
+            identity=$(git -C "$path" config user.name 2> /dev/null) || identity=''
+            # --untracked-files=no on purpose: a worktree's untracked files are overwhelmingly build
+            # output, and the full walk costs seconds per tree on Windows. A tracked modification is
+            # the signal that somebody is mid-edit, and it is the one this keeps.
+            dirty=$(git -C "$path" status --porcelain --untracked-files=no 2> /dev/null | wc -l | tr -d ' ')
+            authors=$(gate_who_owns_authors "$main" "$short")
+            case "$unlanded" in
+              *" $short "*) ahead=unlanded ;;
+              *) ahead=landed ;;
+            esac
+            # A WORKTREE IS ONLY DECISIVE WHEN IT SHOWS LIVE WORK - unlanded commits, or a tracked
+            # modification. One that is landed and clean is a tree somebody forgot to retire, and
+            # this repository keeps several: counting those as owners would have made the
+            # instrument report an owner for every finished specification whose author had not
+            # cleaned up, which is the noise that gets a check ignored rather than read. The line is
+            # still PRINTED, because a reader placing work wants to know a tree is standing there;
+            # COUNTS= says whether the verdict leaned on it.
+            counts=no
+            if [ "$ahead" = unlanded ] || [ "$dirty" != 0 ]; then counts=yes; fi
+            printf 'WORKTREE=%s BRANCH=%s IDENTITY=%s DIRTY=%s BRANCH_STATE=%s AUTHORS=%s LINK=%s COUNTS=%s\n' \
+              "$path" "$short" "${identity:-<unset>}" "$dirty" "$ahead" "${authors:-<none>}" "$link" "$counts"
+            if [ "$counts" = yes ]; then
+              # TWO LIVE TREES ON ONE SPECIFICATION IS A REAL STATE, not an error to hide. The first
+              # draft named whichever worktree git listed first and got module-client-api-readme
+              # wrong on its first run: it named a stale tree of mine over the Developer who owns
+              # the specification. So the newest commit wins, and CONTESTED= says how many were in
+              # the running - a reader who sees it should read the lines rather than the verdict.
+              contested=$((contested + 1))
+              committed=$(git -C "$main" log -n 1 --format=%ct "refs/heads/$short" 2> /dev/null)
+              case "$committed" in *[!0-9]* | '') committed=0 ;; esac
+              if [ -z "$owner" ] || [ "$committed" -gt "$owner_time" ]; then
+                owner=${identity:-${authors%%,*}}
+                evidence=worktree
+                owner_time=$committed
+              fi
+            fi
+          fi
+        fi
+        path=''
+        branch=''
+        ;;
+    esac
+  done << EOF
+$trees
+
+EOF
+
+  # Then the branches nobody has a worktree for: work set aside, which is not the same as absent.
+  # Only UNLANDED branches are name-matched here - a landed branch is landed, and this repository
+  # keeps hundreds of them whose names would otherwise each claim a specification forever.
+  local ref
+  for ref in $pathbranches $unlanded; do
+    [ -n "$ref" ] || continue
+    [ "$ref" = develop ] && continue
+    case "$seen_branches" in *" $ref "*) continue ;; esac
+    seen_branches="$seen_branches$ref "
+    link=''
+    case "$pathbranches" in *" $ref "*) link=spec-paths ;; esac
+    if [ -z "$link" ]; then
+      case "$ref" in *"$spec"*) link=branch-name ;; esac
+    fi
+    [ -n "$link" ] || continue
+    authors=$(gate_who_owns_authors "$main" "$ref")
+    printf 'BRANCH=%s AUTHORS=%s LINK=%s\n' "$ref" "${authors:-<none>}" "$link"
+    if [ -z "$owner" ]; then
+      owner=${authors%%,*}
+      evidence=unlanded-branch
+    fi
+  done
+
+  # Who last committed this specification's own files, and when. Printed whatever the verdict, because
+  # a reader placing work wants the history even when a worktree already answered.
+  last=$(git -C "$main" log -n 1 --format='%an|%ar|%h' -- "$specdir" 2> /dev/null) || last=''
+  searched_history=1
+  if [ -n "$last" ]; then
+    printf 'LAST_AUTHOR=%s WHEN=%s COMMIT=%s\n' "${last%%|*}" "$(printf '%s' "$last" | cut -d'|' -f2)" "${last##*|}"
+  else
+    printf 'LAST_AUTHOR=<none> WHEN=<never> COMMIT=<none>\n'
+  fi
+
+  # THE IMPLEMENTATION LOGS ARE WHAT SEPARATE WRITING A SPECIFICATION FROM IMPLEMENTING IT, and
+  # without them this reader named the wrong person in the one window that matters most. Before any
+  # Developer touches a specification, the last author of its folder is the ARCHITECT who wrote the
+  # documents - so a reader going by authorship alone reports an owner for every freshly approved
+  # specification and blocks the very placement it exists to inform. Measured on the real case: at
+  # 04b3a933 the last author of client-centralization was its Architect and nothing had been
+  # implemented; at 49320309, eight hours later, a Developer had marked a task and become its owner.
+  # The answer has to flip exactly there, and a log or a marked box is what makes it flip.
+  #
+  # `No log AND no marked box` is a sound absence rather than a tuned one: a Developer who had begun
+  # without writing a log yet would still have a worktree or an unlanded branch, and those are read
+  # above. It is NOT the unmarked-task mistake in another coat - an unmarked box is never read as
+  # evidence that nobody started, and a specification with marked boxes and no logs is treated as
+  # implemented, which is what two-tab-connection-wedge actually looks like.
+  logdir="$specdir/Implementation Logs"
+  logs=0
+  lastlog=''
+  if [ -d "$logdir" ]; then
+    logs=$(find "$logdir" -maxdepth 1 -name '*.md' 2> /dev/null | wc -l | tr -d ' ')
+    lastlog=$(git -C "$main" log -n 1 --format='%an|%ar|%h' -- "$logdir" 2> /dev/null) || lastlog=''
+  fi
+  case "$logs" in *[!0-9]* | '') logs=-1 ;; esac
+  if [ -n "$lastlog" ]; then logauthor=${lastlog%%|*}; else logauthor='<none>'; fi
+  printf 'LOGS=%s LAST_LOG_AUTHOR=%s\n' "$logs" "$logauthor"
+
+  tasks="$specdir/tasks.md"
+  if [ -f "$tasks" ]; then
+    open_tasks=$(grep -c '^- \[ \]' "$tasks") || open_tasks=0
+    marked_tasks=$(grep -c '^- \[x\]' "$tasks") || marked_tasks=0
+  fi
+  # Compared as digits only after being proved to BE digits. An empty count reaching `-gt` is the
+  # shape that made a gate verdict error and print ALL GREEN, so the guard is on the value's form
+  # rather than on remembering to set it.
+  case "$open_tasks" in *[!0-9]* | '') open_tasks=-1 ;; esac
+  case "$marked_tasks" in *[!0-9]* | '') marked_tasks=-1 ;; esac
+  printf 'TASKS=%s open, %s marked\n' "$open_tasks" "$marked_tasks"
+
+  if [ -n "$owner" ]; then
+    verdict=owned
+  elif [ "$searched_trees" != 1 ] || [ "$searched_history" != 1 ]; then
+    verdict=unreadable
+    reason='a search did not complete'
+  elif [ -z "$last" ]; then
+    verdict=unreadable
+    reason="no commit has ever touched .spec-workflow/specs/$spec, so there is no history to read"
+  elif [ ! -f "$tasks" ]; then
+    verdict=unreadable
+    reason='no tasks document, so whether every task is done has no answer'
+  elif [ "$open_tasks" -lt 0 ] || [ "$marked_tasks" -lt 0 ] || [ "$logs" -lt 0 ]; then
+    verdict=unreadable
+    reason='the task or log counts could not be read as numbers'
+  elif [ "$logs" = 0 ] && [ "$marked_tasks" -eq 0 ]; then
+    verdict=unowned
+    reason=no-implementation-yet
+  elif [ "$open_tasks" -gt 0 ]; then
+    verdict=owned
+    # The last LOG author rather than the last author of the folder: an Architect amending the tasks
+    # document is the most recent committer often enough to matter, and naming it would hand the
+    # specification to the wrong person while the Developer is mid-work.
+    if [ -n "$lastlog" ]; then owner=${lastlog%%|*}; else owner=${last%%|*}; fi
+    evidence=recent-authorship
+  elif [ "$marked_tasks" -gt 0 ]; then
+    verdict=unowned
+    reason=every-task-marked
+  else
+    verdict=unreadable
+    reason='a tasks document with no task lines at all'
+  fi
+
+  case "$verdict" in
+    owned)
+      if [ "$evidence" = worktree ] && [ "$contested" -gt 1 ]; then
+        printf 'OWNER=%s EVIDENCE=%s CONTESTED=%s\n' "${owner:-<unnamed>}" "$evidence" "$contested"
+      else
+        printf 'OWNER=%s EVIDENCE=%s\n' "${owner:-<unnamed>}" "$evidence"
+      fi
+      return 0
+      ;;
+    unowned)
+      printf 'OWNERSHIP=unowned REASON=%s\n' "$reason"
+      return 0
+      ;;
+    *)
+      printf 'OWNERSHIP_UNREADABLE=<%s>\n' "$reason"
+      return 2
+      ;;
+  esac
+}
+
+# gate_who_owns_path_branches <main> <specdir> - every branch carrying an unlanded commit that
+# touches this specification's folder. This is the PROOF link, as against the branch-name hint.
+#
+# One history walk finds the commits across every branch at once, and only then is each one asked
+# which branches contain it - so the cost is one walk plus a lookup per hit, rather than a walk per
+# branch. There are usually no hits at all.
+gate_who_owns_path_branches() {
+  local main=$1 specdir=$2 sha
+  git -C "$main" log --format=%H --branches --not refs/heads/develop -- "$specdir" 2> /dev/null |
+    while IFS= read -r sha; do
+      [ -n "$sha" ] || continue
+      git -C "$main" branch --contains "$sha" --format='%(refname:short)' 2> /dev/null
+    done | awk 'NF && $0 != "develop" && !seen[$0]++'
+}
+
+# gate_who_owns_authors <main> <short-branch> - the per-task identities on a branch's unlanded
+# commits, comma-separated, most recent first. These are what a commit records; a session's title is
+# not consulted anywhere in this file.
+gate_who_owns_authors() {
+  local main=$1 branch=$2
+  git -C "$main" log --format='%an' "refs/heads/develop..refs/heads/$branch" 2> /dev/null |
+    awk '!seen[$0]++' | paste -sd, - 2> /dev/null
+}
+
+# gate_who_owns_all <main-checkout> - every live specification, one block each.
+#
+# ITS OWN LIVENESS CHECK IS THE POINT OF HAVING AN --all AT ALL. A walk that answers `unreadable` for
+# every specification is indistinguishable, line by line, from a walk over a repository whose
+# specifications are all genuinely ambiguous - and the first is a broken instrument while the second
+# is a true report. So the walk counts what it could answer and refuses to end green on nothing: a
+# zero from a blind tool looks exactly like a zero from a clean run, and the only defence is a health
+# figure printed beside the answer.
+gate_who_owns_all() {
+  local main=${1:-} dir spec answered=0 total=0 rc
+  if [ -z "$main" ] || [ ! -d "$main/.spec-workflow/specs" ]; then
+    printf 'OWNERSHIP_UNREADABLE=<no .spec-workflow/specs under %s>\n' "${main:-<no main checkout named>}"
+    return 2
+  fi
+  for dir in "$main"/.spec-workflow/specs/*; do
+    [ -d "$dir" ] || continue
+    spec=${dir##*/}
+    total=$((total + 1))
+    gate_who_owns "$main" "$spec"
+    rc=$?
+    [ "$rc" -eq 0 ] && answered=$((answered + 1))
+    printf '\n'
+  done
+  if [ "$total" = 0 ]; then
+    printf 'OWNERSHIP_UNREADABLE=<no specification folders to walk>\n'
+    return 2
+  fi
+  printf 'WALKED=%s answered=%s unreadable=%s\n' "$total" "$answered" "$((total - answered))"
+  if [ "$answered" = 0 ]; then
+    printf 'OWNERSHIP_UNREADABLE=<%s specifications walked and not one could be answered; treat this reader as blind rather than the board as free>\n' "$total"
+    return 2
+  fi
+  return 0
+}
