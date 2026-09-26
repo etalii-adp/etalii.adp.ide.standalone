@@ -29,6 +29,7 @@ public class TestFolderTests
     [Fact]
     public void AFolderItCannotDelete_IsReportedRatherThanSwallowed()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange. A held file makes the recursive delete fail for real, every attempt, rather
         // than by a simulated clock - which is why this guard is deterministic and not a race.
         var (root, folder, report) = Scratch();

@@ -69,6 +69,7 @@ public class AdpFileWriterFailureRecordTests : IDisposable
     [Fact]
     public void ARealHolderDenyingTheReplace_IsRecordedWithTheCodeTheOsActuallyGave()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // The half the seam cannot vouch for: a genuine OS refusal, through the real File.Replace,
         // records the code Windows actually returned. Measured as 0x80070020 for this arrangement.
         var path = IoPath.Combine(_folder, "roadmap.mm");

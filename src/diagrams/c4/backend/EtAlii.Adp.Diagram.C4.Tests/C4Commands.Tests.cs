@@ -224,6 +224,7 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task AWriteThatCannotLand_IsReportedRatherThanAnsweredWithSuccess()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: a holder sharing Read only, which denies the replace a publish performs -
         // what an external editor with the file open looks like from here.
         using var holder = new FileStream(_bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -243,6 +244,7 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task ADragWhoseLayoutCannotBeSaved_SucceedsButSaysSo()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: the sidecar exists and is held so it cannot be replaced. A missing sidecar is
         // an empty layout and succeeds, so it has to exist for this to be the case under test.
         await _history.ExecuteAsync(

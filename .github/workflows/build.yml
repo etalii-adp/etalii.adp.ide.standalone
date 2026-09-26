@@ -55,6 +55,15 @@ jobs:
         working-directory: src
         run: npm ci
 
+      # The client's contract code (src/client/src/generated) is mostly git-ignored and made by
+      # `npm run generate`. `npm test` and `npm run typecheck` generate it themselves through
+      # their pre-scripts, but the backend tests run first and EtAlii.Adp.Client.Tests runs the
+      # client test files directly - without this step every file importing a *_pb module fails
+      # to resolve it, and the gate reports a hundred client failures that are one missing step.
+      - name: Generate client contracts
+        working-directory: src/client
+        run: npm run generate
+
       # The four gates, verbatim and separate, so a red run names the gate that failed.
       # No retries anywhere: the known teardown flakes are Windows file-lock races and this
       # runner is Linux - if a flake reproduces here, it should be seen, not hidden.

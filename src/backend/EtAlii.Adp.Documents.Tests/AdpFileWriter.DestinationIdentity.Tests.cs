@@ -45,6 +45,7 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
     [Fact]
     public void ADestinationLeftAlone_IsTheSameFile()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A destination's file identity is read only on Windows.");
         var path = IoPath.Combine(_folder, "same.owm");
         File.WriteAllText(path, "before\n");
 
@@ -58,6 +59,7 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
     [Fact]
     public void ADestinationDeletedDuringThePublish_IsGone()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A destination's file identity is read only on Windows.");
         var path = IoPath.Combine(_folder, "gone.owm");
         File.WriteAllText(path, "before\n");
 
@@ -75,6 +77,7 @@ public class AdpFileWriterDestinationIdentityTests : IDisposable
     [Fact]
     public void ADestinationDeletedAndWrittenAgain_IsRecreated_ThoughItsCreationTimeSaysOtherwise()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A destination's file identity is read only on Windows.");
         // The shape the instrument exists for, and the reason it reads the file index: NTFS tunneling
         // hands a file recreated under the same name within ~15 s its predecessor's creation time, so
         // a creation-time comparison would have answered "same file" here. Both halves are asserted.

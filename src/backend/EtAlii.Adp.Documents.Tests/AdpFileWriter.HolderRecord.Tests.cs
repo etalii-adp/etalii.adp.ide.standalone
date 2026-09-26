@@ -45,6 +45,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     [Fact]
     public void AFailedPublish_NamesAnotherProcessHoldingTheFile()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "The holders of a file are asked only on Windows.");
         // The case the gate hit: the other party is not in this process, so nothing in this process
         // can name it. A real second process holds the file; the record must carry its pid.
         var path = IoPath.Combine(_folder, "tea.owm");
@@ -83,6 +84,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     [Fact]
     public void AFailedPublish_SaysSoWhenThisProcessIsTheHolder()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // The other half of naming: a handle held here is ours, and a record that did not say so
         // would send the next reader hunting for a process that was never involved.
         var path = IoPath.Combine(_folder, "tea.owm");
@@ -189,6 +191,7 @@ public class AdpFileWriterHolderRecordTests : IDisposable
     [Fact]
     public void AFileNobodyHolds_IsReportedAsNobodyHoldingIt_NotAsAFailedQuery()
     {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "The holders of a file are asked only on Windows.");
         // The limit, asserted rather than described: the dominant producer of 0x80070497 is an
         // actor that has already released, and the record must say "nobody now" in words a reader
         // cannot mistake for "the query broke".
