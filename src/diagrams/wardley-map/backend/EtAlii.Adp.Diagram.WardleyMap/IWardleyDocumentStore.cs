@@ -52,7 +52,7 @@ public interface IWardleyDocumentStore
     /// <remarks>
     /// <b>The document is a parameter rather than something this looked up, and that is the fix for
     /// a data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever
-    /// was in the cache at save time - and <see cref="Reload"/> evicts. A reload landing between a
+    /// was in the cache at save time - and <see cref="Reload"/> replaces it. A reload landing between a
     /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
     /// command's inverse on the undo stack for a change that never happened. Passing the document
     /// makes that ordering unrepresentable: what the caller edited is what gets written.
@@ -72,9 +72,15 @@ public interface IWardleyDocumentStore
     /// is never recorded on the history: it arrives through the watcher and never becomes a
     /// command (Requirement 10.7). A no-op while the store's own save of that path is in
     /// flight: its own write on disk is not an external change, and must not bounce back as
-    /// one.
+    /// one. A reload that cannot read keeps the last good document and tells nobody (R2.4).
     /// </summary>
     void Reload(string path);
+
+    /// <summary>
+    /// The watcher saw the body deleted: the document becomes what a first open of a missing body
+    /// shows, and the sessions are told (R2.5). The one call that clears a document a reload kept.
+    /// </summary>
+    void BodyDeleted(string path);
 
     /// <summary>Raised after a save, and after an external edit is picked up.</summary>
     event EventHandler<WardleyDocumentChangedEventArgs>? Changed;
