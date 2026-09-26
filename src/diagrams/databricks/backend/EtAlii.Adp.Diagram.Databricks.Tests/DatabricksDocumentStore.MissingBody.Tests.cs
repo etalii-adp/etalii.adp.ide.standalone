@@ -18,6 +18,13 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// mechanism can only be observed through the log.
 /// </para>
 /// <para>
+/// <b>Since backend-centralization task 6 that check is no longer this store's.</b> Opening
+/// moved to the shared <c>DocumentLifecycle</c>, which keeps the <c>File.Exists</c> check and
+/// also reads a <c>FileNotFoundException</c> as a missing body rather than a failure. The
+/// guard below still holds this store to the outcome - a not-yet-created body opens empty and
+/// logs nothing - whichever of the two produces it.
+/// </para>
+/// <para>
 /// file-io-centralization recorded that as unwritable, because <c>LogCapture</c> lived in three
 /// core test projects and no module one, and because a <c>private static readonly ILogger</c>
 /// binds at type initialisation. Both halves were answered by the de-fork that put

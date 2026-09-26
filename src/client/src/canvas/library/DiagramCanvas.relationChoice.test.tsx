@@ -6,6 +6,7 @@ import type { DiagramRuntimeConfig } from "./api/diagramRuntimeConfig";
 import type { DiagramModel, DiagramModelConnection } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * Which relation a connect gesture draws, when the press alone cannot say.
@@ -16,14 +17,6 @@ import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxConte
  * the target never consulted. These drive a drag from a screen onto an action, which the FIRST
  * relation from a screen does not admit and the second does (the user's ruling of 2026-09-25).
  */
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 /**
  * Two screens and an action in a row, at centres 0, 300 and 600, each 100 wide - so a screen's east

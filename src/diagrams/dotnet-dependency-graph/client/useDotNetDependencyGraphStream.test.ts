@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { Code, ConnectError } from "@connectrpc/connect";
+import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 
 const open = vi.fn();
 const updateView = vi.fn(async () => ({ error: "" }));
@@ -23,8 +24,10 @@ vi.mock("@client/auth/AuthContext", () => {
 
 const watchId = new Uint8Array(16);
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
-  useContextConnection: () => ({ watchId }),
+  useContextConnection: () => connection,
 }));
+
+const connection = fakeContextConnection({ watchId });
 
 // Imported after the mocks so the hook picks them up.
 const { useDotNetDependencyGraphStream } = await import("./useDotNetDependencyGraphStream");

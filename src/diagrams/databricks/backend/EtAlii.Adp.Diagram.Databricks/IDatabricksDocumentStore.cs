@@ -13,6 +13,12 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// than one diagram (a bundle declaring a job inline is both), and JSON reads through the same
 /// YAML door - so three stores would be three copies of the same lifecycle keyed by the same
 /// paths.
+/// <para>
+/// <see cref="IReloadableDocumentStore.Reload"/> is this store's too, declared on the shared
+/// interface: it re-reads a document something outside changed and tells the sessions on it,
+/// and is a no-op while the store's own save of that path is in flight. A reload that cannot
+/// read keeps the last good document and tells nobody (R2.4).
+/// </para>
 /// </remarks>
 public interface IDatabricksDocumentStore : IReloadableDocumentStore
 {
@@ -31,7 +37,7 @@ public interface IDatabricksDocumentStore : IReloadableDocumentStore
     /// <remarks>
     /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
     /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
-    /// in the cache at save time - and <see cref="IReloadableDocumentStore.Reload"/> evicts. A reload landing between a
+    /// in the cache at save time - and a <see cref="IReloadableDocumentStore.Reload"/> replaced that entry. A reload landing between a
     /// command's edit and its save therefore discarded the edit and REPORTED SUCCESS, which put the
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
@@ -40,6 +46,12 @@ public interface IDatabricksDocumentStore : IReloadableDocumentStore
 
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
+
+    /// <summary>
+    /// The watcher saw the body deleted: the document becomes what a first open of a missing body
+    /// shows, and the sessions are told (R2.5). The one call that clears a document a reload kept.
+    /// </summary>
+    void BodyDeleted(string path);
 
     /// <summary>Raised after a save, and after an external change is picked up.</summary>
     event EventHandler<DatabricksDocumentChangedEventArgs>? Changed;

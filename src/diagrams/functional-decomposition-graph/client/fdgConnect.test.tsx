@@ -8,6 +8,7 @@ import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { FDG_DEFINITION } from "./FdgCanvas";
 import { FdgElementTypes } from "./fdgIds";
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * Task 14's connect guard, over the field-service example itself rather than a toy: a connect
@@ -87,14 +88,6 @@ function exampleModel(without: readonly string[] = []): DiagramModel {
     .map((entry): DiagramModelConnection => ({ id: entry.id, type: entry.type, sourceId: entry.from, targetId: entry.to }));
   return { elements, connections };
 }
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 function renderExample(model: DiagramModel) {
   const onConnectionDrawn = vi.fn();

@@ -6,6 +6,7 @@ import type { DiagramModel } from "./api/diagramModel";
 import type { LibraryEventHandlers } from "./api/diagramEvents";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * Height resize, and the permission that gates it.
@@ -15,16 +16,6 @@ import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxConte
  * version that renders four handles for every `sizing: "user"` type passes the first test and
  * changes the timeline's spans, which is why `resize` omitted has to mean "width" and be asserted.
  */
-
-/** A pointer event jsdom can carry: it implements no PointerEvent, and fireEvent.pointerDown
- * builds one whose `button` is undefined - usePointerGesture.test.tsx's idiom, same reason. */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 function definitionOf(resize?: "width" | "both"): DiagramDefinition {
   return {

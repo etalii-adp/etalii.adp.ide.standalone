@@ -5,9 +5,7 @@ import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
-
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * A dropped element stays where it was dropped until the model says where it is.
@@ -42,10 +40,6 @@ const at = (x: number, y: number): DiagramModel => ({
   elements: [{ id: "a", type: "node", x, y }],
   connections: [],
 });
-
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, button: 0, ...init });
-}
 
 /** The box's drawn top-left, which moves one-for-one with the element's centre. */
 function drawnAt(container: HTMLElement): { x: number; y: number } {

@@ -3,8 +3,10 @@
   "title": "Criterion 11.4, the mirror direction - a class a canvas emits that no stylesheet rule claims - which the USER HAS ALREADY AGREED in substance (Scrum master's chat, 2026-09-25); task 12 in tasks.md claims it in the same commit 24c0a2c1, shown only in this title because a card covers one file",
   "filePath": ".spec-workflow/specs/client-centralization/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-24T23:39:18.908Z",
   "category": "spec",
-  "categoryName": "client-centralization"
+  "categoryName": "client-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-26T22:24:44.517Z"
 }

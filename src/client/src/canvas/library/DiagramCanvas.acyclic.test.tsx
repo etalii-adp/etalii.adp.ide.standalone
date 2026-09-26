@@ -5,6 +5,7 @@ import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel, DiagramModelConnection } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "@client/canvas/library/testing/canvasHarness";
 
 /**
  * A declared cycle rule, refused under the pointer rather than after the drop.
@@ -15,16 +16,6 @@ import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxConte
  * example where two of them agree. So the last test drives one refusal that only cardinality can
  * explain and one that only the walk can, in a single definition that declares both.
  */
-
-/** A pointer event jsdom can carry: it implements no PointerEvent, and `fireEvent.pointerDown`
- * builds one whose `button` is undefined - `DiagramCanvas.test.tsx`'s idiom, same reason. */
-function pointer(type: string, init: MouseEventInit) {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
-}
-
-// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
-SVGElement.prototype.setPointerCapture ??= () => {};
-SVGElement.prototype.releasePointerCapture ??= () => {};
 
 function drag(target: Element, fromX: number, fromY: number, toX: number, toY: number) {
   fireEvent(target, pointer("pointerdown", { button: 0, clientX: fromX, clientY: fromY }));

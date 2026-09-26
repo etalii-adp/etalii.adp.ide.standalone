@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/client-centralization/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790093216368_pp1zmp7oi",
       "approvalTitle": "client-centralization - Requirements (raised by the Scrum master for Architect 2): twelve requirements, each naming the copies it replaces, the measured drift and a structural guard; three defects cited as fixed ahead; permitted visible changes default to none (89bb5f35)."
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-26T22:24:44.515Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790293158908_nu75y4m1u",
+      "approvalTitle": "Criterion 11.4, the mirror direction - a class a canvas emits that no stylesheet rule claims - which the USER HAS ALREADY AGREED in substance (Scrum master's chat, 2026-09-25); task 12 in tasks.md claims it in the same commit 24c0a2c1, shown only in this title because a card covers one file"
     }
   ]
 }
