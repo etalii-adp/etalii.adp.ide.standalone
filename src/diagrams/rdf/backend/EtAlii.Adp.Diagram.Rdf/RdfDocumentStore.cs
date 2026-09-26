@@ -12,9 +12,10 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
 
     private readonly ConcurrentDictionary<string, RdfDocumentEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
 
-    // The paths this store is writing right now, so its own save does not bounce back through
-    // Reload as an "external" change - the per-path saving guard every sibling store carries.
-    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+    // The paths this store is writing, and what it last wrote to each, so its own save does not
+    // bounce back through Reload as an "external" change - the per-path saving guard every sibling
+    // store carries.
+    private readonly SelfWriteGuard _selfWrites = new();
 
     /// <inheritdoc />
     public event EventHandler<RdfDocumentChangedEventArgs>? Changed;
@@ -40,7 +41,7 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
             return $"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}";
         }
 
-        _selfWrites[path] = 1;
+        _selfWrites.Begin(path, entry.Document.Text);
         try
         {
             var directory = IoPath.GetDirectoryName(path);
@@ -60,7 +61,7 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
         }
         finally
         {
-            _selfWrites.TryRemove(path, out _);
+            _selfWrites.End(path);
         }
 
         // The document's own lines are authoritative and unchanged by writing them out, but what
@@ -80,6 +81,7 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _entries.TryRemove(path, out _);
+        _selfWrites.Forget(path);
     }
 
     /// <inheritdoc />
@@ -87,10 +89,10 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (_selfWrites.ContainsKey(path))
+        if (_selfWrites.IsOwnWrite(path))
         {
-            // The change on disk is this store's own save, mid-write; Save reparses and tells
-            // the sessions itself.
+            // The change on disk is this store's own save, in flight or already landed; Save
+            // reparses and tells the sessions itself.
             return;
         }
 

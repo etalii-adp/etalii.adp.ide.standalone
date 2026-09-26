@@ -36,14 +36,20 @@ namespace EtAlii.Adp.Backend.Tests;
 // the opposite until then, and the condition it set for changing its own advice - "the moment it
 // fails deterministically" - has been met.
 //
-// The mechanism is a LOST EDIT in the document store, not a watcher-versus-write race and not
+// The mechanism was a LOST EDIT in the document store, not a watcher-versus-write race and not
 // timing in this test. A command does GetOrLoad, splices through TimelineWriter, then calls
-// Save - and TimelineDocumentStore.Save(path) calls GetOrLoad(path) AGAIN rather than writing the
-// entry the caller spliced. Reload(path) evicts the cached entry. So a reload landing between the
-// splice and the save means the spliced object is no longer the written object: the save persists
-// the RE-READ FILE and returns success. The _selfWrites guard does not cover it, because it is
-// cleared in Save's finally before the reparse, so the notification for the store's own write can
-// arrive after the guard has gone and is then treated as external.
+// Save - and TimelineDocumentStore.Save(path) used to call GetOrLoad(path) AGAIN rather than
+// write the entry the caller spliced. Reload(path) evicts the cached entry. So a reload landing
+// between the splice and the save meant the spliced object was no longer the written object: the
+// save persisted the RE-READ FILE and returned success. The self-write guard did not cover it,
+// because it was cleared in Save's finally, so the notification for the store's own write arrived
+// after the guard had gone and was treated as external.
+//
+// FIXED, in two parts. Save takes the entry the command edited and never reads the cache
+// (e326e039, 37326a8c, all nine stores), which is what stops the loss. And the guard now also
+// remembers what each save wrote (SelfWriteGuard), so the late notification for the store's own
+// write is recognised by the file's content and no longer triggers a reload and a second change
+// notice. A red run here is still a data-loss defect until shown otherwise.
 //
 // WHAT IT COSTS, which is why this is not a flake: the command reports success, the file never
 // receives the edit, and the command's inverse goes onto the undo stack for a change that never
