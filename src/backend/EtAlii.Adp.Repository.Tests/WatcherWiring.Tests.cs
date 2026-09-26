@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// No <see cref="FileSystemWatcher"/> in this tree is enabled before its handlers are attached.

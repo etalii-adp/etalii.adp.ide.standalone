@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// Production code reaches for the central file helpers rather than a raw file API

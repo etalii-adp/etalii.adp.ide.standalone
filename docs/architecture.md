@@ -90,6 +90,6 @@ For how a subsystem behaves rather than which project holds it, read [`tech.md`]
 
 **Not covered here, deliberately** (a later pass, each its own specification): per-module internals, the wire contracts and generated code, the client component tree below the canvas library, deployment and hosting, the editor family's internals, per-diagram-type behaviour, and runtime sequence diagrams.
 
-**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that stated counts recompute, and that the page stays within its size limit.
+**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Repository.Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that stated counts recompute, and that the page stays within its size limit.
 
 **It cannot check whether a description is still accurate.** The Konva claim above would have passed every check the guard makes — `src/client/package.json` exists and the sentence states no count. **A wrong description on this page fails silently, and only a reader who knows better will catch it.**

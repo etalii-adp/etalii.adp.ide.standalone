@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// Every declared namespace under the backend's non-test projects matches the project name

@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// One package as a manifest states it, for <see cref="DependencyInventoryTests"/>: the version

@@ -4,7 +4,7 @@ using Grpc.Core;
 using Grpc.Core.Testing;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Authentication.Tests;
 
 /// <summary>
 /// The product-description answer (github-build-pipeline Requirement 2.3): the version comes
@@ -36,7 +36,7 @@ public class AuthenticationServiceTests
     public async Task DescribeProduct_AnswersTheStampedInformationalVersion()
     {
         // Arrange: the authenticator is irrelevant to this call - a refusing one proves it.
-        var service = new Authentication.AuthenticationService(new RefusingAuthenticator(), new InMemorySessionStore());
+        var service = new AuthenticationService(new RefusingAuthenticator(), new InMemorySessionStore());
 
         // Act.
         var response = await service.DescribeProduct(new DescribeProductRequest(), CreateContext());

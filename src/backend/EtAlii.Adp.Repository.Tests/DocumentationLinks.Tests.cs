@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// Every relative link and image reference in the delivered documentation resolves to a file
