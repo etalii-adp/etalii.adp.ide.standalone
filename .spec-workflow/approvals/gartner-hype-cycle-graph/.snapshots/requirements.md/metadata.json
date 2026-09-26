@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/gartner-hype-cycle-graph/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790461393850_8svdhd3x7",
       "approvalTitle": "gartner-hype-cycle-graph requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-26T22:49:32.234Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790462445328_rwd7z3qti",
+      "approvalTitle": "gartner-hype-cycle-graph requirements (.ghg extension, PR #29)"
     }
   ]
 }
