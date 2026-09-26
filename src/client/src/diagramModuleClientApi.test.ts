@@ -136,7 +136,8 @@ function internalList(text: string): string[] {
  * reading the filesystem.
  *
  * **Its blind spot, stated because the rule's own author is in it**: this finds a test that walks
- * DIRECTLY, not one that walks through a helper. This file walks through
+ * DIRECTLY or through the shared `sourceFiles`, not one that walks through a helper of its own. This
+ * file walks through
  * `diagramModuleClientApi.surface.ts`, so the rule does not find this file - which is correct for
  * what the readme's table is for (guards a MODULE is subject to) and would be wrong for any use that
  * claimed to enumerate every walker.
@@ -155,7 +156,7 @@ function walkingTests(): string[] {
       } else if (/\.test\.tsx?$/.test(entry)) {
         const text = readFileSync(path, "utf8");
         const namesTheFolder = /["'`][^"'`]*\bdiagrams\b[^"'`]*["'`]/.test(text);
-        const readsTheTree = /readdirSync|statSync|import\.meta\.glob/.test(text);
+        const readsTheTree = /readdirSync|statSync|sourceFiles|import\.meta\.glob/.test(text);
         if (namesTheFolder && readsTheTree) {
           found.push(path.slice(client.length + 1).replace(/\\/g, "/"));
         }

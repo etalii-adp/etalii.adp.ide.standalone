@@ -38,6 +38,9 @@ vi.mock("./useSparqlStream", () => ({
 }));
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
+  // The library reads the inline-edit prompt itself where it owns the canvas (client-centralization
+  // task 7), so a sourced canvas needs one here even though this module never renames inline.
+  useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   innermostKey: () => currentSelectionKey,
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
   useContextConnection: () => ({

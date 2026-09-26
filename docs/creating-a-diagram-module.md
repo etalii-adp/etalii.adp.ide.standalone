@@ -125,11 +125,11 @@ unmarked, because notes are not the label. Rename marks the node it renames; add
 add-sibling create the node first, named from its siblings, and then mark the new node's id, so
 the new name is edited in place.
 
-The client half is definition data plus one prop. Mark the label editable in the definition —
+The client half is definition data and nothing else. Mark the label editable in the definition —
 `label: { placement: "inside", editable: true }` on the element type, an `inset` rule for one
-named line of a composite card, `{ placement: "midpoint", editable: true }` on a relation — and
-hand `DiagramCanvas` the `editing` prop built from `useContextPrompt` and
-`inlineLabelElementIdOf`. The library places the shared
+named line of a composite card, `{ placement: "midpoint", editable: true }` on a relation — and the
+library does the rest: given the canvas's `source`, it reads the backend's inline-edit prompt itself
+(there is no `editing` prop to pass since client-centralization task 7). The library places the shared
 [`InlineLabelEditor`](../src/client/src/canvas/label/InlineLabelEditor.tsx) over the drawn label
 from the rule alone, commits it as a `label-commit-requested` event through the prompt flow, and
 ends an open edit before any gesture begins. A guard,

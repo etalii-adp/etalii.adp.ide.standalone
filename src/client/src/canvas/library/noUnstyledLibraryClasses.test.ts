@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import ts from "typescript";
+import { sourceFiles } from "@client/sourceFiles";
 
 /**
  * Every visual class the library emits has a rule behind it.
@@ -192,27 +192,12 @@ describe("no unstyled library classes", () => {
     return names;
   }
 
-  /**
-   * Folders no source lives in: build output and installed packages. Under `src/diagrams` they
-   * are nine in ten of all entries, and entering them is what made the module walk time out.
-   */
-  const notSources = new Set(["bin", "obj", "node_modules"]);
-
-  /**
-   * Every source under `dir`, minus its tests. The directory entry says what it is, so nothing is
-   * statted, and a folder in `notSources` is never entered.
-   */
+  /** Every source under `dir` with one of `extensions`, minus its tests, through the shared walk. */
   function sources(dir: string, extensions: string[]): string[] {
-    const paths: string[] = [];
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (!notSources.has(entry.name)) paths.push(...sources(path, extensions));
-      } else if (extensions.some((extension) => entry.name.endsWith(extension)) && !entry.name.includes(".test.")) {
-        paths.push(path);
-      }
-    }
-    return paths;
+    return sourceFiles(dir).filter((path) => {
+      const name = basename(path);
+      return extensions.some((extension) => name.endsWith(extension)) && !name.includes(".test.");
+    });
   }
 
   let moduleClassesOnce: Set<string> | undefined;
@@ -230,7 +215,8 @@ describe("no unstyled library classes", () => {
    * default so that the number is chosen and its reason is here. Walk and parse together measured
    * 87-127 ms on a quiet machine after the fix, and a gate has shown an elevenfold slowdown on
    * this file, which puts them near 1.4 s; three seconds is twice that. A test crossing it means
-   * the walk has grown again - read `notSources` first - not that the machine is busy.
+   * the walk has grown again - read `notSources` in `sourceFiles.ts` first - not that the
+   * machine is busy.
    */
   const moduleTreeBudgetMs = 3_000;
 
@@ -319,39 +305,6 @@ describe("no unstyled library classes", () => {
         + `the module instead: ${trespassing.join(", ")}`,
     ).toEqual([]);
   }, moduleTreeBudgetMs);
-
-  /**
-   * The module walk timed out in a gate (5522 ms against vitest's 5 s default, 2026-09-26) while
-   * the same tree measured 484 ms quiet. The cause was the walk, not the parse: it entered every
-   * backend's `bin/` and `obj/`, statting **9,294** entries under `src/diagrams` to find **74**
-   * sources, and build output is largest and busiest exactly while a gate runs. Skipping build
-   * output and installed packages visits 2,542 and finds the same 74.
-   *
-   * **Checked on a tree built here rather than on the repository**, because a timing budget cannot
-   * tell the two walks apart on a quiet machine, and a fresh checkout has no `bin/` or `obj/` at
-   * all - a guard reading the real tree would pass on the old walk wherever nothing was built.
-   */
-  it("never walks into build output or installed packages", () => {
-    // Arrange: one real source, and one source inside each folder the walk must not enter.
-    const root = mkdtempSync(join(tmpdir(), "library-walk-"));
-    try {
-      for (const folder of ["client", "backend/bin/Debug", "backend/obj", "node_modules/some-package"]) {
-        mkdirSync(join(root, folder), { recursive: true });
-        writeFileSync(join(root, folder, "source.ts"), "export {};\n");
-      }
-      // The premise: started INSIDE a skipped folder the walk does find its file, so an empty
-      // answer below is the folder being skipped, not the walk being blind.
-      expect(sources(join(root, "backend", "bin"), [".ts"]), "the walk cannot read the fixture").toHaveLength(1);
-
-      // Act.
-      const found = sources(root, [".ts"]);
-
-      // Assert.
-      expect(found, "the walk entered build output or installed packages").toEqual([join(root, "client", "source.ts")]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
 
   /**
    * The walk above is only worth its run because it reads a tree rather than text, and here is

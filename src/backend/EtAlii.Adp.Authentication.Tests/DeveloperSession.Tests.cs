@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Xunit;
 using MsOptions = Microsoft.Extensions.Options.Options;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Authentication.Tests;
 
 /// <summary>
 /// The developer sign-in bypass (developer-sign-in-bypass Requirements 1.3, 1.4, 2.4).
@@ -52,7 +52,7 @@ public class DeveloperSessionTests
         DeveloperSessionDisabled = disabled,
     };
 
-    private static Authentication.AuthenticationService Service(
+    private static AuthenticationService Service(
         ISessionStore store,
         LocalAuthenticatorOptions options,
         string environmentName = "Development") =>

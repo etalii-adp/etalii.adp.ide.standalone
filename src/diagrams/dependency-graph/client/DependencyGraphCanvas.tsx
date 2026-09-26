@@ -13,8 +13,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useViewReport } from "@client/diagrams/useViewReport";
@@ -187,9 +186,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
   const diagramModel = useMemo<DiagramModel>(() => {
     const elements = [...model.elements.values()].map((node): NodeElement => ({
       id: node.id,
@@ -276,7 +272,6 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         ariaLabel="Dependency graph"
         className="dependency-graph-surface"
         scrollbarsClassName="dependency-graph-scrollbars"

@@ -8,8 +8,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { DiagramDefinition, RelationTypeDefinition, RouteEnds, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import {
@@ -267,14 +266,11 @@ function definitionOf(): DiagramDefinition {
 export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useCausalLoopStream(projectId, path);
   const { executeAction } = useContextConnection();
-  const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
   const toolboxItems = useToolboxItems(projectId, path);
   // The one refusal this canvas decides on the client, before anything is sent; every other refusal
   // is the backend's, and the call that got it reports it to the library's line itself.
   const { refuse } = useCanvasRefusal();
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-
-  const editingId = inlineLabelElementIdOf(prompt);
 
   /** Runs a backend action, threading its source; a refusal reaches the library's line by itself. */
   const runAction = (actionId: string, sourceId?: string) => {
@@ -432,7 +428,6 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
           events={events}
           source={{ entryId, path }}
           toolboxItems={toolboxItems}
-          editing={{ editingId, onPropose, onSubmit, onCancel }}
           className="causal-loop-canvas-host"
           ariaLabel="Causal loop diagram"
         />

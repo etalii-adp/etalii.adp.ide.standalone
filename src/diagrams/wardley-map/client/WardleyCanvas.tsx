@@ -5,8 +5,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import {
@@ -478,9 +477,6 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
   // The pane's proportions, read off the view the library reports: it shapes the view to the
   // pane before anything sees it, so this is the pane's aspect without measuring it twice.
   const paneAspect = viewport !== null && viewport.height > 0 ? viewport.width / viewport.height : null;
@@ -614,7 +610,6 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         className="wardley-surface"
         scrollbarsClassName="wardley-scrollbars"
         ariaLabel={model.axis?.title ? `Wardley map: ${model.axis.title}` : "Wardley map"}

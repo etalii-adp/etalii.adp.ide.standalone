@@ -4,7 +4,7 @@
 
 ## What ADP is
 
-ADP — *A Different Perspective* — opens architectural diagrams from a user's own workspace folder, draws them, and lets them be edited. The diagrams stay plain text files in that folder: diffable, version-controlled, owned by whatever tool already understood their format.
+ADP — *A Different Perspective* — is a family of specialized, task-tuned diagram, designer and editor experiences, hosted in several IDEs. This repository is the **standalone host**: it opens diagrams from a user's own workspace folder, draws them, and lets them be edited. The diagrams stay plain text files in that folder: diffable, version-controlled, owned by whatever tool already understood their format.
 
 Its reason for existing, and what it is for, are in [`product.md`](../.spec-workflow/steering/product.md). This page does not repeat them.
 
@@ -90,6 +90,6 @@ For how a subsystem behaves rather than which project holds it, read [`tech.md`]
 
 **Not covered here, deliberately** (a later pass, each its own specification): per-module internals, the wire contracts and generated code, the client component tree below the canvas library, deployment and hosting, the editor family's internals, per-diagram-type behaviour, and runtime sequence diagrams.
 
-**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that stated counts recompute, and that the page stays within its size limit.
+**Its guard is `ArchitecturePages.Tests`** (`src/backend/EtAlii.Adp.Repository.Tests/ArchitecturePages.Tests.cs`), listed in [guards.md](guards.md). It checks that every path and project name here exists, that stated counts recompute, and that the page stays within its size limit.
 
 **It cannot check whether a description is still accurate.** The Konva claim above would have passed every check the guard makes — `src/client/package.json` exists and the sentence states no count. **A wrong description on this page fails silently, and only a reader who knows better will catch it.**

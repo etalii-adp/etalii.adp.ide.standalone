@@ -11,8 +11,7 @@ import type {
 } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
@@ -167,9 +166,6 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
   const diagramModel = useMemo<DiagramModel>(() => {
     const elements = [...model.elements.values()].map((element): DiagramModelElement => ({
       id: element.id,
@@ -281,7 +277,6 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose, onSubmit, onCancel }}
         ariaLabel="Functional decomposition graph"
         className="fdg-surface"
       />

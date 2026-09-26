@@ -191,6 +191,22 @@ public class WritableDocumentLifecycleTests : IDisposable
         Assert.Equal("after", File.ReadAllText(path));
     }
 
+    [Fact]
+    public void ASaveIntoAFolderNotThereYet_CreatesIt()
+    {
+        // A freshly registered diagram's body can sit in a folder nobody has made yet, and the first
+        // save is what creates it. Seven stores each did this themselves before task 6 moved it here.
+        var path = IoPath.Combine(_folder, "not", "there", "yet", "plan.note");
+        var lifecycle = Lifecycle();
+        var note = lifecycle.GetOrLoad(path);
+        note.Text = "first";
+
+        var saved = lifecycle.Save(path, note);
+
+        Assert.False(saved.Failed, saved.Error);
+        Assert.Equal("first", File.ReadAllText(path));
+    }
+
     private static WritableDocumentLifecycle<Note> Lifecycle(Action<string, string>? write = null) =>
         new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? new Action<string, string>(AdpFileWriter.Save));
 

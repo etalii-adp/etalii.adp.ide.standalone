@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- The repository's own guards: documents, scripts, conventions and line endings. Their subject is
+       the tree rather than any one project, so this project references none - each guard locates the
+       repository root by walking up from the test binary. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <!--
+      Directory.Build.targets compiles the shared LogCapture into every *.Tests project, and it is
+      written against Serilog. This project references no production project to bring it in
+      transitively, so it names the package itself, as Client.Tests does.
+    -->
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+</Project>

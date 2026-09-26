@@ -99,10 +99,18 @@ public sealed class WritableDocumentLifecycle<TDocument>
     /// must surface a failure rather than drop it; task 3's guard fails the build on a dropped one.
     /// </returns>
     /// <remarks>
+    /// <para>
     /// <b>The document is cached whether or not the write succeeded.</b> On success it is what the
     /// file now holds. On failure the edit stays in memory to be retried (R3.4) - including when a
     /// reload replaced the cached entry while the caller was editing, which would otherwise leave the
     /// edit reachable only through the caller's own reference.
+    /// </para>
+    /// <para>
+    /// <b>A folder that is not there yet is created first</b>, because the writer's scratch file has
+    /// nowhere to land without it. Seven of the nine writable stores each did this themselves before
+    /// task 6 - shared behaviour by count, which R2.1 leaves a module no room to supply - so it is done
+    /// once here. A folder that cannot be created is a failed write like any other.
+    /// </para>
     /// </remarks>
     public DocumentSaveResult Save(string path, TDocument document)
     {
@@ -113,6 +121,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
         _selfWrites.Begin(path, text);
         try
         {
+            CreateFolderOf(path);
             _write(path, text);
 
             // Cached while the self-write mark is still held, so a reload racing this save is either
@@ -129,6 +138,15 @@ public sealed class WritableDocumentLifecycle<TDocument>
         finally
         {
             _selfWrites.End(path);
+        }
+    }
+
+    private static void CreateFolderOf(string path)
+    {
+        var directory = IoPath.GetDirectoryName(path);
+        if (directory is { Length: > 0 } && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
         }
     }
 }

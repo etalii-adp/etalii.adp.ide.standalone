@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Repository.Tests;
 
 /// <summary>
 /// The two architecture pages still describe this tree: every path they name exists, every project
