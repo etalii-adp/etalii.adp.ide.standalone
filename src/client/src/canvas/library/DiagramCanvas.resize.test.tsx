@@ -124,3 +124,67 @@ describe("a type that declares no resize keeps exactly the handles it had", () =
     }
   });
 });
+
+/**
+ * A resize lands its moving edge on the declared `snap.x` lattice - during the gesture as well as
+ * on release, so the edge the reader watches is the one the module is told about.
+ */
+describe("a width resize snaps to the declared step", () => {
+  function snappedCanvas(events: LibraryEventHandlers = {}) {
+    const definition: DiagramDefinition = { ...definitionOf(), snap: { x: { step: 10, origin: 0 } } };
+    return render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvasCore definition={definition} model={model} events={events} selection={[{ kind: "element", id: "a" }]} />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+  }
+
+  it("lands a right edge dragged between two steps on the nearer one, and leaves the left edge where it was", () => {
+    // Arrange: the card spans 120..280; its right edge is dragged 13 right, to 293.
+    const onElementResized = vi.fn();
+    const { container } = snappedCanvas({ onElementResized });
+    const right = handle(container, "right")!;
+
+    // Act.
+    fireEvent(right, pointer("pointerdown", { button: 0, clientX: 280, clientY: 100 }));
+    fireEvent(right, pointer("pointermove", { clientX: 293, clientY: 100 }));
+    fireEvent(right, pointer("pointerup", { clientX: 293, clientY: 100 }));
+
+    // Assert: 290, not 293 - and the far edge untouched.
+    const raised = onElementResized.mock.calls[0][0] as { bounds: { x: number; width: number } };
+    expect(raised.bounds.x).toBe(120);
+    expect(raised.bounds.x + raised.bounds.width).toBe(290);
+  });
+
+  it("shows the snapped edge while the drag is still in flight", () => {
+    // Arrange.
+    const { container } = snappedCanvas();
+    const right = handle(container, "right")!;
+
+    // Act: mid-drag, nothing released.
+    fireEvent(right, pointer("pointerdown", { button: 0, clientX: 280, clientY: 100 }));
+    fireEvent(right, pointer("pointermove", { clientX: 293, clientY: 100 }));
+
+    // Assert: the handle rides the drawn edge, 3 either side of it - at 290, not at the pointer.
+    expect(Number(handle(container, "right")!.getAttribute("x")) + 3).toBe(290);
+  });
+
+  it("stops at one step wide rather than crossing the far edge", () => {
+    // Arrange.
+    const onElementResized = vi.fn();
+    const { container } = snappedCanvas({ onElementResized });
+    const right = handle(container, "right")!;
+
+    // Act: the right edge dragged far past the left one.
+    fireEvent(right, pointer("pointerdown", { button: 0, clientX: 280, clientY: 100 }));
+    fireEvent(right, pointer("pointermove", { clientX: -400, clientY: 100 }));
+    fireEvent(right, pointer("pointerup", { clientX: -400, clientY: 100 }));
+
+    // Assert.
+    const raised = onElementResized.mock.calls[0][0] as { bounds: { x: number; width: number } };
+    expect(raised.bounds.x).toBe(120);
+    expect(raised.bounds.width).toBe(10);
+  });
+});

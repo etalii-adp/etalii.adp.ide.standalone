@@ -49,6 +49,7 @@ export const OUTLINED_SHAPES: readonly BuiltInShape[] = [
   "trapezoid",
   "superellipse",
   "diode",
+  "arrow-banner",
 ];
 
 function at(bounds: ShapeBounds, fx: number, fy: number): ShapePoint {
@@ -83,6 +84,19 @@ export function outlineOf(shape: BuiltInShape, bounds: ShapeBounds): readonly Sh
     });
   }
 
+  if (shape === "arrow-banner") {
+    // A banner whose right end is a point. The depth is clamped to half the width as well as half
+    // the height, so a narrow banner is a triangle rather than a shape that folds back on itself.
+    const depth = arrowBannerPointDepth(bounds);
+    return [
+      { x: bounds.x, y: bounds.y },
+      { x: bounds.x + bounds.width - depth, y: bounds.y },
+      { x: bounds.x + bounds.width, y: bounds.y + (bounds.height / 2) },
+      { x: bounds.x + bounds.width - depth, y: bounds.y + bounds.height },
+      { x: bounds.x, y: bounds.y + bounds.height },
+    ];
+  }
+
   if (shape === "diode") {
     // A rectangle closed on the right by a semicircle: the shape reads as pointing right, which
     // is what it is for. A radius wider than the box would invert it, so it is clamped.
@@ -103,6 +117,11 @@ export function outlineOf(shape: BuiltInShape, bounds: ShapeBounds): readonly Sh
   }
 
   return [];
+}
+
+/** How far an `arrow-banner`'s point reaches back from its right edge: `min(h/2, w/2)`. */
+export function arrowBannerPointDepth(bounds: ShapeBounds): number {
+  return Math.max(0, Math.min(bounds.height / 2, bounds.width / 2));
 }
 
 /** Whether a point lies inside a closed outline, by the even-odd ray rule; the edge counts as in. */

@@ -12,12 +12,13 @@ This readme is about mechanism. **What a module may declare** — the `BuiltInSh
 
 ## Which shapes have an outline
 
-`OUTLINED_SHAPES` names them: `diamond`, `hexagon`, `parallelogram`, `trapezoid`, `superellipse` and `diode`.
+`OUTLINED_SHAPES` names them: `diamond`, `hexagon`, `parallelogram`, `trapezoid`, `superellipse`, `diode` and `arrow-banner`.
 
 - **`diamond`, `hexagon`, `parallelogram`** keep the corner lists the canvas already drew. They were moved here unchanged, so their drawing did not shift.
 - **`trapezoid`** has corners at the fractions (0,0), (1,0), (0.85,1), (0.15,1), so it is narrower at the bottom than at the top.
 - **`superellipse`** is the squircle, |x/a|⁴ + |y/b|⁴ = 1, sampled at 64 points (an even number, so the extremes land on samples).
 - **`diode`** is a rectangle from the left edge to `width − height/2`, closed on the right by a semicircle of radius `height/2`, whose arc is sampled at 24 points.
+- **`arrow-banner`** is a band from the left edge to `width − depth`, closed on the right by a point at mid-height, where the depth is `min(height/2, width/2)`. A type declaring `segments` draws it in phases through [`segments.ts`](segments.ts), which divides the same outline at the inner boundaries and draws a chevron or a line at each.
 
 **Every other shape has no outline here, deliberately.** `outlineOf` returns an **empty list** for `box`, `pill`, `ellipse` and the rest. It does not return their bounding box. The empty list means "no polygon outline; use the rectangle": those shapes keep the geometry they already had, because replacing a working circle with a 64-gon would move drawings nobody asked to move.
 

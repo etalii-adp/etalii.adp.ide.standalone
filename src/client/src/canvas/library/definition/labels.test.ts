@@ -36,6 +36,19 @@ describe("labels — the single-label case, which is most modules", () => {
     expect(at("beside").x).toBeGreaterThan(bounds.x + bounds.width);
   });
 
+  it("ends a before label 8 units left of the element, centred on it and end-anchored", () => {
+    // Arrange, act: the anchor and the x together decide where the text's RIGHT edge is, so both
+    // are asserted - a `before` that kept `beside`'s start anchor would run the name INTO the
+    // element from 8 units out, with the x exactly right.
+    const line = layoutLabels([{ text: { path: "payload.n" }, placement: "before" }], source({ n: "Steam engine" }), bounds)[0]!;
+
+    // Assert.
+    expect(line.anchor).toBe("end");
+    expect(line.x).toBe(bounds.x - 8);
+    // The same baseline offset every placement here adds to its centre line.
+    expect(line.y).toBe(bounds.y + bounds.height / 2 + 4);
+  });
+
   it("truncates to the box only when asked", () => {
     const long = "a".repeat(200);
     const plain = layoutLabels([{ text: { path: "payload.n" } }], source({ n: long }), bounds)[0]!;

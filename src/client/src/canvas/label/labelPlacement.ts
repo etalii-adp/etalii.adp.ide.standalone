@@ -134,3 +134,24 @@ export function asideLabelPlacement(
     text,
   };
 }
+
+/**
+ * The mirror of {@link asideLabelPlacement}: a label drawn to the LEFT of its element, end-anchored,
+ * so its right edge sits `gap` before `at` - the left edge's midpoint. Same width rule.
+ */
+export function beforeLabelPlacement(
+  at: LabelPoint,
+  gap: number,
+  text: string,
+  measuredWidth: number | null = null,
+): LabelPlacement {
+  const width = measuredWidth ?? Math.max(text.length * ESTIMATED_CHAR_WIDTH, MINIMUM_ESTIMATED_WIDTH);
+
+  return {
+    x: at.x - gap - width,
+    y: at.y - TEXT_LABEL_HEIGHT / 2,
+    width,
+    height: TEXT_LABEL_HEIGHT,
+    text,
+  };
+}

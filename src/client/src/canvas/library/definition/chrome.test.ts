@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { DiagramModelElement } from "../api/diagramModel";
 import type { BindingSource } from "./binding";
 import {
+  canvasPositionOf,
   DAY,
   HOUR,
   MINUTE,
+  monthIndexOf,
   resolveChromeText,
   resolveLegend,
   resolveTicks,
@@ -133,5 +135,69 @@ describe("chrome — a ruler's tick ladder", () => {
   it("converts a viewport into the ruler's own units through the declared scale", () => {
     const range = rulerRangeOf(timelineRuler, source({ secondsPerUnit: 3600 }), { start: 2, size: 4 });
     expect(range).toEqual({ from: 7200, to: 21600 });
+  });
+});
+
+/**
+ * A month-uniform scale, and the decade rung that lets a century and a half be read at all.
+ *
+ * The scale is the declaration's own - four canvas units a month from 1900-01 - so the numbers
+ * below are the scale's, not any diagram's.
+ */
+describe("chrome — a month-uniform ruler", () => {
+  const monthly: RulerDeclaration = {
+    orientation: "horizontal",
+    edge: "bottom",
+    scale: { unit: "month", unitsPerStep: 4, origin: "1900-01" },
+    ladder: [
+      { every: { calendar: "month" }, label: "MMM yyyy" },
+      { every: { calendar: "quarter" }, label: "MMM yyyy" },
+      { every: { calendar: "year" }, label: "yyyy" },
+      { every: { calendar: "decade" }, label: "yyyy" },
+    ],
+    minSpacingPx: 64,
+  };
+  const noSource = source({});
+  const x = (year: number, month: number) => ((year * 12) + (month - 1) - (1900 * 12)) * 4;
+
+  it("maps canvas x to month indices and back through the declared origin and step", () => {
+    // Arrange, act.
+    const range = rulerRangeOf(monthly, noSource, { start: x(1950, 1), size: 48 });
+
+    // Assert: twelve months of four units from January 1950, and the inverse lands on the same x.
+    expect(range).toEqual({ from: (1950 * 12), to: (1951 * 12) });
+    expect(canvasPositionOf(monthly, noSource, 1950 * 12)).toBe(x(1950, 1));
+    expect(monthIndexOf("1900-01")).toBe(1900 * 12);
+    expect(monthIndexOf("1769-13")).toBeNull();
+  });
+
+  it("steps months, quarters, years and decades as the visible span grows", () => {
+    // Arrange: one 1,000-pixel strip, four spans from a year to a century and a half.
+    const labelsFor = (years: number) => {
+      const range = rulerRangeOf(monthly, noSource, { start: x(1900, 1), size: years * 48 });
+      return resolveTicks(monthly, noSource, { ...range, sizePx: 1000 });
+    };
+
+    // Act, assert: a year shows months, three years quarters, twenty years years, and 150 decades.
+    expect(labelsFor(1).map((tick) => tick.label).slice(0, 3)).toEqual(["Jan 1900", "Feb 1900", "Mar 1900"]);
+    expect(labelsFor(3).map((tick) => tick.label).slice(0, 3)).toEqual(["Jan 1900", "Apr 1900", "Jul 1900"]);
+    expect(labelsFor(12).map((tick) => tick.label).slice(0, 3)).toEqual(["1900", "1901", "1902"]);
+    expect(labelsFor(150).map((tick) => tick.label).slice(0, 3)).toEqual(["1900", "1910", "1920"]);
+  });
+
+  it("keeps 150 years to a readable number of labels", () => {
+    // Arrange, act: a century and a half from 1760 across 1,000 pixels.
+    const range = rulerRangeOf(monthly, noSource, { start: x(1760, 1), size: 150 * 48 });
+    const ticks = resolveTicks(monthly, noSource, { ...range, sizePx: 1000 });
+
+    // Assert: at most one label per 64 pixels, give or take the rung's rounding - year ticks would
+    // be 150 labels, 6.7 pixels apart.
+    expect(ticks.length).toBeLessThanOrEqual(16);
+    expect(ticks[0]!.label).toBe("1760");
+  });
+
+  it("labels years before 1900 and before the epoch", () => {
+    const range = rulerRangeOf(monthly, noSource, { start: x(1769, 1), size: 48 });
+    expect(resolveTicks(monthly, noSource, { ...range, sizePx: 1000 })[0]!.label).toBe("Jan 1769");
   });
 });

@@ -1,4 +1,4 @@
-import type { ShapePoint } from "../definition/diagramDefinition";
+import type { EdgeAttachment, ShapePoint } from "../definition/diagramDefinition";
 
 /**
  * Everything the library's canvas can tell a module, one typed member per behaviour
@@ -19,6 +19,7 @@ export type DiagramEvent =
   | ElementDeleted
   | ElementMoved
   | ElementResized
+  | SegmentBoundaryMoved
   | ConnectionDrawn
   | ConnectionReleasedOnEmpty
   | ConnectionDeleted
@@ -72,6 +73,19 @@ export interface ElementResized {
 }
 
 /**
+ * An inner boundary between two drawn segments was dragged, where the type's segments declare
+ * `draggableBoundaries`. `index` is the boundary's (0 lies between segments 0 and 1), and `x` its
+ * new canvas position - already snapped with the definition's `snap.x` and clamped so no segment
+ * is narrower than one step. What the position MEANS is the module's.
+ */
+export interface SegmentBoundaryMoved {
+  kind: "segment-boundary-moved";
+  elementId: string;
+  index: number;
+  x: number;
+}
+
+/**
  * A connect gesture released over empty canvas, where the relation declares that release
  * meaningful (`emptyRelease: "complete"`) - the create-and-relate gesture. Under the default
  * the release raises nothing at all; this member exists only for definitions that opt in.
@@ -97,6 +111,12 @@ export interface ConnectionDrawn {
   targetElementId: string;
   sourceAnchor?: string;
   targetAnchor?: string;
+  /**
+   * Where the gesture started and ended along an edge, for an end whose element declares
+   * `{ kind: "along" }` anchors. Absent for every other end, which attaches as before.
+   */
+  sourceAttachment?: EdgeAttachment;
+  targetAttachment?: EdgeAttachment;
 }
 
 /** A delete gesture reached a connection. */

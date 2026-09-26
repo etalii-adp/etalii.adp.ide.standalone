@@ -117,6 +117,10 @@ enum ContextPropertyEditor {
   // are the other stages. `candidates` carries them and `value` is whichever is current, so
   // this stays a single-valued editor like the three above.
   CONTEXT_PROPERTY_EDITOR_CHOICE = 3;
+  // One of a known, ORDERED set, offered as a slider with one stop per candidate: a count of
+  // phases, a level. `candidates` carries the stops in order and `value` is whichever is
+  // current, committed exactly as CHOICE commits - the candidate, never its index.
+  CONTEXT_PROPERTY_EDITOR_SLIDER = 4;
 }
 
 message EntryDetail {

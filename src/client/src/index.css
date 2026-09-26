@@ -23,6 +23,11 @@
   --color-diagram-fdg-action: #9edcfa;
   --color-diagram-fdg-function: #86e6d9;
   --color-diagram-fdg-comment: #fcf281;
+  --color-diagram-hype-peak: #f7e7a1;
+  --color-diagram-hype-trough: #dfe3e8;
+  --color-diagram-hype-slope: #f6c99a;
+  --color-diagram-hype-plateau: #cde8a8;
+  --color-diagram-hype-chevron: #475569;
   /* FOUR TOKENS THE THEME LACKED, each carrying a distinction its diagram exists to show rather
      than a shade somebody liked. Added 2026-09-23 with client-centralization task 1, when
      azure-pipeline's ten private --adp-* and causal-loop's five --vscode-* were mapped onto the
@@ -80,6 +85,11 @@
     --color-diagram-fdg-action: #086fa1;
     --color-diagram-fdg-function: #187569;
     --color-diagram-fdg-comment: #736a03;
+    --color-diagram-hype-peak: #6b5a17;
+    --color-diagram-hype-trough: #475569;
+    --color-diagram-hype-slope: #7c4a1c;
+    --color-diagram-hype-plateau: #3f6212;
+    --color-diagram-hype-chevron: #e2e8f0;
     --color-border-strong: #94a3b8; /* the polarity flips with the ground, as --color-border does */
     --color-accent-subtle: #16351f; /* the same tint, lifted off the dark surface instead of the light one */
     --color-loop-reinforcing: #4daafc; /* the original hues, which only ever read on a dark ground - */
@@ -1448,6 +1458,25 @@ button {
 .property-grid-input-text {
   resize: vertical;
   min-height: 3.4em;
+}
+
+/* A slider over an ordered set of candidates, with the current one named beside it. */
+.property-grid-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.property-grid-input-slider {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}
+
+.property-grid-slider-value {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-text, #1f2430);
 }
 
 .property-grid-input-toggle {
