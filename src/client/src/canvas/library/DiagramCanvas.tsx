@@ -74,6 +74,8 @@ import type {
   ShapeSelection,
 } from "./definition/diagramDefinition";
 import { holds, resolveNumber, resolveOne, type Binding, type BindingSource } from "./definition/binding";
+import { useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
@@ -167,7 +169,11 @@ function shapedToPane(view: ViewBox, pane: PaneSize | null): ViewBox {
   return { x: view.x, y: view.y - (h - view.h) / 2, w: view.w, h };
 }
 
-/** The shell's inline-edit prompt, bridged: which target edits, and the editor's callbacks. */
+/**
+ * The shell's inline-edit prompt, bridged: which target edits, and the editor's callbacks.
+ * <b>Library-internal</b> since client-centralization task 7: the library reads the prompt itself
+ * where it owns the canvas, so a module passes nothing (Requirement 6).
+ */
 export interface DiagramEditingIntegration {
   editingId: string | null;
   onPropose: InlineLabelEditorProps["onPropose"];
@@ -189,7 +195,9 @@ export interface DiagramCanvasProps {
    * a picture with no backend - the canvas highlights its own last press and tells nobody.
    */
   source?: CanvasSource;
-  editing?: DiagramEditingIntegration;
+  // No `editing`: inline rename is the library's (client-centralization Requirement 6). Where it owns
+  // the canvas it reads the shell's prompt itself, so a module wires nothing - and typecheck refuses
+  // one that still passes the prop, which is how the old glue cannot come back.
   /**
    * The backend's toolbox entries, where the module has them. Omitted, the toolbox derives
    * from the definition's element types (Requirement 4.4). Either way this canvas registers
@@ -280,16 +288,25 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
  */
 export interface DiagramCanvasCoreProps extends Omit<DiagramCanvasProps, "events" | "source"> {
   events: LibraryEventHandlers;
+  /** The inline-edit prompt, bridged - the library's to supply. Omitted, the canvas edits no label inline. */
+  editing?: DiagramEditingIntegration;
   /** The selection to draw - the backend's, resolved by the library. Omitted, the core keeps its own last press. */
   selection?: DiagramSelection;
   /** The shared menu's wiring. Omitted, the core offers no menu. */
   context?: LibraryContextIntegration;
 }
 
-/** The canvas with its selection owned by the library: the one place the three props are made. */
+/**
+ * The canvas with its selection and its inline rename owned by the library: the one place those
+ * props are made. The rename is the shell's prompt, read here - which target the backend opened a
+ * label editor for, and the editor's propose, submit and cancel - where nine modules each wrote the
+ * same three lines to pass it in (client-centralization Requirement 6).
+ */
 function LibraryOwnedCanvas(props: DiagramCanvasProps & { source: CanvasSource }) {
   const { selection, context, events } = useLibrarySelection(props.source, props.model, props.definition, props.events);
-  return <DiagramCanvasCore {...props} selection={selection} context={context} events={events} />;
+  const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
+  const editing = { editingId: inlineLabelElementIdOf(prompt), onPropose, onSubmit, onCancel };
+  return <DiagramCanvasCore {...props} selection={selection} context={context} events={events} editing={editing} />;
 }
 
 /** The canvas itself, beneath the selection wrapper. Library-internal - see {@link DiagramCanvasCoreProps}. */

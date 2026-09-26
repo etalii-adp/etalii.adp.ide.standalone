@@ -416,13 +416,15 @@ Source: [`src/client/src/canvas/library/examples/chrome.example.ts`](../src/clie
 
 ## The canvas
 
-**Declarations:** `DiagramCanvas`, `DiagramRuntimeConfig`, `assertValidDiagramDefinition`, `DiagramCanvasProps`, `DiagramEditingIntegration`
+**Declarations:** `DiagramCanvas`, `DiagramRuntimeConfig`, `assertValidDiagramDefinition`, `DiagramCanvasProps`
 
 **What it is for.** The one component that draws a diagram. A module renders it, hands it a definition, a model and a set of handlers, and writes no rendering code of its own.
 
 **Whether a module needs it.** Always. There is no second way to draw.
 
-**Its shape.** `DiagramCanvas` takes `definition`, `model`, `events`, `config`, `source`, `editing`, `toolboxItems`, `className`, `scrollbarsClassName` and `ariaLabel`. **`DiagramCanvasProps` is declared twice in this tree** — the shell's, which is what a canvas COMPONENT receives (`projectId`, `entryId`, `path`, `editorId`, `initialLine`), and the library's, which is the props above. Both are module-facing and neither is wrong; a module uses the first to receive its arguments and the second to hand them on.
+**Its shape.** `DiagramCanvas` takes `definition`, `model`, `events`, `config`, `source`, `toolboxItems`, `className`, `scrollbarsClassName` and `ariaLabel`. **`DiagramCanvasProps` is declared twice in this tree** — the shell's, which is what a canvas COMPONENT receives (`projectId`, `entryId`, `path`, `editorId`, `initialLine`), and the library's, which is the props above. Both are module-facing and neither is wrong; a module uses the first to receive its arguments and the second to hand them on.
+
+**Inline rename is the library's, as selection is.** Given `source`, the canvas reads the shell's inline-edit prompt itself and opens the shared editor over the label the backend named, so a label marked `editable` in the definition needs nothing else. Until `client-centralization` task 7 nine modules each built an `editing` prop from the same three lines to pass in; the prop is gone from `DiagramCanvasProps`, so **typecheck refuses a module that still passes it**.
 
 **`config` is the runtime half.** `DiagramRuntimeConfig` carries `dragging`, `activeLayoutMode`, `activeTool` and `definitionOverrides`, and is applied on the next render — so a mode that forbids editing, or a phase that disables a relation type, is an edit to this object rather than a remount.
 
@@ -435,14 +437,13 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         ariaLabel="Dependency graph"
         className="dependency-graph-surface"
         scrollbarsClassName="dependency-graph-scrollbars"
       />
 ```
 
-**Their members.** `DiagramCanvasProps` carries `definition`, `model`, `events`, `config`, `source`, `editing`, `toolboxItems`, `className`, `scrollbarsClassName`, `ariaLabel`; `DiagramEditingIntegration` carries `editingId`, `onPropose`, `onSubmit`, `onCancel`.
+**Their members.** `DiagramCanvasProps` carries `definition`, `model`, `events`, `config`, `source`, `toolboxItems`, `className`, `scrollbarsClassName`, `ariaLabel`.
 
 ## Events, and how a module answers them
 
@@ -520,13 +521,13 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## The context channel
 
-**Declarations:** `useContextConnection`, `useContextPrompt`, `elementSourceOf`, `inlineLabelElementIdOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`
+**Declarations:** `useContextConnection`, `elementSourceOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`
 
-**What it is for.** Running an action against the backend, and answering a prompt it asks in return.
+**What it is for.** Running an action against the backend. A prompt the backend asks in return — an inline rename among them — is answered by the shell and the library, not by the module.
 
-**Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction`, which is how a module runs an action it answers itself — a drawn connection, a drop; `useContextPrompt` gives the inline-edit prompt and its propose, submit and cancel callbacks.
+**Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction`, which is how a module runs an action it answers itself — a drawn connection, a drop.
 
-**Its shape.** `elementSourceOf` builds the source an action is run against. `inlineLabelElementIdOf` says which element an open label prompt belongs to.
+**Its shape.** `elementSourceOf` builds the source an action is run against.
 
 **A keystroke is not a module's to send.** The same connection also offers `executeShortcut`, and it is the library's: a declared action names its key in `backendKey` (see [Actions, shortcuts and enablement](#actions-shortcuts-and-enablement)) and the library sends it. `contextShortcutOf` and `ContextShortcut`, which built that request, have no entry here for that reason, and `noModuleSendsAKeystroke.test.ts` fails on a module that names either, or `executeShortcut`.
 
@@ -538,8 +539,6 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
-
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
 ```
 
 **Their members.** `ActionOutcome` carries `accepted`, `error`.
@@ -656,7 +655,7 @@ sequenceDiagram
 | `noPrivateGestures.test.ts` | a module-owned drag, pan or connect layer | the library's gesture handling |
 | `noModuleSelection.test.ts` | deriving or pushing a selection | the library owns selection |
 | `noPrivateScrollbars.test.ts` | a module's own scrollbars | the shared scroll surface |
-| `noPrivateLabelEditors.test.ts` | a module's own inline label editor | `useContextPrompt` and the declared label |
+| `noPrivateLabelEditors.test.ts` | a module's own inline label editor | the declared label, which the library edits from the backend's prompt |
 | `noPrivateViewReports.test.ts` | a hand-rolled viewport report | `useViewReport` |
 | `diagramStreamOpensOnlyInHook.test.ts` | opening a delta stream anywhere else | `useDiagramStream`, which every module wraps |
 | `declarativeModules.test.ts` | drawing a diagram outside the declaration | `DiagramDefinition` |
@@ -696,7 +695,7 @@ sequenceDiagram
 
 **The list is computed, not maintained.** It is exactly the library's exports that appear in neither set, so it cannot drift from the code: a name that leaves the library fails the test, and a name a module starts importing leaves this list and must gain an entry above.
 
-**67 names**, read at `c1caca92`, where `client-centralization` task 6 added `ActionDeclaring` and `backendKeyOf` for the library's own use:
+**68 names**, read on `client-centralization` task 7's branch over `develop` at `a062888d`: `client-centralization` task 6 added `ActionDeclaring` and `backendKeyOf`, and task 7 `DiagramEditingIntegration`, for the library's own use:
 
-`ActionDeclaring`, `ActionLookup`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
+`ActionDeclaring`, `ActionLookup`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DiagramEditingIntegration`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
 

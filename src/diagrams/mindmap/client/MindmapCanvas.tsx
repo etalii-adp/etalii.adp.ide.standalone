@@ -6,8 +6,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
@@ -185,9 +184,6 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
   const definition = useMemo(() => definitionOf(), [model]);
 
   const diagramModel = useMemo<DiagramModel>(() => {
@@ -277,7 +273,6 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         className="mindmap-canvas-host"
         ariaLabel="Mind map"
       />

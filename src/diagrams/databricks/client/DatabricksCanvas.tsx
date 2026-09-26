@@ -10,8 +10,7 @@ import type {
 } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useViewReport } from "@client/diagrams/useViewReport";
@@ -277,9 +276,6 @@ export function DatabricksCanvas({
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
   const diagramModel = useMemo<DiagramModel>(() => {
     // Frames first, so everything they enclose paints on top.
     const frames = [...model.frames.values()].map((frame): FrameBoxElement => ({
@@ -398,7 +394,6 @@ export function DatabricksCanvas({
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         ariaLabel={ariaLabel}
         className="databricks-surface"
         scrollbarsClassName="databricks-scrollbars"

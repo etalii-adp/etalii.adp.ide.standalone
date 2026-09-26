@@ -6,8 +6,7 @@ import { assertValidDiagramDefinition } from "@client/canvas/library/definition/
 import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import { useContextConnection, useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { C4Model, C4Node, C4BoundaryBox } from "./c4Model";
@@ -194,9 +193,6 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-
   const diagramModel = useMemo<DiagramModel>(() => {
     const boundaries = [...model.boundaries.values()].map((boundary): C4BoundaryElement => ({
       id: boundary.id,
@@ -303,7 +299,6 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
         events={events}
         source={{ entryId, path }}
         toolboxItems={toolboxItems}
-        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
         className="c4-canvas-host"
         scrollbarsClassName="c4-scrollbars"
         ariaLabel={model.view?.title ?? "C4 diagram"}
