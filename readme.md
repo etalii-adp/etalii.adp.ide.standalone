@@ -1,8 +1,8 @@
 # ADP — A Different Perspective
 
-Specialized diagram, designer and editor experiences, each tuned to one task, backed by plain files that live beside the work they describe. This repository is the standalone web workspace host.
+[![Build](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml?query=branch%3Adevelop)
 
-[![Build](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml/badge.svg)](https://github.com/etalii-adp/etalii.adp.ide.standalone/actions/workflows/build.yml)
+Specialized diagram, designer and editor experiences, each tuned to one task, backed by plain files that live beside the work they describe. This repository is the standalone web workspace host.
 
 ## Why
 
