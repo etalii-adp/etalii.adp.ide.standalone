@@ -1,11 +1,13 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
 /// The numbers the layout arranges by. Estimates of text metrics that only exist in a browser,
-/// declared here so the backend and the canvas name the same sizes.
+/// declared here so the backend and the canvas name the same sizes. The text's own width is the
+/// shared <see cref="TextMetric"/>; the padding and minimum around it are this module's.
 /// </summary>
 /// <param name="FontSize">In canvas units (CSS pixels).</param>
-/// <param name="AverageAdvance">The estimated width of one character, as a fraction of <paramref name="FontSize"/>.</param>
 /// <param name="HorizontalPadding">Inside a node box, each side.</param>
 /// <param name="NodeHeight">Every node is one line tall; this type draws no multi-line boxes.</param>
 /// <param name="MinimumWidth">So a short name is still something to click on.</param>
@@ -18,7 +20,6 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </param>
 public sealed record AnsibleMetrics(
     double FontSize = 14,
-    double AverageAdvance = 0.55,
     double HorizontalPadding = 12,
     double NodeHeight = 32,
     double MinimumWidth = 72,
@@ -30,5 +31,5 @@ public sealed record AnsibleMetrics(
 
     /// <summary>The width a node labelled <paramref name="text"/> needs.</summary>
     public double Measure(string? text) =>
-        Math.Max(MinimumWidth, (text ?? "").Length * FontSize * AverageAdvance + (2 * HorizontalPadding));
+        Math.Max(MinimumWidth, TextMetric.WidthOf(text ?? "", FontSize) + (2 * HorizontalPadding));
 }
