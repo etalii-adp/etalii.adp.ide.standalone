@@ -4,7 +4,8 @@ using Xunit;
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 
 /// <summary>
-/// The energy-breakthroughs, llms-and-agents and coal-technologies examples, held to what their readmes claim - every claim
+/// The energy-breakthroughs, llms-and-agents, coal-technologies, electric-vehicles, internet-evolution and
+/// warfare-in-ukraine examples, held to what their readmes claim - every claim
 /// asserted from the parsed model rather than by eye, as <see cref="GhgDigitalExampleTests"/> does for
 /// digital-trends.
 /// </summary>
@@ -15,16 +16,19 @@ public class GhgEnergyAndAgentsExamplesTests
         { "energy-breakthroughs", 33, 46 },
         { "llms-and-agents", 35, 56 },
         { "coal-technologies", 34, 45 },
+        { "electric-vehicles", 28, 40 },
+        { "internet-evolution", 34, 46 },
+        { "warfare-in-ukraine", 29, 42 },
     };
 
-    public static TheoryData<string> Examples => ["energy-breakthroughs", "llms-and-agents", "coal-technologies"];
+    public static TheoryData<string> Examples => ["energy-breakthroughs", "llms-and-agents", "coal-technologies", "electric-vehicles", "internet-evolution", "warfare-in-ukraine"];
 
     public static TheoryData<string, int> EveryPhaseCount
     {
         get
         {
             var data = new TheoryData<string, int>();
-            foreach (var name in new[] { "energy-breakthroughs", "llms-and-agents", "coal-technologies" })
+            foreach (var name in new[] { "energy-breakthroughs", "llms-and-agents", "coal-technologies", "electric-vehicles", "internet-evolution", "warfare-in-ukraine" })
             {
                 for (var phases = 1; phases <= GhgPhases.Count; phases++)
                 {
@@ -115,6 +119,15 @@ public class GhgEnergyAndAgentsExamplesTests
     [InlineData("coal-technologies", "power")]
     [InlineData("coal-technologies", "gasification or liquids")]
     [InlineData("coal-technologies", "upcoming or conceptual")]
+    [InlineData("electric-vehicles", "batteries")]
+    [InlineData("electric-vehicles", "vehicles or charging")]
+    [InlineData("electric-vehicles", "upcoming or conceptual")]
+    [InlineData("internet-evolution", "networking")]
+    [InlineData("internet-evolution", "web or community")]
+    [InlineData("internet-evolution", "upcoming or conceptual")]
+    [InlineData("warfare-in-ukraine", "drones")]
+    [InlineData("warfare-in-ukraine", "drones and ew")]
+    [InlineData("warfare-in-ukraine", "upcoming or conceptual")]
     public void EachFilterTheReadmeNames_MatchesSomeTrends_AndHidesSome(string name, string filter)
     {
         Func<IReadOnlyList<string>, bool> matches = filter switch
@@ -122,6 +135,12 @@ public class GhgEnergyAndAgentsExamplesTests
             "fusion" => tags => tags.Contains("fusion"),
             "agents" => tags => tags.Contains("agents"),
             "power" => tags => tags.Contains("power"),
+            "batteries" => tags => tags.Contains("batteries"),
+            "networking" => tags => tags.Contains("networking"),
+            "drones" => tags => tags.Contains("drones"),
+            "vehicles or charging" => tags => tags.Contains("vehicles") || tags.Contains("charging"),
+            "web or community" => tags => tags.Contains("web") || tags.Contains("community"),
+            "drones and ew" => tags => tags.Contains("drones") && tags.Contains("ew"),
             "gasification or liquids" => tags => tags.Contains("gasification") || tags.Contains("liquids"),
             "nuclear or fusion" => tags => tags.Contains("nuclear") || tags.Contains("fusion"),
             "agents and coding" => tags => tags.Contains("agents") && tags.Contains("coding"),
@@ -142,6 +161,12 @@ public class GhgEnergyAndAgentsExamplesTests
     [InlineData("llms-and-agents", "conceptual", new[] { "agent-economies", "autonomous-research-agents", "continual-learning", "recursive-self-improvement", "verified-code-generation" })]
     [InlineData("coal-technologies", "upcoming", new[] { "coal-plant-repowering", "coal-to-hydrogen" })]
     [InlineData("coal-technologies", "conceptual", new[] { "coal-to-carbon-materials", "critical-minerals-from-coal-ash", "direct-carbon-fuel-cells" })]
+    [InlineData("electric-vehicles", "upcoming", new[] { "electric-air-taxis", "robotaxis" })]
+    [InlineData("electric-vehicles", "conceptual", new[] { "lithium-air-batteries", "structural-batteries", "wireless-charging-roads" })]
+    [InlineData("internet-evolution", "upcoming", new[] { "6g", "agentic-web" })]
+    [InlineData("internet-evolution", "conceptual", new[] { "interplanetary-internet", "quantum-internet" })]
+    [InlineData("warfare-in-ukraine", "upcoming", new[] { "drone-walls", "ground-robots", "laser-air-defence" })]
+    [InlineData("warfare-in-ukraine", "conceptual", new[] { "autonomous-drone-swarms", "human-machine-teams" })]
     public void TheUpcomingAndConceptualIdeas_AreTheOnesTheReadmeNames(string name, string tag, string[] expected)
     {
         var tagged = Model(name).Trends.Where(trend => trend.Tags.Contains(tag)).Select(trend => trend.Id).Order();
@@ -153,6 +178,9 @@ public class GhgEnergyAndAgentsExamplesTests
     [InlineData("energy-breakthroughs", new[] { "cold-fusion", "fission-power", "inertial-confinement-fusion", "molten-salt-reactors", "room-temperature-superconductors", "small-modular-reactors", "solar-photovoltaics", "stellarator", "tokamak" })]
     [InlineData("llms-and-agents", new[] { "autonomous-agents", "chat-assistants", "large-language-models", "multi-agent-systems", "prompt-engineering", "scaling-laws", "tool-use", "vibe-coding" })]
     [InlineData("coal-technologies", new[] { "carbon-capture-and-storage", "steam-locomotive" })]
+    [InlineData("electric-vehicles", new[] { "battery-electric-cars", "battery-swapping", "electric-air-taxis", "self-driving" })]
+    [InlineData("internet-evolution", new[] { "dot-com-bubble", "web3" })]
+    [InlineData("warfare-in-ukraine", new[] { "anti-tank-missiles", "fpv-drones", "rocket-artillery", "satellite-communications", "strike-drones" })]
     public void TheDraggedBoundaries_AreOnTheTrendsTheReadmeNames(string name, string[] expected)
     {
         var dragged = Model(name).Trends.Where(trend => trend.DraggedEnds.Any(end => end is not null)).Select(trend => trend.Id).Order();
