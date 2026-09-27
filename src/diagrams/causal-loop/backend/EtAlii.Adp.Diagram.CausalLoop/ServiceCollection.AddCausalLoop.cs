@@ -49,7 +49,7 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<IDiagramDocumentFactory>(_ => new CausalLoopDocumentFactory(CausalLoopOrigin));
 
         // The edit commands, each with a byte-restoring inverse.
-        services.AddSingleton<ICommandHandler<RestoreCausalLoopDocumentCommand>, RestoreCausalLoopDocumentCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<ICausalLoopDocumentStore>>, RestoreDocumentCommandHandler<ICausalLoopDocumentStore>>();
         services.AddSingleton<ICommandHandler<AddVariableCommand>, AddVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<RenameVariableCommand>, RenameVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveVariableCommand>, RemoveVariableCommandHandler>();
