@@ -14,14 +14,14 @@ trends:
     name: Coke iron smelting
     start: 1760-01
     stop: 1830-01
-    row: 1
+    row: 2
     phases: 4
     tags: [industry, energy]
   - id: mechanised-textiles
     name: Mechanised textiles
     start: 1764-01
     stop: 1850-01
-    row: 2
+    row: 4
     phases: 4
     tags: [industry]
     description: The spinning jenny, the water frame and the power loom.
@@ -29,7 +29,7 @@ trends:
     name: Factory system
     start: 1771-01
     stop: 1860-01
-    row: 3
+    row: 6
     phases: 4
     tags: [industry, society]
     description: Arkwright's Cromford mill and its many imitators.
@@ -37,14 +37,14 @@ trends:
     name: Interchangeable parts
     start: 1798-01
     stop: 1880-01
-    row: 4
+    row: 8
     phases: 4
     tags: [industry]
   - id: machine-tools
     name: Machine tools
     start: 1800-01
     stop: 1900-01
-    row: 5
+    row: 10
     phases: 4
     tags: [industry]
   - id: bessemer-steel
@@ -59,7 +59,7 @@ trends:
     name: Industrial chemistry
     start: 1856-01
     stop: 1950-01
-    row: 1
+    row: 2
     phases: 4
     tags: [industry, science]
     description: From synthetic dyes onwards.
@@ -67,7 +67,7 @@ trends:
     name: Second Industrial Revolution
     start: 1870-01
     stop: 1914-01
-    row: 2
+    row: 4
     phases: 4
     tags: [industry, society]
     description: Steel, chemicals, electricity and mass markets.
@@ -75,14 +75,14 @@ trends:
     name: Scientific management
     start: 1890-01
     stop: 1940-01
-    row: 3
+    row: 6
     phases: 4
     tags: [industry, society]
   - id: plastics
     name: Plastics
     start: 1907-01
     stop: 1990-01
-    row: 4
+    row: 8
     phases: 4
     tags: [industry, science]
     description: From Bakelite onwards.
@@ -90,7 +90,7 @@ trends:
     name: Mass production
     start: 1908-01
     stop: 1970-01
-    row: 5
+    row: 10
     phases: 4
     tags: [industry, transport]
     description: The moving assembly line at Highland Park.
@@ -98,7 +98,7 @@ trends:
     name: Synthetic fertiliser
     start: 1913-01
     stop: 1970-01
-    row: 6
+    row: 12
     phases: 4
     tags: [industry, science, health]
     description: The Haber-Bosch process.
@@ -106,7 +106,7 @@ trends:
     name: Fordism
     start: 1914-01
     stop: 1973-01
-    row: 7
+    row: 14
     phases: 4
     tags: [industry, society]
   - id: green-revolution
@@ -120,21 +120,21 @@ trends:
     name: Lean manufacturing
     start: 1950-01
     stop: 2000-01
-    row: 2
+    row: 4
     phases: 4
     tags: [industry]
   - id: automation
     name: Workplace automation
     start: 1955-01
     stop: 2030-01
-    row: 1
+    row: 2
     phases: 3
     tags: [industry, computing, society]
   - id: industrial-robots
     name: Industrial robots
     start: 1961-01
     stop: 2010-01
-    row: 3
+    row: 6
     phases: 4
     tags: [industry, computing]
     description: Unimate on a General Motors line.
@@ -142,28 +142,28 @@ trends:
     name: Just-in-time logistics
     start: 1970-01
     stop: 2005-01
-    row: 8
+    row: 16
     phases: 4
     tags: [industry, transport]
   - id: globalisation
     name: Globalisation
     start: 1980-01
     stop: 2020-01
-    row: 5
+    row: 10
     phases: 4
     tags: [society, industry, finance]
   - id: offshoring
     name: Offshoring
     start: 1985-01
     stop: 2015-01
-    row: 6
+    row: 12
     phases: 4
     tags: [industry, society]
   - id: 3d-printing
     name: 3D printing
     start: 1986-01
     stop: 2030-01
-    row: 7
+    row: 14
     phases: 3
     tags: [industry, computing]
   - id: industry-4
@@ -177,21 +177,21 @@ trends:
     name: Circular economy
     start: 2012-01
     stop: 2040-01
-    row: 2
+    row: 4
     phases: 2
     tags: [industry, society, energy]
   - id: reshoring
     name: Reshoring
     start: 2018-01
     stop: 2035-01
-    row: 3
+    row: 6
     phases: 1
     tags: [industry, society]
   - id: coal
     name: Coal power
     start: 1760-01
     stop: 1960-01
-    row: 10
+    row: 20
     phases: 4
     tags: [energy, industry]
     description: The fuel of the first two industrial revolutions.
@@ -199,7 +199,7 @@ trends:
     name: Steam engine
     start: 1765-01
     stop: 1900-01
-    row: 11
+    row: 22
     phases: 4
     trough-end: 1800-01
     tags: [energy, industry]
@@ -208,7 +208,7 @@ trends:
     name: Electric battery
     start: 1800-01
     stop: 1880-01
-    row: 12
+    row: 24
     phases: 4
     tags: [energy, science]
     description: Volta's pile.
@@ -216,14 +216,14 @@ trends:
     name: Gas lighting
     start: 1807-01
     stop: 1910-01
-    row: 13
+    row: 26
     phases: 4
     tags: [energy, society]
   - id: electromagnetism
     name: Electromagnetism
     start: 1820-01
     stop: 1880-01
-    row: 14
+    row: 28
     phases: 4
     tags: [science, energy]
     description: Oersted, Faraday and Maxwell.
@@ -231,7 +231,7 @@ trends:
     name: Petroleum
     start: 1859-01
     stop: 2030-01
-    row: 15
+    row: 30
     phases: 4
     tags: [energy, transport]
     description: From Drake's well in Titusville.
@@ -239,28 +239,28 @@ trends:
     name: Dynamo
     start: 1866-01
     stop: 1910-01
-    row: 16
+    row: 32
     phases: 4
     tags: [energy]
   - id: internal-combustion
     name: Internal combustion engine
     start: 1876-01
     stop: 1950-01
-    row: 17
+    row: 34
     phases: 4
     tags: [energy, transport]
   - id: electric-light
     name: Electric light
     start: 1879-01
     stop: 1930-01
-    row: 18
+    row: 36
     phases: 4
     tags: [energy, society]
   - id: electricity-grid
     name: Electricity grid
     start: 1882-01
     stop: 1960-01
-    row: 12
+    row: 24
     phases: 4
     tags: [energy, society]
     description: Pearl Street Station, then the war of the currents.
@@ -268,56 +268,56 @@ trends:
     name: Hydroelectric power
     start: 1882-01
     stop: 1970-01
-    row: 14
+    row: 28
     phases: 4
     tags: [energy]
   - id: steam-turbine
     name: Steam turbine
     start: 1884-01
     stop: 1950-01
-    row: 19
+    row: 38
     phases: 4
     tags: [energy, transport]
   - id: alternating-current
     name: Alternating current
     start: 1886-01
     stop: 1920-01
-    row: 20
+    row: 40
     phases: 4
     tags: [energy]
   - id: diesel-engine
     name: Diesel engine
     start: 1893-01
     stop: 1960-01
-    row: 21
+    row: 42
     phases: 4
     tags: [energy, transport]
   - id: rural-electrification
     name: Rural electrification
     start: 1930-01
     stop: 1960-01
-    row: 11
+    row: 22
     phases: 4
     tags: [energy, society]
   - id: nuclear-fission
     name: Nuclear fission
     start: 1938-12
     stop: 1955-01
-    row: 13
+    row: 26
     phases: 4
     tags: [energy, science]
   - id: natural-gas
     name: Natural gas
     start: 1950-01
     stop: 2030-01
-    row: 16
+    row: 32
     phases: 4
     tags: [energy]
   - id: fusion
     name: Nuclear fusion
     start: 1951-01
     stop: 2050-01
-    row: 18
+    row: 36
     phases: 1
     tags: [energy, science]
     description: Always thirty years away.
@@ -325,7 +325,7 @@ trends:
     name: Nuclear power
     start: 1954-01
     stop: 2030-01
-    row: 17
+    row: 34
     phases: 4
     peak-end: 1974-01
     trough-end: 1995-01
@@ -335,7 +335,7 @@ trends:
     name: Solar photovoltaics
     start: 1954-01
     stop: 2035-01
-    row: 19
+    row: 38
     phases: 4
     trough-end: 1985-01
     slope-end: 2010-01
@@ -345,28 +345,28 @@ trends:
     name: Oil crises
     start: 1973-10
     stop: 1986-01
-    row: 10
+    row: 20
     phases: 3
     tags: [energy, finance, society]
   - id: wind-power
     name: Wind power
     start: 1980-01
     stop: 2035-01
-    row: 11
+    row: 22
     phases: 4
     tags: [energy]
   - id: lithium-ion
     name: Lithium-ion batteries
     start: 1991-01
     stop: 2035-01
-    row: 10
+    row: 20
     phases: 4
     tags: [energy, computing]
   - id: hydrogen-economy
     name: Hydrogen economy
     start: 2000-01
     stop: 2040-01
-    row: 12
+    row: 24
     phases: 2
     tags: [energy, transport]
     description: Twice hyped, twice disappointed.
@@ -374,42 +374,42 @@ trends:
     name: Shale gas and fracking
     start: 2005-01
     stop: 2030-01
-    row: 13
+    row: 26
     phases: 3
     tags: [energy]
   - id: carbon-capture
     name: Carbon capture
     start: 2005-01
     stop: 2040-01
-    row: 14
+    row: 28
     phases: 2
     tags: [energy, science]
   - id: energy-transition
     name: Energy transition
     start: 2006-01
     stop: 2050-01
-    row: 20
+    row: 40
     phases: 2
     tags: [energy, society]
   - id: grid-storage
     name: Grid-scale storage
     start: 2015-01
     stop: 2035-01
-    row: 21
+    row: 42
     phases: 2
     tags: [energy]
   - id: small-modular-reactors
     name: Small modular reactors
     start: 2015-01
     stop: 2040-01
-    row: 22
+    row: 44
     phases: 1
     tags: [energy]
   - id: canals
     name: Canals
     start: 1761-01
     stop: 1840-01
-    row: 24
+    row: 48
     phases: 4
     tags: [transport, industry]
     description: The Bridgewater Canal.
@@ -417,14 +417,14 @@ trends:
     name: Steamboats
     start: 1807-01
     stop: 1870-01
-    row: 25
+    row: 50
     phases: 4
     tags: [transport, energy]
   - id: railways
     name: Railways
     start: 1825-09
     stop: 1930-01
-    row: 26
+    row: 52
     phases: 4
     tags: [transport, industry]
     description: From Stockton and Darlington.
@@ -432,14 +432,14 @@ trends:
     name: Ocean steamships
     start: 1838-01
     stop: 1920-01
-    row: 27
+    row: 54
     phases: 4
     tags: [transport, energy]
   - id: railway-mania
     name: Railway mania
     start: 1843-01
     stop: 1850-01
-    row: 24
+    row: 48
     phases: 3
     peak-end: 1846-01
     tags: [transport, finance]
@@ -448,21 +448,21 @@ trends:
     name: Transcontinental railroad
     start: 1863-01
     stop: 1900-01
-    row: 24
+    row: 48
     phases: 4
     tags: [transport, society]
   - id: underground-railways
     name: Underground railways
     start: 1863-01
     stop: 1930-01
-    row: 28
+    row: 56
     phases: 4
     tags: [transport, society]
   - id: bicycle
     name: Bicycle
     start: 1867-01
     stop: 1910-01
-    row: 29
+    row: 58
     phases: 4
     tags: [transport, society]
     description: The safety bicycle and the boom of the 1890s.
@@ -470,14 +470,14 @@ trends:
     name: Electric tram
     start: 1881-01
     stop: 1950-01
-    row: 25
+    row: 50
     phases: 4
     tags: [transport, energy]
   - id: automobile
     name: Automobile
     start: 1886-01
     stop: 1960-01
-    row: 30
+    row: 60
     phases: 4
     tags: [transport, industry]
     description: Benz's Patent-Motorwagen.
@@ -485,7 +485,7 @@ trends:
     name: Aviation
     start: 1903-12
     stop: 1960-01
-    row: 24
+    row: 48
     phases: 4
     tags: [transport, science]
     description: Kitty Hawk.
@@ -493,42 +493,42 @@ trends:
     name: Commercial aviation
     start: 1919-01
     stop: 1990-01
-    row: 29
+    row: 58
     phases: 4
     tags: [transport]
   - id: motorways
     name: Motorways
     start: 1924-01
     stop: 1980-01
-    row: 27
+    row: 54
     phases: 4
     tags: [transport, society]
   - id: jet-engine
     name: Jet engine
     start: 1937-01
     stop: 1975-01
-    row: 26
+    row: 52
     phases: 4
     tags: [transport, energy]
   - id: suburbanisation
     name: Suburbanisation
     start: 1945-01
     stop: 1990-01
-    row: 28
+    row: 56
     phases: 4
     tags: [society, transport]
   - id: jet-age
     name: Jet age
     start: 1952-01
     stop: 1990-01
-    row: 25
+    row: 50
     phases: 4
     tags: [transport, society]
   - id: container-shipping
     name: Container shipping
     start: 1956-01
     stop: 2000-01
-    row: 31
+    row: 62
     phases: 4
     tags: [transport, industry, finance]
     description: Malcom McLean's Ideal X.
@@ -536,7 +536,7 @@ trends:
     name: Space flight
     start: 1957-10
     stop: 2000-01
-    row: 32
+    row: 64
     phases: 4
     tags: [transport, science]
     description: Sputnik and the space race.
@@ -544,7 +544,7 @@ trends:
     name: High-speed rail
     start: 1964-01
     stop: 2020-01
-    row: 24
+    row: 48
     phases: 4
     tags: [transport]
     description: The Shinkansen.
@@ -552,14 +552,14 @@ trends:
     name: Satellite navigation
     start: 1973-01
     stop: 2020-01
-    row: 30
+    row: 60
     phases: 4
     tags: [transport, computing, communication]
   - id: autonomous-vehicles
     name: Autonomous vehicles
     start: 2004-01
     stop: 2040-01
-    row: 25
+    row: 50
     phases: 2
     tags: [transport, computing]
     description: From the DARPA Grand Challenge.
@@ -567,7 +567,7 @@ trends:
     name: Electric vehicles
     start: 2008-01
     stop: 2040-01
-    row: 26
+    row: 52
     phases: 3
     tags: [transport, energy]
     description: The Roadster, then everything else.
@@ -575,7 +575,7 @@ trends:
     name: Commercial space flight
     start: 2008-01
     stop: 2040-01
-    row: 27
+    row: 54
     phases: 3
     tags: [transport, science]
     description: Reusable rockets.
@@ -583,28 +583,28 @@ trends:
     name: Ride-hailing
     start: 2009-01
     stop: 2030-01
-    row: 28
+    row: 56
     phases: 3
     tags: [transport, computing]
   - id: drones
     name: Consumer and delivery drones
     start: 2010-01
     stop: 2035-01
-    row: 29
+    row: 58
     phases: 2
     tags: [transport, computing]
   - id: urban-air-mobility
     name: Urban air mobility
     start: 2016-01
     stop: 2040-01
-    row: 31
+    row: 62
     phases: 1
     tags: [transport, energy]
   - id: electric-telegraph
     name: Electric telegraph
     start: 1837-01
     stop: 1920-01
-    row: 34
+    row: 68
     phases: 4
     tags: [communication, energy]
     description: Cooke and Wheatstone, then Morse.
@@ -612,35 +612,35 @@ trends:
     name: Photography
     start: 1839-01
     stop: 1930-01
-    row: 35
+    row: 70
     phases: 4
     tags: [communication, science]
   - id: submarine-cable
     name: Submarine telegraph cable
     start: 1858-01
     stop: 1920-01
-    row: 36
+    row: 72
     phases: 4
     tags: [communication]
   - id: mass-newspapers
     name: Mass-circulation newspapers
     start: 1860-01
     stop: 1960-01
-    row: 37
+    row: 74
     phases: 4
     tags: [communication, society]
   - id: typewriter
     name: Typewriter
     start: 1868-01
     stop: 1980-01
-    row: 38
+    row: 76
     phases: 4
     tags: [communication, industry]
   - id: telephone
     name: Telephone
     start: 1876-03
     stop: 1980-01
-    row: 39
+    row: 78
     phases: 4
     tags: [communication]
     description: Bell's patent.
@@ -648,21 +648,21 @@ trends:
     name: Phonograph
     start: 1877-01
     stop: 1950-01
-    row: 40
+    row: 80
     phases: 4
     tags: [communication, society]
   - id: cinema
     name: Cinema
     start: 1895-01
     stop: 1960-01
-    row: 41
+    row: 82
     phases: 4
     tags: [communication, society]
   - id: radio
     name: Radio
     start: 1895-01
     stop: 1960-01
-    row: 42
+    row: 84
     phases: 4
     tags: [communication, science]
     description: Marconi, then broadcasting.
@@ -670,49 +670,49 @@ trends:
     name: Vacuum tube
     start: 1904-01
     stop: 1960-01
-    row: 43
+    row: 86
     phases: 4
     tags: [communication, computing, science]
   - id: broadcast-radio
     name: Broadcast radio
     start: 1920-01
     stop: 1960-01
-    row: 44
+    row: 88
     phases: 4
     tags: [communication, society]
   - id: television
     name: Television
     start: 1927-01
     stop: 1990-01
-    row: 34
+    row: 68
     phases: 4
     tags: [communication, society]
   - id: magnetic-tape
     name: Magnetic tape
     start: 1935-01
     stop: 1990-01
-    row: 35
+    row: 70
     phases: 4
     tags: [communication, computing]
   - id: radar
     name: Radar
     start: 1935-01
     stop: 1960-01
-    row: 36
+    row: 72
     phases: 4
     tags: [communication, science]
   - id: colour-television
     name: Colour television
     start: 1954-01
     stop: 1990-01
-    row: 40
+    row: 80
     phases: 4
     tags: [communication, society]
   - id: communication-satellites
     name: Communication satellites
     start: 1962-07
     stop: 2000-01
-    row: 36
+    row: 72
     phases: 4
     tags: [communication, science]
     description: Telstar.
@@ -720,28 +720,28 @@ trends:
     name: Cable television
     start: 1970-01
     stop: 2010-01
-    row: 37
+    row: 74
     phases: 4
     tags: [communication, finance]
   - id: fibre-optics
     name: Fibre optics
     start: 1970-01
     stop: 2020-01
-    row: 41
+    row: 82
     phases: 4
     tags: [communication, computing]
   - id: email
     name: Email
     start: 1971-01
     stop: 2010-01
-    row: 42
+    row: 84
     phases: 4
     tags: [communication, computing]
   - id: mobile-phones
     name: Mobile phones
     start: 1983-01
     stop: 2010-01
-    row: 38
+    row: 76
     phases: 4
     tags: [communication]
     description: The DynaTAC.
@@ -749,7 +749,7 @@ trends:
     name: Internet
     start: 1983-01
     stop: 2020-01
-    row: 39
+    row: 78
     phases: 4
     tags: [communication, computing]
     description: TCP/IP on the ARPANET.
@@ -757,35 +757,35 @@ trends:
     name: Video conferencing
     start: 1990-01
     stop: 2030-01
-    row: 43
+    row: 86
     phases: 4
     tags: [communication, computing]
   - id: world-wide-web
     name: World Wide Web
     start: 1991-08
     stop: 2015-01
-    row: 44
+    row: 88
     phases: 4
     tags: [communication, computing]
   - id: sms
     name: Text messaging
     start: 1992-12
     stop: 2015-01
-    row: 34
+    row: 68
     phases: 4
     tags: [communication]
   - id: search-engines
     name: Search engines
     start: 1994-01
     stop: 2015-01
-    row: 35
+    row: 70
     phases: 4
     tags: [communication, computing]
   - id: dot-com
     name: Dot-com bubble
     start: 1995-01
     stop: 2004-01
-    row: 40
+    row: 80
     phases: 4
     peak-end: 2000-03
     trough-end: 2002-10
@@ -794,49 +794,49 @@ trends:
     name: Wi-Fi
     start: 1997-01
     stop: 2020-01
-    row: 45
+    row: 90
     phases: 4
     tags: [communication, computing]
   - id: broadband
     name: Broadband
     start: 1999-01
     stop: 2020-01
-    row: 46
+    row: 92
     phases: 4
     tags: [communication, computing]
   - id: blogs
     name: Blogs
     start: 1999-01
     stop: 2015-01
-    row: 47
+    row: 94
     phases: 4
     tags: [communication, society]
   - id: mobile-internet
     name: Mobile internet
     start: 2001-01
     stop: 2025-01
-    row: 48
+    row: 96
     phases: 4
     tags: [communication, computing]
   - id: social-media
     name: Social media
     start: 2004-01
     stop: 2030-01
-    row: 36
+    row: 72
     phases: 4
     tags: [communication, computing, society]
   - id: video-streaming
     name: Video streaming
     start: 2005-01
     stop: 2030-01
-    row: 49
+    row: 98
     phases: 4
     tags: [communication, computing, society]
   - id: smartphones
     name: Smartphones
     start: 2007-06
     stop: 2030-01
-    row: 40
+    row: 80
     phases: 4
     tags: [communication, computing]
     description: The iPhone.
@@ -844,63 +844,63 @@ trends:
     name: App stores
     start: 2008-07
     stop: 2025-01
-    row: 50
+    row: 100
     phases: 4
     tags: [communication, computing, finance]
   - id: 4g
     name: 4G mobile networks
     start: 2009-01
     stop: 2025-01
-    row: 51
+    row: 102
     phases: 4
     tags: [communication]
   - id: messaging-apps
     name: Messaging apps
     start: 2009-01
     stop: 2030-01
-    row: 52
+    row: 104
     phases: 4
     tags: [communication, computing]
   - id: creator-economy
     name: Creator economy
     start: 2014-01
     stop: 2035-01
-    row: 37
+    row: 74
     phases: 2
     tags: [communication, finance, society]
   - id: misinformation
     name: Online misinformation
     start: 2016-01
     stop: 2035-01
-    row: 38
+    row: 76
     phases: 2
     tags: [communication, society]
   - id: 5g
     name: 5G mobile networks
     start: 2019-01
     stop: 2035-01
-    row: 34
+    row: 68
     phases: 2
     tags: [communication, computing]
   - id: satellite-internet
     name: Satellite internet constellations
     start: 2019-01
     stop: 2035-01
-    row: 35
+    row: 70
     phases: 2
     tags: [communication, transport]
   - id: metaverse
     name: Metaverse
     start: 2021-10
     stop: 2035-01
-    row: 42
+    row: 84
     phases: 2
     tags: [communication, computing]
   - id: jacquard-loom
     name: Jacquard loom
     start: 1804-01
     stop: 1880-01
-    row: 54
+    row: 108
     phases: 4
     tags: [computing, industry]
     description: Punched cards control a loom.
@@ -908,7 +908,7 @@ trends:
     name: Mechanical calculators
     start: 1820-01
     stop: 1970-01
-    row: 55
+    row: 110
     phases: 4
     tags: [computing, industry]
     description: The arithmometer.
@@ -916,7 +916,7 @@ trends:
     name: Difference engine
     start: 1822-01
     stop: 1871-01
-    row: 56
+    row: 112
     phases: 2
     tags: [computing, science]
     description: Babbage's, never completed.
@@ -924,14 +924,14 @@ trends:
     name: Boolean logic
     start: 1854-01
     stop: 1940-01
-    row: 57
+    row: 114
     phases: 4
     tags: [computing, science]
   - id: punched-cards
     name: Punched-card tabulation
     start: 1890-01
     stop: 1970-01
-    row: 54
+    row: 108
     phases: 4
     tags: [computing, finance]
     description: Hollerith and the US census.
@@ -939,14 +939,14 @@ trends:
     name: Computability theory
     start: 1936-01
     stop: 1960-01
-    row: 56
+    row: 112
     phases: 4
     tags: [computing, science]
   - id: electronic-computers
     name: Electronic computers
     start: 1945-01
     stop: 1960-01
-    row: 57
+    row: 114
     phases: 4
     tags: [computing, science]
     description: ENIAC.
@@ -954,7 +954,7 @@ trends:
     name: Transistor
     start: 1947-12
     stop: 1980-01
-    row: 58
+    row: 116
     phases: 4
     tags: [computing, science]
     description: Bell Labs.
@@ -962,14 +962,14 @@ trends:
     name: Cybernetics
     start: 1948-01
     stop: 1975-01
-    row: 59
+    row: 118
     phases: 4
     tags: [computing, science, society]
   - id: mainframes
     name: Mainframes
     start: 1951-01
     stop: 1990-01
-    row: 60
+    row: 120
     phases: 4
     tags: [computing, finance]
     description: UNIVAC, then System/360.
@@ -977,7 +977,7 @@ trends:
     name: Symbolic AI
     start: 1956-06
     stop: 1974-01
-    row: 61
+    row: 122
     phases: 3
     peak-end: 1970-01
     tags: [computing, science]
@@ -986,7 +986,7 @@ trends:
     name: High-level programming languages
     start: 1957-01
     stop: 1990-01
-    row: 62
+    row: 124
     phases: 4
     tags: [computing]
     description: Fortran and COBOL.
@@ -994,42 +994,42 @@ trends:
     name: Integrated circuit
     start: 1958-09
     stop: 1985-01
-    row: 63
+    row: 126
     phases: 4
     tags: [computing, science]
   - id: time-sharing
     name: Time-sharing
     start: 1961-01
     stop: 1985-01
-    row: 64
+    row: 128
     phases: 4
     tags: [computing]
   - id: minicomputers
     name: Minicomputers
     start: 1965-01
     stop: 1990-01
-    row: 56
+    row: 112
     phases: 4
     tags: [computing]
   - id: arpanet
     name: ARPANET
     start: 1969-10
     stop: 1990-01
-    row: 57
+    row: 114
     phases: 4
     tags: [computing, communication]
   - id: databases
     name: Relational databases
     start: 1970-01
     stop: 2010-01
-    row: 65
+    row: 130
     phases: 4
     tags: [computing, finance]
   - id: microprocessor
     name: Microprocessor
     start: 1971-11
     stop: 2000-01
-    row: 66
+    row: 132
     phases: 4
     tags: [computing]
     description: The Intel 4004.
@@ -1037,14 +1037,14 @@ trends:
     name: Video games
     start: 1972-01
     stop: 2020-01
-    row: 54
+    row: 108
     phases: 4
     tags: [computing, society]
   - id: gui
     name: Graphical user interfaces
     start: 1973-01
     stop: 2000-01
-    row: 55
+    row: 110
     phases: 4
     tags: [computing]
     description: The Alto, then the Macintosh.
@@ -1052,7 +1052,7 @@ trends:
     name: Personal computers
     start: 1975-01
     stop: 2010-01
-    row: 67
+    row: 134
     phases: 4
     tags: [computing, society]
     description: The Altair, then the Apple II and the IBM PC.
@@ -1060,7 +1060,7 @@ trends:
     name: Spreadsheets
     start: 1979-01
     stop: 2000-01
-    row: 59
+    row: 118
     phases: 4
     tags: [computing, finance]
     description: VisiCalc.
@@ -1068,7 +1068,7 @@ trends:
     name: Expert systems
     start: 1980-01
     stop: 1993-01
-    row: 61
+    row: 122
     phases: 3
     tags: [computing, science]
     description: The second AI boom and its winter.
@@ -1076,7 +1076,7 @@ trends:
     name: Open source
     start: 1983-09
     stop: 2020-01
-    row: 58
+    row: 116
     phases: 4
     tags: [computing, society]
     description: The GNU project, then Linux.
@@ -1084,21 +1084,21 @@ trends:
     name: Laptops
     start: 1985-01
     stop: 2015-01
-    row: 68
+    row: 136
     phases: 4
     tags: [computing]
   - id: client-server
     name: Client-server computing
     start: 1985-01
     stop: 2005-01
-    row: 69
+    row: 138
     phases: 4
     tags: [computing]
   - id: neural-networks
     name: Neural networks
     start: 1986-01
     stop: 2006-01
-    row: 70
+    row: 140
     phases: 3
     tags: [computing, science]
     description: Backpropagation, then a long trough.
@@ -1106,7 +1106,7 @@ trends:
     name: Personal digital assistants
     start: 1993-01
     stop: 2007-01
-    row: 56
+    row: 112
     phases: 3
     tags: [computing, communication]
     description: The Newton, then the Palm Pilot.
@@ -1114,21 +1114,21 @@ trends:
     name: E-commerce
     start: 1995-01
     stop: 2025-01
-    row: 57
+    row: 114
     phases: 4
     tags: [computing, finance]
   - id: virtualisation
     name: Virtualisation
     start: 1998-01
     stop: 2020-01
-    row: 60
+    row: 120
     phases: 4
     tags: [computing]
   - id: agile
     name: Agile software development
     start: 2001-02
     stop: 2025-01
-    row: 61
+    row: 122
     phases: 4
     tags: [computing, society]
     description: The manifesto.
@@ -1136,21 +1136,21 @@ trends:
     name: Big data
     start: 2005-01
     stop: 2020-01
-    row: 55
+    row: 110
     phases: 4
     tags: [computing, finance]
   - id: machine-learning
     name: Machine learning
     start: 2006-01
     stop: 2030-01
-    row: 59
+    row: 118
     phases: 4
     tags: [computing, science]
   - id: cloud-computing
     name: Cloud computing
     start: 2006-03
     stop: 2030-01
-    row: 62
+    row: 124
     phases: 4
     tags: [computing, finance]
     description: AWS launches S3 and EC2.
@@ -1158,7 +1158,7 @@ trends:
     name: GPU computing
     start: 2007-01
     stop: 2030-01
-    row: 63
+    row: 126
     phases: 4
     tags: [computing, science]
     description: CUDA.
@@ -1166,21 +1166,21 @@ trends:
     name: DevOps
     start: 2009-01
     stop: 2030-01
-    row: 56
+    row: 112
     phases: 4
     tags: [computing]
   - id: iot
     name: Internet of Things
     start: 2009-01
     stop: 2035-01
-    row: 64
+    row: 128
     phases: 3
     tags: [computing, communication]
   - id: blockchain
     name: Blockchain
     start: 2009-01
     stop: 2035-01
-    row: 66
+    row: 132
     phases: 2
     tags: [computing, finance]
     description: Bitcoin's genesis block.
@@ -1188,14 +1188,14 @@ trends:
     name: Cryptocurrency
     start: 2010-01
     stop: 2035-01
-    row: 69
+    row: 138
     phases: 2
     tags: [finance, computing]
   - id: vr
     name: Virtual reality
     start: 2012-08
     stop: 2035-01
-    row: 65
+    row: 130
     phases: 2
     trough-end: 2024-01
     tags: [computing, communication]
@@ -1204,7 +1204,7 @@ trends:
     name: Deep learning
     start: 2012-09
     stop: 2035-01
-    row: 67
+    row: 134
     phases: 3
     tags: [computing, science]
     description: AlexNet.
@@ -1212,14 +1212,14 @@ trends:
     name: Edge computing
     start: 2014-01
     stop: 2035-01
-    row: 70
+    row: 140
     phases: 2
     tags: [computing, communication]
   - id: transformers
     name: Transformer models
     start: 2017-06
     stop: 2035-01
-    row: 68
+    row: 136
     phases: 2
     tags: [computing, science]
     description: Attention is all you need.
@@ -1227,7 +1227,7 @@ trends:
     name: Large language models
     start: 2020-05
     stop: 2040-01
-    row: 71
+    row: 142
     phases: 2
     slope-end: 2030-01
     tags: [computing, communication, society]
@@ -1236,35 +1236,35 @@ trends:
     name: AI regulation
     start: 2021-04
     stop: 2040-01
-    row: 72
+    row: 144
     phases: 1
     tags: [society, computing]
   - id: generative-ai
     name: Generative AI
     start: 2022-08
     stop: 2040-01
-    row: 54
+    row: 108
     phases: 2
     tags: [computing, communication, society]
   - id: ai-agents
     name: AI agents
     start: 2024-01
     stop: 2040-01
-    row: 55
+    row: 110
     phases: 1
     tags: [computing, society]
   - id: urbanisation
     name: Urbanisation
     start: 1760-01
     stop: 1950-01
-    row: 74
+    row: 148
     phases: 4
     tags: [society, industry]
   - id: vaccination
     name: Vaccination
     start: 1796-05
     stop: 1900-01
-    row: 75
+    row: 150
     phases: 4
     tags: [health, science, society]
     description: Jenner's smallpox vaccine.
@@ -1272,14 +1272,14 @@ trends:
     name: Labour movement
     start: 1830-01
     stop: 1950-01
-    row: 76
+    row: 152
     phases: 4
     tags: [society, industry]
   - id: public-health
     name: Public health reform
     start: 1848-01
     stop: 1920-01
-    row: 77
+    row: 154
     phases: 4
     tags: [society, health, science]
     description: Sanitation after the cholera epidemics.
@@ -1287,21 +1287,21 @@ trends:
     name: Women's suffrage
     start: 1848-07
     stop: 1930-01
-    row: 78
+    row: 156
     phases: 4
     tags: [society]
   - id: department-stores
     name: Department stores
     start: 1852-01
     stop: 1960-01
-    row: 79
+    row: 158
     phases: 4
     tags: [society, finance]
   - id: germ-theory
     name: Germ theory
     start: 1861-01
     stop: 1910-01
-    row: 80
+    row: 160
     phases: 4
     tags: [science, health]
     description: Pasteur and Koch.
@@ -1309,49 +1309,49 @@ trends:
     name: Mass education
     start: 1870-01
     stop: 1950-01
-    row: 81
+    row: 162
     phases: 4
     tags: [society]
   - id: refrigeration
     name: Refrigeration
     start: 1870-01
     stop: 1960-01
-    row: 82
+    row: 164
     phases: 4
     tags: [society, energy, health]
   - id: advertising
     name: Mass advertising
     start: 1880-01
     stop: 1970-01
-    row: 83
+    row: 166
     phases: 4
     tags: [society, communication, finance]
   - id: welfare-state
     name: Welfare state
     start: 1883-01
     stop: 1980-01
-    row: 84
+    row: 168
     phases: 4
     tags: [society, finance]
   - id: consumerism
     name: Consumer society
     start: 1920-01
     stop: 1990-01
-    row: 75
+    row: 150
     phases: 4
     tags: [society, finance]
   - id: household-appliances
     name: Household appliances
     start: 1920-01
     stop: 1970-01
-    row: 80
+    row: 160
     phases: 4
     tags: [society, energy]
   - id: antibiotics
     name: Antibiotics
     start: 1928-09
     stop: 1970-01
-    row: 77
+    row: 154
     phases: 4
     tags: [health, science]
     description: Penicillin.
@@ -1359,14 +1359,14 @@ trends:
     name: Credit cards
     start: 1958-01
     stop: 2000-01
-    row: 74
+    row: 148
     phases: 4
     tags: [finance, society]
   - id: environmentalism
     name: Environmental movement
     start: 1962-01
     stop: 2010-01
-    row: 76
+    row: 152
     phases: 4
     tags: [society, energy]
     description: Silent Spring.
@@ -1374,21 +1374,21 @@ trends:
     name: Cash machines
     start: 1967-06
     stop: 2000-01
-    row: 78
+    row: 156
     phases: 4
     tags: [finance, computing]
   - id: electronic-trading
     name: Electronic trading
     start: 1971-01
     stop: 2010-01
-    row: 79
+    row: 158
     phases: 4
     tags: [finance, computing]
   - id: globalised-finance
     name: Global financial markets
     start: 1971-08
     stop: 2008-09
-    row: 81
+    row: 162
     phases: 4
     tags: [finance, society]
     description: The end of Bretton Woods.
@@ -1396,14 +1396,14 @@ trends:
     name: Climate change awareness
     start: 1988-06
     stop: 2030-01
-    row: 77
+    row: 154
     phases: 3
     tags: [society, energy, science]
   - id: genomics
     name: Genomics
     start: 1990-10
     stop: 2030-01
-    row: 80
+    row: 160
     phases: 4
     tags: [science, health, computing]
     description: The Human Genome Project.
@@ -1411,7 +1411,7 @@ trends:
     name: Mobile payments
     start: 2007-03
     stop: 2030-01
-    row: 74
+    row: 148
     phases: 4
     tags: [finance, communication, computing]
     description: M-Pesa.
@@ -1419,56 +1419,56 @@ trends:
     name: 2008 financial crisis
     start: 2007-08
     stop: 2015-01
-    row: 75
+    row: 150
     phases: 3
     tags: [finance, society]
   - id: sharing-economy
     name: Sharing economy
     start: 2008-01
     stop: 2025-01
-    row: 78
+    row: 156
     phases: 3
     tags: [society, finance]
   - id: gig-economy
     name: Gig economy
     start: 2009-01
     stop: 2030-01
-    row: 82
+    row: 164
     phases: 2
     tags: [society, computing]
   - id: fintech
     name: Fintech
     start: 2010-01
     stop: 2030-01
-    row: 83
+    row: 166
     phases: 3
     tags: [finance, computing]
   - id: telemedicine
     name: Telemedicine
     start: 2010-01
     stop: 2035-01
-    row: 84
+    row: 168
     phases: 3
     tags: [health, communication]
   - id: crispr
     name: CRISPR gene editing
     start: 2012-06
     stop: 2040-01
-    row: 76
+    row: 152
     phases: 2
     tags: [science, health]
   - id: wearables
     name: Wearables
     start: 2013-01
     stop: 2030-01
-    row: 79
+    row: 158
     phases: 2
     tags: [health, computing]
   - id: digital-privacy
     name: Digital privacy
     start: 2013-06
     stop: 2035-01
-    row: 81
+    row: 162
     phases: 2
     tags: [society, computing]
     description: The Snowden disclosures, then the GDPR.
@@ -1476,7 +1476,7 @@ trends:
     name: Remote work
     start: 2020-03
     stop: 2035-01
-    row: 75
+    row: 150
     phases: 3
     tags: [society, computing, communication]
     description: The pandemic's forced experiment.
@@ -1484,7 +1484,7 @@ trends:
     name: mRNA vaccines
     start: 2020-12
     stop: 2040-01
-    row: 85
+    row: 170
     phases: 2
     tags: [health, science]
 influences:
@@ -1641,9 +1641,9 @@ influences:
     to-at: 0.05
   - id: railways--railway-mania
     from: railways
-    from-phase: slope
+    from-phase: peak
     from-edge: top
-    from-at: 0.50
+    from-at: 0.68
     to: railway-mania
     to-phase: peak
     to-edge: bottom
@@ -1991,9 +1991,9 @@ influences:
     to-at: 0.05
   - id: automobile--mass-production
     from: automobile
-    from-phase: peak
+    from-phase: trough
     from-edge: top
-    from-at: 0.50
+    from-at: 0.23
     to: mass-production
     to-phase: peak
     to-edge: bottom
@@ -2055,9 +2055,9 @@ influences:
     to-at: 0.05
   - id: bessemer-steel--railways
     from: bessemer-steel
-    from-phase: peak
+    from-phase: slope
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.18
     to: railways
     to-phase: slope
     to-edge: top
@@ -2155,9 +2155,9 @@ influences:
     to-at: 0.05
   - id: jet-engine--commercial-aviation
     from: jet-engine
-    from-phase: peak
+    from-phase: slope
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.78
     to: commercial-aviation
     to-phase: slope
     to-edge: top
@@ -2491,9 +2491,9 @@ influences:
     to-at: 0.08
   - id: transistor--mainframes
     from: transistor
-    from-phase: peak
+    from-phase: plateau
     from-edge: bottom
-    from-at: 0.45
+    from-at: 0.42
     to: mainframes
     to-phase: slope
     to-edge: top
@@ -2646,9 +2646,9 @@ influences:
     to-at: 0.10
   - id: gui--personal-computers
     from: gui
-    from-phase: peak
+    from-phase: slope
     from-edge: bottom
-    from-at: 0.37
+    from-at: 0.24
     to: personal-computers
     to-phase: trough
     to-edge: top
@@ -2920,9 +2920,9 @@ influences:
     description: Graphics cards made training large networks practical.
   - id: neural-networks--deep-learning
     from: neural-networks
-    from-phase: trough
+    from-phase: slope
     from-edge: top
-    from-at: 0.50
+    from-at: 0.9
     to: deep-learning
     to-phase: peak
     to-edge: bottom
@@ -3066,9 +3066,9 @@ influences:
     to-at: 0.15
   - id: smartphones--social-media
     from: smartphones
-    from-phase: peak
+    from-phase: slope
     from-edge: top
-    from-at: 0.09
+    from-at: 0.27
     to: social-media
     to-phase: slope
     to-edge: bottom
