@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ghg-compact-mode/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-27T11:59:10.909Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790510349970_n1rkk3f8l",
+      "approvalTitle": "ghg-compact-mode requirements: the Compact toggle for the hype cycle graph"
+    }
+  ]
+}
