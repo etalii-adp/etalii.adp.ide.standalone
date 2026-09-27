@@ -85,14 +85,14 @@ public sealed class FdgCommandsTests : IDisposable
 
         // Assert: it edited - otherwise the undo proves nothing.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotEqual(_original, File.ReadAllBytes(Body));
+        Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
 
         // Act: the undo.
         var undone = await _dispatcher.DispatchAsync(Assert.IsAssignableFrom<ICommand>(result.Inverse), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     public static TheoryData<string, string> EveryRefusal => new()
@@ -141,7 +141,7 @@ public sealed class FdgCommandsTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains(saying, result.Error, StringComparison.Ordinal);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
         Assert.Equal(cachedBefore, _store.GetOrLoad(Body).Document.Text);
     }
 
@@ -169,7 +169,7 @@ public sealed class FdgCommandsTests : IDisposable
 
         // Assert: all three are back, byte for byte.
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
         Assert.Equal(2, Parse().Connections.Count(connection => connection.From == "task-row" || connection.To == "task-row"));
     }
 
@@ -192,7 +192,7 @@ public sealed class FdgCommandsTests : IDisposable
         Assert.False(result.IsSuccess);
         Assert.Contains("cycle check", result.Error, StringComparison.Ordinal);
         Assert.Empty(FdgOwnership.CyclesIn(Parse()));
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     /// <summary>A drag reaches the document through the session and is one undo away, like every other edit.</summary>
@@ -217,7 +217,7 @@ public sealed class FdgCommandsTests : IDisposable
 
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -247,7 +247,7 @@ public sealed class FdgCommandsTests : IDisposable
         // Assert: both refused, and the file is still the real diagram.
         Assert.False(edited.IsSuccess);
         Assert.True(saved.Failed);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     private FdgModel Parse() => FdgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));

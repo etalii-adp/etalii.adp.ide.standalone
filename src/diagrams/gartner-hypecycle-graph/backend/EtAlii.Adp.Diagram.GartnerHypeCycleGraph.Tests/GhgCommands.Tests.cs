@@ -86,12 +86,12 @@ public sealed class GhgCommandsTests : IDisposable
 
         // It edited - otherwise the undo proves nothing.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotEqual(_original, File.ReadAllBytes(Body));
+        Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
 
         var undone = await _dispatcher.DispatchAsync(Assert.IsAssignableFrom<ICommand>(result.Inverse), TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     public static TheoryData<string, string> EveryRefusal => new()
@@ -134,7 +134,7 @@ public sealed class GhgCommandsTests : IDisposable
 
         Assert.False(result.IsSuccess);
         Assert.Contains(saying, result.Error, StringComparison.Ordinal);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
         Assert.Equal(cachedBefore, _store.GetOrLoad(Body).Document.Text);
     }
 
@@ -155,7 +155,7 @@ public sealed class GhgCommandsTests : IDisposable
         var undone = await _dispatcher.DispatchAsync(removed.Inverse!, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
         Assert.Equal(2, Touching(Parse(), "steamboats"));
     }
 
@@ -175,7 +175,7 @@ public sealed class GhgCommandsTests : IDisposable
 
         Assert.False(duplicate.IsSuccess);
         Assert.Equal("This trend already influences that one; a trend influences another once in each direction.", duplicate.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
 
         var opposite = await _dispatcher.DispatchAsync(
             new AddGhgInfluenceCommand(Body, "railways", null, "steam-engine", null),
@@ -216,7 +216,7 @@ public sealed class GhgCommandsTests : IDisposable
         var undone = await history.UndoAsync(TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -244,7 +244,7 @@ public sealed class GhgCommandsTests : IDisposable
 
         Assert.False(edited.IsSuccess);
         Assert.True(saved.Failed);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     private static int Touching(GhgModel model, string id) =>

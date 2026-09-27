@@ -83,7 +83,7 @@ public class GhgRulesTests
     [Fact]
     public async Task TheValidator_CarriesEachBreachToThePanel()
     {
-        var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "rule-self-influence.ghg"));
+        var text = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "rule-self-influence.ghg"), TestContext.Current.CancellationToken);
 
         var problems = await new GhgValidator().ValidateAsync(
             new DiagramValidationRequest(text, "rule-self-influence", "/root", "/root/rule-self-influence.ghg", null),
