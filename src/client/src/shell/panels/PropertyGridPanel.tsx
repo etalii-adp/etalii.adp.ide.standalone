@@ -6,6 +6,8 @@ import { type ContextLevelDetail } from "../../generated/context-contract_pb";
 import { type ContextProperty, type ContextSelection } from "../../generated/context_pb";
 import { useContextConnection, useContextSelection } from "../context/ContextConnectionProvider";
 import { PropertyRow } from "./PropertyRow";
+import { answerPropertyPreview, usePropertyPreview } from "./propertyPreview";
+import { selectedElementIdOf } from "../../canvas/selection";
 import { PanelEmptyState } from "./PanelEmptyState";
 
 const SOURCE_LABELS: Record<number, string> = {
@@ -108,6 +110,10 @@ export function PropertyGridPanel() {
   const [properties, setProperties] = useState<ContextProperty[]>([]);
   // Kept apart from an empty `properties`, which is the ordinary "nothing to edit here" state.
   const [describeError, setDescribeError] = useState("");
+  // What a canvas gesture in flight would write, shown in place of the backend's value - for the
+  // selected element only.
+  const preview = usePropertyPreview();
+  const previewed = preview !== null && preview.elementId === selectedElementIdOf(selection) ? preview.values : undefined;
 
   // Held in a ref rather than depended on. What should re-ask for properties is the selection
   // changing, not the identity of the function that asks - and a caller that hands us a fresh
@@ -133,6 +139,8 @@ export function PropertyGridPanel() {
       if (!cancelled) {
         setProperties(described.properties);
         setDescribeError(described.error);
+        // The answer to a released gesture's write, if one was waiting: its preview can go.
+        answerPropertyPreview();
       }
     });
 
@@ -206,7 +214,7 @@ export function PropertyGridPanel() {
                     {group.properties.map((property) => (
                       <PropertyRow
                         key={property.id}
-                        property={property}
+                        property={previewed?.[property.id] !== undefined ? { ...property, value: previewed[property.id]! } : property}
                         onCommit={(value) => commit(property.id, value)}
                       />
                     ))}

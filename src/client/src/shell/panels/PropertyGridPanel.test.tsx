@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { ContextLevelDetailSchema, ContextSelectionSource, ContextPropertyEditor } from "../../generated/context-contract_pb";
@@ -7,6 +7,8 @@ import { ContextSelectionAction, type ContextSelection, type ContextProperty, Co
 import { EntryKind } from "../../generated/shared_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import { PropertyGridPanel, groupsOf, levelsOf } from "./PropertyGridPanel";
+import { ContextSelectionSchema } from "../../generated/context_pb";
+import { clearPropertyPreview, endPropertyPreview, settlePropertyPreview, showPropertyPreview } from "./propertyPreview";
 
 const contextState: { selection: ContextSelection | null; levels: ContextLevelDetail[]; actions: ContextActionGroup[] } = {
   selection: null,
@@ -134,6 +136,76 @@ describe("PropertyGridPanel", () => {
     expect(screen.getByText("Node")).toBeTruthy();
     expect(((await screen.findByLabelText("Text")) as HTMLInputElement).value).toBe("Milestones");
     expect(screen.getByLabelText("Notes")).toBeTruthy();
+  });
+
+  describe("while a canvas gesture previews a value", () => {
+    /** A trend selected on the canvas, by element id, as the library pushes one. */
+    function selectTrend(elementId: string) {
+      const node = create(ContextSelectionSchema, {
+        source: ContextSelectionSource.DIAGRAM_CANVAS,
+        path: { segments: ["Industrial Revolution"] },
+        id: { source: { case: "elementId", value: { value: elementId } } },
+      });
+      contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, new Uint8Array(16).fill(1), ["trends.ghg"], { case: "child", value: node });
+      contextState.levels = [entryDetail(EntryKind.FILE), elementDetail("Industrial Revolution")];
+      backend.properties = [property({ id: "ghg.start", label: "Start", value: "1760-01" }), property({ id: "ghg.peak-end", label: "Peak ends", value: "1780-01" })];
+    }
+
+    afterEach(() => clearPropertyPreview());
+
+    it("shows the previewed value for the selected element as the drag goes, and writes nothing", async () => {
+      // Arrange.
+      selectTrend("industrial-revolution");
+      render(<PropertyGridPanel />);
+      const peakEnds = (await screen.findByLabelText("Peak ends")) as HTMLInputElement;
+
+      // Act: a boundary drag in flight.
+      act(() => showPropertyPreview("industrial-revolution", { "ghg.peak-end": "1790-06" }));
+
+      // Assert.
+      expect(peakEnds.value, "the grid kept the backend's value while the chevron was being dragged, and caught up only after the release").toBe("1790-06");
+      expect((screen.getByLabelText("Start") as HTMLInputElement).value).toBe("1760-01");
+      expect(backend.writes).toEqual([]);
+    });
+
+    it("ignores a preview for an element that is not the selected one", async () => {
+      // Arrange.
+      selectTrend("industrial-revolution");
+      render(<PropertyGridPanel />);
+      const peakEnds = (await screen.findByLabelText("Peak ends")) as HTMLInputElement;
+
+      // Act.
+      act(() => showPropertyPreview("steam-engine", { "ghg.peak-end": "1790-06" }));
+
+      // Assert.
+      expect(peakEnds.value).toBe("1780-01");
+    });
+
+    it("keeps a released preview until the answer is read, and drops an abandoned one at once", async () => {
+      // Arrange.
+      selectTrend("industrial-revolution");
+      render(<PropertyGridPanel />);
+      const peakEnds = (await screen.findByLabelText("Peak ends")) as HTMLInputElement;
+
+      // Act: released and written, the answer not read yet.
+      act(() => {
+        showPropertyPreview("industrial-revolution", { "ghg.peak-end": "1790-06" });
+        settlePropertyPreview();
+        endPropertyPreview();
+      });
+
+      // Assert: no flash back to the old value while the write travels.
+      expect(peakEnds.value).toBe("1790-06");
+
+      // Act: abandoned instead.
+      act(() => {
+        showPropertyPreview("industrial-revolution", { "ghg.peak-end": "1795-01" });
+        endPropertyPreview();
+      });
+
+      // Assert.
+      expect(peakEnds.value).toBe("1780-01");
+    });
   });
 
   it("shows every level of a chain, outermost first", () => {

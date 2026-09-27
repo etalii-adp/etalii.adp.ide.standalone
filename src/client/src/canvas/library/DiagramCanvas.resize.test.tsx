@@ -162,6 +162,38 @@ describe("a width resize snaps to the declared step", () => {
     expect(Number(handle(container, "right")!.getAttribute("x")) + 3).toBe(290);
   });
 
+  it("tells the module the drawn rectangle while the drag is in flight", () => {
+    // Arrange.
+    const onElementPreviewed = vi.fn();
+    const { container } = snappedCanvas({ onElementPreviewed });
+    const right = handle(container, "right")!;
+
+    // Act: mid-drag.
+    fireEvent(right, pointer("pointerdown", { button: 0, clientX: 280, clientY: 100 }));
+    fireEvent(right, pointer("pointermove", { clientX: 293, clientY: 100 }));
+
+    // Assert: the snapped rectangle, before anything is released.
+    expect(onElementPreviewed, "the module heard nothing until the release, so a Start or Stop in the property grid could not follow the edge").toHaveBeenLastCalledWith({ kind: "element-previewed", elementId: "a", bounds: { x: 120, y: 76, width: 170, height: 48 } });
+
+    // Act, assert: released - the preview is over.
+    fireEvent(right, pointer("pointerup", { clientX: 293, clientY: 100 }));
+    expect(onElementPreviewed).toHaveBeenLastCalledWith({ kind: "element-previewed", elementId: "a", bounds: null });
+  });
+
+  it("keeps the released edge where it landed until the model answers", () => {
+    // Arrange.
+    const { container } = snappedCanvas();
+    const right = handle(container, "right")!;
+
+    // Act: released at 290, the model not yet changed.
+    fireEvent(right, pointer("pointerdown", { button: 0, clientX: 280, clientY: 100 }));
+    fireEvent(right, pointer("pointermove", { clientX: 293, clientY: 100 }));
+    fireEvent(right, pointer("pointerup", { clientX: 293, clientY: 100 }));
+
+    // Assert: not back at 280 for the length of the round trip.
+    expect(Number(handle(container, "right")!.getAttribute("x")) + 3, "the release reverted the edge to the model's old place until the backend answered, which is a flicker").toBe(290);
+  });
+
   it("stops at one step wide rather than crossing the far edge", () => {
     // Arrange.
     const onElementResized = vi.fn();

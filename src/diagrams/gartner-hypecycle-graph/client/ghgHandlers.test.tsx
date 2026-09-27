@@ -6,6 +6,7 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel } from "@client/canvas/library/api/diagramModel";
 import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 import { emptyModel, type GhgModel } from "./ghgModel";
+import { clearPropertyPreview, usePropertyPreview } from "@client/shell/panels/propertyPreview";
 
 /**
  * Task 20's handler guard: each library event produces its ONE route and nothing else - a move
@@ -177,6 +178,44 @@ describe("the hype cycle graph canvas answers each library event through its one
 
     expect(executed).toEqual([{ actionId: "ghg.connect.influence", targetId: "rel:steam-engine@slope/bottom/0.3->coal@peak/top/0.13" }]);
     expect(properties).toEqual([]);
+  });
+
+  it("a dragged influence end is its new attachment, through setProperty on the end it was", async () => {
+    const events = renderCanvas();
+
+    events.onConnectionEndMoved!({ kind: "connection-end-moved", connectionId: "coal--steam-engine", end: "target", attachment: { edge: "top", region: 2, at: 0.5 } });
+    events.onConnectionEndMoved!({ kind: "connection-end-moved", connectionId: "coal--steam-engine", end: "source", attachment: { edge: "bottom", region: 3, at: 0.25 } });
+    await settle();
+
+    expect(properties).toEqual([
+      { propertyId: "ghg.to-attachment", value: "slope/top/0.5", targetId: "coal--steam-engine" },
+      { propertyId: "ghg.from-attachment", value: "plateau/bottom/0.25", targetId: "coal--steam-engine" },
+    ]);
+    expect(executed).toEqual([]);
+  });
+
+  it("a drag in flight is shown as the dates it would write, and writes nothing", async () => {
+    const events = renderCanvas();
+    let shown: ReturnType<typeof usePropertyPreview> = null;
+    function Probe() {
+      shown = usePropertyPreview();
+      return null;
+    }
+    render(<Probe />);
+
+    // Resized to span x -560 to 1,080 (1888-05 to 1922-07), its chevrons drawn at 2,400 and 800.
+    act(() => events.onElementPreviewed!({ kind: "element-previewed", elementId: "steam-engine", bounds: { x: -560, y: 168, width: 1640, height: 32 }, boundaries: [2400, 800] }));
+
+    expect(shown).toEqual({
+      elementId: "steam-engine",
+      values: { "ghg.start": "1888-05", "ghg.stop": "1922-07", "ghg.peak-end": "1950-01", "ghg.trough-end": "1916-09" },
+    });
+    expect(properties).toEqual([]);
+
+    // Abandoned: nothing was written, so nothing is kept.
+    act(() => events.onElementPreviewed!({ kind: "element-previewed", elementId: "steam-engine", bounds: null }));
+    expect(shown).toBeNull();
+    clearPropertyPreview();
   });
 
   it("a drop from the backend's toolbox, or of the bare type, adds a trend where it landed", async () => {

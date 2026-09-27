@@ -37,9 +37,25 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
   const [error, setError] = useState("");
   const committing = useRef(false);
 
+  // A slider writes while it is dragged, one write in flight at a time: `sliding` is the value the
+  // row is waiting to see pushed back, and `queued` the newest stop reached while a write was out.
+  const sliding = useRef<string | null>(null);
+  const queued = useRef<string | null>(null);
+  const writing = useRef(false);
+  const pushed = useRef(property.value);
+  pushed.current = property.value;
+
   // The pushed value wins whenever the row is not being edited - another connection may have
-  // changed it, and an undo certainly will have.
+  // changed it, and an undo certainly will have. While a slider's writes are still coming back,
+  // a push is an echo of an earlier stop and not an answer: taking it would move the thumb back
+  // under the pointer, and the next pointer move would write that stop again.
   useEffect(() => {
+    if (sliding.current !== null) {
+      if (property.value !== sliding.current) {
+        return;
+      }
+      sliding.current = null;
+    }
     if (!editing) {
       setDraft(property.value);
     }
@@ -77,6 +93,41 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
       // of this function, writing nothing and saying nothing.
       committing.current = false;
     }
+  }
+
+  /**
+   * Writes a slider's stop, live, without flooding the history: while a write is in flight only
+   * the newest stop is kept, and it is written when that one lands. The row then waits for the
+   * last stop to be pushed back before it takes a pushed value again.
+   */
+  function slide(value: string) {
+    sliding.current = value;
+    if (writing.current) {
+      queued.current = value;
+      return;
+    }
+
+    writing.current = true;
+    void onCommit(value)
+      .then((failure) => {
+        setError(failure);
+        if (failure.length > 0) {
+          queued.current = null;
+          sliding.current = null;
+          setDraft(property.value);
+        }
+      })
+      .finally(() => {
+        writing.current = false;
+        const next = queued.current;
+        queued.current = null;
+        if (next !== null && next !== value) {
+          slide(next);
+        } else if (sliding.current !== null && pushed.current === sliding.current) {
+          // Already pushed before this write returned: there is no echo left to wait for.
+          sliding.current = null;
+        }
+      });
   }
 
   function abandon() {
@@ -194,12 +245,7 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
                 }
                 setDraft(next);
                 setEditing(false);
-                void onCommit(next).then((failure) => {
-                  setError(failure);
-                  if (failure.length > 0) {
-                    setDraft(property.value);
-                  }
-                });
+                slide(next);
               }}
             />
             <datalist id={`${property.id}-stops`}>

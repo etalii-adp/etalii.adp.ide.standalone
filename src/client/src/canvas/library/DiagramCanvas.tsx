@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, Component, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { create } from "@bufbuild/protobuf";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
 import {
@@ -11,6 +12,7 @@ import {
   sideAnchorOf,
   splinePath,
   straightPath,
+  edgeBezierPath,
   horizontalBezierPath,
   type ConnectorBox,
   type Point,
@@ -233,6 +235,7 @@ type PressTarget =
   | { kind: "boundary"; element: DiagramModelElement; index: number; x: number }
   | { kind: "connection"; connection: DiagramModelConnection }
   | { kind: "adjust"; connection: DiagramModelConnection; from: Point }
+  | { kind: "end"; connection: DiagramModelConnection; end: "source" | "target"; from: Point; attachment: EdgeAttachment }
   | { kind: "background"; view: ViewBox };
 
 /** The dragged element's live displacement, in canvas units, clamped - one per gesture. */
@@ -263,6 +266,13 @@ interface ResizeDragPreview {
 /** A segment boundary being dragged: the element, the boundary, and where it would land. */
 interface BoundaryDragPreview extends MovedBoundary {
   id: string;
+}
+
+/** A connection end being slid along its edge: where it would attach if released now. */
+interface EndDragPreview {
+  connectionId: string;
+  end: "source" | "target";
+  attachment: EdgeAttachment;
 }
 
 /** A connection-adjust in flight: the waypoint under the pointer - the second added kind. */
@@ -481,7 +491,40 @@ export function DiagramCanvasCore({
   const boundaryValue = useMemo(() => createGestureValue<BoundaryDragPreview>(), []);
   const boundaryFrameRef = useRef<GestureFrame<BoundaryDragPreview> | null>(null);
   const adjustFrameRef = useRef<GestureFrame<AdjustDragPreview> | null>(null);
+  const endValue = useMemo(() => createGestureValue<EndDragPreview>(), []);
+  /** The layer above every element that a connection's end handles are drawn into. */
+  const [handleLayer, setHandleLayer] = useState<SVGGElement | null>(null);
+  const endFrameRef = useRef<GestureFrame<EndDragPreview> | null>(null);
+  /**
+   * A released resize, boundary drag or end drag, still drawn where it landed until the model
+   * answers - the same hold a dropped element gets, for the same reason: the module asks its
+   * backend and waits, and reverting at once drew the old shape for the length of that wait.
+   * `was` is what the model said before; any other answer releases the hold.
+   */
+  const heldShapeRef = useRef<{ id: string; was: string; release: () => void } | null>(null);
+  const modelRef = useRef(model);
+  modelRef.current = model;
+  useEffect(() => {
+    const held = heldShapeRef.current;
+    if (held === null) {
+      return;
+    }
+
+    if (shapeSignatureOf(model, held.id) !== held.was) {
+      heldShapeRef.current = null;
+      held.release();
+    }
+  }, [model]);
+  const holdShape = useCallback(
+    (id: string, release: () => void) => {
+      heldShapeRef.current?.release();
+      heldShapeRef.current = { id, was: shapeSignatureOf(modelRef.current, id), release };
+    },
+    [],
+  );
   const panFrameRef = useRef<GestureFrame<ViewBox> | null>(null);
+  /** The pan in flight, for the chrome that must follow it live - the bottom ruler. */
+  const panValue = useMemo(() => createGestureValue<ViewBox>(), []);
   const panLatestRef = useRef<ViewBox | null>(null);
   useEffect(
     () => () => {
@@ -497,6 +540,8 @@ export function DiagramCanvasCore({
       adjustFrameRef.current = null;
       boundaryFrameRef.current?.cancel();
       boundaryFrameRef.current = null;
+      endFrameRef.current?.cancel();
+      endFrameRef.current = null;
       panFrameRef.current?.cancel();
       panFrameRef.current = null;
     },
@@ -550,6 +595,45 @@ export function DiagramCanvasCore({
     },
     [events],
   );
+
+  /** The element whose in-flight shape was last previewed, so the gesture's end can say so. */
+  const previewingRef = useRef<string | null>(null);
+
+  /**
+   * A live write that tells the module where the element is drawn this frame - `element-previewed`
+   * - so a module can show what the release will write while the gesture is still going.
+   */
+  const previewWrite = useCallback(
+    <T,>(drawn: (value: T) => { element: DiagramModelElement; bounds: ConnectorBox; moved?: MovedBoundary } | null): LiveWrite<T> => ({
+      apply: (value) => {
+        const shape = drawn(value);
+        if (shape === null) {
+          return;
+        }
+        const type = elementTypes.get(shape.element.type);
+        previewingRef.current = shape.element.id;
+        raise({
+          kind: "element-previewed",
+          elementId: shape.element.id,
+          bounds: { x: shape.bounds.x, y: shape.bounds.y, width: shape.bounds.width, height: shape.bounds.height },
+          ...(type?.segments !== undefined
+            ? { boundaries: resolveSegments(type.segments, sourceOf(shape.element), shape.bounds, shape.moved).dividers.map((divider) => divider.x) }
+            : {}),
+        });
+      },
+      // The gesture's end is raised by the release or the abandonment, after its final event.
+      revert: () => {},
+    }),
+    [elementTypes, raise],
+  );
+
+  const endPreview = useCallback(() => {
+    const id = previewingRef.current;
+    previewingRef.current = null;
+    if (id !== null) {
+      raise({ kind: "element-previewed", elementId: id, bounds: null });
+    }
+  }, [raise]);
 
   // view-changed means the view CHANGED - initially, on fit, zoom, pan and scrollbar alike -
   // so a module reporting its viewport observes one signal instead of wiring every gesture.
@@ -611,6 +695,8 @@ export function DiagramCanvasCore({
           before = null;
         },
       },
+      // The ruler is React, not an attribute: it follows through this cell, and only it re-renders.
+      valueWrite(panValue),
     ];
   }, [fitBox]);
 
@@ -888,6 +974,7 @@ export function DiagramCanvasCore({
           break;
         case "connection":
         case "adjust":
+        case "end":
           select(selectableConnection(target.connection) ? { kind: "connection", id: target.connection.id } : null);
           break;
         case "anchor":
@@ -918,7 +1005,13 @@ export function DiagramCanvasCore({
           // The frame begins on the first move: the rect is read here, once, and served
           // for the gesture's life - no layout read per pointer frame (Requirement 1.3).
           heldDropRef.current = null; // a new gesture replaces any drop still awaiting its answer
-          const frame = (dragFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(dragValue)]));
+          const frame = (dragFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [
+            valueWrite(dragValue),
+            previewWrite<ElementDragOffset>((value) => {
+              const moved = { ...target.element, x: target.element.x + value.dx, y: target.element.y + value.dy };
+              return { element: moved, bounds: elementBounds(moved, elementTypes.get(moved.type)) };
+            }),
+          ]));
           const dragScale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
           const at = dragLanding(definition, elementTypes, target.element, dx * dragScale, dy * dragScale);
           frame.move({ id: target.element.id, dx: at.x - target.element.x, dy: at.y - target.element.y });
@@ -952,7 +1045,14 @@ export function DiagramCanvasCore({
           break;
         }
         case "resize": {
-          const frame = (resizeFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(resizeValue)]));
+          heldShapeRef.current = null; // a new gesture replaces any shape still awaiting its answer
+          const frame = (resizeFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [
+            valueWrite(resizeValue),
+            previewWrite<ResizeDragPreview>((value) => {
+              const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), value.side, value.delta);
+              return { element: { ...target.element, x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2, width: bounds.width, height: bounds.height }, bounds };
+            }),
+          ]));
           const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
           // Snapped DURING the gesture, through the same rule the release uses, so the edge the
           // reader watches is the edge the module is told about.
@@ -960,11 +1060,34 @@ export function DiagramCanvasCore({
           break;
         }
         case "boundary": {
+          heldShapeRef.current = null;
           // The banner redraws with the boundary under the pointer, snapped and clamped exactly as
           // the release will be - one element re-renders per frame, as a resize does.
-          const frame = (boundaryFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(boundaryValue)]));
+          const frame = (boundaryFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [
+            valueWrite(boundaryValue),
+            previewWrite<BoundaryDragPreview>((value) => ({ element: target.element, bounds: elementBounds(target.element, elementTypes.get(target.element.type)), moved: value })),
+          ]));
           const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
           frame.move({ id: target.element.id, index: target.index, x: boundaryLandingOf(target.element, target.index, target.x + dx * scale) });
+          break;
+        }
+        case "end": {
+          // The end slides along the edge it is on - the same edge, any segment - measured as a
+          // connect gesture measures an end, so the release attaches exactly where it is drawn.
+          const elementId = target.end === "source" ? target.connection.sourceId : target.connection.targetId;
+          const element = modelRef.current.elements.find((candidate) => candidate.id === elementId);
+          const type = element !== undefined ? elementTypes.get(element.type) : undefined;
+          if (element === undefined || type === undefined) {
+            break;
+          }
+          const frame = (endFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(endValue)]));
+          const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
+          const bounds = elementBounds(element, type);
+          const point = { x: target.from.x + dx * scale, y: target.from.y + dy * scale };
+          const attachment = nearestAttachment(point, bounds, [target.attachment.edge], attachmentLayoutOf(element, type, bounds));
+          if (attachment !== undefined) {
+            frame.move({ connectionId: target.connection.id, end: target.end, attachment });
+          }
           break;
         }
         case "adjust": {
@@ -1050,9 +1173,16 @@ export function DiagramCanvasCore({
           const frame = resizeFrameRef.current;
           resizeFrameRef.current = null;
           const scale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
-          frame?.commit();
           const delta = resizeLanding(definition, elementTypes, target.element, target.side, alongSide(target.side, dx, dy) * scale);
           const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, delta);
+          if (delta !== 0) {
+            // Held at the landing until the model answers, as a dropped element is.
+            frame?.cancel();
+            resizeValue.set({ id: target.element.id, side: target.side, delta });
+            holdShape(target.element.id, () => resizeValue.clear());
+          } else {
+            frame?.commit();
+          }
           raise({ kind: "element-resized", elementId: target.element.id, side: target.side, bounds });
           break;
         }
@@ -1092,11 +1222,32 @@ export function DiagramCanvasCore({
           const frame = boundaryFrameRef.current;
           boundaryFrameRef.current = null;
           const scale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
-          frame?.commit();
           const landing = boundaryLandingOf(target.element, target.index, target.x + dx * scale);
           if (landing !== target.x) {
+            frame?.cancel();
+            boundaryValue.set({ id: target.element.id, index: target.index, x: landing });
+            holdShape(target.element.id, () => boundaryValue.clear());
             raise({ kind: "segment-boundary-moved", elementId: target.element.id, index: target.index, x: landing });
+          } else {
+            frame?.commit();
           }
+          break;
+        }
+        case "end": {
+          const preview = endValue.get();
+          const frame = endFrameRef.current;
+          endFrameRef.current = null;
+          const moved = preview !== null && !sameAttachment(preview.attachment, target.attachment);
+          if (moved) {
+            frame?.cancel();
+            endValue.set(preview);
+            holdShape(target.connection.id, () => endValue.clear());
+            raise({ kind: "connection-end-moved", connectionId: target.connection.id, end: target.end, attachment: preview.attachment });
+          } else {
+            frame?.commit();
+          }
+          // Chrome gives the press's focus to the handle's layer; the surface is where the keys go.
+          svgRef.current?.focus();
           break;
         }
         case "adjust": {
@@ -1114,6 +1265,8 @@ export function DiagramCanvasCore({
         case "connection":
           break;
       }
+      // After the final event, so a module sees the write before it forgets the preview.
+      endPreview();
     },
     onDragAbandon: () => {
       // The revert is the scheduler's: an abandonment cannot leak a publication any more
@@ -1130,6 +1283,9 @@ export function DiagramCanvasCore({
       adjustFrameRef.current = null;
       boundaryFrameRef.current?.revert();
       boundaryFrameRef.current = null;
+      endFrameRef.current?.revert();
+      endFrameRef.current = null;
+      endPreview();
       panFrameRef.current?.revert();
       panFrameRef.current = null;
       panLatestRef.current = null;
@@ -1893,6 +2049,11 @@ export function DiagramCanvasCore({
             selected={isSelected("connection", connection.id)}
             press={gesture.press({ kind: "connection", connection })}
             adjustPress={(from) => gesture.press({ kind: "adjust", connection, from })}
+            endValue={endValue}
+            handleLayer={handleLayer}
+            // Six pixels at any zoom: a hype cycle is read zoomed far out, where six UNITS is one.
+            endHandleRadius={paneSize !== null && paneSize.width > 0 ? (6 * effectiveView.w) / paneSize.width : 6}
+            endPress={(end, from, attachment) => gesture.press({ kind: "end", connection, end, from, attachment })}
             onContextMenu={onItemContextMenu(connection.id)}
           />
         ))}
@@ -1909,6 +2070,9 @@ export function DiagramCanvasCore({
         )}
 
         <ConnectPreviewLayer value={connectValue} />
+
+        {/* Above every element: a trend's edge strip otherwise takes the press meant for a handle. */}
+        <g data-layer="handles" ref={setHandleLayer} />
 
         {editing !== undefined && editing.editingId !== null && editingPlacement !== null && (
           <InlineLabelEditor
@@ -1968,7 +2132,7 @@ export function DiagramCanvasCore({
       )}
 
       {bottomRulers.map((ruler, index) => (
-        <RulerStrip key={index} declaration={ruler} source={chromeSource} view={effectiveView} widthPx={paneSize?.width ?? null} />
+        <RulerStrip key={index} declaration={ruler} source={chromeSource} view={effectiveView} panning={panValue} widthPx={paneSize?.width ?? null} />
       ))}
 
       <CanvasScrollbars
@@ -2368,6 +2532,10 @@ function LibraryConnection({
   selected,
   press,
   adjustPress,
+  endValue,
+  handleLayer,
+  endHandleRadius,
+  endPress,
   onContextMenu,
 }: {
   connection: DiagramModelConnection;
@@ -2380,6 +2548,10 @@ function LibraryConnection({
   selected: boolean;
   press: PointerPressWiring;
   adjustPress: (from: Point) => PointerPressWiring;
+  endValue: GestureValue<EndDragPreview>;
+  handleLayer: SVGGElement | null;
+  endHandleRadius: number;
+  endPress: (end: "source" | "target", from: Point, attachment: EdgeAttachment) => PointerPressWiring;
   onContextMenu: (event: React.MouseEvent) => void;
 }) {
   // The adjust preview: only the connection whose handle is being dragged re-renders per
@@ -2405,11 +2577,20 @@ function LibraryConnection({
     return value.id === connection.sourceId || value.id === connection.targetId ? value : null;
   });
 
+  // An end being slid along its edge: only this connection re-renders, attached where the pointer is.
+  const liveEnd = useSyncExternalStore(endValue.subscribe, () => {
+    const value = endValue.get();
+    return value !== null && value.connectionId === connection.id ? value : null;
+  });
+
   if (relation === undefined) {
     return null; // an undeclared relation type has nothing to route; the validator rejects it upstream
   }
 
-  const ends = connectionEnds(connection, elementsById, elementTypes, attachmentPoint, liveDrag);
+  const drawn: DiagramModelConnection = liveEnd === null
+    ? connection
+    : { ...connection, [liveEnd.end === "source" ? "sourceAttachment" : "targetAttachment"]: liveEnd.attachment };
+  const ends = connectionEnds(drawn, elementsById, elementTypes, attachmentPoint, liveDrag);
   if (ends === null) {
     return null; // a dangling end is the module's model bug to notice; there is nothing to draw
   }
@@ -2420,7 +2601,12 @@ function LibraryConnection({
   const target = draggedInto(elementsById.get(connection.targetId), liveDrag);
   const routeEnds =
     source !== undefined && target !== undefined
-      ? { source: elementBounds(source, elementTypes.get(source.type)), target: elementBounds(target, elementTypes.get(target.type)) }
+      ? {
+        source: elementBounds(source, elementTypes.get(source.type)),
+        target: elementBounds(target, elementTypes.get(target.type)),
+        ...(drawn.sourceAttachment !== undefined ? { sourceEdge: drawn.sourceAttachment.edge } : {}),
+        ...(drawn.targetAttachment !== undefined ? { targetEdge: drawn.targetAttachment.edge } : {}),
+      }
       : undefined;
   const d = routePath(relation, from, to, waypoints, connection.style?.cornerRadius ?? relation.style?.cornerRadius, routeEnds);
   const style = { ...relation.style, ...connection.style };
@@ -2464,6 +2650,20 @@ function LibraryConnection({
         // The one adjustment handle: dragging it raises connection-adjusted with the carried
         // waypoint; a definition that forbids adjustment never renders it (Requirement 3.5).
         <circle className="library-adjust-handle" data-testid={`adjust-${connection.id}`} cx={mid.x} cy={mid.y} r={5} {...adjustPress(mid)} />
+      )}
+      {selected && relation.movableEnds === true && handleLayer !== null && createPortal(
+        // One round handle on each end attached along an edge; dragging it slides that end along
+        // the same edge and raises connection-end-moved on release. Drawn in the layer above the
+        // elements, so the edge strips of the trends it sits on cannot take its press.
+        <g data-handles-for={connection.id}>
+          {drawn.sourceAttachment !== undefined && (
+            <circle className="library-end-handle" data-end="source" data-testid={`end-source-${connection.id}`} cx={from.x} cy={from.y} r={endHandleRadius} {...endPress("source", from, drawn.sourceAttachment)} />
+          )}
+          {drawn.targetAttachment !== undefined && (
+            <circle className="library-end-handle" data-end="target" data-testid={`end-target-${connection.id}`} cx={to.x} cy={to.y} r={endHandleRadius} {...endPress("target", to, drawn.targetAttachment)} />
+          )}
+        </g>,
+        handleLayer,
       )}
     </g>
   );
@@ -3161,7 +3361,9 @@ export function routePath(
     case "quadratic-bezier":
       return quadraticBezierPath(from, to);
     case "cubic-bezier":
-      return horizontalBezierPath(from, to);
+      return ends?.sourceEdge !== undefined || ends?.targetEdge !== undefined
+        ? edgeBezierPath(from, to, ends.sourceEdge, ends.targetEdge)
+        : horizontalBezierPath(from, to);
     case "spline":
       return splinePath(from, to, waypoints);
   }
@@ -3611,4 +3813,22 @@ function deriveToolbox(definition: DiagramDefinition): ToolboxItem[] {
     create(ToolboxItemSchema, { id: item.payload, label: item.title, icon: item.icon ?? "mdi-shape-outline" }),
   );
   return [...derived, ...added];
+}
+
+/** Whether two edge attachments name the same place. */
+function sameAttachment(left: EdgeAttachment, right: EdgeAttachment): boolean {
+  return left.edge === right.edge && left.region === right.region && left.at === right.at;
+}
+
+/**
+ * What the model says about one element's shape or one connection's ends, as a string to compare -
+ * what a held gesture waits to see change. Empty when the model has neither.
+ */
+function shapeSignatureOf(model: DiagramModel, id: string): string {
+  const element = model.elements.find((candidate) => candidate.id === id);
+  if (element !== undefined) {
+    return JSON.stringify([element.x, element.y, element.width, element.height, element.payload ?? null]);
+  }
+  const connection = model.connections.find((candidate) => candidate.id === id);
+  return connection !== undefined ? JSON.stringify([connection.sourceAttachment ?? null, connection.targetAttachment ?? null]) : "";
 }
