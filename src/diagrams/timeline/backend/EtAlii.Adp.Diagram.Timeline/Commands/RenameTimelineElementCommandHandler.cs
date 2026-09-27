@@ -36,9 +36,9 @@ public sealed class RenameTimelineElementCommandHandler : ICommandHandler<Rename
         var inverse = new RenameTimelineElementCommand(command.BodyPath, command.ElementId, element.Label);
         TimelineWriter.SetLabel(entry.Document, element, command.Label);
 
-        var error = _documents.Save(command.BodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = _documents.Save(command.BodyPath, entry);
+        return Task.FromResult(!saved.Failed
             ? CommandResult.Success(inverse)
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 }
