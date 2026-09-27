@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { DiagramDefinition, EdgeAttachment, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, EdgeAttachment, ElementTypeDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { RulerRung } from "@client/canvas/library/definition/chrome";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
@@ -51,6 +51,12 @@ const RULER_RUNGS: readonly { months: number; rung: RulerRung }[] = [
 ];
 
 /**
+ * A compact trend's width: that of a new trend dropped in true-time, twelve steps of any unit -
+ * a step is always `unitsPerMonth` units wide - so compact draws at a size the author knows.
+ */
+const COMPACT_WIDTH = 12 * GhgScale.unitsPerMonth;
+
+/**
  * What a hype cycle graph is, stated once for each time unit a document may name. Every piece of it
  * is a library declaration: the phased banner, the attachments anywhere along a phase's edge, one
  * influence per direction, the ruler and the tag filter. The unit changes only the ruler's scale
@@ -60,28 +66,35 @@ const RULER_RUNGS: readonly { months: number; rung: RulerRung }[] = [
  */
 function definitionFor(unit: GhgTimeUnit): DiagramDefinition {
   const months = GhgTimeUnits[unit];
+  const trendType: ElementTypeDefinition = {
+    id: GhgElementTypes.trend,
+    shape: "arrow-banner",
+    classNames: [{ className: "canvas-element ghg-trend", on: "element" }],
+    segments: {
+      count: { path: "payload.phases" },
+      max: GHG_PHASES.length,
+      boundaries: "payload.boundaries",
+      classNames: GHG_PHASES.map((phase) => `ghg-${phase}`),
+      tooltips: GHG_PHASE_TOOLTIPS,
+      divider: "chevron",
+      draggableBoundaries: true,
+    },
+    labels: [{ text: { path: "payload.name" }, placement: "before", editable: true, className: "canvas-node-label ghg-label" }],
+    // An influence attaches anywhere along a phase's top or bottom edge; no dot is drawn, because
+    // the whole edge is the handle.
+    anchors: { kind: "along", edges: ["top", "bottom"], regions: "segments", visible: false },
+    sizing: "user",
+  };
+  // Compact: every trend one width, its phases even, and nothing that would change a date offered -
+  // no move, no resize, no boundary drag - while influences, renaming and the toolbox still work.
+  const compactTrendType: ElementTypeDefinition = {
+    ...trendType,
+    sizing: "model",
+    draggable: false,
+    segments: { ...trendType.segments!, boundaries: undefined, draggableBoundaries: false },
+  };
   return assertValidDiagramDefinition({
-    elementTypes: [
-      {
-        id: GhgElementTypes.trend,
-        shape: "arrow-banner",
-        classNames: [{ className: "canvas-element ghg-trend", on: "element" }],
-        segments: {
-          count: { path: "payload.phases" },
-          max: GHG_PHASES.length,
-          boundaries: "payload.boundaries",
-          classNames: GHG_PHASES.map((phase) => `ghg-${phase}`),
-          tooltips: GHG_PHASE_TOOLTIPS,
-          divider: "chevron",
-          draggableBoundaries: true,
-        },
-        labels: [{ text: { path: "payload.name" }, placement: "before", editable: true, className: "canvas-node-label ghg-label" }],
-        // An influence attaches anywhere along a phase's top or bottom edge; no dot is drawn, because
-        // the whole edge is the handle.
-        anchors: { kind: "along", edges: ["top", "bottom"], regions: "segments", visible: false },
-        sizing: "user",
-      },
-    ],
+    elementTypes: [trendType],
     relationTypes: [
       {
         id: GhgRelationTypes.influence,
@@ -129,7 +142,16 @@ function definitionFor(unit: GhgTimeUnit): DiagramDefinition {
       // The key to the phase colours, each swatch painted by the rule that paints its phase.
       legend: GHG_PHASES.map((phase, index) => ({ caption: GHG_PHASE_TITLES[index], swatchClass: `ghg-${phase}` })),
     },
-    layout: { modes: ["manual"] },
+    // True-time by default; the Compact toggle under the legend packs the trends along their rows
+    // at one width, in the order they start, and takes away the time axis with the gestures.
+    layout: {
+      modes: ["manual", "row-packed"],
+      toggle: { caption: "Compact", on: "row-packed" },
+      rowPacked: { width: COMPACT_WIDTH, gap: GhgScale.unitsPerMonth },
+      modeOverrides: {
+        "row-packed": { elementTypes: [compactTrendType], dragging: "disabled", chrome: { rulers: [] } },
+      },
+    },
     dragging: "enabled",
   });
 }
@@ -149,6 +171,9 @@ export function ghgDefinitionFor(unit: GhgTimeUnit): DiagramDefinition {
 
 /** The definition for a diagram drawn in months - every document that names no unit. */
 export const GHG_DEFINITION: DiagramDefinition = DEFINITIONS.month;
+
+/** A view of the whole canvas, far beyond any date a document can state: what compact reports. */
+const EVERYTHING: ShapeBounds = { x: -1e9, y: -1e9, width: 2e9, height: 2e9 };
 
 /** The declared actions this module forwards; anything else the library raises is not ours. */
 const FORWARDED_ACTIONS: ReadonlySet<string> = new Set(GHG_ACTION_IDS);
@@ -183,6 +208,9 @@ export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+  // Compact places every trend by where all the others start, so it needs the whole document: while
+  // it is on, the view reported to the backend is everything, not the part of the canvas on screen.
+  const [compact, setCompact] = useState(false);
   // Every trend carries the diagram's unit; an empty diagram is drawn in months until it has one.
   const unit = timeUnitOf(model.trends.values().next().value?.payload.unit);
   const dateAt = (x: number) => formatMonth(monthAt(x, unit));
@@ -296,16 +324,19 @@ export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       }
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
+    onLayoutModeChanged: ({ mode }) => setCompact(mode === "row-packed"),
   };
 
+  const reported = compact ? EVERYTHING : viewport;
+
   useViewReport({
-    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    view: { x: reported?.x ?? 0, y: reported?.y ?? 0, w: reported?.width ?? 0, h: reported?.height ?? 0 },
     report: viewReportOf(client, projectId, watchId, path),
     convert: () => ({
-      minX: viewport?.x ?? 0,
-      minY: viewport?.y ?? 0,
-      maxX: (viewport?.x ?? 0) + (viewport?.width ?? 0),
-      maxY: (viewport?.y ?? 0) + (viewport?.height ?? 0),
+      minX: reported?.x ?? 0,
+      minY: reported?.y ?? 0,
+      maxX: (reported?.x ?? 0) + (reported?.width ?? 0),
+      maxY: (reported?.y ?? 0) + (reported?.height ?? 0),
     }),
     ready: !loading && !failed && viewport !== null,
   });
