@@ -141,7 +141,7 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
       <div className="property-grid-row property-grid-row-readonly">
         <dt>{property.label}</dt>
         <dd>
-          <span className="property-grid-value">{property.value}</span>
+          <span className="property-grid-value">{linesOf(property.value)}</span>
           {/* Why, not merely that: a reader who cannot change a value here deserves to know
               what would have to change instead. */}
           <span className="property-grid-readonly-reason">{property.readOnlyReason}</span>
@@ -294,4 +294,19 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
       </dd>
     </div>
   );
+}
+
+/**
+ * A read-only value one line a row: a list such as a trend phase's influences arrives as lines,
+ * and a reader should see them as a list rather than run together.
+ */
+function linesOf(value: string) {
+  const lines = value.split("\n");
+  return lines.length === 1
+    ? value
+    : lines.map((line, index) => (
+        <span key={index} className="property-grid-value-line">
+          {line}
+        </span>
+      ));
 }
