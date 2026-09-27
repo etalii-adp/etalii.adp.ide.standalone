@@ -21,6 +21,7 @@ import {
   type CausalLoopVariable,
 } from "./causalLoopModel";
 import { useCausalLoopStream } from "./useCausalLoopStream";
+import { placementId, relationId, withoutPrefix } from "@client/canvas/gestureIds";
 
 export interface CausalLoopCanvasProps {
   projectId: Uint8Array;
@@ -341,7 +342,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     // or loop item drops onto whatever variable it was released on, the same as its menu entry.
     onElementDropped: ({ elementType, position }) => {
       if (elementType === AddVariableActionId) {
-        runAction(elementType, `new:${position.x},${position.y}`);
+        runAction(elementType, placementId(position.x, position.y));
         return;
       }
       // A link or loop item is dropped ONTO a variable; find which one it landed on.
@@ -355,9 +356,15 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     // A link drawn by right-dragging between two variables: the shared gesture layer raises this,
     // and the module states the link (and claims the loops it closes) with no dialog.
     onConnectionDrawn: ({ sourceElementId, targetElementId }) => {
-      const from = sourceElementId.slice("variable:".length);
-      const to = targetElementId.slice("variable:".length);
-      runAction(ConnectActionId, `rel:${from}->${to}`);
+      // Both ends must be variables: an id that is not one, or is the bare prefix, is refused
+      // here rather than sent as a truncated or empty end.
+      const from = withoutPrefix(sourceElementId, "variable:");
+      const to = withoutPrefix(targetElementId, "variable:");
+      if (from === null || to === null) {
+        refuse("Draw a link between two variables.");
+        return;
+      }
+      runAction(ConnectActionId, relationId(from, to));
     },
     // Deletions stay unanswered: Delete was never a causal-loop key; removal lives in the menu
     // the backend pushes.
