@@ -221,7 +221,7 @@
 /*
  * AN ANCHOR IS PART OF ITS ELEMENT, SO IT IS COLOURED LIKE ONE.
  *
- * All three anchor classes below used to be `--color-primary` unconditionally, so every anchor
+ * The anchor classes below used to be `--color-primary` unconditionally, so every anchor
  * on every canvas sat green whether or not anything was selected - which reads as "this is
  * highlighted" on an element that is not, and leaves a selected element's anchors saying
  * nothing new. Reported against the dependency graph and the timeline; it was never those two
@@ -231,20 +231,6 @@
  * to (canvas/library/highlight.ts), so the two cannot disagree and no module rule can outrank it;
  * this rule dresses the resting state only.
  */
-.canvas-anchor {
-  fill: var(--color-surface, #ffffff);
-  stroke: var(--color-border, #8892a6);
-  stroke-width: 1.5;
-  cursor: crosshair;
-  pointer-events: none;
-}
-
-/* The generous, invisible grab target each anchor dot sits inside. */
-.canvas-anchor-hit {
-  fill: transparent;
-  stroke: none;
-  cursor: crosshair;
-}
 
 /* ---- The library's own classes ------------------------------------------------------
  *
@@ -264,14 +250,15 @@
  * This is the same failure `.library-canvas` above already documents - a class name with no
  * rule behind it - and the same remedy: the library's own classes are stated here, once,
  * rather than left for each module to discover. They deliberately reuse the variables the
- * `canvas-*` rules use, so a library-drawn anchor and a module-drawn one are the same dot.
+ * `canvas-*` rules use, so an anchor reads as part of the element it sits on. (Every anchor is
+ * the library's now: the shared `canvas-anchor` pair no module drew any more was removed by
+ * client-centralization task 12's emitter guard.)
  */
 
 /* The library's own anchors carry the connect gesture themselves - the circle is the press
- * target, not a decoration beside one. So this must NOT take `pointer-events: none` from
- * `.canvas-anchor` above, which can afford it only because the modules that use it draw a
- * separate `canvas-anchor-hit` circle behind it. Copying that rule wholesale would have left
- * the anchors looking right and impossible to drag from. */
+ * target, not a decoration beside one. So this must NOT take `pointer-events: none`, which a
+ * span's anchor below can afford only because a separate hit circle sits behind it. Copying
+ * that rule wholesale would have left the anchors looking right and impossible to drag from. */
 .library-anchor {
   fill: var(--color-surface, #ffffff);
   stroke: var(--color-border, #8892a6);
@@ -506,14 +493,6 @@
    arrowhead all take the highlight inline, from the same one place the elements do: the whole
    route reads as one thing, and the marker in <defs> follows through `context-stroke`, which no
    selector on a selected connection could ever have reached. */
-
-.canvas-pending-connection {
-  fill: none;
-  stroke: var(--color-primary, limegreen);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3;
-  pointer-events: none;
-}
 
 /* The arrowhead a directed canvas defines; each module attaches its own marker id. A marker
    lives in <defs>, so no selector on the selected connection can ever reach it - context-stroke

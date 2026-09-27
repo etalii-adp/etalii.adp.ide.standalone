@@ -67,6 +67,30 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         });
 
     /// <summary>
+    /// Opens every stage and job the pipeline drew that is still shut - shared with
+    /// <see cref="ShippedExampleModelsTests"/>, which exports what a fully opened pipeline sends.
+    /// </summary>
+    internal static void ExpandPipelineViews(IServiceProvider services, DrawnView view)
+    {
+        var views = services.GetRequiredService<PipelineViewState>();
+        var open = views.For(view.WatchId, view.BodyPath);
+        var openable = new[] { PipelineElementMapper.StageType, PipelineElementMapper.JobType };
+        foreach (var element in view.Baseline.Where(element => openable.Contains(element.Type)))
+        {
+            // Only what is still shut. Toggle FLIPS, so re-toggling an open stage on the next
+            // round would close it and the expansion would oscillate rather than settle - which
+            // is exactly what the helper's round cap reported when this hook first ran.
+            //
+            // One set of ids for both levels since Developer 2's job-steps change: a job's id
+            // carries its stage's, so the view state takes either without being told which.
+            if (!open.IsExpanded(element.Id))
+            {
+                views.Toggle(view.WatchId, view.BodyPath, element.Id);
+            }
+        }
+    }
+
+    /// <summary>
     /// Every module whose canvas the examples show, with the types its projection emits over them.
     /// </summary>
     private static readonly DrawnModule[] Modules =
@@ -81,25 +105,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("azure-pipeline", new(
             [PipelineElementMapper.EdgeType],
             [PipelineElementMapper.StageType, PipelineElementMapper.JobType, PipelineElementMapper.StepType, PipelineElementMapper.TemplateType]),
-            ExpandViews: (services, view) =>
-            {
-                var views = services.GetRequiredService<PipelineViewState>();
-                var open = views.For(view.WatchId, view.BodyPath);
-                var openable = new[] { PipelineElementMapper.StageType, PipelineElementMapper.JobType };
-                foreach (var element in view.Baseline.Where(element => openable.Contains(element.Type)))
-                {
-                    // Only what is still shut. Toggle FLIPS, so re-toggling an open stage on the next
-                    // round would close it and the expansion would oscillate rather than settle - which
-                    // is exactly what the helper's round cap reported when this hook first ran.
-                    //
-                    // One set of ids for both levels since Developer 2's job-steps change: a job's id
-                    // carries its stage's, so the view state takes either without being told which.
-                    if (!open.IsExpanded(element.Id))
-                    {
-                        views.Toggle(view.WatchId, view.BodyPath, element.Id);
-                    }
-                }
-            }),
+            ExpandViews: ExpandPipelineViews),
         new("c4", new(
             [C4ElementMapper.RelationshipType],
             [C4ElementMapper.NodeType, C4ElementMapper.BoundaryType, C4ElementMapper.ViewType])),

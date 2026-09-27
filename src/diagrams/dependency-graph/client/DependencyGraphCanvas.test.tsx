@@ -591,12 +591,12 @@ describe("the dependency graph canvas", () => {
     const { container } = renderCanvas();
 
     // Assert.
-    // The shared span element still draws the strips; the stylesheet hides them and no handler
-    // is wired, so a grab on one cannot become an edit. What the timeline resized was a
-    // duration, and there is none.
-    const adorners = [...container.querySelectorAll(".dependency-graph-adorner")];
-    expect(properties).toHaveLength(0);
-    adorners.forEach((adorner) => fireEvent.mouseDown(adorner, { clientX: 100, clientY: 30 }));
+    // None is drawn at all: the library draws resize handles only on a type sized by the user,
+    // and a node is not one. What the timeline resized was a duration, and there is none. (This
+    // once asked after `.dependency-graph-adorner`, which nothing drew - client-centralization
+    // task 12 - so it held however many strips appeared.)
+    const adorners = [...container.querySelectorAll(".library-resize-handle, .library-span-adorner")];
+    expect(adorners).toHaveLength(0);
     expect(properties).toHaveLength(0);
     expect(executed).toHaveLength(0);
   });

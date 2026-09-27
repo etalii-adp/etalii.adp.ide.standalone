@@ -101,7 +101,7 @@ public sealed partial class DiagramService
             // MUST STAY NON-BLOCKING: DiagramDocumentChangeHandler raises into this while holding its lock.
             foreach (var delta in args.Deltas)
             {
-                channel.Writer.TryWrite(ToProto(delta));
+                channel.Writer.TryWrite(DiagramWire.ToProto(delta));
             }
         }
 
@@ -134,7 +134,7 @@ public sealed partial class DiagramService
 
             foreach (var delta in baseline)
             {
-                await responseStream.WriteAsync(ToProto(delta), context.CancellationToken);
+                await responseStream.WriteAsync(DiagramWire.ToProto(delta), context.CancellationToken);
             }
 
             await foreach (var delta in channel.Reader.ReadAllAsync(context.CancellationToken))

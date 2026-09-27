@@ -346,10 +346,10 @@ describe("no unstyled library classes", () => {
    * The library's own anchors stay pressable.
    *
    * They carry the connect gesture themselves — `anchorPress` is spread onto the circle — unlike
-   * the shared `.canvas-anchor`, which can be inert because the modules using it draw a separate
-   * hit circle behind it. Copying that rule wholesale, which is exactly what the first version of
-   * this fix did, leaves the anchors looking correct and impossible to drag from: a regression
-   * that no test would see and that looks like nothing at all on screen.
+   * a span's anchor, which can be inert because a separate hit circle sits behind it. Copying an
+   * inert anchor's rule wholesale, which is exactly what the first version of this fix did, leaves
+   * the anchors looking correct and impossible to drag from: a regression that no test would see
+   * and that looks like nothing at all on screen.
    */
   it("leaves the library's own anchors pressable", () => {
     // Arrange.
@@ -365,23 +365,5 @@ describe("no unstyled library classes", () => {
       rule![1],
       "pointer-events: none on .library-anchor makes the connect gesture unreachable",
     ).not.toMatch(/pointer-events:\s*none/);
-  });
-
-  /** An anchor the library draws and one a module draws are the same dot. */
-  it("gives the library's anchors the same fill as the shared ones", () => {
-    // Arrange.
-    const stylesheets = css();
-
-    // Act.
-    const shared = /\.canvas-anchor\s*\{([^}]*)\}/.exec(stylesheets);
-    const library = /\.library-anchor[^{]*\{([^}]*)\}/.exec(stylesheets);
-
-    // Assert.
-    expect(shared).not.toBeNull();
-    expect(library, "the library's own anchors have no rule").not.toBeNull();
-    for (const property of ["fill", "stroke"]) {
-      const of = (block: string) => new RegExp(`${property}:\\s*([^;]+)`).exec(block)?.[1].trim();
-      expect(of(library![1]), `${property} differs from the shared anchor`).toEqual(of(shared![1]));
-    }
   });
 });
