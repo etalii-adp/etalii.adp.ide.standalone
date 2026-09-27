@@ -1,4 +1,4 @@
-import { isCustomShape, type CustomRouteRef, type CustomShapeRef, type DiagramDefinition } from "./diagramDefinition";
+import { isCustomShape, type CustomRouteRef, type CustomShapeRef, type DiagramDefinition, type LayoutMode } from "./diagramDefinition";
 
 /**
  * Checks a diagram definition at construction, before anything renders from it. The shapes of
@@ -13,9 +13,39 @@ import { isCustomShape, type CustomRouteRef, type CustomShapeRef, type DiagramDe
 export function validateDiagramDefinition(definition: DiagramDefinition): readonly string[] {
   const problems: string[] = [];
 
-  if (definition.layout.modes.length === 0) {
+  const layout = definition.layout;
+  if (layout.modes.length === 0) {
     problems.push("The layout allows zero modes: a canvas that can lay out no way is a definition bug.");
   }
+  if (layout.modes.includes("row-packed") && layout.rowPacked === undefined) {
+    problems.push("The layout allows row-packed without declaring rowPacked: the mode has no width to draw with.");
+  }
+  if (layout.toggle !== undefined) {
+    if (!layout.modes.includes(layout.toggle.on)) {
+      problems.push(`The layout toggle switches to "${layout.toggle.on}", which the layout does not allow.`);
+    }
+    if (layout.modes.length !== 2) {
+      problems.push(`The layout toggle needs exactly two modes to switch between; the layout allows ${layout.modes.length}.`);
+    }
+    if (definition.filter === undefined) {
+      problems.push("The layout toggle is drawn below the filter box's legend, and this definition declares no filter.");
+    }
+  }
+
+  problems.push(...validateBody(definition));
+
+  // A mode's overrides make a second definition the canvas really draws, so it answers to the
+  // same checks: an override naming an element type nobody declares is as much a bug there.
+  for (const [mode, overrides] of Object.entries(layout.modeOverrides ?? {}) as [LayoutMode, Partial<DiagramDefinition>][]) {
+    problems.push(...validateBody({ ...definition, ...overrides, layout }).map((problem) => `Under layout mode "${mode}": ${problem}`));
+  }
+
+  return problems;
+}
+
+/** The checks on what a definition draws - its types, routes and rules - as opposed to its layout. */
+function validateBody(definition: DiagramDefinition): string[] {
+  const problems: string[] = [];
 
   const knownElementTypes = new Set(definition.elementTypes.map((type) => type.id));
 
