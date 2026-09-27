@@ -303,7 +303,7 @@ Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../
 
 ### Layout, dragging, snap and extent
 
-**Declarations:** `SnapDeclaration`, `DropTargetDeclaration`, `LayoutDefinition`, `LayoutMode`, `DraggingPolicy`, `SnapAxis`, `DeclaredNumber`
+**Declarations:** `SnapDeclaration`, `DropTargetDeclaration`, `LayoutDefinition`, `LayoutMode`, `DraggingPolicy`, `SnapAxis`, `DeclaredNumber`, `snapToStep`
 
 **What it is for.** Where elements may go and how they move.
 
@@ -320,6 +320,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 ```
 
 **Their members.** `LayoutDefinition` carries `modes`, `dragUnderAutomaticLayout`, `treeDirection`; `SnapAxis` carries `step`, `origin`.
+
+**`snapToStep(value, step)` is the one rounding rule for a lattice**, halves away from zero and never negative zero - the rule a declared `snap` drags by, and the one the backend persists a row with. A module that needs a row index for an id divides it back out, `snapToStep(y, ROW_HEIGHT) / ROW_HEIGHT`, rather than rounding again; the dependency graph and the timeline each had their own copy until `client-centralization` task 9.
 
 ### Background
 
@@ -723,7 +725,7 @@ sequenceDiagram
 
 **The list is computed, not maintained.** It is exactly the library's exports that appear in neither set, so it cannot drift from the code: a name that leaves the library fails the test, and a name a module starts importing leaves this list and must gain an entry above.
 
-**71 names** since `gartner-hype-cycle-graph` added `BEFORE_GAP`, `canvasPositionOf` and `monthIndexOf`; 68 read on `client-centralization` task 7's branch over `develop` at `a062888d`: `client-centralization` task 6 added `ActionDeclaring` and `backendKeyOf`, and task 7 `DiagramEditingIntegration`, for the library's own use:
+**70 names** since `client-centralization` task 9 made `snapToStep` module-facing; 71 since `gartner-hype-cycle-graph` added `BEFORE_GAP`, `canvasPositionOf` and `monthIndexOf`; 68 read on `client-centralization` task 7's branch over `develop` at `a062888d`: `client-centralization` task 6 added `ActionDeclaring` and `backendKeyOf`, and task 7 `DiagramEditingIntegration`, for the library's own use:
 
-`ActionDeclaring`, `ActionLookup`, `BEFORE_GAP`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DiagramEditingIntegration`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `canvasPositionOf`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `monthIndexOf`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `snapToStep`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
+`ActionDeclaring`, `ActionLookup`, `BEFORE_GAP`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `BindingSource`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DiagramEditingIntegration`, `DispatchedAction`, `ElementBounds`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `canvasPositionOf`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `estimatedTextWidth`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `monthIndexOf`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `structuralModelOf`, `treeLayout`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
 

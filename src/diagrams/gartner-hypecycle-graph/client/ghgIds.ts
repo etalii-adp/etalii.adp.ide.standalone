@@ -76,9 +76,9 @@ export function xOfMonth(monthIndex: number): number {
   return (monthIndex - GhgScale.originMonth) * GhgScale.unitsPerMonth;
 }
 
-/** A month index as the document writes it: `YYYY-MM`. */
+/** A month index as the document writes it: `YYYY-MM`, or `-YYYY-MM` before year 0 (ISO 8601's astronomical years). */
 export function formatMonth(monthIndex: number): string {
   const year = Math.floor(monthIndex / 12);
   const month = monthIndex - year * 12 + 1;
-  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
+  return `${year < 0 ? "-" : ""}${String(Math.abs(year)).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
 }
