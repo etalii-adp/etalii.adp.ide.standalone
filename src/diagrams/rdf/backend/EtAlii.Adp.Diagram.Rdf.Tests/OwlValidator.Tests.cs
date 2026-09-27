@@ -18,7 +18,7 @@ public class OwlValidatorTests
         """;
 
     private static IReadOnlyList<DiagramProblem> Judge(string body) =>
-        OwlValidator.Judge(RdfParser.Parse(RdfDocument.Parse(Prelude + body)));
+        OwlValidator.Judge(RdfParser.Parse(LineDocument.Parse(Prelude + body)));
 
     [Fact]
     public void ACleanOntology_ReportsNothing()

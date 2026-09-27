@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -9,13 +10,13 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// </summary>
 public class JobWriterTests
 {
-    private static DatabricksDocument Load()
+    private static LineDocument Load()
     {
-        return DatabricksDocument.Parse(
+        return LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "job.yml")));
     }
 
-    private static JobModel Job(DatabricksDocument document) =>
+    private static JobModel Job(LineDocument document) =>
         Assert.Single(JobParser.Parse(DatabricksYaml.Root(document), document));
 
     [Fact]

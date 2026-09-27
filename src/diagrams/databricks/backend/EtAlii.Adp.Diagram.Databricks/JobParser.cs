@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using YamlDotNet.RepresentationModel;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -31,7 +32,7 @@ internal static class JobParser
         ("spark_jar_task", "jar", "main_class_name"),
     ];
 
-    public static IReadOnlyList<JobModel> Parse(YamlMappingNode? root, DatabricksDocument document)
+    public static IReadOnlyList<JobModel> Parse(YamlMappingNode? root, LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -63,7 +64,7 @@ internal static class JobParser
         return jobs;
     }
 
-    private static List<JobTask> ReadTasks(YamlMappingNode job, DatabricksDocument document)
+    private static List<JobTask> ReadTasks(YamlMappingNode job, LineDocument document)
     {
         var tasks = new List<JobTask>();
         foreach (var node in DatabricksYaml.Sequence(job, "tasks"))
@@ -129,7 +130,7 @@ internal static class JobParser
         return "";
     }
 
-    private static List<JobDependency> ReadDependencies(YamlMappingNode task, DatabricksDocument document)
+    private static List<JobDependency> ReadDependencies(YamlMappingNode task, LineDocument document)
     {
         var dependencies = new List<JobDependency>();
         foreach (var node in DatabricksYaml.Sequence(task, "depends_on"))
@@ -147,7 +148,7 @@ internal static class JobParser
         return dependencies;
     }
 
-    private static List<JobCluster> ReadClusters(YamlMappingNode job, DatabricksDocument document)
+    private static List<JobCluster> ReadClusters(YamlMappingNode job, LineDocument document)
     {
         var clusters = new List<JobCluster>();
         foreach (var node in DatabricksYaml.Sequence(job, "job_clusters"))

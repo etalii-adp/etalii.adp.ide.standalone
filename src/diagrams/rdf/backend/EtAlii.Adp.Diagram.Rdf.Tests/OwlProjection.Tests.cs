@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -16,7 +17,7 @@ public class OwlProjectionTests
     private static OwlGraphResult ProjectFixture(string name)
     {
         var text = File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name));
-        return OwlProjection.Project(RdfParser.Parse(RdfDocument.Parse(text)));
+        return OwlProjection.Project(RdfParser.Parse(LineDocument.Parse(text)));
     }
 
     [Fact]
@@ -145,8 +146,8 @@ public class OwlProjectionTests
         var text = File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "owl-ontology.ttl"));
 
         // Act: the same bytes twice.
-        var first = OwlProjection.Project(RdfParser.Parse(RdfDocument.Parse(text)));
-        var second = OwlProjection.Project(RdfParser.Parse(RdfDocument.Parse(text)));
+        var first = OwlProjection.Project(RdfParser.Parse(LineDocument.Parse(text)));
+        var second = OwlProjection.Project(RdfParser.Parse(LineDocument.Parse(text)));
 
         // Assert: same ids, same order, same edges - the same file always opens the same way.
         Assert.Equal(first.Nodes.Select(node => node.Id), second.Nodes.Select(node => node.Id));
@@ -184,9 +185,9 @@ public class OwlProjectionTests
             """;
 
         // Act.
-        var beforeId = OwlProjection.Project(RdfParser.Parse(RdfDocument.Parse(before)))
+        var beforeId = OwlProjection.Project(RdfParser.Parse(LineDocument.Parse(before)))
             .Nodes.Single(node => node.Kind == OwlNodeKind.Restriction).Id;
-        var afterId = OwlProjection.Project(RdfParser.Parse(RdfDocument.Parse(after)))
+        var afterId = OwlProjection.Project(RdfParser.Parse(LineDocument.Parse(after)))
             .Nodes.Single(node => node.Kind == OwlNodeKind.Restriction).Id;
 
         // Assert: the restriction's id shifted with the inserted axiom.
@@ -211,7 +212,7 @@ public class OwlProjectionTests
         }
 
         // Act: a budget of five holds two whole units, and must not split the third.
-        var graph = OwlProjection.Project(RdfParser.Parse(RdfDocument.Parse(text.ToString())), budget: 5);
+        var graph = OwlProjection.Project(RdfParser.Parse(LineDocument.Parse(text.ToString())), budget: 5);
 
         // Assert.
         Assert.True(graph.Truncated);

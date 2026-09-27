@@ -21,7 +21,7 @@ internal static class PipelineParser
         "channel", "libraries", "notifications",
     ];
 
-    public static IReadOnlyList<PipelineModel> Parse(YamlMappingNode? root, DatabricksDocument document)
+    public static IReadOnlyList<PipelineModel> Parse(YamlMappingNode? root, LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -56,7 +56,7 @@ internal static class PipelineParser
     }
 
     private static PipelineModel Read(
-        string key, YamlMappingNode pipeline, LineRange lines, DatabricksDocument document) =>
+        string key, YamlMappingNode pipeline, LineRange lines, LineDocument document) =>
         new(
             key,
             DatabricksYaml.Scalar(pipeline, "name") ?? "",
@@ -72,7 +72,7 @@ internal static class PipelineParser
             ReadUnknownKeys(pipeline, document),
             lines);
 
-    private static List<PipelineLibrary> ReadLibraries(YamlMappingNode pipeline, DatabricksDocument document)
+    private static List<PipelineLibrary> ReadLibraries(YamlMappingNode pipeline, LineDocument document)
     {
         var libraries = new List<PipelineLibrary>();
         foreach (var node in DatabricksYaml.Sequence(pipeline, "libraries"))
@@ -97,7 +97,7 @@ internal static class PipelineParser
         return libraries;
     }
 
-    private static List<PipelineNotification> ReadNotifications(YamlMappingNode pipeline, DatabricksDocument document)
+    private static List<PipelineNotification> ReadNotifications(YamlMappingNode pipeline, LineDocument document)
     {
         var notifications = new List<PipelineNotification>();
         foreach (var node in DatabricksYaml.Sequence(pipeline, "notifications"))
@@ -122,7 +122,7 @@ internal static class PipelineParser
             .Select(node => node.Value ?? "")
             .ToList();
 
-    private static List<UnknownNode> ReadUnknownKeys(YamlMappingNode pipeline, DatabricksDocument document)
+    private static List<UnknownNode> ReadUnknownKeys(YamlMappingNode pipeline, LineDocument document)
     {
         var unknown = new List<UnknownNode>();
         foreach (var (keyNode, value) in pipeline.Children)

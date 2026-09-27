@@ -13,6 +13,9 @@ untouched document saves byte-identically, and the writers' smallest-diff tests 
   (`edition`).
 - `crlf-line-endings.yml` / `lf-line-endings.yml` - the same small bundle under each convention;
   they exist to prove the writer preserves whichever the file has.
+- `tied-line-endings.yml` - as many LF endings as CRLF, so neither is the majority and the tie
+  rule alone decides which ending a newly inserted line takes: CRLF, core's rule
+  (backend-centralization Requirement 1.2).
 - `no-trailing-newline.yml` - the same bundle without a final newline, which an append must not
   silently add.
 - `broken.yml` - not YAML; carried as an error, opened as unavailable, refused on save.

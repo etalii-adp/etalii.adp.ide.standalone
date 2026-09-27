@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -20,7 +21,7 @@ public class ExpressionRendererTests
     /// <summary>Renders the blank object of :A's subClassOf axiom in <paramref name="body"/>.</summary>
     private static OwlExpressionText Render(string body, int? maxDepth = null)
     {
-        var model = RdfParser.Parse(RdfDocument.Parse(Prelude + body));
+        var model = RdfParser.Parse(LineDocument.Parse(Prelude + body));
         var root = model.Triples
             .Single(t => t.Subject is IriTerm { Iri: "http://example.org/t#A" } && t.Predicate.Iri == OwlVocabulary.SubClassOf)
             .Object;
@@ -115,7 +116,7 @@ public class ExpressionRendererTests
     public void TheProjection_CarriesTheRenderedLabelAndTheElisionFlag()
     {
         // Arrange & act: the same deep nesting, through OwlProjection.
-        var model = RdfParser.Parse(RdfDocument.Parse(Prelude + """
+        var model = RdfParser.Parse(LineDocument.Parse(Prelude + """
             :A a owl:Class ;
                 rdfs:subClassOf [ a owl:Restriction ; owl:onProperty :p ; owl:someValuesFrom
                     [ a owl:Class ; owl:unionOf ( :B
