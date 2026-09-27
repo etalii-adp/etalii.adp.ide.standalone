@@ -139,14 +139,14 @@ public sealed class GhgTimeUnitTests : IDisposable
     public async Task AMove_InADiagramOfDecades_LandsOnADecade()
     {
         var body = Path.Combine(_folder, "eras.ghg");
-        File.WriteAllText(body, Document("decade"));
+        await File.WriteAllTextAsync(body, Document("decade"), TestContext.Current.CancellationToken);
 
         var moved = await new GhgTestDispatcher(_store).DispatchAsync(
             new SetGhgPlacementCommand(body, "printing", GhgScale.XOf(M(1453, 7), GhgTimeUnit.Decade), GhgScale.TopOf(4)),
             TestContext.Current.CancellationToken);
 
         Assert.True(moved.IsSuccess, moved.Error);
-        var printing = Parse(File.ReadAllText(body)).Trends.Single(trend => trend.Id == "printing");
+        var printing = Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).Trends.Single(trend => trend.Id == "printing");
         Assert.Equal((M(1450), M(1710), 4), (printing.Start!.Value, printing.Stop!.Value, printing.Row));
     }
 
@@ -155,14 +155,14 @@ public sealed class GhgTimeUnitTests : IDisposable
     public async Task ADrop_InADiagramOfCenturies_IsTwelveCenturiesLong()
     {
         var body = Path.Combine(_folder, "eras.ghg");
-        File.WriteAllText(body, Document("century"));
+        await File.WriteAllTextAsync(body, Document("century"), TestContext.Current.CancellationToken);
 
         var added = await new GhgTestDispatcher(_store).DispatchAsync(
             new AddGhgTrendCommand(body, GhgScale.XOf(M(1250), GhgTimeUnit.Century), GhgScale.TopOf(6) + 10),
             TestContext.Current.CancellationToken);
 
         Assert.True(added.IsSuccess, added.Error);
-        var trend = Parse(File.ReadAllText(body)).Trends.Single(trend => trend.Name == AddGhgTrendCommandHandler.DefaultName);
+        var trend = Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).Trends.Single(trend => trend.Name == AddGhgTrendCommandHandler.DefaultName);
         Assert.Equal((M(1200), M(2400)), (trend.Start!.Value, trend.Stop!.Value));
     }
 }

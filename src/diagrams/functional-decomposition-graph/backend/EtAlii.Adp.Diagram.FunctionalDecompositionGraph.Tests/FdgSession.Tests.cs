@@ -48,7 +48,7 @@ public sealed class FdgSessionTests : IDisposable
     public async Task AFreshSession_DeliversEveryElementAndConnectionOfTheExample()
     {
         // Arrange.
-        var model = FdgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+        var model = FdgParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken)));
         await using var session = Open();
 
         // Act.

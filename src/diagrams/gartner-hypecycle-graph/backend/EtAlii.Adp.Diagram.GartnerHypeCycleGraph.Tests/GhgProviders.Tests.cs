@@ -193,7 +193,7 @@ public sealed class GhgProvidersTests : IDisposable
         var resolver = new ContextPropertyResolver([_properties]);
         var set = await resolver.SetAsync(Target("steam-engine--railways"), GhgContextPropertyProvider.FromProperty, "coal", TestContext.Current.CancellationToken);
         Assert.False(set.IsSuccess);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -217,7 +217,7 @@ public sealed class GhgProvidersTests : IDisposable
         Assert.Empty(await actions.DiscoverAsync(Target(GestureIds.Placement(1, 2)), TestContext.Current.CancellationToken));
         Assert.All(await RowsOf("railways", properties), row => Assert.False(row.IsEditable, row.Id));
         Assert.IsType<ContextExecutionFailed>(await actions.ExecuteAsync(Target(GestureIds.Placement(1, 2)), GhgContextActionProvider.AddTrendActionId, TestContext.Current.CancellationToken));
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     public static TheoryData<string, string, string> EverySet => new()
@@ -246,12 +246,12 @@ public sealed class GhgProvidersTests : IDisposable
         var result = await resolver.SetAsync(Target(id), property, value, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotEqual(_original, File.ReadAllBytes(Body));
+        Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
 
         var undone = await _historyStacks.Get(_folder).UndoAsync(TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
