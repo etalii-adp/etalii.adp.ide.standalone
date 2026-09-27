@@ -1,10 +1,17 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>
 /// The one owner of loaded <c>.cld</c> files, keyed by path, so two connections on one document
 /// share its parse rather than each holding their own.
 /// </summary>
-public interface ICausalLoopDocumentStore
+/// <remarks>
+/// <see cref="IReloadableDocumentStore.Reload"/> is this store's too, declared on the shared
+/// interface so the shared restore edit (backend-centralization R6) can reload this module's
+/// documents: it re-reads a document something outside changed and tells the sessions on it.
+/// </remarks>
+public interface ICausalLoopDocumentStore : IReloadableDocumentStore
 {
     /// <summary>The document at <paramref name="path"/>, loaded once and kept.</summary>
     CausalLoopDocumentEntry GetOrLoad(string path);
@@ -25,9 +32,6 @@ public interface ICausalLoopDocumentStore
 
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
-
-    /// <summary>Re-reads a document something outside changed, and tells the sessions on it.</summary>
-    void Reload(string path);
 
     /// <summary>
     /// The body was deleted - the watcher's evidence, not a read that failed - so the diagram
