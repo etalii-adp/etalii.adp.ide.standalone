@@ -17,8 +17,17 @@ public interface ISparqlDocumentStore
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
 
-    /// <summary>Re-reads a document something outside changed, and tells the sessions on it.</summary>
+    /// <summary>
+    /// Re-reads a document something outside changed, and tells the sessions on it. A reload that
+    /// cannot read keeps the last good query and tells nobody.
+    /// </summary>
     void Reload(string path);
+
+    /// <summary>
+    /// The query was deleted - the watcher's evidence, not a read that failed - so the entry becomes
+    /// the one a missing file opens as. A reload that cannot read keeps the last good query; this does not.
+    /// </summary>
+    void BodyDeleted(string path);
 
     /// <summary>Raised after an external change is picked up - the only way an entry ever changes.</summary>
     event EventHandler<SparqlDocumentChangedEventArgs>? Changed;

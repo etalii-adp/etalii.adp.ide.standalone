@@ -8,6 +8,14 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// the text editor is where these files are edited, so an external change is the normal way a
 /// query changes at all (Requirement 1.5).
 /// </summary>
+/// <remarks>
+/// <b><see cref="BodyDeleted"/> IS OVERRIDDEN, AND DROPPING THE OVERRIDE LOOKS HARMLESS AND IS NOT.</b>
+/// <see cref="IDiagramDocumentReloader.BodyDeleted"/> defaults to a reload, which was right while a
+/// read that failed installed the "does not exist" entry. Since task 7 this store keeps the last good
+/// query through a reload that cannot read, so a deletion routed to a reload would keep a deleted query
+/// on the canvas for good, with nothing failing. The guard is <c>SparqlDocumentReloader.Tests</c>, seen
+/// to fail with this override removed.
+/// </remarks>
 public sealed class SparqlDocumentReloader(DiagramOrigin origin, ISparqlDocumentStore documents) : IDiagramDocumentReloader
 {
     public DiagramOrigin Origin { get; } = origin;
@@ -16,5 +24,11 @@ public sealed class SparqlDocumentReloader(DiagramOrigin origin, ISparqlDocument
     {
         _ = rootPath;
         documents.Reload(bodyPath);
+    }
+
+    public void BodyDeleted(string rootPath, string bodyPath)
+    {
+        _ = rootPath;
+        documents.BodyDeleted(bodyPath);
     }
 }
