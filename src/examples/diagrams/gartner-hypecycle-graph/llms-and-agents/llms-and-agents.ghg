@@ -294,319 +294,319 @@ influences:
     from: word-embeddings
     from-phase: trough
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.33
     to: attention
     to-phase: peak
     to-edge: top
-    to-at: 0.25
+    to-at: 0.75
   - id: attention--transformer
     from: attention
     from-phase: slope
     from-edge: bottom
-    from-at: 0.25
+    from-at: 0.56
     to: transformer
     to-phase: peak
     to-edge: top
-    to-at: 0.12
+    to-at: 0.47
     description: The Transformer kept attention and dropped the recurrence.
   - id: transformer--pretrained-encoders
     from: transformer
     from-phase: peak
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.55
     to: pretrained-encoders
     to-phase: peak
     to-edge: top
-    to-at: 0.06
+    to-at: 0.26
   - id: word-embeddings--pretrained-encoders
     from: word-embeddings
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.08
+    from-at: 0.38
     to: pretrained-encoders
     to-phase: peak
     to-edge: top
-    to-at: 0.31
+    to-at: 0.77
   - id: transformer--large-language-models
     from: transformer
     from-phase: trough
     from-edge: bottom
-    from-at: 0.46
+    from-at: 0.55
     to: large-language-models
     to-phase: peak
     to-edge: top
-    to-at: 0.06
+    to-at: 0.27
   - id: scaling-laws--large-language-models
     from: scaling-laws
     from-phase: peak
     from-edge: bottom
-    from-at: 0.16
+    from-at: 0.29
     to: large-language-models
     to-phase: peak
     to-edge: top
-    to-at: 0.14
+    to-at: 0.70
     description: GPT-3 was sized by the scaling laws published months earlier.
   - id: pretrained-encoders--retrieval-augmented-generation
     from: pretrained-encoders
     from-phase: trough
     from-edge: bottom
-    from-at: 0.38
+    from-at: 0.67
     to: retrieval-augmented-generation
     to-phase: peak
     to-edge: top
-    to-at: 0.07
+    to-at: 0.44
     description: Dense retrievers are pretrained encoders.
   - id: transformer--mixture-of-experts
     from: transformer
     from-phase: trough
     from-edge: top
-    from-at: 0.73
+    from-at: 0.64
     to: mixture-of-experts
     to-phase: peak
     to-edge: bottom
-    to-at: 0.06
+    to-at: 0.40
   - id: large-language-models--ai-code-completion
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.39
+    from-at: 0.18
     to: ai-code-completion
     to-phase: peak
     to-edge: top
-    to-at: 0.06
+    to-at: 0.37
     description: Copilot ran on Codex, a GPT-3 trained on code.
   - id: retrieval-augmented-generation--vector-databases
     from: retrieval-augmented-generation
     from-phase: peak
     from-edge: bottom
-    from-at: 0.37
+    from-at: 0.53
     to: vector-databases
     to-phase: peak
     to-edge: top
-    to-at: 0.09
+    to-at: 0.46
   - id: large-language-models--instruction-tuning
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.35
     to: instruction-tuning
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.36
   - id: transformer--image-generation
     from: transformer
     from-phase: slope
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.57
     to: image-generation
     to-phase: peak
     to-edge: top
-    to-at: 0.06
+    to-at: 0.45
   - id: large-language-models--prompt-engineering
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.75
+    from-at: 0.51
     to: prompt-engineering
     to-phase: peak
     to-edge: top
-    to-at: 0.25
+    to-at: 0.24
   - id: instruction-tuning--chat-assistants
     from: instruction-tuning
     from-phase: peak
     from-edge: bottom
-    from-at: 0.34
+    from-at: 0.32
     to: chat-assistants
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.68
     description: ChatGPT was InstructGPT's method applied to dialogue.
   - id: large-language-models--chat-assistants
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.86
+    from-at: 0.69
     to: chat-assistants
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.26
   - id: chat-assistants--prompt-engineering
     from: chat-assistants
     from-phase: peak
     from-edge: bottom
-    from-at: 0.1
+    from-at: 0.16
     to: prompt-engineering
     to-phase: peak
     to-edge: top
-    to-at: 0.67
+    to-at: 0.84
   - id: instruction-tuning--alignment-research
     from: instruction-tuning
     from-phase: peak
     from-edge: bottom
-    from-at: 0.42
+    from-at: 0.76
     to: alignment-research
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.44
   - id: large-language-models--open-weight-models
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.94
+    from-at: 0.88
     to: open-weight-models
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.27
   - id: chat-assistants--autonomous-agents
     from: chat-assistants
     from-phase: peak
     from-edge: bottom
-    from-at: 0.18
+    from-at: 0.28
     to: autonomous-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.2
+    to-at: 0.96
   - id: image-generation--multimodal-models
     from: image-generation
     from-phase: peak
     from-edge: bottom
-    from-at: 0.37
+    from-at: 0.31
     to: multimodal-models
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.27
   - id: large-language-models--multimodal-models
     from: large-language-models
     from-phase: trough
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.80
     to: multimodal-models
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.70
   - id: autonomous-agents--tool-use
     from: autonomous-agents
     from-phase: peak
     from-edge: top
-    from-at: 0.8
+    from-at: 0.35
     to: tool-use
     to-phase: peak
     to-edge: bottom
-    to-at: 0.08
+    to-at: 0.38
     description: Agents needed a reliable way to call tools; function calling gave them one.
   - id: autonomous-agents--multi-agent-systems
     from: autonomous-agents
     from-phase: trough
     from-edge: bottom
-    from-at: 0.18
+    from-at: 0.55
     to: multi-agent-systems
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.47
   - id: mixture-of-experts--open-weight-models
     from: mixture-of-experts
     from-phase: trough
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.57
     to: open-weight-models
     to-phase: peak
     to-edge: top
-    to-at: 0.18
+    to-at: 0.71
     description: Mixtral brought mixture of experts to open weights.
   - id: image-generation--world-models
     from: image-generation
     from-phase: peak
     from-edge: bottom
-    from-at: 0.66
+    from-at: 0.78
     to: world-models
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.27
     description: Sora was a diffusion transformer over video.
   - id: multimodal-models--world-models
     from: multimodal-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.25
+    from-at: 0.38
     to: world-models
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.68
   - id: open-weight-models--small-models
     from: open-weight-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.27
+    from-at: 0.58
     to: small-models
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.45
   - id: scaling-laws--reasoning-models
     from: scaling-laws
     from-phase: peak
     from-edge: bottom
-    from-at: 0.95
+    from-at: 0.72
     to: reasoning-models
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.28
     description: Scaling moved from training to answer time.
   - id: multimodal-models--computer-use-agents
     from: multimodal-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.34
+    from-at: 0.74
     to: computer-use-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.45
   - id: tool-use--model-context-protocol
     from: tool-use
     from-phase: trough
     from-edge: bottom
-    from-at: 0.67
+    from-at: 0.04
     to: model-context-protocol
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.40
   - id: instruction-tuning--reasoning-models
     from: instruction-tuning
     from-phase: trough
     from-edge: bottom
-    from-at: 0.12
+    from-at: 0.89
     to: reasoning-models
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.69
     description: Reinforcement learning on verifiable answers taught models to reason.
   - id: tool-use--autonomous-agents
     from: tool-use
     from-phase: trough
     from-edge: bottom
-    from-at: 0.89
+    from-at: 0.96
     to: autonomous-agents
     to-phase: slope
     to-edge: top
-    to-at: 0.05
+    to-at: 0.40
     description: With dependable tool calls, agents climbed out of their trough.
   - id: ai-code-completion--coding-agents
     from: ai-code-completion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.31
+    from-at: 0.59
     to: coding-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.20
   - id: chat-assistants--vibe-coding
     from: chat-assistants
     from-phase: peak
     from-edge: bottom
-    from-at: 0.9
+    from-at: 0.80
     to: vibe-coding
     to-phase: peak
     to-edge: top
-    to-at: 0.14
+    to-at: 0.25
   - id: coding-agents--vibe-coding
     from: coding-agents
     from-phase: peak
@@ -615,194 +615,194 @@ influences:
     to: vibe-coding
     to-phase: peak
     to-edge: top
-    to-at: 0.29
+    to-at: 0.96
   - id: reasoning-models--coding-agents
     from: reasoning-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.07
+    from-at: 0.24
     to: coding-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.76
   - id: model-context-protocol--agent-to-agent-protocols
     from: model-context-protocol
     from-phase: peak
     from-edge: bottom
-    from-at: 0.07
+    from-at: 0.73
     to: agent-to-agent-protocols
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.71
   - id: multi-agent-systems--agent-to-agent-protocols
     from: multi-agent-systems
     from-phase: peak
     from-edge: bottom
-    from-at: 0.83
+    from-at: 0.78
     to: agent-to-agent-protocols
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.27
   - id: model-context-protocol--coding-agents
     from: model-context-protocol
     from-phase: peak
     from-edge: bottom
-    from-at: 0.15
+    from-at: 0.30
     to: coding-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.49
   - id: vibe-coding--spec-driven-development
     from: vibe-coding
     from-phase: trough
     from-edge: bottom
-    from-at: 0.07
+    from-at: 0.54
     to: spec-driven-development
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.21
     description: Specifications as the answer to code nobody had read.
   - id: coding-agents--spec-driven-development
     from: coding-agents
     from-phase: peak
     from-edge: bottom
-    from-at: 0.13
+    from-at: 0.41
     to: spec-driven-development
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.77
   - id: prompt-engineering--spec-driven-development
     from: prompt-engineering
     from-phase: slope
     from-edge: bottom
-    from-at: 0.38
+    from-at: 0.63
     to: spec-driven-development
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.49
   - id: multi-agent-systems--human-agent-teams
     from: multi-agent-systems
     from-phase: trough
     from-edge: bottom
-    from-at: 0.11
+    from-at: 0.63
     to: human-agent-teams
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.77
   - id: spec-driven-development--human-agent-teams
     from: spec-driven-development
     from-phase: peak
     from-edge: bottom
-    from-at: 0.16
+    from-at: 0.55
     to: human-agent-teams
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.49
   - id: alignment-research--human-agent-teams
     from: alignment-research
     from-phase: peak
     from-edge: bottom
-    from-at: 0.68
+    from-at: 0.57
     to: human-agent-teams
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.20
   - id: reasoning-models--autonomous-research-agents
     from: reasoning-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.27
+    from-at: 0.50
     to: autonomous-research-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.28
   - id: coding-agents--autonomous-research-agents
     from: coding-agents
     from-phase: peak
     from-edge: bottom
-    from-at: 0.24
+    from-at: 0.64
     to: autonomous-research-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.70
   - id: world-models--continual-learning
     from: world-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.33
+    from-at: 0.58
     to: continual-learning
     to-phase: peak
     to-edge: top
-    to-at: 0.06
+    to-at: 0.70
   - id: retrieval-augmented-generation--continual-learning
     from: retrieval-augmented-generation
     from-phase: slope
     from-edge: bottom
-    from-at: 0.28
+    from-at: 0.56
     to: continual-learning
     to-phase: peak
     to-edge: top
-    to-at: 0.14
+    to-at: 0.28
     description: Memory that retrieval bolts on, learned into the weights.
   - id: reasoning-models--verified-code-generation
     from: reasoning-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.4
+    from-at: 0.75
     to: verified-code-generation
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.31
   - id: coding-agents--verified-code-generation
     from: coding-agents
     from-phase: peak
     from-edge: bottom
-    from-at: 0.39
+    from-at: 0.85
     to: verified-code-generation
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.71
   - id: agent-to-agent-protocols--agent-economies
     from: agent-to-agent-protocols
     from-phase: peak
     from-edge: bottom
-    from-at: 0.48
+    from-at: 0.69
     to: agent-economies
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.69
   - id: computer-use-agents--agent-economies
     from: computer-use-agents
     from-phase: peak
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.56
     to: agent-economies
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.27
   - id: autonomous-research-agents--recursive-self-improvement
     from: autonomous-research-agents
     from-phase: peak
     from-edge: bottom
-    from-at: 0.34
+    from-at: 0.62
     to: recursive-self-improvement
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.77
   - id: continual-learning--recursive-self-improvement
     from: continual-learning
     from-phase: peak
     from-edge: bottom
-    from-at: 0.43
+    from-at: 0.59
     to: recursive-self-improvement
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.49
   - id: alignment-research--recursive-self-improvement
     from: alignment-research
     from-phase: trough
     from-edge: bottom
-    from-at: 0.54
+    from-at: 0.53
     to: recursive-self-improvement
     to-phase: peak
     to-edge: top

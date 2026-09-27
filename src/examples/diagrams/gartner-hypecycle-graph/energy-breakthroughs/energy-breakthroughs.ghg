@@ -280,40 +280,40 @@ influences:
     from: stellarator
     from-phase: trough
     from-edge: bottom
-    from-at: 0.17
+    from-at: 0.39
     to: tokamak
     to-phase: peak
     to-edge: top
-    to-at: 0.1
+    to-at: 0.83
     description: Princeton turned its Model C stellarator into a tokamak in 1970.
   - id: tokamak--inertial-confinement-fusion
     from: tokamak
     from-phase: peak
     from-edge: bottom
-    from-at: 0.31
+    from-at: 0.51
     to: inertial-confinement-fusion
     to-phase: peak
     to-edge: top
-    to-at: 0.11
+    to-at: 0.48
   - id: inertial-confinement-fusion--magnetized-target-fusion
     from: inertial-confinement-fusion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.49
+    from-at: 0.31
     to: magnetized-target-fusion
     to-phase: peak
     to-edge: top
-    to-at: 0.08
+    to-at: 0.66
     description: Magnetized target fusion sits between the magnetic and the inertial routes.
   - id: field-reversed-configuration--magnetized-target-fusion
     from: field-reversed-configuration
     from-phase: peak
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.28
     to: magnetized-target-fusion
     to-phase: peak
     to-edge: top
-    to-at: 0.17
+    to-at: 0.28
   - id: field-reversed-configuration--pulsed-magneto-inertial-fusion
     from: field-reversed-configuration
     from-phase: peak
@@ -322,384 +322,384 @@ influences:
     to: pulsed-magneto-inertial-fusion
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.20
     description: Helion's plasmoids are field-reversed configurations.
   - id: inertial-confinement-fusion--pulsed-magneto-inertial-fusion
     from: inertial-confinement-fusion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.8
+    from-at: 0.73
     to: pulsed-magneto-inertial-fusion
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.47
   - id: magnetized-target-fusion--sheared-flow-z-pinch
     from: magnetized-target-fusion
     from-phase: peak
     from-edge: bottom
-    from-at: 0.89
+    from-at: 0.65
     to: sheared-flow-z-pinch
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.37
   - id: tokamak--compact-high-field-tokamak
     from: tokamak
     from-phase: trough
     from-edge: bottom
-    from-at: 0.9
+    from-at: 0.60
     to: compact-high-field-tokamak
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.23
     description: SPARC grew out of MIT's Alcator C-Mod.
   - id: high-temperature-superconductors--compact-high-field-tokamak
     from: high-temperature-superconductors
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.74
     to: compact-high-field-tokamak
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.71
     description: Stronger magnets let a tokamak shrink.
   - id: ai-for-fusion-and-grids--tokamak
     from: ai-for-fusion-and-grids
     from-phase: peak
     from-edge: top
-    from-at: 0.05
+    from-at: 0.53
     to: tokamak
     to-phase: slope
     to-edge: bottom
-    to-at: 0.05
+    to-at: 0.43
     description: Deep reinforcement learning held a plasma in shape at the TCV tokamak.
   - id: high-temperature-superconductors--stellarator
     from: high-temperature-superconductors
     from-phase: plateau
     from-edge: top
-    from-at: 0.36
+    from-at: 0.45
     to: stellarator
     to-phase: slope
     to-edge: bottom
-    to-at: 0.25
+    to-at: 0.29
   - id: high-temperature-superconductors--room-temperature-superconductors
     from: high-temperature-superconductors
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.4
+    from-at: 0.28
     to: room-temperature-superconductors
     to-phase: peak
     to-edge: top
-    to-at: 0.5
+    to-at: 0.04
   - id: cold-fusion--room-temperature-superconductors
     from: cold-fusion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.9
+    from-at: 0.60
     to: room-temperature-superconductors
     to-phase: peak
     to-edge: top
-    to-at: 0.58
+    to-at: 0.40
     description: The same rush to replicate, and the same failure to.
   - id: ai-data-centre-demand--pulsed-magneto-inertial-fusion
     from: ai-data-centre-demand
     from-phase: peak
     from-edge: top
-    from-at: 0.05
+    from-at: 0.04
     to: pulsed-magneto-inertial-fusion
     to-phase: peak
     to-edge: bottom
-    to-at: 0.45
+    to-at: 0.47
     description: Microsoft agreed in 2023 to buy Helion's first fusion power.
   - id: ai-data-centre-demand--compact-high-field-tokamak
     from: ai-data-centre-demand
     from-phase: peak
     from-edge: top
-    from-at: 0.37
+    from-at: 0.25
     to: compact-high-field-tokamak
     to-phase: peak
     to-edge: bottom
-    to-at: 0.41
+    to-at: 0.52
   - id: pulsed-magneto-inertial-fusion--fusion-power-plants
     from: pulsed-magneto-inertial-fusion
     from-phase: peak
     from-edge: bottom
-    from-at: 0.71
+    from-at: 0.82
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.12
   - id: compact-high-field-tokamak--fusion-power-plants
     from: compact-high-field-tokamak
     from-phase: peak
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.95
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.24
   - id: inertial-confinement-fusion--fusion-power-plants
     from: inertial-confinement-fusion
     from-phase: slope
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.65
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.60
   - id: magnetized-target-fusion--fusion-power-plants
     from: magnetized-target-fusion
     from-phase: trough
+    from-edge: bottom
+    from-at: 0.64
+    to: fusion-power-plants
+    to-phase: peak
+    to-edge: top
+    to-at: 0.48
+  - id: tokamak--fusion-power-plants
+    from: tokamak
+    from-phase: slope
     from-edge: bottom
     from-at: 0.75
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.29
-  - id: tokamak--fusion-power-plants
-    from: tokamak
-    from-phase: slope
-    from-edge: bottom
-    from-at: 0.57
-    to: fusion-power-plants
-    to-phase: peak
-    to-edge: top
-    to-at: 0.37
+    to-at: 0.85
     description: ITER's burning plasma is meant to settle the physics for later plants.
   - id: sheared-flow-z-pinch--fusion-power-plants
     from: sheared-flow-z-pinch
     from-phase: peak
     from-edge: bottom
-    from-at: 0.92
+    from-at: 0.60
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.36
   - id: stellarator--fusion-power-plants
     from: stellarator
     from-phase: slope
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.74
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.53
+    to-at: 0.73
   - id: pulsed-magneto-inertial-fusion--lunar-helium-3
     from: pulsed-magneto-inertial-fusion
     from-phase: peak
     from-edge: top
-    from-at: 0.87
+    from-at: 0.81
     to: lunar-helium-3
     to-phase: peak
     to-edge: bottom
-    to-at: 0.08
+    to-at: 0.27
     description: Deuterium-helium-3 is Helion's intended fuel.
   - id: field-reversed-configuration--lunar-helium-3
     from: field-reversed-configuration
     from-phase: trough
     from-edge: top
-    from-at: 0.78
+    from-at: 0.67
     to: lunar-helium-3
     to-phase: peak
     to-edge: bottom
-    to-at: 0.18
+    to-at: 0.68
   - id: fission-power--molten-salt-reactors
     from: fission-power
     from-phase: peak
     from-edge: bottom
-    from-at: 0.47
+    from-at: 0.50
     to: molten-salt-reactors
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.47
   - id: fission-power--small-modular-reactors
     from: fission-power
     from-phase: slope
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.60
     to: small-modular-reactors
     to-phase: peak
     to-edge: top
-    to-at: 0.06
+    to-at: 0.27
   - id: molten-salt-reactors--small-modular-reactors
     from: molten-salt-reactors
     from-phase: slope
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.32
     to: small-modular-reactors
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.80
   - id: small-modular-reactors--microreactors
     from: small-modular-reactors
     from-phase: peak
     from-edge: bottom
-    from-at: 0.71
+    from-at: 0.62
     to: microreactors
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.40
   - id: ai-data-centre-demand--small-modular-reactors
     from: ai-data-centre-demand
     from-phase: peak
     from-edge: top
-    from-at: 0.29
+    from-at: 0.78
     to: small-modular-reactors
     to-phase: trough
     to-edge: bottom
-    to-at: 0.06
+    to-at: 0.78
     description: Google and Amazon ordered small reactors in October 2024.
   - id: ai-data-centre-demand--fission-power
     from: ai-data-centre-demand
     from-phase: peak
     from-edge: top
-    from-at: 0.21
+    from-at: 0.14
     to: fission-power
     to-phase: plateau
     to-edge: bottom
-    to-at: 0.91
+    to-at: 0.96
     description: Microsoft's deal to restart a Three Mile Island unit.
   - id: ai-data-centre-demand--next-generation-geothermal
     from: ai-data-centre-demand
     from-phase: peak
     from-edge: top
-    from-at: 0.13
+    from-at: 0.62
     to: next-generation-geothermal
     to-phase: peak
     to-edge: bottom
-    to-at: 0.17
+    to-at: 0.68
   - id: next-generation-geothermal--superhot-rock-geothermal
     from: next-generation-geothermal
     from-phase: peak
     from-edge: top
-    from-at: 0.41
+    from-at: 0.57
     to: superhot-rock-geothermal
     to-phase: peak
     to-edge: bottom
-    to-at: 0.05
+    to-at: 0.44
   - id: solar-photovoltaics--perovskite-solar-cells
     from: solar-photovoltaics
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.07
+    from-at: 0.22
     to: perovskite-solar-cells
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.44
   - id: solar-photovoltaics--space-based-solar-power
     from: solar-photovoltaics
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.86
+    from-at: 0.84
     to: space-based-solar-power
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.40
   - id: wind-power--offshore-wind
     from: wind-power
     from-phase: trough
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.52
     to: offshore-wind
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.48
   - id: wind-power--smart-grid
     from: wind-power
     from-phase: slope
     from-edge: bottom
-    from-at: 0.52
+    from-at: 0.54
     to: smart-grid
     to-phase: peak
     to-edge: top
-    to-at: 0.15
+    to-at: 0.44
   - id: solar-photovoltaics--green-hydrogen
     from: solar-photovoltaics
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.6
+    from-at: 0.53
     to: green-hydrogen
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.75
   - id: offshore-wind--green-hydrogen
     from: offshore-wind
     from-phase: trough
     from-edge: bottom
-    from-at: 0.95
+    from-at: 0.64
     to: green-hydrogen
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.45
   - id: hydrogen-fuel-cells--green-hydrogen
     from: hydrogen-fuel-cells
     from-phase: trough
     from-edge: bottom
-    from-at: 0.9
+    from-at: 0.60
     to: green-hydrogen
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.21
     description: The hydrogen economy's second attempt, this time made with renewable power.
   - id: lithium-ion-batteries--electric-vehicles
     from: lithium-ion-batteries
     from-phase: trough
     from-edge: bottom
-    from-at: 0.95
+    from-at: 0.60
     to: electric-vehicles
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.40
   - id: lithium-ion-batteries--solid-state-batteries
     from: lithium-ion-batteries
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.04
     to: solid-state-batteries
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.47
   - id: electric-vehicles--solid-state-batteries
     from: electric-vehicles
     from-phase: trough
     from-edge: top
-    from-at: 0.38
+    from-at: 0.45
     to: solid-state-batteries
     to-phase: peak
     to-edge: bottom
-    to-at: 0.46
+    to-at: 0.55
   - id: lithium-ion-batteries--grid-scale-batteries
     from: lithium-ion-batteries
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.13
+    from-at: 0.54
     to: grid-scale-batteries
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.46
   - id: smart-grid--grid-scale-batteries
     from: smart-grid
     from-phase: trough
     from-edge: top
-    from-at: 0.43
+    from-at: 0.58
     to: grid-scale-batteries
     to-phase: peak
     to-edge: bottom
-    to-at: 0.06
+    to-at: 0.44
   - id: electric-vehicles--grid-scale-batteries
     from: electric-vehicles
     from-phase: trough
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.55
     to: grid-scale-batteries
     to-phase: peak
     to-edge: top
-    to-at: 0.28
+    to-at: 0.96
   - id: smart-grid--ai-for-fusion-and-grids
     from: smart-grid
     from-phase: slope
     from-edge: bottom
-    from-at: 0.05
+    from-at: 0.52
     to: ai-for-fusion-and-grids
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.25

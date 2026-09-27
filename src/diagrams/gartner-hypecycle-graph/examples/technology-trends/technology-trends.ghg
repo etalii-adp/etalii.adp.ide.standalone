@@ -1506,37 +1506,37 @@ influences:
     to: steam-engine
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.49
     description: Pumping water from coal mines was the first market for engines.
   - id: steam-engine--coal
     from: steam-engine
     from-phase: peak
     from-edge: top
-    from-at: 0.73
+    from-at: 0.70
     to: coal
     to-phase: peak
     to-edge: bottom
-    to-at: 0.48
+    to-at: 0.50
     description: Engines drained deeper mines, and coal output soared.
   - id: steam-engine--factory-system
     from: steam-engine
     from-phase: peak
     from-edge: top
-    from-at: 0.86
+    from-at: 0.85
     to: factory-system
     to-phase: peak
     to-edge: bottom
-    to-at: 0.47
+    to-at: 0.49
     description: Mills moved from rivers to towns once steam could drive them.
   - id: mechanised-textiles--factory-system
     from: mechanised-textiles
     from-phase: peak
     from-edge: bottom
-    from-at: 0.59
+    from-at: 0.55
     to: factory-system
     to-phase: peak
     to-edge: top
-    to-at: 0.41
+    to-at: 0.45
   - id: mechanised-textiles--industrial-revolution
     from: mechanised-textiles
     from-phase: peak
@@ -1550,11 +1550,11 @@ influences:
     from: steam-engine
     from-phase: peak
     from-edge: top
-    from-at: 0.37
+    from-at: 0.34
     to: industrial-revolution
     to-phase: peak
     to-edge: bottom
-    to-at: 0.83
+    to-at: 0.85
   - id: coal--industrial-revolution
     from: coal
     from-phase: peak
@@ -1587,29 +1587,29 @@ influences:
     from: industrial-revolution
     from-phase: peak
     from-edge: bottom
-    from-at: 0.50
+    from-at: 0.46
     to: urbanisation
     to-phase: peak
     to-edge: top
-    to-at: 0.39
+    to-at: 0.44
   - id: factory-system--labour-movement
     from: factory-system
     from-phase: slope
     from-edge: bottom
-    from-at: 0.74
+    from-at: 0.64
     to: labour-movement
     to-phase: peak
     to-edge: top
-    to-at: 0.33
+    to-at: 0.40
   - id: urbanisation--public-health
     from: urbanisation
     from-phase: trough
     from-edge: bottom
-    from-at: 0.36
+    from-at: 0.31
     to: public-health
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.11
     description: Crowded cities made cholera a political problem.
   - id: steam-engine--steamboats
     from: steam-engine
@@ -1619,82 +1619,82 @@ influences:
     to: steamboats
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.49
   - id: steam-engine--railways
     from: steam-engine
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.01
+    from-at: 0.00
     to: railways
     to-phase: peak
     to-edge: top
-    to-at: 0.96
+    to-at: 0.94
     description: Locomotion needed a dependable engine first.
   - id: iron-smelting--railways
     from: iron-smelting
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.60
     to: railways
     to-phase: peak
     to-edge: top
-    to-at: 0.17
+    to-at: 0.19
   - id: railways--railway-mania
     from: railways
     from-phase: peak
     from-edge: top
-    from-at: 0.52
+    from-at: 0.77
     to: railway-mania
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.96
   - id: railways--transcontinental-railroad
     from: railways
     from-phase: trough
     from-edge: top
-    from-at: 0.53
+    from-at: 0.51
     to: transcontinental-railroad
     to-phase: peak
     to-edge: bottom
-    to-at: 0.42
+    to-at: 0.45
   - id: railways--electric-telegraph
     from: railways
     from-phase: peak
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.61
     to: electric-telegraph
     to-phase: peak
     to-edge: top
-    to-at: 0.73
+    to-at: 0.76
     description: Railways needed signalling along the line, and gave the telegraph its wayleaves.
   - id: railways--mass-newspapers
     from: railways
     from-phase: trough
     from-edge: bottom
-    from-at: 0.58
+    from-at: 0.55
     to: mass-newspapers
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.45
     description: Overnight distribution made national newspapers possible.
   - id: steamboats--steamships
     from: steamboats
     from-phase: slope
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.57
     to: steamships
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.71
   - id: steam-engine--steamships
     from: steam-engine
     from-phase: slope
     from-edge: bottom
-    from-at: 0.74
+    from-at: 0.72
     to: steamships
     to-phase: peak
     to-edge: top
-    to-at: 0.23
+    to-at: 0.26
   - id: steamships--submarine-cable
     from: steamships
     from-phase: trough
@@ -1718,29 +1718,29 @@ influences:
     from: electric-battery
     from-phase: trough
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.61
     to: electric-telegraph
     to-phase: peak
     to-edge: top
-    to-at: 0.16
+    to-at: 0.18
   - id: electromagnetism--electric-telegraph
     from: electromagnetism
     from-phase: trough
     from-edge: bottom
-    from-at: 0.62
+    from-at: 0.56
     to: electric-telegraph
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.49
   - id: electromagnetism--dynamo
     from: electromagnetism
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.29
+    from-at: 0.28
     to: dynamo
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.46
   - id: electric-telegraph--telephone
     from: electric-telegraph
     from-phase: plateau
@@ -1755,47 +1755,47 @@ influences:
     from: electromagnetism
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.93
+    from-at: 0.72
     to: radio
     to-phase: peak
     to-edge: top
-    to-at: 0.09
+    to-at: 0.28
   - id: electric-telegraph--typewriter
     from: electric-telegraph
     from-phase: trough
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.74
     to: typewriter
     to-phase: peak
     to-edge: top
-    to-at: 0.38
+    to-at: 0.44
   - id: telephone--radio
     from: telephone
     from-phase: peak
     from-edge: bottom
-    from-at: 0.74
+    from-at: 0.63
     to: radio
     to-phase: peak
     to-edge: top
-    to-at: 0.62
+    to-at: 0.67
   - id: dynamo--electric-light
     from: dynamo
     from-phase: trough
     from-edge: bottom
-    from-at: 0.59
+    from-at: 0.55
     to: electric-light
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.49
   - id: dynamo--electricity-grid
     from: dynamo
     from-phase: trough
     from-edge: top
-    from-at: 0.55
+    from-at: 0.53
     to: electricity-grid
     to-phase: peak
     to-edge: bottom
-    to-at: 0.11
+    to-at: 0.12
   - id: electric-light--electricity-grid
     from: electric-light
     from-phase: peak
@@ -1810,11 +1810,11 @@ influences:
     from: alternating-current
     from-phase: peak
     from-edge: top
-    from-at: 0.70
+    from-at: 0.60
     to: electricity-grid
     to-phase: peak
     to-edge: bottom
-    to-at: 0.65
+    to-at: 0.66
   - id: electricity-grid--tram
     from: electricity-grid
     from-phase: peak
@@ -1837,20 +1837,20 @@ influences:
     from: electricity-grid
     from-phase: trough
     from-edge: bottom
-    from-at: 0.73
+    from-at: 0.60
     to: household-appliances
     to-phase: peak
     to-edge: top
-    to-at: 0.19
+    to-at: 0.28
   - id: electricity-grid--rural-electrification
     from: electricity-grid
     from-phase: slope
     from-edge: top
-    from-at: 0.54
+    from-at: 0.52
     to: rural-electrification
     to-phase: peak
     to-edge: bottom
-    to-at: 0.39
+    to-at: 0.44
   - id: electricity-grid--refrigeration
     from: electricity-grid
     from-phase: peak
@@ -1864,20 +1864,20 @@ influences:
     from: hydroelectric
     from-phase: peak
     from-edge: top
-    from-at: 0.56
+    from-at: 0.53
     to: electricity-grid
     to-phase: peak
     to-edge: bottom
-    to-at: 0.76
+    to-at: 0.77
   - id: steam-turbine--electricity-grid
     from: steam-turbine
     from-phase: peak
     from-edge: top
-    from-at: 0.65
+    from-at: 0.58
     to: electricity-grid
     to-phase: peak
     to-edge: bottom
-    to-at: 0.85
+    to-at: 0.87
   - id: steam-turbine--steamships
     from: steam-turbine
     from-phase: peak
@@ -1891,20 +1891,20 @@ influences:
     from: coal
     from-phase: peak
     from-edge: bottom
-    from-at: 0.83
+    from-at: 0.79
     to: gas-lighting
     to-phase: peak
     to-edge: top
-    to-at: 0.22
+    to-at: 0.40
   - id: gas-lighting--electric-light
     from: gas-lighting
     from-phase: slope
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.57
     to: electric-light
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.17
     description: Edison priced electric light against gas.
   - id: machine-tools--interchangeable-parts
     from: machine-tools
@@ -1919,76 +1919,76 @@ influences:
     from: interchangeable-parts
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.31
+    from-at: 0.29
     to: bicycle
     to-phase: peak
     to-edge: top
-    to-at: 0.26
+    to-at: 0.38
   - id: interchangeable-parts--mass-production
     from: interchangeable-parts
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.72
     to: mass-production
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.21
   - id: bicycle--automobile
     from: bicycle
     from-phase: trough
     from-edge: bottom
-    from-at: 0.73
+    from-at: 0.62
     to: automobile
     to-phase: peak
     to-edge: top
-    to-at: 0.18
+    to-at: 0.19
     description: Bicycle makers supplied the chains, bearings and pneumatic tyres.
   - id: bicycle--aviation
     from: bicycle
     from-phase: plateau
     from-edge: top
-    from-at: 0.67
+    from-at: 0.60
     to: aviation
     to-phase: peak
     to-edge: bottom
-    to-at: 0.37
+    to-at: 0.43
     description: The Wright brothers were bicycle makers.
   - id: internal-combustion--automobile
     from: internal-combustion
     from-phase: peak
     from-edge: bottom
-    from-at: 0.69
+    from-at: 0.60
     to: automobile
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.48
   - id: internal-combustion--aviation
     from: internal-combustion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.56
     to: aviation
     to-phase: peak
     to-edge: top
-    to-at: 0.36
+    to-at: 0.42
   - id: oil--internal-combustion
     from: oil
     from-phase: peak
     from-edge: bottom
-    from-at: 0.31
+    from-at: 0.29
     to: internal-combustion
     to-phase: peak
     to-edge: top
-    to-at: 0.22
+    to-at: 0.35
   - id: oil--automobile
     from: oil
     from-phase: peak
     from-edge: bottom
-    from-at: 0.75
+    from-at: 0.73
     to: automobile
     to-phase: peak
     to-edge: top
-    to-at: 0.72
+    to-at: 0.76
   - id: automobile--mass-production
     from: automobile
     from-phase: trough
@@ -2003,25 +2003,25 @@ influences:
     from: scientific-management
     from-phase: trough
     from-edge: bottom
-    from-at: 0.84
+    from-at: 0.68
     to: mass-production
     to-phase: peak
     to-edge: top
-    to-at: 0.72
+    to-at: 0.76
   - id: mass-production--fordism
     from: mass-production
     from-phase: peak
     from-edge: bottom
-    from-at: 0.73
+    from-at: 0.72
     to: fordism
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.48
   - id: fordism--consumerism
     from: fordism
     from-phase: peak
     from-edge: bottom
-    from-at: 0.58
+    from-at: 0.54
     to: consumerism
     to-phase: peak
     to-edge: top
@@ -2048,11 +2048,11 @@ influences:
     from: motorways
     from-phase: trough
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.56
     to: suburbanisation
     to-phase: peak
     to-edge: top
-    to-at: 0.36
+    to-at: 0.42
   - id: bessemer-steel--railways
     from: bessemer-steel
     from-phase: slope
@@ -2067,20 +2067,20 @@ influences:
     from: bessemer-steel
     from-phase: peak
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.61
     to: second-industrial-revolution
     to-phase: peak
     to-edge: top
-    to-at: 0.20
+    to-at: 0.24
   - id: chemical-industry--second-industrial-revolution
     from: chemical-industry
     from-phase: peak
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.58
     to: second-industrial-revolution
     to-phase: peak
     to-edge: top
-    to-at: 0.63
+    to-at: 0.68
   - id: electricity-grid--second-industrial-revolution
     from: electricity-grid
     from-phase: peak
@@ -2094,20 +2094,20 @@ influences:
     from: second-industrial-revolution
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.74
+    from-at: 0.62
     to: mass-production
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.48
   - id: chemical-industry--plastics
     from: chemical-industry
     from-phase: slope
     from-edge: bottom
-    from-at: 0.31
+    from-at: 0.29
     to: plastics
     to-phase: peak
     to-edge: top
-    to-at: 0.37
+    to-at: 0.43
   - id: chemical-industry--synthetic-fertiliser
     from: chemical-industry
     from-phase: slope
@@ -2121,57 +2121,57 @@ influences:
     from: synthetic-fertiliser
     from-phase: slope
     from-edge: top
-    from-at: 0.63
+    from-at: 0.57
     to: green-revolution
     to-phase: peak
     to-edge: bottom
-    to-at: 0.32
+    to-at: 0.40
   - id: diesel-engine--container-shipping
     from: diesel-engine
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.67
+    from-at: 0.60
     to: container-shipping
     to-phase: peak
     to-edge: top
-    to-at: 0.24
+    to-at: 0.35
   - id: aviation--commercial-aviation
     from: aviation
     from-phase: trough
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.53
     to: commercial-aviation
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.48
   - id: jet-engine--jet-age
     from: jet-engine
     from-phase: trough
     from-edge: top
-    from-at: 0.82
+    from-at: 0.67
     to: jet-age
     to-phase: peak
     to-edge: bottom
-    to-at: 0.71
+    to-at: 0.75
   - id: jet-engine--commercial-aviation
     from: jet-engine
     from-phase: slope
     from-edge: bottom
-    from-at: 0.58
+    from-at: 0.54
     to: commercial-aviation
     to-phase: slope
     to-edge: top
-    to-at: 0.46
+    to-at: 0.48
     description: Jets rescued airlines from piston-engine economics.
   - id: commercial-aviation--jet-age
     from: commercial-aviation
     from-phase: trough
     from-edge: top
-    from-at: 0.73
+    from-at: 0.62
     to: jet-age
     to-phase: peak
     to-edge: bottom
-    to-at: 0.39
+    to-at: 0.44
   - id: jet-age--globalisation
     from: jet-age
     from-phase: plateau
@@ -2195,92 +2195,92 @@ influences:
     from: globalisation
     from-phase: peak
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.51
     to: offshoring
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.41
   - id: container-shipping--just-in-time
     from: container-shipping
     from-phase: trough
     from-edge: top
-    from-at: 0.54
+    from-at: 0.52
     to: just-in-time
     to-phase: peak
     to-edge: bottom
-    to-at: 0.44
+    to-at: 0.47
   - id: lean-manufacturing--just-in-time
     from: lean-manufacturing
     from-phase: trough
     from-edge: bottom
-    from-at: 0.63
+    from-at: 0.57
     to: just-in-time
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.39
   - id: just-in-time--offshoring
     from: just-in-time
     from-phase: trough
     from-edge: top
-    from-at: 0.68
+    from-at: 0.61
     to: offshoring
     to-phase: peak
     to-edge: bottom
-    to-at: 0.29
+    to-at: 0.38
   - id: offshoring--reshoring
     from: offshoring
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: reshoring
     to-phase: peak
     to-edge: bottom
-    to-at: 0.22
+    to-at: 0.40
   - id: space-flight--communication-satellites
     from: space-flight
     from-phase: peak
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.56
     to: communication-satellites
     to-phase: peak
     to-edge: top
-    to-at: 0.38
+    to-at: 0.43
   - id: space-flight--satellite-navigation
     from: space-flight
     from-phase: trough
     from-edge: top
-    from-at: 0.64
+    from-at: 0.58
     to: satellite-navigation
     to-phase: peak
     to-edge: bottom
-    to-at: 0.38
+    to-at: 0.43
   - id: radar--jet-age
     from: radar
     from-phase: slope
     from-edge: top
-    from-at: 0.69
+    from-at: 0.60
     to: jet-age
     to-phase: peak
     to-edge: bottom
-    to-at: 0.18
+    to-at: 0.19
   - id: radio--radar
     from: radio
     from-phase: slope
     from-edge: top
-    from-at: 0.54
+    from-at: 0.52
     to: radar
     to-phase: peak
     to-edge: bottom
-    to-at: 0.39
+    to-at: 0.44
   - id: radio--broadcast-radio
     from: radio
     from-phase: trough
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.53
     to: broadcast-radio
     to-phase: peak
     to-edge: top
-    to-at: 0.19
+    to-at: 0.20
   - id: vacuum-tube--radio
     from: vacuum-tube
     from-phase: peak
@@ -2303,29 +2303,29 @@ influences:
     from: vacuum-tube
     from-phase: trough
     from-edge: top
-    from-at: 0.71
+    from-at: 0.61
     to: television
     to-phase: peak
     to-edge: bottom
-    to-at: 0.34
+    to-at: 0.37
   - id: vacuum-tube--electronic-computers
     from: vacuum-tube
     from-phase: slope
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.61
     to: electronic-computers
     to-phase: peak
     to-edge: top
-    to-at: 0.30
+    to-at: 0.40
   - id: broadcast-radio--television
     from: broadcast-radio
     from-phase: peak
     from-edge: top
-    from-at: 0.81
+    from-at: 0.80
     to: television
     to-phase: peak
     to-edge: bottom
-    to-at: 0.16
+    to-at: 0.17
   - id: broadcast-radio--advertising
     from: broadcast-radio
     from-phase: peak
@@ -2339,56 +2339,56 @@ influences:
     from: cinema
     from-phase: slope
     from-edge: top
-    from-at: 0.60
+    from-at: 0.55
     to: television
     to-phase: peak
     to-edge: bottom
-    to-at: 0.81
+    to-at: 0.82
   - id: photography--cinema
     from: photography
     from-phase: slope
     from-edge: bottom
-    from-at: 0.59
+    from-at: 0.55
     to: cinema
     to-phase: peak
     to-edge: top
-    to-at: 0.38
+    to-at: 0.43
   - id: phonograph--magnetic-tape
     from: phonograph
     from-phase: plateau
     from-edge: top
-    from-at: 0.51
+    from-at: 0.50
     to: magnetic-tape
     to-phase: peak
     to-edge: bottom
-    to-at: 0.48
+    to-at: 0.49
   - id: television--colour-television
     from: television
     from-phase: trough
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.58
     to: colour-television
     to-phase: peak
     to-edge: top
-    to-at: 0.25
+    to-at: 0.36
   - id: television--cable-television
     from: television
     from-phase: slope
     from-edge: bottom
-    from-at: 0.75
+    from-at: 0.63
     to: cable-television
     to-phase: peak
     to-edge: top
-    to-at: 0.62
+    to-at: 0.67
   - id: communication-satellites--cable-television
     from: communication-satellites
     from-phase: peak
     from-edge: bottom
-    from-at: 0.71
+    from-at: 0.61
     to: cable-television
     to-phase: peak
     to-edge: top
-    to-at: 0.23
+    to-at: 0.26
   - id: television--consumerism
     from: television
     from-phase: peak
@@ -2402,38 +2402,38 @@ influences:
     from: advertising
     from-phase: trough
     from-edge: top
-    from-at: 0.36
+    from-at: 0.31
     to: consumerism
     to-phase: peak
     to-edge: bottom
-    to-at: 0.07
+    to-at: 0.13
   - id: department-stores--consumerism
     from: department-stores
     from-phase: slope
     from-edge: top
-    from-at: 0.65
+    from-at: 0.58
     to: consumerism
     to-phase: peak
     to-edge: bottom
-    to-at: 0.55
+    to-at: 0.58
   - id: boolean-logic--electronic-computers
     from: boolean-logic
     from-phase: plateau
     from-edge: top
-    from-at: 0.79
+    from-at: 0.60
     to: electronic-computers
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.21
   - id: turing-machine--electronic-computers
     from: turing-machine
     from-phase: trough
     from-edge: bottom
-    from-at: 0.68
+    from-at: 0.59
     to: electronic-computers
     to-phase: peak
     to-edge: top
-    to-at: 0.72
+    to-at: 0.76
   - id: punched-cards--mainframes
     from: punched-cards
     from-phase: plateau
@@ -2447,48 +2447,48 @@ influences:
     from: jacquard-loom
     from-phase: plateau
     from-edge: top
-    from-at: 0.95
+    from-at: 0.60
     to: punched-cards
     to-phase: peak
     to-edge: top
-    to-at: 0.08
+    to-at: 0.40
   - id: mechanical-calculators--punched-cards
     from: mechanical-calculators
     from-phase: trough
     from-edge: top
-    from-at: 0.68
+    from-at: 0.60
     to: punched-cards
     to-phase: peak
     to-edge: bottom
-    to-at: 0.16
+    to-at: 0.30
   - id: difference-engine--turing-machine
     from: difference-engine
     from-phase: trough
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: turing-machine
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.40
     description: "Remembered, not used: Babbage was rediscovered in the 1940s."
   - id: electronic-computers--mainframes
     from: electronic-computers
     from-phase: trough
     from-edge: bottom
-    from-at: 0.80
+    from-at: 0.66
     to: mainframes
     to-phase: peak
     to-edge: top
-    to-at: 0.25
+    to-at: 0.27
   - id: transistor--integrated-circuit
     from: transistor
     from-phase: trough
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.54
     to: integrated-circuit
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.45
   - id: transistor--mainframes
     from: transistor
     from-phase: plateau
@@ -2503,7 +2503,7 @@ influences:
     from: integrated-circuit
     from-phase: slope
     from-edge: bottom
-    from-at: 0.51
+    from-at: 0.50
     to: microprocessor
     to-phase: peak
     to-edge: top
@@ -2521,21 +2521,21 @@ influences:
     from: radar
     from-phase: slope
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.53
     to: transistor
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.48
     description: Wartime radar work gave Bell Labs its semiconductor physics.
   - id: mainframes--programming-languages
     from: mainframes
     from-phase: peak
     from-edge: bottom
-    from-at: 0.35
+    from-at: 0.31
     to: programming-languages
     to-phase: peak
     to-edge: top
-    to-at: 0.17
+    to-at: 0.33
   - id: mainframes--time-sharing
     from: mainframes
     from-phase: trough
@@ -2549,83 +2549,83 @@ influences:
     from: time-sharing
     from-phase: trough
     from-edge: top
-    from-at: 0.33
+    from-at: 0.31
     to: arpanet
     to-phase: peak
     to-edge: bottom
-    to-at: 0.24
+    to-at: 0.37
   - id: time-sharing--email
     from: time-sharing
     from-phase: trough
     from-edge: top
-    from-at: 0.77
+    from-at: 0.74
     to: email
     to-phase: peak
     to-edge: bottom
-    to-at: 0.25
+    to-at: 0.27
   - id: arpanet--email
     from: arpanet
     from-phase: peak
     from-edge: top
-    from-at: 0.91
+    from-at: 0.72
     to: email
     to-phase: peak
     to-edge: bottom
-    to-at: 0.67
+    to-at: 0.69
   - id: arpanet--internet
     from: arpanet
     from-phase: slope
     from-edge: top
-    from-at: 0.65
+    from-at: 0.58
     to: internet
     to-phase: peak
     to-edge: bottom
-    to-at: 0.15
+    to-at: 0.16
   - id: cybernetics--symbolic-ai
     from: cybernetics
     from-phase: trough
     from-edge: bottom
-    from-at: 0.94
+    from-at: 0.73
     to: symbolic-ai
     to-phase: peak
     to-edge: top
-    to-at: 0.67
+    to-at: 0.69
   - id: electronic-computers--symbolic-ai
     from: electronic-computers
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.60
     to: symbolic-ai
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.28
   - id: symbolic-ai--expert-systems
     from: symbolic-ai
     from-phase: slope
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: expert-systems
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.40
   - id: microprocessor--personal-computers
     from: microprocessor
     from-phase: peak
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.53
     to: personal-computers
     to-phase: peak
     to-edge: top
-    to-at: 0.16
+    to-at: 0.17
   - id: microprocessor--video-games
     from: microprocessor
     from-phase: peak
     from-edge: top
-    from-at: 0.80
+    from-at: 0.79
     to: video-games
     to-phase: peak
     to-edge: bottom
-    to-at: 0.49
+    to-at: 0.50
   - id: microprocessor--industrial-robots
     from: microprocessor
     from-phase: peak
@@ -2677,29 +2677,29 @@ influences:
     from: personal-computers
     from-phase: trough
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.04
     to: client-server
     to-phase: peak
     to-edge: top
-    to-at: 0.72
+    to-at: 0.76
   - id: minicomputers--client-server
     from: minicomputers
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.51
     to: client-server
     to-phase: peak
     to-edge: top
-    to-at: 0.49
+    to-at: 0.50
   - id: databases--client-server
     from: databases
     from-phase: trough
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.52
     to: client-server
     to-phase: peak
     to-edge: top
-    to-at: 0.19
+    to-at: 0.20
   - id: mainframes--databases
     from: mainframes
     from-phase: slope
@@ -2713,65 +2713,65 @@ influences:
     from: personal-computers
     from-phase: trough
     from-edge: top
-    from-at: 0.76
+    from-at: 0.74
     to: world-wide-web
     to-phase: peak
     to-edge: bottom
-    to-at: 0.21
+    to-at: 0.25
   - id: internet--world-wide-web
     from: internet
     from-phase: peak
     from-edge: bottom
-    from-at: 0.86
+    from-at: 0.84
     to: world-wide-web
     to-phase: peak
     to-edge: top
-    to-at: 0.16
+    to-at: 0.19
   - id: world-wide-web--search-engines
     from: world-wide-web
     from-phase: peak
     from-edge: top
-    from-at: 0.53
+    from-at: 0.51
     to: search-engines
     to-phase: peak
     to-edge: bottom
-    to-at: 0.36
+    to-at: 0.43
   - id: world-wide-web--e-commerce
     from: world-wide-web
     from-phase: peak
     from-edge: bottom
-    from-at: 0.82
+    from-at: 0.76
     to: e-commerce
     to-phase: peak
     to-edge: top
-    to-at: 0.64
+    to-at: 0.69
   - id: world-wide-web--dot-com
     from: world-wide-web
     from-phase: peak
     from-edge: top
-    from-at: 0.81
+    from-at: 0.80
     to: dot-com
     to-phase: peak
     to-edge: bottom
-    to-at: 0.41
+    to-at: 0.45
   - id: world-wide-web--blogs
     from: world-wide-web
     from-phase: trough
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.51
     to: blogs
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.48
   - id: dot-com--e-commerce
     from: dot-com
     from-phase: trough
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.60
     to: e-commerce
     to-phase: trough
     to-edge: top
-    to-at: 0.31
+    to-at: 0.40
     description: The crash sorted the durable businesses from the rest.
   - id: e-commerce--just-in-time
     from: e-commerce
@@ -2786,20 +2786,20 @@ influences:
     from: internet
     from-phase: trough
     from-edge: bottom
-    from-at: 0.68
+    from-at: 0.60
     to: broadband
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.46
   - id: fibre-optics--broadband
     from: fibre-optics
     from-phase: slope
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.53
     to: broadband
     to-phase: peak
     to-edge: top
-    to-at: 0.76
+    to-at: 0.78
   - id: fibre-optics--internet
     from: fibre-optics
     from-phase: trough
@@ -2813,34 +2813,34 @@ influences:
     from: broadband
     from-phase: trough
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.54
     to: video-streaming
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.47
   - id: broadband--social-media
     from: broadband
     from-phase: trough
     from-edge: top
-    from-at: 0.62
+    from-at: 0.56
     to: social-media
     to-phase: peak
     to-edge: bottom
-    to-at: 0.70
+    to-at: 0.71
   - id: blogs--social-media
     from: blogs
     from-phase: trough
     from-edge: top
-    from-at: 0.57
+    from-at: 0.54
     to: social-media
     to-phase: peak
     to-edge: bottom
-    to-at: 0.27
+    to-at: 0.28
   - id: open-source--internet
     from: open-source
     from-phase: peak
     from-edge: top
-    from-at: 0.51
+    from-at: 0.50
     to: internet
     to-phase: peak
     to-edge: bottom
@@ -2849,38 +2849,38 @@ influences:
     from: open-source
     from-phase: slope
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.57
     to: cloud-computing
     to-phase: peak
     to-edge: top
-    to-at: 0.56
+    to-at: 0.58
   - id: virtualisation--cloud-computing
     from: virtualisation
     from-phase: trough
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.58
     to: cloud-computing
     to-phase: peak
     to-edge: top
-    to-at: 0.36
+    to-at: 0.38
   - id: client-server--cloud-computing
     from: client-server
     from-phase: plateau
     from-edge: top
-    from-at: 0.88
+    from-at: 0.60
     to: cloud-computing
     to-phase: peak
     to-edge: bottom
-    to-at: 0.18
+    to-at: 0.40
   - id: cloud-computing--big-data
     from: cloud-computing
     from-phase: peak
     from-edge: top
-    from-at: 0.18
+    from-at: 0.17
     to: big-data
     to-phase: peak
     to-edge: bottom
-    to-at: 0.71
+    to-at: 0.72
   - id: cloud-computing--devops
     from: cloud-computing
     from-phase: peak
@@ -2894,49 +2894,49 @@ influences:
     from: agile
     from-phase: trough
     from-edge: top
-    from-at: 0.66
+    from-at: 0.58
     to: devops
     to-phase: peak
     to-edge: bottom
-    to-at: 0.67
+    to-at: 0.70
   - id: big-data--machine-learning
     from: big-data
     from-phase: peak
     from-edge: bottom
-    from-at: 0.35
+    from-at: 0.32
     to: machine-learning
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.41
   - id: gpus--deep-learning
     from: gpus
     from-phase: trough
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.58
     to: deep-learning
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.71
     description: Graphics cards made training large networks practical.
   - id: neural-networks--deep-learning
     from: neural-networks
     from-phase: slope
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: deep-learning
     to-phase: peak
     to-edge: bottom
-    to-at: 0.10
+    to-at: 0.28
     description: Backpropagation waited twenty years for the data and the hardware.
   - id: video-games--gpus
     from: video-games
     from-phase: slope
     from-edge: bottom
-    from-at: 0.69
+    from-at: 0.61
     to: gpus
     to-phase: peak
     to-edge: top
-    to-at: 0.11
+    to-at: 0.27
     description: Games paid for the chips machine learning would use.
   - id: machine-learning--deep-learning
     from: machine-learning
@@ -2951,47 +2951,47 @@ influences:
     from: deep-learning
     from-phase: peak
     from-edge: bottom
-    from-at: 0.77
+    from-at: 0.74
     to: transformers
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.42
   - id: transformers--large-language-models
     from: transformers
     from-phase: peak
     from-edge: bottom
-    from-at: 0.71
+    from-at: 0.65
     to: large-language-models
     to-phase: peak
     to-edge: top
-    to-at: 0.63
+    to-at: 0.82
   - id: large-language-models--generative-ai
     from: large-language-models
     from-phase: peak
     from-edge: top
-    from-at: 0.63
+    from-at: 0.54
     to: generative-ai
     to-phase: peak
     to-edge: bottom
-    to-at: 0.46
+    to-at: 0.36
   - id: generative-ai--ai-agents
     from: generative-ai
     from-phase: peak
     from-edge: bottom
-    from-at: 0.82
+    from-at: 0.80
     to: ai-agents
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.47
   - id: generative-ai--ai-regulation
     from: generative-ai
     from-phase: peak
     from-edge: bottom
-    from-at: 0.54
+    from-at: 0.52
     to: ai-regulation
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.47
   - id: cloud-computing--large-language-models
     from: cloud-computing
     from-phase: slope
@@ -3005,11 +3005,11 @@ influences:
     from: gpus
     from-phase: slope
     from-edge: bottom
-    from-at: 0.63
+    from-at: 0.57
     to: large-language-models
     to-phase: peak
     to-edge: top
-    to-at: 0.31
+    to-at: 0.32
   - id: large-language-models--misinformation
     from: large-language-models
     from-phase: peak
@@ -3023,29 +3023,29 @@ influences:
     from: mobile-phones
     from-phase: trough
     from-edge: top
-    from-at: 0.60
+    from-at: 0.56
     to: sms
     to-phase: peak
     to-edge: bottom
-    to-at: 0.37
+    to-at: 0.43
   - id: mobile-phones--smartphones
     from: mobile-phones
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.60
+    from-at: 0.55
     to: smartphones
     to-phase: peak
     to-edge: top
-    to-at: 0.18
+    to-at: 0.19
   - id: pdas--smartphones
     from: pdas
     from-phase: slope
     from-edge: top
-    from-at: 0.77
+    from-at: 0.60
     to: smartphones
     to-phase: peak
     to-edge: bottom
-    to-at: 0.08
+    to-at: 0.14
   - id: smartphones--app-stores
     from: smartphones
     from-phase: peak
@@ -3063,7 +3063,7 @@ influences:
     to: mobile-internet
     to-phase: trough
     to-edge: top
-    to-at: 0.49
+    to-at: 0.50
   - id: smartphones--social-media
     from: smartphones
     from-phase: slope
@@ -3087,11 +3087,11 @@ influences:
     from: smartphones
     from-phase: peak
     from-edge: bottom
-    from-at: 0.29
+    from-at: 0.28
     to: mobile-payments
     to-phase: peak
     to-edge: top
-    to-at: 0.44
+    to-at: 0.47
   - id: smartphones--messaging-apps
     from: smartphones
     from-phase: peak
@@ -3105,20 +3105,20 @@ influences:
     from: sms
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.51
     to: messaging-apps
     to-phase: peak
     to-edge: top
-    to-at: 0.72
+    to-at: 0.96
   - id: mobile-internet--4g
     from: mobile-internet
     from-phase: trough
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.56
     to: 4g
     to-phase: peak
     to-edge: top
-    to-at: 0.68
+    to-at: 0.70
   - id: 4g--video-streaming
     from: 4g
     from-phase: peak
@@ -3132,11 +3132,11 @@ influences:
     from: 4g
     from-phase: slope
     from-edge: top
-    from-at: 0.70
+    from-at: 0.60
     to: 5g
     to-phase: peak
     to-edge: bottom
-    to-at: 0.26
+    to-at: 0.06
   - id: 5g--edge-computing
     from: 5g
     from-phase: peak
@@ -3150,11 +3150,11 @@ influences:
     from: iot
     from-phase: peak
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.58
     to: edge-computing
     to-phase: peak
     to-edge: top
-    to-at: 0.25
+    to-at: 0.27
   - id: wifi--iot
     from: wifi
     from-phase: slope
@@ -3168,20 +3168,20 @@ influences:
     from: smartphones
     from-phase: trough
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.54
     to: wearables
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.48
   - id: lithium-ion--smartphones
     from: lithium-ion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.28
+    from-at: 0.23
     to: smartphones
     to-phase: peak
     to-edge: top
-    to-at: 0.36
+    to-at: 0.44
   - id: lithium-ion--laptops
     from: lithium-ion
     from-phase: peak
@@ -3195,38 +3195,38 @@ influences:
     from: lithium-ion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.52
+    from-at: 0.51
     to: electric-vehicles
     to-phase: peak
     to-edge: top
-    to-at: 0.15
+    to-at: 0.16
   - id: lithium-ion--grid-storage
     from: lithium-ion
     from-phase: slope
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.52
     to: grid-storage
     to-phase: peak
     to-edge: top
-    to-at: 0.49
+    to-at: 0.50
   - id: lithium-ion--drones
     from: lithium-ion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.84
+    from-at: 0.81
     to: drones
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.42
   - id: electric-vehicles--grid-storage
     from: electric-vehicles
     from-phase: peak
     from-edge: top
-    from-at: 0.85
+    from-at: 0.84
     to: grid-storage
     to-phase: peak
     to-edge: bottom
-    to-at: 0.39
+    to-at: 0.44
   - id: solar-pv--grid-storage
     from: solar-pv
     from-phase: plateau
@@ -3235,52 +3235,52 @@ influences:
     to: grid-storage
     to-phase: peak
     to-edge: top
-    to-at: 0.79
+    to-at: 0.80
   - id: wind-power--grid-storage
     from: wind-power
     from-phase: slope
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.53
     to: grid-storage
     to-phase: peak
     to-edge: top
-    to-at: 0.19
+    to-at: 0.20
   - id: solar-pv--energy-transition
     from: solar-pv
     from-phase: slope
     from-edge: bottom
-    from-at: 0.75
+    from-at: 0.63
     to: energy-transition
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.35
   - id: wind-power--energy-transition
     from: wind-power
     from-phase: trough
     from-edge: bottom
-    from-at: 0.74
+    from-at: 0.62
     to: energy-transition
     to-phase: peak
     to-edge: top
-    to-at: 0.13
+    to-at: 0.15
   - id: electric-vehicles--energy-transition
     from: electric-vehicles
     from-phase: peak
     from-edge: top
-    from-at: 0.51
+    from-at: 0.44
     to: energy-transition
     to-phase: peak
     to-edge: bottom
-    to-at: 0.67
+    to-at: 0.70
   - id: climate-awareness--energy-transition
     from: climate-awareness
     from-phase: trough
     from-edge: top
-    from-at: 0.57
+    from-at: 0.54
     to: energy-transition
     to-phase: peak
     to-edge: bottom
-    to-at: 0.27
+    to-at: 0.28
   - id: energy-transition--circular-economy
     from: energy-transition
     from-phase: peak
@@ -3294,11 +3294,11 @@ influences:
     from: environmentalism
     from-phase: slope
     from-edge: bottom
-    from-at: 0.58
+    from-at: 0.54
     to: climate-awareness
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.46
   - id: environmentalism--nuclear-power
     from: environmentalism
     from-phase: peak
@@ -3313,7 +3313,7 @@ influences:
     from: oil-crisis
     from-phase: peak
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.24
     to: solar-pv
     to-phase: trough
     to-edge: top
@@ -3323,38 +3323,38 @@ influences:
     from: oil-crisis
     from-phase: trough
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.79
     to: wind-power
     to-phase: peak
     to-edge: top
-    to-at: 0.35
+    to-at: 0.42
   - id: oil-crisis--nuclear-power
     from: oil-crisis
     from-phase: peak
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.88
     to: nuclear-power
     to-phase: trough
     to-edge: top
-    to-at: 0.37
+    to-at: 0.43
   - id: oil--oil-crisis
     from: oil
     from-phase: slope
     from-edge: top
-    from-at: 0.57
+    from-at: 0.54
     to: oil-crisis
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.38
   - id: natural-gas--fracking
     from: natural-gas
     from-phase: slope
     from-edge: top
-    from-at: 0.35
+    from-at: 0.31
     to: fracking
     to-phase: peak
     to-edge: bottom
-    to-at: 0.09
+    to-at: 0.04
   - id: fracking--natural-gas
     from: fracking
     from-phase: peak
@@ -3369,11 +3369,11 @@ influences:
     from: nuclear-fission
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.04
     to: nuclear-power
     to-phase: peak
     to-edge: top
-    to-at: 0.29
+    to-at: 0.39
   - id: nuclear-fission--fusion
     from: nuclear-fission
     from-phase: plateau
@@ -3382,43 +3382,43 @@ influences:
     to: fusion
     to-phase: peak
     to-edge: top
-    to-at: 0.25
+    to-at: 0.28
   - id: nuclear-power--small-modular-reactors
     from: nuclear-power
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.60
+    from-at: 0.56
     to: small-modular-reactors
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.46
   - id: hydrogen-economy--fusion
     from: hydrogen-economy
     from-phase: peak
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.62
     to: fusion
     to-phase: peak
     to-edge: top
-    to-at: 0.71
+    to-at: 0.72
   - id: carbon-capture--energy-transition
     from: carbon-capture
     from-phase: peak
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.56
     to: energy-transition
     to-phase: peak
     to-edge: top
-    to-at: 0.59
+    to-at: 0.60
   - id: space-flight--commercial-space
     from: space-flight
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: commercial-space
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
   - id: commercial-space--satellite-internet
     from: commercial-space
     from-phase: trough
@@ -3432,11 +3432,11 @@ influences:
     from: satellite-navigation
     from-phase: plateau
     from-edge: top
-    from-at: 0.29
+    from-at: 0.04
     to: ride-hailing
     to-phase: peak
     to-edge: bottom
-    to-at: 0.49
+    to-at: 0.50
   - id: satellite-navigation--drones
     from: satellite-navigation
     from-phase: plateau
@@ -3460,20 +3460,20 @@ influences:
     from: drones
     from-phase: peak
     from-edge: bottom
-    from-at: 0.79
+    from-at: 0.75
     to: urban-air-mobility
     to-phase: peak
     to-edge: top
-    to-at: 0.37
+    to-at: 0.43
   - id: electric-vehicles--autonomous-vehicles
     from: electric-vehicles
     from-phase: peak
     from-edge: top
-    from-at: 0.64
+    from-at: 0.62
     to: autonomous-vehicles
     to-phase: peak
     to-edge: bottom
-    to-at: 0.71
+    to-at: 0.72
   - id: ride-hailing--autonomous-vehicles
     from: ride-hailing
     from-phase: peak
@@ -3487,38 +3487,38 @@ influences:
     from: ride-hailing
     from-phase: peak
     from-edge: bottom
-    from-at: 0.83
+    from-at: 0.81
     to: gig-economy
     to-phase: peak
     to-edge: top
-    to-at: 0.70
+    to-at: 0.71
   - id: sharing-economy--gig-economy
     from: sharing-economy
     from-phase: peak
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.53
     to: gig-economy
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.28
   - id: smartphones--sharing-economy
     from: smartphones
     from-phase: peak
     from-edge: bottom
-    from-at: 0.60
+    from-at: 0.58
     to: sharing-economy
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.71
   - id: internet--remote-work
     from: internet
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.73
+    from-at: 0.60
     to: remote-work
     to-phase: peak
     to-edge: top
-    to-at: 0.10
+    to-at: 0.21
   - id: video-conferencing--remote-work
     from: video-conferencing
     from-phase: plateau
@@ -3532,11 +3532,11 @@ influences:
     from: cloud-computing
     from-phase: slope
     from-edge: bottom
-    from-at: 0.34
+    from-at: 0.30
     to: remote-work
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.47
   - id: broadband--video-conferencing
     from: broadband
     from-phase: peak
@@ -3568,29 +3568,29 @@ influences:
     from: genomics
     from-phase: slope
     from-edge: top
-    from-at: 0.62
+    from-at: 0.57
     to: crispr
     to-phase: peak
     to-edge: bottom
-    to-at: 0.42
+    to-at: 0.45
   - id: genomics--mrna-vaccines
     from: genomics
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.55
+    to: mrna-vaccines
+    to-phase: peak
+    to-edge: top
+    to-at: 0.71
+  - id: vaccination--mrna-vaccines
+    from: vaccination
     from-phase: plateau
     from-edge: bottom
     from-at: 0.60
     to: mrna-vaccines
     to-phase: peak
     to-edge: top
-    to-at: 0.70
-  - id: vaccination--mrna-vaccines
-    from: vaccination
-    from-phase: plateau
-    from-edge: bottom
-    from-at: 0.96
-    to: mrna-vaccines
-    to-phase: peak
-    to-edge: top
-    to-at: 0.04
+    to-at: 0.28
     description: Two centuries of vaccine science under a new platform.
   - id: germ-theory--public-health
     from: germ-theory
@@ -3605,25 +3605,25 @@ influences:
     from: germ-theory
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: antibiotics
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
   - id: vaccination--germ-theory
     from: vaccination
     from-phase: slope
     from-edge: bottom
-    from-at: 0.62
+    from-at: 0.56
     to: germ-theory
     to-phase: peak
     to-edge: top
-    to-at: 0.66
+    to-at: 0.69
   - id: blockchain--cryptocurrency
     from: blockchain
     from-phase: peak
     from-edge: bottom
-    from-at: 0.51
+    from-at: 0.50
     to: cryptocurrency
     to-phase: peak
     to-edge: top
@@ -3632,65 +3632,65 @@ influences:
     from: social-media
     from-phase: trough
     from-edge: bottom
-    from-at: 0.58
+    from-at: 0.54
     to: creator-economy
     to-phase: peak
     to-edge: top
-    to-at: 0.31
+    to-at: 0.40
   - id: video-streaming--creator-economy
     from: video-streaming
     from-phase: trough
     from-edge: top
-    from-at: 0.72
+    from-at: 0.63
     to: creator-economy
     to-phase: peak
     to-edge: bottom
-    to-at: 0.37
+    to-at: 0.43
   - id: social-media--misinformation
     from: social-media
     from-phase: trough
     from-edge: bottom
-    from-at: 0.87
+    from-at: 0.83
     to: misinformation
     to-phase: peak
     to-edge: top
-    to-at: 0.31
+    to-at: 0.40
   - id: social-media--digital-privacy
     from: social-media
     from-phase: trough
     from-edge: bottom
-    from-at: 0.30
+    from-at: 0.24
     to: digital-privacy
     to-phase: peak
     to-edge: top
-    to-at: 0.23
+    to-at: 0.26
   - id: digital-privacy--ai-regulation
     from: digital-privacy
     from-phase: peak
     from-edge: top
-    from-at: 0.80
+    from-at: 0.76
     to: ai-regulation
     to-phase: peak
     to-edge: bottom
-    to-at: 0.32
+    to-at: 0.41
   - id: vr--metaverse
     from: vr
     from-phase: peak
     from-edge: top
-    from-at: 0.67
+    from-at: 0.60
     to: metaverse
     to-phase: peak
     to-edge: bottom
-    to-at: 0.21
+    to-at: 0.33
   - id: social-media--metaverse
     from: social-media
     from-phase: slope
     from-edge: bottom
-    from-at: 0.77
+    from-at: 0.74
     to: metaverse
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.41
   - id: industrial-robots--automation
     from: industrial-robots
     from-phase: peak
@@ -3722,20 +3722,20 @@ influences:
     from: 3d-printing
     from-phase: trough
     from-edge: top
-    from-at: 0.61
+    from-at: 0.56
     to: industry-4
     to-phase: peak
     to-edge: bottom
-    to-at: 0.13
+    to-at: 0.15
   - id: industry-4--reshoring
     from: industry-4
     from-phase: peak
     from-edge: bottom
-    from-at: 0.90
+    from-at: 0.87
     to: reshoring
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.42
   - id: electronic-trading--globalised-finance
     from: electronic-trading
     from-phase: peak
@@ -3744,31 +3744,31 @@ influences:
     to: globalised-finance
     to-phase: peak
     to-edge: top
-    to-at: 0.49
+    to-at: 0.50
   - id: globalised-finance--financial-crisis
     from: globalised-finance
     from-phase: plateau
     from-edge: top
-    from-at: 0.66
+    from-at: 0.58
     to: financial-crisis
     to-phase: peak
     to-edge: bottom
-    to-at: 0.12
+    to-at: 0.20
   - id: financial-crisis--cryptocurrency
     from: financial-crisis
     from-phase: trough
     from-edge: top
-    from-at: 0.96
+    from-at: 0.85
     to: cryptocurrency
     to-phase: peak
     to-edge: bottom
-    to-at: 0.38
+    to-at: 0.44
     description: Bitcoin's genesis block quotes a bailout headline.
   - id: financial-crisis--sharing-economy
     from: financial-crisis
     from-phase: peak
     from-edge: bottom
-    from-at: 0.73
+    from-at: 0.72
     to: sharing-economy
     to-phase: peak
     to-edge: top
@@ -3777,65 +3777,65 @@ influences:
     from: credit-cards
     from-phase: peak
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.63
     to: atm
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.33
   - id: atm--electronic-trading
     from: atm
     from-phase: peak
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.59
     to: electronic-trading
     to-phase: peak
     to-edge: top
-    to-at: 0.37
+    to-at: 0.43
   - id: mainframes--credit-cards
     from: mainframes
     from-phase: peak
     from-edge: bottom
-    from-at: 0.77
+    from-at: 0.74
     to: credit-cards
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.41
   - id: mobile-payments--fintech
     from: mobile-payments
     from-phase: peak
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.56
     to: fintech
     to-phase: peak
     to-edge: top
-    to-at: 0.26
+    to-at: 0.27
   - id: e-commerce--fintech
     from: e-commerce
     from-phase: slope
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.52
     to: fintech
     to-phase: peak
     to-edge: top
-    to-at: 0.71
+    to-at: 0.72
   - id: labour-movement--welfare-state
     from: labour-movement
     from-phase: trough
     from-edge: bottom
-    from-at: 0.81
+    from-at: 0.66
     to: welfare-state
     to-phase: peak
     to-edge: top
-    to-at: 0.62
+    to-at: 0.67
   - id: womens-suffrage--welfare-state
     from: womens-suffrage
     from-phase: trough
     from-edge: bottom
-    from-at: 0.69
+    from-at: 0.60
     to: welfare-state
     to-phase: peak
     to-edge: top
-    to-at: 0.24
+    to-at: 0.26
   - id: mass-education--mass-newspapers
     from: mass-education
     from-phase: peak
@@ -3849,45 +3849,45 @@ influences:
     from: typewriter
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.66
+    from-at: 0.58
     to: personal-computers
     to-phase: peak
     to-edge: top
-    to-at: 0.26
+    to-at: 0.32
   - id: urbanisation--department-stores
     from: urbanisation
     from-phase: trough
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.74
     to: department-stores
     to-phase: peak
     to-edge: top
-    to-at: 0.18
+    to-at: 0.33
   - id: welfare-state--consumerism
     from: welfare-state
     from-phase: trough
     from-edge: top
-    from-at: 0.61
+    from-at: 0.56
     to: consumerism
     to-phase: peak
     to-edge: bottom
-    to-at: 0.35
+    to-at: 0.37
   - id: household-appliances--consumerism
     from: household-appliances
     from-phase: peak
     from-edge: top
-    from-at: 0.77
+    from-at: 0.74
     to: consumerism
     to-phase: peak
     to-edge: bottom
-    to-at: 0.79
+    to-at: 0.82
   - id: railways--high-speed-rail
     from: railways
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: high-speed-rail
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
     description: "Rail's revival: the Shinkansen answered the motorway and the airliner."

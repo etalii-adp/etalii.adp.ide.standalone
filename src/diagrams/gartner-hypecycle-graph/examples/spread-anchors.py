@@ -5,9 +5,11 @@ byte of the file is kept. The rule, which GhgExampleInfluencePhaseTests holds ev
 
 - An influence arrives no earlier than it leaves: the date under its To end is at or after the date
   under its From end. Both start at one moment the two phases share; where they share none, the
-  cause's end sits late in its phase and the effect's early in its own.
+  cause's end sits late in its phase and the effect's early in its own, and the two are not drawn together.
 - The ends sharing one edge of one phase spread evenly across it, in date order, keeping clear of
   the phase's ends. An end alone on its edge leans only gently to the middle, so its dates decide.
+  Where the first rule leaves an edge's ends bunched, its first end goes as early and its last as
+  late as each one's partner allows, the rest evenly between.
 - Rounding to two decimals goes towards each other, the cause down and the effect up, so it never
   breaks the first rule.
 
@@ -104,6 +106,11 @@ def run(text):
         lo, hi = max(w["f"][0], w["t"][0]), min(w["f"][1], w["t"][1])
         mid = (lo + hi) / 2 if lo < hi else None
         # Start both at one shared moment where the phases meet; else late on the cause, early on the effect.
+        w["meet"] = mid is not None
+        if not w["meet"]:
+            # Phases that never meet: the cause acts from late in its phase, the effect is felt early in its own.
+            w["f"] = (fs[0] + 0.6 * (fs[1] - fs[0]), w["f"][1])
+            w["t"] = (w["t"][0], ts[0] + 0.4 * (ts[1] - ts[0]))
         w["T1"] = mid if mid is not None else w["f"][1]
         w["T2"] = mid if mid is not None else w["t"][0]
         work.append(w)
@@ -136,14 +143,39 @@ def run(text):
         for w in work:
             # A gentle pull together: an influence acts about when both phases are under way.
             gap = w["T2"] - w["T1"]
-            if gap > 0:
-                w["T1"] = clamp(w["T1"] + 0.05 * gap, w["f"])
-                w["T2"] = clamp(w["T2"] - 0.05 * gap, w["t"])
+            if gap > 0 and w["meet"]:
+                w["T1"] = clamp(w["T1"] + 0.02 * gap, w["f"])
+                w["T2"] = clamp(w["T2"] - 0.02 * gap, w["t"])
             elif gap < 0:
                 # The effect before its cause: meet at the middle, as far as each phase allows.
                 meet = (w["T1"] + w["T2"]) / 2
                 w["T1"] = clamp(meet, w["f"])
                 w["T2"] = clamp(max(meet, w["T1"]), w["t"])
+
+    # A phase edge whose ends are still bunched is placed outright: its first end as early and its
+    # last as late as each one's partner allows, the rest evenly between, in date order.
+    def bounds(w, side):
+        if side == "from":
+            return frac(w["fs"], w["f"][0]), frac(w["fs"], max(min(w["f"][1], w["T2"]), w["f"][0]))
+        return frac(w["ts"], min(max(w["t"][0], w["T1"]), w["t"][1])), frac(w["ts"], w["t"][1])
+
+    for _ in range(3):
+        for members in slots.values():
+            fr = [f_of(*mm) for mm in members]
+            if len(members) < 2 or max(fr) - min(fr) >= 0.3:
+                continue
+            members.sort(key=lambda mm: (f_of(*mm), mm[0]["T1"], mm[0]["T2"]))
+            n = len(members)
+            lo = bounds(*members[0])[0]
+            hi = bounds(*members[-1])[1]
+            for k, (w, side) in enumerate(members):
+                target = lo + k * (hi - lo) / (n - 1)
+                b = bounds(w, side)
+                target = min(max(target, b[0]), b[1])
+                if side == "from":
+                    w["T1"] = when_at(w["fs"], target)
+                else:
+                    w["T2"] = when_at(w["ts"], target)
 
     for w in work:
         # Last, strictly: the effect never before its cause, within the phases themselves.

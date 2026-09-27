@@ -235,105 +235,105 @@ influences:
     from: mainframe-computing
     from-phase: peak
     from-edge: bottom
-    from-at: 0.66
+    from-at: 0.59
     to: minicomputers
     to-phase: peak
     to-edge: top
-    to-at: 0.30
+    to-at: 0.39
   - id: minicomputers--internet
     from: minicomputers
     from-phase: peak
     from-edge: bottom
-    from-at: 0.81
+    from-at: 0.68
     to: internet
     to-phase: peak
     to-edge: top
-    to-at: 0.31
+    to-at: 0.39
     description: ARPANET's routers were minicomputers.
   - id: mainframe-computing--relational-databases
     from: mainframe-computing
     from-phase: trough
     from-edge: bottom
-    from-at: 0.75
+    from-at: 0.65
     to: relational-databases
     to-phase: peak
     to-edge: top
-    to-at: 0.26
+    to-at: 0.36
   - id: minicomputers--personal-computer
     from: minicomputers
     from-phase: trough
     from-edge: bottom
-    from-at: 0.73
+    from-at: 0.63
     to: personal-computer
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.41
   - id: graphical-user-interface--personal-computer
     from: graphical-user-interface
     from-phase: peak
     from-edge: top
-    from-at: 0.62
+    from-at: 0.57
     to: personal-computer
     to-phase: peak
     to-edge: bottom
-    to-at: 0.41
+    to-at: 0.45
     description: The Macintosh and Windows made the PC usable by anyone.
   - id: internet--email
     from: internet
     from-phase: peak
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.51
     to: email
     to-phase: peak
     to-edge: top
-    to-at: 0.47
+    to-at: 0.48
   - id: internet--world-wide-web
     from: internet
     from-phase: trough
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.73
     to: world-wide-web
     to-phase: peak
     to-edge: top
-    to-at: 0.10
+    to-at: 0.14
   - id: personal-computer--world-wide-web
     from: personal-computer
     from-phase: trough
     from-edge: bottom
-    from-at: 0.63
+    from-at: 0.57
     to: world-wide-web
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.37
   - id: graphical-user-interface--world-wide-web
     from: graphical-user-interface
     from-phase: slope
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.57
     to: world-wide-web
     to-phase: peak
     to-edge: top
-    to-at: 0.57
+    to-at: 0.59
     description: The browser is a graphical user interface to the web.
   - id: internet--cybersecurity
     from: internet
     from-phase: trough
     from-edge: bottom
-    from-at: 0.38
+    from-at: 0.33
     to: cybersecurity
     to-phase: peak
     to-edge: top
-    to-at: 0.08
+    to-at: 0.28
     description: The Morris worm spread over the internet.
   - id: world-wide-web--search-engines
     from: world-wide-web
     from-phase: peak
     from-edge: top
-    from-at: 0.86
+    from-at: 0.84
     to: search-engines
     to-phase: peak
     to-edge: bottom
-    to-at: 0.25
+    to-at: 0.27
   - id: world-wide-web--dot-com-bubble
     from: world-wide-web
     from-phase: trough
@@ -347,11 +347,11 @@ influences:
     from: world-wide-web
     from-phase: trough
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.57
     to: e-commerce
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.71
   - id: search-engines--e-commerce
     from: search-engines
     from-phase: peak
@@ -365,55 +365,55 @@ influences:
     from: dot-com-bubble
     from-phase: peak
     from-edge: bottom
-    from-at: 0.77
+    from-at: 0.74
     to: broadband
     to-phase: peak
     to-edge: top
-    to-at: 0.30
+    to-at: 0.40
     description: The bubble paid for fibre that later carried broadband.
   - id: relational-databases--software-as-a-service
     from: relational-databases
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.63
+    from-at: 0.57
     to: software-as-a-service
     to-phase: peak
     to-edge: top
-    to-at: 0.68
+    to-at: 0.70
   - id: internet--software-as-a-service
     from: internet
     from-phase: slope
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.62
     to: software-as-a-service
     to-phase: peak
     to-edge: top
-    to-at: 0.20
+    to-at: 0.24
   - id: open-source--cloud-computing
     from: open-source
     from-phase: slope
     from-edge: bottom
-    from-at: 0.69
+    from-at: 0.60
     to: cloud-computing
     to-phase: peak
     to-edge: top
-    to-at: 0.07
+    to-at: 0.11
     description: Linux and open-source tooling run most of the cloud.
   - id: e-commerce--cloud-computing
     from: e-commerce
     from-phase: trough
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.63
     to: cloud-computing
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.46
     description: Amazon sold the infrastructure it had built for its own shop.
   - id: software-as-a-service--cloud-computing
     from: software-as-a-service
     from-phase: trough
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.51
     to: cloud-computing
     to-phase: peak
     to-edge: top
@@ -422,11 +422,11 @@ influences:
     from: world-wide-web
     from-phase: slope
     from-edge: top
-    from-at: 0.63
+    from-at: 0.57
     to: social-media
     to-phase: peak
     to-edge: bottom
-    to-at: 0.25
+    to-at: 0.26
   - id: broadband--streaming-media
     from: broadband
     from-phase: trough
@@ -440,20 +440,20 @@ influences:
     from: mobile-phones
     from-phase: plateau
     from-edge: top
-    from-at: 0.69
+    from-at: 0.60
     to: smartphones
     to-phase: peak
     to-edge: bottom
-    to-at: 0.54
+    to-at: 0.58
   - id: wifi--smartphones
     from: wifi
     from-phase: trough
     from-edge: top
-    from-at: 0.64
+    from-at: 0.57
     to: smartphones
     to-phase: peak
     to-edge: bottom
-    to-at: 0.13
+    to-at: 0.15
   - id: open-source--smartphones
     from: open-source
     from-phase: plateau
@@ -487,11 +487,11 @@ influences:
     from: wifi
     from-phase: peak
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.59
     to: internet-of-things
     to-phase: peak
     to-edge: top
-    to-at: 0.41
+    to-at: 0.45
   - id: cloud-computing--internet-of-things
     from: cloud-computing
     from-phase: peak
@@ -505,11 +505,11 @@ influences:
     from: social-media
     from-phase: peak
     from-edge: bottom
-    from-at: 0.75
+    from-at: 0.73
     to: big-data
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.41
   - id: cloud-computing--big-data
     from: cloud-computing
     from-phase: peak
@@ -523,30 +523,30 @@ influences:
     from: big-data
     from-phase: trough
     from-edge: top
-    from-at: 0.60
+    from-at: 0.55
     to: deep-learning
     to-phase: peak
     to-edge: bottom
-    to-at: 0.27
+    to-at: 0.28
     description: Large labelled datasets made deep networks trainable.
   - id: cloud-computing--deep-learning
     from: cloud-computing
     from-phase: trough
     from-edge: top
-    from-at: 0.72
+    from-at: 0.61
     to: deep-learning
     to-phase: peak
     to-edge: bottom
-    to-at: 0.67
+    to-at: 0.70
   - id: open-source--blockchain
     from: open-source
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.58
+    from-at: 0.55
     to: blockchain
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.46
   - id: smartphones--virtual-reality
     from: smartphones
     from-phase: trough
@@ -561,11 +561,11 @@ influences:
     from: smartphones
     from-phase: slope
     from-edge: top
-    from-at: 0.63
+    from-at: 0.57
     to: 5g
     to-phase: peak
     to-edge: bottom
-    to-at: 0.25
+    to-at: 0.27
   - id: 5g--internet-of-things
     from: 5g
     from-phase: peak
@@ -579,7 +579,7 @@ influences:
     from: deep-learning
     from-phase: trough
     from-edge: bottom
-    from-at: 0.52
+    from-at: 0.51
     to: large-language-models
     to-phase: peak
     to-edge: top
@@ -588,20 +588,20 @@ influences:
     from: cloud-computing
     from-phase: slope
     from-edge: top
-    from-at: 0.74
+    from-at: 0.64
     to: large-language-models
     to-phase: peak
     to-edge: bottom
-    to-at: 0.26
+    to-at: 0.36
   - id: large-language-models--ai-agents
     from: large-language-models
     from-phase: peak
     from-edge: top
-    from-at: 0.80
+    from-at: 0.76
     to: ai-agents
     to-phase: peak
     to-edge: bottom
-    to-at: 0.32
+    to-at: 0.40
   - id: quantum-computing--cybersecurity
     from: quantum-computing
     from-phase: peak
