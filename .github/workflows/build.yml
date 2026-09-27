@@ -210,7 +210,7 @@ jobs:
       # exits 0.
       - name: Refuse to release a build carrying the developer sign-in bypass
         if: steps.tip.outputs.publish == 'true'
-        run: dotnet run --project .github/tools/developer-session-guard -c Release -- publish/EtAlii.Adp.Backend.dll
+        run: dotnet run --project .github/tools/developer-session-guard -c Release -- publish/EtAlii.Adp.Authentication.dll
 
       - name: Write the release readme
         if: steps.tip.outputs.publish == 'true'
