@@ -388,8 +388,17 @@ export function DiagramCanvasCore({
   const layoutInput = useMemo<LayoutInput>(
     () => ({
       elements: model.elements.map((element) => {
-        const bounds = elementBounds(element, elementTypes.get(element.type));
-        return { id: element.id, x: element.x, y: element.y, width: bounds.width, height: bounds.height, parentId: element.parentId };
+        const type = elementTypes.get(element.type);
+        const bounds = elementBounds(element, type);
+        return {
+          id: element.id,
+          x: element.x,
+          y: element.y,
+          width: bounds.width,
+          height: bounds.height,
+          parentId: element.parentId,
+          leading: leadingOf(element, type),
+        };
       }),
       connections: model.connections.map((connection) => ({ sourceId: connection.sourceId, targetId: connection.targetId })),
     }),
@@ -3841,6 +3850,22 @@ function snapLeadingEdge(
 /** A declared number's value for this element: written outright, or bound - null when a binding yields none. */
 function declaredNumberOf(value: import("./definition/diagramDefinition").DeclaredNumber, source: BindingSource): number | null {
   return typeof value === "number" ? value : resolveNumber(value, source);
+}
+
+/**
+ * The room an element's labels take up to its left - a `before` label's text and the gap to it -
+ * which a layout packing elements side by side keeps clear, or the name overprints the element
+ * before it on the row.
+ */
+function leadingOf(element: DiagramModelElement, type: ElementTypeDefinition | undefined): number | undefined {
+  let leading: number | undefined;
+  for (const label of type?.labels ?? []) {
+    if (label.placement === "before") {
+      const text = resolveOne(label.text, sourceOf(element)) ?? "";
+      leading = Math.max(leading ?? 0, BEFORE_GAP + widthOf(text, LABEL_FONT_SIZE));
+    }
+  }
+  return leading;
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {

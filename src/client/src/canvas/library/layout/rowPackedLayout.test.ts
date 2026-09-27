@@ -104,6 +104,13 @@ describe("row-packed placement", () => {
     }
   });
 
+  it("keeps the room an element needs before it clear of the element before it on its row", () => {
+    const named = { ...trend("b", 100, 8, 0), leading: 100 };
+    const positions = placed([trend("a", 0, 8, 0), named]);
+
+    expect(leftOf(positions.get("b")!)).toBe(WIDTH + GAP + 100);
+  });
+
   it("lays out as manual where the definition declares no rowPacked", () => {
     expect(rowPackedLayout.place(inputOf(FIFTY), { modes: ["row-packed"] })).toBeNull();
   });

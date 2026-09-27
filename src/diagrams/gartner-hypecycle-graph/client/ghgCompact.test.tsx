@@ -10,6 +10,8 @@ import { pointer } from "@client/canvas/library/testing/canvasHarness";
 import { GHG_DEFINITION, ghgDefinitionFor } from "./GhgCanvas";
 import { GhgScale, GhgTimeUnits, type GhgTimeUnit } from "./ghgIds";
 import { exampleModel } from "./ghgExample";
+import { LABEL_FONT_SIZE, widthOf } from "@client/canvas/label/textMetrics";
+import { BEFORE_GAP } from "@client/canvas/library/definition/labels";
 
 /**
  * Compact mode over the technology-trends example: the definition's second layout mode, switched on
@@ -94,6 +96,7 @@ describe("the technology-trends example in compact mode", () => {
     const { container } = renderCompact(model);
 
     const placed = model.elements.map((element) => ({
+      name: element.label ?? "",
       start: element.x - element.width! / 2,
       row: element.y,
       box: drawnBox(container, element.id),
@@ -112,9 +115,11 @@ describe("the technology-trends example in compact mode", () => {
       rows.set(entry.row, [...(rows.get(entry.row) ?? []), entry]);
     }
     for (const row of rows.values()) {
-      const lefts = row.map((entry) => entry.box.left).sort((a, b) => a - b);
-      for (let index = 1; index < lefts.length; index += 1) {
-        expect(lefts[index] - lefts[index - 1]).toBeGreaterThanOrEqual(COMPACT_WIDTH + GhgScale.unitsPerMonth - 1e-6);
+      // A trend's name is drawn to its left, so the gap before it holds the name as well.
+      const ordered = [...row].sort((a, b) => a.box.left - b.box.left);
+      for (let index = 1; index < ordered.length; index += 1) {
+        const room = GhgScale.unitsPerMonth + BEFORE_GAP + widthOf(ordered[index].name, LABEL_FONT_SIZE);
+        expect(ordered[index].box.left - ordered[index - 1].box.right).toBeGreaterThanOrEqual(room - 1e-6);
       }
     }
   });

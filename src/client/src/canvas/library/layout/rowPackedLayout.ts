@@ -16,7 +16,8 @@ interface Packed {
  *
  * Elements starting at one manual x are placed as a group. The group's x is the larger of where
  * the previous group ended up and where each row it touches is free again (its last element's
- * right edge plus `gap`), so a later start is never left of an earlier one, equal starts on
+ * right edge plus `gap`, plus the room the element needs before it for a label drawn to its left),
+ * so a later start is never left of an earlier one, equal starts on
  * different rows share an x, and no two elements on a row come closer than `gap`. A second
  * element of the group on the same row follows the first on that row. Nothing further left
  * satisfies all three, which is what makes the result as narrow as they allow.
@@ -43,7 +44,7 @@ function pack(input: LayoutInput, declaration: RowPackedDeclaration): Packed[] {
     for (const { element } of group) {
       const free = rowEnd.get(element.y);
       if (free !== undefined) {
-        groupX = Math.max(groupX, free + declaration.gap);
+        groupX = Math.max(groupX, free + declaration.gap + (element.leading ?? 0));
       }
     }
 
@@ -51,7 +52,7 @@ function pack(input: LayoutInput, declaration: RowPackedDeclaration): Packed[] {
     let rightmost = groupX;
     for (const entry of group) {
       const row = entry.element.y;
-      const placedLeft = placedRows.has(row) ? rowEnd.get(row)! + declaration.gap : groupX;
+      const placedLeft = placedRows.has(row) ? rowEnd.get(row)! + declaration.gap + (entry.element.leading ?? 0) : groupX;
       placedRows.add(row);
       rowEnd.set(row, placedLeft + declaration.width);
       rightmost = Math.max(rightmost, placedLeft);
