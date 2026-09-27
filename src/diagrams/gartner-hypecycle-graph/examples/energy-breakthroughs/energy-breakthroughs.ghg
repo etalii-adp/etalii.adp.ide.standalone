@@ -246,10 +246,10 @@ trends:
   - id: room-temperature-superconductors
     name: Room-temperature superconductors
     start: 2023-07
-    stop: 2025-01
+    stop: 2025-07
     row: 50
     phases: 2
-    peak-end: 2023-09
+    peak-end: 2024-01
     tags: [materials, conceptual]
     description: LK-99's claim of July 2023, refuted within weeks; the breakthrough would change every grid and magnet.
   - id: smart-grid
@@ -389,7 +389,7 @@ influences:
     to: room-temperature-superconductors
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.96
   - id: cold-fusion--room-temperature-superconductors
     from: cold-fusion
     from-phase: trough
@@ -398,7 +398,7 @@ influences:
     to: room-temperature-superconductors
     to-phase: peak
     to-edge: top
-    to-at: 0.40
+    to-at: 0.04
     description: The same rush to replicate, and the same failure to.
   - id: ai-data-centre-demand--pulsed-magneto-inertial-fusion
     from: ai-data-centre-demand

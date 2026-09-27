@@ -172,7 +172,7 @@ trends:
     row: 36
     phases: 3
     peak-end: 2024-06
-    trough-end: 2025-03
+    trough-end: 2025-06
     tags: [agents, tooling]
   - id: model-context-protocol
     name: Model Context Protocol
@@ -564,7 +564,7 @@ influences:
     from: tool-use
     from-phase: trough
     from-edge: bottom
-    from-at: 0.04
+    from-at: 0.47
     to: model-context-protocol
     to-phase: peak
     to-edge: top
@@ -583,11 +583,11 @@ influences:
     from: tool-use
     from-phase: trough
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.94
     to: autonomous-agents
     to-phase: slope
     to-edge: top
-    to-at: 0.40
+    to-at: 0.41
     description: With dependable tool calls, agents climbed out of their trough.
   - id: ai-code-completion--coding-agents
     from: ai-code-completion

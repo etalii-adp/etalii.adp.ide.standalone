@@ -16,7 +16,7 @@ This is a workspace package (`@adp/diagram-gartner-hypecycle-graph-client`). It 
 - **One element type, `trend`**, on the library's `arrow-banner` shape, sized by the reader in width. Its `segments` are bound to the payload: the number of phases it has reached and the fractions its inner boundaries sit at. Each phase has its own class (`ghg-peak` to `ghg-plateau`) and its full Gartner name as a tooltip; chevrons divide them, and their boundaries can be dragged.
 - **The name sits before the banner**, right-aligned, and is renamed in the shared inline editor.
 - **Influences attach anywhere along a phase's top or bottom edge** (`along` anchors, no dots drawn). One influence is allowed each way between two trends, never to itself, and an influence attached to a phase its trend does not show is hidden but still counts.
-- **Snapping** is to whole months horizontally and to rows vertically. A **bottom ruler** is declared in months, stepping to quarters, years and decades as the view widens. A **filter box** hides the trends whose tags do not match an expression such as `energy and (transport or industry)`.
+- **Snapping** is to whole months horizontally and to rows vertically. A **bottom ruler** is declared in months, stepping to quarters, years and decades as the view widens. A **filter box** takes tags as chips, looked up among the diagram's own as they are typed, and hides the trends having none of them - or, switched from Any to All, not every one of them.
 
 ## How each gesture reaches the backend
 
