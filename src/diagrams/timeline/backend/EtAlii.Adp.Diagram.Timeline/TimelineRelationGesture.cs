@@ -1,9 +1,12 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
 /// The synthetic id a finished relation gesture carries: <c>rel:{from}-&gt;{to}</c>, where the
 /// target is an element id or a <see cref="TimelineNewPlacement"/> for a release on empty
 /// canvas.
+/// Built and parsed by the shared <see cref="GestureIds"/> grammar (backend-centralization R11.1).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,33 +25,10 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </remarks>
 public static class TimelineRelationGesture
 {
-    private const string Prefix = "rel:";
-    private const string Separator = "->";
-
     /// <summary>The id for a finished gesture from one element to another - or to a placement.</summary>
-    public static string IdFor(string fromElementId, string target) =>
-        $"{Prefix}{fromElementId}{Separator}{target}";
+    public static string IdFor(string fromElementId, string target) => GestureIds.Relation(fromElementId, target);
 
     /// <summary>Whether <paramref name="elementId"/> is a relation gesture, and what it carries.</summary>
-    public static bool TryParse(string? elementId, out string from, out string to)
-    {
-        from = "";
-        to = "";
-
-        if (elementId is null || !elementId.StartsWith(Prefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        var payload = elementId[Prefix.Length..];
-        var separator = payload.IndexOf(Separator, StringComparison.Ordinal);
-        if (separator <= 0 || separator >= payload.Length - Separator.Length)
-        {
-            return false;
-        }
-
-        from = payload[..separator];
-        to = payload[(separator + Separator.Length)..];
-        return true;
-    }
+    public static bool TryParse(string? elementId, out string from, out string to) =>
+        GestureIds.TryParseRelation(elementId, out from, out to);
 }
