@@ -20,9 +20,10 @@ public sealed record Line(string Text, string Ending)
 
     /// <summary>Whether the line's first non-whitespace character starts a comment.</summary>
     /// <remarks>
-    /// Used when narrowing a node's line range: YAML's end marks routinely run past the last line
-    /// that actually declares something, and trailing blank or comment lines swept into an
-    /// element's range would be rewritten by an edit that had no business touching them.
+    /// Not the rule <see cref="YamlNodeRange"/> narrows a node's range with. YAML indents with spaces
+    /// alone, so there a line whose first non-space character is a tab is block-scalar content rather
+    /// than a comment, and the range keeps it (backend-centralization R7.2). This general rule is
+    /// the one causal-loop's own format reads.
     /// </remarks>
     public bool IsComment => Text.TrimStart().StartsWith('#');
 }
