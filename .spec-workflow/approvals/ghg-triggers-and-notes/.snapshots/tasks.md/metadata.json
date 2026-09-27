@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ghg-triggers-and-notes/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-27T13:25:22.484Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790515521741_58fc5gbja",
+      "approvalTitle": "ghg-triggers-and-notes: tasks (12 tasks, 53 of 53 criteria claimed)"
+    }
+  ]
+}
