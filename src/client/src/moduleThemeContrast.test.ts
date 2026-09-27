@@ -133,6 +133,29 @@ describe("module colours honour the theme", () => {
   });
 
   /**
+   * gartner-hype-cycle-graph's phase fills against the chevron dividers drawn over them.
+   *
+   * A chevron is a stroke, not text, so the bar is WCAG's 3:1 for graphical objects rather than
+   * the 4.5:1 above. Each fill is its own pair, because a divider sits between two phases and a
+   * chevron that reads against three of four fills still vanishes into the fourth.
+   */
+  describe("gartner-hype-cycle-graph's chevrons read against every phase", () => {
+    const GRAPHICAL = 3;
+
+    for (const theme of ["light", "dark"] as const) {
+      for (const phase of ["peak", "trough", "slope", "plateau"]) {
+        it(`separates the ${phase} phase in the ${theme} theme`, () => {
+          const fill = resolvedIn(theme, `--color-diagram-hype-${phase}`);
+          const chevron = resolvedIn(theme, "--color-diagram-hype-chevron");
+          const ratio = contrastRatio(chevron, fill);
+
+          expect(ratio, `the chevron (${chevron}) on the ${phase} fill (${fill}) in the ${theme} theme is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(GRAPHICAL);
+        });
+      }
+    }
+  });
+
+  /**
    * The cause behind both looks, stated directly rather than through a ratio: a private
    * namespace the theme never defines.
    *

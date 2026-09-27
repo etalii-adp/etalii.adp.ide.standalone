@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/gartner-hype-cycle-graph/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-26T22:49:29.080Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790462932677_t6676keij",
+      "approvalTitle": "gartner-hype-cycle-graph design"
+    }
+  ]
+}

@@ -50,6 +50,55 @@ async function withEscapingRejection(body: () => Promise<void>) {
   }
 }
 
+describe("PropertyRow as a slider", () => {
+  const phases = () =>
+    property({
+      id: "phases",
+      label: "Phases",
+      value: "Trough",
+      editor: ContextPropertyEditor.SLIDER,
+      candidates: ["Peak", "Trough", "Slope", "Plateau"],
+    });
+
+  it("renders one stop per candidate and names the current one", () => {
+    // Arrange, act.
+    const { container } = render(<PropertyRow property={phases()} onCommit={vi.fn(async () => "")} />);
+
+    // Assert.
+    const slider = screen.getByLabelText("Phases") as HTMLInputElement;
+    expect(slider.type).toBe("range");
+    expect(slider.max).toBe("3");
+    expect(slider.value).toBe("1");
+    expect(container.querySelectorAll("datalist option")).toHaveLength(4);
+    expect(container.querySelector(".property-grid-slider-value")?.textContent).toBe("Trough");
+  });
+
+  it("commits the chosen CANDIDATE, never its stop index", async () => {
+    // Arrange.
+    const onCommit = vi.fn(async () => "");
+    render(<PropertyRow property={phases()} onCommit={onCommit} />);
+
+    // Act: the fourth stop.
+    fireEvent.change(screen.getByLabelText("Phases"), { target: { value: "3" } });
+    await flush();
+
+    // Assert.
+    expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(onCommit).toHaveBeenCalledWith("Plateau");
+  });
+
+  it("still shows an editor number this client does not know as read-only", () => {
+    // Arrange, act: an editor from a backend newer than this client.
+    const { container } = render(
+      <PropertyRow property={property({ id: "x", label: "Future", value: "v", editor: 99 as ContextPropertyEditor })} onCommit={vi.fn(async () => "")} />,
+    );
+
+    // Assert: the value, and no field of any kind.
+    expect(container.querySelector(".property-grid-value")?.textContent).toBe("v");
+    expect(container.querySelector("input, select, textarea")).toBeNull();
+  });
+});
+
 describe("PropertyRow", () => {
   it("takes the next edit after a commit that rejected", async () => {
     // Arrange.

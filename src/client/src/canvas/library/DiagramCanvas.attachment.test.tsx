@@ -1,11 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { render } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
 import { DiagramCanvasCore } from "./DiagramCanvas";
 import type { BuiltInShape, DiagramDefinition } from "./definition/diagramDefinition";
-import type { DiagramModel } from "./api/diagramModel";
+import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "./api/diagramModel";
 import { isInsideOutline, outlineOf } from "./shapes/outline";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "./testing/canvasHarness";
 
 /**
  * Where a connector touches a shape that is not a rectangle.
@@ -123,3 +124,127 @@ describe("a connector meets the outline, not the bounding box", () => {
     }
   });
 });
+
+/**
+ * Continuous attachment: a connection end that is a FRACTION of a stretch of edge, recomputed from
+ * the element's current bounds and segments on every render.
+ *
+ * The surface is given a real size here - jsdom measures nothing - equal to the declared extent,
+ * so a client pixel is a canvas unit and the pointer lands where the test says: canvas x is client
+ * x, canvas y is client y less 100.
+ */
+describe("a connection attached along an edge", () => {
+  const EXTENT = { x: 0, y: -100, width: 800, height: 400 };
+  let restore: (() => void) | undefined;
+
+  beforeEach(() => {
+    const original = SVGSVGElement.prototype.getBoundingClientRect;
+    SVGSVGElement.prototype.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, x: 0, y: 0, width: EXTENT.width, height: EXTENT.height, right: EXTENT.width, bottom: EXTENT.height, toJSON: () => ({}) }) as DOMRect;
+    restore = () => { SVGSVGElement.prototype.getBoundingClientRect = original; };
+  });
+
+  afterEach(() => restore?.());
+
+  function bannerDefinition(): DiagramDefinition {
+    return {
+      elementTypes: [
+        {
+          id: "banner",
+          shape: "arrow-banner",
+          anchors: { kind: "along", edges: ["top", "bottom"], regions: "segments" },
+          sizing: "user",
+          segments: { count: 4, max: 4, boundaries: "payload.boundaries", divider: "chevron" },
+        },
+      ],
+      relationTypes: [
+        { id: "flows", route: "straight", endpoints: { source: { elementTypes: ["banner"] }, target: { elementTypes: ["banner"] }, allowSelf: false } },
+      ],
+      layout: { modes: ["manual"] },
+      dragging: "enabled",
+      extent: EXTENT,
+    };
+  }
+
+  /** A banner with its boundaries at quarters; `a` spans x 0..width, y 0..32. */
+  const banner = (id: string, x: number, y: number, width = 400): DiagramModelElement =>
+    ({ id, type: "banner", x, y, width, height: 32, payload: { boundaries: [0.25, 0.5, 0.75] } });
+
+  function renderModel(elements: DiagramModelElement[], connections: DiagramModelConnection[] = [], onConnectionDrawn = vi.fn()) {
+    const result = render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvasCore definition={bannerDefinition()} model={{ elements, connections }} events={{ onConnectionDrawn }} />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+    return { ...result, onConnectionDrawn };
+  }
+
+  const startOf = (container: HTMLElement) => {
+    const d = container.querySelector('[data-connection-id="c"] path.canvas-connection-line')!.getAttribute("d")!;
+    const [, x, y] = /^M (-?[\d.]+) (-?[\d.]+)/.exec(d)!;
+    return { x: Number(x), y: Number(y) };
+  };
+
+  const attached: DiagramModelConnection = {
+    id: "c",
+    type: "flows",
+    sourceId: "a",
+    targetId: "b",
+    sourceAttachment: { edge: "top", region: 1, at: 0.25 },
+    targetAttachment: { edge: "bottom", region: 0, at: 0.5 },
+  };
+
+  it("ends at the fraction of its segment's stretch of the edge", () => {
+    // Arrange, act: segment 2's top runs from the first chevron's tail at 84 to the second's at 184.
+    const { container } = renderModel([banner("a", 200, 16), banner("b", 600, 216)], [attached]);
+
+    // Assert: a quarter of the way along it, on the top edge.
+    expect(startOf(container)).toEqual({ x: 109, y: 0 });
+  });
+
+  it("stays at that fraction of the NEW segment when the element doubles in width", () => {
+    // Arrange, act: the same connection, the banner now 800 wide - segment 2's top runs 184..384.
+    const { container } = renderModel([banner("a", 400, 16, 800), banner("b", 600, 216)], [attached]);
+
+    // Assert: a quarter along the new stretch. An end stored as an offset would stay at 109.
+    expect(startOf(container)).toEqual({ x: 234, y: 0 });
+  });
+
+  it("records where a gesture started and ended, as edge, segment and fraction", () => {
+    // Arrange.
+    const { container, onConnectionDrawn } = renderModel([banner("a", 200, 16), banner("b", 600, 216)]);
+    const strip = container.querySelector('[data-element-id="a"] .library-edge-strip[data-edge="bottom"][data-region="0"]')!;
+    expect(strip).not.toBeNull();
+
+    // Act: pressed on segment 1's bottom edge at canvas (40, 32), released just inside b's top edge
+    // at canvas (600, 201) - in b's third segment, whose top runs 584..684.
+    fireEvent(strip, pointer("pointerdown", { button: 0, clientX: 40, clientY: 132 }));
+    fireEvent(strip, pointer("pointermove", { clientX: 600, clientY: 301 }));
+    fireEvent(strip, pointer("pointerup", { clientX: 600, clientY: 301 }));
+
+    // Assert: both ends as fractions of the stretch they landed on, to two decimals.
+    expect(onConnectionDrawn).toHaveBeenCalledTimes(1);
+    expect(onConnectionDrawn.mock.calls[0][0]).toMatchObject({
+      sourceElementId: "a",
+      targetElementId: "b",
+      sourceAttachment: { edge: "bottom", region: 0, at: 0.48 },
+      targetAttachment: { edge: "top", region: 2, at: 0.16 },
+    });
+  });
+
+  it("lights up the stretch it would attach to while the drag is in flight", () => {
+    // Arrange.
+    const { container } = renderModel([banner("a", 200, 16), banner("b", 600, 216)]);
+    const strip = container.querySelector('[data-element-id="a"] .library-edge-strip[data-edge="bottom"][data-region="0"]')!;
+
+    // Act: mid-drag over b's third segment.
+    fireEvent(strip, pointer("pointerdown", { button: 0, clientX: 40, clientY: 132 }));
+    fireEvent(strip, pointer("pointermove", { clientX: 600, clientY: 301 }));
+
+    // Assert.
+    expect(container.querySelector('[data-element-id="b"] .library-attachment-highlight')?.getAttribute("data-attachment")).toBe("top:2");
+  });
+});
+

@@ -52,7 +52,7 @@ export interface RulerRung {
    * is not a fixed number of anything. A month is not 2,629,746 seconds and a reader expects a
    * label on "the 1st", so the calendar rungs are named rather than approximated.
    */
-  every: number | { calendar: "month" | "quarter" | "year"; count?: number };
+  every: number | { calendar: CalendarStep; count?: number };
   /**
    * How a tick at this rung is labelled. A format the library understands, not a function:
    * `"yyyy"`, `"MMM"`, `"d MMM"`, `"HH:mm"`, or `"number"` for a plain count.
@@ -63,14 +63,46 @@ export interface RulerRung {
   label: TemporalFormat;
 }
 
+/** The calendar steps a rung may take. A decade is ten years, starting on a year ending in 0. */
+export type CalendarStep = "month" | "quarter" | "year" | "decade";
+
+/**
+ * A time axis that is uniform in MONTHS rather than in seconds: every month the same width, so a
+ * month is a fixed step on the canvas and snapping to one needs no calendar arithmetic.
+ *
+ * Canvas x is `(monthIndex(date) - monthIndex(origin)) * unitsPerStep`, where
+ * `monthIndex(y-m) = y * 12 + (m - 1)`. The ruler's own unit is then the month index, and the
+ * module's backend can state the same scale and convert identically, because nothing is fitted.
+ */
+export interface MonthScale {
+  unit: "month";
+  /** Canvas units per month. */
+  unitsPerStep: number;
+  /** The month at canvas x 0, as `YYYY-MM`. */
+  origin: string;
+}
+
 /** A ruler pinned to the view rather than to the diagram. */
 export interface RulerDeclaration {
   orientation: "horizontal" | "vertical";
   /**
-   * How many of the ruler's own units one canvas unit covers - a timeline's seconds per unit.
-   * Bound, because it is the module's scale and the library has no opinion about it.
+   * Which side of the viewport the canvas pins the ruler to, where the LIBRARY draws it. Only
+   * `bottom` is drawn today: a strip in screen coordinates, so it never scrolls out of sight,
+   * whose ticks follow horizontal pan and zoom. Omitted, the library draws nothing and a module
+   * may render the ticks itself, as it could before.
    */
-  unitsPerCanvasUnit: Binding | number;
+  edge?: "bottom";
+  /**
+   * The scale, stated once where the axis is month-uniform. Given, it replaces
+   * {@link unitsPerCanvasUnit} and {@link origin}: the ruler's unit becomes the month index.
+   */
+  scale?: MonthScale;
+  /**
+   * How many of the ruler's own units one canvas unit covers - a timeline's seconds per unit.
+   * Bound, because it is the module's scale and the library has no opinion about it. Ignored
+   * under a {@link scale}.
+   */
+  unitsPerCanvasUnit?: Binding | number;
   /** Where the ruler's own zero sits, in its units. */
   origin?: Binding | number;
   /** The rungs, coarsest chosen that still fits. Order does not matter; the library sorts. */
@@ -155,21 +187,36 @@ export function resolveLegend(
   return captions.map((caption, index) => ({ caption, swatchClass: swatches[index] }));
 }
 
-/** How many of the ruler's own units one rung spans, for choosing between rungs. */
-function approximateSpan(rung: RulerRung): number {
+/** How many months a calendar step spans. */
+function monthsOf(step: CalendarStep, count: number): number {
+  switch (step) {
+    case "month":
+      return count;
+    case "quarter":
+      return 3 * count;
+    case "year":
+      return 12 * count;
+    case "decade":
+      return 120 * count;
+  }
+}
+
+/**
+ * How many of the ruler's own units one rung spans, for choosing between rungs: seconds on a
+ * seconds scale, months on a {@link MonthScale}.
+ */
+function approximateSpan(rung: RulerRung, monthly = false): number {
   if (typeof rung.every === "number") {
     return rung.every;
   }
 
-  const count = rung.every.count ?? 1;
-  switch (rung.every.calendar) {
-    case "month":
-      return count * 30 * DAY;
-    case "quarter":
-      return count * 91 * DAY;
-    case "year":
-      return count * 365 * DAY;
+  const months = monthsOf(rung.every.calendar, rung.every.count ?? 1);
+  if (monthly) {
+    return months;
   }
+
+  // A month as 30 days, a quarter as 91 and a year as 365, as the ladder always approximated.
+  return rung.every.calendar === "quarter" ? (months / 3) * 91 * DAY : rung.every.calendar === "month" ? months * 30 * DAY : (months / 12) * 365 * DAY;
 }
 
 function fixedTicks(from: number, to: number, step: number, format: TemporalFormat): ResolvedTick[] {
@@ -185,16 +232,19 @@ function fixedTicks(from: number, to: number, step: number, format: TemporalForm
 function calendarTicks(
   from: number,
   to: number,
-  unit: "month" | "quarter" | "year",
+  unit: CalendarStep,
   count: number,
   format: TemporalFormat,
 ): ResolvedTick[] {
   const ticks: ResolvedTick[] = [];
   const start = new Date(from * 1000);
-  const months = unit === "year" ? 12 * count : unit === "quarter" ? 3 * count : count;
+  const months = monthsOf(unit, count);
 
   let year = start.getUTCFullYear();
-  let month = unit === "year" ? 0 : Math.floor(start.getUTCMonth() / months) * months;
+  if (unit === "decade") {
+    year = Math.floor(year / (10 * count)) * 10 * count;
+  }
+  let month = unit === "year" || unit === "decade" ? 0 : Math.floor(start.getUTCMonth() / months) * months;
   for (let guard = 0; guard < 4096; guard++) {
     const at = Date.UTC(year, month, 1) / 1000;
     if (at > to) {
@@ -231,19 +281,60 @@ export function resolveTicks(
     return [];
   }
 
+  const monthly = declaration.scale !== undefined;
   const span = view.to - view.from;
   const maxTicks = Math.max(1, Math.floor(view.sizePx / (declaration.minSpacingPx ?? 80)));
   const coarsest = span / maxTicks;
 
-  const rungs = [...declaration.ladder].sort((left, right) => approximateSpan(left) - approximateSpan(right));
-  const chosen = rungs.find((rung) => approximateSpan(rung) >= coarsest) ?? rungs[rungs.length - 1];
+  const rungs = [...declaration.ladder].sort((left, right) => approximateSpan(left, monthly) - approximateSpan(right, monthly));
+  const chosen = rungs.find((rung) => approximateSpan(rung, monthly) >= coarsest) ?? rungs[rungs.length - 1];
   if (chosen === undefined) {
     return [];
+  }
+
+  if (monthly) {
+    return monthTicks(view.from, view.to, chosen);
   }
 
   return typeof chosen.every === "number"
     ? fixedTicks(view.from, view.to, chosen.every, chosen.label)
     : calendarTicks(view.from, view.to, chosen.every.calendar, chosen.every.count ?? 1, chosen.label);
+}
+
+/** `YYYY-MM` as a month index, `y * 12 + (m - 1)`; null for anything else. */
+export function monthIndexOf(text: string): number | null {
+  const match = /^(-?\d{1,6})-(\d{2})$/.exec(text.trim());
+  if (match === null) {
+    return null;
+  }
+
+  const month = Number(match[2]);
+  return month >= 1 && month <= 12 ? (Number(match[1]) * 12) + (month - 1) : null;
+}
+
+/**
+ * Ticks on a month-uniform scale, at month indices. A calendar rung steps whole months from a
+ * boundary of its own size - quarters on January, April, July and October, decades on years
+ * ending in 0 - and a fixed rung steps that many months.
+ */
+function monthTicks(from: number, to: number, rung: RulerRung): ResolvedTick[] {
+  const months = typeof rung.every === "number" ? Math.max(1, Math.round(rung.every)) : monthsOf(rung.every.calendar, rung.every.count ?? 1);
+  const ticks: ResolvedTick[] = [];
+  for (let at = Math.ceil(from / months) * months, guard = 0; at <= to && guard < 4096; at += months, guard++) {
+    ticks.push({ at, label: formatEpochSeconds(epochSecondsOfMonth(at), rung.label) });
+  }
+
+  return ticks;
+}
+
+/** The first instant of a month index, in epoch seconds - so the one formatter labels it. */
+function epochSecondsOfMonth(index: number): number {
+  const year = Math.floor(index / 12);
+  const month = index - (year * 12);
+  const date = new Date(Date.UTC(2000, month, 1));
+  // Set separately: `Date.UTC` reads a year 0..99 as 1900..1999.
+  date.setUTCFullYear(year);
+  return date.getTime() / 1000;
 }
 
 /** The ruler's own range for a viewport, in its units. */
@@ -252,9 +343,28 @@ export function rulerRangeOf(
   source: BindingSource,
   viewport: { start: number; size: number },
 ): { from: number; to: number } {
+  if (declaration.scale !== undefined) {
+    const origin = monthIndexOf(declaration.scale.origin) ?? 0;
+    const per = declaration.scale.unitsPerStep > 0 ? declaration.scale.unitsPerStep : 1;
+    return { from: origin + (viewport.start / per), to: origin + ((viewport.start + viewport.size) / per) };
+  }
+
   const perUnit = numberOf(declaration.unitsPerCanvasUnit, source, 1);
   const origin = numberOf(declaration.origin, source, 0);
   return { from: origin + viewport.start * perUnit, to: origin + (viewport.start + viewport.size) * perUnit };
+}
+
+/** Where a tick in the ruler's own units sits on the canvas - the inverse of {@link rulerRangeOf}. */
+export function canvasPositionOf(declaration: RulerDeclaration, source: BindingSource, at: number): number {
+  if (declaration.scale !== undefined) {
+    const origin = monthIndexOf(declaration.scale.origin) ?? 0;
+    const per = declaration.scale.unitsPerStep > 0 ? declaration.scale.unitsPerStep : 1;
+    return (at - origin) * per;
+  }
+
+  const perUnit = numberOf(declaration.unitsPerCanvasUnit, source, 1);
+  const origin = numberOf(declaration.origin, source, 0);
+  return perUnit !== 0 ? (at - origin) / perUnit : 0;
 }
 
 export { SECOND, MINUTE, HOUR, DAY };

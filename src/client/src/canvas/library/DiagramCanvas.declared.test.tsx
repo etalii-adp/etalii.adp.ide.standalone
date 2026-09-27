@@ -5,6 +5,7 @@ import type { DiagramDefinition, ElementTypeDefinition } from "./definition/diag
 import type { DiagramModel } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
+import { pointer } from "./testing/canvasHarness";
 
 /**
  * THE ELEMENT-LEVEL GAPS THE SUFFICIENCY TABLE FOUND, mounted.
@@ -91,8 +92,8 @@ describe("declared classes — the gap every one of the 28 rows had (G1)", () =>
 
     expect(shapeIn(container).getAttribute("class")).not.toContain("node-selected");
 
-    fireEvent(shapeIn(container), new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 }));
-    fireEvent(shapeIn(container), new MouseEvent("pointerup", { bubbles: true, cancelable: true }));
+    fireEvent(shapeIn(container), pointer("pointerdown", { button: 0 }));
+    fireEvent(shapeIn(container), pointer("pointerup"));
 
     expect(shapeIn(container).getAttribute("class")).toContain("node-selected");
   });
@@ -257,5 +258,67 @@ describe("a declared label's anchor reaches the screen - it is part of the geome
     } finally {
       sheet.remove();
     }
+  });
+});
+
+/**
+ * `visible: false` on a type's anchors: no dot at rest or on hover, and a connection can still be
+ * drawn from and to it - the valid target still lights up, so the gesture is not blind.
+ */
+describe("invisible anchors", () => {
+  function twoNodes(visible: boolean | undefined) {
+    const definition: DiagramDefinition = {
+      elementTypes: [
+        {
+          id: "node",
+          shape: "box",
+          anchors: { kind: "compass", positions: ["e", "w"], ...(visible === undefined ? {} : { visible }) },
+          sizing: "model",
+        },
+      ],
+      relationTypes: [
+        { id: "link", route: "straight", endpoints: { source: { elementTypes: ["node"] }, target: { elementTypes: ["node"] }, allowSelf: false } },
+      ],
+      layout: { modes: ["manual"] },
+      dragging: "enabled",
+    };
+    const model: DiagramModel = {
+      elements: [
+        { id: "a", type: "node", x: 0, y: 0, width: 100, height: 40, label: "A" },
+        { id: "b", type: "node", x: 300, y: 0, width: 100, height: 40, label: "B" },
+      ],
+      connections: [],
+    };
+    return render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvas definition={definition} model={model} events={{}} />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+  }
+
+  it("draws no anchor dot, at rest or while the pointer rests on the element", () => {
+    // Arrange, act.
+    const { container } = twoNodes(false);
+    fireEvent.pointerEnter(container.querySelector('[data-element-id="a"]')!);
+
+    // Assert: no dot anywhere - and the visible default still draws them, so the check is live.
+    expect(container.querySelectorAll(".library-anchor")).toHaveLength(0);
+    expect(twoNodes(undefined).container.querySelectorAll(".library-anchor")).toHaveLength(4);
+  });
+
+  it("still starts a connection and still highlights the valid target during the drag", () => {
+    // Arrange.
+    const { container } = twoNodes(false);
+    const east = container.querySelector('[data-element-id="a"] [data-anchor="e"]')!;
+    expect(east).not.toBeNull();
+
+    // Act: A's east anchor (50) dragged over B (300).
+    fireEvent(east, pointer("pointerdown", { button: 0, clientX: 50, clientY: 0 }));
+    fireEvent(east, pointer("pointermove", { clientX: 300, clientY: 0 }));
+
+    // Assert.
+    expect(container.querySelector('[data-element-id="b"]')!.classList.contains("library-connect-target")).toBe(true);
   });
 });

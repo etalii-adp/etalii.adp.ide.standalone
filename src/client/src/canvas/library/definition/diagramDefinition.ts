@@ -80,7 +80,13 @@ export type BuiltInShape =
    */
   | "diode"
   /** A ring inside the ellipse - owl's `doubled` and wardley's submap mark (rows 18, 27, 28). */
-  | "double-ellipse";
+  | "double-ellipse"
+  /**
+   * A banner closed on the right by a point: `(0,0) (w - p, 0) (w, h/2) (w - p, h) (0, h)` with
+   * point depth `p = min(h/2, w/2)`. It reads as something moving forward in time, and it is the
+   * one shape that can be cut into {@link SegmentDeclaration segments}, each ending in a chevron.
+   */
+  | "arrow-banner";
 
 /**
  * Every built-in shape, enumerable - <b>what the conformance guard walks</b>.
@@ -115,6 +121,7 @@ export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
   "cylinder",
   "moment",
   "double-ellipse",
+  "arrow-banner",
 ];
 
 /**
@@ -152,7 +159,41 @@ export type AnchorPositions =
   | { kind: "edge" }
   | { kind: "compass"; positions: readonly CompassPosition[] }
   | { kind: "sides"; fractions: readonly SideFraction[] }
-  | { kind: "points"; points: readonly NamedAnchorPoint[] };
+  | { kind: "points"; points: readonly NamedAnchorPoint[] }
+  | AlongAnchors;
+
+/** One side of an element's bounds. */
+export type EdgeName = "top" | "bottom" | "left" | "right";
+
+/**
+ * Attachment ANYWHERE along the named edges, rather than at a fixed set of points.
+ *
+ * A connection drawn to such an element records where it landed as an {@link EdgeAttachment} - an
+ * edge, optionally a region of it, and a fraction along that - and its end is recomputed from the
+ * element's current bounds on every render, so a resize moves it proportionally instead of leaving
+ * it behind. `regions: "segments"` cuts the top and bottom edges into the stretches the element's
+ * {@link SegmentDeclaration segments} occupy, so an attachment belongs to one segment and moves
+ * with that segment's boundaries.
+ */
+export interface AlongAnchors {
+  kind: "along";
+  edges: readonly EdgeName[];
+  regions?: "segments";
+}
+
+/**
+ * Where on an element a connection end sits, for an element declaring {@link AlongAnchors}.
+ *
+ * `at` is a fraction 0..1 of the region's length - of the whole edge when there is no region -
+ * measured left to right on the top and bottom edges and top to bottom on the sides. A fraction
+ * rather than an offset, because an offset stays where it was when the element grows.
+ */
+export interface EdgeAttachment {
+  edge: EdgeName;
+  /** The segment index whose stretch of the edge this is, for `regions: "segments"`. */
+  region?: number;
+  at: number;
+}
 
 /**
  * Whether an element's anchors are shown and usable - <b>the half of the anchor declaration
@@ -168,6 +209,11 @@ export type AnchorPositions =
  * mechanisms for it would be one too many.
  */
 export interface AnchorEnablement {
+  /**
+   * `false` draws no anchor dot, at rest or on hover. The anchors still take a connection, and a
+   * connect gesture still highlights the target and the stretch of edge under the pointer, so the
+   * gesture is never blind - only the resting clutter goes.
+   */
   visible?: DeclaredFlag;
   enabled?: DeclaredFlag;
   /**
@@ -372,8 +418,14 @@ export interface DecorationDeclaration {
   when?: Condition;
 }
 
-/** Where a label sits relative to its element's shape. Carried over from `LabelRule`. */
-export type LabelPlacement = "inside" | "above" | "below" | "beside" | "inset";
+/**
+ * Where a label sits relative to its element's shape. Carried over from `LabelRule`.
+ *
+ * `before` is the mirror of `beside`: the text ENDS 8 units left of the element's left edge,
+ * vertically centred and end-anchored, so a row of elements starting at different places still
+ * reads as a column of names each hugging its own element.
+ */
+export type LabelPlacement = "inside" | "above" | "below" | "beside" | "before" | "inset";
 
 /**
  * A named vertical position inside the box, for the stacked-line case.
@@ -736,6 +788,11 @@ export interface ElementTypeDefinition {
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
   deletable?: boolean;
   /**
+   * Cuts an `arrow-banner` into consecutive segments along its width. See {@link SegmentDeclaration}.
+   * Ignored on any other shape.
+   */
+  segments?: SegmentDeclaration;
+  /**
    * Whether an element of this type can be the selection. **Omitted means selectable** - every
    * type selects unless its definition says otherwise, so "not selectable" is only ever a value
    * somebody declared and never the absence of one (centralized-selection Requirement 2.3).
@@ -844,6 +901,15 @@ export interface Cardinality {
   maxFromSource?: number;
   /** At most this many of this relation arriving at one target element. */
   maxIntoTarget?: number;
+  /**
+   * At most ONE connection of this relation between a pair of elements: `ordered` counts only
+   * the same direction, so A -> B and B -> A may both exist; `unordered` counts either.
+   *
+   * The count reads the MODEL, not what is drawn, so a connection hidden by
+   * {@link RelationTypeDefinition.hideWhenAttachmentHidden} or by a filter still blocks its
+   * duplicate - hidden is a view, and the document still holds it.
+   */
+  perPair?: "ordered" | "unordered";
 }
 
 /** One kind of line a diagram draws. */
@@ -896,6 +962,13 @@ export interface RelationTypeDefinition {
    * Recorded as a schema extension in the tasks document per Requirement 9.4.
    */
   emptyRelease?: "ignore" | "complete";
+  /**
+   * Hide a connection whose source or target attachment names a segment region its element is
+   * not drawing - an index at or beyond the element's segment count. Hidden means not drawn, not
+   * hit-tested and not selectable; the connection stays in the model untouched, so raising the
+   * count draws it again where it was.
+   */
+  hideWhenAttachmentHidden?: boolean;
 }
 
 /**
@@ -1008,6 +1081,57 @@ export interface SnapAxis {
   origin?: DeclaredNumber;
 }
 
+/**
+ * An element cut into consecutive segments along its width, each its own fill, tooltip and stretch
+ * of the top and bottom edges.
+ *
+ * <b>The library draws what it is given.</b> Where the boundaries lie is the module's arithmetic,
+ * bound from the model, so the drawing and the document can never disagree about it; the library
+ * only falls back to an even spread when the model gives none, or gives a list it cannot use.
+ *
+ * Only the first `count` segments are drawn, over the element's FULL width, so the last drawn
+ * segment is the one that ends in the point.
+ */
+export interface SegmentDeclaration {
+  /** How many segments are drawn, 1 to {@link max}. */
+  count: DeclaredNumber;
+  /** How many segments an element of this type can have. */
+  max: number;
+  /**
+   * A path to an array of fractions of the width, one per inner boundary between drawn segments
+   * (`count - 1` of them), strictly increasing within 0..1. Missing or unusable, the drawn
+   * segments share the width evenly.
+   */
+  boundaries?: BindingPath;
+  /** One class per segment index, for its fill. */
+  classNames?: readonly string[];
+  /** One tooltip per segment index. Over the point, the last drawn segment's shows. */
+  tooltips?: readonly string[];
+  /** How two segments meet: a right-pointing chevron, or a straight line. Defaults to `chevron`. */
+  divider?: "chevron" | "line";
+  /**
+   * Give each inner boundary a horizontal drag handle over its divider. A drag raises
+   * `segment-boundary-moved` with the snapped position, clamped so no segment becomes narrower
+   * than one step of the definition's `snap.x` (one unit where it declares none).
+   */
+  draggableBoundaries?: boolean;
+}
+
+/**
+ * A filter box over the canvas: elements whose tag list does not match the typed expression are
+ * not drawn, and neither is any connection touching them.
+ *
+ * The expression is `a and (b or c)` - `and` binding tighter than `or`, case-insensitive, a tag
+ * being any run of non-space characters other than the keywords and parentheses. It is view
+ * state, held by the canvas and never sent anywhere, and it survives every model update.
+ */
+export interface FilterDeclaration {
+  /** A path to the element's tags: an array of strings. */
+  field: BindingPath;
+  /** The filter box's placeholder. */
+  label: string;
+}
+
 export interface DiagramDefinition {
   elementTypes: readonly ElementTypeDefinition[];
   relationTypes: readonly RelationTypeDefinition[];
@@ -1072,6 +1196,8 @@ export interface DiagramDefinition {
    * so this is declared by the notations that forbid one, and by no others.
    */
   acyclic?: readonly AcyclicRule[];
+  /** A filter box over the canvas. See {@link FilterDeclaration}. Omitted, the canvas shows none. */
+  filter?: FilterDeclaration;
 }
 
 /**
