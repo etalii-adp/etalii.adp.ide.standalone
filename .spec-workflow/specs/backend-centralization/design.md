@@ -113,6 +113,8 @@ The undoable edit that puts a document's whole text back, shared by `causal-loop
 
 The rule that turns a parsed YAML node into the lines it occupies, identical in three modules and near-identical in `azure-pipeline`. **The difference is read and decided in implementation, not guessed here**: the three agree, so the three win unless azure-pipeline's variant is shown to handle an input they get wrong — and the task carries a test on an input that tells the two apart.
 
+**What was found and kept** (small amendment, chat ruling of 2026-09-27): databricks, dependency-graph and timeline trimmed leading whitespace of every kind before looking for `#`, while azure-pipeline trimmed spaces only, so a line whose first non-space character is a tab followed by `#` was a trailing comment to the three and content to azure-pipeline. **azure-pipeline's rule is kept**, because its variant handles an input the three get wrong: measured against YamlDotNet, a tab-led comment never reaches the end of a range, and the only tab-led line that does is the last content line of a block scalar, which the three's rule cut out of the element holding it (127 of 695 accepted inputs). `ABlockScalarsLastLine_LedByATab_IsContentAndStaysInTheRange_WhichIsAzurePipelinesBehaviour` tells the two apart.
+
 ## The cross-tier rules (R9–R13)
 
 Each is computed on both sides of the wire without crossing it, so drift is invisible to both suites. **Each has one owner, one implementation on the owning side, and one fixture both suites read.** The backend owns all five; `client-centralization` cites them.
