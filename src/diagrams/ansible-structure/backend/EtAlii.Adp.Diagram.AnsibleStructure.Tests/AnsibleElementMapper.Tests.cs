@@ -248,7 +248,7 @@ public class AnsibleElementMapperTests
         // Act.
         var (project, graph) = Read("infrastructure");
         var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
-        var deltas = Mapper.Diff([], elements);
+        var deltas = DiagramDiff.Between([], elements);
 
         // Assert.
         // Nothing on this diagram folds, so the two delta kinds that express folding have no
@@ -261,14 +261,14 @@ public class AnsibleElementMapperTests
     public void AFirstPush_IsOneAddAndNoRemove()
     {
         // Act.
-        var deltas = Mapper.Diff([], Everything("infrastructure"));
+        var deltas = DiagramDiff.Between([], Everything("infrastructure"));
 
         // Assert.
         Assert.IsType<DiagramAddDelta>(Assert.Single(deltas));
     }
 
     [Fact]
-    public void SomethingLeavingTheFolder_IsRemovedBeforeTheRestIsResent()
+    public void SomethingLeavingTheFolder_IsRemoved_AndOnlyWhatChangedIsResent()
     {
         // Arrange.
         var before = Everything("infrastructure");
@@ -280,12 +280,22 @@ public class AnsibleElementMapperTests
             var after = Mapper.Visible(project, AnsibleGraph.Derive(project), DiagramViewport.Unbounded);
 
             // Act.
-            var deltas = Mapper.Diff(before, after);
+            var deltas = DiagramDiff.Between(before, after);
 
             // Assert.
             var removed = Assert.IsType<DiagramRemoveDelta>(deltas[0]);
             Assert.Contains("playbook:dbservers.yml", removed.ElementIds);
-            Assert.IsType<DiagramAddDelta>(deltas[1]);
+            // The rest is no longer resent whole: an add carries only what is new or changed
+            // (backend-centralization R4.2), where this used to assert an add of everything.
+            var now = after.ToDictionary(element => element.Id, StringComparer.Ordinal);
+            var unchanged = before
+                .Where(was => now.TryGetValue(was.Id, out var @is) && DiagramDiff.Same(was, @is))
+                .Select(was => was.Id)
+                .ToHashSet(StringComparer.Ordinal);
+            Assert.NotEmpty(unchanged);
+            Assert.DoesNotContain(
+                deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
+                element => unchanged.Contains(element.Id));
         }
         finally
         {
@@ -298,10 +308,12 @@ public class AnsibleElementMapperTests
     {
         // Act.
         var elements = Everything("infrastructure");
-        var deltas = Mapper.Diff(elements, elements);
+        var deltas = DiagramDiff.Between(elements, elements);
 
         // Assert.
         Assert.All(deltas, delta => Assert.IsNotType<DiagramRemoveDelta>(delta));
+        // Nor anything else: an unchanged project resends nothing (backend-centralization R4.2).
+        Assert.Empty(deltas);
     }
 
     // ---- plumbing -----------------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -9,11 +10,11 @@ namespace EtAlii.Adp.Diagram.Databricks.Tests;
 /// </summary>
 public class BundleWriterTests
 {
-    private static DatabricksDocument Load() =>
-        DatabricksDocument.Parse(
+    private static LineDocument Load() =>
+        LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "bundle.yml")));
 
-    private static BundleModel Bundle(DatabricksDocument document) =>
+    private static BundleModel Bundle(LineDocument document) =>
         BundleParser.Parse(DatabricksYaml.Root(document), document);
 
     [Fact]
@@ -43,7 +44,7 @@ public class BundleWriterTests
     public void AddResourceSkeleton_OnAFileWithoutResources_CreatesTheSection()
     {
         // Arrange.
-        var document = DatabricksDocument.Parse("bundle:\r\n  name: fresh\r\n");
+        var document = LineDocument.Parse("bundle:\r\n  name: fresh\r\n");
 
         // Act.
         var refusal = BundleWriter.AddResourceSkeleton(document, Bundle(document), "pipelines", "first");

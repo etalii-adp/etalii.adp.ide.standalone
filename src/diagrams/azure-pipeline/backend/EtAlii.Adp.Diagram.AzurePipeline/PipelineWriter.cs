@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.AzurePipeline;
@@ -11,7 +12,7 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// component here for a reason: the file is executable configuration the repository already owns,
 /// so a stray line is a broken build and a diff somebody has to review. Every edit is therefore
 /// scoped to a property's own lines - found inside the element's range, at the element's own
-/// indentation - and applied through <see cref="PipelineDocument"/>'s splice, which cannot touch
+/// indentation - and applied through <see cref="LineDocument"/>'s splice, which cannot touch
 /// anything outside the range it is given.
 /// </para>
 /// <para>
@@ -30,10 +31,10 @@ public sealed class PipelineWriter
 {
     private static readonly ILogger _logger = Log.ForContext<PipelineWriter>();
 
-    private readonly PipelineDocument _document;
+    private readonly LineDocument _document;
 
     /// <summary>Creates a writer over <paramref name="document"/>.</summary>
-    public PipelineWriter(PipelineDocument document)
+    public PipelineWriter(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         _document = document;
@@ -140,7 +141,7 @@ public sealed class PipelineWriter
             end++;
         }
 
-        _document.Remove(new PipelineLineRange(element.Lines.Start, end));
+        _document.Remove(new LineRange(element.Lines.Start, end));
         return true;
     }
 
@@ -245,7 +246,7 @@ public sealed class PipelineWriter
     /// Whether the lines already say exactly this, in which case writing them would put a
     /// no-op change in somebody's diff.
     /// </summary>
-    private bool Unchanged(PipelineLineRange range, IReadOnlyList<string> lines) =>
+    private bool Unchanged(LineRange range, IReadOnlyList<string> lines) =>
         range.Length == lines.Count &&
         Enumerable.Range(0, lines.Count).All(offset =>
             string.Equals(_document.Lines[range.Start + offset].Text, lines[offset], StringComparison.Ordinal));
@@ -259,12 +260,12 @@ public sealed class PipelineWriter
     /// one of its jobs - a job's properties are always further in - and what stops the search
     /// descending into blocks it has no business editing.
     /// </remarks>
-    private PipelineLineRange? Find(PipelineEditTarget element, string key, int indent)
+    private LineRange? Find(PipelineEditTarget element, string key, int indent)
     {
         for (var index = element.Lines.Start; index <= element.Lines.End; index++)
         {
             var line = _document.Lines[index];
-            if (line.Indent != indent || !StartsWithKey(line.Text, indent, key))
+            if (line.Indent() != indent || !StartsWithKey(line.Text, indent, key))
             {
                 continue;
             }
@@ -272,12 +273,12 @@ public sealed class PipelineWriter
             var end = index;
             while (end + 1 <= element.Lines.End &&
                 !_document.Lines[end + 1].IsBlank &&
-                _document.Lines[end + 1].Indent > indent)
+                _document.Lines[end + 1].Indent() > indent)
             {
                 end++;
             }
 
-            return new PipelineLineRange(index, end);
+            return new LineRange(index, end);
         }
 
         return null;
@@ -308,8 +309,8 @@ public sealed class PipelineWriter
     private int PropertyIndent(PipelineEditTarget element)
     {
         var first = _document.Lines[element.Lines.Start];
-        var text = first.Text.AsSpan(first.Indent);
-        return text.StartsWith("- ") || text.SequenceEqual("-") ? first.Indent + 2 : first.Indent;
+        var text = first.Text.AsSpan(first.Indent());
+        return text.StartsWith("- ") || text.SequenceEqual("-") ? first.Indent() + 2 : first.Indent();
     }
 
     /// <summary>

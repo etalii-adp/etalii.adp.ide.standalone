@@ -12,6 +12,7 @@ import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useSkosStream } from "./useSkosStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { ALTERNATE, HIERARCHY, IRI_FALLBACK, MAPPING, type SkosCollection, type SkosConcept, type SkosModel, type SkosScheme } from "./skosModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /** A concept's drawn width, in the module's own canvas units - matching the layout's spacing. */
 export const CONCEPT_WIDTH = 200;
@@ -303,9 +304,9 @@ export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     // Which anchor the drag began at is which gesture it is - one stateless rel: id either
     // way, and the backend refuses ends that are not both asserted concepts.
     onConnectionDrawn: ({ relationType, sourceElementId, targetElementId }) =>
-      runAction(relationType === "hierarchy" ? "skos.file-under" : "skos.relate", `rel:${sourceElementId}->${targetElementId}`),
+      runAction(relationType === "hierarchy" ? "skos.file-under" : "skos.relate", relationId(sourceElementId, targetElementId)),
     // A drop names a placement - `new:{x},{y}` under the pointer.
-    onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
+    onElementDropped: ({ elementType, position }) => runAction(elementType, placementId(position.x, position.y)),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 

@@ -28,7 +28,7 @@ public static class ShaclWriter
     /// existing blank-rooted shape is a different act and is refused (Requirement 3.3).
     /// </remarks>
     public static string AppendPropertyShapeBlock(
-        RdfDocument document,
+        LineDocument document,
         RdfModel model,
         string shapeIri,
         string pathIri,
@@ -85,7 +85,7 @@ public static class ShaclWriter
     }
 
     /// <summary>Declares one more target on an IRI-named shape, through the family writer.</summary>
-    public static string AddTarget(RdfDocument document, RdfModel model, string shapeIri, string targetPredicateIri, RdfTerm term)
+    public static string AddTarget(LineDocument document, RdfModel model, string shapeIri, string targetPredicateIri, RdfTerm term)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(term);
@@ -108,7 +108,7 @@ public static class ShaclWriter
     /// IRI, the target predicate, and the targeted term - no canvas selection involved
     /// (Requirement 5.3, over the chip address of Requirement 1.3).
     /// </summary>
-    public static string RemoveTarget(RdfDocument document, RdfModel model, string shapeIri, string targetPredicateIri, string termIri)
+    public static string RemoveTarget(LineDocument document, RdfModel model, string shapeIri, string targetPredicateIri, string termIri)
     {
         ArgumentNullException.ThrowIfNull(model);
 
@@ -132,7 +132,7 @@ public static class ShaclWriter
     }
 
     /// <summary>States a new node shape: one subject with one <c>rdf:type sh:NodeShape</c> triple.</summary>
-    public static string CreateNodeShape(RdfDocument document, RdfModel model, string shapeIri)
+    public static string CreateNodeShape(LineDocument document, RdfModel model, string shapeIri)
     {
         ArgumentNullException.ThrowIfNull(model);
 
@@ -144,7 +144,7 @@ public static class ShaclWriter
     /// <summary>
     /// Switches a shape off or back on: adds or removes its <c>sh:deactivated true</c> triple.
     /// </summary>
-    public static string SetDeactivated(RdfDocument document, RdfModel model, string shapeIri, bool deactivated)
+    public static string SetDeactivated(LineDocument document, RdfModel model, string shapeIri, bool deactivated)
     {
         ArgumentNullException.ThrowIfNull(model);
 
@@ -172,7 +172,7 @@ public static class ShaclWriter
     /// <see cref="RdfWriter.ReplaceObjectLiteral"/> where one is already stated - a single-literal
     /// rewrite is exactly what that operation is for - and an added triple where none is.
     /// </summary>
-    public static string SetLiteral(RdfDocument document, RdfModel model, string shapeIri, string predicateIri, string value)
+    public static string SetLiteral(LineDocument document, RdfModel model, string shapeIri, string predicateIri, string value)
     {
         ArgumentNullException.ThrowIfNull(model);
 
@@ -228,7 +228,7 @@ public static class ShaclWriter
     /// statement's triple takes the whole bracketed fragment with it.
     /// </para>
     /// </remarks>
-    public static string RemoveShapeWithSubtrees(RdfDocument document, RdfModel model, string shapeIri)
+    public static string RemoveShapeWithSubtrees(LineDocument document, RdfModel model, string shapeIri)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -428,7 +428,7 @@ public static class ShaclWriter
     /// The start offset of every line, for turning the parser's absolute offsets into a line and
     /// column. Mirrors the family writer's own helper rather than reaching into it.
     /// </summary>
-    private static List<int> LineStarts(RdfDocument document)
+    private static List<int> LineStarts(LineDocument document)
     {
         var starts = new List<int>(document.Lines.Count) { 0 };
         var offset = 0;

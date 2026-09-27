@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
@@ -19,11 +21,11 @@ public sealed record PipelinePool(
     string VmImage,
     IReadOnlyList<string> Demands,
     PipelinePoolOrigin Origin,
-    PipelineLineRange Lines)
+    LineRange Lines)
 {
     /// <summary>No <c>pool</c> declared at this level or any above it.</summary>
     public static PipelinePool None { get; } =
-        new("", "", [], PipelinePoolOrigin.None, PipelineLineRange.Single(0));
+        new("", "", [], PipelinePoolOrigin.None, new LineRange(0, 0));
 
     /// <summary>Whether a pool was declared at all.</summary>
     public bool IsDeclared => Origin != PipelinePoolOrigin.None;

@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/client-centralization/requirements.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790293158908_nu75y4m1u",
       "approvalTitle": "Criterion 11.4, the mirror direction - a class a canvas emits that no stylesheet rule claims - which the USER HAS ALREADY AGREED in substance (Scrum master's chat, 2026-09-25); task 12 in tasks.md claims it in the same commit 24c0a2c1, shown only in this title because a card covers one file"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-27T01:18:24.992Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790470423210_61cq0ckmk",
+      "approvalTitle": "client-centralization requirements: backend's shared width metric everywhere, OWL moves onto it (Req 4.1, 12.1; chat rulings 2026-09-27)"
     }
   ]
 }

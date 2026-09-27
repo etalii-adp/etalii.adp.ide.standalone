@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -12,10 +13,10 @@ namespace EtAlii.Adp.Diagram.AzurePipeline.Tests;
 public class PipelineParserTests
 {
     private static PipelineModel ParseFixture(string name) =>
-        PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
 
-    private static PipelineDocument FixtureDocument(string name) =>
-        PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name)));
+    private static LineDocument FixtureDocument(string name) =>
+        LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name)));
 
     public static TheoryData<string> AllFixtures()
     {
@@ -33,7 +34,7 @@ public class PipelineParserTests
     public void EveryFixture_Parses(string relativePath)
     {
         // Arrange.
-        var document = PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", relativePath)));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", relativePath)));
 
         // Act.
         var model = PipelineParser.Parse(document);
@@ -256,7 +257,7 @@ public class PipelineParserTests
     public void AMultiLineScript_DoesNotBecomeAMultiLineLabel()
     {
         // Arrange.
-        var document = PipelineDocument.Parse(
+        var document = LineDocument.Parse(
             "steps:\n  - script: |\n      echo one\n      echo two\n");
 
         // Act.
@@ -425,7 +426,7 @@ public class PipelineParserTests
     public void ADocumentWithNoStagesJobsOrSteps_ParsesToNothingRatherThanThrowing()
     {
         // Arrange: a file that is valid YAML but declares nothing this module draws.
-        var document = PipelineDocument.Parse("variables:\n  buildConfiguration: Release\n");
+        var document = LineDocument.Parse("variables:\n  buildConfiguration: Release\n");
 
         // Act.
         var model = PipelineParser.Parse(document);

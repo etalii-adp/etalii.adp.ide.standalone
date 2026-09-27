@@ -12,7 +12,7 @@ public class BundleParserTests
 {
     private static BundleModel Parse(string name)
     {
-        var document = DatabricksDocument.Parse(
+        var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
         return BundleParser.Parse(DatabricksYaml.Root(document), document);
     }

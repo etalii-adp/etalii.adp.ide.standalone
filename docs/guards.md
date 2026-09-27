@@ -43,6 +43,7 @@
 | No module selection | `src/client/src/canvas/library/noModuleSelection.test.ts` | Does any module client handle selection? |
 | No private gestures | `src/client/src/canvas/library/noPrivateGestures.test.ts` | Does a migrated module hold private gesture state? |
 | No private label editors | `src/client/src/canvas/label/noPrivateLabelEditors.test.ts` | Does any module build its own in-place editor? |
+| One builder per gesture id | `src/client/src/canvas/gestureIds.test.ts` | Does any client code write a `new:x,y` or `rel:a->b` id by hand, or take a prefix off an id without checking it is there? causal-loop stripped `variable:` by length, so a bare prefix became an empty end and an unprefixed id lost nine characters. |
 | No private scrollbars | `src/client/src/canvas/scroll/noPrivateScrollbars.test.ts` | Does any module build its own scrollbar? |
 | No private view reports | `src/client/src/diagrams/noPrivateViewReports.test.ts` | Does any module build its own view report? |
 | No unstyled library classes | `src/client/src/canvas/library/noUnstyledLibraryClasses.test.ts` | Does every visual class the library emits have a rule behind it? |

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -19,18 +20,18 @@ public class PipelineWriterTests
         + "        - notebook:\r\n"
         + "            path: transformations/bronze\r\n";
 
-    private static DatabricksDocument LoadJson() =>
-        DatabricksDocument.Parse(
+    private static LineDocument LoadJson() =>
+        LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "pipeline.json")));
 
-    private static PipelineModel Pipeline(DatabricksDocument document) =>
+    private static PipelineModel Pipeline(LineDocument document) =>
         Assert.Single(PipelineParser.Parse(DatabricksYaml.Root(document), document));
 
     [Fact]
     public void InsertLibrary_InYaml_AppendsADashEntry()
     {
         // Arrange.
-        var document = DatabricksDocument.Parse(Yaml);
+        var document = LineDocument.Parse(Yaml);
 
         // Act.
         var refusal = PipelineWriter.InsertLibrary(document, Pipeline(document), "file", "transformations/silver.py");
@@ -82,7 +83,7 @@ public class PipelineWriterTests
     public void RemoveLibrary_OfTheOnlyEntry_IsRefused()
     {
         // Arrange.
-        var document = DatabricksDocument.Parse(Yaml);
+        var document = LineDocument.Parse(Yaml);
         var original = document.Text;
 
         // Act & assert.
@@ -114,7 +115,7 @@ public class PipelineWriterTests
     public void SetScalar_InYaml_AddsAMissingKey()
     {
         // Arrange.
-        var document = DatabricksDocument.Parse(Yaml);
+        var document = LineDocument.Parse(Yaml);
 
         // Act.
         var refusal = PipelineWriter.SetScalar(document, Pipeline(document), "catalog", "lakehouse_dev");

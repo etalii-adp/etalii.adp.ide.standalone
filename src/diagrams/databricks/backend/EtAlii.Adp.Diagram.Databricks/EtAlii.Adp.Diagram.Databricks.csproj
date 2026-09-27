@@ -16,7 +16,7 @@
     <!--
       Reading only, for all three formats: JSON is a subset of YAML 1.2, so the pipeline
       settings .json comes through the same door as the two YAML documents. Nothing is ever
-      serialised back through it - every write is a splice through DatabricksDocument.
+      serialised back through it - every write is a splice through core's LineDocument.
     -->
     <PackageReference Include="YamlDotNet" />
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->

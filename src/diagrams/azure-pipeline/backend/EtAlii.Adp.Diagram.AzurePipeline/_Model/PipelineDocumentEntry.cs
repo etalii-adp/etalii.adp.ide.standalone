@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
@@ -13,7 +15,7 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// <param name="Error">Why it could not be parsed; empty when it could.</param>
 /// <param name="ErrorLine">The line the parser stopped at, 1-based; 0 when there was no error.</param>
 public sealed record PipelineDocumentEntry(
-    PipelineDocument Document,
+    LineDocument Document,
     PipelineModel Model,
     string Error,
     int ErrorLine)

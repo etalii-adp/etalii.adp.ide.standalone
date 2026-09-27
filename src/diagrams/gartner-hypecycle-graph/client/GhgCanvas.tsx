@@ -27,6 +27,7 @@ import {
   monthAt,
 } from "./ghgIds";
 import { applyDelta, emptyModel } from "./ghgModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /**
  * What a hype cycle graph is, stated once. Every piece of it is a library declaration: the phased
@@ -209,13 +210,13 @@ export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     onConnectionDrawn: ({ sourceElementId, targetElementId, sourceAttachment, targetAttachment }) => {
       runAction(
         GhgActions.connect,
-        `rel:${gestureEnd(sourceElementId, sourceAttachment)}->${gestureEnd(targetElementId, targetAttachment)}`,
+        relationId(gestureEnd(sourceElementId, sourceAttachment), gestureEnd(targetElementId, targetAttachment)),
       );
     },
     // The backend's toolbox drops its add action; a toolbox derived from the definition drops the type.
     onElementDropped: ({ elementType, position }) => {
       if (elementType === GhgActions.addTrend || elementType === GhgElementTypes.trend) {
-        runAction(GhgActions.addTrend, `new:${position.x},${position.y}`);
+        runAction(GhgActions.addTrend, placementId(position.x, position.y));
       }
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),

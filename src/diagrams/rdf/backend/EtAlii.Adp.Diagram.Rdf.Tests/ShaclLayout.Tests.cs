@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 public class ShaclLayoutTests
 {
     private static ShaclProjectionResult Project(string body) =>
-        ShaclProjection.Project(RdfParser.Parse(RdfDocument.Parse(
+        ShaclProjection.Project(RdfParser.Parse(LineDocument.Parse(
             "@prefix sh: <http://www.w3.org/ns/shacl#> .\n@prefix ex: <http://example.org/> .\n" + body)));
 
     [Fact]

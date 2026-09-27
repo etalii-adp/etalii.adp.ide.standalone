@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </remarks>
 public sealed class RdfParser
 {
-    private readonly RdfDocument _document;
+    private readonly LineDocument _document;
     private readonly RdfTokenizer _tokenizer;
     private readonly List<RdfTriple> _triples = [];
     private readonly List<PrefixDeclaration> _declarations = [];
@@ -29,7 +29,7 @@ public sealed class RdfParser
     private int _baseLine = -1;
     private int _blankOrdinal;
 
-    private RdfParser(RdfDocument document)
+    private RdfParser(LineDocument document)
     {
         _document = document;
         _tokenizer = new RdfTokenizer(document.Text);
@@ -40,7 +40,7 @@ public sealed class RdfParser
     /// What <paramref name="document"/> states. Throws <see cref="RdfParseException"/> naming line
     /// and reason where it is not valid Turtle; the store turns that into the unavailable state.
     /// </summary>
-    public static RdfModel Parse(RdfDocument document)
+    public static RdfModel Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         return new RdfParser(document).ParseDocument();

@@ -1,0 +1,27 @@
+{
+  "reason": "On a row canvas (timeline, dependency-graph) a vertical drag snaps to the nearest row, and both tiers compute that row without asking the other: the client to draw the preview and build the placement id, the backend to persist the row (backend-centralization R9). The rule is: row = y / rowHeight, rounded to the nearest whole number with halves rounded AWAY FROM ZERO, row 0 lying at y = 0. Neither tier's default does that. .NET's Math.Round rounds halves to even, so 2.5 rows lands on row 2 while 1.5 lands on row 2 as well; JavaScript's Math.round rounds halves up, so -0.5 rows lands on row 0 (as -0) while 0.5 lands on row 1. A row is never negative zero: a small upward drag above the origin, or a y of -0, lands on row 0, and a tier whose rows are numbers must normalise -0 to 0 before it compares, formats or sends one. Every y here divides by its rowHeight exactly or lies well clear of a half, so no case depends on floating-point error.",
+  "cases": [
+    { "y": 0, "rowHeight": 60, "row": 0, "why": "the origin" },
+    { "y": -0.0, "rowHeight": 60, "row": 0, "why": "negative zero lands on row 0, not -0" },
+    { "y": -12, "rowHeight": 60, "row": 0, "why": "a small upward drag above the origin: -0.2 rows, which Math.round turns into -0" },
+    { "y": 30, "rowHeight": 60, "row": 1, "why": "exact half above zero: 0.5 rows rounds away from zero" },
+    { "y": -30, "rowHeight": 60, "row": -1, "why": "exact half below zero: -0.5 rows rounds away from zero, where Math.round gives -0" },
+    { "y": 90, "rowHeight": 60, "row": 2, "why": "exact half: 1.5 rows" },
+    { "y": 150, "rowHeight": 60, "row": 3, "why": "exact half: 2.5 rows, where rounding half to even gives 2" },
+    { "y": -90, "rowHeight": 60, "row": -2, "why": "exact half below zero: -1.5 rows" },
+    { "y": -150, "rowHeight": 60, "row": -3, "why": "exact half below zero: -2.5 rows, where rounding half to even gives -2 and Math.round gives -2" },
+    { "y": 29.99, "rowHeight": 60, "row": 0, "why": "just short of the half above zero" },
+    { "y": 30.01, "rowHeight": 60, "row": 1, "why": "just past the half above zero" },
+    { "y": -29.99, "rowHeight": 60, "row": 0, "why": "just short of the half below zero" },
+    { "y": -30.01, "rowHeight": 60, "row": -1, "why": "just past the half below zero" },
+    { "y": 70, "rowHeight": 60, "row": 1, "why": "between lines, nearer the upper one" },
+    { "y": 100, "rowHeight": 60, "row": 2, "why": "between lines, nearer the lower one" },
+    { "y": 180, "rowHeight": 60, "row": 3, "why": "exactly on a row" },
+    { "y": -120, "rowHeight": 60, "row": -2, "why": "a negative row, exactly on its line" },
+    { "y": -100, "rowHeight": 60, "row": -2, "why": "a negative row, between lines" },
+    { "y": -70, "rowHeight": 60, "row": -1, "why": "a negative row, between lines, nearer zero" },
+    { "y": 62.5, "rowHeight": 25, "row": 3, "why": "the row height is a parameter: 2.5 rows of 25" },
+    { "y": -62.5, "rowHeight": 25, "row": -3, "why": "the row height is a parameter: -2.5 rows of 25" },
+    { "y": 37.5, "rowHeight": 25, "row": 2, "why": "the row height is a parameter: 1.5 rows of 25" }
+  ]
+}

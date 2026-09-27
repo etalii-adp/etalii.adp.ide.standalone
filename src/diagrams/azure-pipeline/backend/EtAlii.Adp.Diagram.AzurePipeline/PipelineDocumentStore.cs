@@ -46,7 +46,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     public PipelineDocumentStore()
     {
         _lifecycle = new WritableDocumentLifecycle<PipelineDocumentEntry>(
-            (path, text) => Parse(_roots[path], path, PipelineDocument.Parse(text)),
+            (path, text) => Parse(_roots[path], path, LineDocument.Parse(text)),
             entry => entry.Document.Text);
     }
 
@@ -141,7 +141,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
     /// carried as an entry with an error rather than thrown out of the store. The line comes from
     /// the parser and is what makes the message worth reading.
     /// </remarks>
-    private PipelineDocumentEntry Parse(string rootPath, string path, PipelineDocument document)
+    private PipelineDocumentEntry Parse(string rootPath, string path, LineDocument document)
     {
         try
         {
