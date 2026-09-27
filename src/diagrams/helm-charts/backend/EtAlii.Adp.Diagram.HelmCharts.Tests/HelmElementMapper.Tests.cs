@@ -144,7 +144,7 @@ public class HelmElementMapperTests
     }
 
     [Fact]
-    public void Diff_RemovesWhatVanished_ThenUpsertsWhatRemains()
+    public void Diff_RemovesWhatVanished_AndResendsNothingThatStayed()
     {
         // Arrange.
         var (chart, graph) = WellFormed();
@@ -157,14 +157,13 @@ public class HelmElementMapperTests
             .ToArray();
 
         // Act.
-        var deltas = mapper.Diff(before, after);
+        var deltas = DiagramDiff.Between(before, after);
 
         // Assert.
-        Assert.Equal(2, deltas.Count);
-        var remove = Assert.IsType<DiagramRemoveDelta>(deltas[0]);
+        var remove = Assert.IsType<DiagramRemoveDelta>(Assert.Single(deltas));
         Assert.Equal(2, remove.ElementIds.Count);
-        var add = Assert.IsType<DiagramAddDelta>(deltas[1]);
-        Assert.Equal(after.Length, add.Elements.Count);
+        // What stayed is unchanged, so nothing is resent: the module used to upsert all of it
+        // again, and the shared diff sends only what changed (backend-centralization R4.2).
         // Never a group or ungroup: nothing here folds, nothing here is edited.
     }
 

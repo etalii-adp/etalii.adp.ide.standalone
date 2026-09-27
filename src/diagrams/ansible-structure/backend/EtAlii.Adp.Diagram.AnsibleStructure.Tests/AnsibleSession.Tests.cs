@@ -96,14 +96,24 @@ public class AnsibleSessionTests : IDisposable
         // Arrange.
         await using var session = Open();
         session.Baseline();
-        session.UpdateView(new DiagramViewport(-10, -10, 10, 10));
+        var left = session.UpdateView(new DiagramViewport(-10, -10, 10, 10))
+            .OfType<DiagramRemoveDelta>()
+            .SelectMany(delta => delta.ElementIds)
+            .ToArray();
 
         // Act.
         var deltas = session.UpdateView(DiagramViewport.Unbounded);
 
         // Assert.
+        // Everything that left comes back. This used to look for role:postgres in an add of
+        // everything - but postgres never leaves that viewport (the one-hop pull reaches it
+        // through dbservers.yml), and the add is no longer everything: only what changed is
+        // sent (backend-centralization R4.2), so the test asks about what actually left.
+        Assert.NotEmpty(left);
         var added = Assert.IsType<DiagramAddDelta>(deltas.Last(delta => delta is DiagramAddDelta));
-        Assert.Contains(added.Elements, element => element.Id == "role:postgres");
+        Assert.Equal(
+            left.Order(StringComparer.Ordinal),
+            added.Elements.Select(element => element.Id).Order(StringComparer.Ordinal));
     }
 
     // ---- following the folder ----------------------------------------------------------------
@@ -130,6 +140,39 @@ public class AnsibleSessionTests : IDisposable
         var deltas = await WaitForPush(pushes);
         var removed = Assert.IsType<DiagramRemoveDelta>(deltas.First(delta => delta is DiagramRemoveDelta));
         Assert.Contains("playbook:dbservers.yml", removed.ElementIds);
+    }
+
+    /// <summary>
+    /// A change on disk sends what changed, not the whole diagram again (backend-centralization
+    /// R4.2): nothing the push adds is identical to what this connection already holds.
+    /// </summary>
+    [Fact]
+    public async Task AChangeOnDisk_ResendsOnlyWhatChanged()
+    {
+        // Arrange.
+        await using var session = Open();
+        var delivered = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements
+            .ToDictionary(element => element.Id, StringComparer.Ordinal);
+        var pushes = new List<IReadOnlyList<DiagramDelta>>();
+        session.Changed += (_, args) =>
+        {
+            lock (pushes)
+            {
+                pushes.Add(args.Deltas);
+            }
+        };
+
+        // Act.
+        File.Delete(IoPath.Combine(_root, "dbservers.yml"));
+
+        // Assert.
+        var deltas = await WaitForPush(pushes);
+        Assert.Contains(deltas, delta => delta is DiagramRemoveDelta);
+        var added = deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToArray();
+        Assert.DoesNotContain(added, element =>
+            delivered.TryGetValue(element.Id, out var was) && DiagramDiff.Same(was, element));
+        // A role the deleted playbook never named is untouched, so it is not resent.
+        Assert.DoesNotContain(added, element => element.Id == "role:nginx");
     }
 
     [Fact]

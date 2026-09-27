@@ -1,10 +1,11 @@
-using System.Globalization;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
 /// The synthetic element id a canvas gesture uses to name a place where no node exists yet:
 /// <c>new:{x},{row}</c>.
+/// Built and parsed by the shared <see cref="GestureIds"/> grammar (backend-centralization R11.1).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,26 +27,10 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 public static class DependencyGraphNewPlacement
 {
-    private const string Prefix = "new:";
-
     /// <summary>The id for a placement, as the canvas writes it.</summary>
-    public static string IdFor(double x, int row) =>
-        string.Create(CultureInfo.InvariantCulture, $"{Prefix}{x},{row}");
+    public static string IdFor(double x, int row) => GestureIds.RowPlacement(x, row);
 
     /// <summary>Whether <paramref name="elementId"/> is a placement id, and what it carries.</summary>
-    public static bool TryParse(string? elementId, out double x, out int row)
-    {
-        x = 0;
-        row = 0;
-
-        if (elementId is null || !elementId.StartsWith(Prefix, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        var parts = elementId[Prefix.Length..].Split(',');
-        return parts.Length == 2
-            && double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out x)
-            && int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out row);
-    }
+    public static bool TryParse(string? elementId, out double x, out int row) =>
+        GestureIds.TryParseRowPlacement(elementId, out x, out row);
 }

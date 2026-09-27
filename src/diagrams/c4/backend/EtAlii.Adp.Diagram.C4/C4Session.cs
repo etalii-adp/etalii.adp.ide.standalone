@@ -9,11 +9,16 @@ namespace EtAlii.Adp.Diagram.C4;
 /// "model once, view many" - so an edit through any of them reaches all of them through the
 /// store's change event (c4-diagrams Requirements 1.2, 1.5).
 /// </summary>
+/// <remarks>
+/// A change of any shape - an edit here, an edit through another view, an external save, a
+/// viewport report - is answered the same way: the view is rendered again and diffed against what
+/// this connection was last given. Both the diff and the reaction to the store's event are the
+/// shared ones (backend-centralization R4 and R5).
+/// </remarks>
 public sealed class C4Session : IDiagramSession
 {
     private static readonly ILogger _logger = Log.ForContext<C4Session>();
 
-    private readonly ShortGuid _watchId;
     private readonly string _bodyPath;
     private readonly string? _viewKey;
     private readonly IC4DocumentStore _documents;
@@ -24,10 +29,12 @@ public sealed class C4Session : IDiagramSession
 
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
-    /// <summary>The element ids this connection was last given - what a later change removes from.</summary>
-    private HashSet<string> _delivered = new(StringComparer.Ordinal);
-
-    private readonly Lock _deliveredGate = new();
+    /// <summary>
+    /// What this connection was last given, and the one way it is changed. The removals a change
+    /// sends are measured against it, because by then the document no longer contains a deleted
+    /// element to compare with.
+    /// </summary>
+    private readonly DiagramDocumentChangeHandler _changes;
 
     public C4Session(
         ShortGuid watchId,
@@ -41,12 +48,18 @@ public sealed class C4Session : IDiagramSession
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
 
-        _watchId = watchId;
+        // Nothing here is per watch any longer: the watch id was only ever named in the push's
+        // log line, and the push is the shared handler's now.
+        _ = watchId;
         _bodyPath = bodyPath;
         _viewKey = viewKey;
         _documents = documents;
         _mapper = mapper;
         _history = history;
+        _changes = new DiagramDocumentChangeHandler(
+            bodyPath,
+            Visible,
+            deltas => Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas)));
         _documents.Changed += OnDocumentChanged;
     }
 
@@ -54,33 +67,14 @@ public sealed class C4Session : IDiagramSession
 
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        var elements = Visible();
-        Delivered(elements);
+        var elements = _changes.Deliver();
         return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        var before = Visible().Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         _viewport = viewport;
-        var after = Visible();
-
-        var removed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
-        if (removed.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(removed));
-        }
-
-        Delivered(after);
-        return deltas;
+        return _changes.Refresh();
     }
 
     /// <summary>
@@ -178,62 +172,6 @@ public sealed class C4Session : IDiagramSession
         return view is null ? [] : _mapper.Visible(workspace, view, _viewport, _bodyPath);
     }
 
-    private void OnDocumentChanged(object? sender, C4DocumentChangedEventArgs args)
-    {
-        if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        // Adds are upserts, so re-delivering the whole view is how a change of any shape - an
-        // edit here, an edit through another view, an external save - reaches this connection.
-        //
-        // AND WHAT IS GONE IS SAID, NOT LEFT. The client folds an add as an upsert and takes an
-        // element off the canvas only on a remove delta (c4Model.ts), so re-delivering what is
-        // still there never removes what is not: an element deleted in a text editor stayed on
-        // the canvas until the diagram was reopened. And a change that deleted everything pushed
-        // nothing at all. The removals are measured against what THIS connection was last given,
-        // because by now the document no longer contains the deleted element to compare with.
-        var elements = Visible();
-        var removed = Delivered(elements);
-
-        var deltas = new List<DiagramDelta>();
-        if (elements.Count > 0)
-        {
-            deltas.Add(new DiagramAddDelta(elements));
-        }
-
-        if (removed.Count > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(removed));
-        }
-
-        if (deltas.Count > 0)
-        {
-            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-        }
-
-        _logger.Debug(
-            "Pushed {Count} elements and {Removed} removals to watch {WatchId} after {Path} changed",
-            elements.Count,
-            removed.Count,
-            _watchId,
-            args.Path);
-    }
-
-    /// <summary>
-    /// Records <paramref name="elements"/> as what this connection now holds, and returns the ids
-    /// it held before that are no longer among them. Guarded because a document change arrives on
-    /// the watcher's thread while a baseline or a view update arrives on a request's.
-    /// </summary>
-    private IReadOnlyList<string> Delivered(IReadOnlyList<DiagramElement> elements)
-    {
-        var now = elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        lock (_deliveredGate)
-        {
-            var gone = _delivered.Where(id => !now.Contains(id)).ToArray();
-            _delivered = now;
-            return gone;
-        }
-    }
+    private void OnDocumentChanged(object? sender, C4DocumentChangedEventArgs args) =>
+        _changes.OnDocumentChanged(args.Path);
 }

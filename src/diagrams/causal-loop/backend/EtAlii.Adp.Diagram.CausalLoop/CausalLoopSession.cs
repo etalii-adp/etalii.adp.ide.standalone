@@ -1,6 +1,5 @@
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
-using Serilog;
 
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
@@ -16,20 +15,28 @@ namespace EtAlii.Adp.Diagram.CausalLoop;
 /// happens to be looking, so the diagram crawls under them as they pan (Requirement 10.3).
 /// </para>
 /// <para>
-/// <b>Add for what appeared, then Remove for what left.</b> That order is the one the reference
-/// sessions emit in, and it is deliberate - adding first means the reader never sees a frame with
-/// a hole in it where the incoming content has not arrived yet.
+/// <b>What is new or changed is added, what is gone is removed - removals first.</b> Both a view
+/// change and a document change are diffed against what this connection was last given, with the
+/// one diff every module shares, whose order is one order for all of them (backend-centralization
+/// R4.5): removing first can never delete something the same batch just added.
 /// </para>
 /// <para>
 /// <b>A document change re-filters through the same viewport.</b> A change handler that rendered
 /// unfiltered would re-send everything the viewport had just culled, which is invisible until
 /// somebody edits a document while zoomed in.
 /// </para>
+/// <para>
+/// <b>Only a read failure is caught.</b> The reaction to a document change is the shared one
+/// (backend-centralization R5), which logs a file that vanished or locked mid-reload as a warning
+/// naming the path and raises nothing. Anything else - a defect in the layout or the mapper -
+/// propagates out of the store's change event to whoever raised it: for a change on disk that is
+/// the reload bridge, whose folder watcher guards every event it dispatches and logs the failure
+/// as an error naming the path. Until R5.2 this session caught every failure and logged it as its
+/// own error, which hid a defect behind the same kind of line as a locked file.
+/// </para>
 /// </remarks>
 internal sealed class CausalLoopSession : IDiagramSession
 {
-    private static readonly ILogger _logger = Log.ForContext<CausalLoopSession>();
-
     private readonly string _bodyPath;
     private readonly string? _registrationPath;
     private readonly ICausalLoopDocumentStore _documents;
@@ -38,8 +45,8 @@ internal sealed class CausalLoopSession : IDiagramSession
     /// <summary>The project's history, so an arrangement is one undo away. Null makes the diagram read-only.</summary>
     private readonly IHistoryStack? _history;
 
-    /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
-    private IReadOnlyList<DiagramElement> _delivered = [];
+    /// <summary>What this connection was last sent, and the one way it is changed.</summary>
+    private readonly DiagramDocumentChangeHandler _changes;
 
     /// <summary>
     /// The last viewport this connection reported. Unbounded until it reports one, so a client
@@ -64,6 +71,11 @@ internal sealed class CausalLoopSession : IDiagramSession
         _mapper = mapper;
         _history = history;
 
+        // Rendered through the same viewport the connection last reported, whatever the cause.
+        _changes = new DiagramDocumentChangeHandler(
+            bodyPath,
+            Render,
+            deltas => Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas)));
         _documents.Changed += OnDocumentChanged;
     }
 
@@ -73,8 +85,7 @@ internal sealed class CausalLoopSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        var elements = Render();
-        _delivered = elements;
+        var elements = _changes.Deliver();
 
         return elements.Count > 0 ? [new DiagramAddDelta(elements)] : [];
     }
@@ -82,27 +93,8 @@ internal sealed class CausalLoopSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        var before = _delivered.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         _viewport = viewport;
-
-        var after = Render();
-        _delivered = after;
-
-        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
-        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
-        if (departed.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(departed));
-        }
-
-        return deltas;
+        return _changes.Refresh();
     }
 
     /// <summary>Refused: nothing in this diagram nests under a parent - its place is a position.</summary>
@@ -249,43 +241,6 @@ internal sealed class CausalLoopSession : IDiagramSession
         return _mapper.Visible(entry.Model, boxes, _viewport);
     }
 
-    private void OnDocumentChanged(object? sender, CausalLoopDocumentChangedEventArgs args)
-    {
-        if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        try
-        {
-            // Rendered through the same viewport the connection last reported. Rendering
-            // unfiltered here would re-send everything the viewport just culled.
-            var current = Render();
-            var before = _delivered.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-            _delivered = current;
-
-            var deltas = new List<DiagramDelta>();
-            var gone = before.Except(current.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-            if (current.Count > 0)
-            {
-                deltas.Add(new DiagramAddDelta(current));
-            }
-
-            if (gone.Length > 0)
-            {
-                deltas.Add(new DiagramRemoveDelta(gone));
-            }
-
-            if (deltas.Count > 0)
-            {
-                Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-            }
-        }
-        catch (Exception exception)
-        {
-            // A push that cannot be built loses that push and says so; the next change catches
-            // the diagram up. Never the connection's death.
-            _logger.Error(exception, "Re-rendering {Body} after a change failed", _bodyPath);
-        }
-    }
+    private void OnDocumentChanged(object? sender, CausalLoopDocumentChangedEventArgs args) =>
+        _changes.OnDocumentChanged(args.Path);
 }
