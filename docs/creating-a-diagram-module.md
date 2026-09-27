@@ -85,6 +85,8 @@ Every edit is an `ICommand` with a matching handler, dispatched through the hist
 
 The core contract carries every diagram the same way: elements with an id, a position, a mime-style element type, and a `google.protobuf.Any` payload core never interprets. Your module defines those payloads in its own `api/` folder — timeline's [`timeline.proto`](../src/diagrams/timeline/api/timeline.proto) — and packs them in its element mapper. Core's `.proto` files in [`src/api/`](../src/api/) are not edited.
 
+Each element type is a public constant on the module's mapper, shaped `vendor/type+kind` — timeline's `PeriodType` in [`TimelineElementMapper.cs`](../src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/TimelineElementMapper.cs). Name every one in [`ElementTypeCatalog.cs`](../src/backend/EtAlii.Adp.Backend.Tests/Unit%20Tests/ElementTypeCatalog.cs), under the module's folder name and as an element or a relation: `ElementTypesTests` fails on a constant of that shape the catalog does not name, and writes [`src/fixtures/cross-tier/element-types.json`](../src/fixtures/cross-tier/element-types.json) from the catalog, which the client suite reads against the type ids your client declares. Commit the file it rewrites.
+
 A module with its own proto joins two generation paths:
 
 - Backend: the `.csproj` includes the proto through `Grpc.Tools`, compiled at build time.
