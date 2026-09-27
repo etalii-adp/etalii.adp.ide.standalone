@@ -1,0 +1,28 @@
+/*
+ * What this notation needs that the shared appearance has no opinion about: the fill of each of the
+ * four phases, and the chevrons between them. Everything else comes from canvas.css.
+ *
+ * The colours are theme tokens from index.css, with their dark values beside them there, and every
+ * fill is contrast-checked against the chevron in moduleThemeContrast.test.ts. The two-class
+ * selectors outrank `.library-segment`, which paints a segment with the surface colour.
+ */
+
+.library-segment.ghg-peak {
+  fill: var(--color-diagram-hype-peak);
+}
+
+.library-segment.ghg-trough {
+  fill: var(--color-diagram-hype-trough);
+}
+
+.library-segment.ghg-slope {
+  fill: var(--color-diagram-hype-slope);
+}
+
+.library-segment.ghg-plateau {
+  fill: var(--color-diagram-hype-plateau);
+}
+
+.ghg-trend .library-segment-divider {
+  stroke: var(--color-diagram-hype-chevron);
+}
