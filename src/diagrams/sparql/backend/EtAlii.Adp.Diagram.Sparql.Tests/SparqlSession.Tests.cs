@@ -63,19 +63,23 @@ public class SparqlSessionTests : IDisposable
 
     /// <summary>
     /// The loop this task closes (view-delta-adoption Requirements 1.2, 1.3): a changed
-    /// viewport answers with what came into view and what left it, in that order. Viewports are
+    /// viewport answers with what left the view and what came into it, in that order - the shared
+    /// diff's order (backend-centralization R4.5), where this used to pin the opposite. Viewports are
     /// derived from where the elements actually are, so a layout change moves the test with the
     /// code rather than breaking it.
     /// </summary>
     [Fact]
-    public async Task AChangedViewport_AddsWhatAppearedThenRemovesWhatLeft()
+    public async Task AChangedViewport_RemovesWhatLeftThenAddsWhatAppeared()
     {
         // Arrange.
         var body = CopyFixture("groups.rq");
         await using var session = Open(body, WriteRegistration("groups.rq"));
-        var all = ElementsOf(session);
-        var leftmost = all.MinBy(element => element.X)!;
-        var rightmost = all.MaxBy(element => element.X)!;
+        // Regions, because they are placed: an edge, a note or the header sits at the origin, so
+        // the leftmost of everything is a window that holds no region at all, and panning from
+        // there only ever adds - which would pass against either order.
+        var regions = ElementsOf(session).Where(element => element.Type == SparqlElementMapper.RegionType).ToList();
+        var leftmost = regions.MinBy(element => element.X)!;
+        var rightmost = regions.MaxBy(element => element.X)!;
         Assert.NotEqual(leftmost.Id, rightmost.Id);
 
         // Act.
@@ -85,10 +89,12 @@ public class SparqlSessionTests : IDisposable
         // Assert: narrowing removed the far element...
         Assert.Contains(rightmost.Id, narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
 
-        // ...and moving across added it back, Add before Remove.
+        // ...and moving across added it back, Remove before Add (backend-centralization R4.5).
         Assert.Contains(moved.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements), element => element.Id == rightmost.Id);
-        Assert.IsType<DiagramAddDelta>(moved[0]);
-        Assert.True(moved.Count == 1 || moved[1] is DiagramRemoveDelta);
+        Assert.Collection(
+            moved,
+            removed => Assert.Contains(leftmost.Id, Assert.IsType<DiagramRemoveDelta>(removed).ElementIds),
+            added => Assert.IsType<DiagramAddDelta>(added));
     }
 
     /// <summary>

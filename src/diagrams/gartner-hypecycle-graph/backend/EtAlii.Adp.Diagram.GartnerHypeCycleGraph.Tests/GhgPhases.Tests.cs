@@ -150,12 +150,46 @@ public class GhgPhasesTests
         }
     }
 
+    /// <summary>
+    /// backend-centralization R9.1: a row is found through the one shared rounding rule, so a top exactly
+    /// between two rows rounds away from zero. 2.5 and -2.5 rows are the halves where rounding half to
+    /// even (.NET's default) gives 2 and -2, and 0.5 and -0.5 are where it gives 0 - so a copy that
+    /// dropped the midpoint rule lands a row short here.
+    /// </summary>
+    [Theory]
+    [InlineData(0.5, 1)]
+    [InlineData(-0.5, -1)]
+    [InlineData(2.5, 3)]
+    [InlineData(-2.5, -3)]
+    public void ATopExactlyBetweenRows_RoundsAwayFromZero(double rows, int expected)
+    {
+        Assert.Equal(expected, GhgScale.RowAtTop(rows * GhgScale.RowStep));
+        Assert.Equal(expected, GhgScale.RowAtMiddle((rows * GhgScale.RowStep) + (GhgScale.TrendHeight / 2)));
+    }
+
+    /// <summary>
+    /// backend-centralization R9.1: this module's row is the shared rule's row at every quarter-row from
+    /// -5 to 5, halves included, so the two cannot drift apart.
+    /// </summary>
+    [Fact]
+    public void TheRowAtATop_IsTheSharedRowRounding()
+    {
+        for (var quarter = -20; quarter <= 20; quarter++)
+        {
+            var top = quarter * GhgScale.RowStep / 4;
+            Assert.Equal(RowRounding.ToNearestRow(top, GhgScale.RowStep), GhgScale.RowAtTop(top));
+        }
+    }
+
     [Theory]
     [InlineData("1900-13")]
     [InlineData("1900-00")]
     [InlineData("1900")]
     [InlineData("19000-01")]
     [InlineData("1900-1")]
+    [InlineData("-900-01")]
+    [InlineData("+1900-01")]
+    [InlineData("-1234567-01")]
     public void AMonthThatIsNotYyyyMm_DoesNotParse(string text) => Assert.Null(GhgScale.ParseMonth(text));
 
     private static (double X, double Y, double Width) Drawn(GhgElementMapper mapper, GhgTrend trend)

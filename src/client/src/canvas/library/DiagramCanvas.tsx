@@ -32,6 +32,7 @@ import { CenteredBoxElement } from "../elements/centered-box/CenteredBoxElement"
 import { EllipseElement } from "../elements/ellipse/EllipseElement";
 import { FrameElement } from "../elements/frame/FrameElement";
 import { SpanElement } from "../elements/span/SpanElement";
+import { LABEL_FONT_SIZE, widthOf } from "../label/textMetrics";
 import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
@@ -2128,6 +2129,16 @@ export function DiagramCanvasCore({
               {filterError}
             </div>
           )}
+          {definition.filter.legend !== undefined && definition.filter.legend.length > 0 && (
+            <ul className="library-filter-legend" aria-label="Legend">
+              {definition.filter.legend.map((entry) => (
+                <li key={entry.caption} className="library-filter-legend-entry">
+                  <span className={`library-filter-legend-swatch ${entry.swatchClass}`} aria-hidden="true" />
+                  {entry.caption}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
@@ -3784,7 +3795,7 @@ function declaredNumberOf(value: import("./definition/diagramDefinition").Declar
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {
-  const width = element.width ?? (type?.sizing === "content" ? Math.max(DEFAULT_WIDTH, (element.label?.length ?? 0) * 8 + 16) : DEFAULT_WIDTH);
+  const width = element.width ?? (type?.sizing === "content" ? Math.max(DEFAULT_WIDTH, widthOf(element.label ?? "", LABEL_FONT_SIZE) + 16) : DEFAULT_WIDTH);
   const height = element.height ?? DEFAULT_HEIGHT;
   return { x: element.x - width / 2, y: element.y - height / 2, width, height };
 }

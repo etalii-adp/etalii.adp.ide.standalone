@@ -8,6 +8,7 @@ import {
 } from "./shaclModel";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
+import { capacityOf, LABEL_FONT_SIZE } from "@client/canvas/label/textMetrics";
 
 let currentModel: ShaclModel = emptyShaclModel;
 let currentLoading = false;
@@ -155,10 +156,11 @@ describe("ShaclCanvas", () => {
     const drawn = container.querySelector("text.shacl-row-summary")!;
     expect(drawn.textContent!.endsWith("…")).toBe(true);
     expect(summary.startsWith(drawn.textContent!.slice(0, -1))).toBe(true);
-    // The path's x is the card's left edge plus its 8 inset; by truncation's own 7-per-character
-    // estimate the summary must end eight short of the right edge.
+    // The path's x is the card's left edge plus its 8 inset; by truncation's own metric the
+    // summary must end eight short of the right edge.
     const left = Number(path.getAttribute("x")) - 8;
-    expect(Number(drawn.getAttribute("x")) - left + drawn.textContent!.length * 7).toBeLessThanOrEqual(CARD_WIDTH - 8);
+    const room = CARD_WIDTH - 8 - (Number(drawn.getAttribute("x")) - left);
+    expect(drawn.textContent!.length).toBeLessThanOrEqual(capacityOf(room, LABEL_FONT_SIZE));
   });
 
   it("renders an absent target exactly like a present one", () => {

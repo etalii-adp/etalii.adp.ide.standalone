@@ -48,9 +48,9 @@ public sealed class DisconnectTimelineConnectionCommandHandler : ICommandHandler
             TimelineWriter.RemoveConnectionsSectionIfEmpty(entry.Document, TimelineParser.Parse(entry.Document));
         }
 
-        var error = _documents.Save(command.BodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = _documents.Save(command.BodyPath, entry);
+        return Task.FromResult(!saved.Failed
             ? CommandResult.Success(inverse)
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 }

@@ -413,6 +413,35 @@
   border-color: var(--color-danger, #dc2626);
 }
 
+/* A filter box's legend: a row of small swatches and captions under the box. A module colours
+   each swatch through the class its entry names. */
+.library-filter-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 2px 6px;
+  list-style: none;
+  font-size: 11px;
+  color: var(--color-text, #1f2430);
+  background: var(--color-surface, #ffffff);
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.library-filter-legend-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.library-filter-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--color-border, #d6dae2);
+  border-radius: 2px;
+}
+
 .library-filter-error {
   font-size: 11px;
   color: var(--color-danger, #dc2626);

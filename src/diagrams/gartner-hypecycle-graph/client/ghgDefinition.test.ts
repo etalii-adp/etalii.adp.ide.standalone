@@ -59,6 +59,13 @@ describe("the hype cycle graph's definition", () => {
     expect(GHG_DEFINITION.chrome?.rulers).toHaveLength(1);
     expect(GHG_DEFINITION.chrome!.rulers![0]).toMatchObject({ edge: "bottom", scale: { unit: "month", unitsPerStep: 4, origin: "1900-01" } });
     expect(GHG_DEFINITION.filter).toMatchObject({ field: "payload.tags" });
+    // Its legend keys the four phase colours, each swatch carrying the class its phase is painted by.
+    expect(GHG_DEFINITION.filter!.legend).toEqual([
+      { caption: "Peak", swatchClass: "ghg-peak" },
+      { caption: "Trough", swatchClass: "ghg-trough" },
+      { caption: "Slope", swatchClass: "ghg-slope" },
+      { caption: "Plateau", swatchClass: "ghg-plateau" },
+    ]);
     expect(GHG_DEFINITION.layout.modes).toEqual(["manual"]);
   });
 });

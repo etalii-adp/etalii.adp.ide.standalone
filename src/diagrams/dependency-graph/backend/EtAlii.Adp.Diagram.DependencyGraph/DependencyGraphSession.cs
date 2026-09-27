@@ -69,9 +69,9 @@ public sealed class DependencyGraphSession : IDiagramSession
     }
 
     /// <summary>
-    /// What the reported viewport changes: an Add for the elements it newly admits, then a
-    /// Remove for the ones that left. The order is the one both reference implementations use
-    /// (view-delta-adoption Requirement 4.3, as the design corrected it).
+    /// What the reported viewport changes: a Remove for the elements that left, then an Add for
+    /// the ones it newly admits - the shared diff's order (backend-centralization R4.5), which
+    /// supersedes the add-first order view-delta-adoption Requirement 4.3 settled on.
     /// </summary>
     /// <remarks>
     /// The same render and the same diff a document change goes through, so the two paths cannot
@@ -85,7 +85,7 @@ public sealed class DependencyGraphSession : IDiagramSession
         _viewport = viewport;
 
         var current = Render();
-        var deltas = _mapper.Diff(_delivered, current);
+        var deltas = DiagramDiff.Between(_delivered, current);
         _delivered = current;
 
         return deltas;
@@ -167,7 +167,7 @@ public sealed class DependencyGraphSession : IDiagramSession
         try
         {
             var current = Render();
-            var deltas = _mapper.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)

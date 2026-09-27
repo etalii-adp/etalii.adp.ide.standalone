@@ -39,7 +39,7 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
     public DatabricksDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
-    public string Save(string path, DatabricksDocumentEntry entry)
+    public DocumentSaveResult Save(string path, DatabricksDocumentEntry entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
@@ -49,7 +49,7 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
             // Writing a document whose models are empty because it never parsed would replace a
             // file somebody can still fix with one this module invented.
             _logger.Warning("Refusing to write {Path}: it does not parse ({Error})", path, entry.Error);
-            return $"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}";
+            return DocumentSaveResult.Failure($"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}");
         }
 
         // The document's own lines are authoritative and unchanged by writing them out, but what
@@ -59,11 +59,11 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
         var result = _lifecycle.Save(path, reparsed);
         if (result.Failed)
         {
-            return result.Error;
+            return result;
         }
 
         Changed?.Invoke(this, new DatabricksDocumentChangedEventArgs(path, reparsed));
-        return "";
+        return DocumentSaveResult.Ok;
     }
 
     /// <inheritdoc />

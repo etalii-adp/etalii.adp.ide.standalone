@@ -123,13 +123,14 @@ public class DependencyGraphSessionTests : IDisposable
 
     /// <summary>
     /// The behavioural half of the view-delta loop: a changed viewport produces deltas, in the
-    /// Add-then-Remove order both reference implementations use. This is the test that fails
+    /// Remove-then-Add order of the shared diff (backend-centralization R4.5, which replaced the
+    /// Add-then-Remove order this test used to pin). This is the test that fails
     /// against the `return []` this session answered with before adoption - asserting that the
     /// client called `UpdateView` would not, because an empty answer passes that too
     /// (view-delta-adoption Requirement 1.3).
     /// </summary>
     [Fact]
-    public void AChangedViewport_AddsWhatAppeared_ThenRemovesWhatLeft()
+    public void AChangedViewport_RemovesWhatLeft_ThenAddsWhatAppeared()
     {
         // Arrange: opened whole, then narrowed to the connected pair - the island leaves.
         var path = Write(GraphWithAnIsland);
@@ -140,10 +141,10 @@ public class DependencyGraphSessionTests : IDisposable
         // Act: move the view to the island, which no span reaches.
         var deltas = session.Value.UpdateView(new DiagramViewport(19_900, -10, 20_500, 60));
 
-        // Assert: Add first, then Remove - the order the design corrected Requirement 4.3 to.
+        // Assert: Remove first, then Add - the shared diff's order (backend-centralization R4.5).
         Assert.Equal(2, deltas.Count);
-        var appeared = Assert.IsType<DiagramAddDelta>(deltas[0]);
-        var departed = Assert.IsType<DiagramRemoveDelta>(deltas[1]);
+        var departed = Assert.IsType<DiagramRemoveDelta>(deltas[0]);
+        var appeared = Assert.IsType<DiagramAddDelta>(deltas[1]);
         Assert.Equal(["island"], appeared.Elements.Select(element => element.Id));
         Assert.Equal(["aaa", "bbb", "ccc"], departed.ElementIds.Order());
     }
@@ -167,9 +168,10 @@ public class DependencyGraphSessionTests : IDisposable
         var moved = session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
 
         // Assert.
-        var appeared = Assert.IsType<DiagramAddDelta>(moved[0]);
+        // Remove first, then Add (backend-centralization R4.5).
+        Assert.Equal(["island"], Assert.IsType<DiagramRemoveDelta>(moved[0]).ElementIds);
+        var appeared = Assert.IsType<DiagramAddDelta>(moved[1]);
         Assert.Equal(["aaa", "bbb", "ccc"], appeared.Elements.Select(element => element.Id).Order());
-        Assert.Equal(["island"], Assert.IsType<DiagramRemoveDelta>(moved[1]).ElementIds);
     }
 
     /// <summary>

@@ -86,7 +86,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
 
         var answer = store.Save(body, store.GetOrLoad(body));
 
-        Assert.NotEqual("", answer);
+        Assert.NotEqual("", answer.Error);
         Assert.Equal(Model, File.ReadAllText(body));
     }
 
@@ -183,7 +183,7 @@ public class C4DocumentStoreFailedReloadTests : IDisposable
         Assert.Empty(store.WorkspaceOf(body).Elements);
         var answer = store.Save(body, store.GetOrLoad(body));
 
-        Assert.Equal("", answer);
+        Assert.Equal("", answer.Error);
         Assert.True(File.Exists(body), "A new, empty model was not saved.");
     }
 

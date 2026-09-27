@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
@@ -28,7 +30,7 @@ public interface IPipelineDocumentStore
     /// Writes the document back and tells every session on it. Refuses while the document does not
     /// parse, so a file that is already broken is never made worse.
     /// </summary>
-    /// <returns>Empty on success, or why it was not written.</returns>
+    /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
     /// <remarks>
     /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
     /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
@@ -37,7 +39,7 @@ public interface IPipelineDocumentStore
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
     /// </remarks>
-    string Save(string rootPath, string path, PipelineDocumentEntry entry);
+    DocumentSaveResult Save(string rootPath, string path, PipelineDocumentEntry entry);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document - for a

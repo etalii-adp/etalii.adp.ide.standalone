@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "./labelPlacement";
+import { LABEL_FONT_SIZE, widthOf } from "./textMetrics";
 
 describe("centredLabelPlacement", () => {
   it("turns a centred box into the corner-anchored rectangle an editor is drawn in", () => {
@@ -64,7 +65,7 @@ describe("midpointLabelPlacement", () => {
     const long = midpointLabelPlacement({ x: 0, y: 0 }, { x: 0, y: 0 }, 0, "a".repeat(40));
     const empty = midpointLabelPlacement({ x: 0, y: 0 }, { x: 0, y: 0 }, 0, "");
 
-    expect(long.width).toBe(40 * 7);
+    expect(long.width).toBe(widthOf("a".repeat(40), LABEL_FONT_SIZE));
     expect(empty.width).toBe(80);
   });
 });

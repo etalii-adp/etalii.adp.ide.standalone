@@ -53,7 +53,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
 
     public C4Workspace WorkspaceOf(string path) => _lifecycle.GetOrLoad(path).Workspace;
 
-    public string Save(string path, C4Document document)
+    public DocumentSaveResult Save(string path, C4Document document)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(document);
@@ -71,7 +71,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
             // the file on disk is the only copy of the model left. Measured, one reload that could
             // not read the body followed by a save left a real .dsl file empty on disk.
             _logger.Warning("Refusing to write {Path}: it could not be read", path);
-            return $"{Path.GetFileName(path)} could not be read, so it was not written.";
+            return DocumentSaveResult.Failure($"{Path.GetFileName(path)} could not be read, so it was not written.");
         }
 
         // Parsed before the write, so the lifecycle caches exactly the entry that was written -
@@ -80,11 +80,11 @@ public sealed class C4DocumentStore : IC4DocumentStore
         var result = _lifecycle.Save(path, entry);
         if (result.Failed)
         {
-            return result.Error;
+            return result;
         }
 
         Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, entry.Workspace));
-        return "";
+        return DocumentSaveResult.Ok;
     }
 
     public void Touch(string path)

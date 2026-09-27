@@ -106,13 +106,6 @@ public sealed class SkosElementMapper
         return elements;
     }
 
-    /// <summary>The family diff, reused verbatim - one delta vocabulary for every reading.</summary>
-    public IReadOnlyList<DiagramDelta> Diff(
-        IReadOnlyList<DiagramElement> before,
-        IReadOnlyList<DiagramElement> after) => _family.Diff(before, after);
-
-    private readonly RdfElementMapper _family = new();
-
     private static SkosChosenLabel Chosen(IReadOnlyList<SkosLabel> labels, string displayLanguage, string iri) =>
         SkosLabels.Choose(labels, displayLanguage, Shorten(iri));
 

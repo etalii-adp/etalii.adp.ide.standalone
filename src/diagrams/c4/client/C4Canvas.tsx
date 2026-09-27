@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { capacityOf, fitToCapacity } from "@client/canvas/label/textMetrics";
 
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
@@ -38,7 +39,7 @@ type C4BoundaryElement = DiagramModelElement & { boundary: C4BoundaryBox };
  * wrapped here always takes at most the lines the backend made the card tall for.
  */
 function charactersAcross(width: number): number {
-  return Math.max(1, Math.floor((width - 2 * 12) / (10 * 0.55)));
+  return capacityOf(width - 2 * 12, 10);
 }
 
 /**
@@ -46,8 +47,7 @@ function charactersAcross(width: number): number {
  * backend clamps a card at 240 wide however long the technology is, and reserves one line.
  */
 function typeLineFitted(typeLine: string, width: number): string {
-  const across = charactersAcross(width);
-  return typeLine.length <= across ? typeLine : `${typeLine.slice(0, across - 1)}…`;
+  return fitToCapacity(typeLine, charactersAcross(width));
 }
 
 /**

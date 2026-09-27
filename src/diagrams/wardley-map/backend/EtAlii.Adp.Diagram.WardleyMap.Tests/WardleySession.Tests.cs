@@ -114,7 +114,7 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void UpdateView_AnsweringAViewportChange_AddsWhatAppearedThenRemovesWhatLeft()
+    public void UpdateView_AnsweringAViewportChange_RemovesWhatLeftThenAddsWhatAppeared()
     {
         // Arrange. Two components at opposite corners of the map's own 0..1 space. The document
         // writes [visibility, maturity] and the canvas draws (maturity, 1 - visibility), so Alpha
@@ -138,9 +138,10 @@ public sealed class WardleySessionTests : IDisposable
         Assert.Equal(beta, Assert.Single(AddedBy(moved)).Id);
         Assert.Single(RemovedBy(moved));
 
-        // And Add comes before Remove, which is the order the reference implementations use.
-        Assert.IsType<DiagramAddDelta>(moved[0]);
-        Assert.IsType<DiagramRemoveDelta>(moved[1]);
+        // And Remove comes before Add - the shared diff's order (backend-centralization R4.5),
+        // where this used to pin Add first.
+        Assert.IsType<DiagramRemoveDelta>(moved[0]);
+        Assert.IsType<DiagramAddDelta>(moved[1]);
     }
 
     [Fact]

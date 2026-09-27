@@ -71,48 +71,6 @@ public sealed class RdfElementMapper
         return elements;
     }
 
-    /// <summary>
-    /// The difference between two renderings, as adds and removes - an edit is an add carrying
-    /// the element in its new state.
-    /// </summary>
-    public IReadOnlyList<DiagramDelta> Diff(
-        IReadOnlyList<DiagramElement> before,
-        IReadOnlyList<DiagramElement> after)
-    {
-        ArgumentNullException.ThrowIfNull(before);
-        ArgumentNullException.ThrowIfNull(after);
-
-        var previous = before.ToDictionary(element => element.Id, StringComparer.Ordinal);
-        var deltas = new List<DiagramDelta>();
-
-        var changed = after
-            .Where(element => !previous.TryGetValue(element.Id, out var was) || !Same(was, element))
-            .ToArray();
-        if (changed.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(changed));
-        }
-
-        var current = after.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        var gone = before.Select(element => element.Id).Where(id => !current.Contains(id)).ToArray();
-        if (gone.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(gone));
-        }
-
-        return deltas;
-    }
-
-    /// <summary>
-    /// Whether two renderings of one element say the same thing. Not the record's own equality:
-    /// <see cref="ReadOnlyMemory{T}"/> compares its reference rather than its bytes.
-    /// </summary>
-    private static bool Same(DiagramElement left, DiagramElement right) =>
-        left.X.Equals(right.X)
-        && left.Y.Equals(right.Y)
-        && left.Type == right.Type
-        && left.Payload.Span.SequenceEqual(right.Payload.Span);
-
     private static RegistrationPosition At(
         IReadOnlyDictionary<string, RegistrationPosition> positions, string id) =>
         positions.TryGetValue(id, out var position) ? position : default;

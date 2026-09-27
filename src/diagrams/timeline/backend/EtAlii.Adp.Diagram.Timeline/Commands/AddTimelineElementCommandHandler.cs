@@ -53,10 +53,10 @@ public sealed class AddTimelineElementCommandHandler : ICommandHandler<AddTimeli
         TimelineWriter.InsertElement(
             entry.Document, entry.Model, command.Id, command.Label, command.Begin, command.End, command.Row);
 
-        var error = _documents.Save(command.BodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = _documents.Save(command.BodyPath, entry);
+        return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RemoveTimelineElementCommand(command.BodyPath, command.Id))
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 
     private static bool Inverted(AddTimelineElementCommand command)

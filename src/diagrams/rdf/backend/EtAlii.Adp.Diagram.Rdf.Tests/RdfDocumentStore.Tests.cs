@@ -50,7 +50,7 @@ public class RdfDocumentStoreTests : IDisposable
         var refusal = _store.Save(path, entry);
 
         // Assert.
-        Assert.Equal("", refusal);
+        Assert.Equal("", refusal.Error);
         Assert.Equal(original, File.ReadAllBytes(path));
     }
 
@@ -81,8 +81,8 @@ public class RdfDocumentStoreTests : IDisposable
         // Assert.
         Assert.False(entry.IsUsable);
         Assert.NotEqual(0, entry.ErrorLine);
-        Assert.NotEqual("", refusal);
-        Assert.Contains("broken.ttl", refusal);
+        Assert.NotEqual("", refusal.Error);
+        Assert.Contains("broken.ttl", refusal.Error);
         // Refusing to save left the broken file exactly as it was.
         Assert.Equal(original, File.ReadAllBytes(path));
     }

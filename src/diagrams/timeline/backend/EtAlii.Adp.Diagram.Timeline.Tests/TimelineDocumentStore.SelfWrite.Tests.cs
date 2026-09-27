@@ -49,7 +49,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var entry = store.GetOrLoad(path);
         var changes = 0;
         store.Changed += (_, _) => changes++;
-        Assert.Equal("", store.Save(path, entry));
+        Assert.Equal("", store.Save(path, entry).Error);
         Assert.Equal(1, changes);
 
         store.Reload(path);
@@ -96,7 +96,7 @@ public class TimelineDocumentStoreSelfWriteTests : IDisposable
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {
-            if (store.Save(path, store.GetOrLoad(path)).Length > 0)
+            if (store.Save(path, store.GetOrLoad(path)).Failed)
             {
                 refused++;
             }

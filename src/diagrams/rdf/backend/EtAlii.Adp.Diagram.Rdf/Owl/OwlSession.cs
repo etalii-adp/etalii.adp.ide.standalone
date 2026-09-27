@@ -23,7 +23,6 @@ public sealed class OwlSession : IDiagramSession
     private readonly string? _registrationPath;
     private readonly IRdfDocumentStore _documents;
     private readonly OwlElementMapper _mapper;
-    private readonly RdfElementMapper _differ;
     private readonly IHistoryStack? _history;
 
     private IReadOnlyList<DiagramElement> _delivered = [];
@@ -43,19 +42,16 @@ public sealed class OwlSession : IDiagramSession
         string? registrationPath,
         IRdfDocumentStore documents,
         OwlElementMapper mapper,
-        RdfElementMapper differ,
         IHistoryStack? history = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
-        ArgumentNullException.ThrowIfNull(differ);
 
         _bodyPath = bodyPath;
         _registrationPath = registrationPath;
         _documents = documents;
         _mapper = mapper;
-        _differ = differ;
         _history = history;
         _documents.Changed += OnDocumentChanged;
     }
@@ -80,7 +76,7 @@ public sealed class OwlSession : IDiagramSession
         _viewport = viewport;
 
         var current = Render();
-        var deltas = _differ.Diff(_delivered, current);
+        var deltas = DiagramDiff.Between(_delivered, current);
         _delivered = current;
 
         return deltas;
@@ -232,7 +228,7 @@ public sealed class OwlSession : IDiagramSession
         {
             _laidOut = null;
             var current = Render();
-            var deltas = _differ.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)

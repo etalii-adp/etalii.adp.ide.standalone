@@ -44,10 +44,10 @@ public sealed class RestoreDependencyGraphLinesCommandHandler : ICommandHandler<
             entry.Document.Insert(segment.Start, segment.Lines);
         }
 
-        var error = _documents.Save(command.BodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = _documents.Save(command.BodyPath, entry);
+        return Task.FromResult(!saved.Failed
             // Redoing the undo removes it again - by id, which the node has again now.
             ? CommandResult.Success(new RemoveDependencyGraphElementCommand(command.BodyPath, command.ElementId))
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 }
