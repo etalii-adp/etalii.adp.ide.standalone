@@ -1,4 +1,5 @@
 import type { ConnectorBox } from "../../connectors";
+import { fitToWidth, LABEL_FONT_SIZE } from "../../label/textMetrics";
 
 export interface SpanElementClasses {
   /** The extent rectangle. */
@@ -27,8 +28,6 @@ export interface SpanElementProps extends React.SVGProps<SVGGElement> {
   selected?: boolean;
   /** The diamond's radius. */
   pointRadius?: number;
-  /** The per-character width the label-fit estimate uses; it errs on trimming a little early. */
-  labelCharWidth?: number;
   classes: SpanElementClasses;
   onResizeStart?: (event: React.MouseEvent, side: "left" | "right") => void;
   /** A press on a connection anchor, saying which side it sits on - the begin or the end. */
@@ -59,7 +58,6 @@ export function SpanElement({
   hint = null,
   selected = false,
   pointRadius = 9,
-  labelCharWidth = 7,
   classes,
   onResizeStart,
   onAnchorStart,
@@ -86,7 +84,7 @@ export function SpanElement({
           : { x: box.x, textAnchor: undefined })}
         y={box.y + 4}
       >
-        {moment ? label : trimmedToWidth(label, box.width, labelCharWidth)}
+        {moment ? label : fitToWidth(label, box.width, LABEL_FONT_SIZE)}
       </text>
       {hint ? (
         <text className={classes.hint} x={box.x} y={top - 8}>
@@ -140,16 +138,3 @@ function diamond(cx: number, cy: number, r: number): string {
   return `M ${cx - r} ${cy} L ${cx} ${cy - r} L ${cx + r} ${cy} L ${cx} ${cy + r} Z`;
 }
 
-/**
- * The label, trimmed to what its box can hold with an ellipsis when it cannot hold it all.
- * The capacity comes from the same per-character estimate the old beside-the-box placement
- * used, so what fits untrimmed is unchanged.
- */
-function trimmedToWidth(label: string, width: number, charWidth: number): string {
-  const capacity = Math.floor(Math.max(width - 8, 0) / charWidth);
-  if (label.length <= capacity) {
-    return label;
-  }
-
-  return capacity <= 1 ? "…" : `${label.slice(0, capacity - 1)}…`;
-}
