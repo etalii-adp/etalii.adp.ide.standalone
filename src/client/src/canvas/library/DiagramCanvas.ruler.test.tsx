@@ -127,4 +127,19 @@ describe("a declared bottom ruler", () => {
     // Assert.
     expect(share1950(container)).toBeCloseTo(expected(), 6);
   });
+
+  it("follows a pan WHILE it is dragged, not only when it is released", () => {
+    // Arrange.
+    const { container } = renderRuler();
+    const svg = container.querySelector("svg")!;
+
+    // Act: pressed and moved, still held.
+    fireEvent(svg, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(svg, pointer("pointermove", { clientX: 160, clientY: 100 }));
+
+    // Assert: the drawing has moved, and the tick with it.
+    expect(share1950(container), "the ruler kept the view from before the pan until the release, so its dates slid against the trends under them").toBeCloseTo((x(1950, 1) - viewOf(container).x) / viewOf(container).w, 6);
+
+    fireEvent(svg, pointer("pointerup", { clientX: 160, clientY: 100 }));
+  });
 });

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +12,7 @@ public class DatabricksLayoutTests
 {
     private static DatabricksDocumentEntry Load(string name)
     {
-        var document = DatabricksDocument.Parse(
+        var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
         var root = DatabricksYaml.Root(document);
         return new DatabricksDocumentEntry(

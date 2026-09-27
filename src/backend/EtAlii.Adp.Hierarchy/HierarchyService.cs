@@ -56,7 +56,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
             _logger.Warning("Refused a hierarchy watch for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
-            throw new RpcException(new Status(StatusCode.FailedPrecondition, error));
+            throw new RpcException(new Status(PermanentRefusal.CannotOpen, error));
         }
 
         var watchId = request.WatchId;

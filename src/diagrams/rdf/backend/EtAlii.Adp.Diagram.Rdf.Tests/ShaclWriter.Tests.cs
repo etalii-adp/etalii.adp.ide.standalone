@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -20,9 +21,9 @@ public class ShaclWriterTests
 
     private const string Ex = "http://example.org/";
 
-    private static (RdfDocument Document, RdfModel Model) Open(string body)
+    private static (LineDocument Document, RdfModel Model) Open(string body)
     {
-        var document = RdfDocument.Parse(Prelude + body);
+        var document = LineDocument.Parse(Prelude + body);
         return (document, RdfParser.Parse(document));
     }
 

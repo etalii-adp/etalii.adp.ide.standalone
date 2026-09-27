@@ -17,6 +17,7 @@ import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useOwlStream } from "./useOwlStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isCard, isExpression, type OwlEdgeKind, type OwlModel, type OwlNode } from "./owlModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /** A card's drawn width, in the module's own canvas units - matching the backend layout's spacing. */
 export const CARD_WIDTH = 220;
@@ -433,9 +434,9 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     // The whole gesture in one stateless rel: call. Between two classes the backend offers
     // the subclass axiom; anything else asks for a predicate (Requirement 6.1).
     onConnectionDrawn: ({ sourceElementId, targetElementId }) =>
-      runAction("owl.subclass", `rel:${sourceElementId}->${targetElementId}`),
+      runAction("owl.subclass", relationId(sourceElementId, targetElementId)),
     // A toolbox drop names a placement - `new:{x},{y}` under the pointer.
-    onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
+    onElementDropped: ({ elementType, position }) => runAction(elementType, placementId(position.x, position.y)),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 

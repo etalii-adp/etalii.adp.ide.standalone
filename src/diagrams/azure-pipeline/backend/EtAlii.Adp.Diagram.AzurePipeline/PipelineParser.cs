@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
@@ -6,7 +7,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
-/// Reads a <see cref="PipelineDocument"/> into a <see cref="PipelineModel"/>, recording for every
+/// Reads a <see cref="LineDocument"/> into a <see cref="PipelineModel"/>, recording for every
 /// element the lines that declare it.
 /// </summary>
 /// <remarks>
@@ -48,7 +49,7 @@ public sealed class PipelineParser
         ["parallel"] = PipelineStrategyKind.Parallel,
     };
 
-    private readonly PipelineDocument _document;
+    private readonly LineDocument _document;
     private readonly PipelineTemplates? _resolver;
     private readonly string _documentPath;
     private readonly string _source;
@@ -58,7 +59,7 @@ public sealed class PipelineParser
     private PipelinePool _pipelinePool = PipelinePool.None;
 
     private PipelineParser(
-        PipelineDocument document,
+        LineDocument document,
         PipelineTemplates? resolver,
         string documentPath,
         string source,
@@ -78,7 +79,7 @@ public sealed class PipelineParser
     /// The document is not YAML this can read. It carries the line, which is what a reader needs
     /// in order to go and fix it (Requirement 3.6).
     /// </exception>
-    public static PipelineModel Parse(PipelineDocument document)
+    public static PipelineModel Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         return new PipelineParser(document, null, "", "", []).Read();
@@ -91,7 +92,7 @@ public sealed class PipelineParser
     /// <param name="document">The document to read.</param>
     /// <param name="resolver">Bounds which files may be followed, and remembers what it read.</param>
     /// <param name="documentPath">Where the document lives, absolute - relative references start here.</param>
-    public static PipelineModel Parse(PipelineDocument document, PipelineTemplates resolver, string documentPath)
+    public static PipelineModel Parse(LineDocument document, PipelineTemplates resolver, string documentPath)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(resolver);
@@ -169,7 +170,7 @@ public sealed class PipelineParser
 
     private static PipelineStage ImplicitStage(
         IReadOnlyList<PipelineJob> jobs,
-        PipelineLineRange lines,
+        LineRange lines,
         PipelinePool pool,
         string source) =>
         new(
@@ -190,7 +191,7 @@ public sealed class PipelineParser
 
     private static PipelineJob ImplicitJob(
         IReadOnlyList<PipelineStep> steps,
-        PipelineLineRange lines,
+        LineRange lines,
         PipelinePool pool,
         string source) =>
         new(
@@ -653,7 +654,7 @@ public sealed class PipelineParser
         PipelineTemplateSlot slot,
         string reference,
         YamlMappingNode declaration,
-        PipelineLineRange lines)
+        LineRange lines)
     {
         // "path@resource" names a template in another repository, which is the commonest reason
         // one cannot be followed - so the two halves are separated here rather than at resolution.
@@ -739,69 +740,8 @@ public sealed class PipelineParser
         Entry(mapping, key) is YamlScalarNode { Value: { } value } ? value : "";
 
     /// <summary>
-    /// The lines a node occupies, as a range into the document.
+    /// The lines a node occupies, as a range into the document: the shared rule
+    /// (backend-centralization R7, <see cref="YamlNodeRange"/>).
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// YamlDotNet counts lines from one, and leaves a block collection's own end mark empty - so a
-    /// stage read from its own mark alone would span one line, and a rename would be the only edit
-    /// that ever worked. The end therefore comes from the furthest end mark among the node's
-    /// descendants, which for a block collection is the last scalar it contains.
-    /// </para>
-    /// <para>
-    /// That mark points at where scanning stopped, which for a block scalar is the start of the
-    /// next line - so a column-one mark is pulled back one, and then back past any blank or comment
-    /// lines it swept up. Without that a stage's range would take in the comment introducing the
-    /// stage after it, and a splice would eat it.
-    /// </para>
-    /// </remarks>
-    private PipelineLineRange Range(YamlNode node)
-    {
-        var last = _document.Lines.Count - 1;
-        var extent = EndMark(node);
-        // YamlDotNet counts in long; a document with more lines than an int holds is not a thing.
-        var start = Math.Clamp((int)node.Start.Line - 1, 0, last);
-        var end = Math.Clamp((int)extent.Line - 1, start, last);
-        if (extent.Column == 1 && end > start)
-        {
-            end--;
-        }
-
-        while (end > start && (_document.Lines[end].IsBlank || _document.Lines[end].IsComment))
-        {
-            end--;
-        }
-
-        return new PipelineLineRange(start, end);
-    }
-
-    /// <summary>
-    /// The furthest end mark in a node's subtree.
-    /// </summary>
-    /// <remarks>
-    /// An alias resolves to the node it points at, which YAML requires to have been declared
-    /// earlier in the file - so following one can only ever look backwards, and never stretches a
-    /// range past where the element actually ends.
-    /// </remarks>
-    private static Mark EndMark(YamlNode node)
-    {
-        var end = node.End;
-        foreach (var child in Descend(node))
-        {
-            var childEnd = EndMark(child);
-            if (childEnd.Line > end.Line)
-            {
-                end = childEnd;
-            }
-        }
-
-        return end;
-    }
-
-    private static IEnumerable<YamlNode> Descend(YamlNode node) => node switch
-    {
-        YamlMappingNode mapping => mapping.Children.Keys.Concat(mapping.Children.Values),
-        YamlSequenceNode sequence => sequence.Children,
-        _ => [],
-    };
+    private LineRange Range(YamlNode node) => YamlNodeRange.Of(node, _document.Lines);
 }

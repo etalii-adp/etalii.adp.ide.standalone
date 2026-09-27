@@ -31,6 +31,7 @@ import {
   type FdgRelationType,
 } from "./fdgIds";
 import { applyDelta, emptyModel } from "./fdgModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /** The shape each type is drawn as - the library's built-ins, and nothing of this module's own. */
 const SHAPES: Readonly<Record<FdgElementType, ElementTypeDefinition["shape"]>> = {
@@ -241,7 +242,7 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     },
     // The whole gesture in one stateless call: the relation in the action id, both ends in the target.
     onConnectionDrawn: ({ relationType, sourceElementId, targetElementId }) => {
-      runAction(FdgActions.connect(relationType as FdgRelationType), `rel:${sourceElementId}->${targetElementId}`);
+      runAction(FdgActions.connect(relationType as FdgRelationType), relationId(sourceElementId, targetElementId));
     },
     // A toolbox drop carries the element type; the placement is the drop's centre.
     // The backend's toolbox drops its add action (`fdg.add.<type>`), as every module's does; a toolbox
@@ -251,7 +252,7 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       if (!isElementType(type)) {
         return;
       }
-      runAction(FdgActions.add(type), `new:${position.x},${position.y}`);
+      runAction(FdgActions.add(type), placementId(position.x, position.y));
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };

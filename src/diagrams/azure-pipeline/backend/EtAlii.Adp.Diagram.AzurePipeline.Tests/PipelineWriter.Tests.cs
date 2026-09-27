@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -10,12 +11,12 @@ namespace EtAlii.Adp.Diagram.AzurePipeline.Tests;
 /// </summary>
 public class PipelineWriterTests
 {
-    private static PipelineDocument FixtureDocument(string name) =>
-        PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name)));
+    private static LineDocument FixtureDocument(string name) =>
+        LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name)));
 
     /// <summary>The lines of a document, for comparing what an edit did and did not touch.</summary>
-    private static string[] Snapshot(PipelineDocument document) =>
-        document.Lines.Select(line => line.ToString()).ToArray();
+    private static string[] Snapshot(LineDocument document) =>
+        document.Lines.Select(line => line.Text + line.Ending).ToArray();
 
     /// <summary>
     /// Asserts that the only lines differing between two snapshots are the ones expected to.
@@ -34,7 +35,7 @@ public class PipelineWriterTests
         }
     }
 
-    private static PipelineStage StageIn(PipelineDocument document, string name) =>
+    private static PipelineStage StageIn(LineDocument document, string name) =>
         PipelineParser.Parse(document).Stages.Single(stage => stage.Name == name);
 
     [Fact]
@@ -54,6 +55,28 @@ public class PipelineWriterTests
         var line = Array.FindIndex(before, text => text.Contains("displayName: Build the solution", StringComparison.Ordinal));
         Assert.Contains("displayName: Build everything", after[line]);
         AssertOnlyTheseLinesChanged(before, after, line, removed: 1, added: 1);
+    }
+
+    [Fact]
+    public void ANewProperty_OnATiedFile_TakesCrlf()
+    {
+        // Arrange: as many LF endings as CRLF, so the tie rule alone decides the ending of the
+        // line a new displayName is written on. This module's own document gave LF on a tie;
+        // core's gives CRLF, and core's rule is the one that stands (backend-centralization
+        // Requirement 1.2).
+        var document = FixtureDocument("edge-tied-endings.yml");
+        var unnamed = PipelineParser.Parse(document).Steps.Last();
+        var before = Snapshot(document);
+
+        // Act.
+        var changed = new PipelineWriter(document).SetDisplayName(PipelineEditTarget.For(unnamed), "Named");
+
+        // Assert.
+        var after = Snapshot(document);
+        Assert.True(changed);
+        var line = Array.FindIndex(after, text => text.Contains("displayName: Named", StringComparison.Ordinal));
+        Assert.EndsWith("\r\n", after[line], StringComparison.Ordinal);
+        AssertOnlyTheseLinesChanged(before, after, line, removed: 0, added: 1);
     }
 
     [Fact]
@@ -108,7 +131,7 @@ public class PipelineWriterTests
     {
         // Arrange: the comment is about that property. Losing it while renaming something is an
         // edit nobody asked for.
-        var document = PipelineDocument.Parse(
+        var document = LineDocument.Parse(
             "stages:\n  - stage: Build\n    displayName: Old   # why it is called that\n");
         var build = StageIn(document, "Build");
 
@@ -124,7 +147,7 @@ public class PipelineWriterTests
     {
         // Arrange: a `#` only starts a comment after whitespace and outside quotes; treating this
         // one as a comment would truncate the name it is part of.
-        var document = PipelineDocument.Parse(
+        var document = LineDocument.Parse(
             "stages:\n  - stage: Build\n    displayName: \"Build #2\"\n");
         var build = StageIn(document, "Build");
 
@@ -261,7 +284,7 @@ public class PipelineWriterTests
         // Arrange: the guarantee the whole module is built around, checked end to end rather than
         // line by line - comments, blank lines, anchors and quoting all still there afterwards.
         var original = File.ReadAllText(IoPath.Combine("Fixtures", "edge-comments.yml"));
-        var document = PipelineDocument.Parse(original);
+        var document = LineDocument.Parse(original);
         var stage = PipelineParser.Parse(document).Stages[0];
 
         // Act.
@@ -271,8 +294,8 @@ public class PipelineWriterTests
         // The stage here has no displayName, so the edit inserts one line. Every other line of the
         // file is untouched - the comments, the blank lines, and the block scalar with a hash in it
         // that a serialiser would have been entitled to reformat.
-        var before = PipelineDocument.Parse(original).Lines.Select(line => line.ToString()).ToArray();
-        var after = document.Lines.Select(line => line.ToString()).ToArray();
+        var before = LineDocument.Parse(original).Lines.Select(line => line.Text + line.Ending).ToArray();
+        var after = document.Lines.Select(line => line.Text + line.Ending).ToArray();
         var inserted = stage.Lines.Start + 1;
         Assert.Equal("    displayName: Renamed\n", after[inserted]);
         AssertOnlyTheseLinesChanged(before, after, inserted, removed: 0, added: 1);
@@ -284,7 +307,7 @@ public class PipelineWriterTests
         // Arrange: a serialiser would expand `<<: *defaults` and lose the author's intent. A
         // line-scoped edit cannot, because it never goes near those lines.
         var original = File.ReadAllText(IoPath.Combine("Fixtures", "edge-anchors.yml"));
-        var document = PipelineDocument.Parse(original);
+        var document = LineDocument.Parse(original);
         var two = StageIn(document, "Two");
 
         // Act.
@@ -319,7 +342,7 @@ public class PipelineWriterTests
     {
         // Arrange: a colon-space inside a bare scalar makes it a mapping, which would turn a
         // rename into a syntax error a build only finds later.
-        var document = PipelineDocument.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: A\n        steps:\n          - script: x\n");
+        var document = LineDocument.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: A\n        steps:\n          - script: x\n");
         var build = StageIn(document, "Build");
 
         // Act.
@@ -335,7 +358,7 @@ public class PipelineWriterTests
     {
         // Arrange: a quote appearing around a name that never had one is a diff line a reviewer
         // has to stop and think about.
-        var document = PipelineDocument.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: A\n        steps:\n          - script: x\n");
+        var document = LineDocument.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: A\n        steps:\n          - script: x\n");
         var build = StageIn(document, "Build");
 
         // Act.
@@ -350,7 +373,7 @@ public class PipelineWriterTests
     {
         // Arrange: quoting an expression would still be valid YAML and would stop it being an
         // expression, which is the one thing this module promises never to do to one.
-        var document = PipelineDocument.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: A\n        steps:\n          - script: x\n");
+        var document = LineDocument.Parse("stages:\n  - stage: Build\n    jobs:\n      - job: A\n        steps:\n          - script: x\n");
         var build = StageIn(document, "Build");
 
         // Act.
@@ -402,10 +425,10 @@ public class PipelineWriterTests
     {
         // Arrange: an off-by-one in a range rewrites somebody's pipeline, so it is a programming
         // error rather than something to absorb.
-        var document = PipelineDocument.Parse("stages:\n  - stage: Build\n");
+        var document = LineDocument.Parse("stages:\n  - stage: Build\n");
 
         // Act & assert.
-        var target = new PipelineEditTarget("x", new PipelineLineRange(0, 40), IsImplicit: false, "");
+        var target = new PipelineEditTarget("x", new LineRange(0, 40), IsImplicit: false, "");
         Assert.Throws<ArgumentOutOfRangeException>(() => new PipelineWriter(document).SetDisplayName(target, "x"));
     }
 
@@ -432,8 +455,8 @@ public class PipelineWriterTests
     {
         // Arrange: its text is in another file, so an edit here would land in the wrong one
         // (Requirement 5.4).
-        var target = new PipelineEditTarget("Build/Compile", new PipelineLineRange(0, 1), IsImplicit: false, "templates/build-jobs.yml");
-        var document = PipelineDocument.Parse("jobs:\n  - job: Compile\n");
+        var target = new PipelineEditTarget("Build/Compile", new LineRange(0, 1), IsImplicit: false, "templates/build-jobs.yml");
+        var document = LineDocument.Parse("jobs:\n  - job: Compile\n");
 
         // Act & assert.
         var error = Assert.Throws<InvalidOperationException>(
@@ -460,7 +483,7 @@ public class PipelineWriterTests
         var renamed = 0;
         foreach (var path in fixtures)
         {
-            var document = PipelineDocument.Parse(File.ReadAllText(path));
+            var document = LineDocument.Parse(File.ReadAllText(path));
             var stage = PipelineParser.Parse(document).Stages
                 .Select((candidate, index) => (candidate, index))
                 .FirstOrDefault(pair => PipelineEditTarget.For(pair.candidate).IsEditable);
@@ -481,7 +504,7 @@ public class PipelineWriterTests
         // And a floor on the fixtures that actually reached the assertion. Finding the corpus
         // is not enough here: every iteration can take the continue above, and the walk then
         // completes green having renamed nothing at all - the whole test passing vacuously
-        // while still reading fourteen files. Eight of the fourteen offer an editable stage
+        // while still reading fifteen files. Eight of the fifteen offer an editable stage
         // today, so five is a floor with real headroom on it.
         Assert.True(
             renamed >= 5,

@@ -1,0 +1,21 @@
+{
+  "reason": "A diagram, context or hierarchy stream that ends with a status error either dropped, and is re-opened, or was refused, and re-opening it gets the same answer (backend-centralization R13). The refusals are named once in core, in PermanentRefusal (EtAlii.Adp.Projects): a status is permanent exactly when core refuses an open or a watch with it, so a client stream loop stops on a permanent status and says the diagram cannot be opened, and retries every other one. Every gRPC status code but OK (0) is listed, keyed by its number, which is the same on both tiers; the name is gRPC's canonical one, because .NET and Connect spell CANCELLED differently. A code core never refuses with is not permanent, so NOT_FOUND is false here. UNAUTHENTICATED is false too: it is the session interceptor's answer to any call, met by signing in again rather than by giving up on the diagram.",
+  "statuses": [
+    { "code": 1, "name": "CANCELLED", "permanent": false },
+    { "code": 2, "name": "UNKNOWN", "permanent": false },
+    { "code": 3, "name": "INVALID_ARGUMENT", "permanent": false },
+    { "code": 4, "name": "DEADLINE_EXCEEDED", "permanent": false },
+    { "code": 5, "name": "NOT_FOUND", "permanent": false },
+    { "code": 6, "name": "ALREADY_EXISTS", "permanent": false },
+    { "code": 7, "name": "PERMISSION_DENIED", "permanent": false },
+    { "code": 8, "name": "RESOURCE_EXHAUSTED", "permanent": false },
+    { "code": 9, "name": "FAILED_PRECONDITION", "permanent": true },
+    { "code": 10, "name": "ABORTED", "permanent": false },
+    { "code": 11, "name": "OUT_OF_RANGE", "permanent": false },
+    { "code": 12, "name": "UNIMPLEMENTED", "permanent": true },
+    { "code": 13, "name": "INTERNAL", "permanent": false },
+    { "code": 14, "name": "UNAVAILABLE", "permanent": false },
+    { "code": 15, "name": "DATA_LOSS", "permanent": false },
+    { "code": 16, "name": "UNAUTHENTICATED", "permanent": false }
+  ]
+}

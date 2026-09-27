@@ -18,14 +18,14 @@ internal static class DatabricksSplices
     /// is - rather than block YAML. The two need different lines spliced in: a JSON array grows
     /// an element-plus-comma, a YAML sequence grows a dash entry.
     /// </summary>
-    public static bool IsJson(DatabricksDocument document) =>
+    public static bool IsJson(LineDocument document) =>
         document.Lines.FirstOrDefault(line => !line.IsBlank)?.Text.TrimStart().StartsWith('{') == true;
 
     /// <summary>
     /// The first line inside <paramref name="range"/> whose key is <paramref name="key"/>, dash
     /// prefixes and either syntax's quoting tolerated; -1 when the range has none.
     /// </summary>
-    public static int FindKey(DatabricksDocument document, LineRange range, string key)
+    public static int FindKey(LineDocument document, LineRange range, string key)
     {
         for (var i = range.Start; i <= range.End && i < document.Lines.Count; i++)
         {
@@ -52,7 +52,7 @@ internal static class DatabricksSplices
     /// The indentation the keys inside a range already use - copied from the file rather than
     /// imposed, so a document written with four spaces stays written with four spaces.
     /// </summary>
-    public static string KeyIndentWithin(DatabricksDocument document, LineRange range)
+    public static string KeyIndentWithin(LineDocument document, LineRange range)
     {
         for (var i = range.Start + 1; i <= range.End && i < document.Lines.Count; i++)
         {

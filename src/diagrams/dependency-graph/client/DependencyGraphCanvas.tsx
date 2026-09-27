@@ -19,6 +19,7 @@ import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDependencyGraphStream } from "./useDependencyGraphStream";
 import type { DependencyGraphElement } from "./dependencyGraphModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /**
  * The vertical distance between adjacent rows, in the module's own y units.
@@ -167,7 +168,7 @@ function nearestRow(y: number): number {
 
 /** The placement id a gesture carries when it lands on empty canvas: `new:{x},{row}`. */
 function newPlacementId(x: number, row: number): string {
-  return `new:${x},${row}`;
+  return placementId(x, row);
 }
 
 /**
@@ -218,7 +219,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
    * depends on the dragged node - because what depends on a node arrives at it.
    */
   const dependencyGesture = (sourceId: string, landing: string, sourceAnchor?: string): string =>
-    sourceAnchor === "left" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
+    sourceAnchor === "left" ? relationId(landing, sourceId) : relationId(sourceId, landing);
 
   // Selection is the library's (centralized-selection), and so are sending a declared action and
   // showing a refusal: every call below reports its own to the library's one refusal line.

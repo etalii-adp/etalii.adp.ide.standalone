@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -12,9 +13,9 @@ namespace EtAlii.Adp.Diagram.AzurePipeline.Tests;
 public class PipelineGraphBuilderTests
 {
     private static PipelineModel ParseFixture(string name) =>
-        PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
 
-    private static PipelineModel Parse(string text) => PipelineParser.Parse(PipelineDocument.Parse(text));
+    private static PipelineModel Parse(string text) => PipelineParser.Parse(LineDocument.Parse(text));
 
     [Fact]
     public void AStageWithNoDependsOn_WaitsForTheStageBeforeIt()
@@ -360,7 +361,7 @@ public class PipelineGraphBuilderTests
         var staged = 0;
         foreach (var path in fixtures)
         {
-            var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
+            var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
 
             // Act.
             var graph = PipelineGraphBuilder.OfStages(model);
@@ -377,9 +378,9 @@ public class PipelineGraphBuilderTests
 
         // And a floor on the second collection, which is the one carrying the inner assertion:
         // the equality above reads 0 == 0 on a stage-less model and the inner loop then walks
-        // nothing, so a parser that stopped producing stages passes this test. Six of the
-        // fourteen fixtures declare no stage line of their own, which is why this is a floor on
-        // the corpus total rather than on any single file. The corpus yields 25 stages today,
+        // nothing, so a parser that stopped producing stages passes this test. Seven of the
+        // fifteen fixtures declare no stage line of their own, which is why this is a floor on
+        // the corpus total rather than on any single file. The corpus yields 26 stages today,
         // so fifteen is a floor with real headroom on it.
         Assert.True(
             staged >= 15,

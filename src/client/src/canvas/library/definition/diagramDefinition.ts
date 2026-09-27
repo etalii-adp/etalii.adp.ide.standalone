@@ -844,6 +844,13 @@ export type RouteKind = BuiltInRoute | CustomRouteRef;
 export interface RouteEnds {
   source: ShapeBounds;
   target: ShapeBounds;
+  /**
+   * The edge each end is attached along, for an end attached with `{ kind: "along" }` anchors.
+   * A curved route leaves and arrives square to that edge, so its arrowhead meets the border at
+   * a right angle rather than at whatever slant the two ends' offset gives.
+   */
+  sourceEdge?: EdgeName;
+  targetEdge?: EdgeName;
 }
 
 /** A module-supplied path builder, for geometry no built-in draws. */
@@ -926,6 +933,13 @@ export interface RelationTypeDefinition {
   };
   /** Whether waypoints or control points may be dragged (Requirement 3.5). */
   adjustable?: boolean;
+  /**
+   * Whether an end attached ALONG an edge (`{ kind: "along" }` anchors) can be dragged along that
+   * edge once the connection is selected. The selected connection shows a round handle on each
+   * such end; dragging it slides the end along the same edge, across segments, and the release
+   * raises `connection-end-moved` with the new attachment.
+   */
+  movableEnds?: boolean;
   /**
    * Whether a connection of this type can be the selection. **Omitted means selectable**, as for
    * element types: an unselectable relation is always a recorded decision about the notation,

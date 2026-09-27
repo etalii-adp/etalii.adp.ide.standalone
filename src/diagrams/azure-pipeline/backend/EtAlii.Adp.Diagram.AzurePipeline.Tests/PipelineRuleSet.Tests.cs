@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -14,7 +15,7 @@ namespace EtAlii.Adp.Diagram.AzurePipeline.Tests;
 public class PipelineRuleSetTests
 {
     private static IReadOnlyList<DiagramProblem> Judge(string yaml) =>
-        PipelineRuleSet.Judge(PipelineParser.Parse(PipelineDocument.Parse(yaml)));
+        PipelineRuleSet.Judge(PipelineParser.Parse(LineDocument.Parse(yaml)));
 
     private static IEnumerable<DiagramProblem> Of(string yaml, string ruleId) =>
         Judge(yaml).Where(problem => problem.RuleId == ruleId);

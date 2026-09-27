@@ -270,7 +270,7 @@ const COMMENT_TYPE: ElementTypeDefinition = {
 
 **Whether a module needs it.** `relationTypes` is declared by all 14 modules. `acyclic` is declared by one, the functional decomposition graph (both read at `5b44878d`).
 
-**Its shape.** A `RelationTypeDefinition` carries `id`, `route`, `style`, `label`, `adjustable`, `selectable`, `className`, `lineClassName`, `hitClassName`, `emptyRelease` and `hideWhenAttachmentHidden`, which leaves a connection undrawn while the segment one of its ends attaches to is not shown. A route the built-ins do not cover is a `CustomRouteRef` — `customRoute` and `path`. An `AcyclicRule` carries `relationTypes`: the relation ids a cycle may not be formed from, so a "depends on" edge can refuse a cycle while other relation types stay free to form one.
+**Its shape.** A `RelationTypeDefinition` carries `id`, `route`, `style`, `label`, `adjustable`, `movableEnds`, `selectable`, `className`, `lineClassName`, `hitClassName`, `emptyRelease` and `hideWhenAttachmentHidden`, which leaves a connection undrawn while the segment one of its ends attaches to is not shown. A route the built-ins do not cover is a `CustomRouteRef` — `customRoute` and `path`. An `AcyclicRule` carries `relationTypes`: the relation ids a cycle may not be formed from, so a "depends on" edge can refuse a cycle while other relation types stay free to form one.
 
 Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 
@@ -297,7 +297,7 @@ Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../
 
 **Which relation a connect gesture draws.** The press sees only the source, so it starts with the `activeTool` relation if the runtime names one, and otherwise with the first relation whose source admits the element. Over a target, the canvas keeps that relation if it admits the target's type. If it does not, and no `activeTool` is named, it draws the first relation that admits BOTH ends - the source's anchor included - and the connect checks then run on the relation actually drawn. So a notation whose relations are told apart by what they point at can draw each of them from the same element: the functional decomposition graph's screen owns a child screen, an action, data or a function through four different relations. **A named `activeTool` still wins**: a target it does not admit is refused, not drawn as some other relation. A definition whose starting relation already admits every target it meets never reaches the search, so it draws exactly what it did before this behaviour arrived (`5ce04fbc`).
 
-**Their members.** `RouteEnds` carries `source`, `target`; `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`, `perPair` - `"ordered"` allows one connection of the type per direction between two elements, `"unordered"` one per pair.
+**Their members.** `RouteEnds` carries `source`, `target`, `sourceEdge`, `targetEdge` (the edge an end is attached along, which a `cubic-bezier` route leaves and meets square on); `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`, `perPair` - `"ordered"` allows one connection of the type per direction between two elements, `"unordered"` one per pair.
 
 **Their members.** `RelationTypeDefinition` carries `endpoints`, `adorn`.
 
@@ -451,7 +451,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## Events, and how a module answers them
 
-**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`
+**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`, `ElementPreviewed`, `ConnectionEndMoved`
 
 **What it is for.** **Every event is a request, never a report.** The canvas raises what a user did; the module decides what happens and sends it to the backend. Nothing is applied to the model by the library on its own.
 
@@ -495,9 +495,11 @@ sequenceDiagram
     end
 ```
 
+**`ElementPreviewed` is the other member that is not a request.** It is raised on every frame of a move, a resize or a boundary drag with the element's drawn rectangle and its inner boundaries, and once more with `bounds: null` after the gesture's final event. Nothing is written for it: it is there so a module can show what the release will write while the gesture is still going, which is what `showPropertyPreview` is for (see [The context channel](#the-context-channel)).
+
 **Their members.** `DiagramViewport` carries `x`, `y`, `width`, `height`; `SelectionChanged` carries `kind`, `selection`.
 
-**Their members.** `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
+**Their members.** `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `ConnectionEndMoved` carries `connectionId`, `end`, `attachment`; `ElementPreviewed` carries `elementId`, `bounds`, `boundaries`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
 
 ## Selection
 
@@ -525,7 +527,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## The context channel
 
-**Declarations:** `useContextConnection`, `elementSourceOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`
+**Declarations:** `useContextConnection`, `elementSourceOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`, `showPropertyPreview`, `settlePropertyPreview`, `endPropertyPreview`
 
 **What it is for.** Running an action against the backend. A prompt the backend asks in return — an inline rename among them — is answered by the shell and the library, not by the module.
 
@@ -546,6 +548,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 ```
 
 **Their members.** `ActionOutcome` carries `accepted`, `error`.
+
+**A value shown before it is written.** `showPropertyPreview(elementId, values)` puts values in the property grid in place of what the backend last said, for that element while it is selected, and writes nothing; a module calls it from `ElementPreviewed` so Start, Stop or a phase's end follow a drag. `settlePropertyPreview` says the release wrote them, so they stay until the grid has read the answer and the old value never flashes back; `endPropertyPreview` ends the gesture, dropping a preview nothing wrote at once. The hype cycle graph is the first user.
 
 ## Refusals and status
 
@@ -616,6 +620,18 @@ sequenceDiagram
 
 **Their members.** `Viewport` carries `minX`, `minY`, `maxX`, `maxY`.
 
+## Gesture ids
+
+**Declarations:** `placementId`, `relationId`, `withoutPrefix`
+
+**What it is for.** Naming what a gesture lands on when it is not an existing element: a placement on empty canvas, `new:x,y`, or a relation between two ends, `rel:from->to`. The backend parses both, so the grammar is its own, and its golden fixture pins the client's builders to it.
+
+**Whether a module needs it.** Any module whose drops, connections or menu gestures send an action to a target it builds: ten do today.
+
+**Its shape.** `placementId(x, y)` and `relationId(from, to)` build the two forms. `withoutPrefix(id, prefix)` takes a prefix off an element id and answers null when the id does not carry it or nothing follows it, so an end is never sent truncated or empty; a module refuses the gesture instead.
+
+**The guard.** `gestureIds.test.ts` fails on either form written by hand, or a `.slice("prefix:".length)` with no `startsWith` check of that prefix on the line or just above it, anywhere outside `gestureIds.ts`.
+
 ## Geometry for custom shapes and routes
 
 **Declarations:** `forwardBezierPath`, `ShapePoint`, `ConnectorBox`, `facingAnchorsBetween`, `horizontalBezierPath`, `sideAnchorOf`
@@ -668,7 +684,7 @@ sequenceDiagram
 
 **The canvas test harness** beside it, `canvasHarness.ts`, holds what every canvas test used to write for itself (client-centralization Requirement 10): `pointer` builds a pointer event jsdom can carry, `idsPushed` reads the ids a canvas pushed for a `LibrarySelectionHarness`, and `fakeContextConnection` is the one fake of the context connection, every member a `vi.fn()` - pass only the members a test drives, and mount it as `useContextConnection: () => connection` with `connection` built once. jsdom's missing pointer capture is stubbed in `test-setup.ts` for every test. A module's `renderCanvas` stays its own: its props differ per module.
 
-**The guards that walk module clients — twenty of them, measured rather than recalled:**
+**The guards that walk module clients — twenty-one of them, measured rather than recalled:**
 
 | Guard | What it forbids | The shared mechanism instead |
 | --- | --- | --- |
@@ -689,13 +705,14 @@ sequenceDiagram
 | `noModuleReachesLibraryShapes.test.ts` | a module stylesheet selecting an SVG element type, which reaches the shapes the library draws | a class the module declares on its own shape |
 | `noCanvasTestCopiesAHelper.test.ts` | a canvas test declaring its own pointer-capture stub, pointer-event factory, `pushedIds` adapter or context-connection fake | `test-setup.ts` and `canvasHarness.ts` |
 | `noStylesheetRuleWithoutAnEmitter.test.tsx` | a stylesheet rule for a class no shipped example draws, or a drawn class no stylesheet rules, unless either is listed with why | every canvas mounted on the shipped examples the backend exports to `src/fixtures/cross-tier/example-models/` |
+| `gestureIds.test.ts` | a placement or relation id written by hand, or a prefix removed without a check | `placementId`, `relationId` and `withoutPrefix` |
 | `textMetrics.test.ts` | a width estimated from a character count, a per-character advance, or an ellipsis cut by slice, outside the shared metric | `capacityOf` and `fitToCapacity` |
 | `everyCanvasHasOneRefusalSurface.test.tsx` | a module's own refusal line or status, or one that replaces the library's | the library's frame around every canvas |
 | `diagramModuleClientApi.test.ts` | this document drifting from the module-facing surface — an undocumented name, a stale entry, a changed excerpt, a diagram naming nothing real | an entry here |
 
-**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; twenty is what the tree holds now, with `client-centralization` task 6 adding `noModuleSendsAKeystroke.test.ts`, task 3 `everyCanvasHasOneRefusalSurface.test.tsx`, task 4 `noModuleReachesLibraryShapes.test.ts`, task 11 `noCanvasTestCopiesAHelper.test.ts` task 12 `noStylesheetRuleWithoutAnEmitter.test.tsx` and task 5 `textMetrics.test.ts`, so that figure is a timestamp rather than a count.
+**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; twenty-one is what the tree holds now, with `client-centralization` task 6 adding `noModuleSendsAKeystroke.test.ts`, task 3 `everyCanvasHasOneRefusalSurface.test.tsx`, task 4 `noModuleReachesLibraryShapes.test.ts`, task 11 `noCanvasTestCopiesAHelper.test.ts` task 12 `noStylesheetRuleWithoutAnEmitter.test.tsx`, task 10 `gestureIds.test.ts` and task 5 `textMetrics.test.ts`, so that figure is a timestamp rather than a count.
 
-**The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the nineteen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
+**The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the twenty above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
 
 ## A minimal module client, end to end
 

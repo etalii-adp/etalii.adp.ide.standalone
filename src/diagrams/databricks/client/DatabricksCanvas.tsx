@@ -17,6 +17,7 @@ import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDatabricksStream } from "./useDatabricksStream";
 import { SIMULATED_ACTION_IDS, SIMULATED_MARKER, useSimulatedRun } from "./useSimulatedRun";
 import type { DatabricksFrame, DatabricksNode } from "./databricksModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /** A node's drawn size, in the module's own canvas units - matching the backend layouts' spacing. */
 export const NODE_WIDTH = 200;
@@ -369,9 +370,9 @@ export function DatabricksCanvas({
     // the landing task waits for. Released on nothing, the library raises nothing: this
     // family creates tasks by drop, not by relation-to-empty-space.
     onConnectionDrawn: ({ sourceElementId, targetElementId }) =>
-      runAction("databricks.connect", `rel:${sourceElementId}->${targetElementId}`),
+      runAction("databricks.connect", relationId(sourceElementId, targetElementId)),
     // A toolbox drop names a placement - `new:{x},{y}` under the pointer (Requirement 9).
-    onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
+    onElementDropped: ({ elementType, position }) => runAction(elementType, placementId(position.x, position.y)),
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 

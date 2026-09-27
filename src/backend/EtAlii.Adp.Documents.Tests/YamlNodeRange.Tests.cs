@@ -101,20 +101,29 @@ public class YamlNodeRangeTests
     }
 
     [Fact]
-    public void ATabLedLine_IsAComment_WhichIsTheBehaviourKeptOverAzurePipelines()
+    public void ABlockScalarsLastLine_LedByATab_IsContentAndStaysInTheRange_WhichIsAzurePipelinesBehaviour()
     {
         // R7.2's pin, on the input that tells the copies apart. The four range bodies were identical;
-        // what differed was what a comment IS. azure-pipeline's line type trimmed only spaces before
-        // looking for '#', so a tab-led comment stayed inside a node's range there and a splice would
-        // eat it. databricks, dependency-graph and timeline trimmed every kind of leading whitespace,
-        // and the three win. Pinned on the predicate the range uses, so it holds whether or not
-        // YamlDotNet accepts a tab-led comment line in block context - which was not measured.
-        Assert.True(new Line("\t# introduces the next stage", "\n").IsComment);
-        Assert.True(new Line("  # introduces the next stage", "\n").IsComment);
+        // what differed was what a comment IS. databricks, dependency-graph and timeline trimmed every
+        // kind of leading whitespace before looking for '#', azure-pipeline trimmed spaces only. The
+        // only way a line whose first non-space character is a tab reaches a range's end is as a block
+        // scalar's CONTENT - YamlDotNet refuses a tab-led comment line in block context - so the three's
+        // rule cut the scalar's last line out of the element that holds it, and a splice of the element
+        // would leave that line behind. Measured on this input: azure-pipeline's rule (1,4), the three's
+        // (1,3). azure-pipeline's behaviour is kept, by the design's S7 rule.
+        const string text =
+            "elements:\n" +
+            "  - id: a\n" +
+            "    notes: |\n" +
+            "      line one\n" +
+            "      \t# still line two of the notes\n" +
+            "  - id: b\n";
+        var element = Elements(text)[0];
+        Assert.Equal("line one\n\t# still line two of the notes\n", ((YamlScalarNode)((YamlMappingNode)element).Children[new YamlScalarNode("notes")]).Value);
 
-        // And the other direction, so a predicate that called everything a comment would not pass.
-        Assert.False(new Line("  - id: a # trailing, not a comment line", "\n").IsComment);
-        Assert.False(new Line("\t- id: a", "\n").IsComment);
+        var range = YamlNodeRange.Of(element, LineDocument.Parse(text).Lines);
+
+        Assert.Equal(new LineRange(1, 4), range);
     }
 
     private static YamlMappingNode Root(string text)

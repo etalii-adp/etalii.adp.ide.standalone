@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -18,7 +19,7 @@ public class ShaclShapeDiscoveryTests
         """;
 
     private static IReadOnlyList<ShaclShape> Discover(string body) =>
-        ShaclShapeDiscovery.Discover(RdfParser.Parse(RdfDocument.Parse(Prelude + body)));
+        ShaclShapeDiscovery.Discover(RdfParser.Parse(LineDocument.Parse(Prelude + body)));
 
     [Fact]
     public void ATypedNodeShape_IsDiscovered()

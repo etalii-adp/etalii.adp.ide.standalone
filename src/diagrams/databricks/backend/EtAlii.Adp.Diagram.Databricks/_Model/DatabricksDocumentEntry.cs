@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
@@ -20,7 +22,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// <param name="Error">Why the file could not be parsed; empty when it could.</param>
 /// <param name="ErrorLine">The line the parser stopped at, 1-based; 0 when there was no error.</param>
 public sealed record DatabricksDocumentEntry(
-    DatabricksDocument Document,
+    LineDocument Document,
     BundleModel Bundle,
     IReadOnlyList<JobModel> Jobs,
     IReadOnlyList<PipelineModel> Pipelines,

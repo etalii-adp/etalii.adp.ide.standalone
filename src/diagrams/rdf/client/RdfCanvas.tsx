@@ -11,6 +11,7 @@ import type { DiagramEventHandlers, DiagramViewport } from "@client/canvas/libra
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useRdfStream } from "./useRdfStream";
 import type { RdfNode } from "./rdfModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /** A card's drawn width, in the module's own canvas units - matching the backend layout's spacing. */
 export const NODE_WIDTH = 220;
@@ -234,9 +235,9 @@ export function RdfCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     // The whole gesture in one stateless rel: call; the predicate is asked in a dialog -
     // the event carries the payload the context channel cannot (Requirement 7.3).
     onConnectionDrawn: ({ sourceElementId, targetElementId }) =>
-      runAction("rdf.connect", `rel:${sourceElementId}->${targetElementId}`),
+      runAction("rdf.connect", relationId(sourceElementId, targetElementId)),
     // A drop carries the backend's own action id; the drop point becomes its placement.
-    onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
+    onElementDropped: ({ elementType, position }) => runAction(elementType, placementId(position.x, position.y)),
     // Deletion stays the backend's: the key travels as data against the selection, exactly
     // the shortcut the old keyboard path sent - the backend owns the key-to-action table.
     onViewChanged: ({ viewport: next }) => setViewport(next),

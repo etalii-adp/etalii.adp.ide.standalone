@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
@@ -23,7 +25,7 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// <param name="Lines">The lines declaring it.</param>
 /// <param name="IsImplicit">Whether the schema implied it rather than the file declaring it.</param>
 /// <param name="Template">The template it came from, if any.</param>
-public sealed record PipelineEditTarget(string Id, PipelineLineRange Lines, bool IsImplicit, string Template)
+public sealed record PipelineEditTarget(string Id, LineRange Lines, bool IsImplicit, string Template)
 {
     /// <summary>The stage, as something that may or may not be edited.</summary>
     public static PipelineEditTarget For(PipelineStage stage)

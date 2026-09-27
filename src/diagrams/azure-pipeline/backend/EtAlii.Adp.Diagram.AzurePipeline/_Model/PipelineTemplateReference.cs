@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
@@ -26,7 +28,7 @@ public sealed record PipelineTemplateReference(
     string Path,
     string Resource,
     IReadOnlyList<string> ParameterNames,
-    PipelineLineRange Lines)
+    LineRange Lines)
 {
     /// <summary>The reference as written, which is what the canvas shows.</summary>
     public string Reference => Resource.Length > 0 ? $"{Path}@{Resource}" : Path;

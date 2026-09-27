@@ -13,6 +13,7 @@ import type { DiagramEventHandlers, DiagramViewport } from "@client/canvas/libra
 import { TimelineRuler } from "./TimelineRuler";
 import { useTimelineStream } from "./useTimelineStream";
 import type { TimelineElement, TimelineModel } from "./timelineModel";
+import { placementId, relationId } from "@client/canvas/gestureIds";
 
 /**
  * The vertical distance between adjacent rows, in the module's own y units. Mirrors
@@ -143,7 +144,7 @@ function formatSeconds(seconds: number, dateOnly: boolean): string {
 
 /** The placement id a gesture carries when it lands on empty canvas: `new:{seconds},{row}`. */
 function newPlacementId(seconds: number, row: number): string {
-  return `new:${seconds},${row}`;
+  return placementId(seconds, row);
 }
 
 /**
@@ -363,7 +364,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
 
   /** A drag from the begin anchor arrives reversed: what precedes an element points into it. */
   const relationOf = (sourceId: string, sourceAnchor: string | undefined, landing: string) =>
-    sourceAnchor === "begin" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
+    sourceAnchor === "begin" ? relationId(landing, sourceId) : relationId(sourceId, landing);
 
   const events: DiagramEventHandlers = {
     // Selection is the library's (centralized-selection), and so is the refusal line: every call

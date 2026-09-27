@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -19,7 +20,7 @@ public class ShaclProjectionTests
         """;
 
     private static ShaclProjectionResult Project(string body, int budget = ShaclProjection.DefaultBudget) =>
-        ShaclProjection.Project(RdfParser.Parse(RdfDocument.Parse(Prelude + body)), budget);
+        ShaclProjection.Project(RdfParser.Parse(LineDocument.Parse(Prelude + body)), budget);
 
     [Fact]
     public void CardsAreShapes_RowsArePropertyShapes_AndPlumbingNeverDraws()

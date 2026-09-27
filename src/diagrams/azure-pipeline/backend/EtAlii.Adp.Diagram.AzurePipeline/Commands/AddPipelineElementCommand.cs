@@ -81,7 +81,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
             entry.Model.Stages.Select(stage => stage.Name));
 
         var last = declared[^1];
-        var indent = entry.Document.Lines[last.Lines.Start].Indent;
+        var indent = entry.Document.Lines[last.Lines.Start].Indent();
         new PipelineWriter(entry.Document).InsertElement(
             PipelineEditTarget.For(last),
             listKeyLine: 0,
@@ -129,7 +129,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
             entry.Model.Jobs.Select(job => job.Name));
 
         var last = authored[^1];
-        var indent = entry.Document.Lines[last.Lines.Start].Indent;
+        var indent = entry.Document.Lines[last.Lines.Start].Indent();
         var lines = command.Kind == PipelineAddKind.DeploymentJob
             ? PipelineBlocks.DeploymentJob(name, name.ToLowerInvariant(), indent)
             : PipelineBlocks.Job(name, indent);
@@ -153,7 +153,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
         }
 
         var last = authored[^1];
-        var indent = entry.Document.Lines[last.Lines.Start].Indent;
+        var indent = entry.Document.Lines[last.Lines.Start].Indent();
         new PipelineWriter(entry.Document).InsertElement(
             PipelineEditTarget.For(last),
             listKeyLine: 0,

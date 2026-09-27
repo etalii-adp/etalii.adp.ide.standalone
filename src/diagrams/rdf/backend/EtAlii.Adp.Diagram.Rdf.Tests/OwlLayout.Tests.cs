@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -19,7 +20,7 @@ public class OwlLayoutTests
         """;
 
     private static OwlGraphResult Graph(string body) =>
-        OwlProjection.Project(RdfParser.Parse(RdfDocument.Parse(Prelude + body)));
+        OwlProjection.Project(RdfParser.Parse(LineDocument.Parse(Prelude + body)));
 
     [Fact]
     public void Classes_FallIntoColumnsByAssertedDepth_RootsLeft()
@@ -222,6 +223,6 @@ public class OwlLayoutTests
 
         Assert.NotNull(directory);
         var path = IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl");
-        return RdfParser.Parse(RdfDocument.Parse(File.ReadAllText(path)));
+        return RdfParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
     }
 }

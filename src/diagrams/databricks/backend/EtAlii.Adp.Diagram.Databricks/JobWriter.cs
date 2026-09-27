@@ -30,7 +30,7 @@ internal static class JobWriter
 
     /// <summary>Inserts a new task after the job's last one.</summary>
     public static string InsertTask(
-        DatabricksDocument document, JobModel job, string taskKey, string taskType, string source)
+        LineDocument document, JobModel job, string taskKey, string taskType, string source)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(job);
@@ -73,7 +73,7 @@ internal static class JobWriter
     /// the task because an edge to something that no longer exists is not a diagram anybody
     /// wants; <see cref="ReferencesTo"/> answers how many, before anything runs.
     /// </remarks>
-    public static string RemoveTask(DatabricksDocument document, JobModel job, string taskKey)
+    public static string RemoveTask(LineDocument document, JobModel job, string taskKey)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(job);
@@ -113,7 +113,7 @@ internal static class JobWriter
 
     /// <summary>Adds a <c>depends_on</c> entry: <paramref name="toKey"/> comes to depend on <paramref name="fromKey"/>.</summary>
     public static string Connect(
-        DatabricksDocument document, JobModel job, string fromKey, string toKey, string outcome = "")
+        LineDocument document, JobModel job, string fromKey, string toKey, string outcome = "")
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(job);
@@ -167,7 +167,7 @@ internal static class JobWriter
     /// Removes one <c>depends_on</c> entry - and the <c>depends_on:</c> key itself when that was
     /// the last one, so an undo of the connect that created both restores the file byte for byte.
     /// </summary>
-    public static string Disconnect(DatabricksDocument document, JobModel job, string fromKey, string toKey)
+    public static string Disconnect(LineDocument document, JobModel job, string fromKey, string toKey)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(job);
@@ -192,7 +192,7 @@ internal static class JobWriter
     /// Renames a task, rewriting its own <c>task_key</c> and every <c>depends_on</c> reference to
     /// it in the same operation - so no reference is ever left stranded (Requirement 11.4).
     /// </summary>
-    public static string RenameTask(DatabricksDocument document, JobModel job, string taskKey, string newKey)
+    public static string RenameTask(LineDocument document, JobModel job, string taskKey, string newKey)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(job);
@@ -238,11 +238,11 @@ internal static class JobWriter
     }
 
     /// <summary>Rewrites a task's <c>run_if</c>; an empty value removes the key, restoring the default.</summary>
-    public static string SetRunIf(DatabricksDocument document, JobModel job, string taskKey, string runIf) =>
+    public static string SetRunIf(LineDocument document, JobModel job, string taskKey, string runIf) =>
         SetTaskKey(document, job, taskKey, "run_if", runIf);
 
     /// <summary>Rewrites a task's cluster binding; an empty value removes the key - serverless.</summary>
-    public static string SetCluster(DatabricksDocument document, JobModel job, string taskKey, string clusterKey)
+    public static string SetCluster(LineDocument document, JobModel job, string taskKey, string clusterKey)
     {
         ArgumentNullException.ThrowIfNull(job);
         if (clusterKey.Length > 0 && job.Clusters.All(cluster => cluster.Key != clusterKey))
@@ -254,7 +254,7 @@ internal static class JobWriter
     }
 
     private static string SetTaskKey(
-        DatabricksDocument document, JobModel job, string taskKey, string key, string value)
+        LineDocument document, JobModel job, string taskKey, string key, string value)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(job);
@@ -294,7 +294,7 @@ internal static class JobWriter
     /// <c>depends_on:</c> key line itself when none would remain.
     /// </summary>
     private static List<LineRange> DependencyRemovals(
-        DatabricksDocument document, JobTask task, IReadOnlyList<JobDependency> removed)
+        LineDocument document, JobTask task, IReadOnlyList<JobDependency> removed)
     {
         var ranges = removed.Select(dependency => dependency.Lines).ToList();
         if (removed.Count > 0 && removed.Count == task.DependsOn.Count)
@@ -314,7 +314,7 @@ internal static class JobWriter
     /// directly under a bare <c>tasks:</c> key. -1 when there is nowhere to insert.
     /// </summary>
     private static (string ItemIndent, string KeyIndent, int InsertAt) TaskInsertion(
-        DatabricksDocument document, JobModel job)
+        LineDocument document, JobModel job)
     {
         if (job.Tasks.Count > 0)
         {

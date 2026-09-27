@@ -81,7 +81,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - The two byte-identical `nearestRow` copies go. **Architect 1 owns the rule** (the backend persists the row); this task cites its fixture, **including the halfway and negative-zero cases** five earlier copies got wrong, and tells Architect 1 that `snapToStep` is now module-facing.
   - _Requirements: 8.1, 8.2, 8.3_
 
-- [ ] 10. One builder per id grammar
+- [x] 10. One builder per id grammar
   - Files: `canvas/selection/gestureIds.ts` (new), the ~8 canvases building `new:x,y` and `rel:a->b`, `CausalLoopCanvas.tsx:359-360`
   - **The defect this removes:** causal-loop strips `variable:` by length with no `startsWith` guard, so an id of exactly `variable:` yields an empty end and an unprefixed id is silently truncated. Every other strip in the client guards.
   - **The grammar and its parsers are Architect 1's**; this task cites its fixture and tests the empty and unprefixed ids.

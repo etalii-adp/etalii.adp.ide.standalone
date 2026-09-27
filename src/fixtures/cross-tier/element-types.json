@@ -1,0 +1,183 @@
+{
+  "reason": "Written by ElementTypesTests from each diagram module's own type constants, through ElementTypeCatalog: every element and relation type string a module puts on the wire, keyed by the module's folder under src/diagrams. The backend's constants are the source and this file is their copy; the client suite reads it against the type ids each client module declares (backend-centralization R12). An element is drawn as a box of its own, a relation between two elements. Each list is sorted ordinally, and the modules by folder name. Do not edit by hand: re-run the test and commit what it writes.",
+  "modules": {
+    "ansible-structure": {
+      "elements": [
+        "ansible/structure+inventory",
+        "ansible/structure+play",
+        "ansible/structure+playbook",
+        "ansible/structure+role",
+        "ansible/structure+taskfile",
+        "ansible/structure+vars"
+      ],
+      "relations": [
+        "ansible/structure+edge"
+      ]
+    },
+    "azure-pipeline": {
+      "elements": [
+        "azure-devops/pipeline+job",
+        "azure-devops/pipeline+stage",
+        "azure-devops/pipeline+step",
+        "azure-devops/pipeline+template"
+      ],
+      "relations": [
+        "azure-devops/pipeline+edge"
+      ]
+    },
+    "c4": {
+      "elements": [
+        "c4/model+boundary",
+        "c4/model+node",
+        "c4/model+view"
+      ],
+      "relations": [
+        "c4/model+relationship"
+      ]
+    },
+    "causal-loop": {
+      "elements": [
+        "systems/causal-loop+loop",
+        "systems/causal-loop+variable"
+      ],
+      "relations": [
+        "systems/causal-loop+link"
+      ]
+    },
+    "databricks": {
+      "elements": [
+        "databricks/bundle+bundle",
+        "databricks/bundle+resource",
+        "databricks/bundle+target",
+        "databricks/job+cluster",
+        "databricks/job+task",
+        "databricks/pipeline+node"
+      ],
+      "relations": [
+        "databricks/bundle+edge",
+        "databricks/job+edge",
+        "databricks/pipeline+edge"
+      ]
+    },
+    "dependency-graph": {
+      "elements": [
+        "generic/dependencies+node"
+      ],
+      "relations": [
+        "generic/dependencies+relation"
+      ]
+    },
+    "dotnet-dependency-graph": {
+      "elements": [
+        "dotnet/dependency-graph+package",
+        "dotnet/dependency-graph+project"
+      ],
+      "relations": [
+        "dotnet/dependency-graph+edge"
+      ]
+    },
+    "functional-decomposition-graph": {
+      "elements": [
+        "etalii/functional-decomposition-graph+action",
+        "etalii/functional-decomposition-graph+comment",
+        "etalii/functional-decomposition-graph+data-element",
+        "etalii/functional-decomposition-graph+function",
+        "etalii/functional-decomposition-graph+ui-element"
+      ],
+      "relations": [
+        "etalii/functional-decomposition-graph+owns-action",
+        "etalii/functional-decomposition-graph+owns-data",
+        "etalii/functional-decomposition-graph+owns-function",
+        "etalii/functional-decomposition-graph+shows",
+        "etalii/functional-decomposition-graph+ui-child"
+      ]
+    },
+    "gartner-hypecycle-graph": {
+      "elements": [
+        "gartner/hypecycle-graph+trend"
+      ],
+      "relations": [
+        "gartner/hypecycle-graph+influence"
+      ]
+    },
+    "helm-charts": {
+      "elements": [
+        "helm/chart+archive",
+        "helm/chart+chart",
+        "helm/chart+crds",
+        "helm/chart+lock",
+        "helm/chart+partial",
+        "helm/chart+schema",
+        "helm/chart+subchart",
+        "helm/chart+template",
+        "helm/chart+values"
+      ],
+      "relations": [
+        "helm/chart+dependency",
+        "helm/chart+edge"
+      ]
+    },
+    "mindmap": {
+      "elements": [
+        "freeplane/mindmap+node"
+      ],
+      "relations": []
+    },
+    "rdf": {
+      "elements": [
+        "w3c/owl+expression",
+        "w3c/owl+node",
+        "w3c/owl+truncation",
+        "w3c/rdf+resource",
+        "w3c/rdf+truncation",
+        "w3c/shacl+shape",
+        "w3c/shacl+truncation",
+        "w3c/skos+collection",
+        "w3c/skos+concept",
+        "w3c/skos+scheme",
+        "w3c/skos+truncation"
+      ],
+      "relations": [
+        "w3c/owl+edge",
+        "w3c/rdf+edge",
+        "w3c/shacl+edge",
+        "w3c/skos+edge"
+      ]
+    },
+    "sparql": {
+      "elements": [
+        "w3c/sparql+annotation",
+        "w3c/sparql+header",
+        "w3c/sparql+region",
+        "w3c/sparql+term",
+        "w3c/sparql+truncation",
+        "w3c/sparql+variable"
+      ],
+      "relations": [
+        "w3c/sparql+edge"
+      ]
+    },
+    "timeline": {
+      "elements": [
+        "generic/timeline+moment",
+        "generic/timeline+period"
+      ],
+      "relations": [
+        "generic/timeline+connection"
+      ]
+    },
+    "wardley-map": {
+      "elements": [
+        "wardley/map+accelerator",
+        "wardley/map+annotation",
+        "wardley/map+attitude",
+        "wardley/map+element",
+        "wardley/map+evolution-axis",
+        "wardley/map+note"
+      ],
+      "relations": [
+        "wardley/map+link"
+      ]
+    }
+  }
+}
