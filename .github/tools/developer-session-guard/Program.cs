@@ -33,9 +33,15 @@ using System.Text;
 //      before reaching any handler.
 //
 // Either alone is harmless; the guard reports both so that a partial survival is still loud.
+//
+// WHICH ASSEMBLY
+//
+// Both live in EtAlii.Adp.Authentication.dll, beside the service in the publish folder. They
+// moved there from EtAlii.Adp.Backend.dll; pointed at the old assembly, the guard finds no
+// AuthenticationService and refuses, rather than passing on an assembly that holds nothing.
 
 const string ServiceTypeName = "AuthenticationService";
-const string ServiceNamespace = "EtAlii.Adp.Backend.Authentication";
+const string ServiceNamespace = "EtAlii.Adp.Authentication";
 const string HandlerName = "DeveloperSession";
 const string ExemptionLiteral = "/DeveloperSession";
 
