@@ -17,7 +17,8 @@ It is the close-up of the last few trends in [digital-trends](../digital-trends/
 | Part | In this example |
 | --- | --- |
 | Trends | 35, in five clusters of rows: foundations, models, tooling, agents, and what comes next, with an empty row between every two rows of trends |
-| Influences | 56, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Influences | 67, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Triggers | 7, each a circle at the month it happened, with an influence on every trend it set off |
 | Anchors | Placed by [`spread-anchors.py`](../spread-anchors.py): each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: word embeddings and the Transformer show all four phases, most agent trends only a Peak |
 | Upcoming and conceptual ideas | Human-agent teams and agent-to-agent protocols are tagged `upcoming`; autonomous research agents, continual learning, verified code generation, agent economies and recursive self-improvement are tagged `conceptual` |
@@ -26,6 +27,20 @@ It is the close-up of the last few trends in [digital-trends](../digital-trends/
 | Descriptions | On most trends and some influences, kept in the document and never drawn |
 
 **Tags make meaningful filters**, for example `agents` alone; `agents` and `coding` with the filter on All; and `upcoming` and `conceptual` on Any. The other tags are `language`, `architecture`, `models`, `alignment`, `multimodal`, `products`, `society`, `tooling`, `data`, `techniques` and `science`.
+
+## Triggers
+
+A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
+
+- **AlexNet wins ImageNet**, September 2012: on Word embeddings.
+- **Attention Is All You Need**, June 2017: on Transformer.
+- **GPT-3 paper**, May 2020: on Large language models and Scaling laws.
+- **ChatGPT launched**, November 2022: on Chat assistants, Prompt engineering and Alignment research.
+- **LLaMA weights released**, February 2023: on Open-weight models.
+- **EU AI Act enters into force**, August 2024: on Alignment research.
+- **DeepSeek-R1 released**, January 2025: on Reasoning models and Open-weight models.
+
+**No trend here was a moment**: each spans years, so none was rewritten as a trigger.
 
 ## What it does not demonstrate
 

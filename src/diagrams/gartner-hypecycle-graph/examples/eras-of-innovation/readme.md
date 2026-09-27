@@ -22,12 +22,29 @@ It is the long companion to [technology-trends](../technology-trends/readme.md) 
 | --- | --- |
 | Time unit | Decades, named in the document's `unit:` key |
 | Trends | 42, from the year -3500 to 2050, placed so that a trend shares a row only where its label clears the trend before it, with an empty row between any two rows of trends |
-| Influences | 55, each attached to the phase of each trend in which it acted |
+| Influences | 66, each attached to the phase of each trend in which it acted |
+| Triggers | 9, each a circle at the month it happened, with an influence on every trend it set off |
 | Anchors | Placed by `spread-anchors.py` in the examples folder: each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: ancient and early modern innovations show all four phases, recent ones such as renewables and artificial intelligence fewer |
 | Descriptions | On some trends and some influences, kept in the document and never drawn |
 
 **Tags make meaningful filters**, for example `knowledge` alone; `energy` and `transport` with the filter on Any; and `economy` and `transport` on All. The other tags are `society`, `materials`, `health`, `communication`, `computing` and `food`.
+
+## Triggers
+
+A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
+
+- **Black Death reaches Europe**, October 1347: on Banking and double-entry bookkeeping.
+- **Gutenberg Bible printed**, January 1455: on Printing press.
+- **Columbus reaches the Americas**, October 1492: on Ocean navigation.
+- **Watt's separate condenser patent**, January 1769: on Steam engine and Factory production.
+- **Jenner's smallpox inoculation**, May 1796: on Vaccination.
+- **Wright brothers' first flight**, December 1903: on Powered flight.
+- **Fleming notices penicillin**, September 1928: on Antibiotics.
+- **Chicago Pile-1 goes critical**, December 1942: on Nuclear power.
+- **Sputnik 1**, October 1957: on Space flight and Internet.
+
+**No trend here was a moment**: each spans years, so none was rewritten as a trigger.
 
 ## What it does not demonstrate
 

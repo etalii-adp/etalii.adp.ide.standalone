@@ -15,13 +15,29 @@ It is the smaller companion to [technology-trends](../technology-trends/readme.m
 | Part | In this example |
 | --- | --- |
 | Trends | 30, placed in rows so that no two in a row overlap in time |
-| Influences | 41, each attached to the phase of each trend in which it acted |
+| Influences | 52, each attached to the phase of each trend in which it acted |
+| Triggers | 8, each a circle at the month it happened, with an influence on every trend it set off |
 | Anchors | Placed by [`spread-anchors.py`](../spread-anchors.py): each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: settled trends show all four phases, recent ones such as quantum computing and AI agents only a Peak |
 | Dragged boundaries | The dot-com bubble, blockchain and virtual reality have phase boundaries placed by hand; every other trend's phases are even |
 | Descriptions | On some trends and some influences, kept in the document and never drawn |
 
 **Tags make meaningful filters**, for example `ai` alone; `communication` and `computing` with the filter on All; and `media` and `commerce` on Any. The other tags are `data`, `security`, `society`, `finance` and `science`.
+
+## Triggers
+
+A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
+
+- **IBM PC launched**, August 1981: on Personal computer.
+- **Morris worm**, November 1988: on Cybersecurity.
+- **Mosaic browser released**, April 1993: on World Wide Web and Search engines.
+- **Nasdaq peak and crash**, March 2000: on Dot-com bubble.
+- **iPhone announced**, January 2007: on Smartphones and Mobile phones.
+- **Bitcoin white paper**, October 2008: on Blockchain and cryptocurrency.
+- **AlexNet wins ImageNet**, September 2012: on Deep learning.
+- **ChatGPT launched**, November 2022: on Large language models and AI agents.
+
+**No trend here was a moment**: each spans years, so none was rewritten as a trigger.
 
 ## What it does not demonstrate
 

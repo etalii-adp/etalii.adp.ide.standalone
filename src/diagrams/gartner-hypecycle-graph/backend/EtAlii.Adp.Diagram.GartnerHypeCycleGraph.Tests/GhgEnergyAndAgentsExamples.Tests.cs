@@ -13,12 +13,12 @@ public class GhgEnergyAndAgentsExamplesTests
 {
     public static TheoryData<string, int, int> Sizes => new()
     {
-        { "energy-breakthroughs", 33, 46 },
-        { "llms-and-agents", 35, 56 },
-        { "coal-technologies", 34, 45 },
-        { "electric-vehicles", 28, 40 },
-        { "internet-evolution", 34, 46 },
-        { "warfare-in-ukraine", 29, 42 },
+        { "energy-breakthroughs", 33, 57 },
+        { "llms-and-agents", 35, 67 },
+        { "coal-technologies", 34, 54 },
+        { "electric-vehicles", 28, 48 },
+        { "internet-evolution", 34, 56 },
+        { "warfare-in-ukraine", 29, 53 },
     };
 
     public static TheoryData<string> Examples => ["energy-breakthroughs", "llms-and-agents", "coal-technologies", "electric-vehicles", "internet-evolution", "warfare-in-ukraine"];
@@ -85,7 +85,8 @@ public class GhgEnergyAndAgentsExamplesTests
 
         Assert.All(model.Influences, influence =>
         {
-            Assert.True(influence.FromEnd.PhaseIndex < trends[influence.From].VisiblePhases, $"{influence.Id} leaves a phase {influence.From} does not show.");
+            // A trigger has no phases, so an influence from one leaves nothing that could be hidden.
+            Assert.True(!trends.TryGetValue(influence.From, out var from) || influence.FromEnd.PhaseIndex < from.VisiblePhases, $"{influence.Id} leaves a phase {influence.From} does not show.");
             Assert.True(influence.ToEnd.PhaseIndex < trends[influence.To].VisiblePhases, $"{influence.Id} lands on a phase {influence.To} does not show.");
         });
     }

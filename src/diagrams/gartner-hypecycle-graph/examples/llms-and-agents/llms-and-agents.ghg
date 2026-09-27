@@ -289,6 +289,49 @@ trends:
     phases: 1
     tags: [models, conceptual]
     description: Systems that improve the systems that improve them.
+triggers:
+  - id: alexnet
+    name: AlexNet wins ImageNet
+    date: 2012-09
+    row: 1
+    tags: [models]
+    description: Deep networks trained on GPUs became the default approach to learning from data.
+  - id: attention-is-all-you-need
+    name: Attention Is All You Need
+    date: 2017-06
+    row: 3
+    tags: [architecture]
+    description: The paper that introduced the Transformer.
+  - id: gpt-3-paper
+    name: GPT-3 paper
+    date: 2020-05
+    row: 7
+    tags: [models]
+    description: A 175-billion-parameter model that learned tasks from a few examples in its prompt.
+  - id: chatgpt-launch
+    name: ChatGPT launched
+    date: 2022-11
+    row: 13
+    tags: [products]
+    description: A hundred million users in two months.
+  - id: llama-weights
+    name: LLaMA weights released
+    date: 2023-02
+    row: 17
+    tags: [models]
+    description: Meta's model weights, shared with researchers and leaked within a week.
+  - id: eu-ai-act
+    name: EU AI Act enters into force
+    date: 2024-08
+    row: 15
+    tags: [society, alignment]
+    description: The first broad law on AI, with duties for general-purpose models.
+  - id: deepseek-r1
+    name: DeepSeek-R1 released
+    date: 2025-01
+    row: 25
+    tags: [models]
+    description: An open-weight reasoning model trained at a fraction of the expected cost.
 influences:
   - id: word-embeddings--attention
     from: word-embeddings
@@ -303,11 +346,11 @@ influences:
     from: attention
     from-phase: slope
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.64
     to: transformer
     to-phase: peak
     to-edge: top
-    to-at: 0.47
+    to-at: 0.70
     description: The Transformer kept attention and dropped the recurrence.
   - id: transformer--pretrained-encoders
     from: transformer
@@ -331,20 +374,20 @@ influences:
     from: transformer
     from-phase: trough
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.61
     to: large-language-models
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.48
   - id: scaling-laws--large-language-models
     from: scaling-laws
     from-phase: peak
     from-edge: bottom
-    from-at: 0.29
+    from-at: 0.50
     to: large-language-models
     to-phase: peak
     to-edge: top
-    to-at: 0.70
+    to-at: 0.79
     description: GPT-3 was sized by the scaling laws published months earlier.
   - id: pretrained-encoders--retrieval-augmented-generation
     from: pretrained-encoders
@@ -406,11 +449,11 @@ influences:
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.51
+    from-at: 0.52
     to: prompt-engineering
     to-phase: peak
     to-edge: top
-    to-at: 0.24
+    to-at: 0.44
   - id: instruction-tuning--chat-assistants
     from: instruction-tuning
     from-phase: peak
@@ -419,44 +462,44 @@ influences:
     to: chat-assistants
     to-phase: peak
     to-edge: top
-    to-at: 0.68
+    to-at: 0.75
     description: ChatGPT was InstructGPT's method applied to dialogue.
   - id: large-language-models--chat-assistants
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.69
+    from-at: 0.71
     to: chat-assistants
     to-phase: peak
     to-edge: top
-    to-at: 0.26
+    to-at: 0.47
   - id: chat-assistants--prompt-engineering
     from: chat-assistants
     from-phase: peak
     from-edge: bottom
-    from-at: 0.16
+    from-at: 0.17
     to: prompt-engineering
     to-phase: peak
     to-edge: top
-    to-at: 0.84
+    to-at: 0.88
   - id: instruction-tuning--alignment-research
     from: instruction-tuning
     from-phase: peak
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.77
     to: alignment-research
     to-phase: peak
     to-edge: top
-    to-at: 0.44
+    to-at: 0.48
   - id: large-language-models--open-weight-models
     from: large-language-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.88
+    from-at: 0.90
     to: open-weight-models
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.47
   - id: chat-assistants--autonomous-agents
     from: chat-assistants
     from-phase: peak
@@ -507,11 +550,11 @@ influences:
     from: mixture-of-experts
     from-phase: trough
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.60
     to: open-weight-models
     to-phase: peak
     to-edge: top
-    to-at: 0.71
+    to-at: 0.78
     description: Mixtral brought mixture of experts to open weights.
   - id: image-generation--world-models
     from: image-generation
@@ -536,20 +579,20 @@ influences:
     from: open-weight-models
     from-phase: peak
     from-edge: bottom
-    from-at: 0.58
+    from-at: 0.73
     to: small-models
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.47
   - id: scaling-laws--reasoning-models
     from: scaling-laws
     from-phase: peak
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.79
     to: reasoning-models
     to-phase: peak
     to-edge: top
-    to-at: 0.28
+    to-at: 0.21
     description: Scaling moved from training to answer time.
   - id: multimodal-models--computer-use-agents
     from: multimodal-models
@@ -573,11 +616,11 @@ influences:
     from: instruction-tuning
     from-phase: trough
     from-edge: bottom
-    from-at: 0.89
+    from-at: 0.94
     to: reasoning-models
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.76
     description: Reinforcement learning on verifiable answers taught models to reason.
   - id: tool-use--autonomous-agents
     from: tool-use
@@ -808,3 +851,69 @@ influences:
     to-edge: top
     to-at: 0.21
     description: Whether it can be done safely decides whether it should be done at all.
+  - id: alexnet--word-embeddings
+    from: alexnet
+    to: word-embeddings
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.37
+  - id: attention-is-all-you-need--transformer
+    from: attention-is-all-you-need
+    to: transformer
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: gpt-3-paper--large-language-models
+    from: gpt-3-paper
+    to: large-language-models
+    to-phase: peak
+    to-edge: top
+    to-at: 0.20
+  - id: gpt-3-paper--scaling-laws
+    from: gpt-3-paper
+    to: scaling-laws
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.20
+  - id: chatgpt-launch--chat-assistants
+    from: chatgpt-launch
+    to: chat-assistants
+    to-phase: peak
+    to-edge: top
+    to-at: 0.20
+  - id: chatgpt-launch--prompt-engineering
+    from: chatgpt-launch
+    to: prompt-engineering
+    to-phase: peak
+    to-edge: top
+    to-at: 0.42
+  - id: chatgpt-launch--alignment-research
+    from: chatgpt-launch
+    to: alignment-research
+    to-phase: peak
+    to-edge: top
+    to-at: 0.20
+  - id: llama-weights--open-weight-models
+    from: llama-weights
+    to: open-weight-models
+    to-phase: peak
+    to-edge: top
+    to-at: 0.20
+  - id: eu-ai-act--alignment-research
+    from: eu-ai-act
+    to: alignment-research
+    to-phase: peak
+    to-edge: top
+    to-at: 0.76
+  - id: deepseek-r1--reasoning-models
+    from: deepseek-r1
+    to: reasoning-models
+    to-phase: peak
+    to-edge: top
+    to-at: 0.48
+  - id: deepseek-r1--open-weight-models
+    from: deepseek-r1
+    to: open-weight-models
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.39

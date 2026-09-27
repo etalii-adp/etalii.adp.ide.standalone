@@ -259,6 +259,49 @@ trends:
     phases: 1
     tags: [networking, space, conceptual]
     description: Delay-tolerant networking between Earth, the Moon and Mars, as Vint Cerf proposed.
+triggers:
+  - id: tcp-ip-flag-day
+    name: ARPANET switches to TCP/IP
+    date: 1983-01
+    row: 3
+    tags: [networking]
+    description: Every host on the ARPANET moved to TCP/IP on one day, 1 January 1983.
+  - id: mosaic-release
+    name: Mosaic browser released
+    date: 1993-04
+    row: 25
+    tags: [web]
+    description: The first widely used graphical browser.
+  - id: netscape-ipo
+    name: Netscape IPO
+    date: 1995-08
+    row: 31
+    tags: [business, finance]
+    description: A company without profits doubled its share price on its first day of trading.
+  - id: napster-launch
+    name: Napster launched
+    date: 1999-06
+    row: 35
+    tags: [media]
+    description: Free sharing of music files between users' own computers.
+  - id: iphone-announced
+    name: iPhone announced
+    date: 2007-01
+    row: 13
+    tags: [access]
+    description: A phone with a full web browser.
+  - id: snowden-disclosures
+    name: Snowden disclosures
+    date: 2013-06
+    row: 17
+    tags: [society, policy]
+    description: Documents showing mass surveillance of internet traffic.
+  - id: chatgpt-launch
+    name: ChatGPT launched
+    date: 2022-11
+    row: 23
+    tags: [ai]
+    description: Answers written for the question, rather than links to pages.
 influences:
   - id: packet-switching--arpanet
     from: packet-switching
@@ -291,7 +334,7 @@ influences:
     from: tcp-ip
     from-phase: trough
     from-edge: top
-    from-at: 0.28
+    from-at: 0.22
     to: arpanet
     to-phase: slope
     to-edge: bottom
@@ -301,11 +344,11 @@ influences:
     from: tcp-ip
     from-phase: trough
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.61
     to: dns
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.69
   - id: arpanet--usenet
     from: arpanet
     from-phase: slope
@@ -328,11 +371,11 @@ influences:
     from: tcp-ip
     from-phase: trough
     from-edge: top
-    from-at: 0.72
+    from-at: 0.78
     to: nsfnet
     to-phase: peak
     to-edge: bottom
-    to-at: 0.28
+    to-at: 0.31
   - id: bulletin-board-systems--dial-up-access
     from: bulletin-board-systems
     from-phase: slope
@@ -375,29 +418,29 @@ influences:
     from: world-wide-web
     from-phase: peak
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.27
     to: web-browsers
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.65
   - id: world-wide-web--search-engines
     from: world-wide-web
     from-phase: peak
     from-edge: bottom
-    from-at: 0.75
+    from-at: 0.81
     to: search-engines
     to-phase: peak
     to-edge: top
-    to-at: 0.38
+    to-at: 0.40
   - id: web-browsers--dot-com-bubble
     from: web-browsers
     from-phase: peak
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.56
     to: dot-com-bubble
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.48
     description: Netscape's listing started the boom.
   - id: world-wide-web--e-commerce
     from: world-wide-web
@@ -439,7 +482,7 @@ influences:
     from: dot-com-bubble
     from-phase: peak
     from-edge: top
-    from-at: 0.74
+    from-at: 0.80
     to: broadband
     to-phase: peak
     to-edge: bottom
@@ -449,11 +492,11 @@ influences:
     from: broadband
     from-phase: peak
     from-edge: bottom
-    from-at: 0.66
+    from-at: 0.68
     to: peer-to-peer-sharing
     to-phase: peak
     to-edge: top
-    to-at: 0.75
+    to-at: 0.77
   - id: usenet--social-media
     from: usenet
     from-phase: plateau
@@ -505,11 +548,11 @@ influences:
     from: wifi
     from-phase: trough
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.66
     to: mobile-internet
     to-phase: peak
     to-edge: top
-    to-at: 0.37
+    to-at: 0.67
   - id: mobile-internet--social-media
     from: mobile-internet
     from-phase: peak
@@ -605,11 +648,11 @@ influences:
     from: cloud-computing
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.69
+    from-at: 0.82
     to: ai-answer-engines
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.69
   - id: mobile-internet--satellite-internet
     from: mobile-internet
     from-phase: plateau
@@ -683,3 +726,63 @@ influences:
     to-edge: top
     to-at: 0.28
     description: Delay-tolerant networking reworks TCP/IP for minutes-long round trips.
+  - id: tcp-ip-flag-day--tcp-ip
+    from: tcp-ip-flag-day
+    to: tcp-ip
+    to-phase: trough
+    to-edge: top
+    to-at: 0.50
+  - id: tcp-ip-flag-day--dns
+    from: tcp-ip-flag-day
+    to: dns
+    to-phase: peak
+    to-edge: top
+    to-at: 0.26
+  - id: mosaic-release--web-browsers
+    from: mosaic-release
+    to: web-browsers
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: mosaic-release--world-wide-web
+    from: mosaic-release
+    to: world-wide-web
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.72
+  - id: netscape-ipo--dot-com-bubble
+    from: netscape-ipo
+    to: dot-com-bubble
+    to-phase: peak
+    to-edge: top
+    to-at: 0.20
+  - id: netscape-ipo--e-commerce
+    from: netscape-ipo
+    to: e-commerce
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.41
+  - id: napster-launch--peer-to-peer-sharing
+    from: napster-launch
+    to: peer-to-peer-sharing
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: iphone-announced--mobile-internet
+    from: iphone-announced
+    to: mobile-internet
+    to-phase: peak
+    to-edge: top
+    to-at: 0.26
+  - id: snowden-disclosures--privacy-regulation
+    from: snowden-disclosures
+    to: privacy-regulation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.34
+  - id: chatgpt-launch--ai-answer-engines
+    from: chatgpt-launch
+    to: ai-answer-engines
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27

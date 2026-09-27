@@ -23,7 +23,7 @@ public class GhgDigitalExampleTests
         Assert.Equal(GhgModel.CurrentVersion, model.Version);
         Assert.Empty(model.Problems);
         Assert.Equal(30, model.Trends.Count);
-        Assert.Equal(41, model.Influences.Count);
+        Assert.Equal(52, model.Influences.Count);
     }
 
     [Fact]
@@ -53,7 +53,8 @@ public class GhgDigitalExampleTests
 
         Assert.All(model.Influences, influence =>
         {
-            Assert.True(influence.FromEnd.PhaseIndex < trends[influence.From].VisiblePhases, $"{influence.Id} leaves a phase {influence.From} does not show.");
+            // A trigger has no phases, so an influence from one leaves nothing that could be hidden.
+            Assert.True(!trends.TryGetValue(influence.From, out var from) || influence.FromEnd.PhaseIndex < from.VisiblePhases, $"{influence.Id} leaves a phase {influence.From} does not show.");
             Assert.True(influence.ToEnd.PhaseIndex < trends[influence.To].VisiblePhases, $"{influence.Id} lands on a phase {influence.To} does not show.");
         });
     }

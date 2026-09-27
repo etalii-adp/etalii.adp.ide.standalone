@@ -144,7 +144,8 @@ public sealed class GhgProvidersTests : IDisposable
         var influencedBy = GhgContextPropertyProvider.InfluencedByProperties;
 
         Assert.Equal("Coal power · Peak\nFactory system · Peak\nIndustrial Revolution · Peak", Value(influences, 0));
-        Assert.Equal("Coke iron smelting · Peak\nCoal power · Peak", Value(influencedBy, 0));
+        // A trigger is named alone: it has no phase to name.
+        Assert.Equal("Coke iron smelting · Peak\nCoal power · Peak\nWatt's separate condenser patent", Value(influencedBy, 0));
         Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influences, 1));
         Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influencedBy, 1));
         Assert.Equal("Steamboats · Peak\nOcean steamships · Peak", Value(influences, 2));

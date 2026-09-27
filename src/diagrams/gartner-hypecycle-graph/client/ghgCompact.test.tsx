@@ -97,7 +97,8 @@ describe("the technology-trends example in compact mode", () => {
   it("draws every trend at one width, in the order they start, never two touching on a row", { timeout: 30_000 }, () => {
     const { container } = renderCompact(model);
 
-    const placed = model.elements.map((element) => ({
+    // The trends: a trigger and a note keep their own size, which the next describe block holds.
+    const placed = model.elements.filter((element) => element.type === "trend").map((element) => ({
       name: element.label ?? "",
       start: element.x - element.width! / 2,
       row: element.y,
