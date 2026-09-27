@@ -20,7 +20,7 @@ namespace EtAlii.Adp.Diagram.CausalLoop;
 /// <see cref="SetRegistrationLayoutCommand"/> per box would make undoing a forty-variable
 /// arrangement forty undos, which is not what "one undo away like every other edit" means. So
 /// this is a single command whose inverse restores the registration's prior text — the same
-/// shape <see cref="RestoreCausalLoopDocumentCommand"/> uses for the body, and for the same
+/// shape <see cref="RestoreDocumentCommand{TStore}"/> uses for the body, and for the same
 /// reason: a snapshot cannot be wrong about what it is putting back.
 /// </para>
 /// </remarks>

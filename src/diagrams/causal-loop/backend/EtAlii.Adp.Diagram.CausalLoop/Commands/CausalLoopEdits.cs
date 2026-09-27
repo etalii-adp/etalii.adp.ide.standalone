@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.CausalLoop;
@@ -44,39 +43,6 @@ internal static class CausalLoopEdits
             return Task.FromResult(CommandResult.Failure(error));
         }
 
-        return Task.FromResult(CommandResult.Success(new RestoreCausalLoopDocumentCommand(bodyPath, before, self)));
-    }
-}
-
-/// <summary>
-/// Puts a document back byte for byte - the inverse every edit here reports, so undoing one
-/// restores comments, blank lines and spacing exactly as the author had them.
-/// </summary>
-/// <param name="BodyPath">The document to restore.</param>
-/// <param name="Text">Its complete text as captured before the edit.</param>
-/// <param name="Redo">The original command, so redoing the undo runs the same edit again.</param>
-public sealed record RestoreCausalLoopDocumentCommand(string BodyPath, string Text, ICommand Redo) : ICommand;
-
-/// <inheritdoc cref="RestoreCausalLoopDocumentCommand" />
-public sealed class RestoreCausalLoopDocumentCommandHandler(ICausalLoopDocumentStore documents)
-    : ICommandHandler<RestoreCausalLoopDocumentCommand>
-{
-    public Task<CommandResult> ExecuteAsync(
-        RestoreCausalLoopDocumentCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        try
-        {
-            AdpFileWriter.Save(command.BodyPath, command.Text);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return Task.FromResult(CommandResult.Failure($"Could not restore the file: {exception.Message}"));
-        }
-
-        documents.Reload(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(command.Redo));
+        return Task.FromResult(CommandResult.Success(new RestoreDocumentCommand<ICausalLoopDocumentStore>(bodyPath, before, self)));
     }
 }

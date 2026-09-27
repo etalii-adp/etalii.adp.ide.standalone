@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -39,7 +38,7 @@ internal static class RdfEdits
 
         var error = documents.Save(bodyPath, entry);
         return Task.FromResult(error.Length == 0
-            ? CommandResult.Success(new RestoreRdfDocumentCommand(bodyPath, before, self))
+            ? CommandResult.Success(new RestoreDocumentCommand<IRdfDocumentStore>(bodyPath, before, self))
             : CommandResult.Failure(error));
     }
 
@@ -61,37 +60,4 @@ internal static class RdfEdits
                     && l.Lexical == lexical
                     && (l.Language ?? "") == language
                     && (l.DatatypeIri ?? "") == datatypeIri));
-}
-
-/// <summary>
-/// Puts a document back byte for byte - the inverse every module edit reports, so undoing one
-/// restores comments, formatting and abbreviation style exactly as they were.
-/// </summary>
-/// <param name="BodyPath">The document to restore.</param>
-/// <param name="Text">Its complete text as captured before the edit.</param>
-/// <param name="Redo">The original command, so redoing the undo runs the same edit again.</param>
-public sealed record RestoreRdfDocumentCommand(string BodyPath, string Text, ICommand Redo) : ICommand;
-
-/// <inheritdoc cref="RestoreRdfDocumentCommand" />
-public sealed class RestoreRdfDocumentCommandHandler(IRdfDocumentStore documents)
-    : ICommandHandler<RestoreRdfDocumentCommand>
-{
-    public Task<CommandResult> ExecuteAsync(RestoreRdfDocumentCommand command, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        try
-        {
-            AdpFileWriter.Save(command.BodyPath, command.Text);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return Task.FromResult(CommandResult.Failure($"Could not restore the file: {exception.Message}"));
-        }
-
-        // Through the store's reload, so every open session hears about the restored state.
-        documents.Reload(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(command.Redo));
-    }
 }
