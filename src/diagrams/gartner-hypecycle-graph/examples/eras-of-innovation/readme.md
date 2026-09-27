@@ -27,7 +27,7 @@ It is the long companion to [technology-trends](../technology-trends/readme.md) 
 | Phase counts | Every count from 1 to 4: ancient and early modern innovations show all four phases, recent ones such as renewables and artificial intelligence fewer |
 | Descriptions | On some trends and some influences, kept in the document and never drawn |
 
-**Tags make meaningful filters**, for example `knowledge`; `energy or transport`; and `health and not knowledge`. The other tags are `society`, `materials`, `economy`, `communication`, `computing` and `food`.
+**Tags make meaningful filters**, for example `knowledge` alone; `energy` and `transport` with the filter on Any; and `economy` and `transport` on All. The other tags are `society`, `materials`, `health`, `communication`, `computing` and `food`.
 
 ## What it does not demonstrate
 

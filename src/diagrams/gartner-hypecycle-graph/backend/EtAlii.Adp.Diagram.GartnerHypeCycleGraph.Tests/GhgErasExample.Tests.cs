@@ -99,14 +99,14 @@ public class GhgErasExampleTests
     [Theory]
     [InlineData("knowledge")]
     [InlineData("energy or transport")]
-    [InlineData("health and not knowledge")]
+    [InlineData("economy and transport")]
     public void EachFilterTheReadmeNames_MatchesSomeTrends_AndHidesSome(string filter)
     {
         Func<IReadOnlyList<string>, bool> matches = filter switch
         {
             "knowledge" => tags => tags.Contains("knowledge"),
             "energy or transport" => tags => tags.Contains("energy") || tags.Contains("transport"),
-            "health and not knowledge" => tags => tags.Contains("health") && !tags.Contains("knowledge"),
+            "economy and transport" => tags => tags.Contains("economy") && tags.Contains("transport"),
             _ => throw new ArgumentOutOfRangeException(nameof(filter)),
         };
 
