@@ -1,4 +1,5 @@
 import type { LayoutDefinition, LayoutMode, ShapePoint } from "../definition/diagramDefinition";
+import { rowPackedLayout } from "./rowPackedLayout";
 
 /** What a layout pass reads: positions, sizes, and the two structures a hierarchy can hang on. */
 export interface LayoutInput {
@@ -14,10 +15,25 @@ export interface LayoutElement {
   height: number;
   /** The tree parent, where the notation nests structurally. */
   parentId?: string;
+  /** The element's type, for a layout that treats types differently. */
+  type?: string;
+  /**
+   * The room this element needs clear before its left edge - a label drawn to its left. A layout
+   * that packs elements side by side keeps it free of the element before; omitted, none.
+   */
+  leading?: number;
 }
 
-/** Where each element goes, by id. `null` means: the model's own positions, untouched. */
-export type LayoutPositions = ReadonlyMap<string, ShapePoint> | null;
+/**
+ * Where each element goes, by id, and - for a layout that sizes as well as places - the width
+ * it is drawn with. `null` means: the model's own positions, untouched.
+ */
+export type LayoutPositions = ReadonlyMap<string, LayoutPlacement> | null;
+
+/** One element's placement: its centre, and its width where the layout decides that too. */
+export interface LayoutPlacement extends ShapePoint {
+  width?: number;
+}
 
 /**
  * One layout mode behind one seam (diagram-library Requirement 8.1). A further algorithm is
@@ -31,6 +47,12 @@ export type LayoutPositions = ReadonlyMap<string, ShapePoint> | null;
 export interface LayoutAlgorithm {
   readonly mode: LayoutMode;
   place(input: LayoutInput, definition: LayoutDefinition): LayoutPositions;
+  /**
+   * The point in the model's own space that `point`, in the placed space, stands for - what a
+   * drop under this layout means to a module that places by the model's positions. A layout
+   * without one leaves a drop's position as the pointer's.
+   */
+  inverse?(point: ShapePoint, input: LayoutInput, definition: LayoutDefinition): ShapePoint;
 }
 
 /**
@@ -136,7 +158,7 @@ export const treeLayout: LayoutAlgorithm = {
  * manual: the honest fallback, because inventing placements for an unimplemented mode would
  * be worse than leaving the model's own.
  */
-export const LAYOUT_ALGORITHMS: readonly LayoutAlgorithm[] = [manualLayout, treeLayout];
+export const LAYOUT_ALGORITHMS: readonly LayoutAlgorithm[] = [manualLayout, treeLayout, rowPackedLayout];
 
 export function layoutAlgorithmFor(mode: LayoutMode): LayoutAlgorithm | undefined {
   return LAYOUT_ALGORITHMS.find((algorithm) => algorithm.mode === mode);

@@ -72,7 +72,7 @@ internal static class ElementTypeCatalog
             [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType],
             [FdgElementMapper.UiChildType, FdgElementMapper.OwnsActionType, FdgElementMapper.OwnsDataType, FdgElementMapper.OwnsFunctionType, FdgElementMapper.ShowsType]),
         new("gartner-hypecycle-graph",
-            [GhgElementMapper.TrendType],
+            [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType],
             [GhgElementMapper.InfluenceType]),
         new("helm-charts",
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.CrdsType, HelmElementMapper.SubchartType, HelmElementMapper.ArchiveType, HelmElementMapper.LockType],

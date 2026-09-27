@@ -208,7 +208,7 @@ public class WritableDocumentLifecycleTests : IDisposable
     }
 
     private static WritableDocumentLifecycle<Note> Lifecycle(Action<string, string>? write = null) =>
-        new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? new Action<string, string>(AdpFileWriter.Save));
+        new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? AdpFileWriter.Save);
 
     private string Write(string name, string text)
     {

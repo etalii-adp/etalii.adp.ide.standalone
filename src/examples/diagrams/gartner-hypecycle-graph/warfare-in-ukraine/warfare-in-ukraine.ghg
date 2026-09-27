@@ -236,6 +236,49 @@ trends:
     phases: 1
     tags: [ai, doctrine, conceptual]
     description: Units in which soldiers direct many robots, and the rules for who decides what.
+triggers:
+  - id: annexation-of-crimea
+    name: Annexation of Crimea
+    date: 2014-03
+    row: 11
+    tags: [doctrine]
+    description: Unmarked troops and information operations took Crimea with little fighting.
+  - id: mh17
+    name: Downing of MH17
+    date: 2014-07
+    row: 15
+    tags: [intelligence]
+    description: Open-source investigators traced the missile launcher from photographs and videos posted online.
+  - id: notpetya
+    name: NotPetya cyberattack
+    date: 2017-06
+    row: 7
+    tags: [cyber]
+    description: Malware spread through Ukrainian accounting software and disabled companies worldwide.
+  - id: second-nagorno-karabakh-war
+    name: Second Nagorno-Karabakh War
+    date: 2020-09
+    row: 17
+    tags: [drones]
+    description: Forty-four days in which strike drones and loitering munitions destroyed armour and air defences.
+  - id: full-scale-invasion
+    name: Full-scale invasion
+    date: 2022-02
+    row: 21
+    tags: [doctrine]
+    description: Russia's invasion of Ukraine on 24 February 2022.
+  - id: sinking-of-moskva
+    name: Sinking of the cruiser Moskva
+    date: 2022-04
+    row: 33
+    tags: [naval]
+    description: The Black Sea Fleet's flagship sank after a missile strike, and the fleet moved away from Ukraine's coast.
+  - id: operation-spiderweb
+    name: Operation Spiderweb
+    date: 2025-06
+    row: 41
+    tags: [drones]
+    description: Drones launched from trucks deep inside Russia struck strategic bombers at several airbases.
 influences:
   - id: gps--precision-guided-munitions
     from: gps
@@ -279,66 +322,66 @@ influences:
     from: cyber-warfare
     from-phase: peak
     from-edge: bottom
-    from-at: 0.59
+    from-at: 0.62
     to: hybrid-warfare
     to-phase: peak
     to-edge: top
-    to-at: 0.35
+    to-at: 0.67
   - id: hybrid-warfare--electronic-warfare
     from: hybrid-warfare
     from-phase: peak
     from-edge: bottom
-    from-at: 0.04
+    from-at: 0.35
     to: electronic-warfare
     to-phase: peak
     to-edge: top
-    to-at: 0.43
+    to-at: 0.69
   - id: hybrid-warfare--open-source-intelligence
     from: hybrid-warfare
     from-phase: peak
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.71
     to: open-source-intelligence
     to-phase: peak
     to-edge: top
-    to-at: 0.40
+    to-at: 0.51
     description: Volunteers traced the missile that downed MH17.
   - id: commercial-satellite-imagery--open-source-intelligence
     from: commercial-satellite-imagery
     from-phase: peak
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.56
     to: open-source-intelligence
     to-phase: peak
     to-edge: top
-    to-at: 0.71
+    to-at: 0.78
   - id: armed-drones--strike-drones
     from: armed-drones
     from-phase: slope
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.57
     to: strike-drones
     to-phase: peak
     to-edge: top
-    to-at: 0.30
+    to-at: 0.65
   - id: strike-drones--loitering-munitions
     from: strike-drones
     from-phase: peak
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.96
     to: loitering-munitions
     to-phase: peak
     to-edge: top
-    to-at: 0.44
+    to-at: 0.69
   - id: cyber-warfare--satellite-communications
     from: cyber-warfare
     from-phase: trough
     from-edge: bottom
-    from-at: 0.52
+    from-at: 0.53
     to: satellite-communications
     to-phase: peak
     to-edge: top
-    to-at: 0.17
+    to-at: 0.61
     description: The KA-SAT hack on the first day of the invasion sent units to Starlink.
   - id: precision-guided-munitions--anti-tank-missiles
     from: precision-guided-munitions
@@ -348,16 +391,16 @@ influences:
     to: anti-tank-missiles
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.96
   - id: commercial-satellite-imagery--battlefield-management-software
     from: commercial-satellite-imagery
     from-phase: trough
     from-edge: bottom
-    from-at: 0.35
+    from-at: 0.36
     to: battlefield-management-software
     to-phase: peak
     to-edge: top
-    to-at: 0.68
+    to-at: 0.75
   - id: satellite-communications--battlefield-management-software
     from: satellite-communications
     from-phase: peak
@@ -366,7 +409,7 @@ influences:
     to: battlefield-management-software
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.48
   - id: gps--rocket-artillery
     from: gps
     from-phase: plateau
@@ -399,11 +442,11 @@ influences:
     from: satellite-communications
     from-phase: trough
     from-edge: bottom
-    from-at: 0.50
+    from-at: 0.54
     to: sea-drones
     to-phase: peak
     to-edge: top
-    to-at: 0.50
+    to-at: 0.71
   - id: long-range-attack-drones--layered-air-defence
     from: long-range-attack-drones
     from-phase: peak
@@ -477,7 +520,7 @@ influences:
     to: mass-drone-production
     to-phase: peak
     to-edge: top
-    to-at: 0.40
+    to-at: 0.28
   - id: electronic-warfare--fpv-drones
     from: electronic-warfare
     from-phase: peak
@@ -623,3 +666,69 @@ influences:
     to-phase: peak
     to-edge: top
     to-at: 0.78
+  - id: annexation-of-crimea--hybrid-warfare
+    from: annexation-of-crimea
+    to: hybrid-warfare
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: annexation-of-crimea--electronic-warfare
+    from: annexation-of-crimea
+    to: electronic-warfare
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: mh17--open-source-intelligence
+    from: mh17
+    to: open-source-intelligence
+    to-phase: peak
+    to-edge: top
+    to-at: 0.20
+  - id: notpetya--cyber-warfare
+    from: notpetya
+    to: cyber-warfare
+    to-phase: trough
+    to-edge: top
+    to-at: 0.42
+  - id: second-nagorno-karabakh-war--strike-drones
+    from: second-nagorno-karabakh-war
+    to: strike-drones
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: second-nagorno-karabakh-war--loitering-munitions
+    from: second-nagorno-karabakh-war
+    to: loitering-munitions
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: full-scale-invasion--anti-tank-missiles
+    from: full-scale-invasion
+    to: anti-tank-missiles
+    to-phase: peak
+    to-edge: top
+    to-at: 0.04
+  - id: full-scale-invasion--satellite-communications
+    from: full-scale-invasion
+    to: satellite-communications
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: full-scale-invasion--battlefield-management-software
+    from: full-scale-invasion
+    to: battlefield-management-software
+    to-phase: peak
+    to-edge: top
+    to-at: 0.20
+  - id: sinking-of-moskva--sea-drones
+    from: sinking-of-moskva
+    to: sea-drones
+    to-phase: peak
+    to-edge: top
+    to-at: 0.26
+  - id: operation-spiderweb--mass-drone-production
+    from: operation-spiderweb
+    to: mass-drone-production
+    to-phase: peak
+    to-edge: top
+    to-at: 0.69

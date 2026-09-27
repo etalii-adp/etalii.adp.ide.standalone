@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { LAYOUT_ALGORITHMS, layoutAlgorithmFor, manualLayout, treeLayout } from "./layoutAlgorithm";
+import { rowPackedLayout } from "./rowPackedLayout";
 import { DiagramCanvas } from "../DiagramCanvas";
 import type { DiagramDefinition } from "../definition/diagramDefinition";
 import type { DiagramModel } from "../api/diagramModel";
@@ -53,7 +54,8 @@ describe("the layout seam", () => {
     // Declared in the schema, landing with adoption: no entry yet, and the canvas falls back
     // to manual rather than inventing placements.
     expect(layoutAlgorithmFor("horizontal-flow")).toBeUndefined();
-    expect(LAYOUT_ALGORITHMS.length).toBe(2);
+    expect(layoutAlgorithmFor("row-packed")).toBe(rowPackedLayout);
+    expect(LAYOUT_ALGORITHMS.length).toBe(3);
   });
 });
 

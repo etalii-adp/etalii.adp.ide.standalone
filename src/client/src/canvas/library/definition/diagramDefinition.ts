@@ -234,6 +234,16 @@ export interface AnchorEnablement {
    * has always done.
    */
   edgeSides?: "all" | "horizontal" | "vertical";
+  /**
+   * Where a connection end on this element is DRAWN, as opposed to where the gesture that made it
+   * started. `"edge"` draws every end on the element by edge intersection towards the other end,
+   * whatever named anchor was pulled, and leaves the anchor name out of `connection-drawn` - so a
+   * small circle can offer handles to start a connection from, while its line leaves the outline
+   * facing its target and the document stores nothing for that end. Unset, or `"anchor"`, draws
+   * an end at the anchor it names, as always. Meaningless on `along` anchors, which the validator
+   * rejects.
+   */
+  attachDrawnBy?: "anchor" | "edge";
 }
 
 export type AnchorSet = AnchorPositions & AnchorEnablement;
@@ -785,6 +795,15 @@ export interface ElementTypeDefinition {
   resize?: "width" | "both";
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
   draggable?: boolean;
+  /**
+   * Whether an element of this type that a toolbox drop just created is selected and its label
+   * opened for editing, through the type's `activate` gesture, as soon as the model brings it.
+   * The canvas remembers the drop point for five seconds; the first new element of such a type
+   * whose model bounds contain it is the one. Any other gesture forgets the drop, so a slow
+   * backend never opens an editor on something the reader did not just drop. Unset, a dropped
+   * element is only drawn.
+   */
+  editOnDrop?: boolean;
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
   deletable?: boolean;
   /**
@@ -1006,7 +1025,7 @@ export interface ToolboxItemDefinition {
 }
 
 /** The layout modes a definition may allow (Requirement 8.1). */
-export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph";
+export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph" | "row-packed";
 
 export interface LayoutDefinition {
   /**
@@ -1023,6 +1042,51 @@ export interface LayoutDefinition {
   dragUnderAutomaticLayout?: "repin-to-manual" | "reclaimed-displacement";
   /** The direction a `tree` mode grows in, where that mode is allowed. */
   treeDirection?: "left-to-right" | "right-to-left" | "top-down" | "bottom-up";
+  /**
+   * What the `row-packed` mode draws every element as: one `width` for all, packed along the
+   * rows they already sit on, each at least `gap` after the one before it on its row.
+   * Required where that mode is allowed.
+   */
+  rowPacked?: RowPackedDeclaration;
+  /**
+   * Parts of the definition replaced while a mode is active, merged shallowly over it - the
+   * way a mode says which gestures and chrome it switches off. `layout` itself is never
+   * overridden, so the modes and the toggle stay put while switching.
+   */
+  modeOverrides?: Partial<Record<LayoutMode, Partial<Omit<DiagramDefinition, "layout">>>>;
+  /**
+   * A two-state switch between the first mode and `on`, drawn as a toggle button directly
+   * below the filter box's legend. Declared, it replaces the switcher row.
+   */
+  toggle?: LayoutToggleDeclaration;
+}
+
+/** See {@link LayoutDefinition.rowPacked}. */
+export interface RowPackedDeclaration {
+  /** The width every element of the listed types is drawn with - every element, without `types`. */
+  width: number;
+  /** The least space between two elements on one row. */
+  gap: number;
+  /**
+   * The element types drawn at `width`. An element of any other type keeps its own width and
+   * height, and is still placed in the order of its left edge and clear of its neighbours on every
+   * row it covers. Omitted, every element takes the width.
+   */
+  types?: readonly string[];
+  /**
+   * The distance between two row lines. Declared, an element occupies every row line from
+   * `floor(top / rowStep)` to `floor((bottom - 1) / rowStep)`, so one two rows tall keeps both
+   * clear; omitted, an element's row is its centre's height, as for elements one row tall.
+   */
+  rowStep?: number;
+}
+
+/** See {@link LayoutDefinition.toggle}. */
+export interface LayoutToggleDeclaration {
+  /** The button's caption. */
+  caption: string;
+  /** The mode the button's pressed state stands for; the first mode is its unpressed state. */
+  on: LayoutMode;
 }
 
 /** Whether pointer drags move elements at all, before per-type overrides (Requirement 5.2). */
@@ -1150,6 +1214,12 @@ export interface FilterDeclaration {
    * it stands for. Omitted, the box has none.
    */
   legend?: readonly FilterLegendEntry[];
+  /**
+   * The element types the filter applies to. An element of any other type is never hidden by it,
+   * keeps its connections, and offers none of its tags as suggestions - a remark box carrying no
+   * tags stays on the canvas under every filter. Omitted, the filter applies to every type.
+   */
+  elementTypes?: readonly string[];
 }
 
 /** One line of a filter box's legend. See {@link FilterDeclaration.legend}. */

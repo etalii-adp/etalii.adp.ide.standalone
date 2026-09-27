@@ -15,7 +15,9 @@ Thirty-four technologies around coal, from the Newcomen pumping engine of 1712 t
 | Part | In this example |
 | --- | --- |
 | Trends | 34, in five clusters of rows: mining; iron, steam and gas; power; conversion; and climate and after coal, with an empty row between every two rows of trends |
-| Influences | 45, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Influences | 54, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Triggers | 6, each a circle at the month it happened, with an influence on every trend it set off |
+| Notes | 1, beside the trends after 2026, saying that they are projections |
 | Long-finished trends | The Newcomen engine, coke smelting, the Watt engine and coal gas show all four phases and ended long ago; several of them act on a later trend from their last phase |
 | Phase counts | Every count from 1 to 4: most historical trends show all four phases, the phase-out and the ideas after it only a Peak |
 | Upcoming and conceptual ideas | Coal to hydrogen with capture and repowered coal plants are tagged `upcoming`; critical minerals from coal ash, coal to carbon materials and direct carbon fuel cells are tagged `conceptual` |
@@ -23,6 +25,19 @@ Thirty-four technologies around coal, from the Newcomen pumping engine of 1712 t
 | Descriptions | On most trends and some influences, kept in the document and never drawn |
 
 **Tags make meaningful filters**, for example `power` alone; `gasification` and `liquids` with the filter on Any; and `upcoming` and `conceptual` on Any. The other tags are `mining`, `steam`, `safety`, `automation`, `iron`, `gas`, `transport`, `chemistry`, `environment`, `policy`, `climate`, `heat` and `reuse`.
+
+## Triggers
+
+A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
+
+- **Rainhill trials**, October 1829: on Steam locomotive.
+- **Pearl Street Station opens**, September 1882: on Coal-fired power stations.
+- **Great Smog of London**, December 1952: on Smoke abatement and Electrostatic precipitators.
+- **US Clean Air Act**, December 1970: on Flue-gas desulfurisation.
+- **1973 oil crisis**, October 1973: on Coal gasification and Fischer-Tropsch coal-to-liquids.
+- **Paris Agreement**, December 2015: on Coal phase-out and Carbon capture and storage.
+
+**No trend here was a moment**: each spans years, so none was rewritten as a trigger.
 
 ## What it does not demonstrate
 

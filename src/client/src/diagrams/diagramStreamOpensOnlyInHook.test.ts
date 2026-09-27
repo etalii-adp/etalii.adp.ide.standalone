@@ -13,16 +13,18 @@ import { describe, expect, it } from "vitest";
  * The behavioural half, which proves the wrappers actually reconnect correctly, is
  * `diagramStreamHooks.reconnect.test.ts`.
  *
- * **Its limits, stated plainly.** It reads text: it recognises the `Open` request by its
- * shape, a call to `.open(` whose request begins with `projectId:`. That catches a copy of
+ * **Its limits, stated plainly.** It reads text: it recognises the open by its shape, a call to
+ * `openDiagramStream(` - the tab's one stream, handed out by `useWorkspaceStreams` since
+ * two-tab-connection-wedge task 5 - or to `.open(` whose request begins with `projectId:`, the
+ * `DiagramService.Open` call it replaced and the shape every past copy took. That catches a copy of
  * the loop, which is how every offender arose, and not a from-scratch rewrite that builds the
  * request under other names. The positive control below proves the pattern still recognises
  * the one call that is allowed, so a pattern that silently stopped matching fails here rather
  * than passing with nothing found.
  */
 
-/** A `DiagramService.Open` call: `.open(` with a request object that starts with projectId. */
-const DIAGRAM_STREAM_OPEN = /\.open\(\s*\{\s*projectId\s*:/;
+/** A diagram stream opened: on the tab's one stream, or the `DiagramService.Open` call it replaced. */
+const DIAGRAM_STREAM_OPEN = /\bopenDiagramStream\(\s*\{|\.open\(\s*\{\s*projectId\s*:/;
 
 /** The one file allowed to open the stream, relative to src/. */
 const THE_HOOK = "client/src/diagrams/useDiagramStream.ts";

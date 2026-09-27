@@ -87,6 +87,7 @@ import type {
   EdgeAttachment,
   EdgeName,
   ElementTypeDefinition,
+  LayoutMode,
   RelationTypeDefinition,
   ShapeSelection,
 } from "./definition/diagramDefinition";
@@ -286,12 +287,14 @@ interface AdjustDragPreview {
 interface ConnectPreview {
   relation: RelationTypeDefinition;
   sourceId: string;
+  /** The source element's type, so the release knows whether its end is drawn by edge. */
+  sourceType: string;
   sourceAnchor?: string;
   /** Where along its edge the gesture began, for a source declaring `along` anchors. */
   sourceAttachment?: EdgeAttachment;
   from: Point;
   point: Point;
-  target?: { elementId: string; anchor?: string; attachment?: EdgeAttachment };
+  target?: { elementId: string; type: string; anchor?: string; attachment?: EdgeAttachment };
   valid: boolean;
 }
 
@@ -360,7 +363,16 @@ export function DiagramCanvasCore({
   // Memoized because two registrations key on its identity: a fresh object per render
   // would re-register the toolbox every render, and the provider's setState would render
   // again - a loop. The config object is a prop; its identity is the caller's contract.
-  const definition = useMemo(() => effectiveDefinition(statedDefinition, config), [statedDefinition, config]);
+  //
+  // The active layout mode is VIEW STATE: a host that sets `activeLayoutMode` decides it, and a
+  // canvas nobody configures answers its own switcher and toggle. It is read from the stated
+  // layout, which no mode overrides, and chooses which of the mode's overrides the canvas reads.
+  const [viewLayoutMode, setViewLayoutMode] = useState<LayoutMode | undefined>(undefined);
+  const activeLayoutMode = config?.activeLayoutMode ?? viewLayoutMode ?? statedDefinition.layout.modes[0] ?? "manual";
+  const definition = useMemo(
+    () => effectiveDefinition(statedDefinition, config, activeLayoutMode),
+    [statedDefinition, config, activeLayoutMode],
+  );
   const elementTypes = useMemo(
     () => new Map(definition.elementTypes.map((type) => [type.id, type])),
     [definition.elementTypes],
@@ -372,21 +384,40 @@ export function DiagramCanvasCore({
   // The layout seam (Requirement 8.1): the active mode's algorithm places the elements, and
   // everything downstream - rendering, hit-testing, anchors, fit - reads the placed set.
   // Manual/external returns null and the model's own positions pass through untouched.
-  const activeLayoutMode = config?.activeLayoutMode ?? definition.layout.modes[0] ?? "manual";
-  const layoutPositions = useMemo(() => {
-    const algorithm = layoutAlgorithmFor(activeLayoutMode);
-    if (algorithm === undefined) {
-      return null; // an unimplemented mode lays out as manual - the honest fallback
-    }
-    const input: LayoutInput = {
+  // Laid out over every element of the model, never only those the filter leaves: filtering hides,
+  // it does not re-place what is left.
+  const layoutAlgorithm = layoutAlgorithmFor(activeLayoutMode);
+  const layoutInput = useMemo<LayoutInput>(
+    () => ({
       elements: model.elements.map((element) => {
-        const bounds = elementBounds(element, elementTypes.get(element.type));
-        return { id: element.id, x: element.x, y: element.y, width: bounds.width, height: bounds.height, parentId: element.parentId };
+        const type = elementTypes.get(element.type);
+        const bounds = elementBounds(element, type);
+        return {
+          id: element.id,
+          x: element.x,
+          y: element.y,
+          width: bounds.width,
+          height: bounds.height,
+          parentId: element.parentId,
+          type: element.type,
+          leading: leadingOf(element, type),
+        };
       }),
       connections: model.connections.map((connection) => ({ sourceId: connection.sourceId, targetId: connection.targetId })),
-    };
-    return algorithm.place(input, definition.layout);
-  }, [activeLayoutMode, model, elementTypes, definition.layout]);
+    }),
+    [model, elementTypes],
+  );
+  const layoutToggle = statedDefinition.layout.toggle;
+  /** A switch the reader made: held as view state, and raised for a host that wants to know. */
+  const switchLayoutMode = (mode: LayoutMode) => {
+    setViewLayoutMode(mode);
+    raise({ kind: "layout-mode-changed", mode });
+  };
+  const layoutPositions = useMemo(
+    // An unimplemented mode lays out as manual - the honest fallback.
+    () => (layoutAlgorithm === undefined ? null : layoutAlgorithm.place(layoutInput, definition.layout)),
+    [layoutAlgorithm, layoutInput, definition.layout],
+  );
 
   const elements = useMemo(
     () =>
@@ -394,7 +425,7 @@ export function DiagramCanvasCore({
         ? model.elements
         : model.elements.map((element) => {
             const at = layoutPositions.get(element.id);
-            return at === undefined ? element : { ...element, x: at.x, y: at.y };
+            return at === undefined ? element : { ...element, x: at.x, y: at.y, width: at.width ?? element.width };
           }),
     [model.elements, layoutPositions],
   );
@@ -414,7 +445,14 @@ export function DiagramCanvasCore({
       return byElement;
     }
 
+    // An element of a type outside the filter's scope has no entry at all, so it is never hidden
+    // and its tags are never suggested.
+    const scope = filter.elementTypes === undefined ? undefined : new Set(filter.elementTypes);
     for (const element of elements) {
+      if (scope !== undefined && !scope.has(element.type)) {
+        continue;
+      }
+
       const tags = valueAtPath(filter.field, sourceOf(element));
       byElement.set(element.id, Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : []);
     }
@@ -457,6 +495,8 @@ export function DiagramCanvasCore({
   const rootRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewBox | null>(null);
   const [ownSelection, setOwnSelection] = useState<DiagramSelection>([]);
+  /** The last toolbox drop, awaiting the element it creates - see the edit-on-drop effect. */
+  const dropMemoryRef = useRef<{ position: Point; at: number; known: ReadonlySet<string> } | null>(null);
 
   // A gesture's per-frame values are NOT React state on the canvas: they flow through the
   // gesture-frame scheduler into these cells, and only the gesture's own participants
@@ -736,7 +776,9 @@ export function DiagramCanvasCore({
       if (attachment !== undefined && type?.anchors.kind === "along") {
         return attachmentPointOf(attachment, bounds, attachmentLayoutOf(element, type, bounds));
       }
-      if (anchor !== undefined && type !== undefined) {
+      // An end on a type drawn by edge ignores the anchor that started the gesture, so the line
+      // leaves the outline facing the other end rather than the handle it was pulled from.
+      if (anchor !== undefined && type !== undefined && type.anchors.attachDrawnBy !== "edge") {
         const named = anchorPoints(type.anchors, bounds).find((candidate) => candidate.name === anchor);
         if (named !== undefined) {
           return named.point;
@@ -778,6 +820,16 @@ export function DiagramCanvasCore({
         if (onOutline !== null) {
           return onOutline;
         }
+      }
+
+      // A type drawn by edge is a small shape starting lines in every direction, where the box's
+      // corner would leave a visible gap beside a round outline. Other ellipses keep the box answer
+      // `outline.ts` explains, so no existing drawing moves.
+      if (type?.anchors.attachDrawnBy === "edge" && !isCustomShape(type.shape) && shapeOf(type.shape, sourceOf(element)) === "ellipse" && (dx !== 0 || dy !== 0)) {
+        const a = bounds.width / 2;
+        const b = bounds.height / 2;
+        const scale = 1 / Math.sqrt((dx * dx) / (a * a) + (dy * dy) / (b * b));
+        return { x: centre.x + dx * scale, y: centre.y + dy * scale };
       }
 
       return edgePointOf(box, dx, dy);
@@ -1044,12 +1096,13 @@ export function DiagramCanvasCore({
           frame.move({
             relation: drawn,
             sourceId: target.element.id,
+            sourceType: target.element.type,
             sourceAnchor: target.anchor,
             sourceAttachment: target.attachment,
-            from: target.at,
+            from: drawnByEdge(elementTypes.get(target.element.type)) ? attachmentPoint(target.element, undefined, point) : target.at,
             point,
             target: valid && candidate !== undefined
-              ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
+              ? { elementId: candidate.id, type: candidate.type, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
               : undefined,
             valid,
           });
@@ -1212,8 +1265,7 @@ export function DiagramCanvasCore({
               relationType: preview.relation.id,
               sourceElementId: preview.sourceId,
               targetElementId: preview.target.elementId,
-              sourceAnchor: preview.sourceAnchor,
-              targetAnchor: preview.target.anchor,
+              ...anchorNamesOf(preview, elementTypes),
               ...attachmentsOf(preview),
             });
           } else if (preview !== null && preview.relation.emptyRelease === "complete" && elementAt(preview.point) === undefined) {
@@ -1223,7 +1275,7 @@ export function DiagramCanvasCore({
               kind: "connection-released-on-empty",
               relationType: preview.relation.id,
               sourceElementId: preview.sourceId,
-              sourceAnchor: preview.sourceAnchor,
+              ...(drawnByEdge(elementTypes.get(preview.sourceType)) ? {} : { sourceAnchor: preview.sourceAnchor }),
               position: preview.point,
             });
           }
@@ -1430,10 +1482,11 @@ export function DiagramCanvasCore({
     frame.move({
       relation: drawn,
       sourceId: active.element.id,
+      sourceType: active.element.type,
       from: active.from,
       point,
       target: valid && candidate !== undefined
-        ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
+        ? { elementId: candidate.id, type: candidate.type, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
         : undefined,
       valid,
     });
@@ -1463,12 +1516,11 @@ export function DiagramCanvasCore({
         relationType: preview.relation.id,
         sourceElementId: preview.sourceId,
         targetElementId: preview.target.elementId,
-        sourceAnchor: preview.sourceAnchor,
-        targetAnchor: preview.target.anchor,
+        ...anchorNamesOf(preview, elementTypes),
         ...attachmentsOf(preview),
       });
     }
-  }, [connectValue, raise]);
+  }, [connectValue, raise, elementTypes]);
 
   // An interrupted right draw (pointer cancel, capture lost) reverts the shared connect frame
   // rather than committing it: were it left set, the next anchor drag's `??=` would reuse this
@@ -1510,7 +1562,12 @@ export function DiagramCanvasCore({
     }
 
     event.preventDefault();
-    raise({ kind: "element-dropped", elementType: payload, position: toCanvasPoint(event.clientX, event.clientY) });
+    // Under a layout that re-places elements, the pointer's position means nothing to a module that
+    // places by the model's own positions; the layout's inverse says what it stands for there.
+    const pointer = toCanvasPoint(event.clientX, event.clientY);
+    const position = layoutAlgorithm?.inverse?.(pointer, layoutInput, definition.layout) ?? pointer;
+    dropMemoryRef.current = { position, at: Date.now(), known: new Set(model.elements.map((element) => element.id)) };
+    raise({ kind: "element-dropped", elementType: payload, position });
   };
 
   // ---- keyboard: delete --------------------------------------------------------------------
@@ -1519,6 +1576,7 @@ export function DiagramCanvasCore({
     if (isTextTarget(event.target)) {
       return;
     }
+    dropMemoryRef.current = null; // a key is another gesture: the drop no longer awaits its element
 
     if (event.key === "Escape") {
       // Whatever gesture is in flight dissolves, dispatching nothing.
@@ -1628,6 +1686,41 @@ export function DiagramCanvasCore({
     },
     [elementsById, elementTypes, definition.actions, raise],
   );
+
+  /*
+   * EDIT ON DROP: the element a toolbox drop created, selected and opened for editing when the
+   * model brings it. The drop is remembered - where, when, and which elements already existed - and
+   * the first model carrying a NEW element of a type declaring `editOnDrop` whose model bounds
+   * contain the drop point is taken to be it. Model bounds, because the drop's position is already
+   * the layout's inverse. Forgotten on that match, on any other gesture, or after five seconds.
+   */
+  useEffect(() => {
+    const memory = dropMemoryRef.current;
+    if (memory === null) {
+      return;
+    }
+    if (Date.now() - memory.at > EDIT_ON_DROP_MS) {
+      dropMemoryRef.current = null;
+      return;
+    }
+
+    const created = model.elements.find((element) => {
+      const type = elementTypes.get(element.type);
+      if (memory.known.has(element.id) || type?.editOnDrop !== true) {
+        return false;
+      }
+      const bounds = elementBounds(element, type);
+      return memory.position.x >= bounds.x && memory.position.x <= bounds.x + bounds.width
+        && memory.position.y >= bounds.y && memory.position.y <= bounds.y + bounds.height;
+    });
+    if (created === undefined) {
+      return;
+    }
+
+    dropMemoryRef.current = null;
+    select({ kind: "element", id: created.id });
+    dispatchElementGesture(created.id, "activate");
+  }, [model.elements, elementTypes, select, dispatchElementGesture]);
 
   /** A declared shortcut, dispatched by action id. True when one fired. */
   function dispatchDeclaredAction(event: React.KeyboardEvent): boolean {
@@ -1994,7 +2087,7 @@ export function DiagramCanvasCore({
         tabIndex={0}
         role="img"
         aria-label={ariaLabel ?? "Diagram"}
-        onPointerDownCapture={(event) => { endEditBeforeGesture(event); beginRightConnect(event); }}
+        onPointerDownCapture={(event) => { dropMemoryRef.current = null; endEditBeforeGesture(event); beginRightConnect(event); }}
         onPointerDown={backgroundWiring.onPointerDown}
         onPointerMove={(event) => { moveRightConnect(event); backgroundWiring.onPointerMove(event); }}
         onPointerUp={(event) => { endRightConnect(event); backgroundWiring.onPointerUp(event); }}
@@ -2108,14 +2201,14 @@ export function DiagramCanvasCore({
         )}
       </svg>
 
-      {definition.layout.modes.length > 1 && (
+      {definition.layout.modes.length > 1 && definition.layout.toggle === undefined && (
         <div className="library-layout-switcher" data-testid="layout-switcher">
           {definition.layout.modes.map((mode) => (
             <button
               key={mode}
               type="button"
               className={mode === activeLayoutMode ? "library-layout-active" : undefined}
-              onClick={() => raise({ kind: "layout-mode-changed", mode })}
+              onClick={() => switchLayoutMode(mode)}
             >
               {mode}
             </button>
@@ -2153,6 +2246,17 @@ export function DiagramCanvasCore({
                 </li>
               ))}
             </ul>
+          )}
+          {layoutToggle !== undefined && (
+            <button
+              type="button"
+              className="library-layout-toggle"
+              data-testid="layout-toggle"
+              aria-pressed={activeLayoutMode === layoutToggle.on}
+              onClick={() => switchLayoutMode(activeLayoutMode === layoutToggle.on ? (definition.layout.modes[0] ?? "manual") : layoutToggle.on)}
+            >
+              {layoutToggle.caption}
+            </button>
           )}
         </div>
       )}
@@ -3429,6 +3533,25 @@ function connectionEnds(
   return [from, to];
 }
 
+/** How long a toolbox drop waits for the element it creates before an editor may no longer open on it. */
+const EDIT_ON_DROP_MS = 5000;
+
+/** Whether ends on elements of this type are drawn by edge intersection whatever anchor started them. */
+function drawnByEdge(type: ElementTypeDefinition | undefined): boolean {
+  return type?.anchors.attachDrawnBy === "edge";
+}
+
+/**
+ * The anchor names a finished connect gesture carries, leaving out an end on a type drawn by edge:
+ * the handle it was pulled from says nothing about where the end is drawn, so nothing is stored.
+ */
+function anchorNamesOf(preview: ConnectPreview, elementTypes: Map<string, ElementTypeDefinition>): { sourceAnchor?: string; targetAnchor?: string } {
+  return {
+    ...(preview.sourceAnchor !== undefined && !drawnByEdge(elementTypes.get(preview.sourceType)) ? { sourceAnchor: preview.sourceAnchor } : {}),
+    ...(preview.target?.anchor !== undefined && !drawnByEdge(elementTypes.get(preview.target.type)) ? { targetAnchor: preview.target.anchor } : {}),
+  };
+}
+
 /** The attachments a finished connect gesture carries, leaving out the ends that have none. */
 function attachmentsOf(preview: ConnectPreview): { sourceAttachment?: EdgeAttachment; targetAttachment?: EdgeAttachment } {
   return {
@@ -3807,6 +3930,22 @@ function snapLeadingEdge(
 /** A declared number's value for this element: written outright, or bound - null when a binding yields none. */
 function declaredNumberOf(value: import("./definition/diagramDefinition").DeclaredNumber, source: BindingSource): number | null {
   return typeof value === "number" ? value : resolveNumber(value, source);
+}
+
+/**
+ * The room an element's labels take up to its left - a `before` label's text and the gap to it -
+ * which a layout packing elements side by side keeps clear, or the name overprints the element
+ * before it on the row.
+ */
+function leadingOf(element: DiagramModelElement, type: ElementTypeDefinition | undefined): number | undefined {
+  let leading: number | undefined;
+  for (const label of type?.labels ?? []) {
+    if (label.placement === "before") {
+      const text = resolveOne(label.text, sourceOf(element)) ?? "";
+      leading = Math.max(leading ?? 0, BEFORE_GAP + widthOf(text, LABEL_FONT_SIZE));
+    }
+  }
+  return leading;
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {

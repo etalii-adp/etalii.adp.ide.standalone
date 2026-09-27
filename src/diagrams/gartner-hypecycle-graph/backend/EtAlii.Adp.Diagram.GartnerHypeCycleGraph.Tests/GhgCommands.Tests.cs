@@ -59,14 +59,14 @@ public sealed class GhgCommandsTests : IDisposable
     private ICommand EditNamed(string name) => name switch
     {
         "add a trend" => new AddGhgTrendCommand(Body, GhgScale.XOf(M(2030)) + 1, GhgScale.TopOf(90) + 10),
-        "remove a trend" => new RemoveGhgTrendCommand(Body, "steamboats"),
+        "remove a trend" => new RemoveGhgElementCommand(Body, "steamboats"),
         "move" => new SetGhgPlacementCommand(Body, "railways", GhgScale.XOf(M(1830)), GhgScale.TopOf(40)),
         "resize from the left" => new SetGhgSpanCommand(Body, "steam-engine", "1780-01", null),
         "resize from the right" => new SetGhgSpanCommand(Body, "steam-engine", null, "1950-01"),
         "drag a boundary" => new SetGhgBoundaryCommand(Body, "railways", 0, "1840-01"),
         "even the phases" => new ClearGhgBoundariesCommand(Body, "steam-engine"),
         "lower the phases" => new SetGhgPhasesCommand(Body, "railways", 2),
-        "rename" => new RenameGhgTrendCommand(Body, "railways", "Railroads"),
+        "rename" => new RenameGhgElementCommand(Body, "railways", "Railroads"),
         "set tags" => new SetGhgTagsCommand(Body, "railways", "transport, industry, society"),
         "describe a trend" => new SetGhgDescriptionCommand(Body, "iron-smelting", "Darby's coke furnace at Coalbrookdale."),
         "describe an influence" => new SetGhgDescriptionCommand(Body, "steam-engine--railways", ""),
@@ -114,7 +114,7 @@ public sealed class GhgCommandsTests : IDisposable
         "stop before the start" => new SetGhgSpanCommand(Body, "railways", null, "1820-01"),
         "drag a hidden boundary" => new SetGhgBoundaryCommand(Body, "railways", 3, "1840-01"),
         "drag to a date that is not one" => new SetGhgBoundaryCommand(Body, "railways", 0, "soon"),
-        "remove a trend that is not there" => new RemoveGhgTrendCommand(Body, "nothing-here"),
+        "remove a trend that is not there" => new RemoveGhgElementCommand(Body, "nothing-here"),
         "remove an influence that is not there" => new RemoveGhgInfluenceCommand(Body, "nothing-here"),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such refusal."),
     };
@@ -145,7 +145,7 @@ public sealed class GhgCommandsTests : IDisposable
         // Steamboats: the steam engine made them, and they led to ocean steamships.
         Assert.Equal(2, Touching(Parse(), "steamboats"));
 
-        var removed = await _dispatcher.DispatchAsync(new RemoveGhgTrendCommand(Body, "steamboats"), TestContext.Current.CancellationToken);
+        var removed = await _dispatcher.DispatchAsync(new RemoveGhgElementCommand(Body, "steamboats"), TestContext.Current.CancellationToken);
 
         Assert.True(removed.IsSuccess, removed.Error);
         var after = Parse();
@@ -238,7 +238,7 @@ public sealed class GhgCommandsTests : IDisposable
         Assert.Empty(entry.Model.Trends);
 
         var edited = await new GhgTestDispatcher(store).DispatchAsync(
-            new RenameGhgTrendCommand(Body, "railways", "Railroads"),
+            new RenameGhgElementCommand(Body, "railways", "Railroads"),
             TestContext.Current.CancellationToken);
         var saved = store.Save(Body, LineDocument.Parse(GhgDocumentFactory.EmptyDocument("\n")));
 

@@ -1,7 +1,7 @@
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>
-/// Everything one <c>.ghg</c> document declares: its trends, its influences, and what the parser
+/// Everything one <c>.ghg</c> document declares: its trends, triggers, notes and influences, and what the parser
 /// could not read.
 /// </summary>
 /// <param name="Trends">The trend entries, in document order.</param>
@@ -21,6 +21,12 @@ public sealed record GhgModel(
     int? Version,
     GhgTimeUnit? Unit = null)
 {
+    /// <summary>The trigger entries, in document order; empty when the document has no <c>triggers</c> list.</summary>
+    public IReadOnlyList<GhgTrigger> Triggers { get; init; } = [];
+
+    /// <summary>The note entries, in document order; empty when the document has no <c>notes</c> list.</summary>
+    public IReadOnlyList<GhgNote> Notes { get; init; } = [];
+
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
     public static GhgModel Empty { get; } = new([], [], [], null);
 

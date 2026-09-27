@@ -171,7 +171,7 @@ and be attempted.
     only piece here that helps if the cap is reached by something nobody has predicted.
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [-] 5. Optional: collapse the three per-tab streams
+- [x] 5. Optional: collapse the three per-tab streams
   - Files: `hierarchy.proto`, `context.proto`, `diagrams.proto` and their clients - a contract change
   - **Optional, because the production decision is TLS.** Under h2 the stream count stops being a
     correctness question, so this is robustness rather than the fix, and **it does not satisfy

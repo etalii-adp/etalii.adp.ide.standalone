@@ -55,11 +55,11 @@ public sealed class GhgProvidersTests : IDisposable
 
     private GhgModel Parse() => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
 
-    /// <summary>The toolbox is data: one Trend item whose drop runs the add action.</summary>
+    /// <summary>The toolbox is data: its first item is the Trend, whose drop runs the add action.</summary>
     [Fact]
     public void TheToolbox_OffersATrend_ThatDropsTheAddAction()
     {
-        var item = Assert.Single(new GhgToolboxProvider().Items);
+        var item = new GhgToolboxProvider().Items[0];
 
         Assert.Equal("Trend", item.Label);
         Assert.Equal(GhgContextActionProvider.AddTrendActionId, item.DropActionId);
@@ -144,7 +144,8 @@ public sealed class GhgProvidersTests : IDisposable
         var influencedBy = GhgContextPropertyProvider.InfluencedByProperties;
 
         Assert.Equal("Coal power · Peak\nFactory system · Peak\nIndustrial Revolution · Peak", Value(influences, 0));
-        Assert.Equal("Coke iron smelting · Peak\nCoal power · Peak", Value(influencedBy, 0));
+        // A trigger is named alone: it has no phase to name.
+        Assert.Equal("Coke iron smelting · Peak\nCoal power · Peak\nWatt's separate condenser patent", Value(influencedBy, 0));
         Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influences, 1));
         Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influencedBy, 1));
         Assert.Equal("Steamboats · Peak\nOcean steamships · Peak", Value(influences, 2));
@@ -279,7 +280,7 @@ public sealed class GhgProvidersTests : IDisposable
         var adds = await _actions.DiscoverAsync(Target(GestureIds.Placement(1, 2)), TestContext.Current.CancellationToken);
         var connects = await _actions.DiscoverAsync(Target(GestureIds.Relation("a", "b")), TestContext.Current.CancellationToken);
 
-        Assert.Equal(["ghg.add.trend"], adds.SelectMany(group => group.Actions).Select(action => action.Id));
+        Assert.Equal(["ghg.add.trend", "ghg.add.trigger", "ghg.add.note"], adds.SelectMany(group => group.Actions).Select(action => action.Id));
         Assert.Equal(["ghg.connect.influence"], connects.SelectMany(group => group.Actions).Select(action => action.Id));
     }
 

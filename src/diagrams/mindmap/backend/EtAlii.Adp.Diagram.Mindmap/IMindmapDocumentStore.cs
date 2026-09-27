@@ -27,6 +27,7 @@ public interface IMindmapDocumentStore
     /// sentence and the user was told nothing they could act on. A save this store never loaded a
     /// document for is still an exception: that is a programming error, not an outcome.
     /// </remarks>
+    /// <param name="bodyPath">The path of the document to write.</param>
     /// <param name="document">
     /// The document to write - **the one the caller edited**, passed in rather than looked up again.
     /// The change argument beside it made this signature look as though it already did that; it

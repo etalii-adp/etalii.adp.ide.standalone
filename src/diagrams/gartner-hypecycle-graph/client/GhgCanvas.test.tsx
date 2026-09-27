@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { GhgAttachmentSchema, GhgInfluencePayloadSchema, GhgTrendPayloadSchema } from "@client/generated/gartner-hypecycle-graph_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
@@ -15,6 +15,7 @@ import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing
 let currentModel: GhgModel = emptyModel;
 let currentSelectionKey: string | null = null;
 let selections: unknown[] = [];
+let reports: { minX: number; maxX: number }[] = [];
 
 vi.mock("@client/diagrams/useDiagramStream", () => ({
   useDiagramStream: () => ({
@@ -28,7 +29,7 @@ vi.mock("@client/diagrams/useDiagramStream", () => ({
 
 vi.mock("@client/diagrams/viewReport", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@client/diagrams/viewReport")>()),
-  viewReportOf: () => () => {},
+  viewReportOf: () => (viewport: { minX: number; maxX: number }) => reports.push(viewport),
 }));
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
@@ -62,6 +63,8 @@ function modelWith(): GhgModel {
       ["coal", { id: "coal", x: 200, y: 16, payload: trend("Coal", 4, 400) }],
       ["steam-engine", { id: "steam-engine", x: 400, y: 72, payload: trend("Steam engine", 3, 400) }],
     ]),
+    triggers: new Map(),
+    notes: new Map(),
     influences: new Map([
       ["coal--steam-engine", {
         id: "coal--steam-engine",
@@ -84,6 +87,7 @@ beforeEach(() => {
   currentModel = modelWith();
   currentSelectionKey = null;
   selections = [];
+  reports = [];
 });
 
 describe("the hype cycle graph canvas, mounted", () => {
@@ -108,5 +112,26 @@ describe("the hype cycle graph canvas, mounted", () => {
       element: "coal",
       connection: "coal--steam-engine",
     });
+  });
+
+  it("reports the whole canvas as its view while Compact is on, and the screen's again after", async () => {
+    // Compact places each trend by where every other starts, so it needs the backend to send them all.
+    vi.useFakeTimers();
+    try {
+      const { container } = renderCanvas();
+      await act(async () => { vi.advanceTimersByTime(1000); });
+      const before = reports.at(-1);
+
+      fireEvent.click(container.querySelector(".library-layout-toggle")!);
+      await act(async () => { vi.advanceTimersByTime(1000); });
+      expect(reports.at(-1)!.minX).toBeLessThan(-1e8);
+      expect(reports.at(-1)!.maxX).toBeGreaterThan(1e8);
+
+      fireEvent.click(container.querySelector(".library-layout-toggle")!);
+      await act(async () => { vi.advanceTimersByTime(1000); });
+      expect(reports.at(-1)).toEqual(before);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

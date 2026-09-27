@@ -43,3 +43,21 @@
 .ghg-trend .library-segment-divider {
   stroke: var(--color-diagram-hype-chevron);
 }
+
+/* A trigger: a small solid circle, read without a legend as a moment rather than a span. */
+.canvas-node.ghg-trigger-circle {
+  fill: var(--color-diagram-hype-trigger);
+  stroke: var(--color-diagram-hype-trigger);
+}
+
+/* A note: the author's remark, a pale box with its text in prose lines. */
+.canvas-node.ghg-note-box {
+  fill: var(--color-diagram-hype-note);
+  stroke: var(--color-border);
+}
+
+.ghg-note-text {
+  fill: var(--color-diagram-hype-note-text);
+  font-size: 12px;
+  pointer-events: none;
+}

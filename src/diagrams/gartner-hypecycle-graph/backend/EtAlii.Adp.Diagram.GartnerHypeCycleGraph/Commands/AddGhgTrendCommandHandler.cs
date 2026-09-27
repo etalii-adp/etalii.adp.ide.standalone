@@ -28,8 +28,7 @@ public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICo
 
         return GhgEdits.Run(documents, minted.BodyPath, minted, (document, model) =>
         {
-            if (model.Trends.Any(trend => trend.Id == minted.TrendId) ||
-                model.Influences.Any(influence => influence.Id == minted.TrendId))
+            if (GhgEdits.IdTaken(model, minted.TrendId))
             {
                 return GhgEdit.Refused("That id is already used in this graph.");
             }
@@ -37,7 +36,7 @@ public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICo
             var start = GhgScale.MonthContaining(minted.X, model.TimeUnit);
             var trend = new GhgTrend(
                 minted.TrendId,
-                UniqueName(model),
+                GhgEdits.UniqueName(model.Trends.Select(trend => trend.Name), DefaultName),
                 start,
                 start + (DefaultMonths * model.TimeUnit.Months),
                 GhgScale.RowAtMiddle(minted.Y),
@@ -49,24 +48,5 @@ public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICo
 
             return GhgWriter.AddTrend(document, model, trend);
         });
-    }
-
-    /// <summary>The default name, or the name with the lowest number that makes it unique.</summary>
-    private static string UniqueName(GhgModel model)
-    {
-        var taken = model.Trends.Select(trend => trend.Name).ToHashSet(StringComparer.Ordinal);
-        if (!taken.Contains(DefaultName))
-        {
-            return DefaultName;
-        }
-
-        for (var number = 2; ; number++)
-        {
-            var candidate = $"{DefaultName} {number}";
-            if (!taken.Contains(candidate))
-            {
-                return candidate;
-            }
-        }
     }
 }

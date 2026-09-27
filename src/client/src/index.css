@@ -28,6 +28,9 @@
   --color-diagram-hype-slope: #f6c99a;
   --color-diagram-hype-plateau: #cde8a8;
   --color-diagram-hype-chevron: #475569;
+  --color-diagram-hype-trigger: #7c3aed; /* a trigger's circle: a graphical object, held to 3:1 against the canvas in theme.contrast.test.ts */
+  --color-diagram-hype-note: #fef9c3; /* a note's box, and the text written on it - held to 4.5:1 there */
+  --color-diagram-hype-note-text: #0f172a;
   /* FOUR TOKENS THE THEME LACKED, each carrying a distinction its diagram exists to show rather
      than a shade somebody liked. Added 2026-09-23 with client-centralization task 1, when
      azure-pipeline's ten private --adp-* and causal-loop's five --vscode-* were mapped onto the
@@ -100,6 +103,9 @@
     --color-diagram-hype-slope: #7c4a1c;
     --color-diagram-hype-plateau: #3f6212;
     --color-diagram-hype-chevron: #e2e8f0;
+    --color-diagram-hype-trigger: #c4b5fd;
+    --color-diagram-hype-note: #423a10;
+    --color-diagram-hype-note-text: #f1f5f9;
     --color-border-strong: #94a3b8; /* the polarity flips with the ground, as --color-border does */
     --color-accent-subtle: #16351f; /* the same tint, lifted off the dark surface instead of the light one */
     --color-loop-reinforcing: #4daafc; /* the original hues, which only ever read on a dark ground - */

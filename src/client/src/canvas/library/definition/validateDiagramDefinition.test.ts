@@ -46,6 +46,40 @@ describe("validateDiagramDefinition", () => {
     expect(problems.some((problem) => problem.includes("zero modes"))).toBe(true);
   });
 
+  it("rejects a row-packed mode without the width it draws with", () => {
+    const definition: DiagramDefinition = { ...goodDefinition(), layout: { modes: ["manual", "row-packed"] } };
+
+    expect(validateDiagramDefinition(definition).some((problem) => problem.includes("without declaring rowPacked"))).toBe(true);
+  });
+
+  it("rejects a layout toggle to a mode the layout does not allow, over other than two modes, or without a filter", () => {
+    const toggled = (modes: DiagramDefinition["layout"]["modes"], on: "tree" | "row-packed", filter: boolean): DiagramDefinition => ({
+      ...goodDefinition(),
+      layout: { modes, toggle: { caption: "Packed", on }, rowPacked: { width: 48, gap: 4 } },
+      ...(filter ? { filter: { field: "payload.tags", label: "Filter" } } : {}),
+    });
+
+    expect(validateDiagramDefinition(toggled(["manual", "row-packed"], "row-packed", true))).toEqual([]);
+    expect(validateDiagramDefinition(toggled(["manual", "row-packed"], "tree", true)).some((problem) => problem.includes("does not allow"))).toBe(true);
+    expect(validateDiagramDefinition(toggled(["manual", "row-packed", "tree"], "tree", true)).some((problem) => problem.includes("exactly two modes"))).toBe(true);
+    expect(validateDiagramDefinition(toggled(["manual", "row-packed"], "row-packed", false)).some((problem) => problem.includes("declares no filter"))).toBe(true);
+  });
+
+  it("checks a mode's overrides as the definition the canvas draws under that mode", () => {
+    const definition = goodDefinition();
+    const broken: DiagramDefinition = {
+      ...definition,
+      layout: {
+        modes: ["manual", "row-packed"],
+        rowPacked: { width: 48, gap: 4 },
+        modeOverrides: { "row-packed": { elementTypes: [definition.elementTypes[1]] } },
+      },
+    };
+
+    // Under the override, `node` is gone while `link` still names it.
+    expect(validateDiagramDefinition(broken).some((problem) => problem.startsWith('Under layout mode "row-packed"'))).toBe(true);
+  });
+
   it("rejects an endpoint constraint naming an element type the definition does not declare", () => {
     const definition = goodDefinition();
     const [link] = definition.relationTypes as RelationTypeDefinition[];
@@ -145,5 +179,41 @@ describe("validateDiagramDefinition", () => {
       endpoints: { source: { elementTypes: ["node"] }, target: { elementTypes: ["node"] }, allowSelf: false },
     };
     expect(interactive.adjustable).toBe(true);
+  });
+});
+
+describe("validateDiagramDefinition, a filter's element types", () => {
+  it("rejects a filter scoped to an element type nobody declares, and accepts a declared one", () => {
+    const scopedTo = (elementTypes: string[]): DiagramDefinition => ({
+      ...goodDefinition(),
+      filter: { field: "payload.tags", label: "Filter", elementTypes },
+    });
+
+    expect(validateDiagramDefinition(scopedTo(["node"]))).toEqual([]);
+    expect(validateDiagramDefinition(scopedTo(["nobody"])).some((problem) => problem.includes('filter applies to element type "nobody"'))).toBe(true);
+  });
+});
+
+describe("validateDiagramDefinition, attachDrawnBy", () => {
+  it("rejects attachDrawnBy on along anchors, and accepts it on named anchors", () => {
+    const withAnchors = (anchors: DiagramDefinition["elementTypes"][number]["anchors"]): DiagramDefinition => ({
+      ...goodDefinition(),
+      elementTypes: [{ id: "node", shape: "ellipse", anchors, sizing: "model" }, goodDefinition().elementTypes[1]!],
+    });
+
+    expect(validateDiagramDefinition(withAnchors({ kind: "compass", positions: ["n"], attachDrawnBy: "edge" }))).toEqual([]);
+    expect(validateDiagramDefinition(withAnchors({ kind: "along", edges: ["top"], attachDrawnBy: "edge" })).some((problem) => problem.includes("attachDrawnBy on along anchors"))).toBe(true);
+  });
+});
+
+describe("validateDiagramDefinition, row-packed types", () => {
+  it("rejects a row-packed width for an element type nobody declares", () => {
+    const packed = (types: string[]): DiagramDefinition => ({
+      ...goodDefinition(),
+      layout: { modes: ["manual", "row-packed"], rowPacked: { width: 48, gap: 4, types } },
+    });
+
+    expect(validateDiagramDefinition(packed(["node"]))).toEqual([]);
+    expect(validateDiagramDefinition(packed(["nobody"])).some((problem) => problem.includes('element type "nobody"'))).toBe(true);
   });
 });

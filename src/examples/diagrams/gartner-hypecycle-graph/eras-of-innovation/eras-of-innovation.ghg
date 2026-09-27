@@ -308,6 +308,61 @@ trends:
     phases: 1
     tags: [computing]
     description: Machine learning that works at scale, from deep learning to language models.
+triggers:
+  - id: black-death
+    name: Black Death reaches Europe
+    date: 1347-10
+    row: 11
+    tags: [health, society]
+    description: A third of Europe died; scarce labour raised wages and the value of labour-saving devices.
+  - id: gutenberg-bible
+    name: Gutenberg Bible printed
+    date: 1455-01
+    row: 13
+    tags: [knowledge]
+    description: The first major book printed with movable metal type in Europe.
+  - id: columbus-voyage
+    name: Columbus reaches the Americas
+    date: 1492-10
+    row: 15
+    tags: [transport, economy]
+    description: A voyage west that joined two hemispheres' trade, crops and diseases.
+  - id: watt-condenser
+    name: Watt's separate condenser patent
+    date: 1769-01
+    row: 1
+    tags: [energy]
+    description: A condenser apart from the cylinder made the steam engine efficient enough to drive mills.
+  - id: jenner-smallpox
+    name: Jenner's smallpox inoculation
+    date: 1796-05
+    row: 5
+    tags: [health]
+    description: Edward Jenner inoculated a boy with cowpox and showed he was protected from smallpox.
+  - id: wright-flyer
+    name: Wright brothers' first flight
+    date: 1903-12
+    row: 27
+    tags: [transport]
+    description: Twelve seconds of controlled, powered flight at Kitty Hawk.
+  - id: penicillin
+    name: Fleming notices penicillin
+    date: 1928-09
+    row: 17
+    tags: [health]
+    description: A mould killing the bacteria around it on a forgotten culture plate.
+  - id: chicago-pile
+    name: Chicago Pile-1 goes critical
+    date: 1942-12
+    row: 29
+    tags: [energy]
+    description: The first self-sustaining nuclear chain reaction.
+  - id: sputnik
+    name: Sputnik 1
+    date: 1957-10
+    row: 11
+    tags: [transport, knowledge]
+    description: The first artificial satellite, and the start of the space race.
 influences:
   - id: horse-riding--wheel
     from: horse-riding
@@ -455,7 +510,7 @@ influences:
     to: printing-press
     to-phase: peak
     to-edge: top
-    to-at: 0.40
+    to-at: 0.28
   - id: zero--banking
     from: zero
     from-phase: plateau
@@ -464,7 +519,7 @@ influences:
     to: banking
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.76
   - id: coinage--banking
     from: coinage
     from-phase: plateau
@@ -473,7 +528,7 @@ influences:
     to: banking
     to-phase: peak
     to-edge: top
-    to-at: 0.28
+    to-at: 0.21
   - id: compass--exploration
     from: compass
     from-phase: slope
@@ -561,11 +616,11 @@ influences:
     from: steam-engine
     from-phase: trough
     from-edge: bottom
-    from-at: 0.44
+    from-at: 0.63
     to: factories
     to-phase: peak
     to-edge: top
-    to-at: 0.58
+    to-at: 0.83
   - id: exploration--factories
     from: exploration
     from-phase: plateau
@@ -661,21 +716,21 @@ influences:
     from: combustion-engine
     from-phase: peak
     from-edge: bottom
-    from-at: 0.63
+    from-at: 0.68
     to: powered-flight
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.66
     description: Light petrol engines made powered flight possible.
   - id: germ-theory--antibiotics
     from: germ-theory
     from-phase: slope
     from-edge: top
-    from-at: 0.61
+    from-at: 0.67
     to: antibiotics
     to-phase: peak
     to-edge: bottom
-    to-at: 0.38
+    to-at: 0.67
   - id: electricity--computer
     from: electricity
     from-phase: plateau
@@ -698,11 +753,11 @@ influences:
     from: electricity
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.34
     to: nuclear-power
     to-phase: peak
     to-edge: top
-    to-at: 0.29
+    to-at: 0.65
   - id: combustion-engine--green-revolution
     from: combustion-engine
     from-phase: slope
@@ -725,20 +780,20 @@ influences:
     from: computer
     from-phase: peak
     from-edge: bottom
-    from-at: 0.76
+    from-at: 0.79
     to: space-flight
     to-phase: peak
     to-edge: top
-    to-at: 0.40
+    to-at: 0.68
   - id: computer--internet
     from: computer
     from-phase: trough
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.35
     to: internet
     to-phase: peak
     to-edge: top
-    to-at: 0.38
+    to-at: 0.67
   - id: telegraph--internet
     from: telegraph
     from-phase: plateau
@@ -812,3 +867,69 @@ influences:
     to-phase: peak
     to-edge: top
     to-at: 0.28
+  - id: black-death--banking
+    from: black-death
+    to: banking
+    to-phase: peak
+    to-edge: top
+    to-at: 0.50
+  - id: gutenberg-bible--printing-press
+    from: gutenberg-bible
+    to: printing-press
+    to-phase: peak
+    to-edge: top
+    to-at: 0.69
+  - id: columbus-voyage--exploration
+    from: columbus-voyage
+    to: exploration
+    to-phase: trough
+    to-edge: top
+    to-at: 0.46
+  - id: watt-condenser--steam-engine
+    from: watt-condenser
+    to: steam-engine
+    to-phase: trough
+    to-edge: bottom
+    to-at: 0.28
+  - id: watt-condenser--factories
+    from: watt-condenser
+    to: factories
+    to-phase: peak
+    to-edge: top
+    to-at: 0.28
+  - id: jenner-smallpox--vaccination
+    from: jenner-smallpox
+    to: vaccination
+    to-phase: peak
+    to-edge: top
+    to-at: 0.41
+  - id: wright-flyer--powered-flight
+    from: wright-flyer
+    to: powered-flight
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: penicillin--antibiotics
+    from: penicillin
+    to: antibiotics
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.27
+  - id: chicago-pile--nuclear-power
+    from: chicago-pile
+    to: nuclear-power
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: sputnik--space-flight
+    from: sputnik
+    to: space-flight
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: sputnik--internet
+    from: sputnik
+    to: internet
+    to-phase: peak
+    to-edge: top
+    to-at: 0.24

@@ -13,8 +13,11 @@ byte of the file is kept. The rule, which GhgExampleInfluencePhaseTests holds ev
 - Rounding to two decimals goes towards each other, the cause down and the effect up, so it never
   breaks the first rule.
 
-Run it again after adding trends or influences to an example; an influence on a hidden phase is not
-drawn and is left as written.
+An influence from a trigger has no From end: the trigger's date is where it leaves, and only its To
+end is placed - no earlier than that date, and spread with the other ends on its edge.
+
+Run it again after adding trends, triggers or influences to an example; an influence on a hidden phase
+is not drawn and is left as written.
 """
 import re, sys, math
 
@@ -54,22 +57,26 @@ def boundaries(start, stop, phases, dragged):
 
 def parse(text):
     lines = text.split("\n")
-    trends, infl, cur, sect = {}, [], None, None
+    trends, triggers, infl, cur, sect = {}, {}, [], None, None
     for n, line in enumerate(lines):
-        if line.startswith("trends:"):
-            sect = "t"; continue
-        if line.startswith("influences:"):
-            sect = "i"; continue
+        m = re.match(r"^(trends|triggers|notes|influences):", line)
+        if m:
+            sect = m.group(1); continue
         m = re.match(r"^  - id: (\S+)", line)
         if m:
             cur = {"id": m.group(1)}
-            (trends.__setitem__(cur["id"], cur) if sect == "t" else infl.append(cur))
+            if sect == "trends":
+                trends[cur["id"]] = cur
+            elif sect == "triggers":
+                triggers[cur["id"]] = cur
+            elif sect == "influences":
+                infl.append(cur)
             continue
         m = re.match(r"^    ([\w-]+): (.*?)\s*$", line)
         if m and cur is not None:
             cur[m.group(1)] = m.group(2)
             cur[m.group(1) + "@"] = n
-    return lines, trends, infl
+    return lines, trends, triggers, infl
 
 
 def span(t, phase):
@@ -91,9 +98,21 @@ def when_at(s, f):
 
 
 def run(text):
-    lines, trends, infl = parse(text)
+    lines, trends, triggers, infl = parse(text)
     work = []
     for i, x in enumerate(infl):
+        if x["from"] in triggers:
+            # A trigger is a moment: it leaves at its date, and the effect is felt no earlier.
+            d = month(triggers[x["from"]]["date"])
+            ts = span(trends[x["to"]], PH.index(x["to-phase"]))
+            if ts is None:
+                continue
+            m = 0.04
+            t = (ts[0] + m * (ts[1] - ts[0]), ts[1] - m * (ts[1] - ts[0]))
+            t = (min(max(t[0], d), t[1]), t[1])
+            work.append({"i": i, "trigger": True, "fs": (d, d + 1), "ts": ts, "f": (d, d), "t": t,
+                         "meet": True, "T1": d, "T2": t[0]})
+            continue
         fs = span(trends[x["from"]], PH.index(x["from-phase"]))
         ts = span(trends[x["to"]], PH.index(x["to-phase"]))
         if fs is None or ts is None:
@@ -118,7 +137,8 @@ def run(text):
     slots = {}
     for w in work:
         x = infl[w["i"]]
-        slots.setdefault((x["from"], x["from-phase"], x["from-edge"]), []).append((w, "from"))
+        if not w.get("trigger"):
+            slots.setdefault((x["from"], x["from-phase"], x["from-edge"]), []).append((w, "from"))
         slots.setdefault((x["to"], x["to-phase"], x["to-edge"]), []).append((w, "to"))
 
     def f_of(w, side):
@@ -186,7 +206,7 @@ def run(text):
     out = list(lines)
     for w in work:
         x = infl[w["i"]]
-        for side in ("from", "to"):
+        for side in (("to",) if w.get("trigger") else ("from", "to")):
             # Rounded towards each other - the cause down, the effect up - so rounding never puts
             # the effect's date before the cause's.
             f = f_of(w, side) * 100

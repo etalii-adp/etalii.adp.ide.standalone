@@ -275,6 +275,49 @@ trends:
     phases: 1
     tags: [grid, ai]
     description: The load that sent AI companies to sign for nuclear, geothermal and fusion power.
+triggers:
+  - id: atoms-for-peace
+    name: Atoms for Peace
+    date: 1953-12
+    row: 19
+    tags: [nuclear, policy]
+    description: Eisenhower's speech to the UN General Assembly offering civil nuclear power to the world.
+  - id: oil-crisis-1973
+    name: 1973 oil crisis
+    date: 1973-10
+    row: 27
+    tags: [policy]
+    description: The oil embargo started public research programmes into every alternative.
+  - id: three-mile-island
+    name: Three Mile Island accident
+    date: 1979-03
+    row: 19
+    tags: [nuclear, disaster]
+    description: A partial meltdown in Pennsylvania; no new US reactor was ordered for decades.
+  - id: chernobyl
+    name: Chernobyl disaster
+    date: 1986-04
+    row: 19
+    tags: [nuclear, disaster]
+    description: A reactor explosion in Soviet Ukraine spread fallout across Europe.
+  - id: fukushima
+    name: Fukushima Daiichi accident
+    date: 2011-03
+    row: 19
+    tags: [nuclear, disaster]
+    description: A tsunami disabled the cooling of three reactors; Germany decided to leave nuclear power.
+  - id: paris-agreement
+    name: Paris Agreement
+    date: 2015-12
+    row: 31
+    tags: [policy]
+    description: A shared goal of holding warming well below two degrees.
+  - id: nif-ignition
+    name: NIF achieves ignition
+    date: 2022-12
+    row: 3
+    tags: [fusion, science]
+    description: The National Ignition Facility got more fusion energy out of a target than its lasers put in.
 influences:
   - id: stellarator--tokamak
     from: stellarator
@@ -423,38 +466,38 @@ influences:
     from: pulsed-magneto-inertial-fusion
     from-phase: peak
     from-edge: bottom
-    from-at: 0.82
+    from-at: 0.93
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.12
+    to-at: 0.22
   - id: compact-high-field-tokamak--fusion-power-plants
     from: compact-high-field-tokamak
     from-phase: peak
     from-edge: bottom
-    from-at: 0.95
+    from-at: 0.96
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.24
+    to-at: 0.32
   - id: inertial-confinement-fusion--fusion-power-plants
     from: inertial-confinement-fusion
     from-phase: slope
+    from-edge: bottom
+    from-at: 0.67
+    to: fusion-power-plants
+    to-phase: peak
+    to-edge: top
+    to-at: 0.64
+  - id: magnetized-target-fusion--fusion-power-plants
+    from: magnetized-target-fusion
+    from-phase: trough
     from-edge: bottom
     from-at: 0.65
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.60
-  - id: magnetized-target-fusion--fusion-power-plants
-    from: magnetized-target-fusion
-    from-phase: trough
-    from-edge: bottom
-    from-at: 0.64
-    to: fusion-power-plants
-    to-phase: peak
-    to-edge: top
-    to-at: 0.48
+    to-at: 0.53
   - id: tokamak--fusion-power-plants
     from: tokamak
     from-phase: slope
@@ -463,17 +506,17 @@ influences:
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.85
+    to-at: 0.86
     description: ITER's burning plasma is meant to settle the physics for later plants.
   - id: sheared-flow-z-pinch--fusion-power-plants
     from: sheared-flow-z-pinch
     from-phase: peak
     from-edge: bottom
-    from-at: 0.60
+    from-at: 0.62
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.36
+    to-at: 0.42
   - id: stellarator--fusion-power-plants
     from: stellarator
     from-phase: slope
@@ -482,7 +525,7 @@ influences:
     to: fusion-power-plants
     to-phase: peak
     to-edge: top
-    to-at: 0.73
+    to-at: 0.75
   - id: pulsed-magneto-inertial-fusion--lunar-helium-3
     from: pulsed-magneto-inertial-fusion
     from-phase: peak
@@ -515,20 +558,20 @@ influences:
     from: fission-power
     from-phase: slope
     from-edge: bottom
-    from-at: 0.60
+    from-at: 0.58
     to: small-modular-reactors
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.20
   - id: molten-salt-reactors--small-modular-reactors
     from: molten-salt-reactors
     from-phase: slope
     from-edge: bottom
-    from-at: 0.32
+    from-at: 0.35
     to: small-modular-reactors
     to-phase: peak
     to-edge: top
-    to-at: 0.80
+    to-at: 0.86
   - id: small-modular-reactors--microreactors
     from: small-modular-reactors
     from-phase: peak
@@ -620,16 +663,16 @@ influences:
     to: green-hydrogen
     to-phase: peak
     to-edge: top
-    to-at: 0.75
+    to-at: 0.78
   - id: offshore-wind--green-hydrogen
     from: offshore-wind
     from-phase: trough
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.65
     to: green-hydrogen
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.55
   - id: hydrogen-fuel-cells--green-hydrogen
     from: hydrogen-fuel-cells
     from-phase: trough
@@ -638,7 +681,7 @@ influences:
     to: green-hydrogen
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.17
     description: The hydrogen economy's second attempt, this time made with renewable power.
   - id: lithium-ion-batteries--electric-vehicles
     from: lithium-ion-batteries
@@ -703,3 +746,69 @@ influences:
     to-phase: peak
     to-edge: top
     to-at: 0.25
+  - id: atoms-for-peace--fission-power
+    from: atoms-for-peace
+    to: fission-power
+    to-phase: peak
+    to-edge: top
+    to-at: 0.40
+  - id: oil-crisis-1973--solar-photovoltaics
+    from: oil-crisis-1973
+    to: solar-photovoltaics
+    to-phase: peak
+    to-edge: top
+    to-at: 0.76
+  - id: oil-crisis-1973--wind-power
+    from: oil-crisis-1973
+    to: wind-power
+    to-phase: peak
+    to-edge: top
+    to-at: 0.29
+  - id: three-mile-island--fission-power
+    from: three-mile-island
+    to: fission-power
+    to-phase: trough
+    to-edge: top
+    to-at: 0.27
+  - id: chernobyl--fission-power
+    from: chernobyl
+    to: fission-power
+    to-phase: trough
+    to-edge: top
+    to-at: 0.70
+  - id: fukushima--fission-power
+    from: fukushima
+    to: fission-power
+    to-phase: plateau
+    to-edge: top
+    to-at: 0.40
+  - id: fukushima--small-modular-reactors
+    from: fukushima
+    to: small-modular-reactors
+    to-phase: peak
+    to-edge: top
+    to-at: 0.49
+  - id: paris-agreement--offshore-wind
+    from: paris-agreement
+    to: offshore-wind
+    to-phase: trough
+    to-edge: top
+    to-at: 0.65
+  - id: paris-agreement--green-hydrogen
+    from: paris-agreement
+    to: green-hydrogen
+    to-phase: peak
+    to-edge: top
+    to-at: 0.35
+  - id: nif-ignition--inertial-confinement-fusion
+    from: nif-ignition
+    to: inertial-confinement-fusion
+    to-phase: slope
+    to-edge: top
+    to-at: 0.40
+  - id: nif-ignition--fusion-power-plants
+    from: nif-ignition
+    to: fusion-power-plants
+    to-phase: peak
+    to-edge: top
+    to-at: 0.10

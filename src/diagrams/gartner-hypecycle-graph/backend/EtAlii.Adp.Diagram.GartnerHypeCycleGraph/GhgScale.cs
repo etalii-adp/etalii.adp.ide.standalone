@@ -41,6 +41,9 @@ public static partial class GhgScale
     /// <summary>Every trend's height, in canvas units.</summary>
     public const double TrendHeight = 32;
 
+    /// <summary>A trigger's diameter: half a trend's height (Requirement 2.1).</summary>
+    public const double TriggerSize = TrendHeight / 2;
+
     /// <summary>The distance between two rows: a trend's height plus a 24-unit gutter for influences.</summary>
     public const double RowStep = 56;
 
@@ -125,6 +128,32 @@ public static partial class GhgScale
 
     /// <summary>The row whose vertical middle is nearest <paramref name="y"/>.</summary>
     public static int RowAtMiddle(double y) => RowAtTop(y - (TrendHeight / 2));
+
+    /// <summary>
+    /// A date as a trigger's label writes it, in the diagram's unit (Q2): <c>Dec 1947</c> in a
+    /// diagram of months, and the year alone in one of years or coarser.
+    /// </summary>
+    public static string FormatWhen(int monthIndex, GhgTimeUnit unit) => FormatDate(monthIndex, unit, "MMM");
+
+    /// <summary>The same date in full, for a tooltip: <c>December 1947</c>, or the year alone.</summary>
+    public static string FormatWhenLong(int monthIndex, GhgTimeUnit unit) => FormatDate(monthIndex, unit, "MMMM");
+
+    private static string FormatDate(int monthIndex, GhgTimeUnit unit, string monthFormat)
+    {
+        ArgumentNullException.ThrowIfNull(unit);
+
+        var year = (int)Math.Floor(monthIndex / 12d);
+        var month = monthIndex - (year * 12) + 1;
+        var yearText = year.ToString(CultureInfo.InvariantCulture);
+        if (unit.Months > 1)
+        {
+            return yearText;
+        }
+
+        // A month name from any year: only the name is used, and year 2000 is valid for every month.
+        var name = new DateTime(2000, month, 1).ToString(monthFormat, CultureInfo.InvariantCulture);
+        return $"{name} {yearText}";
+    }
 
     [GeneratedRegex(@"^(-\d{4,6}|\d{4})-(\d{2})$", RegexOptions.CultureInvariant)]
     private static partial Regex MonthExpression();

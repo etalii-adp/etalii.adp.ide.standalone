@@ -127,7 +127,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
             [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType])),
         new("gartner-hypecycle-graph", new(
             [GhgElementMapper.InfluenceType],
-            [GhgElementMapper.TrendType])),
+            [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType])),
         new("helm-charts", new(
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),

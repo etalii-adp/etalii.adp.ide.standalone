@@ -90,7 +90,7 @@ public sealed class GhgSession : IDiagramSession
         }
 
         var model = _documents.GetOrLoad(_bodyPath).Model;
-        if (GhgEdits.TrendOf(model, elementId) is null)
+        if (!GhgEdits.IsElement(model, elementId))
         {
             return "That is not something this graph can move.";
         }

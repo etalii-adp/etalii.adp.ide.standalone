@@ -28,7 +28,8 @@ describe("the eras-of-innovation example, as this definition reads it", () => {
   it("is read in full, in decades: forty-two trends and fifty-five influences, none of them hidden", () => {
     expect(EXAMPLE.unit).toBe("decade");
     expect(EXAMPLE.trends).toHaveLength(42);
-    expect(EXAMPLE.influences).toHaveLength(55);
+    expect(EXAMPLE.triggers).toHaveLength(9);
+    expect(EXAMPLE.influences).toHaveLength(66);
     expect(EXAMPLE.influences.filter((influence) => isHidden(influence, EXAMPLE.trends))).toEqual([]);
   });
 
@@ -43,7 +44,7 @@ describe("the eras-of-innovation example, as this definition reads it", () => {
       </DiagramViewProvider>,
     );
 
-    expect(container.querySelectorAll("[data-element-id]")).toHaveLength(42);
-    expect(container.querySelectorAll("[data-connection-id]")).toHaveLength(55);
+    expect(container.querySelectorAll("[data-element-id]")).toHaveLength(42 + 9);
+    expect(container.querySelectorAll("[data-connection-id]")).toHaveLength(66);
   });
 });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import { GhgAttachmentSchema, GhgInfluencePayloadSchema, GhgTrendPayloadSchema } from "@client/generated/gartner-hypecycle-graph_pb";
+import { GhgAttachmentSchema, GhgInfluencePayloadSchema, GhgNotePayloadSchema, GhgTrendPayloadSchema, GhgTriggerPayloadSchema } from "@client/generated/gartner-hypecycle-graph_pb";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel } from "@client/canvas/library/api/diagramModel";
 import type { DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
@@ -87,6 +87,8 @@ function modelWith(): GhgModel {
         payload: create(GhgTrendPayloadSchema, { name: "Coal", phases: 4, width: 400 }),
       }],
     ]),
+    triggers: new Map(),
+    notes: new Map(),
     influences: new Map([
       ["coal--steam-engine", {
         id: "coal--steam-engine",
@@ -286,7 +288,7 @@ describe("the hype cycle graph canvas answers each library event through its one
 
     const steam = captured!.model.elements.find((element) => element.id === "steam-engine")!;
     expect(steam).toMatchObject({ type: "trend", x: 240, y: 184, width: 1600, height: 32, label: "Steam engine" });
-    expect(steam.payload).toEqual({ name: "Steam engine", phases: 3, boundaries: [0.2, 0.5], tags: ["energy"] });
+    expect(steam.payload).toEqual({ name: "Steam engine", phases: 3, boundaries: [0.2, 0.5], tags: ["energy"], snapX: 0, snapY: 0 });
     expect(captured!.model.connections).toEqual([
       expect.objectContaining({
         id: "coal--steam-engine",
@@ -297,5 +299,81 @@ describe("the hype cycle graph canvas answers each library event through its one
         targetAttachment: { edge: "top", region: 1, at: 0.25 },
       }),
     ]);
+  });
+});
+
+/** The same graph with a trigger on a step line at row 2's middle, and a note whose top-left is on row 4. */
+function withTriggerAndNote(): GhgModel {
+  const base = modelWith();
+  return {
+    ...base,
+    triggers: new Map([["transistor", {
+      id: "transistor",
+      x: 96,
+      y: 2 * 56 + 16,
+      payload: create(GhgTriggerPayloadSchema, { name: "Transistor", when: "Dec 1947", snapX: -8, snapY: 8 }),
+    }]]),
+    notes: new Map([["remark", {
+      id: "remark",
+      x: 280,
+      y: 4 * 56 + 32,
+      payload: create(GhgNotePayloadSchema, { text: "A remark", width: 160, height: 64 }),
+    }]]),
+  };
+}
+
+describe("triggers and notes, answered through their routes", () => {
+  it("a drop of a Trigger or a Note, from the backend's toolbox or as the bare type, adds one where it landed", async () => {
+    const events = renderCanvas();
+
+    events.onElementDropped!({ kind: "element-dropped", elementType: "ghg.add.trigger", position: { x: 300, y: 700 } });
+    events.onElementDropped!({ kind: "element-dropped", elementType: "trigger", position: { x: 4, y: 8 } });
+    events.onElementDropped!({ kind: "element-dropped", elementType: "ghg.add.note", position: { x: 40, y: 60 } });
+    events.onElementDropped!({ kind: "element-dropped", elementType: "note", position: { x: 12, y: 16 } });
+    await settle();
+
+    expect(executed).toEqual([
+      { actionId: "ghg.add.trigger", targetId: "new:300,700" },
+      { actionId: "ghg.add.trigger", targetId: "new:4,8" },
+      { actionId: "ghg.add.note", targetId: "new:40,60" },
+      { actionId: "ghg.add.note", targetId: "new:12,16" },
+    ]);
+  });
+
+  it("a move takes each element's OWN half-size off its centre: a trigger's 8, a note's half its box", async () => {
+    currentModel = withTriggerAndNote();
+    const events = renderCanvas();
+
+    events.onElementMoved!({ kind: "element-moved", elementId: "transistor", position: { x: 100, y: 184 } });
+    events.onElementMoved!({ kind: "element-moved", elementId: "remark", position: { x: 500, y: 300 } });
+    await settle();
+
+    expect(moves).toEqual([
+      { elementId: "transistor", x: 100 - 8, y: 184 - 8 },
+      { elementId: "remark", x: 500 - 80, y: 300 - 32 },
+    ]);
+  });
+
+  it("a note's resize is its size and the top-left it now has, through setProperty, and no move", async () => {
+    currentModel = withTriggerAndNote();
+    const events = renderCanvas();
+
+    // The left edge at x 200 is the start of 1904-03; the top at 168 is row 3.
+    events.onElementResized!({ kind: "element-resized", elementId: "remark", side: "top", bounds: { x: 200, y: 168, width: 240.5, height: 120 } });
+    await settle();
+
+    expect(properties).toEqual([{ propertyId: "ghg.size", value: "240.5 x 120 at 1904-03 row 3", targetId: "remark" }]);
+    expect(moves).toEqual([]);
+  });
+
+  it("hands the library a trigger 16 across with its name as its label, and a note at its own size", () => {
+    currentModel = withTriggerAndNote();
+    renderCanvas();
+
+    const trigger = captured!.model.elements.find((element) => element.id === "transistor")!;
+    expect(trigger).toMatchObject({ type: "trigger", width: 16, height: 16, label: "Transistor" });
+    expect(trigger.payload).toMatchObject({ name: "Transistor", when: "Dec 1947", snapX: -8, snapY: 8 });
+    const note = captured!.model.elements.find((element) => element.id === "remark")!;
+    expect(note).toMatchObject({ type: "note", width: 160, height: 64, label: "A remark", payload: { text: "A remark" } });
   });
 });

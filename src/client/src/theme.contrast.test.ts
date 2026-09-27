@@ -96,6 +96,34 @@ describe("a diagram fill stays readable under the theme's text", () => {
     }
   });
 
+  describe("the hype cycle's trigger and note", () => {
+    /** WCAG 2.x's line for a graphical object - a circle, not text - against what it is drawn on. */
+    const GRAPHICAL = 3;
+
+    function resolved(mode: "light" | "dark", name: string): string {
+      const colour = resolveToken(tokens[mode], name);
+      expect(colour, `${mode} declares ${name}`).toBeDefined();
+      return colour!;
+    }
+
+    for (const mode of ["light", "dark"] as const) {
+      it(`draws a trigger that stands out from the canvas in ${mode} mode`, () => {
+        const trigger = resolved(mode, "--color-diagram-hype-trigger");
+        for (const ground of ["--color-bg", "--color-surface"]) {
+          const ratio = contrastRatio(trigger, resolved(mode, ground));
+          expect(ratio, `the trigger (${trigger}) on ${ground} in ${mode} mode is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(GRAPHICAL);
+        }
+      });
+
+      it(`writes a note's text readably on its box in ${mode} mode`, () => {
+        const text = resolved(mode, "--color-diagram-hype-note-text");
+        const box = resolved(mode, "--color-diagram-hype-note");
+        const ratio = contrastRatio(text, box);
+        expect(ratio, `the note's text (${text}) on its box (${box}) in ${mode} mode is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(AA);
+      });
+    }
+  });
+
   it("declares the user's light hex exactly, none of it adjusted for contrast", () => {
     // The user ruled the light values are theirs verbatim. Pinning them is the point: a later
     // reader tuning all ten for contrast would be undoing a decision rather than fixing a defect.

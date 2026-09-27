@@ -26,15 +26,27 @@ export interface DiagramRuntimeConfig {
   definitionOverrides?: Partial<DiagramDefinition>;
 }
 
-/** The definition as the canvas actually reads it: the module's statement plus the runtime's overrides. */
-export function effectiveDefinition(definition: DiagramDefinition, config: DiagramRuntimeConfig | undefined): DiagramDefinition {
-  if (config?.definitionOverrides === undefined && config?.dragging === undefined) {
+/**
+ * The definition as the canvas actually reads it: the module's statement, then the overrides the
+ * active layout mode declares (`layout.modeOverrides`), then the runtime's overrides - so a host
+ * that reconfigures the canvas still has the last word over a mode. `layout` is never replaced by
+ * a mode, so the modes and the toggle hold still while switching between them.
+ */
+export function effectiveDefinition(
+  definition: DiagramDefinition,
+  config: DiagramRuntimeConfig | undefined,
+  activeMode?: LayoutMode,
+): DiagramDefinition {
+  const modeOverrides = activeMode === undefined ? undefined : definition.layout.modeOverrides?.[activeMode];
+  if (modeOverrides === undefined && config?.definitionOverrides === undefined && config?.dragging === undefined) {
     return definition;
   }
 
   return {
     ...definition,
-    ...config.definitionOverrides,
-    ...(config.dragging !== undefined ? { dragging: config.dragging } : {}),
+    ...modeOverrides,
+    layout: definition.layout,
+    ...config?.definitionOverrides,
+    ...(config?.dragging !== undefined ? { dragging: config.dragging } : {}),
   };
 }

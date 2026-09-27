@@ -5,8 +5,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>One influence entry, and the lines that declare it.</summary>
 /// <param name="Id">Its id. Empty when the entry states none, which the rules report.</param>
-/// <param name="From">The influencing trend's id.</param>
-/// <param name="FromEnd">Where it leaves that trend.</param>
+/// <param name="From">The influencing trend's or trigger's id.</param>
+/// <param name="FromEnd">Where it leaves that trend; <see cref="GhgEnd.None"/> when it leaves a trigger.</param>
 /// <param name="To">The influenced trend's id.</param>
 /// <param name="ToEnd">Where it arrives at that trend.</param>
 /// <param name="Description">Prose about the influence. <b>Never sent to the client</b>.</param>
@@ -26,6 +26,12 @@ public sealed record GhgInfluence(
 /// <param name="At">The fraction along the phase's stretch of the edge; null when missing or not a number.</param>
 public sealed record GhgEnd(string Phase, string Edge, double? At)
 {
+    /// <summary>The end of an influence leaving a trigger, which states none.</summary>
+    public static GhgEnd None { get; } = new("", "", null);
+
+    /// <summary>Whether this is <see cref="None"/>: an end that states nothing at all.</summary>
+    public bool IsNone => Phase.Length == 0 && Edge.Length == 0 && At is null;
+
     /// <summary>The edge an influence attaches to at the top of a trend.</summary>
     public const string Top = "top";
 

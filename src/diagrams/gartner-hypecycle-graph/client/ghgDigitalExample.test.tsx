@@ -25,9 +25,10 @@ beforeEach(() => {
 afterEach(() => restore?.());
 
 describe("the digital-trends example, as this definition reads it", () => {
-  it("is read in full: thirty trends and forty-one influences, none of them hidden", () => {
+  it("is read in full: thirty trends, eight triggers and fifty-two influences, none of them hidden", () => {
     expect(EXAMPLE.trends).toHaveLength(30);
-    expect(EXAMPLE.influences).toHaveLength(41);
+    expect(EXAMPLE.triggers).toHaveLength(8);
+    expect(EXAMPLE.influences).toHaveLength(52);
     expect(EXAMPLE.influences.filter((influence) => isHidden(influence, EXAMPLE.trends))).toEqual([]);
   });
 
@@ -42,7 +43,7 @@ describe("the digital-trends example, as this definition reads it", () => {
       </DiagramViewProvider>,
     );
 
-    expect(container.querySelectorAll("[data-element-id]")).toHaveLength(30);
-    expect(container.querySelectorAll("[data-connection-id]")).toHaveLength(41);
+    expect(container.querySelectorAll("[data-element-id]")).toHaveLength(38);
+    expect(container.querySelectorAll("[data-connection-id]")).toHaveLength(52);
   });
 });

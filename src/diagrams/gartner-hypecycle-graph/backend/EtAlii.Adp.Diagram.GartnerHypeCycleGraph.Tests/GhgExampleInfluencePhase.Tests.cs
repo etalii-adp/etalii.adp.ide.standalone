@@ -27,7 +27,11 @@ public class GhgExampleInfluencePhaseTests
 
         foreach (var influence in model.Influences)
         {
-            var from = trends[influence.From];
+            if (!trends.TryGetValue(influence.From, out var from))
+            {
+                continue; // a trigger's influences are EveryInfluenceFromATrigger_ActsOnAPhaseNotYetOver's
+            }
+
             var to = trends[influence.To];
             if (influence.FromEnd.PhaseIndex >= from.VisiblePhases || influence.ToEnd.PhaseIndex >= to.VisiblePhases)
             {
@@ -60,9 +64,10 @@ public class GhgExampleInfluencePhaseTests
         var trends = model.Trends.ToDictionary(trend => trend.Id);
         var wrong = new List<string>();
 
+        var triggers = model.Triggers.ToDictionary(trigger => trigger.Id);
         foreach (var influence in Drawn(model, trends))
         {
-            var leaves = DateOf(trends[influence.From], influence.FromEnd);
+            var leaves = triggers.TryGetValue(influence.From, out var trigger) ? trigger.Date!.Value : DateOf(trends[influence.From], influence.FromEnd);
             var arrives = DateOf(trends[influence.To], influence.ToEnd);
             if (arrives < leaves)
             {
@@ -86,6 +91,7 @@ public class GhgExampleInfluencePhaseTests
         var trends = model.Trends.ToDictionary(trend => trend.Id);
         var stacked = Drawn(model, trends)
             .SelectMany(influence => new[] { (Trend: influence.From, End: influence.FromEnd), (Trend: influence.To, End: influence.ToEnd) })
+            .Where(end => !end.End.IsNone)
             .GroupBy(end => (end.Trend, end.End.Phase, end.End.Edge))
             .Where(slot => slot.Count() >= 2)
             .Where(slot => slot.Max(end => end.End.At!.Value) - slot.Min(end => end.End.At!.Value) < 0.2)
@@ -93,6 +99,68 @@ public class GhgExampleInfluencePhaseTests
             .ToList();
 
         Assert.True(stacked.Count == 0, $"These phase edges stack their influences in one spot: {string.Join("; ", stacked)}.");
+    }
+
+    /// <summary>
+    /// A trigger acts on a trend in the phase the trend was in when it happened, or a later one: the
+    /// phase it lands on is not over before the trigger's date. A trigger before a trend began acts on
+    /// its Peak.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Examples))]
+    public void EveryInfluenceFromATrigger_ActsOnAPhaseNotYetOver(string name)
+    {
+        var model = Model(name);
+        var trends = model.Trends.ToDictionary(trend => trend.Id);
+        var wrong = new List<string>();
+
+        foreach (var trigger in model.Triggers)
+        {
+            foreach (var influence in model.Influences.Where(influence => influence.From == trigger.Id))
+            {
+                var (_, stop) = PhaseSpan(trends[influence.To], influence.ToEnd.PhaseIndex);
+                if (stop <= trigger.Date!.Value)
+                {
+                    wrong.Add($"{influence.Id} ({trigger.Id} at {GhgScale.FormatMonth(trigger.Date.Value)}, {influence.ToEnd.Phase} over by {GhgScale.FormatMonth(stop)})");
+                }
+            }
+        }
+
+        Assert.True(wrong.Count == 0, $"These influences act on a phase that was already over: {string.Join("; ", wrong)}.");
+    }
+
+    /// <summary>
+    /// ghg-triggers-and-notes Requirement 10.1: every shipped example shows at least one real trigger
+    /// setting a trend off, and validates without a report.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Examples))]
+    public void EveryExample_HasATriggerWithAnInfluence_AndBreaksNoRule(string name)
+    {
+        var model = Model(name);
+
+        Assert.Contains(model.Triggers, trigger => model.Influences.Any(influence => influence.From == trigger.Id));
+        Assert.Empty(GhgValidator.Validate(model));
+    }
+
+    /// <summary>
+    /// Every example ships twice - beside the module and under <c>src/examples</c> - and the two copies
+    /// are one document, byte for byte.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Examples))]
+    public void BothCopiesOfAnExample_AreByteIdentical(string name)
+    {
+        var shipped = GhgModuleFiles.ShippedExampleNamed(name);
+
+        Assert.Equal(File.ReadAllBytes(GhgModuleFiles.ExampleNamed(name)), File.ReadAllBytes(shipped));
+    }
+
+    /// <summary>ghg-triggers-and-notes Requirement 10.5: at least one example carries a note.</summary>
+    [Fact]
+    public void AtLeastOneExample_CarriesANote()
+    {
+        Assert.Contains(Examples, row => Model(row.Data).Notes.Count > 0);
     }
 
     /// <summary>Peter asked for at least one empty row between any two rows that hold trends.</summary>
@@ -104,11 +172,11 @@ public class GhgExampleInfluencePhaseTests
         Assert.All(rows.Zip(rows.Skip(1)), pair => Assert.True(pair.Second - pair.First >= 2, $"Rows {pair.First} and {pair.Second} both hold trends with no empty row between them."));
     }
 
-    /// <summary>The influences drawn: both ends readable and on a visible phase.</summary>
+    /// <summary>The influences drawn: both ends readable and on a visible phase, a trigger's end being none.</summary>
     private static IEnumerable<GhgInfluence> Drawn(GhgModel model, Dictionary<string, GhgTrend> trends) =>
         model.Influences.Where(influence =>
-            influence.FromEnd.IsReadable && influence.ToEnd.IsReadable &&
-            influence.FromEnd.PhaseIndex < trends[influence.From].VisiblePhases &&
+            (influence.FromEnd.IsNone || (influence.FromEnd.IsReadable && influence.FromEnd.PhaseIndex < trends[influence.From].VisiblePhases)) &&
+            influence.ToEnd.IsReadable &&
             influence.ToEnd.PhaseIndex < trends[influence.To].VisiblePhases);
 
     /// <summary>The date under an end: its fraction along its phase's span.</summary>

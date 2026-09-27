@@ -64,6 +64,44 @@ internal static class GhgEdits
     public static GhgTrend? TrendOf(GhgModel model, string id) =>
         model.Trends.FirstOrDefault(trend => string.Equals(trend.Id, id, StringComparison.Ordinal));
 
+    /// <summary>The trigger with <paramref name="id"/>: the first entry with it.</summary>
+    public static GhgTrigger? TriggerOf(GhgModel model, string id) =>
+        model.Triggers.FirstOrDefault(trigger => string.Equals(trigger.Id, id, StringComparison.Ordinal));
+
+    /// <summary>The note with <paramref name="id"/>: the first entry with it.</summary>
+    public static GhgNote? NoteOf(GhgModel model, string id) =>
+        model.Notes.FirstOrDefault(note => string.Equals(note.Id, id, StringComparison.Ordinal));
+
+    /// <summary>Whether any entry of any list already has <paramref name="id"/>: ids are unique across all four.</summary>
+    public static bool IdTaken(GhgModel model, string id) =>
+        model.Trends.Any(trend => trend.Id == id) ||
+        model.Triggers.Any(trigger => trigger.Id == id) ||
+        model.Notes.Any(note => note.Id == id) ||
+        model.Influences.Any(influence => influence.Id == id);
+
+    /// <summary>Whether <paramref name="id"/> names a trend, a trigger or a note: something drawn as an element.</summary>
+    public static bool IsElement(GhgModel model, string id) =>
+        TrendOf(model, id) is not null || TriggerOf(model, id) is not null || NoteOf(model, id) is not null;
+
+    /// <summary><paramref name="name"/>, or it with the lowest number that makes it unique among <paramref name="taken"/>.</summary>
+    public static string UniqueName(IEnumerable<string> taken, string name)
+    {
+        var names = taken.ToHashSet(StringComparer.Ordinal);
+        if (!names.Contains(name))
+        {
+            return name;
+        }
+
+        for (var number = 2; ; number++)
+        {
+            var candidate = $"{name} {number}";
+            if (!names.Contains(candidate))
+            {
+                return candidate;
+            }
+        }
+    }
+
     /// <summary>The influence with <paramref name="id"/>: the first entry with it.</summary>
     public static GhgInfluence? InfluenceOf(GhgModel model, string id) =>
         model.Influences.FirstOrDefault(influence => string.Equals(influence.Id, id, StringComparison.Ordinal));
