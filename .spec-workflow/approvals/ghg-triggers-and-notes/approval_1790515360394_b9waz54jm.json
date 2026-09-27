@@ -3,8 +3,10 @@
   "title": "ghg-triggers-and-notes: design (document, commands, four library additions, examples)",
   "filePath": ".spec-workflow/specs/ghg-triggers-and-notes/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-27T13:22:40.394Z",
   "category": "spec",
-  "categoryName": "ghg-triggers-and-notes"
+  "categoryName": "ghg-triggers-and-notes",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-27T13:23:38.265Z"
 }
