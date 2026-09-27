@@ -180,7 +180,7 @@
   - Run the criterion-to-claim diff over this document and the approved requirements: 71 criteria, each claimed, and no claim naming a criterion that does not exist. Run it again when the work is done, traced to files and strings rather than to a task's promise.
   - _Requirements: 15.3_
 
-- [ ] 24. The browser pass
+- [x] 24. The browser pass
   - File: `tests.md`
   - An entry covering, in a real browser, everything Requirement 16.1 lists: the banner and chevrons at each phase count in both themes; the phase tooltips; the name before the banner, right-aligned; month snapping on drag and resize and row snapping; phases even until a boundary is dragged, the dragged boundary staying put and scaling with a resize; influences on each phase's top and bottom edges keeping their place on resize; a same-direction duplicate refused and the opposite direction accepted; influences hiding and reappearing with the phase count and present in the saved file while hidden; tag filtering with and, or and parentheses; the axis pinned to the bottom while scrolling and zooming; and pan, zoom, drag and a filter change on the 200-trend example without visible lag.
   - **jsdom is not evidence for any of these**: it applies no CSS and lays out no text.
