@@ -113,6 +113,10 @@ src/client/src/generated/**   text eol=lf
 # comment above exists to protect. Added BEFORE the first fixture was written, because a fixture
 # committed under `text=auto` has already been normalised and the pair is already lost.
 *.fdg   -text
+# `.ghg` is the gartner-hypecycle-graph module's document, byte-compared for the same reason as
+# `.fdg` (its Requirement 2.5), with the same `crlf-line-endings` / `lf-line-endings` fixture pair.
+# Added before its first fixture, for the reason given above.
+*.ghg   -text
 # `.ttl` and `.nt` belong to the RDF family, whose round-trip requirement byte-compares them -
 # and unlike `.yml`, these extensions mean Turtle and N-Triples everywhere in the tree, so the
 # by-extension rule applies exactly as written above: the guarantee follows the format.

@@ -92,7 +92,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - The pointer-capture stubs move to `test-setup.ts`; the pointer-event factory, the `pushedIds` adapter and **one fake context connection with every member** replace 20 partial fakes. `renderCanvas` **stays per module** — its props differ, so it is not a duplicate.
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-- [ ] 12. No stylesheet rule without an emitter
+- [x] 12. No stylesheet rule without an emitter
   - Files: a new mounted guard on the client; **a backend test that exports each module's shipped examples as the model the client would receive**; `timeline.css`'s two confirmed-dead rules
   - **Mount every canvas on its shipped examples, collect the classes actually emitted**, and fail on a stylesheet class nothing emits unless it is listed with a reason. **A text search cannot answer this**: `pipeline-problem-{payload.problemSeverity}` and `databricks-sim-{payload.simulated}` are composed at runtime from declared templates and read as dead.
   - **How an example's model reaches the client - 11.2 names the method but not the route, so the user ruled it (the Scrum master's chat, 2026-09-25): a backend test exports each module's shipped examples as the model the client would receive, and the client guard mounts each canvas on those.** This makes the task **cross-stack**. The cheaper substitute - mounting on the hand-written models the canvas tests already build - was rejected, because those models never compose a template class, so `pipeline-problem-{payload.problemSeverity}` would read as dead and the guard would fail on the very classes it exists to see.

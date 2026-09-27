@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.GartnerHypeCycleGraph\EtAlii.Adp.Diagram.GartnerHypeCycleGraph.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The round-trip corpus, beside the test binary so a test reads a document from disk exactly
+      as the backend will. PreserveNewest rather than Always: a byte-for-byte round-trip test
+      compares against the file it copied, so the copy must not be rewritten under a running test.
+    -->
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

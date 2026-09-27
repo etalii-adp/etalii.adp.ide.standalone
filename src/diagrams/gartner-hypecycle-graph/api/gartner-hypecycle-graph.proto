@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package etalii.adp.gartnerhypecyclegraph;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.GartnerHypeCycleGraph";
+
+// One trend: a right-pointing arrow banner spanning its start and stop dates, divided into its
+// visible phases. Which of the two types it is travels in the core Element's type, not here.
+//
+// WIDTH IS IN THE PAYLOAD BECAUSE THE CORE ELEMENT HAS NOWHERE ELSE FOR IT, and must be: the shared
+// diff compares position, type and payload bytes, so a span change kept anywhere else would produce
+// no delta at all. Every trend shares one height, so there is no height field.
+//
+// A DESCRIPTION IS NEVER SENT, so none can be drawn (Requirement 12.3). There is no field for it,
+// which is how that is enforced rather than remembered.
+message GhgTrendPayload {
+  string name = 1;
+  // How many phases are drawn, 1 to 4, always the earliest ones: Peak, Trough, Slope, Plateau.
+  int32 phases = 2;
+  // The drawn inner phase boundaries as fractions of the width, `phases - 1` of them, computed once
+  // by the backend (GhgPhases.BoundariesOf) so the client never recomputes the rule.
+  repeated double boundaries = 3;
+  repeated string tags = 4;
+  // The span in canvas units: months times the scale's units per month.
+  double width = 5;
+}
+
+// Where one end of an influence attaches: an edge of one phase of a trend, and how far along it.
+message GhgAttachment {
+  // "top" or "bottom".
+  string edge = 1;
+  // The phase's index: 0 Peak, 1 Trough, 2 Slope, 3 Plateau. May name a phase that is not drawn;
+  // the influence is then hidden by the canvas and kept (Requirement 7.2).
+  int32 region = 2;
+  // A fraction 0 to 1 of that phase's stretch of the edge.
+  double at = 3;
+}
+
+// One influence, from one trend to another. The endpoints are here because the client cannot
+// draw an edge without them, as in every module. An attachment the document states unreadably is
+// left unset, and the connection is then drawn as one with no attachment.
+message GhgInfluencePayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+  GhgAttachment source_attachment = 3;
+  GhgAttachment target_attachment = 4;
+}

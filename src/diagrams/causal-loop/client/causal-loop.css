@@ -28,11 +28,6 @@
   width: 100%;
 }
 
-.causal-loop-canvas {
-  width: 100%;
-  height: 100%;
-}
-
 .causal-loop-message {
   padding: 16px;
   color: var(--color-text-muted, #64748b);

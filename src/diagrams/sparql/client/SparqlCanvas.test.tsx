@@ -259,9 +259,11 @@ describe("SparqlCanvas", () => {
     const { container } = renderCanvas();
 
     // Assert.
-    expect(container.querySelectorAll(".canvas-anchor")).toHaveLength(0);
-    expect(container.querySelectorAll(".canvas-anchor-hit")).toHaveLength(0);
-    expect(container.querySelectorAll(".canvas-pending-connection")).toHaveLength(0);
+    // The library's names: the `canvas-anchor` and `canvas-pending-connection` classes this once
+    // asked after are drawn by no canvas now (client-centralization task 12).
+    expect(container.querySelectorAll(".library-anchor")).toHaveLength(0);
+    expect(container.querySelectorAll(".library-span-anchor-hit")).toHaveLength(0);
+    expect(container.querySelectorAll(".library-connect-preview")).toHaveLength(0);
     expect(container.querySelector("svg.library-canvas-surface")?.getAttribute("ondrop")).toBeNull();
   });
 
