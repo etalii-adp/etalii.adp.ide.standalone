@@ -8,14 +8,14 @@ Thirty-three energy trends from the first fission and fusion experiments of the 
 
 **Its dates and influences are illustrative, not a claim.** Every start date up to 2026 is plausible to the year, and every influence is one an account of energy research would recognise. **Dates after 2026 are projections**: fusion power plants, lunar helium-3, superhot rock geothermal and the stop of every trend still running are guesses, drawn so the diagram can show what is expected as well as what happened.
 
-**Each influence is dated, and its anchors follow from that date.** An influence attaches to the phase each trend was in at the month it acted, and its anchor sits as far along that phase as the month does. Influences on one phase therefore line up in the order they happened: the seven that feed fusion power plants arrive in the order their variants are expected to deliver.
+**Each influence is dated, and its anchors are spread by the rule every example follows.** An influence attaches to the phase each trend was in at the month it acted. Where on that phase it sits is placed by the anchor-spreading rule shared by all the examples: an influence never arrives before it leaves, and the influences sharing one edge of a phase spread across it rather than stacking in one spot.
 
 ## What it shows
 
 | Part | In this example |
 | --- | --- |
 | Trends | 33, in five clusters of rows: fusion, fission, renewables, storage and hydrogen, and the grid, with an empty row between every two rows of trends |
-| Influences | 46, each attached to the phase of each trend in which it acted, at the point in that phase when it acted |
+| Influences | 46, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
 | Phase counts | Every count from 1 to 4: fission, solar and lithium-ion show all four phases; most fusion variants a Peak or a Trough |
 | Upcoming and conceptual ideas | Fusion power plants are tagged `upcoming`; lunar helium-3, space-based solar power, superhot rock geothermal and room-temperature superconductors are tagged `conceptual` |
 | A trend that fizzled | Cold fusion and room-temperature superconductors show a Peak and a Trough and stop there |
