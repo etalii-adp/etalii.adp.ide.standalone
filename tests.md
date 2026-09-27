@@ -3317,3 +3317,21 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
     re-read an element's position immediately before each gesture.
   - **With an emulated viewport larger than the pane, clicks land scaled** (a click reported at
     591, 291 arrived at 1113, 548). Use the pane's own size for any input row.
+
+## The Gartner hype cycle graph, in a browser (gartner-hype-cycle-graph, task 24)
+
+**Why this is a browser pass and not a test:** jsdom applies no CSS and lays out no text, so none of the rows below - a fill a stylesheet paints, a tooltip, a label's alignment, a drag that writes a date, the ruler pinned to the view - is evidenced by the module's own suites. Requirements 16.1 and 16.2.
+
+- **Preconditions**: a locally running developer build ("developer session" in the header), signed in with the checked-in placeholder. A **copy** of `src/diagrams/gartner-hypecycle-graph/examples/technology-trends/` (the `.adp` and the `.ghg`) added as a project - the rows below edit the document. Open `technology-trends.ghg` from Hierarchy. Before recording a failed row, check the origin still answers (`fetch('/favicon.ico')` settles in milliseconds). Read positions again before each gesture, since a theme or viewport change re-fits the canvas.
+- **Rows**:
+  1. **Banner and chevrons, every phase count, both themes.** Set one trend's Phases slider to each of its four stops: the banner shows exactly that many phases, always the earliest, and ends in its point after the last. Read each segment's **computed** fill: light `#f7e7a1`, `#dfe3e8`, `#f6c99a`, `#cde8a8` with chevrons `#475569`; dark `#6b5a17`, `#475569`, `#7c4a1c`, `#3f6212` with chevrons `#e2e8f0`.
+  2. **Tooltips.** Rest the pointer on each phase: Peak of Inflated Expectations, Trough of Disillusionment, Slope of Enlightenment, Plateau of Productivity.
+  3. **The name.** Every trend's name sits left of its banner, right-aligned 8 units from the left edge and vertically centred. F2 or a double click renames it in place; the property grid's Name does the same.
+  4. **Snapping.** Drag a trend horizontally, then its left and its right edge: `start` and `stop` in the file change to whole months and nothing else changes. Drag it vertically: it lands on a row, never between two. The height cannot be changed.
+  5. **Phases.** On a trend with no `*-end` keys the phases are equal. Drag one chevron: it lands on a month, the file gains that `*-end`, the others spread evenly around it. Resize the trend: the dragged boundary keeps its share of the span. Run **Even phases**: the key goes and the phases are equal again.
+  6. **Influences.** Draw influences from and to each phase's top and bottom edge: while drawing, the stretch under the pointer lights up; the file records the phase, the edge and the fraction. Resize either trend: each end stays at its fraction of its phase. Draw A to B where A to B exists: B is never highlighted and nothing is written. Draw B to A: accepted.
+  7. **Hidden influences.** Lower a trend's Phases below a phase an influence attaches to: the influence disappears, stays in the saved file, and still refuses its duplicate. Raise it again: it reappears where it was.
+  8. **Filter.** Type `energy`, then `energy and transport`, then `energy and (transport or industry)`, then `energy or`: each hides the trends that do not match and every influence touching them; the last shows an error under the box and leaves the previous filter applied. Clearing the box shows everything.
+  9. **The axis.** The ruler stays at the bottom of the view while scrolling vertically. Pan and zoom horizontally: the tick for 1950 stays over a trend starting 1950-01. Zoom from two years to the whole graph: labels step months, quarters, years, decades and never overlap.
+  10. **Scale.** On the 200-trend example, pan, zoom, drag a trend and change the filter: none shows visible lag.
+- **Result: not yet run.** Written with the module (PR from `claude/ghg-module`) in a cloud session, which cannot install .NET and so cannot run the backend. Owed to the first local session on the merged branch; task 24 stays unticked until it is recorded here.
