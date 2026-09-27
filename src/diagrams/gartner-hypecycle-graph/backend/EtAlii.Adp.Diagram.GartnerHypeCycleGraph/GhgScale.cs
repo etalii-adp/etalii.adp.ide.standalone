@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -90,7 +91,12 @@ public static partial class GhgScale
     public static double TopOf(int row) => row * RowStep;
 
     /// <summary>The row whose top edge is nearest <paramref name="top"/>.</summary>
-    public static int RowAtTop(double top) => (int)Math.Round(top / RowStep, MidpointRounding.AwayFromZero);
+    /// <remarks>
+    /// The rule is <see cref="RowRounding.ToNearestRow"/>, shared with every row canvas and pinned by
+    /// the golden fixture the client reads too (backend-centralization R9): a top exactly between two
+    /// rows rounds away from zero, on both sides of the origin.
+    /// </remarks>
+    public static int RowAtTop(double top) => RowRounding.ToNearestRow(top, RowStep);
 
     /// <summary>The row whose vertical middle is nearest <paramref name="y"/>.</summary>
     public static int RowAtMiddle(double y) => RowAtTop(y - (TrendHeight / 2));
