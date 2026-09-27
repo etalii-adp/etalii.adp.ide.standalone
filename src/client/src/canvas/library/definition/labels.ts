@@ -1,6 +1,7 @@
 import { holds, resolveEntries, resolveMany, resolveNumber, resolveOneAt, type Binding, type BindingSource } from "./binding";
 import type { BuiltInShape, DeclaredNumber, LabelDeclaration, LabelSlot, LabelTypography, ShapeBounds } from "./diagramDefinition";
 import { outlineOf, textRegionOf } from "../shapes/outline";
+import { capacityOf, continuedWithin, fitToCapacity, fitToWidth, LABEL_FONT_SIZE } from "../../label/textMetrics";
 
 /**
  * `labels` — what an element says, declared rather than drawn.
@@ -39,37 +40,13 @@ export interface LaidOutLabel {
 }
 
 /**
- * The per-character estimate the span element already uses. Shared here rather than re-derived
- * so a truncated label is trimmed identically wherever it is drawn - the alternative is two
- * capacities that disagree by a character and a diagram that looks different in two places.
- */
-const CHAR_WIDTH = 7;
-
-/**
- * The width this library estimates for a string, in canvas units.
- *
- * Exported because a guard about wrapping has to measure what the wrapper measures. Asserting
- * against the literal 7 instead would pass while disagreeing with the code, and would have to be
- * edited the day the estimate is replaced by a real text metric - which is exactly the "second
- * copy of the data" a guard must not be.
- */
-export function estimatedTextWidth(text: string): number {
-  return text.length * CHAR_WIDTH;
-}
-
-/** How many characters fit a width, by the same estimate. At least one, so a fit always advances. */
-function capacityOf(width: number): number {
-  return Math.max(1, Math.floor(width / CHAR_WIDTH));
-}
-
-/**
  * The text broken into lines no wider than `width`, at spaces and at explicit newlines.
  *
  * A word longer than the line is broken rather than allowed to overflow: a URL in a comment is
  * still text somebody has to read, and a line that runs out of the shape is not a kinder answer.
  */
-function wrappedLines(text: string, width: number): readonly string[] {
-  const capacity = capacityOf(width);
+function wrappedLines(text: string, width: number, fontSize: number): readonly string[] {
+  const capacity = capacityOf(width, fontSize);
   const lines: string[] = [];
   for (const paragraph of text.split("\n")) {
     let current = "";
@@ -112,10 +89,11 @@ function fittedWrap(
   shape: BuiltInShape,
   bounds: ShapeBounds,
   lineHeight: number,
+  fontSize: number,
 ): { lines: readonly string[]; region: ShapeBounds; overflowed: boolean } {
   let lineCount = 1;
   let region = textRegionOf(shape, bounds, lineHeight);
-  let lines = wrappedLines(text, region.width);
+  let lines = wrappedLines(text, region.width, fontSize);
 
   // Six rounds is far more than any real label needs; the cap is here so a shape whose region
   // shrinks as it grows cannot oscillate forever.
@@ -126,7 +104,7 @@ function fittedWrap(
       break;
     }
     region = wanted;
-    lines = wrappedLines(text, region.width);
+    lines = wrappedLines(text, region.width, fontSize);
   }
 
   const room = Math.max(1, Math.floor(region.height / lineHeight));
@@ -137,26 +115,13 @@ function fittedWrap(
   // What does not fit says so, rather than being drawn outside the shape or silently dropped.
   const visible = lines.slice(0, room);
   const last = visible[room - 1] ?? "";
-  const capacity = capacityOf(region.width);
-  visible[room - 1] = last.length >= capacity ? `${last.slice(0, Math.max(0, capacity - 1))}…` : `${last}…`;
+  const capacity = capacityOf(region.width, fontSize);
+  visible[room - 1] = continuedWithin(last, capacity);
   return { lines: visible, region, overflowed: true };
 }
 
 /** Vertical offsets for the named slots, as fractions of the box height. */
 const SLOT_FRACTION: Record<LabelSlot, number> = { header: 0.28, body: 0.5, footer: 0.78 };
-
-function trimmedToWidth(text: string, width: number): string {
-  return trimmedToCapacity(text, Math.floor(Math.max(width - 8, 0) / CHAR_WIDTH));
-}
-
-/** The text cut to so many characters, the last of them an ellipsis when anything was cut. */
-function trimmedToCapacity(text: string, capacity: number): string {
-  if (text.length <= capacity) {
-    return text;
-  }
-
-  return capacity <= 1 ? "…" : `${text.slice(0, capacity - 1)}…`;
-}
 
 /**
  * The text region a TRUNCATED single line is fitted to, or null to keep trimming to the box.
@@ -362,7 +327,7 @@ export function wrappedLabelRegion(
 
   const lineHeight = declaration.stack?.lineHeight ?? Math.round((declaration.typography?.fontSize ?? 12) * 1.4);
   const whole = entries.map((entry) => entry.text).join("\n");
-  return fittedWrap(whole, shape, bounds, lineHeight).region;
+  return fittedWrap(whole, shape, bounds, lineHeight, declaration.typography?.fontSize ?? LABEL_FONT_SIZE).region;
 }
 
 export function layoutLabels(
@@ -400,7 +365,7 @@ export function layoutLabels(
       const typography = scaledTypography(declaration.typography, viewScale);
       const lineHeight = declaration.stack?.lineHeight ?? Math.round((typography?.fontSize ?? 12) * 1.4);
       const whole = lines.join("\n");
-      const fitted = fittedWrap(whole, shape, bounds, lineHeight);
+      const fitted = fittedWrap(whole, shape, bounds, lineHeight, typography?.fontSize ?? LABEL_FONT_SIZE);
       const align = declaration.align ?? "middle";
       const anchor = align === "start" ? "start" : align === "end" ? "end" : "middle";
       const x = align === "start" ? fitted.region.x : align === "end" ? fitted.region.x + fitted.region.width : fitted.region.x + (fitted.region.width / 2);
@@ -446,7 +411,7 @@ export function layoutLabels(
 
         const align = column.align ?? "start";
         laidOut.push({
-          text: column.truncate ? trimmedToWidth(text, roomOf(align, bounds, column.insetX)) : text,
+          text: column.truncate ? fitToWidth(text, roomOf(align, bounds, column.insetX), typography?.fontSize ?? LABEL_FONT_SIZE) : text,
           x: alignedX(align, bounds, column.insetX),
           y,
           anchor: align,
@@ -462,8 +427,8 @@ export function layoutLabels(
 
       laidOut.push({
         text: region !== null
-          ? trimmedToCapacity(line, capacityOf(region.width))
-          : declaration.truncate ? trimmedToWidth(line, roomOf(declaration.align, bounds, declaration.insetX)) : line,
+          ? fitToCapacity(line, capacityOf(region.width, typography?.fontSize ?? LABEL_FONT_SIZE))
+          : declaration.truncate ? fitToWidth(line, roomOf(declaration.align, bounds, declaration.insetX), typography?.fontSize ?? LABEL_FONT_SIZE) : line,
         x: region !== null ? region.x + (region.width / 2) : base.x,
         y,
         anchor: base.anchor,

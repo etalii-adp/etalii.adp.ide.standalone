@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { DiagramModelElement } from "../api/diagramModel";
 import type { BindingSource } from "./binding";
 import type { BuiltInShape, LabelDeclaration } from "./diagramDefinition";
-import { estimatedTextWidth, layoutLabels } from "./labels";
+import { layoutLabels } from "./labels";
+import { LABEL_FONT_SIZE, widthOf } from "../../label/textMetrics";
 import { textRegionOf } from "../shapes/outline";
 
 const element: DiagramModelElement = { id: "e1", type: "card", x: 0, y: 0 };
@@ -61,9 +62,9 @@ describe("labels — the single-label case, which is most modules", () => {
 
   it("truncates a side-aligned line or column to the room between its inset and the far edge, not to the whole box", () => {
     // SHACL's summary column starts 110 into a 260 card. Trimmed to the whole box it kept 36
-    // characters - 252 wide by the estimate - and ran a hundred past the card's right edge. By
-    // the same 7-per-character estimate truncation uses, every cut line must end inside the box,
-    // eight short of the edge it runs towards.
+    // characters - 252 wide by the estimate then - and ran a hundred past the card's right edge.
+    // By the same metric truncation uses, every cut line must end inside the box, eight short of
+    // the edge it runs towards.
     const card = { x: 0, y: 0, width: 260, height: 80 };
     const long = "or({ datatype xsd:string }, { class ex:Address }) and then some";
     const rows = [{ path: long, summary: long, cardinality: long }];
@@ -89,11 +90,11 @@ describe("labels — the single-label case, which is most modules", () => {
     for (const name of ["path", "summary"]) {
       const line = byClass(name);
       expect(line.text.endsWith("…")).toBe(true);
-      expect(line.x - card.x + line.text.length * 7).toBeLessThanOrEqual(card.width - 8);
+      expect(line.x - card.x + widthOf(line.text, LABEL_FONT_SIZE)).toBeLessThanOrEqual(card.width - 8);
     }
     const end = byClass("cardinality");
     expect(end.text.endsWith("…")).toBe(true);
-    expect(end.x - end.text.length * 7).toBeGreaterThanOrEqual(card.x + 8);
+    expect(end.x - widthOf(end.text, LABEL_FONT_SIZE)).toBeGreaterThanOrEqual(card.x + 8);
   });
 });
 
@@ -370,10 +371,10 @@ describe("labels - an offset moves the line down, it does not un-align it", () =
 
 describe("a wrapped label is laid out inside the shape, not inside its bounding box", () => {
   /**
-   * The widths here are asserted against `estimatedTextWidth`, the function the wrapper itself
-   * measures with, rather than against the literal 7 it happens to use today. A guard naming the
-   * literal would pass while disagreeing with the code, and would have to be edited the day a
-   * real text metric replaces the estimate - a second copy of the data rather than a check on it.
+   * The widths here are asserted against `widthOf`, the metric the wrapper itself measures with,
+   * at the declaration's font size, rather than against a literal per-character width. A guard
+   * naming the literal would pass while disagreeing with the code, and would have to be edited the
+   * day the metric changes - a second copy of the data rather than a check on it.
    */
   const wrapped = (extra: Partial<LabelDeclaration> = {}): LabelDeclaration => ({
     text: { path: "payload.note" },
@@ -402,7 +403,7 @@ describe("a wrapped label is laid out inside the shape, not inside its bounding 
     expect(out.length).toBeGreaterThan(1);
     const region = textRegionOf("box", tall, out.length * 14);
     for (const line of out) {
-      expect(estimatedTextWidth(line.text), line.text).toBeLessThanOrEqual(region.width);
+      expect(widthOf(line.text, 10), line.text).toBeLessThanOrEqual(region.width);
     }
     // Every word survives the break, in order: a wrap that dropped one would still fit.
     expect(out.map((line) => line.text).join(" ").split(/\s+/)).toEqual(label.split(" "));
@@ -443,7 +444,7 @@ describe("a wrapped label is laid out inside the shape, not inside its bounding 
     expect(inTrapezoid.length).toBeGreaterThanOrEqual(inBox.length);
     const region = textRegionOf("trapezoid", box, inTrapezoid.length * 14);
     for (const line of inTrapezoid) {
-      expect(estimatedTextWidth(line.text), line.text).toBeLessThanOrEqual(region.width);
+      expect(widthOf(line.text, 10), line.text).toBeLessThanOrEqual(region.width);
     }
     // And the two really are different layouts, or this test would pass on a box-measured wrap.
     expect(inTrapezoid.map((line) => line.text)).not.toEqual(inBox.map((line) => line.text));
@@ -475,7 +476,7 @@ describe("a truncated line inside an outlined shape is fitted to the shape, not 
     (shape) => {
       const region = textRegionOf(shape, small, lineHeight);
       const line = truncatedIn(shape);
-      const half = estimatedTextWidth(line.text) / 2;
+      const half = widthOf(line.text, LABEL_FONT_SIZE) / 2;
 
       // The arrangement, asserted: a line that was never cut proves nothing about cutting.
       expect(line.text.endsWith("…"), "the line was not long enough to be truncated").toBe(true);
