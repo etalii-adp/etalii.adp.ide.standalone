@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/two-tab-connection-wedge/design.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1790191644934_zorvy5lxt",
       "approvalTitle": "two-tab-connection-wedge - Design (carries one question for you: TLS in production, or not?)"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-27T17:15:39.309Z",
+      "trigger": "approved",
+      "approvalId": "approval_1790517085473_e553ktift",
+      "approvalTitle": "Design: Requirement 3's stream reduction, as built (task 5, one stream per tab)"
     }
   ]
 }
