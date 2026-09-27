@@ -405,10 +405,13 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
         } catch {
           // Fall through to the reconnect below unless we were told to stop.
         }
-        streamsRef.current.disconnect();
+        // An aborted loop belongs to a mount that is gone, and its stream rejects after the next
+        // mount's consumers have already subscribed - StrictMode's development remount does exactly
+        // that. Disconnecting here would fail their live feeds on a connection that never dropped.
         if (abortController.signal.aborted) {
           return;
         }
+        streamsRef.current.disconnect();
         setSelectionValue((previous) => ({ ...previous, connected: false }));
         await new Promise((resolve) => setTimeout(resolve, reconnectDelay));
         reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS);
