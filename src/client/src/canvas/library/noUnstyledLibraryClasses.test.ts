@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import ts from "typescript";
 import { sourceFiles } from "@client/sourceFiles";
@@ -308,24 +309,37 @@ describe("no unstyled library classes", () => {
 
   /**
    * The walk above is only worth its run because it reads a tree rather than text, and here is
-   * the proof on live code rather than on a fixture.
+   * the proof.
    *
-   * Two module canvases contain the word `library-internal` in prose, describing why a helper was
-   * copied rather than imported. A raw-text scan reports that as a module emitting a class called
+   * Module canvases used to say `library-internal` in prose, explaining why a helper was copied
+   * rather than imported. A raw-text scan reports that as a module emitting a class called
    * `library-internal`, and the namespace guard would fail on arrival, on a comment. The parse
-   * does not see it, because a comment is not a node.
+   * does not see it, because a comment is not a node. Those comments went when the copies did
+   * (client-centralization task 9), so the case is planted here, beside a literal that must still
+   * be read - without it, a parse that read nothing would pass too.
    */
   it("does not mistake prose in a module comment for an emitted class", () => {
-    // Arrange: the premise - the word really is in those files, or this test proves nothing.
-    const moduleText = read(modulesRoot, ".tsx");
-    expect(moduleText, "no module comment mentions library-internal any more").toContain("library-internal");
+    // Arrange: a module with the word in a comment and a real class in a literal.
+    const folder = mkdtempSync(join(tmpdir(), "prose-"));
+    const planted = join(folder, "PlantedCanvas.tsx");
+    writeFileSync(planted, [
+      "/** Kept here rather than imported: the library's helper is library-internal. */",
+      "// library-internal, again, on a line comment.",
+      "export const shape = <rect className=\"library-planted-box\" />;",
+      "",
+    ].join("\n"));
 
-    // Act.
-    const emitted = moduleClasses();
+    try {
+      // Act.
+      const emitted = emittedClasses([planted]);
 
-    // Assert.
-    expect([...emitted], "a comment was read as an emitted class").not.toContain("library-internal");
-  }, moduleTreeBudgetMs);
+      // Assert.
+      expect([...emitted], "the literal was not read, so the parse proves nothing").toContain("library-planted-box");
+      expect([...emitted], "a comment was read as an emitted class").not.toContain("library-internal");
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+    }
+  });
 
   /**
    * The specific rule that stops the wedge. A curve with a fill paints the region between itself

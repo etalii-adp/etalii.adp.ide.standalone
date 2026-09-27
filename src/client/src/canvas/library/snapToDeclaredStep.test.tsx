@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { DiagramCanvas, snapToStep } from "./DiagramCanvas";
@@ -6,6 +8,7 @@ import type { DiagramModel, DiagramModelElement } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { pointer } from "@client/canvas/library/testing/canvasHarness";
+import { sourceRoot } from "@client/diagramModuleClientApi.surface";
 
 /**
  * A dragged element comes to rest on the lattice its diagram type declares.
@@ -110,6 +113,24 @@ describe("snapToStep - the rule itself", () => {
     expect(snapToStep(37, undefined)).toBe(37);
     expect(snapToStep(37, 0)).toBe(37);
     expect(snapToStep(37, -10)).toBe(37);
+  });
+});
+
+/**
+ * The backend's golden fixture for the row rule (backend-centralization task 19), which its own
+ * suite reads too: a row canvas's preview and placement id name the row the backend persists.
+ * Compared with Object.is, so a -0 row fails rather than passing as 0.
+ */
+describe("snapToStep - against the backend's row-rounding fixture", () => {
+  const fixture = JSON.parse(readFileSync(join(sourceRoot(), "fixtures", "cross-tier", "row-rounding.json"), "utf8")) as {
+    cases: { y: number; rowHeight: number; row: number; why: string }[];
+  };
+
+  it("lands every case on the fixture's row", () => {
+    expect(fixture.cases.length).toBeGreaterThan(10);
+    for (const sample of fixture.cases) {
+      expect(Object.is(snapToStep(sample.y, sample.rowHeight) / sample.rowHeight, sample.row), `${sample.y} / ${sample.rowHeight}: ${sample.why}`).toBe(true);
+    }
   });
 });
 
