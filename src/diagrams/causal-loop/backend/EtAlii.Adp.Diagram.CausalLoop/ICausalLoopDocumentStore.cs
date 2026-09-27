@@ -21,6 +21,7 @@ public interface ICausalLoopDocumentStore : IReloadableDocumentStore
     /// <see cref="CausalLoopDocumentEntry.Document"/> is the thing saved, so an edit is a splice
     /// into the lines that were read rather than a reserialization of the model.
     /// </summary>
+    /// <param name="path">The path to write to.</param>
     /// <param name="entry">
     /// The entry to write - **the one the caller edited**, passed in rather than looked up again.
     /// A save that re-fetched from the cache lost the edit whenever a reload landed between the

@@ -138,6 +138,11 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
             }
         }, TestContext.Current.CancellationToken);
 
+        // Reload only once the writer is publishing. On a loaded runner the 3000 reloads can finish
+        // before the writer's task is even scheduled, and then nothing raced at all.
+        Assert.True(SpinWait.SpinUntil(() => Volatile.Read(ref publishes) > 0, TimeSpan.FromSeconds(10)),
+            "The arrangement failed: the external writer never started publishing.");
+
         const int reloads = 3000;
         var lost = 0;
         try

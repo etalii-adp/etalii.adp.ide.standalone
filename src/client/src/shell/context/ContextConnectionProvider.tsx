@@ -16,6 +16,10 @@ import { useAuth } from "../../auth/AuthContext";
 import { reportedCall, useCanvasRefusalReporter } from "../../canvas/library/surface/canvasRefusals";
 import { ContextSourceSchema } from "../../generated/context-contract_pb";
 import { ContextService, ContextSelectionSchema } from "../../generated/context_pb";
+import type { Delta } from "../../generated/deltas_pb";
+import type { OpenDiagramRequest } from "../../generated/diagrams_pb";
+import type { HierarchyMessage } from "../../generated/hierarchy_pb";
+import { WorkspaceService } from "../../generated/workspace_pb";
 import type { ContextActionGroup, ContextLevelDetail, ContextShortcut, ContextSource } from "../../generated/context-contract_pb";
 import type { ContextPrompt, ContextSelection, ContextSelectionChanged, ContextProperty } from "../../generated/context_pb";
 import type { ProjectProblems } from "../../generated/problems_pb";
@@ -23,6 +27,7 @@ import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPro
 import { useCoalescedSelect } from "./useCoalescedSelect";
 import { requestTextTab } from "../panels/textTabRequests";
 import { onLocalNotice } from "./localNotices";
+import { WorkspaceStreams } from "./workspaceStreams";
 
 /** The `none` alternative: a plain selection, nothing more. */
 export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: create(EmptySchema) };
@@ -99,7 +104,7 @@ export interface PropertyDescription {
 
 /** What a producer of selections needs: stable across selection pushes, so `select()` callers never re-render for them. */
 export interface ContextConnectionValue {
-  /** Generated here once per mounted shell; the explorer uses it for ListEntries/WatchHierarchy too. */
+  /** Generated here once per mounted shell; the explorer uses it for ListEntries too. */
   watchId: Uint8Array;
   /** A plain selection (`none`) is coalesced; any action, or `null` to clear, goes at once. */
   select: (selection: ContextSelection | null) => void;
@@ -142,6 +147,25 @@ export interface ContextSelectionValue {
   connected: boolean;
 }
 
+/**
+ * The feeds that ride the tab's one stream (two-tab-connection-wedge Requirement 3.1), for the
+ * two consumers that used to open streams of their own. Kept off {@link ContextConnectionValue}:
+ * these hand out streams, which end and reject by design, not calls that resolve.
+ */
+export interface WorkspaceStreamsValue {
+  /**
+   * One diagram's deltas - the baseline, then every change - shaped like the `DiagramService.Open`
+   * call it replaced: it ends when the connection drops, and rejects with the backend's own
+   * refusal when the diagram cannot be opened here.
+   */
+  openDiagramStream: (
+    request: Pick<OpenDiagramRequest, "path" | "editorId">,
+    options: { signal: AbortSignal },
+  ) => AsyncIterable<Delta>;
+  /** The hierarchy's changes; fails when the connection drops, as the explorer's own stream did. */
+  watchHierarchy: (options: { signal: AbortSignal }) => AsyncIterable<HierarchyMessage>;
+}
+
 export interface ContextPromptValue {
   prompt: ContextPrompt | null;
   onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
@@ -152,6 +176,7 @@ export interface ContextPromptValue {
 const ConnectionContext = createContext<ContextConnectionValue | undefined>(undefined);
 const SelectionContext = createContext<ContextSelectionValue | undefined>(undefined);
 const PromptContext = createContext<ContextPromptValue | undefined>(undefined);
+const WorkspaceStreamsContext = createContext<WorkspaceStreamsValue | undefined>(undefined);
 // The project's own actions, kept apart from the selection so a project-actions push never
 // re-renders a selection consumer (diagram-undo-redo Deviation 1). Empty until the first push.
 const ProjectActionsContext = createContext<ContextActionGroup[]>([]);
@@ -241,10 +266,18 @@ export interface ContextConnectionProviderProps {
  * The one place the client talks to ContextService: owns the connection's watch_id and
  * its single Watch stream, coalesces plain selections, and fans the pushed context out
  * to every panel through hooks - one gRPC stream per connection, never one per consumer.
+ *
+ * That stream is `WorkspaceService.Watch`, the only server stream a tab opens: it carries the
+ * context, the hierarchy's changes and every open diagram's deltas, which used to be three
+ * streams and three of a browser's six HTTP/1.1 connections per origin (two-tab-connection-wedge
+ * Requirement 3.1). The hierarchy and diagram feeds are handed out through
+ * {@link useWorkspaceStreams}. Anything new the backend has to push rides this stream too.
  */
 export function ContextConnectionProvider({ projectId, children }: ContextConnectionProviderProps) {
   const { transport } = useAuth();
   const client = useMemo(() => createClient(ContextService, transport), [transport]);
+  const workspaceClient = useMemo(() => createClient(WorkspaceService, transport), [transport]);
+  const streamsRef = useRef<WorkspaceStreams>(new WorkspaceStreams());
   const watchIdRef = useRef<Uint8Array>(crypto.getRandomValues(new Uint8Array(16)));
   const lastSentRef = useRef<ContextSelection | null>(null);
 
@@ -297,15 +330,30 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
     const run = async () => {
       while (!abortController.signal.aborted) {
         try {
-          const stream = client.watch(
+          const stream = workspaceClient.watch(
             { projectId: { value: projectId }, watchId: { value: watchIdRef.current } },
             { signal: abortController.signal },
           );
           let first = true;
-          for await (const message of stream) {
+          for await (const workspaceMessage of stream) {
+            if (workspaceMessage.message.case === "hierarchy") {
+              streamsRef.current.hierarchy(workspaceMessage.message.value);
+              continue;
+            }
+            if (workspaceMessage.message.case === "diagram") {
+              streamsRef.current.diagram(workspaceMessage.message.value);
+              continue;
+            }
+            if (workspaceMessage.message.case !== "context") {
+              continue;
+            }
+            const message = workspaceMessage.message.value;
             if (first) {
               first = false;
               reconnectDelay = RECONNECT_INITIAL_MS;
+              // The context's baseline is written once the backend has registered the connection,
+              // so from here a diagram stream can be opened on it.
+              streamsRef.current.connect();
               // The baseline is the backend's truth; if the backend forgot us (idle
               // eviction after a drop) but we still hold a selection, put it back.
               if (message.message.case === "selection" && !message.message.value.selection && lastSentRef.current) {
@@ -357,6 +405,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
         } catch {
           // Fall through to the reconnect below unless we were told to stop.
         }
+        streamsRef.current.disconnect();
         if (abortController.signal.aborted) {
           return;
         }
@@ -459,6 +508,31 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
     [select, execute, setPendingReveal, describeProperties, setProperty],
   );
 
+  const streamsValue = useMemo<WorkspaceStreamsValue>(
+    () => ({
+      openDiagramStream: (request, { signal }) =>
+        streamsRef.current.openDiagram(
+          {
+            open: (streamId) =>
+              workspaceClient.openDiagram({
+                streamId: { value: streamId },
+                request: {
+                  projectId: { value: projectId },
+                  watchId: { value: watchIdRef.current },
+                  path: request.path,
+                  editorId: request.editorId,
+                },
+              }),
+            close: (streamId) =>
+              workspaceClient.closeDiagram({ watchId: { value: watchIdRef.current }, streamId: { value: streamId } }),
+          },
+          signal,
+        ),
+      watchHierarchy: ({ signal }) => streamsRef.current.watchHierarchy(signal),
+    }),
+    [workspaceClient, projectId],
+  );
+
   const promptInteractionId = prompt?.interactionId?.value;
 
   const onPropose = useCallback(
@@ -549,6 +623,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
 
   return (
     <ConnectionContext.Provider value={connectionValue}>
+      <WorkspaceStreamsContext.Provider value={streamsValue}>
       <ProjectActionsContext.Provider value={projectActions}>
         <ProblemsContext.Provider value={problems}>
         <NoticesContext.Provider value={noticesValue}>
@@ -558,8 +633,18 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
         </NoticesContext.Provider>
         </ProblemsContext.Provider>
       </ProjectActionsContext.Provider>
+      </WorkspaceStreamsContext.Provider>
     </ConnectionContext.Provider>
   );
+}
+
+/** The feeds that ride the tab's one stream: a diagram's deltas and the hierarchy's changes. */
+export function useWorkspaceStreams(): WorkspaceStreamsValue {
+  const value = useContext(WorkspaceStreamsContext);
+  if (!value) {
+    throw new Error("useWorkspaceStreams must be used within a ContextConnectionProvider.");
+  }
+  return value;
 }
 
 /**

@@ -30,6 +30,9 @@
          imports deltas, so both live in the one project that serves them. -->
     <Protobuf Include="..\..\api\deltas.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\deltas.proto" />
     <Protobuf Include="..\..\api\diagrams.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\diagrams.proto" />
+    <!-- A tab's one stream composes the hierarchy, context and diagram streams, and this is the
+         one project that references all three. -->
+    <Protobuf Include="..\..\api\workspace.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\workspace.proto" />
   </ItemGroup>
 
   <ItemGroup>

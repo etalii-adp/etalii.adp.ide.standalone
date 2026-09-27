@@ -47,12 +47,24 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         return Task.FromResult(new ListEntriesResponse { Entries = entries });
     }
 
-    public override async Task WatchHierarchy(
+    public override Task WatchHierarchy(
         WatchHierarchyRequest request,
         IServerStreamWriter<HierarchyMessage> responseStream,
-        ServerCallContext context)
+        ServerCallContext context) =>
+        RunWatchAsync(SessionContext.GetUserId(context), request, responseStream.WriteAsync, context.CancellationToken);
+
+    /// <summary>
+    /// The watch itself, written to whatever carries it: its own <c>WatchHierarchy</c> call, or the
+    /// tab's one <c>WorkspaceService.Watch</c> stream (two-tab-connection-wedge Requirement 3.1).
+    /// Refuses with an <see cref="RpcException"/> before anything is registered, and runs until
+    /// <paramref name="cancellationToken"/> ends it.
+    /// </summary>
+    public async Task RunWatchAsync(
+        ShortGuid userId,
+        WatchHierarchyRequest request,
+        Func<HierarchyMessage, CancellationToken, Task> write,
+        CancellationToken cancellationToken)
     {
-        var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
             _logger.Warning("Refused a hierarchy watch for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
@@ -90,12 +102,12 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
 
         try
         {
-            await foreach (var message in channel.Reader.ReadAllAsync(context.CancellationToken))
+            await foreach (var message in channel.Reader.ReadAllAsync(cancellationToken))
             {
-                await responseStream.WriteAsync(message, context.CancellationToken);
+                await write(message, cancellationToken);
             }
         }
-        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // Expected: the client closed the stream (navigated away, reloaded, or the
             // workspace shell unmounted) - not a real error, so don't let it surface as one.

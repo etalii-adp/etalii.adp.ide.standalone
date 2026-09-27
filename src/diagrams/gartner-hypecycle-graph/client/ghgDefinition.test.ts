@@ -56,7 +56,7 @@ describe("the hype cycle graph's definition", () => {
     expect(influence.hideWhenAttachmentHidden).toBe(true);
   });
 
-  it("snaps to whole months and rows, rules the bottom in months, filters on tags, lays out by hand", () => {
+  it("snaps to whole months and rows, rules the bottom in months, filters on tags, lays out by hand until Compact", () => {
     expect(GHG_DEFINITION.snap).toEqual({ x: { step: 4, origin: 0 }, y: { step: 56 } });
     expect(GHG_DEFINITION.chrome?.rulers).toHaveLength(1);
     expect(GHG_DEFINITION.chrome!.rulers![0]).toMatchObject({ edge: "bottom", scale: { unit: "month", unitsPerStep: 4, origin: "1900-01" } });
@@ -68,7 +68,8 @@ describe("the hype cycle graph's definition", () => {
       { caption: "Slope", swatchClass: "ghg-slope" },
       { caption: "Plateau", swatchClass: "ghg-plateau" },
     ]);
-    expect(GHG_DEFINITION.layout.modes).toEqual(["manual"]);
+    // By hand first; compact mode is the second, and ghgCompact.test.tsx is its guard.
+    expect(GHG_DEFINITION.layout.modes).toEqual(["manual", "row-packed"]);
   });
 });
 

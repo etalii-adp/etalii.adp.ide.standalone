@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+import "shared.proto";    // ShortGuid
+import "hierarchy.proto"; // HierarchyMessage
+import "context.proto";   // ContextMessage
+import "diagrams.proto";  // OpenDiagramRequest
+import "deltas.proto";    // Delta
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Wire";
+
+// The one long-lived stream a browser tab holds (two-tab-connection-wedge Requirement 3.1).
+//
+// A tab used to hold three: HierarchyService.WatchHierarchy, ContextService.Watch and one
+// DiagramService.Open for the active document. Over HTTP/1.1 each is a connection of its own,
+// and a browser allows six per origin, so a second tab exhausted the pool and every request from
+// that browser to that origin stopped being dispatched. Serving over TLS is the fix - HTTP/2
+// multiplexes every request onto one connection - and this stream is robustness beside it, not
+// the fix: where the application is still reached over cleartext it raises the limit from two
+// tabs to six rather than removing it (Requirement 3.2).
+//
+// So everything the backend pushes to a tab rides here, as one member per source. A feature that
+// needs to push something new adds a member to WorkspaceMessage, never a second stream - and
+// every stream anyone adds divides the cleartext tab count again.
+//
+// The older per-source streams stay declared for the backend's own integration tests; the client
+// opens none of them.
+service WorkspaceService {
+  // The tab's pushes: the hierarchy's changes, the context's messages, and the deltas of every
+  // diagram stream OpenDiagram started on this connection. The first context message is the
+  // connection's baseline, which is also the client's sign that the connection is registered and
+  // OpenDiagram may be called. Ending the call ends every diagram stream it carried.
+  rpc Watch(WatchWorkspaceRequest) returns (stream WorkspaceMessage);
+
+  // Starts a diagram stream on the connection's Watch - the baseline, then every later change -
+  // under a client-generated stream id. Refused with the same status codes DiagramService.Open
+  // uses, so a permanent answer still reads as one. Answers only once the stream is running, so
+  // its deltas may already have arrived on Watch by the time the answer does.
+  rpc OpenDiagram(OpenDiagramStreamRequest) returns (OpenDiagramStreamResponse);
+
+  // Ends one diagram stream. Closing a stream that is already gone is not an error: the client
+  // closes on unmount, which can race the connection dropping.
+  rpc CloseDiagram(CloseDiagramStreamRequest) returns (CloseDiagramStreamResponse);
+}
+
+message WatchWorkspaceRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2; // the connection id every other call on this tab carries
+}
+
+message WorkspaceMessage {
+  oneof message {
+    HierarchyMessage hierarchy = 1;
+    ContextMessage context = 2;
+    DiagramStreamMessage diagram = 3;
+  }
+}
+
+// One event of one diagram stream, told apart from the connection's other diagram streams by the
+// id the client gave it.
+message DiagramStreamMessage {
+  ShortGuid stream_id = 1;
+  oneof event {
+    Delta delta = 2;
+    // The backend ended the stream itself - a session that failed. The client treats it as a
+    // dropped stream and re-opens, exactly as it treated an Open call ending.
+    DiagramStreamEnded ended = 3;
+  }
+}
+
+message DiagramStreamEnded {}
+
+message OpenDiagramStreamRequest {
+  ShortGuid stream_id = 1;          // client-generated, unique on the connection
+  OpenDiagramRequest request = 2;   // what DiagramService.Open is asked; its watch_id names the connection
+}
+
+message OpenDiagramStreamResponse {}
+
+message CloseDiagramStreamRequest {
+  ShortGuid watch_id = 1;
+  ShortGuid stream_id = 2;
+}
+
+message CloseDiagramStreamResponse {}

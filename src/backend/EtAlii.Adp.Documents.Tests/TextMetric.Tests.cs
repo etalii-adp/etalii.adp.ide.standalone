@@ -46,8 +46,8 @@ public class TextMetricTests
     {
         // The client reads these two numbers from the fixture rather than from this class, so a change
         // here that the fixture does not carry would leave the tiers measuring differently.
-        Assert.Equal(Fixture.AverageAdvance, TextMetric.AverageAdvance);
-        Assert.Equal(Fixture.DefaultFontSize, TextMetric.DefaultFontSize);
+        Assert.Equal(TextMetric.AverageAdvance, Fixture.AverageAdvance);
+        Assert.Equal(TextMetric.DefaultFontSize, Fixture.DefaultFontSize);
     }
 
     [Fact]

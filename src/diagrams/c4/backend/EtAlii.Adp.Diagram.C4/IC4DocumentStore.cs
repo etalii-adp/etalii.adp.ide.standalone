@@ -26,6 +26,7 @@ public interface IC4DocumentStore
     /// Writes <paramref name="document"/> back and tells every session on it. Refuses while the
     /// document on disk is unparseable, so a broken file is never made worse (Requirement 3.4).
     /// </summary>
+    /// <param name="path">The path of the document to write.</param>
     /// <param name="document">
     /// The document to write - **the one the caller edited**, passed in rather than looked up
     /// again. A save that re-fetched from the cache lost the edit whenever a reload landed
