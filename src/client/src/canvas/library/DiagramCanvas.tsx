@@ -37,7 +37,7 @@ import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
 import { asideLabelPlacement, beforeLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
-import { BEFORE_GAP, layoutLabels, wrappedLabelRegion } from "./definition/labels";
+import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
 import { actionForGesture, actionForKey, flagOf } from "./definition/actions";
@@ -2920,7 +2920,7 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
   const inherited = resolveBound(type.boundStyle?.labelColor, source);
   return lines.map((line) => (
     <text
-      key={`${line.declarationIndex}-${line.lineIndex}`}
+      key={labelKey(line)}
       className={["library-element-label", line.className].filter(Boolean).join(" ")}
       x={line.x}
       y={line.y}
