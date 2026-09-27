@@ -12,26 +12,22 @@ public sealed class OwlSessionFactory : IDiagramSessionFactory
 {
     private readonly IRdfDocumentStore _documents;
     private readonly OwlElementMapper _mapper;
-    private readonly RdfElementMapper _differ;
     private readonly IHistoryStackStore _historyStacks;
 
     public OwlSessionFactory(
         DiagramOrigin origin,
         IRdfDocumentStore documents,
         OwlElementMapper mapper,
-        RdfElementMapper differ,
         IHistoryStackStore historyStacks)
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
-        ArgumentNullException.ThrowIfNull(differ);
         ArgumentNullException.ThrowIfNull(historyStacks);
 
         Origin = origin;
         _documents = documents;
         _mapper = mapper;
-        _differ = differ;
         _historyStacks = historyStacks;
     }
 
@@ -46,7 +42,6 @@ public sealed class OwlSessionFactory : IDiagramSessionFactory
             registrationPath,
             _documents,
             _mapper,
-            _differ,
             _historyStacks.Get(rootPath));
     }
 }

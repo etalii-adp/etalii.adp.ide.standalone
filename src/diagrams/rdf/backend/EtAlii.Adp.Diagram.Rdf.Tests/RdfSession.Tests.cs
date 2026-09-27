@@ -343,26 +343,30 @@ public class RdfSessionTests : IDisposable
     }
 
     [Fact]
-    public async Task AViewportChange_EmitsAddBeforeRemove()
+    public async Task AViewportChange_EmitsRemoveBeforeAdd()
     {
         // Arrange.
-        // The order the two reference implementations emit, and the order this module's own
-        // mapper already produced. view-delta-adoption Requirement 4.3 anticipated the
-        // opposite; the code is what the client has always been given.
+        // The shared diff's order (backend-centralization R4.5): what left is removed first,
+        // then what arrived is added, because the client folds an add as an upsert keyed on id.
+        // This used to pin the opposite order, which this module's own mapper produced. A pan
+        // from one corner of the diagram to the other both removes and adds, so the order is
+        // actually exercised - a widening only adds, and would pass against either order.
         var body = CopyFixture("constructs.ttl");
         await using var session = Open(body, WriteRegistration("constructs.ttl"));
         var all = ElementsOf(session).Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
         var first = all.OrderBy(element => element.Y).ThenBy(element => element.X).First();
+        var last = all.OrderBy(element => element.Y).ThenBy(element => element.X).Last();
 
         session.UpdateView(new DiagramViewport(first.X, first.Y, first.X + 1, first.Y + 1));
 
         // Act.
-        var deltas = session.UpdateView(DiagramViewport.Unbounded);
+        var deltas = session.UpdateView(new DiagramViewport(last.X, last.Y, last.X + 1, last.Y + 1));
 
         // Assert.
-        Assert.Contains(deltas, delta => delta is DiagramAddDelta);
-        var kinds = deltas.Select(delta => delta is DiagramAddDelta ? "add" : "remove").ToList();
-        Assert.Equal(kinds.OrderBy(kind => kind == "add" ? 0 : 1).ToList(), kinds);
+        Assert.Collection(
+            deltas,
+            removed => Assert.Contains(first.Id, Assert.IsType<DiagramRemoveDelta>(removed).ElementIds),
+            added => Assert.Contains(Assert.IsType<DiagramAddDelta>(added).Elements, element => element.Id == last.Id));
     }
 
     [Fact]
