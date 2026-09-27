@@ -144,7 +144,7 @@ The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *alre
   - The command is generic over the module's store, because the dispatcher finds a handler by the command's type: one non-generic restore registered by several modules would reach whichever registered last, and reload the wrong store.
   - Usable by a fourth module without copying, which the criterion requires and a second consumer proves.
   - _Requirements: 6.1, 6.2_
-- [x] 18. One YAML node range, and four modules onto it
+- [ ] 18. One YAML node range, and four modules onto it
   - Files: `EtAlii.Adp.Documents`, plus databricks, dependency-graph, timeline and azure-pipeline, and their tests
   - **azure-pipeline's near-copy differs from the three identical copies**, and the design settles which behaviour wins; the task records which difference was dropped and why.
   - _Requirements: 7.1, 7.2_
