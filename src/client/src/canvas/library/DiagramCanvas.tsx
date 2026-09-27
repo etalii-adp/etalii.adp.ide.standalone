@@ -87,6 +87,7 @@ import type {
   RelationTypeDefinition,
   ShapeSelection,
 } from "./definition/diagramDefinition";
+import { placementId } from "../gestureIds";
 import { holds, resolveNumber, resolveOne, valueAtPath, type Binding, type BindingSource } from "./definition/binding";
 import { useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
@@ -1535,7 +1536,7 @@ export function DiagramCanvasCore({
     const onAnItem = (event.target as Element).closest("[data-element-id],[data-connection-id]") !== null;
     if (definition.backgroundMenu === true && context !== undefined && !onAnItem) {
       const at = toCanvasPoint(event.clientX, event.clientY);
-      openMenuAt(event, `new:${at.x},${at.y}`);
+      openMenuAt(event, placementId(at.x, at.y));
     }
   };
 

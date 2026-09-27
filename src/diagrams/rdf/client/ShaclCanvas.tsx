@@ -16,6 +16,7 @@ import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useShaclStream } from "./useShaclStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { shapeHeight, targetWords, type ShaclShape } from "./shaclModel";
+import { placementId } from "@client/canvas/gestureIds";
 
 /** A card's drawn width, in the module's own canvas units - matching the layout's column pitch. */
 export const CARD_WIDTH = 260;
@@ -234,7 +235,7 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     // A row entry dropped on a card acts on that card; anything else lands as a placement.
     onElementDropped: ({ elementType, position }) => {
       const over = cardAt(position);
-      runAction(elementType, over ? over.id : `new:${position.x},${position.y}`);
+      runAction(elementType, over ? over.id : placementId(position.x, position.y));
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
   };
