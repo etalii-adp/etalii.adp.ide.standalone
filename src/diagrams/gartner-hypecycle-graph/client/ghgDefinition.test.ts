@@ -28,7 +28,7 @@ describe("the hype cycle graph's definition", () => {
   it("draws a trend as a phased arrow banner, its name before it, attached anywhere along a phase", () => {
     // Assert: the design's element type, declaration by declaration.
     const [trend] = GHG_DEFINITION.elementTypes;
-    expect(GHG_DEFINITION.elementTypes).toHaveLength(1);
+    expect(GHG_DEFINITION.elementTypes.map((type) => type.id)).toEqual(["trend", "trigger", "note"]);
     expect(trend.shape).toBe("arrow-banner");
     expect(trend.sizing).toBe("user");
     expect(trend.resize ?? "width").toBe("width");
@@ -57,7 +57,8 @@ describe("the hype cycle graph's definition", () => {
   });
 
   it("snaps to whole months and rows, rules the bottom in months, filters on tags, lays out by hand until Compact", () => {
-    expect(GHG_DEFINITION.snap).toEqual({ x: { step: 4, origin: 0 }, y: { step: 56 } });
+    // Each element's own origins: a trend's and a note's are 0, a trigger's put its centre on the lines.
+    expect(GHG_DEFINITION.snap).toEqual({ x: { step: 4, origin: { path: "payload.snapX" } }, y: { step: 56, origin: { path: "payload.snapY" } } });
     expect(GHG_DEFINITION.chrome?.rulers).toHaveLength(1);
     expect(GHG_DEFINITION.chrome!.rulers![0]).toMatchObject({ edge: "bottom", scale: { unit: "month", unitsPerStep: 4, origin: "1900-01" } });
     expect(GHG_DEFINITION.filter).toMatchObject({ field: "payload.tags" });

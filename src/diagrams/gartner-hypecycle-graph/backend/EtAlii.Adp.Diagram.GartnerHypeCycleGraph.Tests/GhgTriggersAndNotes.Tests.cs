@@ -158,7 +158,7 @@ public class GhgTriggersAndNotesTests
         var model = GhgParser.Parse(document);
 
         Assert.True(GhgWriter.SetPlacement(document, model.Triggers[0], GhgScale.MonthIndex(1948, 6), 2).WasApplied);
-        Assert.True(GhgWriter.SetSize(document, GhgParser.Parse(LineDocument.Parse(document.Text)).Notes[1], GhgScale.MonthIndex(1959, 1), 200.5, 48).WasApplied);
+        Assert.True(GhgWriter.SetSize(document, GhgParser.Parse(LineDocument.Parse(document.Text)).Notes[1], GhgScale.MonthIndex(1959, 1), 5, 200.5, 48).WasApplied);
 
         var reread = Reread(document);
         Assert.Equal((GhgScale.MonthIndex(1948, 6), 2), (reread.Triggers[0].Date!.Value, reread.Triggers[0].Row));

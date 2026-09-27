@@ -2,7 +2,7 @@ using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
-/// <summary>Resizes a note, moving its left edge's month when the left border moved.</summary>
+/// <summary>Resizes a note, moving its top-left when the left or top border moved.</summary>
 public sealed class SetGhgNoteSizeCommandHandler(IGhgDocumentStore documents) : ICommandHandler<SetGhgNoteSizeCommand>
 {
     /// <inheritdoc />
@@ -28,7 +28,7 @@ public sealed class SetGhgNoteSizeCommandHandler(IGhgDocumentStore documents) : 
                 return GhgEdit.Refused("This note's position cannot be read, so it cannot be resized until it is fixed in the file.");
             }
 
-            return GhgWriter.SetSize(document, note, at, size.Width, size.Height);
+            return GhgWriter.SetSize(document, note, at, size.Row ?? note.Row, size.Width, size.Height);
         });
     }
 }

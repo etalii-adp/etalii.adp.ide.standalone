@@ -63,6 +63,8 @@ function modelWith(): GhgModel {
       ["coal", { id: "coal", x: 200, y: 16, payload: trend("Coal", 4, 400) }],
       ["steam-engine", { id: "steam-engine", x: 400, y: 72, payload: trend("Steam engine", 3, 400) }],
     ]),
+    triggers: new Map(),
+    notes: new Map(),
     influences: new Map([
       ["coal--steam-engine", {
         id: "coal--steam-engine",

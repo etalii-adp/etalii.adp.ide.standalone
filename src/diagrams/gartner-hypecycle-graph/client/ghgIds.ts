@@ -13,7 +13,7 @@ export const GHG_MIME = "gartner/hypecycle-graph";
 /** What the backend prefixes an element or connection type with on the wire. */
 export const GHG_TYPE_PREFIX = `${GHG_MIME}+`;
 
-export const GhgElementTypes = { trend: "trend" } as const;
+export const GhgElementTypes = { trend: "trend", trigger: "trigger", note: "note" } as const;
 export const GhgRelationTypes = { influence: "influence" } as const;
 
 /** The four phases, in order: the segment index is the index here. */
@@ -34,6 +34,10 @@ export const GHG_PHASE_TOOLTIPS = [
 export const GhgActions = {
   /** Adds a trend a year long from the month containing the drop's x, on the row nearest its y. */
   addTrend: "ghg.add.trend",
+  /** Adds a trigger at the start of the step containing the drop's x, its centre on the nearest row's middle. */
+  addTrigger: "ghg.add.trigger",
+  /** Adds an empty note whose top-left is the start of the step and the top of the row the drop fell in. */
+  addNote: "ghg.add.note",
   /** Draws an influence for a `rel:{from}@{phase}/{edge}/{at}->{to}@{phase}/{edge}/{at}` target. */
   connect: "ghg.connect.influence",
   rename: "ghg.rename",
@@ -53,6 +57,8 @@ export const GhgProperties = {
   /** Where each end of an influence attaches, as `phase/edge/at`: a dragged end handle. */
   fromAttachment: "ghg.from-attachment",
   toAttachment: "ghg.to-attachment",
+  /** A note's size as `width x height at YYYY-MM row N`: a resize, which may move its top-left too. */
+  size: "ghg.size",
 } as const;
 
 export const GhgShortcuts = { rename: "F2" } as const;
@@ -67,6 +73,8 @@ export const GhgScale = {
   originMonth: 1900 * 12,
   trendHeight: 32,
   rowStep: 56,
+  /** A trigger's diameter: half a trend's height. */
+  triggerSize: 16,
 } as const;
 
 /**

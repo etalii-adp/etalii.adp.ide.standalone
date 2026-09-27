@@ -426,8 +426,8 @@ public static class GhgWriter
         return GhgEdit.Applied;
     }
 
-    /// <summary>Rewrites a note's size, and its left edge's month when the left border moved.</summary>
-    public static GhgEdit SetSize(LineDocument document, GhgNote note, int at, double width, double height)
+    /// <summary>Rewrites a note's size, and its left edge's month and top's row when the left or top border moved.</summary>
+    public static GhgEdit SetSize(LineDocument document, GhgNote note, int at, int row, double width, double height)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(note);
@@ -441,6 +441,11 @@ public static class GhgWriter
         if (note.At != at)
         {
             Set(document, ref range, NoteKeyOrder, "at", GhgScale.FormatMonth(at));
+        }
+
+        if (note.Row != row)
+        {
+            Set(document, ref range, NoteKeyOrder, "row", row.ToString(CultureInfo.InvariantCulture));
         }
 
         Set(document, ref range, NoteKeyOrder, "width", FormatSize(width));

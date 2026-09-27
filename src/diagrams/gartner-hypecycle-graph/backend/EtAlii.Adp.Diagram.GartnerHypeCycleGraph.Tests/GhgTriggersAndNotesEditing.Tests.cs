@@ -57,7 +57,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     public static TheoryData<string> EveryEdit =>
     [
         "add a trigger", "add a note", "move a trigger", "move a note", "rename a trigger", "edit a note's text",
-        "resize a note", "resize a note from the left", "date a trigger", "tag a trigger", "describe a trigger",
+        "resize a note", "resize a note from the left", "resize a note from the top", "date a trigger", "tag a trigger", "describe a trigger",
         "remove a trigger", "remove a note", "influence from a trigger",
     ];
 
@@ -71,6 +71,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
         "edit a note's text" => new RenameGhgElementCommand(Body, "note-2", "Now\non two lines"),
         "resize a note" => new SetGhgNoteSizeCommand(Body, "note-2", "200 x 48"),
         "resize a note from the left" => new SetGhgNoteSizeCommand(Body, "note-2", "160 x 40 at 1950-01"),
+        "resize a note from the top" => new SetGhgNoteSizeCommand(Body, "note-2", "120 x 96 at 1960-01 row 4"),
         "date a trigger" => new SetGhgSpanCommand(Body, "transistor-invented", "1947-11", null),
         "tag a trigger" => new SetGhgTagsCommand(Body, "transistor-invented", "electronics, physics"),
         "describe a trigger" => new SetGhgDescriptionCommand(Body, "transistor-invented", ""),
