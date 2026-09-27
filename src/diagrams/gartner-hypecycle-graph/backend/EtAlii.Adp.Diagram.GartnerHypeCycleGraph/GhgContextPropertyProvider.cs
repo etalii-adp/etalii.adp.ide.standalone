@@ -26,6 +26,13 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// end's attachment (a reattach). Start and Stop are the resize's rows, as the design says.
 /// </para>
 /// <para>
+/// <b>Each phase lists its influences</b>, in a group of its own: the ones leaving it as
+/// <i>Influence</i> and the ones arriving at it as <i>Influenced by</i>, one "Railways · Slope" a
+/// line. Both are shown, not edited - an influence is drawn, reattached and deleted on the canvas. A
+/// hidden phase is listed only while an influence still attaches to it, so nothing drawn from the
+/// document goes missing from the grid.
+/// </para>
+/// <para>
 /// <b>Read-only offers nothing writable</b> (Requirement 11.4): for a document that could not be read,
 /// every row carries a read-only reason, and the service refuses a set to any of them.
 /// </para>
@@ -45,6 +52,15 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
 
     /// <summary>The row id of each inner boundary: <c>ghg.peak-end</c>, <c>ghg.trough-end</c>, <c>ghg.slope-end</c>.</summary>
     public static readonly IReadOnlyList<string> BoundaryProperties = [.. GhgPhases.BoundaryKeys.Select(key => $"ghg.{key}")];
+
+    /// <summary>The row id of each phase's outgoing influences: <c>ghg.peak-influences</c> to <c>ghg.plateau-influences</c>.</summary>
+    public static readonly IReadOnlyList<string> InfluencesProperties = [.. GhgPhases.Titles.Select(title => $"ghg.{title.ToLowerInvariant()}-influences")];
+
+    /// <summary>The row id of each phase's incoming influences: <c>ghg.peak-influenced-by</c> to <c>ghg.plateau-influenced-by</c>.</summary>
+    public static readonly IReadOnlyList<string> InfluencedByProperties = [.. GhgPhases.Titles.Select(title => $"ghg.{title.ToLowerInvariant()}-influenced-by")];
+
+    /// <summary>What an influence list says when no influence attaches there.</summary>
+    public const string NoInfluences = "None";
 
     /// <summary>The slider's four stops, in order; the value is the one at <c>phases - 1</c>.</summary>
     public static readonly IReadOnlyList<string> PhaseCandidates = ["Peak", "Peak and Trough", "Peak, Trough and Slope", "All four"];
@@ -102,6 +118,7 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
                 rows.Add(new(BoundaryProperties[index], $"{GhgPhases.Titles[index]} ends", GhgScale.FormatMonth(drawn[index]), ReadOnlyReason: readOnly, Group: PhasesGroup));
             }
 
+            rows.AddRange(InfluenceRows(model, trend));
             return Rows(rows);
         }
 
@@ -186,6 +203,39 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
         var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
+
+    /// <summary>
+    /// Per phase, its two influence lists: every drawn phase, and a hidden one only while an influence
+    /// still attaches to it.
+    /// </summary>
+    private static IEnumerable<ContextPropertyDefinition> InfluenceRows(GhgModel model, GhgTrend trend)
+    {
+        const string shown = "Draw, reattach or delete an influence on the canvas.";
+        for (var phase = 0; phase < GhgPhases.Titles.Count; phase++)
+        {
+            var leaving = model.Influences
+                .Where(influence => influence.From == trend.Id && influence.FromEnd.PhaseIndex == phase)
+                .Select(influence => Describe(model, influence.To, influence.ToEnd))
+                .ToList();
+            var arriving = model.Influences
+                .Where(influence => influence.To == trend.Id && influence.ToEnd.PhaseIndex == phase)
+                .Select(influence => Describe(model, influence.From, influence.FromEnd))
+                .ToList();
+
+            var drawn = phase < trend.VisiblePhases;
+            if (!drawn && leaving.Count == 0 && arriving.Count == 0)
+            {
+                continue;
+            }
+
+            var group = drawn ? GhgPhases.Titles[phase] : $"{GhgPhases.Titles[phase]} (hidden)";
+            yield return new(InfluencesProperties[phase], "Influence", List(leaving), ContextPropertyEditor.Text, shown, group);
+            yield return new(InfluencedByProperties[phase], "Influenced by", List(arriving), ContextPropertyEditor.Text, shown, group);
+        }
+    }
+
+    /// <summary>One entry a line, or <see cref="NoInfluences"/>.</summary>
+    private static string List(IReadOnlyList<string> entries) => entries.Count == 0 ? NoInfluences : string.Join("\n", entries);
 
     /// <summary>An end as the grid shows it: "Steam engine · Plateau".</summary>
     private static string Describe(GhgModel model, string trendId, GhgEnd end)
