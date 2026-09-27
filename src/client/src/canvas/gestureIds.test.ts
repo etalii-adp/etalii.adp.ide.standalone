@@ -29,6 +29,52 @@ describe("the gesture ids", () => {
   });
 });
 
+/** One valid case of the backend's golden fixture: the id, and the components it is built from. */
+interface ValidCase {
+  id: string;
+  x?: number;
+  y?: number;
+  row?: number;
+  from?: string;
+  to?: string;
+}
+
+/**
+ * The backend's golden fixture for the grammar (backend-centralization task 21), which its own
+ * suite parses. Every valid id there is one both tiers build identically, so the client's
+ * builders must give each back from its components.
+ */
+describe("the gesture ids, against the backend's grammar fixture", () => {
+  const fixture = JSON.parse(readFileSync(join(sourceRoot(), "fixtures", "cross-tier", "gesture-ids.json"), "utf8")) as {
+    placements: { xy: { valid: ValidCase[] }; row: { valid: ValidCase[] } };
+    relations: { valid: ValidCase[]; invalid: { id: string }[] };
+  };
+
+  it("builds every valid placement from its components", () => {
+    const cases = [...fixture.placements.xy.valid, ...fixture.placements.row.valid];
+    expect(cases.length).toBeGreaterThan(5);
+    for (const placement of cases) {
+      expect(placementId(placement.x!, placement.y ?? placement.row!), placement.id).toBe(placement.id);
+    }
+  });
+
+  it("builds every valid relation from its ends", () => {
+    expect(fixture.relations.valid.length).toBeGreaterThan(2);
+    for (const relation of fixture.relations.valid) {
+      expect(relationId(relation.from!, relation.to!), relation.id).toBe(relation.id);
+    }
+  });
+
+  it("takes no end out of an id the grammar calls empty or unprefixed", () => {
+    // The fixture's invalid relations with an empty end or no prefix, read as element ids a
+    // canvas might strip: none yields an end.
+    expect(withoutPrefix("rel:", "rel:")).toBeNull();
+    for (const invalid of fixture.relations.invalid.filter((relation) => !relation.id.startsWith("rel:"))) {
+      expect(withoutPrefix(invalid.id, "rel:"), invalid.id).toBeNull();
+    }
+  });
+});
+
 /** Code, with its comments blanked so prose about an id is not mistaken for building one. */
 function codeOf(source: string): string {
   return source
