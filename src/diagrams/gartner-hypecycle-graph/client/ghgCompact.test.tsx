@@ -92,7 +92,9 @@ describe("the hype cycle graph's compact mode, declared", () => {
 describe("the technology-trends example in compact mode", () => {
   const model = exampleModel();
 
-  it("draws every trend at one width, in the order they start, never two touching on a row", () => {
+  // All 200 trends are mounted and measured: well under a second alone, and several times that when
+  // the backend suite runs every client test file at once, so it is given room rather than the default.
+  it("draws every trend at one width, in the order they start, never two touching on a row", { timeout: 30_000 }, () => {
     const { container } = renderCompact(model);
 
     const placed = model.elements.map((element) => ({
