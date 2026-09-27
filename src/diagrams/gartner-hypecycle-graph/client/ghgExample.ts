@@ -4,7 +4,7 @@ import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "
 import { GHG_PHASES, GhgElementTypes, GhgRelationTypes, GhgScale, xOfMonth } from "./ghgIds";
 
 /**
- * The technology-trends example, read line by line for the tests. The document is flat on purpose -
+ * An example document - technology-trends unless another is named - read line by line for the tests. The document is flat on purpose -
  * one `- id:` entry per trend or influence with scalar keys beneath it - so this reads exactly that
  * shape, and the counts asserted beside it say whether it read all of it.
  */
@@ -12,8 +12,8 @@ export interface ExampleEntry {
   [key: string]: string;
 }
 
-export function readExample(): { trends: ExampleEntry[]; influences: ExampleEntry[] } {
-  const text = readFileSync(join(__dirname, "..", "examples", "technology-trends", "technology-trends.ghg"), "utf8");
+export function readExample(name = "technology-trends"): { trends: ExampleEntry[]; influences: ExampleEntry[] } {
+  const text = readFileSync(join(__dirname, "..", "examples", name, `${name}.ghg`), "utf8");
   const sections: Record<string, ExampleEntry[]> = { trends: [], influences: [] };
   let section: ExampleEntry[] | null = null;
   let entry: ExampleEntry | null = null;
@@ -39,9 +39,10 @@ export function readExample(): { trends: ExampleEntry[]; influences: ExampleEntr
   return { trends: sections.trends, influences: sections.influences };
 }
 
+// The year may be signed, as ISO 8601 writes a year before 1: `-3200-01`.
 const monthOf = (text: string) => {
-  const [year, month] = text.split("-").map(Number);
-  return year * 12 + month - 1;
+  const [, year, month] = /^(-?\d+)-(\d{2})$/.exec(text)!;
+  return Number(year) * 12 + Number(month) - 1;
 };
 
 /** Whether an influence attaches to a phase its trend does not show - which hides it. */
@@ -52,8 +53,8 @@ export function isHidden(influence: ExampleEntry, trends: readonly ExampleEntry[
 }
 
 /** The example as the canvas is handed it, limited to `ids` when given: centres, widths, attachments. */
-export function exampleModel(ids?: readonly string[]): DiagramModel {
-  const { trends, influences } = readExample();
+export function exampleModel(ids?: readonly string[], name = "technology-trends"): DiagramModel {
+  const { trends, influences } = readExample(name);
   const kept = ids === undefined ? trends : trends.filter((trend) => ids.includes(trend.id));
   const elements = kept.map((trend): DiagramModelElement => {
     const width = (monthOf(trend.stop) - monthOf(trend.start)) * GhgScale.unitsPerMonth;
