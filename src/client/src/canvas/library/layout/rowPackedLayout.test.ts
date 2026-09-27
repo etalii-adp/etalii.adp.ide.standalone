@@ -287,3 +287,36 @@ describe("row-packed placement with a width per type and elements across rows", 
     expect(manual.x).toBeLessThan(400 - 8);
   });
 });
+
+describe("row-packed placement with a width per element and connections followed", () => {
+  const ROW = 56;
+  const base: LayoutDefinition = { modes: ["manual", "row-packed"], rowPacked: { width: { path: "payload.w" }, gap: GAP, rowStep: ROW } };
+  const at = (id: string, left: number, row: number, packedWidth?: number): LayoutElement =>
+    ({ id, x: left + 20, y: row * ROW + 16, width: 40, height: 32, ...(packedWidth !== undefined ? { packedWidth } : {}) });
+  const leftOf = (positions: Map<string, LayoutPlacement>, element: LayoutElement) => {
+    const placed = positions.get(element.id)!;
+    return placed.x - (placed.width ?? element.width) / 2;
+  };
+
+  it("draws each element at its own resolved width, and at its own width where the binding gave none", () => {
+    const wide = at("wide", 0, 0, 96);
+    const half = at("half", 100, 1, 48);
+    const unbound = at("unbound", 200, 2);
+
+    const positions = rowPackedLayout.place({ elements: [wide, half, unbound], connections: [] }, base) as Map<string, LayoutPlacement>;
+
+    expect([positions.get("wide")!.width, positions.get("half")!.width, positions.get("unbound")!.width]).toEqual([96, 48, 40]);
+  });
+
+  it("starts an effect after the middle of its earlier cause, on another row, only when connections are followed", () => {
+    const cause = at("cause", 0, 0, 96);
+    const effect = at("effect", 10, 1, 96);
+    const input = { elements: [cause, effect], connections: [{ sourceId: "cause", targetId: "effect" }] };
+
+    const followed = rowPackedLayout.place(input, { ...base, rowPacked: { ...base.rowPacked!, followConnections: true } }) as Map<string, LayoutPlacement>;
+    const ignored = rowPackedLayout.place(input, base) as Map<string, LayoutPlacement>;
+
+    expect(leftOf(followed, effect)).toBe(48 + GAP);
+    expect(leftOf(ignored, effect)).toBe(0);
+  });
+});

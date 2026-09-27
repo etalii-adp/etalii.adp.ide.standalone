@@ -401,11 +401,12 @@ export function DiagramCanvasCore({
           parentId: element.parentId,
           type: element.type,
           leading: leadingOf(element, type),
+          ...packedWidthOf(statedDefinition.layout.rowPacked?.width, element),
         };
       }),
       connections: model.connections.map((connection) => ({ sourceId: connection.sourceId, targetId: connection.targetId })),
     }),
-    [model, elementTypes],
+    [model, elementTypes, statedDefinition.layout.rowPacked?.width],
   );
   const layoutToggle = statedDefinition.layout.toggle;
   /** A switch the reader made: held as view state, and raised for a host that wants to know. */
@@ -3925,6 +3926,16 @@ function snapLeadingEdge(
   const origin = axis.origin === undefined ? 0 : (declaredNumberOf(axis.origin, source) ?? 0);
   const edge = centre - extent / 2;
   return origin + snapToStep(edge - origin, step) + extent / 2;
+}
+
+/** A row-packed width bound per element, resolved for this one; nothing for a width written outright. */
+function packedWidthOf(width: import("./definition/diagramDefinition").DeclaredNumber | undefined, element: DiagramModelElement): { packedWidth?: number } {
+  if (width === undefined || typeof width === "number") {
+    return {};
+  }
+
+  const resolved = resolveNumber(width, sourceOf(element));
+  return resolved === null ? {} : { packedWidth: resolved };
 }
 
 /** A declared number's value for this element: written outright, or bound - null when a binding yields none. */

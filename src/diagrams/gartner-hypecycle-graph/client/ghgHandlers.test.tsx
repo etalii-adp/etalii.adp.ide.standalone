@@ -288,7 +288,7 @@ describe("the hype cycle graph canvas answers each library event through its one
 
     const steam = captured!.model.elements.find((element) => element.id === "steam-engine")!;
     expect(steam).toMatchObject({ type: "trend", x: 240, y: 184, width: 1600, height: 32, label: "Steam engine" });
-    expect(steam.payload).toEqual({ name: "Steam engine", phases: 3, boundaries: [0.2, 0.5], tags: ["energy"], snapX: 0, snapY: 0 });
+    expect(steam.payload).toEqual({ name: "Steam engine", phases: 3, boundaries: [0.2, 0.5], tags: ["energy"], snapX: 0, snapY: 0, compactWidth: 72 });
     expect(captured!.model.connections).toEqual([
       expect.objectContaining({
         id: "coal--steam-engine",

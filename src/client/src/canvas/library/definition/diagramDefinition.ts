@@ -1063,8 +1063,13 @@ export interface LayoutDefinition {
 
 /** See {@link LayoutDefinition.rowPacked}. */
 export interface RowPackedDeclaration {
-  /** The width every element of the listed types is drawn with - every element, without `types`. */
-  width: number;
+  /**
+   * The width every element of the listed types is drawn with - every element, without `types`.
+   * Bound, it is read per element, so an element can take a share of it (the hype cycle draws a
+   * trend showing two of its four phases at half the width); a binding that yields nothing leaves
+   * the element its own width.
+   */
+  width: DeclaredNumber;
   /** The least space between two elements on one row. */
   gap: number;
   /**
@@ -1079,6 +1084,12 @@ export interface RowPackedDeclaration {
    * clear; omitted, an element's row is its centre's height, as for elements one row tall.
    */
   rowStep?: number;
+  /**
+   * Whether connections spread the packing: an element starts no earlier than halfway along every
+   * element already placed that connects INTO it, plus `gap`, so causes stand to the left of their
+   * effects rather than stacked in one column. Omitted, connections are not read.
+   */
+  followConnections?: boolean;
 }
 
 /** See {@link LayoutDefinition.toggle}. */

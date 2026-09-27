@@ -18,6 +18,11 @@ export interface LayoutElement {
   /** The element's type, for a layout that treats types differently. */
   type?: string;
   /**
+   * The width a packing layout draws this element with, where the layout declares one per element:
+   * the declared width resolved for it. Omitted, the layout's own width applies.
+   */
+  packedWidth?: number;
+  /**
    * The room this element needs clear before its left edge - a label drawn to its left. A layout
    * that packs elements side by side keeps it free of the element before; omitted, none.
    */

@@ -51,10 +51,16 @@ const RULER_RUNGS: readonly { months: number; rung: RulerRung }[] = [
 ];
 
 /**
- * A compact trend's width: that of a new trend dropped in true-time, twelve steps of any unit -
- * a step is always `unitsPerMonth` units wide - so compact draws at a size the author knows.
+ * A compact trend's width when it shows all four phases: twice that of a new trend dropped in
+ * true-time, twenty-four steps of any unit, so its name and phases read at a glance (Peter,
+ * 2026-09-27). A trend showing fewer phases takes that share of it - see {@link compactWidthOf}.
  */
-const COMPACT_WIDTH = 12 * GhgScale.unitsPerMonth;
+export const COMPACT_WIDTH = 24 * GhgScale.unitsPerMonth;
+
+/** A trend's compact width: {@link COMPACT_WIDTH} shared by the phases it shows, a quarter per phase. */
+export function compactWidthOf(phases: number): number {
+  return (COMPACT_WIDTH * Math.min(Math.max(phases, 1), GHG_PHASES.length)) / GHG_PHASES.length;
+}
 
 /**
  * A trigger: a moment in time, drawn as a circle half a trend's height across. Its name and its date
@@ -196,7 +202,15 @@ function definitionFor(unit: GhgTimeUnit): DiagramDefinition {
       toggle: { caption: "Compact", on: "row-packed" },
       // Only a trend takes the compact width: a trigger keeps its circle and a note its box, and a
       // note two rows tall keeps both rows clear, because an element covers every row line it spans.
-      rowPacked: { width: COMPACT_WIDTH, gap: GhgScale.unitsPerMonth, types: [GhgElementTypes.trend], rowStep: GhgScale.rowStep },
+      // Each trend's width is its share of the compact width, and an influence's target starts after
+      // the middle of its source, so causes read to the left of their effects.
+      rowPacked: {
+        width: { path: "payload.compactWidth" },
+        gap: GhgScale.unitsPerMonth,
+        types: [GhgElementTypes.trend],
+        rowStep: GhgScale.rowStep,
+        followConnections: true,
+      },
       modeOverrides: {
         "row-packed": {
           // Nothing that would change a date is offered: no trigger is dragged, and a note is
@@ -304,6 +318,7 @@ export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         tags: [...trend.payload.tags],
         snapX: trend.payload.snapX,
         snapY: trend.payload.snapY,
+        compactWidth: compactWidthOf(trend.payload.phases),
       },
     }));
     const triggers = [...model.triggers.values()].map((trigger): DiagramModelElement => ({
