@@ -10,28 +10,28 @@
 
 ## The library
 
-- [ ] 1. A filter scoped to element types
+- [x] 1. A filter scoped to element types
   - File: `src/client/src/canvas/library/definition/diagramDefinition.ts`, `src/client/src/canvas/library/definition/validateDiagramDefinition.ts`, `src/client/src/canvas/library/definition/validateDiagramDefinition.test.ts`, `src/client/src/canvas/library/DiagramCanvas.tsx`, `src/client/src/canvas/library/DiagramCanvas.filter.test.tsx`
   - Add `FilterDeclaration.elementTypes?: readonly string[]`. In `tagsByElement`, skip elements whose type is not listed, so `filteredOut` never holds them and their tags are not suggested. Omitted means every type. The validator rejects an entry naming no declared type.
   - Guard: with a filter scoped to type `a`, an untagged element of type `b` stays drawn while a tag is chosen, and so does a connection between two `b` elements; an unmatched `a` element is hidden; `b`'s tags are not among the suggestions; without `elementTypes` an untagged element is hidden as today; the validator rejection.
   - Seen to fail against: today's `tagsByElement` (the `b` element is hidden).
   - _Requirements: 8.1, 8.4, 5.3_
 
-- [ ] 2. A named-anchor source whose drawn end attaches by edge
+- [x] 2. A named-anchor source whose drawn end attaches by edge
   - File: `src/client/src/canvas/library/definition/diagramDefinition.ts`, `src/client/src/canvas/library/definition/validateDiagramDefinition.ts`, `src/client/src/canvas/library/definition/validateDiagramDefinition.test.ts`, `src/client/src/canvas/library/DiagramCanvas.tsx`, `src/client/src/canvas/library/DiagramCanvas.attachment.test.tsx`
   - Add `AnchorEnablement.attachDrawnBy?: "anchor" | "edge"`. For a type declaring `"edge"`, a connection end on one of its elements is drawn at the edge intersection towards the other end, whatever anchor started the gesture, and `connection-drawn` carries no anchor name for that end. A connection from such a source to an `along`-anchored target still carries the target's `EdgeAttachment`. The validator rejects `attachDrawnBy` on `along` anchors.
   - Guard: an `ellipse` type with compass anchors and `attachDrawnBy: "edge"` offers start handles; a connection drawn from its `n` anchor to an element directly to its right leaves the ellipse's right side; `onConnectionDrawn` receives no source anchor and the target's attachment; `perPair: "ordered"` refuses a second such connection and allows the reverse type pairing where the relation admits it; an end handle is drawn on the target end only when `movableEnds` is on; the validator rejection.
   - Seen to fail against: a canvas that ignores `attachDrawnBy` (the line leaves the `n` anchor and the event names it).
   - _Requirements: 8.3, 8.4, 3.1, 3.3, 3.6_
 
-- [ ] 3. The editor opens on the element a toolbox drop created
+- [x] 3. The editor opens on the element a toolbox drop created
   - File: `src/client/src/canvas/library/definition/diagramDefinition.ts`, `src/client/src/canvas/library/DiagramCanvas.tsx`, `src/client/src/canvas/library/DiagramCanvas.editOnDrop.test.tsx` (new)
   - Add `ElementTypeDefinition.editOnDrop?: boolean`. On a toolbox drop, remember the drop point (through the active layout's inverse where one exists) and the time. The first model update bringing a new element of a type declaring `editOnDrop` whose bounds contain the point selects it and opens its editable label's editor. Clear the memory on that match, on any other gesture, or after five seconds.
   - Guard: drop, then a model with a new element of an `editOnDrop` type at the point: its editor is open and it is selected; the same with the new element elsewhere: no editor; the same for a type without `editOnDrop`: no editor; a model arriving after five seconds: no editor; a pointer-down between drop and model: no editor.
   - Seen to fail against: a canvas without the memory (no editor opens), and one matching any new element (the elsewhere assertion fails).
   - _Requirements: 7.1, 8.4, 4.2_
 
-- [ ] 4. Row-packed width per type, and elements covering several rows
+- [x] 4. Row-packed width per type, and elements covering several rows
   - File: `src/client/src/canvas/library/layout/rowPackedLayout.ts`, `src/client/src/canvas/library/layout/rowPackedLayout.test.ts`, `src/client/src/canvas/library/definition/diagramDefinition.ts`, `src/client/src/canvas/library/definition/validateDiagramDefinition.ts`, `src/client/src/canvas/library/definition/validateDiagramDefinition.test.ts`
   - **Waits on ghg-compact-mode (PR #94) merged into `develop`.** Add `rowPacked.types?: readonly string[]` and `rowPacked.rowStep?: number`. The declared width applies to listed types only; others keep their width. With `rowStep`, an element covers every row line from `floor(top / rowStep)` to `floor((bottom - 1) / rowStep)` and clears `rowEnd` on each; without it, rows are keyed by centre as before. `inverse` is unchanged. The validator rejects a `types` entry naming no declared type.
   - Guard: the existing property tests (time order, no overlap, leftmost, determinism) re-run on a population mixing a listed type, an unlisted narrow type and an unlisted element two rows tall; the unlisted elements keep their widths; nothing overlaps the tall element on either row; a drop between a listed and an unlisted element inverts to a manual x between theirs; without `types`, every element takes the width as before.
@@ -40,14 +40,14 @@
 
 ## The backend
 
-- [ ] 5. Triggers and notes in the document
+- [x] 5. Triggers and notes in the document
   - File: `src/diagrams/gartner-hypecycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph/_Model/GhgTrigger.cs` (new), `_Model/GhgNote.cs` (new), `_Model/GhgModel.cs`, `GhgParser.cs`, `GhgWriter.cs`, `GhgRuleSet.cs`, `GhgValidator.cs`; tests `GhgDocument.Tests.cs` and new fixtures `triggers-and-notes.ghg`, `rule-influence-into-trigger.ghg`, `rule-trigger-date.ghg`, `rule-note-position.ghg` in the module's `Fixtures/`
   - Read and write the `triggers` and `notes` lists in the key orders the design gives, a note's text as a literal block when it holds a line break, and an influence from a trigger with an empty `FromEnd` and no `from-*` keys. `AddTrigger` and `AddNote` insert a missing list where the design says. The version stays 1. Add the rules `influence-into-trigger`, `trigger-date` and `note-position`; widen `duplicate-id` and `dangling-reference`; stop `bad-attachment` reporting a trigger's missing `from-*` end.
   - Guard: each new fixture round-trips byte-identical, as does every existing fixture; a document with neither list writes exactly as before; the parser never throws on a malformed trigger or note, keeps it, and reports it; each rule fixture reports exactly its rule; a multi-line note keeps its line breaks through a round trip; an id shared by a trigger and a trend is reported.
   - Seen to fail against: a writer that always writes both list headers (the neither-list assertion fails), and a `bad-attachment` still checking trigger sources (the clean fixture reports it).
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 3.2_
 
-- [ ] 6. Commands, properties, toolbox and the wire
+- [x] 6. Commands, properties, toolbox and the wire
   - File: `src/diagrams/gartner-hypecycle-graph/api/gartner-hypecycle-graph.proto`, `GhgElementMapper.cs`, `GhgToolboxProvider.cs`, `GhgContextActionProvider.cs`, `GhgContextPropertyProvider.cs`, `GhgContextSourceResolver.cs`, `Commands/` (`AddGhgTrigger*`, `AddGhgNote*`, `SetGhgNoteSize*` new; `RemoveGhgTrend*` to `RemoveGhgElement*`, `RenameGhgTrend*` to `RenameGhgElement*`; `SetGhgPlacement*`, `SetGhgSpan*`, `SetGhgTags*`, `SetGhgDescription*`, `AddGhgInfluence*` widened), `ServiceCollection.AddGartnerHypeCycleGraph.cs`; tests `GhgCommands.Tests.cs`, `GhgContextSourceResolver.Tests.cs`
   - Add `GhgTriggerPayload` and `GhgNotePayload` and the trend payload's `snap_x` and `snap_y`, and map triggers and notes at their centres. Format `when` and `when_long` in the diagram's unit (Q2). Offer the Trigger and Note toolbox items with actions `ghg.add.trigger` and `ghg.add.note`. Implement and widen the commands as the design's table says, each with its inverse; refuse an influence into a trigger with *"An influence cannot end at a trigger."*; refuse every edit on a read-only diagram. The property grid offers a trigger's Name, Date, Tags and Description and a note's Text.
   - Guard: every command applied then inverted leaves the document byte-identical; removing a trigger removes its influences and undo restores them; an influence into a trigger and a second from one trigger to one trend are refused with their sentences and change nothing; a trigger's `when` reads `Dec 1947` in a month diagram and `1947` in a year diagram, and `when_long` `December 1947`; the toolbox lists three items; the property groups for each type; a read-only diagram refuses each new command.
@@ -56,14 +56,14 @@
 
 ## The client
 
-- [ ] 7. The hype cycle declares triggers and notes
+- [x] 7. The hype cycle declares triggers and notes
   - File: `src/diagrams/gartner-hypecycle-graph/client/ghgIds.ts`, `ghgModel.ts`, `GhgCanvas.tsx`, `ghg.css`, `src/client/src/index.css`, `src/client/src/theme.contrast.test.ts`; tests `ghgDefinition.test.ts`, `ghgHandlers.test.tsx`, `ghgConnect.test.tsx`, `GhgCanvas.test.tsx`
   - **Waits on tasks 1, 2, 3 and 6.** Declare the trigger and note types as the design gives them; widen the influence's source to trend and trigger; bind the snap origins; scope the filter to trends and triggers; add the three colour tokens in both themes with their contrast checks. Add the `triggers` and `notes` maps to `ghgModel.ts`. Extend the handlers for the two new drops, each element's own half-size on a move, and a note's resize.
   - Guard: the definition validates; a trigger is 16 by 16 and draws its name and date before it and its tooltip; a dragged trigger's centre lands on a step line and a row's middle; a trigger offers no resize; a trigger is offered as a source and never highlighted as a target; an influence from a trigger hides when its target's phase is hidden; a note draws wrapped text, resizes both ways and has no anchors; a chosen tag hides an unmatched trigger and keeps a note; each drop sends its action; `applyDelta` upserts and removes both new types; every guard that walks module clients passes unchanged.
   - Seen to fail against: a definition with plain snap origins (the centre assertion fails by half a circle), and one with an unscoped filter (the note assertion fails).
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.4, 3.6, 4.1, 4.2, 4.3, 4.4, 4.5, 5.2, 5.3, 7.1, 7.6, 9.1, 9.2_
 
-- [ ] 8. Triggers and notes in compact mode
+- [x] 8. Triggers and notes in compact mode
   - File: `src/diagrams/gartner-hypecycle-graph/client/GhgCanvas.tsx`, `ghgDefinition.test.ts`, `GhgCanvas.test.tsx`
   - **Waits on ghg-compact-mode (PR #94) merged into `develop`, and on tasks 4 and 7.** Declare `rowPacked.types: [trend]` and `rowStep`, and list the trigger (`draggable: false`) and the note (`sizing: "model"`, `draggable: false`) in `modeOverrides["row-packed"].elementTypes`.
   - Guard: in compact mode a trigger is placed between the trends starting before and after its date on its row, at its own size; a note keeps its size and no element overlaps it on either row it covers; neither drags, and the note offers no resize; an influence can still be drawn from a trigger; a trigger dropped between two trends gets a date between theirs; toggling issues no command and leaves the document unchanged.
@@ -72,7 +72,7 @@
 
 ## The examples
 
-- [ ] 9. Real triggers in all nine examples
+- [x] 9. Real triggers in all nine examples
   - File: the nine examples, each in both `src/examples/diagrams/gartner-hypecycle-graph/<name>/` and `src/diagrams/gartner-hypecycle-graph/examples/<name>/` (coal-technologies, digital-trends, electric-vehicles, energy-breakthroughs, eras-of-innovation, internet-evolution, llms-and-agents, technology-trends, warfare-in-ukraine), their readmes, and the example tests on both sides (`GhgExample*.Tests.cs`, `GhgDigitalExample.Tests.cs`, `GhgErasExample.Tests.cs`, `GhgEnergyAndAgentsExamples.Tests.cs` and the client `ghg*Example*.test.tsx`)
   - **Waits on tasks 5 and 7; the compact-mode check in step 4 waits on task 8.** For each example follow the design's four steps: rewrite trends that are moments as triggers, add real dated triggers with influences, re-lay out the rows so related elements sit together and no trigger label runs into a trend, and check it in the browser in true-time and compact mode. Give at least one example a note. Keep each example's two copies identical.
   - Guard: every example validates with nothing reported; each holds at least one trigger with an influence; the two copies of each are byte-identical; each readme lists the trends that became triggers and says the dates are illustrative; the counts in the tests match.
@@ -81,19 +81,79 @@
 
 ## Documentation and checks
 
-- [ ] 10. Documentation
+- [x] 10. Documentation
   - File: `docs/creating-a-diagram-module.md`, `docs/diagrams.md`, `src/diagrams/gartner-hypecycle-graph/client/readme.md`
   - Document the four library additions where the definition is described; mention triggers and notes on the `gartner/hypecycle-graph` row, naming this specification; describe both types in the module's readme. After the pull request merges, send the coordinator the note that the Notion *Gartner HypeCycle Graph* entry's implementation details, examples and purpose need updating, with what changed, for the thread that owns that page.
   - Guard: `ArchitecturePages.Tests` and every documentation guard pass.
   - _Requirements: 11.1, 11.2_
 
-- [ ] 11. The browser pass
+- [-] 11. The browser pass
   - File: `tests.md`
   - **Waits on tasks 7, 8 and 9.** Write and run the entry Requirement 11.3 lists, in a real browser in both themes, signed in with the checked-in placeholder, and record the result of each step.
   - Guard: every step recorded as run, with its outcome; none recorded `pending`.
   - _Requirements: 11.3, 11.4, 2.1, 2.3, 4.1_
 
-- [ ] 12. Coverage, before and after
+- [x] 12. Coverage, before and after
   - File: this document
   - Diff the requirement references in this document against the acceptance criteria in `requirements.md`, before raising the tasks card and again after implementing, tracing the second time to files and strings; read two traces back to their artefacts.
   - _Requirements: 11.5_
+
+## Coverage after implementing (task 12, second run)
+
+Traced to files and strings on `PR #100 (merged as efa75a67)`, not to a task's promise. 53 criteria, 53 traced. Two traces were read back to their artefacts (marked **read back**).
+
+| Criterion | Evidence |
+| --- | --- |
+| 1.1 | `GhgParser.ReadTriggers` (`TriggerKeys` id, name, date, row, tags, description); `GhgWriter.AddTrigger`; `GhgTriggersAndNotesTests.TriggersAndNotes_ReadEveryKeyTheDesignStates` |
+| 1.2 | `GhgParser.ReadNotes`; `GhgWriter.TextLines` writes `|-` for a multi-line text; `ANotesText_KeepsItsLineBreaksThroughARoundTrip` |
+| 1.3 | `GhgParser.ReadInfluences` reads `GhgEnd.None` for a trigger source; `GhgWriter.AddInfluence` skips `from-*` when `FromEnd.IsNone`; `AnInfluenceFromATrigger_IsWrittenWithoutAFromEnd` |
+| 1.4 | rules `ghg.influence-into-trigger`, `ghg.trigger-date`, `ghg.note-position`, widened `ghg.duplicate-id`; fixtures `rule-influence-into-trigger.ghg`, `rule-trigger-date.ghg`, `rule-note-position.ghg`; `AMalformedTriggerOrNote_IsKeptAndReported`, `AnIdSharedByATriggerAndATrend_IsReported` |
+| 1.5 | **read back**: `ADocumentWithNeitherList_IsWrittenExactlyAsBefore` asserts one changed line and no `triggers:`/`notes:` header after a trend rename; `AnUnchangedDocument_ComesBackByteForByte` over `triggers-and-notes.ghg` and the three rule fixtures. The criterion is "only the lines that change" and "a document without them exactly as today" - both are what the two tests measure. |
+| 1.6 | `GhgModel.CurrentVersion` unchanged at 1; `triggers-and-notes.ghg` begins `gartner-hypecycle-graph: 1` and reads with no problem |
+| 2.1 | `TRIGGER_TYPE` `shape: "ellipse"`, 16 by 16 (`GhgScale.triggerSize`); mapper centre `XOf(Date)`, `TopOf(Row) + TrendHeight / 2`; `is a circle half a trend's height across` (rx 8, ry 8) |
+| 2.2 | `tooltip: { template: "Trigger: {payload.name}, {payload.whenLong}" }`; `whenLong` `December 1947`; the same test reads the `<title>` |
+| 2.3 | `labels: [{ template: "{payload.name} · {payload.when}", placement: "before" }]`; `GhgScale.FormatWhen` (`Dec 1947`, `1947`); `ATriggersDate_IsWrittenInTheDiagramsUnit` |
+| 2.4 | snap origins bound to `payload.snapX`/`snapY` (-8, 8); `SetGhgPlacementCommandHandler` places a trigger by its centre; `lands its CENTRE on a step line and a row's middle`; `AMovedTrigger_LandsWithItsCentreOnAStepLine_AndARowsMiddle` |
+| 2.5 | `sizing: "model"` on the trigger; `offers no resize handle when selected` |
+| 2.6 | `RenameGhgElementCommand` for a trigger; label `editable: true`, element `label` the name alone; `rename a trigger` edit; grid `NameProperty when isTrend \|\| isTrigger` |
+| 3.1 | `attachDrawnBy: "edge"` (library task 2); `starts an influence from a handle, and the line leaves its outline` |
+| 3.2 | relation target `[trend]`; `AddGhgInfluenceCommandHandler.RefusalFor` "An influence cannot end at a trigger."; `is never offered as a target`; refusal rows `influence into a trigger` |
+| 3.3 | `perPair: "ordered"` on the relation; `a second influence from a trigger` refusal; library `refuses a second connection to the same target under perPair ordered` |
+| 3.4 | `hideWhenAttachmentHidden`; `hides an influence from it whose target phase is hidden` |
+| 3.5 | `GhgWriter.RemoveTrigger`; `RemovingATrigger_TakesItsInfluences_AndOneUndoRestoresThem` |
+| 3.6 | `movableEnds`; library `draws an end handle on the target end only` |
+| 4.1 | note label `wrap: true`; `wraps its text over several lines`; the library's `fittedWrap` ellipsis and whole-text tooltip (`labels.ts`) |
+| 4.2 | note label `editable: true`; action provider `Edit text…` with `ContextInputRequest(... "Text", note.Text, ... InlineLabelElementId)`; grid `TextProperty` |
+| 4.3 | note `sizing: "user"`, `resize: "both"`; `SetGhgNoteSizeCommand` (`W x H at YYYY-MM row N`); `move a note`, `resize a note`, `resize a note from the left`, `resize a note from the top` edits with their undos |
+| 4.4 | note `anchors: { kind: "edge", enabled: false, visible: false }`; `has no anchors` |
+| 4.5 | `--color-diagram-hype-note`, `--color-diagram-hype-note-text` (and `--color-diagram-hype-trigger`) in both themes in `index.css`; `theme.contrast.test.ts` "the hype cycle's trigger and note" |
+| 5.1 | `SetGhgTagsCommandHandler` for a trigger; grid Tags row on a trigger; `tag a trigger` edit |
+| 5.2 | filter `elementTypes: [trend, trigger]`; `hides a trigger without the chosen tag ... and suggests a trigger's tags` |
+| 5.3 | **read back**: the same test asserts `remark` (the note) is still drawn with a tag chosen, and `filters trends and triggers by tag, and never a note` asserts the scope. The criterion is notes staying visible under a filter - that is what the first assertion measures, and the library's `a filter scoped to element types` proves the mechanism. |
+| 6.1 | `rowPacked.types: [trend]`, `rowStep`; `places a trigger between the trends starting before and after its date ... at its own size`; library mixed-population properties |
+| 6.2 | compact override `{ ...TRIGGER_TYPE, draggable: false }`; `drags neither`; `still draws an influence from a trigger` |
+| 6.3 | compact override `{ ...NOTE_TYPE, sizing: "model", draggable: false }`; `keeps a note's size, and nothing overlaps it on either row it covers` |
+| 6.4 | the library's `inverse`, unchanged; `dates a trigger dropped between two trends between theirs` |
+| 6.5 | `switches on and off without a single edit raised` |
+| 7.1 | `GhgToolboxProvider` Trend, Trigger, Note; `editOnDrop: true` on the note (library task 3); `TheToolbox_OffersATrendATriggerAndANote_EachDroppingItsAdd`; handler drop test |
+| 7.2 | `ATriggersRows_AreItsNameDateTagsAndDescription_AndANotesItsText`; no Description in either payload |
+| 7.3 | the fourteen `EveryEdit_ThenItsUndo_GivesTheOriginalBytes` rows |
+| 7.4 | `EveryRefusal_WritesNothing_AndSaysWhy` (seven rows) |
+| 7.5 | `AGraphThatCouldNotBeRead_RefusesEveryNewCommand` |
+| 7.6 | declarations only: the module adds no selection, delete or drop code (`noModuleSelection`, `noPrivateGestures` guards pass) |
+| 8.1 | `FilterDeclaration.elementTypes`; `DiagramCanvas.filter.test.tsx` "a filter scoped to element types" |
+| 8.2 | `RowPackedDeclaration.types`, `rowStep`; `rowPackedLayout.test.ts` "with a width per type and elements across rows" |
+| 8.3 | `AnchorEnablement.attachDrawnBy`; `DiagramCanvas.attachment.test.tsx` "a source whose drawn end attaches by edge"; the along-target and per-pair checks with an unattached end, measured there |
+| 8.4 | each library test seen to fail first (commit messages of tasks 1 to 4); no module id in any declaration or library test |
+| 9.1 | `GhgCanvas.tsx` changes are the two type declarations, the relation's source, snap origins, filter scope, row-packed keys, the fold and the handlers |
+| 9.2 | the full client suite, every guard that walks module clients included |
+| 10.1 | 66 triggers across the nine examples; `EveryExample_HasATriggerWithAnInfluence_AndBreaksNoRule` |
+| 10.2 | technology-trends: Oil crises, 2008 financial crisis, Nuclear fission rewritten, two received influences dropped and named in its readme |
+| 10.3 | the placement script keeps every trigger label clear of trends and triggers on its row; browser pass in `tests.md` |
+| 10.4 | validator empty for every example; counts updated in both tiers' example tests; each readme's Triggers section |
+| 10.5 | notes in coal-technologies and technology-trends; `AtLeastOneExample_CarriesANote` |
+| 11.1 | `docs/diagram-module-client-api.md`, `docs/creating-a-diagram-module.md`, `docs/diagrams.md` |
+| 11.2 | after merge: the note to the coordinator for the Notion entry |
+| 11.3 | `tests.md`, "Triggers and notes, in a browser" |
+| 11.4 | the same entry's preamble; no row cites jsdom |
+| 11.5 | this table, and the diff before the card (53 of 53) |
