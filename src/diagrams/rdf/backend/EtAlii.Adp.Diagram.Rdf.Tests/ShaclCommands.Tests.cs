@@ -48,8 +48,8 @@ public class ShaclCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         Assert.NotEqual(Corpus, await File.ReadAllTextAsync(_path));
 
-        var restore = Assert.IsType<RestoreRdfDocumentCommand>(result.Inverse);
-        var undone = await new RestoreRdfDocumentCommandHandler(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+        var restore = Assert.IsType<RestoreDocumentCommand<IRdfDocumentStore>>(result.Inverse);
+        var undone = await new RestoreDocumentCommandHandler<IRdfDocumentStore>(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path));

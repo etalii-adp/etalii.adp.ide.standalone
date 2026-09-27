@@ -48,8 +48,8 @@ public class CausalLoopCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         Assert.NotEqual(Corpus, await File.ReadAllTextAsync(_path));
 
-        var restore = Assert.IsType<RestoreCausalLoopDocumentCommand>(result.Inverse);
-        var undone = await new RestoreCausalLoopDocumentCommandHandler(_store)
+        var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
+        var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store)
             .ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
@@ -298,8 +298,8 @@ public class CausalLoopCommandsTests : IDisposable
         Assert.Equal(new[] { "a", "b" }, loop.Variables.OrderBy(variable => variable, StringComparer.Ordinal));
 
         // The link and its loop are one edit: undo removes both.
-        var restore = Assert.IsType<RestoreCausalLoopDocumentCommand>(result.Inverse);
-        await new RestoreCausalLoopDocumentCommandHandler(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+        var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
+        await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
         Assert.Empty(_store.GetOrLoad(path).Model.Loops);
         Assert.Single(_store.GetOrLoad(path).Model.Links);
     }

@@ -45,8 +45,8 @@ public class RdfCommandsTests : IDisposable
         Assert.NotEqual(Corpus, edited);
 
         // Act: undo through the reported inverse.
-        var restore = Assert.IsType<RestoreRdfDocumentCommand>(result.Inverse);
-        var undone = await new RestoreRdfDocumentCommandHandler(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+        var restore = Assert.IsType<RestoreDocumentCommand<IRdfDocumentStore>>(result.Inverse);
+        var undone = await new RestoreDocumentCommandHandler<IRdfDocumentStore>(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         // Assert: bytes restored exactly - comments, formatting and abbreviations included -
         // and the undo's own inverse is the original command, so redo re-runs the same edit.
