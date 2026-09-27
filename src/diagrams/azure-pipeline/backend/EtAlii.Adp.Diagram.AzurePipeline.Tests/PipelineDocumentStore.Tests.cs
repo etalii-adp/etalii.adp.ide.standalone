@@ -97,7 +97,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var refusal = store.Save(_workspace, path, entry);
 
         // Assert.
-        Assert.NotEqual("", refusal);
+        Assert.NotEqual("", refusal.Error);
         Assert.Equal(broken, File.ReadAllText(path));
     }
 
@@ -115,7 +115,7 @@ public class PipelineDocumentStoreTests : IDisposable
         var refusal = store.Save(_workspace, path, entry);
 
         // Assert.
-        Assert.Equal("", refusal);
+        Assert.Equal("", refusal.Error);
         Assert.Equal(entry.Document.Text, File.ReadAllText(path));
         Assert.Contains("displayName: Build it", File.ReadAllText(path));
     }
