@@ -1481,6 +1481,99 @@ button {
  * 2 px, so the stop under a held pointer changed with the name it produced, and a drag flickered
  * between two stops, writing each. jsdom lays out nothing, so the guard is in tests.md.
  */
+/* A set of tags: removable chips, then a field that looks typed text up among the tags in use,
+   with its suggestions in a list under it. Shared by the property grid and the canvas filter. */
+.tag-input {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+}
+
+.tag-input:focus-within {
+  border-color: var(--color-primary);
+}
+
+.tag-input-chips {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-input-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px 0 6px;
+  border-radius: 999px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tag-input-chip-remove {
+  padding: 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tag-input-chip-remove:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.tag-input-field {
+  flex: 1 1 6ch;
+  min-width: 6ch;
+  padding: 1px 2px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.tag-input-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 2px 0 0;
+  padding: 2px 0;
+  max-height: 12rem;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 15%);
+}
+
+.tag-input-suggestion {
+  padding: 2px 8px;
+  color: var(--color-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tag-input-suggestion-active,
+.tag-input-suggestion:hover {
+  background: var(--color-surface-raised);
+}
+
 .property-grid-slider {
   display: flex;
   flex-direction: column;

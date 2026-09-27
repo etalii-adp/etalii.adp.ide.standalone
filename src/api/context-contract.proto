@@ -121,6 +121,10 @@ enum ContextPropertyEditor {
   // phases, a level. `candidates` carries the stops in order and `value` is whichever is
   // current, committed exactly as CHOICE commits - the candidate, never its index.
   CONTEXT_PROPERTY_EDITOR_SLIDER = 4;
+  // A set of tags, offered as removable chips and a field that looks the typed text up among
+  // `candidates` - the tags already used elsewhere - and adds a new tag when none matches. `value`
+  // and what is committed are the tags in order, separated by ", ", so a tag holds no comma.
+  CONTEXT_PROPERTY_EDITOR_TAGS = 5;
 }
 
 message EntryDetail {

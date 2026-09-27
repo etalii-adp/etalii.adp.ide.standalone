@@ -131,6 +131,29 @@ describe("PropertyRow as a slider", () => {
 });
 
 describe("PropertyRow", () => {
+  it("edits a TAGS value as chips, committing the whole list on each change", async () => {
+    // Arrange: a trend's tags, looked up among the diagram's.
+    const onCommit = vi.fn<(value: string) => Promise<string>>(async () => "");
+    const { container, getByRole } = render(
+      <PropertyRow
+        property={property({ id: "ghg.tags", label: "Tags", value: "energy, industry", editor: ContextPropertyEditor.TAGS, candidates: ["energy", "industry", "transport"] })}
+        onCommit={onCommit}
+      />,
+    );
+    expect([...container.querySelectorAll(".tag-input-chip-text")].map((chip) => chip.textContent), "the value was not drawn as chips").toEqual(["energy", "industry"]);
+
+    // Act: remove one with its x, then add one by lookup.
+    fireEvent.click(getByRole("button", { name: "Remove energy" }));
+    await flush();
+    const input = container.querySelector(".tag-input-field") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "trans" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await flush();
+
+    // Assert: each change is one commit of the whole list, as the backend reads it.
+    expect(onCommit.mock.calls.map(([value]) => value)).toEqual(["industry", "industry, transport"]);
+  });
+
   it("takes the next edit after a commit that rejected", async () => {
     // Arrange.
     // The first write faults the way a dropped connection faults - by rejecting, not by

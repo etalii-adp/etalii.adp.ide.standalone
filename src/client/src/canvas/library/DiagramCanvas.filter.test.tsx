@@ -50,20 +50,42 @@ const drawnElements = (container: HTMLElement) =>
   [...container.querySelectorAll("[data-element-id]")].map((element) => element.getAttribute("data-element-id"));
 const drawnConnections = (container: HTMLElement) =>
   [...container.querySelectorAll("[data-connection-id]")].map((connection) => connection.getAttribute("data-connection-id"));
-const typeFilter = (container: HTMLElement, text: string) =>
-  fireEvent.change(container.querySelector(".library-filter-input")!, { target: { value: text } });
+/** Chooses a tag in the filter: typed, then taken with Enter as a reader would. */
+const chooseTag = (container: HTMLElement, text: string) => {
+  const field = container.querySelector(".library-filter .tag-input-field")!;
+  fireEvent.change(field, { target: { value: text } });
+  fireEvent.keyDown(field, { key: "Enter" });
+};
+const filterMode = (container: HTMLElement) => container.querySelector(".library-filter-mode") as HTMLButtonElement;
 
 describe("a declared filter", () => {
-  it("draws only the elements whose tags match", () => {
+  it("draws only the elements having any of the chosen tags", () => {
     // Arrange.
     const { container } = render(canvasOf(modelOf()));
     expect(drawnElements(container)).toEqual(["a", "b", "c"]);
 
-    // Act.
-    typeFilter(container, "energy and (transport or industry)");
-
-    // Assert: `a` has energy and industry; `b` has energy alone; `c` has no energy.
+    // Act, assert: `c` has no industry; `a` has it.
+    chooseTag(container, "industry");
     expect(drawnElements(container)).toEqual(["a"]);
+
+    // Act, assert: any of industry or transport.
+    chooseTag(container, "transport");
+    expect(drawnElements(container)).toEqual(["a", "c"]);
+  });
+
+  it("draws only the elements having all of the chosen tags once switched to all", () => {
+    // Arrange: energy or industry is a and b.
+    const { container } = render(canvasOf(modelOf()));
+    chooseTag(container, "energy");
+    chooseTag(container, "industry");
+    expect(drawnElements(container)).toEqual(["a", "b"]);
+
+    // Act.
+    fireEvent.click(filterMode(container));
+
+    // Assert: only `a` has both, and the switch says so.
+    expect(drawnElements(container), "the switch did not narrow the filter to all of the tags").toEqual(["a"]);
+    expect(filterMode(container).textContent).toBe("All");
   });
 
   it("draws no connection touching a filtered element", () => {
@@ -71,38 +93,44 @@ describe("a declared filter", () => {
     const { container } = render(canvasOf(modelOf()));
 
     // Act: `c` is filtered out, `a` and `b` stay.
-    typeFilter(container, "energy");
+    chooseTag(container, "energy");
 
     // Assert: a -> b stays, a -> c goes with `c`.
     expect(drawnElements(container)).toEqual(["a", "b"]);
     expect(drawnConnections(container)).toEqual(["a-b"]);
   });
 
-  it("keeps the last good filter, and says where the text went wrong, when it does not parse", () => {
-    // Arrange: a good filter first.
-    const { container } = render(canvasOf(modelOf()));
-    typeFilter(container, "transport");
-    expect(drawnElements(container)).toEqual(["c"]);
+  it("looks typed text up among the tags in the diagram, and a chip's x takes its tag out", () => {
+    // Arrange.
+    const { container, getByRole } = render(canvasOf(modelOf()));
+    const field = container.querySelector(".library-filter .tag-input-field")!;
 
-    // Act: an unclosed parenthesis.
-    typeFilter(container, "energy and (industry");
+    // Act: typed text finds the diagram's tags that contain it.
+    fireEvent.change(field, { target: { value: "r" } });
 
-    // Assert: still the transport filter, and the error names the parenthesis's position.
-    expect(drawnElements(container)).toEqual(["c"]);
-    expect(container.querySelector(".library-filter-error")?.textContent).toBe("The parenthesis at 12 is never closed.");
+    // Assert: none starts with it, so alphabetically.
+    expect([...container.querySelectorAll(".tag-input-suggestion")].map((option) => option.textContent)).toEqual(["energy", "industry", "transport"]);
+
+    // Act: Enter takes the first; its x takes it out again.
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(drawnElements(container)).toEqual(["a", "b"]);
+    fireEvent.click(getByRole("button", { name: "Remove energy" }));
+
+    // Assert: nothing chosen, nothing hidden.
+    expect(drawnElements(container)).toEqual(["a", "b", "c"]);
   });
 
-  it("survives a new model: a delta does not clear what the reader typed", () => {
+  it("survives a new model: a delta does not clear the tags the reader chose", () => {
     // Arrange.
     const { container, rerender } = render(canvasOf(modelOf()));
-    typeFilter(container, "transport");
+    chooseTag(container, "transport");
 
     // Act: the model changes under the filter, with a new transport element in it.
     rerender(canvasOf(modelOf([{ id: "d", type: "item", x: 600, y: 0, width: 100, height: 40, payload: { tags: ["Transport"] } }])));
 
     // Assert.
     expect(drawnElements(container)).toEqual(["c", "d"]);
-    expect((container.querySelector(".library-filter-input") as HTMLInputElement).value).toBe("transport");
+    expect([...container.querySelectorAll(".library-filter .tag-input-chip-text")].map((chip) => chip.textContent)).toEqual(["transport"]);
   });
 
   it("shows no filter box where the definition declares none", () => {
@@ -137,7 +165,7 @@ describe("a declared filter legend", () => {
     ]);
 
     // Assert: inside the filter's box, after its input.
-    const legend = container.querySelector(".library-filter .library-filter-input ~ .library-filter-legend")!;
+    const legend = container.querySelector(".library-filter .library-filter-row ~ .library-filter-legend")!;
     expect(legend, "no legend under the filter box").not.toBeNull();
     const entries = [...legend.querySelectorAll(".library-filter-legend-entry")].map((entry) => ({
       caption: entry.textContent,

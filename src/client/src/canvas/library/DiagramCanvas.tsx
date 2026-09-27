@@ -55,7 +55,7 @@ import {
 } from "./shapes/segments";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { RulerStrip } from "./surface/RulerStrip";
-import { matchesTags, parseTagExpression, type TagExpression } from "./filter/tagExpression";
+import { TagInput } from "@client/components/TagInput";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
 import { useLibrarySelection, type CanvasSource, type LibraryContextIntegration } from "./librarySelection";
@@ -402,40 +402,50 @@ export function DiagramCanvasCore({
   const elementsById = useMemo(() => new Map(elements.map((element) => [element.id, element])), [elements]);
 
   // THE FILTER IS VIEW STATE, held here and nowhere else: never raised, never sent, and untouched
-  // by a new model, so a delta arriving mid-read does not clear what the reader typed. A text that
-  // does not parse leaves the last expression that did applied, and says why under the box.
-  const [filterText, setFilterText] = useState("");
-  const [filterExpression, setFilterExpression] = useState<TagExpression | null>(null);
-  const [filterError, setFilterError] = useState<string | null>(null);
-  const onFilterChange = (text: string) => {
-    setFilterText(text);
-    const parsed = parseTagExpression(text);
-    if (parsed.ok) {
-      setFilterExpression(parsed.expression);
-      setFilterError(null);
-    } else {
-      setFilterError(parsed.message);
-    }
-  };
+  // by a new model, so a delta arriving mid-read does not clear the tags the reader chose.
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [filterMode, setFilterMode] = useState<"any" | "all">("any");
 
-  /** The elements the filter hides: those whose tags do not match. None without a declared filter. */
-  const filteredOut = useMemo(() => {
-    const hidden = new Set<string>();
+  /** Each element's tags at the filter's field, as strings. Empty without a declared filter. */
+  const tagsByElement = useMemo(() => {
+    const byElement = new Map<string, string[]>();
     const filter = definition.filter;
-    if (filter === undefined || filterExpression === null) {
-      return hidden;
+    if (filter === undefined) {
+      return byElement;
     }
 
     for (const element of elements) {
       const tags = valueAtPath(filter.field, sourceOf(element));
-      const list = Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
-      if (!matchesTags(filterExpression, list)) {
-        hidden.add(element.id);
+      byElement.set(element.id, Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : []);
+    }
+
+    return byElement;
+  }, [definition.filter, elements]);
+
+  /** Every tag in the diagram, once each: what the filter looks typed text up among. */
+  const filterSuggestions = useMemo(() => [...new Set([...tagsByElement.values()].flat())], [tagsByElement]);
+
+  /**
+   * The elements the filter hides: those having none of the chosen tags - or, matching all, not
+   * every one of them. Tags compare without regard to case. None while no tag is chosen.
+   */
+  const filteredOut = useMemo(() => {
+    const hidden = new Set<string>();
+    if (filterTags.length === 0) {
+      return hidden;
+    }
+
+    const wanted = filterTags.map((tag) => tag.toLowerCase());
+    for (const [id, tags] of tagsByElement) {
+      const has = new Set(tags.map((tag) => tag.toLowerCase()));
+      const matches = filterMode === "all" ? wanted.every((tag) => has.has(tag)) : wanted.some((tag) => has.has(tag));
+      if (!matches) {
+        hidden.add(id);
       }
     }
 
     return hidden;
-  }, [definition.filter, filterExpression, elements]);
+  }, [tagsByElement, filterTags, filterMode]);
 
   /** What is drawn and hit-tested: every placed element the filter does not hide. */
   const visibleElements = useMemo(
@@ -2115,20 +2125,25 @@ export function DiagramCanvasCore({
 
       {definition.filter !== undefined && (
         <div className="library-filter" data-testid="library-filter">
-          <input
-            type="search"
-            className={`library-filter-input${filterError !== null ? " library-filter-input-invalid" : ""}`}
-            placeholder={definition.filter.label}
-            aria-label={definition.filter.label}
-            aria-invalid={filterError !== null}
-            value={filterText}
-            onChange={(event) => onFilterChange(event.target.value)}
-          />
-          {filterError !== null && (
-            <div className="library-filter-error" role="alert">
-              {filterError}
-            </div>
-          )}
+          <div className="library-filter-row">
+            <TagInput
+              className="library-filter-input"
+              label={definition.filter.label}
+              tags={filterTags}
+              suggestions={filterSuggestions}
+              onChange={setFilterTags}
+            />
+            {/* Whether an element needs any of the chosen tags or all of them. */}
+            <button
+              type="button"
+              className="library-filter-mode"
+              aria-label={filterMode === "any" ? "Matching any tag; match all instead" : "Matching all tags; match any instead"}
+              aria-pressed={filterMode === "all"}
+              onClick={() => setFilterMode((mode) => (mode === "any" ? "all" : "any"))}
+            >
+              {filterMode === "any" ? "Any" : "All"}
+            </button>
+          </div>
           {definition.filter.legend !== undefined && definition.filter.legend.length > 0 && (
             <ul className="library-filter-legend" aria-label="Legend">
               {definition.filter.legend.map((entry) => (

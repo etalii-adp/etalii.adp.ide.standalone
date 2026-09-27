@@ -94,6 +94,22 @@ public sealed class GhgProvidersTests : IDisposable
         Assert.Equal("All four", phases.Value);
     }
 
+    /// <summary>
+    /// The Tags row is a TAGS editor looking typed text up among every tag the graph uses, each
+    /// once - the case a provider sending a plain LINE, or only the trend's own tags, fails.
+    /// </summary>
+    [Fact]
+    public async Task TheTagsRow_IsATagEditor_OverEveryTagTheGraphUses()
+    {
+        var tags = Assert.Single(await RowsOf("steam-engine"), row => row.Id == GhgContextPropertyProvider.TagsProperty);
+
+        Assert.Equal(ContextPropertyEditor.Tags, tags.Editor);
+        Assert.Equal("energy, industry", tags.Value);
+        var used = Parse().Trends.SelectMany(trend => trend.Tags).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+        Assert.Equal(used, tags.Choices.Order(StringComparer.Ordinal));
+        Assert.Contains("transport", tags.Choices);
+    }
+
     [Fact]
     public async Task ATrend_OffersItsRows_AndOneBoundaryRowPerDrawnBoundary()
     {

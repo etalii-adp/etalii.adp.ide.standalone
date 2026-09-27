@@ -89,7 +89,7 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
             [
                 new(NameProperty, "Name", trend.Name, ReadOnlyReason: readOnly, Group: IdentityGroup),
                 new(DescriptionProperty, "Description", trend.Description, ContextPropertyEditor.Text, readOnly, IdentityGroup),
-                new(TagsProperty, "Tags", string.Join(", ", trend.Tags), ReadOnlyReason: readOnly, Group: IdentityGroup),
+                new(TagsProperty, "Tags", string.Join(", ", trend.Tags), ContextPropertyEditor.Tags, readOnly, IdentityGroup, TagsOf(model)),
                 new(StartProperty, "Start", Month(trend.Start), ReadOnlyReason: readOnly, Group: TimeGroup),
                 new(StopProperty, "Stop", Month(trend.Stop), ReadOnlyReason: readOnly, Group: TimeGroup),
                 new(PhasesProperty, "Phases", PhaseCandidates[trend.VisiblePhases - 1], ContextPropertyEditor.Slider, readOnly, PhasesGroup, PhaseCandidates),
@@ -195,6 +195,10 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
         var phase = end.PhaseIndex >= 0 ? GhgPhases.Titles[end.PhaseIndex] : end.Phase;
         return $"{name} · {phase}";
     }
+
+    /// <summary>Every tag the graph uses, once each, in order of first use: what a Tags row looks the typed text up among.</summary>
+    private static IReadOnlyList<string> TagsOf(GhgModel model) =>
+        [.. model.Trends.SelectMany(trend => trend.Tags).Distinct(StringComparer.Ordinal)];
 
     private static int IndexIn(IReadOnlyList<string> values, string value)
     {
