@@ -18,8 +18,8 @@ The classic hype cycle chart shows one curve and plots each technology as a dot 
 
 | Part | In this example |
 | --- | --- |
-| Trends | 200, in six clusters of rows: industry, energy, transport, communication, computing, and society |
-| Influences | 263, most of them between clusters, each attached to the phase of each trend in which it acted |
+| Trends | 200, in six clusters of rows: industry, energy, transport, communication, computing, and society, with an empty row between every two rows of trends |
+| Influences | 263, most of them between clusters, each attached to the phase of each trend in which it acted: the two phases overlap in time, or, where one trend ended before the other began, it acts from its last phase on the other's Peak |
 | Phase counts | Every count from 1 to 4: trends of the past show all four phases, recent ones such as AI agents, fusion or small modular reactors only a Peak |
 | Edges | Influences attach to the top and the bottom edge of every one of the four phases |
 | A hidden influence | Autonomous vehicles to urban air mobility is attached to the Slope of a trend that shows only two phases, so it is hidden, and kept in the file |
