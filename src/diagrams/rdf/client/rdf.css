@@ -24,12 +24,6 @@
   opacity: 0.75;
 }
 
-/* The predicate riding its edge. */
-.rdf-edge-label {
-  text-anchor: middle;
-  pointer-events: none;
-}
-
 /* The showing-N-of-M banner over a budget-cut view (Requirement 8.2). */
 .rdf-truncation-banner {
   position: absolute;

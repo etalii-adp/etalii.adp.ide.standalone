@@ -20,12 +20,6 @@
   background: var(--color-surface);
 }
 
-.mindmap-canvas-surface {
-  width: 100%;
-  height: 100%;
-  outline: none;
-}
-
 /* The connector from a node to its parent: a bezier from edge to edge, under the boxes. */
 .mindmap-edge {
   stroke: var(--color-border);

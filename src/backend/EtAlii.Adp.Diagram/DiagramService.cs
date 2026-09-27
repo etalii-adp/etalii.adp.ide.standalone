@@ -15,8 +15,7 @@ namespace EtAlii.Adp.Diagram;
 /// The one entry point for viewing and editing a diagram, whatever its type. It resolves the
 /// project, resolves the diagram's type from its <c>.adp</c> file, opens the matching module's
 /// <see cref="IDiagramSession"/>, and pumps that session's deltas onto the stream - mapping
-/// the module's backend delta records to the contract's proto in the one place that mapping
-/// lives. It knows no diagram type (mindmap-diagram Requirement 13.4).
+/// the module's backend delta records to the contract's proto through <see cref="DiagramWire"/>. It knows no diagram type (mindmap-diagram Requirement 13.4).
 /// </summary>
 public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceBase
 {
@@ -138,7 +137,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
 
         foreach (var delta in deltas)
         {
-            channel.Writer.TryWrite(ToProto(delta));
+            channel.Writer.TryWrite(DiagramWire.ToProto(delta));
         }
     }
 
@@ -250,25 +249,4 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         _logger.Information("Saved {FullPath} through the history: {Outcome}", fullPath, result.IsSuccess ? "ok" : result.Error);
         return new SaveTextResponse { Error = result.IsSuccess ? "" : result.Error };
     }
-
-    private static Delta ToProto(DiagramDelta delta) => delta switch
-    {
-        DiagramAddDelta add => new Delta { Add = new Add { Elements = { add.Elements.Select(ToProto) } } },
-        DiagramRemoveDelta remove => new Delta { Remove = new Remove { ElementIds = { remove.ElementIds.Select(id => new ElementId { Value = id }) } } },
-        DiagramGroupDelta group => new Delta { Group = new Group { SourceElementIds = { group.SourceElementIds.Select(id => new ElementId { Value = id }) }, GroupElement = ToProto(group.GroupElement) } },
-        DiagramUngroupDelta ungroup => new Delta { Ungroup = new Ungroup { GroupElementId = new ElementId { Value = ungroup.GroupElementId }, Elements = { ungroup.Elements.Select(ToProto) } } },
-        _ => throw new ArgumentOutOfRangeException(nameof(delta)),
-    };
-
-    private static Element ToProto(DiagramElement element) => new()
-    {
-        Id = new ElementId { Value = element.Id },
-        Position = new Point2D { X = element.X, Y = element.Y },
-        Type = element.Type,
-        Payload = new Google.Protobuf.WellKnownTypes.Any
-        {
-            TypeUrl = element.PayloadTypeUrl,
-            Value = ByteString.CopyFrom(element.Payload.Span),
-        },
-    };
 }

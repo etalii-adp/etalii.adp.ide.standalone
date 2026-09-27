@@ -88,14 +88,9 @@
   stroke-width: 2;
 }
 
-.wardley-band-label,
-.wardley-axis-label {
+.wardley-band-label {
   fill: var(--color-text-muted);
   font-family: var(--font-sans);
-}
-
-.wardley-axis-label {
-  font-weight: 600;
 }
 
 .wardley-axis-end {

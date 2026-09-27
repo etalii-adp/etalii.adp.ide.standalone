@@ -20,9 +20,9 @@
  * nothing else here needs a categorical ramp. The day a second module wants one, that is the
  * moment to promote these, not before.
  */
-.ansible-canvas {
-  touch-action: none;
-
+/* On the host the canvas draws: `.ansible-canvas`, which these and a `touch-action` sat on until
+   client-centralization task 12, was drawn by nothing. */
+.ansible-canvas-host {
   --ansible-play-hue-0: #4f8cc9;
   --ansible-play-hue-1: #57a773;
   --ansible-play-hue-2: #c96f4f;
@@ -33,7 +33,7 @@
 
 /* The same six hues, lifted so they still read against the dark surface they are mixed into. */
 @media (prefers-color-scheme: dark) {
-  .ansible-canvas {
+  .ansible-canvas-host {
     --ansible-play-hue-0: #7fb0e0;
     --ansible-play-hue-1: #7fc79a;
     --ansible-play-hue-2: #e0947a;

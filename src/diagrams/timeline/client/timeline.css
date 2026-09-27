@@ -12,19 +12,6 @@
   stroke: none;
 }
 
-/* ---- Adorners ---------------------------------------------------------------------- */
-
-/* The duration-resize strips; what they resize is a time span, which only this type has. */
-.timeline-adorner {
-  fill: var(--color-primary, limegreen);
-  opacity: 0.35;
-  cursor: ew-resize;
-}
-
-.timeline-adorner:hover {
-  opacity: 0.8;
-}
-
 /* ---- The ruler --------------------------------------------------------------------- */
 
 /*
