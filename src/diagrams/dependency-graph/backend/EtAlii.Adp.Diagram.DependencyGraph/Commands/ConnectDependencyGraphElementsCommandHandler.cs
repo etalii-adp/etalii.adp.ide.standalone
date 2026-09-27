@@ -50,10 +50,10 @@ public sealed class ConnectDependencyGraphElementsCommandHandler : ICommandHandl
         DependencyGraphWriter.InsertRelation(
             entry.Document, entry.Model, command.Id, command.From, command.To, command.Label);
 
-        var error = _documents.Save(command.BodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = _documents.Save(command.BodyPath, entry);
+        return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new DisconnectDependencyGraphRelationCommand(
                 command.BodyPath, command.Id, RemoveEmptiedRelationsSection: !hadSection))
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 }
