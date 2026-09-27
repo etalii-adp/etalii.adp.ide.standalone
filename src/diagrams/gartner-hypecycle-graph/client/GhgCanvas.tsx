@@ -192,9 +192,17 @@ function definitionFor(unit: GhgTimeUnit): DiagramDefinition {
     layout: {
       modes: ["manual", "row-packed"],
       toggle: { caption: "Compact", on: "row-packed" },
-      rowPacked: { width: COMPACT_WIDTH, gap: GhgScale.unitsPerMonth },
+      // Only a trend takes the compact width: a trigger keeps its circle and a note its box, and a
+      // note two rows tall keeps both rows clear, because an element covers every row line it spans.
+      rowPacked: { width: COMPACT_WIDTH, gap: GhgScale.unitsPerMonth, types: [GhgElementTypes.trend], rowStep: GhgScale.rowStep },
       modeOverrides: {
-        "row-packed": { elementTypes: [compactTrendType, TRIGGER_TYPE, NOTE_TYPE], dragging: "disabled", chrome: { rulers: [] } },
+        "row-packed": {
+          // Nothing that would change a date is offered: no trigger is dragged, and a note is
+          // neither dragged nor resized, while influences from a trigger are still drawn.
+          elementTypes: [compactTrendType, { ...TRIGGER_TYPE, draggable: false }, { ...NOTE_TYPE, sizing: "model", draggable: false }],
+          dragging: "disabled",
+          chrome: { rulers: [] },
+        },
       },
     },
     dragging: "enabled",
