@@ -87,6 +87,37 @@ describe("PropertyRow as a slider", () => {
     expect(onCommit).toHaveBeenCalledWith("Plateau");
   });
 
+  it("keeps the dragged stop while an older value echoes back, and writes only the latest", async () => {
+    // Arrange: every write stays in flight until the test settles it, as over a real connection.
+    const settle: (() => void)[] = [];
+    const onCommit = vi.fn((_value: string) => new Promise<string>((resolve) => settle.push(() => resolve(""))));
+    const start = property({ id: "phases", label: "Phases", value: "Peak", editor: ContextPropertyEditor.SLIDER, candidates: ["Peak", "Trough", "Slope", "Plateau"] });
+    const { rerender } = render(<PropertyRow property={start} onCommit={onCommit} />);
+    const slider = screen.getByLabelText("Phases") as HTMLInputElement;
+
+    // Act: a drag passes Trough and Slope and rests on Plateau while the first write is in
+    // flight, and the backend pushes the value that first write produced.
+    fireEvent.change(slider, { target: { value: "1" } });
+    fireEvent.change(slider, { target: { value: "2" } });
+    fireEvent.change(slider, { target: { value: "3" } });
+    rerender(<PropertyRow property={{ ...start, value: "Trough" }} onCommit={onCommit} />);
+
+    // Assert: the thumb stays where the pointer is; an echo is not the user's answer.
+    expect(slider.value, "a pushed echo of an earlier write moved the thumb back under the pointer, which is the flicker, and the next pointer move writes again").toBe("3");
+
+    // Act: the first write lands, then the second, and the backend echoes the last.
+    settle.shift()!();
+    await flush();
+    settle.shift()?.();
+    await flush();
+    rerender(<PropertyRow property={{ ...start, value: "Plateau" }} onCommit={onCommit} />);
+    await flush();
+
+    // Assert: the stops in between were never written; the one the drag ended on was.
+    expect(onCommit.mock.calls.map(([value]) => value)).toEqual(["Trough", "Plateau"]);
+    expect(slider.value).toBe("3");
+  });
+
   it("still shows an editor number this client does not know as read-only", () => {
     // Arrange, act: an editor from a backend newer than this client.
     const { container } = render(

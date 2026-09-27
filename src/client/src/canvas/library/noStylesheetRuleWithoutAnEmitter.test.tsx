@@ -67,7 +67,7 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
   },
   {
     reason: "drawn only on a selected element or connection, and nothing is selected here",
-    classes: ["library-resize-handle", "library-adjust-handle", "library-span-anchor", "library-span-anchor-hit", "library-anchor-hit"],
+    classes: ["library-resize-handle", "library-adjust-handle", "library-end-handle", "library-span-anchor", "library-span-anchor-hit", "library-anchor-hit"],
   },
   {
     reason: "the library frame's refusal and status lines, shown only while a canvas opens, is refused or is unavailable - every example opens",

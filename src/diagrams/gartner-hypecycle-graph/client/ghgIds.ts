@@ -47,6 +47,9 @@ export const GhgProperties = {
   stop: "ghg.stop",
   /** The month each inner boundary ends its phase at, indexed as the library indexes boundaries. */
   boundaries: ["ghg.peak-end", "ghg.trough-end", "ghg.slope-end"],
+  /** Where each end of an influence attaches, as `phase/edge/at`: a dragged end handle. */
+  fromAttachment: "ghg.from-attachment",
+  toAttachment: "ghg.to-attachment",
 } as const;
 
 export const GhgShortcuts = { rename: "F2" } as const;

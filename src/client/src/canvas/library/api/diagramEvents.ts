@@ -20,10 +20,12 @@ export type DiagramEvent =
   | ElementMoved
   | ElementResized
   | SegmentBoundaryMoved
+  | ElementPreviewed
   | ConnectionDrawn
   | ConnectionReleasedOnEmpty
   | ConnectionDeleted
   | ConnectionAdjusted
+  | ConnectionEndMoved
   | SelectionChanged
   | LabelCommitRequested
   | ViewChanged
@@ -86,6 +88,25 @@ export interface SegmentBoundaryMoved {
 }
 
 /**
+ * Where an element is drawn while a move, a resize or a boundary drag is still in flight - raised
+ * once per applied frame, and once more with `bounds: null` when the gesture is over, after its
+ * final event (`element-moved`, `element-resized`, `segment-boundary-moved`) if it had one.
+ *
+ * <b>The one member that is not a request.</b> Nothing is to be written for it: the gesture has
+ * not ended, and a write per frame would be a history entry per frame. It is there so a module
+ * can SHOW what the release would write before it writes it - the property grid's Start, Stop and
+ * phase ends following the drag - and forget it when `bounds` is null.
+ */
+export interface ElementPreviewed {
+  kind: "element-previewed";
+  elementId: string;
+  /** The element's drawn rectangle, in canvas units, or null when the gesture is over. */
+  bounds: { x: number; y: number; width: number; height: number } | null;
+  /** The x of each inner segment boundary as drawn, for a type that declares segments. */
+  boundaries?: readonly number[];
+}
+
+/**
  * A connect gesture released over empty canvas, where the relation declares that release
  * meaningful (`emptyRelease: "complete"`) - the create-and-relate gesture. Under the default
  * the release raises nothing at all; this member exists only for definitions that opt in.
@@ -123,6 +144,18 @@ export interface ConnectionDrawn {
 export interface ConnectionDeleted {
   kind: "connection-deleted";
   connectionId: string;
+}
+
+/**
+ * One end of a connection was dragged along the edge it is attached to, where the relation
+ * declares `movableEnds`. The attachment is the whole new one - same edge, possibly another
+ * segment - measured exactly as a connect gesture measures its ends.
+ */
+export interface ConnectionEndMoved {
+  kind: "connection-end-moved";
+  connectionId: string;
+  end: "source" | "target";
+  attachment: EdgeAttachment;
 }
 
 /** Waypoints or control points were dragged on an adjustable route (Requirement 3.5). */

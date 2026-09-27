@@ -1460,21 +1460,27 @@ button {
   min-height: 3.4em;
 }
 
-/* A slider over an ordered set of candidates, with the current one named beside it. */
+/*
+ * A slider over an ordered set of candidates, with the current one named UNDER it. Beside it, the
+ * name's width came out of the slider's: "Peak" left 84 px of track and "Peak, Trough and Slope"
+ * 2 px, so the stop under a held pointer changed with the name it produced, and a drag flickered
+ * between two stops, writing each. jsdom lays out nothing, so the guard is in tests.md.
+ */
 .property-grid-slider {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
 }
 
 .property-grid-input-slider {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   padding: 0;
 }
 
 .property-grid-slider-value {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   font-size: 12px;
   color: var(--color-text, #1f2430);
 }

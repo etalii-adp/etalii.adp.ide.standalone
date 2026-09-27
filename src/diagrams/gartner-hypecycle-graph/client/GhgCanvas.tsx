@@ -11,6 +11,7 @@ import { useContextConnection } from "@client/shell/context/ContextConnectionPro
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
+import { endPropertyPreview, settlePropertyPreview, showPropertyPreview } from "@client/shell/panels/propertyPreview";
 import { viewReportOf } from "@client/diagrams/viewReport";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import {
@@ -63,6 +64,8 @@ export const GHG_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       route: "cubic-bezier",
       style: { endMarker: "arrow" },
       className: "ghg-influence",
+      // A selected influence shows a handle on each end, slid along its trend's edge to move it.
+      movableEnds: true,
       hideWhenAttachmentHidden: true,
       endpoints: {
         source: { elementTypes: [GhgElementTypes.trend] },
@@ -115,15 +118,17 @@ function attachmentOf(attachment: GhgAttachment | undefined): EdgeAttachment | u
     : { edge: attachment.edge, region: attachment.region, at: attachment.at };
 }
 
+/** An attachment as the document writes one: `phase/edge/at`, such as `plateau/bottom/0.3`. */
+function endText(attachment: EdgeAttachment): string {
+  const phase = GHG_PHASES[attachment.region ?? 0] ?? GHG_PHASES[0];
+  return `${phase}/${attachment.edge}/${Math.round(attachment.at * 100) / 100}`;
+}
+
 /** One end of a connect gesture: the trend id, and where on it the influence attaches. */
 function gestureEnd(elementId: string, attachment: EdgeAttachment | undefined): string {
-  if (attachment === undefined) {
-    return elementId;
-  }
-
-  const phase = GHG_PHASES[attachment.region ?? 0] ?? GHG_PHASES[0];
-  return `${elementId}@${phase}/${attachment.edge}/${Math.round(attachment.at * 100) / 100}`;
+  return attachment === undefined ? elementId : `${elementId}@${endText(attachment)}`;
 }
+
 
 /**
  * A Gartner hype cycle graph: trends on a month axis, each an arrow banner in the phases it has
@@ -184,15 +189,36 @@ export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
         runAction(actionId, targetId);
       }
     },
+    // Where a trend is drawn mid-gesture, shown in the property grid as the dates the release would
+    // write - Start, Stop and each phase's end - and nothing written until then.
+    onElementPreviewed: ({ elementId, bounds, boundaries }) => {
+      if (bounds === null) {
+        endPropertyPreview();
+        return;
+      }
+      const values: Record<string, string> = {
+        [GhgProperties.start]: formatMonth(monthAt(bounds.x)),
+        [GhgProperties.stop]: formatMonth(monthAt(bounds.x + bounds.width)),
+      };
+      (boundaries ?? []).forEach((x, index) => {
+        const property = GhgProperties.boundaries[index];
+        if (property !== undefined) {
+          values[property] = formatMonth(monthAt(x));
+        }
+      });
+      showPropertyPreview(elementId, values);
+    },
     // The library reports the CENTRE it drew the trend at; the backend places by the top-left.
     onElementMoved: ({ elementId, position }) => {
       const trend = model.trends.get(elementId);
       if (trend !== undefined) {
+        settlePropertyPreview();
         void moveElementTo(elementId, position.x - trend.payload.width / 2, position.y - GhgScale.trendHeight / 2);
       }
     },
     // A resize is a span: the dragged edge's month is the new start or stop.
     onElementResized: ({ elementId, side, bounds }) => {
+      settlePropertyPreview();
       if (side === "left") {
         runProperty(GhgProperties.start, formatMonth(monthAt(bounds.x)), elementId);
       } else if (side === "right") {
@@ -203,8 +229,13 @@ export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     onSegmentBoundaryMoved: ({ elementId, index, x }) => {
       const property = GhgProperties.boundaries[index];
       if (property !== undefined) {
+        settlePropertyPreview();
         runProperty(property, formatMonth(monthAt(x)), elementId);
       }
+    },
+    // A selected influence's end, slid along its trend's edge, possibly into another phase.
+    onConnectionEndMoved: ({ connectionId, end, attachment }) => {
+      runProperty(end === "source" ? GhgProperties.fromAttachment : GhgProperties.toAttachment, endText(attachment), connectionId);
     },
     // The whole gesture in one call: both ends, and where on each the influence attaches.
     onConnectionDrawn: ({ sourceElementId, targetElementId, sourceAttachment, targetAttachment }) => {

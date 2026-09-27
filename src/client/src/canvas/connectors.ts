@@ -111,6 +111,42 @@ export function horizontalBezierPath(from: Point, to: Point): string {
   return `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
 }
 
+/** Which way is out of a box through one of its edges. */
+const OUTWARD: Record<"top" | "bottom" | "left" | "right", Point> = {
+  top: { x: 0, y: -1 },
+  bottom: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+
+/**
+ * A cubic bezier whose ends leave and arrive square to the edges they are attached along: each
+ * control point sits straight out from its end along that edge's outward normal, so the tangent at
+ * the end - which is the way an arrowhead points - crosses the border at a right angle. An end with
+ * no edge keeps the horizontal bezier's control point. The reach is half the ends' distance along
+ * the normal's axis, and never less than 24, so two ends level with each other still bow out.
+ */
+export function edgeBezierPath(
+  from: Point,
+  to: Point,
+  fromEdge: "top" | "bottom" | "left" | "right" | undefined,
+  toEdge: "top" | "bottom" | "left" | "right" | undefined,
+): string {
+  const midX = (from.x + to.x) / 2;
+  const control = (end: Point, edge: typeof fromEdge): Point => {
+    if (edge === undefined) {
+      return { x: midX, y: end.y };
+    }
+
+    const out = OUTWARD[edge];
+    const reach = Math.max(24, Math.abs(out.x !== 0 ? to.x - from.x : to.y - from.y) / 2);
+    return { x: end.x + out.x * reach, y: end.y + out.y * reach };
+  };
+  const first = control(from, fromEdge);
+  const second = control(to, toEdge);
+  return `M ${from.x} ${from.y} C ${first.x} ${first.y}, ${second.x} ${second.y}, ${to.x} ${to.y}`;
+}
+
 /**
  * A cubic bezier that always departs `from` rightward and arrives at `to` from its left.
  *
