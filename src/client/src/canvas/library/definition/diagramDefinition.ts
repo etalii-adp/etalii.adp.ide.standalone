@@ -795,6 +795,15 @@ export interface ElementTypeDefinition {
   resize?: "width" | "both";
   /** Overrides the canvas-wide {@link DraggingPolicy} for this type (Requirement 5.2). */
   draggable?: boolean;
+  /**
+   * Whether an element of this type that a toolbox drop just created is selected and its label
+   * opened for editing, through the type's `activate` gesture, as soon as the model brings it.
+   * The canvas remembers the drop point for five seconds; the first new element of such a type
+   * whose model bounds contain it is the one. Any other gesture forgets the drop, so a slow
+   * backend never opens an editor on something the reader did not just drop. Unset, a dropped
+   * element is only drawn.
+   */
+  editOnDrop?: boolean;
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
   deletable?: boolean;
   /**

@@ -494,6 +494,8 @@ export function DiagramCanvasCore({
   const rootRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewBox | null>(null);
   const [ownSelection, setOwnSelection] = useState<DiagramSelection>([]);
+  /** The last toolbox drop, awaiting the element it creates - see the edit-on-drop effect. */
+  const dropMemoryRef = useRef<{ position: Point; at: number; known: ReadonlySet<string> } | null>(null);
 
   // A gesture's per-frame values are NOT React state on the canvas: they flow through the
   // gesture-frame scheduler into these cells, and only the gesture's own participants
@@ -1563,6 +1565,7 @@ export function DiagramCanvasCore({
     // places by the model's own positions; the layout's inverse says what it stands for there.
     const pointer = toCanvasPoint(event.clientX, event.clientY);
     const position = layoutAlgorithm?.inverse?.(pointer, layoutInput, definition.layout) ?? pointer;
+    dropMemoryRef.current = { position, at: Date.now(), known: new Set(model.elements.map((element) => element.id)) };
     raise({ kind: "element-dropped", elementType: payload, position });
   };
 
@@ -1572,6 +1575,7 @@ export function DiagramCanvasCore({
     if (isTextTarget(event.target)) {
       return;
     }
+    dropMemoryRef.current = null; // a key is another gesture: the drop no longer awaits its element
 
     if (event.key === "Escape") {
       // Whatever gesture is in flight dissolves, dispatching nothing.
@@ -1681,6 +1685,41 @@ export function DiagramCanvasCore({
     },
     [elementsById, elementTypes, definition.actions, raise],
   );
+
+  /*
+   * EDIT ON DROP: the element a toolbox drop created, selected and opened for editing when the
+   * model brings it. The drop is remembered - where, when, and which elements already existed - and
+   * the first model carrying a NEW element of a type declaring `editOnDrop` whose model bounds
+   * contain the drop point is taken to be it. Model bounds, because the drop's position is already
+   * the layout's inverse. Forgotten on that match, on any other gesture, or after five seconds.
+   */
+  useEffect(() => {
+    const memory = dropMemoryRef.current;
+    if (memory === null) {
+      return;
+    }
+    if (Date.now() - memory.at > EDIT_ON_DROP_MS) {
+      dropMemoryRef.current = null;
+      return;
+    }
+
+    const created = model.elements.find((element) => {
+      const type = elementTypes.get(element.type);
+      if (memory.known.has(element.id) || type?.editOnDrop !== true) {
+        return false;
+      }
+      const bounds = elementBounds(element, type);
+      return memory.position.x >= bounds.x && memory.position.x <= bounds.x + bounds.width
+        && memory.position.y >= bounds.y && memory.position.y <= bounds.y + bounds.height;
+    });
+    if (created === undefined) {
+      return;
+    }
+
+    dropMemoryRef.current = null;
+    select({ kind: "element", id: created.id });
+    dispatchElementGesture(created.id, "activate");
+  }, [model.elements, elementTypes, select, dispatchElementGesture]);
 
   /** A declared shortcut, dispatched by action id. True when one fired. */
   function dispatchDeclaredAction(event: React.KeyboardEvent): boolean {
@@ -2047,7 +2086,7 @@ export function DiagramCanvasCore({
         tabIndex={0}
         role="img"
         aria-label={ariaLabel ?? "Diagram"}
-        onPointerDownCapture={(event) => { endEditBeforeGesture(event); beginRightConnect(event); }}
+        onPointerDownCapture={(event) => { dropMemoryRef.current = null; endEditBeforeGesture(event); beginRightConnect(event); }}
         onPointerDown={backgroundWiring.onPointerDown}
         onPointerMove={(event) => { moveRightConnect(event); backgroundWiring.onPointerMove(event); }}
         onPointerUp={(event) => { endRightConnect(event); backgroundWiring.onPointerUp(event); }}
@@ -3492,6 +3531,9 @@ function connectionEnds(
   void elementTypes;
   return [from, to];
 }
+
+/** How long a toolbox drop waits for the element it creates before an editor may no longer open on it. */
+const EDIT_ON_DROP_MS = 5000;
 
 /** Whether ends on elements of this type are drawn by edge intersection whatever anchor started them. */
 function drawnByEdge(type: ElementTypeDefinition | undefined): boolean {
