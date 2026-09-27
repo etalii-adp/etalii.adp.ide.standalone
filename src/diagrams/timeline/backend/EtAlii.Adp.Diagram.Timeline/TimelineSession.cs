@@ -83,11 +83,11 @@ public sealed class TimelineSession : IDiagramSession
         _viewport = viewport;
 
         // The same render and the same diff a document change goes through, so the two paths
-        // cannot disagree about what this connection holds. Diff emits Add for what appeared and
-        // then Remove for what left - the order both reference sessions use, and the safe one: a
-        // client applying Add first is never briefly missing an element it is about to be sent.
+        // cannot disagree about what this connection holds. The shared diff removes what left and
+        // then adds what appeared or changed (backend-centralization R4.5): the client folds an
+        // add as an upsert keyed on id, so removing first never deletes what the batch just added.
         var current = Render();
-        var deltas = _mapper.Diff(_delivered, current);
+        var deltas = DiagramDiff.Between(_delivered, current);
         _delivered = current;
 
         return deltas;
@@ -175,7 +175,7 @@ public sealed class TimelineSession : IDiagramSession
         try
         {
             var current = Render();
-            var deltas = _mapper.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)
