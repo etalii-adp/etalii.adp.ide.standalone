@@ -20,9 +20,14 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# Runner choice: every job runs on `vars.RUNS_ON` when that repository (or organisation) variable is set,
+# and on GitHub's hosted `ubuntu-latest` otherwise. The value is a JSON label list or string, for example
+# `["self-hosted","linux"]` to use a self-hosted Linux runner while the hosted minutes are spent. GitHub
+# cannot pick "whichever runner is free" by itself: a job's labels must all match one runner, so the
+# switch is this variable.
 jobs:
   gates:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     permissions:
       contents: read
     steps:
@@ -87,7 +92,7 @@ jobs:
     # Publishing is the merge's reward: pull requests gate only (Requirement 4.3).
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     needs: gates
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     permissions:
       contents: write
     steps:
