@@ -1,0 +1,4 @@
+{
+  "reason": "Written by ShippedExampleModelsTests from src/examples/diagrams (showcase-*) and src/diagrams/*/examples (module-*, less any diagram the showcase already holds): each diagram\u0027s baseline, fully opened, as the base64 protobuf Delta messages DiagramService.Open streams to a canvas. The client\u0027s noStylesheetRuleWithoutAnEmitter guard mounts every canvas on these (client-centralization R11.2). Do not edit by hand: re-run the test and commit what it writes.",
+  "diagrams": []
+}

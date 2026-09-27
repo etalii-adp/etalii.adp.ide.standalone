@@ -89,10 +89,10 @@ The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *alre
   - One store at a time, each landing independently. **Each converted module's existing session tests are the proof**, plus the c4 removal guard that `350b8f9e` landed.
   - **R2.4 and R2.5 land in the same change for each store, never R2.4 across the stores first.** `IDiagramDocumentReloader.BodyDeleted` defaults to a reload, which is right only while a failed read installs an empty document. A store given keep-last-good without forwarding `BodyDeleted` to the lifecycle keeps a deleted diagram forever (the user's chat ruling, 2026-09-25).
   - _Requirements: 2.1, 2.4, 2.5_
-- [ ] 7. The read-only store (sparql) uses the same lifecycle without a save path
+- [x] 7. The read-only store (sparql) uses the same lifecycle without a save path
   - Files: sparql's store and tests
   - _Requirements: 2.7_
-- [ ] 8. A republished unchanged body never installs an empty or unreadable document
+- [x] 8. A republished unchanged body never installs an empty or unreadable document
   - Files: the shared lifecycle's tests
   - The guard drives the real reload path rather than calling the helper directly, because a wiring regression is what a later reader would cause. **Seen to fail against a planted install-on-unreadable.**
   - _Requirements: 2.6_

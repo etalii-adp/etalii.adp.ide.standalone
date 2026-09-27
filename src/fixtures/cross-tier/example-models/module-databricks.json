@@ -1,0 +1,12 @@
+{
+  "reason": "Written by ShippedExampleModelsTests from src/examples/diagrams (showcase-*) and src/diagrams/*/examples (module-*, less any diagram the showcase already holds): each diagram\u0027s baseline, fully opened, as the base64 protobuf Delta messages DiagramService.Open streams to a canvas. The client\u0027s noStylesheetRuleWithoutAnEmitter guard mounts every canvas on these (client-centralization R11.2). Do not edit by hand: re-run the test and commit what it writes.",
+  "diagrams": [
+    {
+      "example": "lakehouse/databricks.adp",
+      "mimeType": "databricks/bundle",
+      "deltas": [
+        "CuIHCpQBCggKBmJ1bmRsZRISCcP1KFyPKlHAEekmMQisHnJAGhhkYXRhYnJpY2tzL2J1bmRsZStidW5kbGUiWgpDdHlwZS5nb29nbGVhcGlzLmNvbS9ldGFsaWkuYWRwLmRhdGFicmlja3MuRGF0YWJyaWNrc1Jlc291cmNlUGF5bG9hZBITCgZidW5kbGUSCWxha2Vob3VzZQq5AQojCiFyZXNvdXJjZTpwaXBlbGluZXMvYnJvbnplX3RvX2dvbGQSEgnsUbgehYFwQBFxPQrXo7RxQBoaZGF0YWJyaWNrcy9idW5kbGUrcmVzb3VyY2UiYgpDdHlwZS5nb29nbGVhcGlzLmNvbS9ldGFsaWkuYWRwLmRhdGFicmlja3MuRGF0YWJyaWNrc1Jlc291cmNlUGF5bG9hZBIbCglwaXBlbGluZXMSDmJyb256ZV90b19nb2xkCokBCgwKCnRhcmdldDpkZXYSCREAAAAAAAB5QBoYZGF0YWJyaWNrcy9idW5kbGUrdGFyZ2V0IlQKQXR5cGUuZ29vZ2xlYXBpcy5jb20vZXRhbGlpLmFkcC5kYXRhYnJpY2tzLkRhdGFicmlja3NUYXJnZXRQYXlsb2FkEg8KC2RldmVsb3BtZW50EAEKkgEKDQoLdGFyZ2V0OnByb2QSEgkAAAAAAEBwQBEAAAAAAAB5QBoYZGF0YWJyaWNrcy9idW5kbGUrdGFyZ2V0IlMKQXR5cGUuZ29vZ2xlYXBpcy5jb20vZXRhbGlpLmFkcC5kYXRhYnJpY2tzLkRhdGFicmlja3NUYXJnZXRQYXlsb2FkEg4KCnByb2R1Y3Rpb24YAgq5AQooCiZvdmVycmlkZTpwcm9kL3BpcGVsaW5lcy9icm9uemVfdG9fZ29sZBIAGhZkYXRhYnJpY2tzL2J1bmRsZStlZGdlInMKP3R5cGUuZ29vZ2xlYXBpcy5jb20vZXRhbGlpLmFkcC5kYXRhYnJpY2tzLkRhdGFicmlja3NFZGdlUGF5bG9hZBIwEgt0YXJnZXQ6cHJvZBohcmVzb3VyY2U6cGlwZWxpbmVzL2Jyb256ZV90b19nb2xkCq8BCiMKIW92ZXJyaWRlOnByb2Qvam9icy9uaWdodGx5X2luZ2VzdBIAGhZkYXRhYnJpY2tzL2J1bmRsZStlZGdlIm4KP3R5cGUuZ29vZ2xlYXBpcy5jb20vZXRhbGlpLmFkcC5kYXRhYnJpY2tzLkRhdGFicmlja3NFZGdlUGF5bG9hZBIrEgt0YXJnZXQ6cHJvZBoccmVzb3VyY2U6am9icy9uaWdodGx5X2luZ2VzdA=="
+      ]
+    }
+  ]
+}

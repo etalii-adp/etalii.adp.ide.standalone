@@ -83,7 +83,6 @@
    (centralized-selection Requirements 5.3, 5.4). These four rules said it a second time, in a
    colour the notation also uses at rest. */
 
-.c4-relationship-label,
 .c4-relationship-group .library-connection-label {
   font-size: 10px;
   fill: var(--color-text-muted);

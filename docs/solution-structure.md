@@ -21,25 +21,25 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **109** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **111** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
 | core | **29** |
-| diagram | **76** |
+| diagram | **78** |
 | editor | **4** |
-| production | **78** |
-| test | **31** |
+| production | **79** |
+| test | **32** |
 
-Those are **two different splits of the same 109**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 111**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **125** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "125 projects" would be wrong in the confident direction.**
+There are **127** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "127 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
 **The solution's project paths are relative to `src/backend/`.** A core project therefore appears as `EtAlii.Adp.Context/EtAlii.Adp.Context.csproj` with no `backend` segment, while a diagram project appears as `../diagrams/<type>/backend/...`.
 
-Classifying by path segment — "count the ones containing `backend`" — yields a plausible **80 / 29** split that is not the core/module split at all. When this page was first written that split was 78 / 27 and matched the production/test sizes exactly, which is how it survived a sanity check; the coincidence has since ended, and the trap has not. **Classify core projects by the absence of a leading `../`.**
+Classifying by path segment — "count the ones containing `backend`" — yields a plausible **82 / 29** split that is not the core/module split at all. When this page was first written that split was 78 / 27 and matched the production/test sizes exactly, which is how it survived a sanity check; the coincidence has since ended, and the trap has not. **Classify core projects by the absence of a leading `../`.**
 
 ## The core projects
 
@@ -94,7 +94,7 @@ The skips are declared per project in a `.csproj.DotSettings` file, and `Namespa
 
 A test project sits beside its subject as `<Project>.Tests`, or is named for its purpose as `EtAlii.Adp.<Purpose>.Tests` where it has no single subject project: `EtAlii.Adp.Client.Tests` runs the client suite, `EtAlii.Adp.Repository.Tests` holds the guards whose subject is the repository itself - its documents, scripts and conventions - and `EtAlii.Adp.HostLogging.Tests` exists to hold **one class on purpose**. That class asserts which host's pipeline the process-wide `Log.Logger` points at, and a test assembly is its own process, so no other class's host can move it; a second host-booting class there ends that. Inside one, `Fixtures/**` is **test input, not product** — and for the modules whose round-trip requirement compares bytes, those fixtures are marked `-text` in `.gitattributes` so git does not rewrite their line endings and turn the test into a test of git.
 
-`src/fixtures/cross-tier/` is a different thing with a similar name: **one JSON file per rule the backend and the client must agree on**, each carrying its cases and the rule's own statement in a `reason` field, and read by both suites. It sits outside both because a client test reaching into the backend's folders would invert the dependency the whole tree is arranged to avoid.
+`src/fixtures/cross-tier/` is a different thing with a similar name: **one JSON file per rule the backend and the client must agree on**, each carrying its cases and the rule's own statement in a `reason` field, and read by both suites. Its `example-models/` folder is the one generated part: `ShippedExampleModelsTests` writes every shipped example there as the stream a canvas receives, and the client's emitter guard mounts every canvas on it. It sits outside both because a client test reaching into the backend's folders would invert the dependency the whole tree is arranged to avoid.
 
 Showcase documents live in `src/examples/`, not in a module's `Fixtures/`. The two look alike and are not: one is read by tests, the other is opened by a person.
 

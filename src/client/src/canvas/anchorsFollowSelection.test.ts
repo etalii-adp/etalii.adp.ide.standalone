@@ -39,8 +39,8 @@ describe("anchors follow their element's selection", () => {
 
   /** The declaration block of the first rule whose selector list contains `selector`. */
   function blockFor(selector: string): string {
-    // Selectors are matched whole, comma- or brace-delimited, so `.canvas-anchor` cannot be
-    // satisfied by `.canvas-anchor-hit` sitting next to it.
+    // Selectors are matched whole, comma- or brace-delimited, so `.library-span-anchor` cannot be
+    // satisfied by `.library-span-anchor-hit` sitting next to it.
     const pattern = new RegExp(`(^|,|\\})\\s*[^{}]*(?<![\\w-])${selector.replace(".", "\\.")}(?![\\w-])[^{}]*\\{([^}]*)\\}`, "m");
     const match = pattern.exec(css);
     expect(match, `no rule in canvas.css names ${selector}`).not.toBeNull();
@@ -62,7 +62,8 @@ describe("anchors follow their element's selection", () => {
     return /var\(\s*(--[\w-]+)/.exec(HIGHLIGHT_STROKE)?.[1] ?? null;
   }
 
-  const ANCHORS = [".canvas-anchor", ".library-anchor", ".library-span-anchor"] as const;
+  // `.canvas-anchor` was a third until client-centralization task 12 found no canvas drew it.
+  const ANCHORS = [".library-anchor", ".library-span-anchor"] as const;
 
   it("is drawn in the same colour as an unselected box, not the highlight colour", () => {
     // THE DEFECT ITSELF. Every one of these was the selected colour at rest.

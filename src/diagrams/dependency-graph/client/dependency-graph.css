@@ -4,18 +4,6 @@
  * this module's register.ts); the canvas composes those classes alongside these.
  */
 
-/* ---- Adorners ---------------------------------------------------------------------- */
-
-/*
- * The shared span element draws resize strips on a selected element's edges. The timeline
- * resized a duration; a node has no extent to resize, so the strips are hidden here rather than
- * by adding a flag to the shared component - which would mean touching the timeline, and this
- * spec's reliability requirement says that module is to be left alone.
- */
-.dependency-graph-adorner {
-  display: none;
-}
-
 /* ---- Dependencies ------------------------------------------------------------------ */
 
 /*

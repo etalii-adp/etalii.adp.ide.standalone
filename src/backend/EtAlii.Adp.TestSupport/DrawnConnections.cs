@@ -283,7 +283,7 @@ public static class DrawnConnections
     /// Every diagram the module opens under <paramref name="workspace"/>: each registration, and each body
     /// with no registration beside it that routes on its own.
     /// </summary>
-    private static List<(string Example, DiagramRouted Routed, IDiagramSessionFactory Factory)> DiagramsIn(
+    public static List<(string Example, DiagramRouted Routed, IDiagramSessionFactory Factory)> DiagramsIn(
         string workspace,
         DiagramFileRouter router,
         IReadOnlyList<IDiagramSessionFactory> factories)
@@ -331,7 +331,8 @@ public static class DrawnConnections
         throw new DirectoryNotFoundException($"No src/examples/diagrams folder above {AppContext.BaseDirectory}.");
     }
 
-    private static void CopyTree(string from, string to)
+    /// <summary>Copies every file under <paramref name="from"/> to the same place under <paramref name="to"/>.</summary>
+    public static void CopyTree(string from, string to)
     {
         foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
         {
