@@ -23,6 +23,7 @@ It is the long companion to [technology-trends](../technology-trends/readme.md) 
 | Time unit | Decades, named in the document's `unit:` key |
 | Trends | 42, from the year -3500 to 2050, placed so that a trend shares a row only where its label clears the trend before it, with an empty row between any two rows of trends |
 | Influences | 55, each attached to the phase of each trend in which it acted |
+| Anchors | Placed by `spread-anchors.py` in the examples folder: each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: ancient and early modern innovations show all four phases, recent ones such as renewables and artificial intelligence fewer |
 | Descriptions | On some trends and some influences, kept in the document and never drawn |
 
