@@ -38,6 +38,16 @@
   --color-loop-reinforcing: #0369a1; /* the causal-loop notation's own semantic pair, and the only */
   --color-loop-balancing: #c2410c;   /* pair here that means something rather than ranks something. Blue and orange are the convention; the hue is kept across themes and the lightness moved, because the original #4daafc and #d18616 read at 2.48:1 and 2.94:1 on white */
   --color-warning-bg: #fdf3d7; /* the pale ground a warning banner sits on, mirroring --color-danger-bg. editors.css carried it privately as --warning-background, which the theme never defined */
+  /* HELM-CHARTS' PER-KIND HUES, moved into the theme by the user's ruling of 2026-09-27
+     (client-centralization 1.2): a chart, its values, its templates, a declared dependency and an
+     unpacked subchart are five kinds a helm reader tells apart at a glance, and no token here
+     means any of them. The module mixes each into a muted fill and uses it whole as the outline;
+     its schema, lock and CRD files are metadata and take --color-text-muted. */
+  --color-diagram-helm-chart: #3d7bd9;
+  --color-diagram-helm-values: #2ea064;
+  --color-diagram-helm-template: #c48220;
+  --color-diagram-helm-dependency: #8e54c4;
+  --color-diagram-helm-subchart: #3498a0;
 
   /* THE TYPE STACKS. Not colours, which is why a --color-* walk never saw them: four module
      stylesheets read --font-sans or --font-mono and NOTHING DEFINED EITHER. wardley-map's seven
@@ -95,6 +105,11 @@
     --color-loop-reinforcing: #4daafc; /* the original hues, which only ever read on a dark ground - */
     --color-loop-balancing: #fb923c;   /* this is the theme the private tokens were quietly written for */
     --color-warning-bg: #3f2d05; /* the same relationship to the surface as --color-danger-bg keeps */
+    --color-diagram-helm-chart: #7db4f0; /* the same five hues, lifted so they still read on the dark surface */
+    --color-diagram-helm-values: #6ecd96;
+    --color-diagram-helm-template: #e8b05a;
+    --color-diagram-helm-dependency: #b88ce4;
+    --color-diagram-helm-subchart: #6ecdd4;
     --color-selected: #a78bfa; /* the same violet, lifted so it still reads on the dark surface */
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
   }
@@ -504,6 +519,13 @@ button {
   overflow: hidden;
   min-width: 0;
   min-height: 0;
+}
+
+/* The two sides are sized as percentages of the whole, which leaves no room for the divider:
+   the second side gives it up, rather than running 4px past the edge and having its far margin
+   clipped - the property grid's right-hand rule and padding were the visible casualty. */
+.split-pane-second {
+  flex-shrink: 1;
 }
 
 .split-pane-divider {
@@ -1380,20 +1402,26 @@ button {
   color: var(--color-danger);
 }
 
-/* Property grid: the read-only selection view (context-service). */
+/* Property grid: the read-only selection view (context-service).
+   No box around the rows: they are ruled instead - a line under each row, and one between the
+   label and value columns - so the grid reads as a table rather than a stack of cards. Each
+   level (the selected element, then the diagram it sits in) opens with its name over a
+   stronger rule, and a group heading sits between rules of its own, one step quieter. */
 .property-grid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
   height: 100%;
   box-sizing: border-box;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1rem 1rem;
   overflow-y: auto;
   background: var(--color-surface);
 }
 
 .property-grid-level-title {
-  margin: 0 0 0.375rem;
+  margin: 0;
+  padding: 0 0 0.375rem;
+  border-bottom: 1px solid var(--color-text-muted);
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--color-text);
@@ -1404,32 +1432,38 @@ button {
   display: flex;
   flex-direction: column;
   margin: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  overflow: hidden;
 }
 
 .property-grid-row {
   display: grid;
   grid-template-columns: minmax(5rem, 1fr) 2fr;
-  gap: 0.5rem;
-  padding: 0.375rem 0.625rem;
   font-size: 0.8125rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-.property-grid-row:last-child {
+.property-grid-rows > .property-grid-row:last-child,
+.property-grid-rows > .property-grid-group:last-child > .property-grid-row:last-child {
   border-bottom: none;
 }
 
 .property-grid-row dt {
+  padding: 0.375rem 0.625rem 0.375rem 0;
+  border-right: 1px solid var(--color-border);
   color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .property-grid-row dd {
   margin: 0;
+  padding: 0.375rem 0 0.375rem 0.625rem;
   color: var(--color-text);
   overflow-wrap: anywhere;
+}
+
+/* An input brings its own padding and border, so the cell gives the same amount back: the value
+   then starts where a read-only value does, and lines up with its label. */
+.property-grid-row dd:has(> .property-grid-input) {
+  padding: calc(0.375rem - 0.15rem - 1px) 0 calc(0.375rem - 0.15rem - 1px) calc(0.625rem - 0.3rem - 1px);
 }
 
 /* An editable value. Deliberately quiet until focused: a panel of boxes reads as a form to
@@ -1490,12 +1524,19 @@ button {
 }
 
 .property-grid-group-title {
-  margin: 0.6rem 0 0.2rem;
+  margin: 0;
+  padding: 0.875rem 0 0.25rem;
+  border-bottom: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* Straight under a level title the title's own rule already separates it. */
+.property-grid-rows > .property-grid-group:first-child > .property-grid-group-title {
+  padding-top: 0.5rem;
 }
 
 /* Why a value cannot be changed here, under the value itself - an explanation rather than a
@@ -1510,6 +1551,11 @@ button {
 
 .property-grid-row-readonly dd .property-grid-value {
   color: var(--color-text-muted);
+}
+
+/* One line of a read-only value that is a list, such as a trend phase's influences. */
+.property-grid-value-line {
+  display: block;
 }
 
 .property-grid-error {

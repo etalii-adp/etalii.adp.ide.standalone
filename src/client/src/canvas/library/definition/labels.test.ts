@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DiagramModelElement } from "../api/diagramModel";
 import type { BindingSource } from "./binding";
 import type { BuiltInShape, LabelDeclaration } from "./diagramDefinition";
-import { layoutLabels } from "./labels";
+import { labelKey, layoutLabels } from "./labels";
 import { LABEL_FONT_SIZE, widthOf } from "../../label/textMetrics";
 import { textRegionOf } from "../shapes/outline";
 
@@ -248,6 +248,25 @@ describe("labels — the row-with-columns case the rdf family needs", () => {
       ["1..1", "sh:name"],
       ["0..1", "sh:age"],
     ]);
+  });
+
+  it("gives a row's line and each of its columns a different key", () => {
+    // SHACL's constraint row is a path, a summary and a cardinality drawn from one declaration
+    // and one line index. Keyed by those two alone, the three cells shared a key ("3-0" on the
+    // shacl canvas) and React warned that it could duplicate or drop them on update.
+    const declaration: LabelDeclaration = {
+      text: { path: "payload.rows", each: { path: "path" } },
+      stack: { lineHeight: 16 },
+      columns: [
+        { text: { path: "summary" }, insetX: 110 },
+        { text: { path: "cardinality" }, insetX: 8, align: "end" },
+      ],
+    };
+    const rows = [{ path: "sh:name", summary: "xsd:string", cardinality: "1..1" }, { path: "sh:age", summary: "xsd:int", cardinality: "0..1" }];
+    const keys = layoutLabels([declaration], source({ rows }), bounds).map(labelKey);
+
+    expect(keys).toHaveLength(6);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 
   it("never marks a column editable, whatever the declaration says", () => {

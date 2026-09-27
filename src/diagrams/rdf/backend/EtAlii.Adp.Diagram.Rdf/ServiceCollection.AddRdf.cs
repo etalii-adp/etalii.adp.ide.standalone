@@ -94,7 +94,6 @@ public static class ServiceCollectionAddRdfExtension
             OwlOrigin,
             provider.GetRequiredService<IRdfDocumentStore>(),
             provider.GetRequiredService<OwlElementMapper>(),
-            provider.GetRequiredService<RdfElementMapper>(),
             provider.GetRequiredService<IHistoryStackStore>()));
         services.AddSingleton<IDiagramDocumentFactory>(_ => new OwlDocumentFactory(OwlOrigin));
         services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
