@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
@@ -739,69 +740,13 @@ public sealed class PipelineParser
         Entry(mapping, key) is YamlScalarNode { Value: { } value } ? value : "";
 
     /// <summary>
-    /// The lines a node occupies, as a range into the document.
+    /// The lines a node occupies, as a range into the document: the shared rule
+    /// (backend-centralization R7, <see cref="YamlNodeRange"/>), read through this module's own line
+    /// type until it reads through <see cref="LineDocument"/>.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// YamlDotNet counts lines from one, and leaves a block collection's own end mark empty - so a
-    /// stage read from its own mark alone would span one line, and a rename would be the only edit
-    /// that ever worked. The end therefore comes from the furthest end mark among the node's
-    /// descendants, which for a block collection is the last scalar it contains.
-    /// </para>
-    /// <para>
-    /// That mark points at where scanning stopped, which for a block scalar is the start of the
-    /// next line - so a column-one mark is pulled back one, and then back past any blank or comment
-    /// lines it swept up. Without that a stage's range would take in the comment introducing the
-    /// stage after it, and a splice would eat it.
-    /// </para>
-    /// </remarks>
     private PipelineLineRange Range(YamlNode node)
     {
-        var last = _document.Lines.Count - 1;
-        var extent = EndMark(node);
-        // YamlDotNet counts in long; a document with more lines than an int holds is not a thing.
-        var start = Math.Clamp((int)node.Start.Line - 1, 0, last);
-        var end = Math.Clamp((int)extent.Line - 1, start, last);
-        if (extent.Column == 1 && end > start)
-        {
-            end--;
-        }
-
-        while (end > start && (_document.Lines[end].IsBlank || _document.Lines[end].IsComment))
-        {
-            end--;
-        }
-
-        return new PipelineLineRange(start, end);
+        var range = YamlNodeRange.Of(node, _document.Lines, line => line.Text);
+        return new PipelineLineRange(range.Start, range.End);
     }
-
-    /// <summary>
-    /// The furthest end mark in a node's subtree.
-    /// </summary>
-    /// <remarks>
-    /// An alias resolves to the node it points at, which YAML requires to have been declared
-    /// earlier in the file - so following one can only ever look backwards, and never stretches a
-    /// range past where the element actually ends.
-    /// </remarks>
-    private static Mark EndMark(YamlNode node)
-    {
-        var end = node.End;
-        foreach (var child in Descend(node))
-        {
-            var childEnd = EndMark(child);
-            if (childEnd.Line > end.Line)
-            {
-                end = childEnd;
-            }
-        }
-
-        return end;
-    }
-
-    private static IEnumerable<YamlNode> Descend(YamlNode node) => node switch
-    {
-        YamlMappingNode mapping => mapping.Children.Keys.Concat(mapping.Children.Values),
-        YamlSequenceNode sequence => sequence.Children,
-        _ => [],
-    };
 }
