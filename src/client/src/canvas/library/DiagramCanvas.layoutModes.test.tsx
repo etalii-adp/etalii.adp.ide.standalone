@@ -47,7 +47,7 @@ const definition: DiagramDefinition = {
     {
       id: "link",
       route: "cubic-bezier",
-      endpoints: { source: { elementTypes: ["banner"] }, target: { elementTypes: ["banner"] } },
+      endpoints: { source: { elementTypes: ["banner"] }, target: { elementTypes: ["banner"] }, allowSelf: false },
     },
   ],
   layout: {
