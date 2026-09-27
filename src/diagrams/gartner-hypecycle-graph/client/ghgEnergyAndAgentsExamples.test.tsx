@@ -7,7 +7,7 @@ import { GHG_DEFINITION } from "./GhgCanvas";
 import { exampleModel, isHidden, readExample } from "./ghgExample";
 
 /**
- * The energy-breakthroughs and llms-and-agents examples, as this definition reads and draws them: every
+ * The energy-breakthroughs, llms-and-agents and coal-technologies examples, as this definition reads and draws them: every
  * trend and every influence each readme counts reaches the canvas, and none of the influences is hidden
  * by a phase count.
  */
@@ -27,6 +27,7 @@ afterEach(() => restore?.());
 describe.each([
   { name: "energy-breakthroughs", trends: 33, influences: 46 },
   { name: "llms-and-agents", trends: 35, influences: 56 },
+  { name: "coal-technologies", trends: 34, influences: 45 },
 ])("the $name example, as this definition reads it", ({ name, trends, influences }) => {
   it(`is read in full: ${trends} trends and ${influences} influences, none of them hidden`, () => {
     const example = readExample(name);
