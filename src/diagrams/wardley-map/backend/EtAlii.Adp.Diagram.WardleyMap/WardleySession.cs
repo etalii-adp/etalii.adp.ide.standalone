@@ -94,7 +94,6 @@ public sealed class WardleySession : IDiagramSession
     /// </remarks>
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        var before = _delivered.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         _viewport = viewport;
 
         IReadOnlyList<DiagramElement> after;
@@ -110,23 +109,10 @@ public sealed class WardleySession : IDiagramSession
             return [];
         }
 
+        // The shared diff against what this connection holds (backend-centralization R4.1):
+        // what left is removed first, then what appeared or changed is added (R4.5).
+        var deltas = DiagramDiff.Between(_delivered, after);
         _delivered = after;
-
-        // Add for what appeared, then Remove for what left. That order is the one the reference
-        // implementations use; the requirements anticipated the opposite and the code wins.
-        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
-        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
-        if (departed.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(departed));
-        }
 
         return deltas;
     }
@@ -204,7 +190,7 @@ public sealed class WardleySession : IDiagramSession
         try
         {
             var current = Visible();
-            var deltas = _mapper.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)
