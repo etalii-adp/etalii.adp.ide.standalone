@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/ghg-triggers-and-notes/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-27T13:09:30.142Z",
       "trigger": "initial",
+      "approvalId": "approval_1790514568672_m73hwl838",
+      "approvalTitle": "ghg-triggers-and-notes: requirements (triggers, notes, examples)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-27T13:12:52.727Z",
+      "trigger": "approved",
       "approvalId": "approval_1790514568672_m73hwl838",
       "approvalTitle": "ghg-triggers-and-notes: requirements (triggers, notes, examples)"
     }

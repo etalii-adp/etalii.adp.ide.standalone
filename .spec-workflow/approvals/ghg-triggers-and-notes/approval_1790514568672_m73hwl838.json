@@ -3,8 +3,10 @@
   "title": "ghg-triggers-and-notes: requirements (triggers, notes, examples)",
   "filePath": ".spec-workflow/specs/ghg-triggers-and-notes/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-27T13:09:28.672Z",
   "category": "spec",
-  "categoryName": "ghg-triggers-and-notes"
+  "categoryName": "ghg-triggers-and-notes",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-27T13:12:52.737Z"
 }
