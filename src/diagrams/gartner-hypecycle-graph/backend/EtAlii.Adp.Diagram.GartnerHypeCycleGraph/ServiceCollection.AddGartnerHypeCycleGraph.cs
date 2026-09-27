@@ -46,13 +46,16 @@ public static class ServiceCollectionAddGartnerHypeCycleGraphExtension
         // The commands, one handler each: the whole editable surface, and nothing writes the file
         // except through them. Every one's undo is the shared restore command, registered once.
         services.AddSingleton<ICommandHandler<AddGhgTrendCommand>, AddGhgTrendCommandHandler>();
-        services.AddSingleton<ICommandHandler<RemoveGhgTrendCommand>, RemoveGhgTrendCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddGhgTriggerCommand>, AddGhgTriggerCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddGhgNoteCommand>, AddGhgNoteCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetGhgNoteSizeCommand>, SetGhgNoteSizeCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveGhgElementCommand>, RemoveGhgElementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgPlacementCommand>, SetGhgPlacementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgSpanCommand>, SetGhgSpanCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgBoundaryCommand>, SetGhgBoundaryCommandHandler>();
         services.AddSingleton<ICommandHandler<ClearGhgBoundariesCommand>, ClearGhgBoundariesCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgPhasesCommand>, SetGhgPhasesCommandHandler>();
-        services.AddSingleton<ICommandHandler<RenameGhgTrendCommand>, RenameGhgTrendCommandHandler>();
+        services.AddSingleton<ICommandHandler<RenameGhgElementCommand>, RenameGhgElementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgTagsCommand>, SetGhgTagsCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgDescriptionCommand>, SetGhgDescriptionCommandHandler>();
         services.AddSingleton<ICommandHandler<AddGhgInfluenceCommand>, AddGhgInfluenceCommandHandler>();

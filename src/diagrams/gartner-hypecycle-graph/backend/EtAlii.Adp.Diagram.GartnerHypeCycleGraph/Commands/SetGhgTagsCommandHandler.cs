@@ -2,7 +2,7 @@ using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
-/// <summary>Rewrites a trend's tags as one flow sequence line.</summary>
+/// <summary>Rewrites a trend's or trigger's tags as one flow sequence line.</summary>
 public sealed class SetGhgTagsCommandHandler(IGhgDocumentStore documents) : ICommandHandler<SetGhgTagsCommand>
 {
     /// <inheritdoc />
@@ -12,8 +12,15 @@ public sealed class SetGhgTagsCommandHandler(IGhgDocumentStore documents) : ICom
         cancellationToken.ThrowIfCancellationRequested();
 
         return GhgEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            GhgEdits.TrendOf(model, command.TrendId) is { } trend
+        {
+            if (GhgEdits.TriggerOf(model, command.TrendId) is { } trigger)
+            {
+                return GhgWriter.SetTags(document, trigger, command.Parsed);
+            }
+
+            return GhgEdits.TrendOf(model, command.TrendId) is { } trend
                 ? GhgWriter.SetTags(document, trend, command.Parsed)
-                : GhgEdits.Gone());
+                : GhgEdits.Gone();
+        });
     }
 }

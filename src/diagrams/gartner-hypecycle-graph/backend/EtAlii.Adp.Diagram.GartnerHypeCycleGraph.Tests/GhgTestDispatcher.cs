@@ -8,13 +8,16 @@ internal sealed class GhgTestDispatcher(IGhgDocumentStore documents) : ICommandD
     public Task<CommandResult> DispatchAsync(ICommand command, CancellationToken cancellationToken = default) => command switch
     {
         AddGhgTrendCommand c => new AddGhgTrendCommandHandler(documents).ExecuteAsync(c, cancellationToken),
-        RemoveGhgTrendCommand c => new RemoveGhgTrendCommandHandler(documents).ExecuteAsync(c, cancellationToken),
+        AddGhgTriggerCommand c => new AddGhgTriggerCommandHandler(documents).ExecuteAsync(c, cancellationToken),
+        AddGhgNoteCommand c => new AddGhgNoteCommandHandler(documents).ExecuteAsync(c, cancellationToken),
+        SetGhgNoteSizeCommand c => new SetGhgNoteSizeCommandHandler(documents).ExecuteAsync(c, cancellationToken),
+        RemoveGhgElementCommand c => new RemoveGhgElementCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgPlacementCommand c => new SetGhgPlacementCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgSpanCommand c => new SetGhgSpanCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgBoundaryCommand c => new SetGhgBoundaryCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         ClearGhgBoundariesCommand c => new ClearGhgBoundariesCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgPhasesCommand c => new SetGhgPhasesCommandHandler(documents).ExecuteAsync(c, cancellationToken),
-        RenameGhgTrendCommand c => new RenameGhgTrendCommandHandler(documents).ExecuteAsync(c, cancellationToken),
+        RenameGhgElementCommand c => new RenameGhgElementCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgTagsCommand c => new SetGhgTagsCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgDescriptionCommand c => new SetGhgDescriptionCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         AddGhgInfluenceCommand c => new AddGhgInfluenceCommandHandler(documents).ExecuteAsync(c, cancellationToken),

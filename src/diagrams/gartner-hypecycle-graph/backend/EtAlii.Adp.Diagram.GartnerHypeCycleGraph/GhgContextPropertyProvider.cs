@@ -40,6 +40,9 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 public sealed class GhgContextPropertyProvider : IContextPropertyProvider
 {
     public const string NameProperty = "ghg.name";
+    public const string DateProperty = "ghg.date";
+    public const string TextProperty = "ghg.text";
+    public const string SizeProperty = "ghg.size";
     public const string StartProperty = "ghg.start";
     public const string StopProperty = "ghg.stop";
     public const string PhasesProperty = "ghg.phases";
@@ -122,6 +125,28 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
             return Rows(rows);
         }
 
+        // A trigger's rows are a trend's that a moment has: no stop, no phases.
+        if (GhgEdits.TriggerOf(model, target.ElementId) is { } trigger)
+        {
+            return Rows(
+            [
+                new(NameProperty, "Name", trigger.Name, ReadOnlyReason: readOnly, Group: IdentityGroup),
+                new(DescriptionProperty, "Description", trigger.Description, ContextPropertyEditor.Text, readOnly, IdentityGroup),
+                new(TagsProperty, "Tags", string.Join(", ", trigger.Tags), ContextPropertyEditor.Tags, readOnly, IdentityGroup, TagsOf(model)),
+                new(DateProperty, "Date", Month(trigger.Date), ReadOnlyReason: readOnly, Group: TimeGroup),
+            ]);
+        }
+
+        // A note's text, and the size row its resize reaches the document through.
+        if (GhgEdits.NoteOf(model, target.ElementId) is { } note)
+        {
+            return Rows(
+            [
+                new(TextProperty, "Text", note.Text, ContextPropertyEditor.Text, readOnly, IdentityGroup),
+                new(SizeProperty, "Size", note.Width is { } width && note.Height is { } height ? SetGhgNoteSizeCommand.Format(width, height) : "", ReadOnlyReason: readOnly, Group: IdentityGroup),
+            ]);
+        }
+
         if (GhgEdits.InfluenceOf(model, target.ElementId) is { } influence)
         {
             const string shown = "Where it is attached; drag the end on the canvas to move it.";
@@ -157,6 +182,8 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
 
         var model = entry.Model;
         var isTrend = GhgEdits.TrendOf(model, id) is not null;
+        var isTrigger = GhgEdits.TriggerOf(model, id) is not null;
+        var isNote = GhgEdits.NoteOf(model, id) is not null;
         var isInfluence = GhgEdits.InfluenceOf(model, id) is not null;
         var boundary = IndexIn(BoundaryProperties, propertyId);
 
@@ -183,11 +210,14 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
             default:
                 command = propertyId switch
                 {
-                    NameProperty when isTrend => new RenameGhgTrendCommand(body, id, value),
+                    NameProperty when isTrend || isTrigger => new RenameGhgElementCommand(body, id, value),
+                    TextProperty when isNote => new RenameGhgElementCommand(body, id, value),
+                    SizeProperty when isNote => new SetGhgNoteSizeCommand(body, id, value),
                     StartProperty when isTrend => new SetGhgSpanCommand(body, id, value, null),
                     StopProperty when isTrend => new SetGhgSpanCommand(body, id, null, value),
-                    TagsProperty when isTrend => new SetGhgTagsCommand(body, id, value),
-                    DescriptionProperty when isTrend || isInfluence => new SetGhgDescriptionCommand(body, id, value),
+                    DateProperty when isTrigger => new SetGhgSpanCommand(body, id, value, null),
+                    TagsProperty when isTrend || isTrigger => new SetGhgTagsCommand(body, id, value),
+                    DescriptionProperty when isTrend || isTrigger || isInfluence => new SetGhgDescriptionCommand(body, id, value),
                     _ when boundary >= 0 && isTrend => new SetGhgBoundaryCommand(body, id, boundary, value),
                     _ => null,
                 };
@@ -237,18 +267,23 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
     /// <summary>One entry a line, or <see cref="NoInfluences"/>.</summary>
     private static string List(IReadOnlyList<string> entries) => entries.Count == 0 ? NoInfluences : string.Join("\n", entries);
 
-    /// <summary>An end as the grid shows it: "Steam engine · Plateau".</summary>
-    private static string Describe(GhgModel model, string trendId, GhgEnd end)
+    /// <summary>An end as the grid shows it: "Steam engine · Plateau", or a trigger's name alone.</summary>
+    private static string Describe(GhgModel model, string id, GhgEnd end)
     {
-        var trend = GhgEdits.TrendOf(model, trendId);
-        var name = trend is { Name.Length: > 0 } ? trend.Name : trendId;
+        if (GhgEdits.TrendOf(model, id) is null && GhgEdits.TriggerOf(model, id) is { } trigger)
+        {
+            return trigger.Name.Length > 0 ? trigger.Name : id;
+        }
+
+        var trend = GhgEdits.TrendOf(model, id);
+        var name = trend is { Name.Length: > 0 } ? trend.Name : id;
         var phase = end.PhaseIndex >= 0 ? GhgPhases.Titles[end.PhaseIndex] : end.Phase;
         return $"{name} · {phase}";
     }
 
     /// <summary>Every tag the graph uses, once each, in order of first use: what a Tags row looks the typed text up among.</summary>
     private static IReadOnlyList<string> TagsOf(GhgModel model) =>
-        [.. model.Trends.SelectMany(trend => trend.Tags).Distinct(StringComparer.Ordinal)];
+        [.. model.Trends.SelectMany(trend => trend.Tags).Concat(model.Triggers.SelectMany(trigger => trigger.Tags)).Distinct(StringComparer.Ordinal)];
 
     private static int IndexIn(IReadOnlyList<string> values, string value)
     {

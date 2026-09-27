@@ -3,10 +3,11 @@ using EtAlii.Adp.History;
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>
-/// Changes a trend's start, stop or both: a resize from the canvas, or a date typed in the grid.
+/// Changes a trend's start, stop or both: a resize from the canvas, or a date typed in the grid - or
+/// a trigger's one date, which is its <paramref name="Start"/>.
 /// </summary>
 /// <param name="BodyPath">The document.</param>
-/// <param name="TrendId">The trend.</param>
+/// <param name="TrendId">The trend, or the trigger.</param>
 /// <param name="Start">The new start as <c>YYYY-MM</c>, or null to keep it.</param>
 /// <param name="Stop">The new stop as <c>YYYY-MM</c>, or null to keep it.</param>
 /// <remarks>

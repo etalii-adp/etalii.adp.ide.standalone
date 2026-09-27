@@ -27,17 +27,19 @@ public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) :
                 return GhgEdit.Refused(refusal);
             }
 
-            if (model.Trends.Any(trend => trend.Id == minted.InfluenceId) ||
-                model.Influences.Any(influence => influence.Id == minted.InfluenceId))
+            if (GhgEdits.IdTaken(model, minted.InfluenceId))
             {
                 return GhgEdit.Refused("That id is already used in this graph.");
             }
 
-            var from = GhgEdits.TrendOf(model, minted.FromId)!;
+            // A trigger has no phases, so an influence leaving one states no end at all.
+            var fromEnd = GhgEdits.TrendOf(model, minted.FromId) is { } from
+                ? minted.FromEnd ?? new GhgEnd(GhgPhases.Names[from.VisiblePhases - 1], GhgEnd.Bottom, 0.5)
+                : GhgEnd.None;
             var influence = new GhgInfluence(
                 minted.InfluenceId,
                 minted.FromId,
-                minted.FromEnd ?? new GhgEnd(GhgPhases.Names[from.VisiblePhases - 1], GhgEnd.Bottom, 0.5),
+                fromEnd,
                 minted.ToId,
                 minted.ToEnd ?? new GhgEnd(GhgPhases.Names[0], GhgEnd.Top, 0.5),
                 Description: "",
@@ -49,14 +51,19 @@ public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) :
 
     /// <summary>
     /// Why an influence from <paramref name="from"/> to <paramref name="to"/> may not be drawn, or null
-    /// when it may. The same two checks the canvas's relation type declares, so a request the canvas
-    /// would not offer is refused here too.
+    /// when it may. The same checks the canvas's relation type declares - a trend or trigger as the
+    /// source, only a trend as the target - so a request the canvas would not offer is refused here too.
     /// </summary>
     public static string? RefusalFor(GhgModel model, string from, string to)
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        if (GhgEdits.TrendOf(model, from) is null || GhgEdits.TrendOf(model, to) is null)
+        if (GhgEdits.TriggerOf(model, to) is not null && GhgEdits.TrendOf(model, to) is null)
+        {
+            return "An influence cannot end at a trigger.";
+        }
+
+        if ((GhgEdits.TrendOf(model, from) is null && GhgEdits.TriggerOf(model, from) is null) || GhgEdits.TrendOf(model, to) is null)
         {
             return "An influence is drawn from one trend to another.";
         }

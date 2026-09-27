@@ -2,7 +2,7 @@ using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
-/// <summary>Changes a trend's span, scaling its dragged boundaries with it.</summary>
+/// <summary>Changes a trend's span, scaling its dragged boundaries with it, or a trigger's date.</summary>
 public sealed class SetGhgSpanCommandHandler(IGhgDocumentStore documents) : ICommandHandler<SetGhgSpanCommand>
 {
     /// <inheritdoc />
@@ -13,6 +13,13 @@ public sealed class SetGhgSpanCommandHandler(IGhgDocumentStore documents) : ICom
 
         return GhgEdits.Run(documents, command.BodyPath, command, (document, model) =>
         {
+            if (GhgEdits.TriggerOf(model, command.TrendId) is { } trigger)
+            {
+                return GhgScale.ParseMonth(command.Start ?? command.Stop) is { } date
+                    ? GhgWriter.SetPlacement(document, trigger, date, trigger.Row)
+                    : GhgEdit.Refused($"'{command.Start ?? command.Stop}' is not a date; write it as YYYY-MM, such as 1947-12.");
+            }
+
             if (GhgEdits.TrendOf(model, command.TrendId) is not { } trend)
             {
                 return GhgEdits.Gone();

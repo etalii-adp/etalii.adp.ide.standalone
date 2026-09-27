@@ -60,7 +60,7 @@ public class GhgTriggersAndNotesTests
 
         var after = document.Lines.Select(line => line.Text).ToList();
         Assert.Equal(before.Count, after.Count);
-        Assert.Single(before.Zip(after).Where(pair => pair.First != pair.Second));
+        Assert.Single(before.Zip(after), pair => pair.First != pair.Second);
         Assert.DoesNotContain("triggers:", document.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("notes:", document.Text, StringComparison.Ordinal);
     }
