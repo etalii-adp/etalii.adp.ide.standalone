@@ -226,7 +226,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         _editorResolver.Resolve(fullPath) is EditorRouted routed
             ? routed.Definition.Id
             : throw new RpcException(new Status(
-                StatusCode.FailedPrecondition,
+                PermanentRefusal.CannotOpen,
                 $"No editor can open '{System.IO.Path.GetFileName(fullPath)}': rival editors claim it and none is the default."));
 
     public override async Task<SaveTextResponse> SaveText(SaveTextRequest request, ServerCallContext context)
