@@ -189,7 +189,7 @@ The hype cycle graph is ADP's first diagram for (constructive) technology assess
 
 #### Acceptance Criteria
 
-1. WHEN the work completes THEN each of the six shipped examples under `src/examples/diagrams/gartner-hypecycle-graph/` SHALL contain real, historically dated triggers (inventions, political moments, natural disasters and other moments) with influences to the trends they set off.
+1. WHEN the work completes THEN each of the nine shipped examples under `src/examples/diagrams/gartner-hypecycle-graph/`, the six at `91d8de03` and the three PR #92 added (electric vehicles, internet evolution and warfare in Ukraine), SHALL contain real, historically dated triggers (inventions, political moments, natural disasters and other moments) with influences to the trends they set off.
 2. WHEN an existing trend is logically a moment rather than a span, such as a scientific breakthrough or a single event, THEN it SHALL be rewritten as a trigger, keeping its influences, with an outgoing influence turned into one from the trigger and an incoming one either dropped or noted in the readme, since a trigger cannot be influenced.
 3. WHEN an example is changed THEN its layout SHALL be revised so that it still reads well: related elements near one another, no trigger label overlapping a trend or another label, and no row left needlessly empty; checked in a real browser in true-time and in compact mode.
 4. WHEN an example is changed THEN the validator SHALL report nothing for it, its tests SHALL be updated to the new counts, and its readme SHALL say which trends became triggers and that the dates are illustrative, not a historical claim.
