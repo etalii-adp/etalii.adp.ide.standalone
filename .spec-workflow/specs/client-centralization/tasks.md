@@ -76,7 +76,7 @@ One worktree for the whole specification, one Developer owning it until every ta
 
 ## Group 3 — The seams, and the last sweep
 
-- [ ] 9. One row-rounding rule, shared with the backend
+- [x] 9. One row-rounding rule, shared with the backend
   - Files: `DiagramCanvas.tsx` (`snapToStep` exported), `DependencyGraphCanvas.tsx:166`, `TimelineCanvas.tsx:135`
   - The two byte-identical `nearestRow` copies go. **Architect 1 owns the rule** (the backend persists the row); this task cites its fixture, **including the halfway and negative-zero cases** five earlier copies got wrong, and tells Architect 1 that `snapToStep` is now module-facing.
   - _Requirements: 8.1, 8.2, 8.3_

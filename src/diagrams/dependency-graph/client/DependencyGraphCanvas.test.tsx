@@ -73,7 +73,7 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: () => [],
 }));
 
-const { DependencyGraphCanvas } = await import("./DependencyGraphCanvas");
+const { DependencyGraphCanvas, nearestRow } = await import("./DependencyGraphCanvas");
 
 const ROW_HEIGHT = 60;
 
@@ -857,5 +857,20 @@ describe("selection, as every canvas has it", () => {
       element: "aaa",
       connection: "ccc",
     });
+  });
+});
+
+describe("nearestRow - the library's rule, not a copy of it", () => {
+  // The halves and the zero side are where the five earlier copies went wrong: Math.round sends
+  // -0.5 to -0, a drop half a row above the origin landing on row 0 while the same drop below
+  // lands correctly. Architect 1's fixture pins the rule itself; this pins that the dependency graph uses it.
+  it("rounds halves away from zero on both sides of the origin", () => {
+    expect(nearestRow(30)).toBe(1);
+    expect(nearestRow(-30)).toBe(-1);
+    expect(nearestRow(-90)).toBe(-2);
+  });
+
+  it("never answers negative zero", () => {
+    expect(Object.is(nearestRow(-1), 0)).toBe(true);
   });
 });
