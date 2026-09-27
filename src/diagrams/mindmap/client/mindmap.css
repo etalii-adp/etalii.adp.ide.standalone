@@ -38,31 +38,23 @@
   cursor: pointer;
 }
 
-.mindmap-node rect {
+.mindmap-node-box {
   fill: var(--color-surface);
   stroke: var(--color-border);
   stroke-width: 1.5;
 }
 
-.mindmap-node text {
+.mindmap-node-label {
   fill: var(--color-text);
   font-size: 12px;
   user-select: none;
 }
 
-.mindmap-node-indicators {
-  fill: var(--color-text-muted);
-  font-size: 10px;
-}
-
-/* The node a drag is held over - the drop's outcome, shown before the button is released.
-   After the base rule: a later equal-specificity rule would swallow the highlight (found by
-   the bezier-connector manual pass). Selected is the library's own ring, not a rule here. */
-.mindmap-node-drop-target rect {
-  stroke: var(--color-primary);
-  stroke-width: 2.5;
-  stroke-dasharray: 6 3;
-}
+/* The corner glyphs carry `mindmap-node-label` too, and look exactly like the node's text.
+   A rule here said muted and 10px, but `.mindmap-node text` outranked it and it never applied -
+   measured in Chromium on 2026-09-26. Kept as rendered rather than as written, because
+   client-centralization permits no visible change this one is not; whether the glyphs should
+   finally look as that rule meant is a question for the user, not a side effect. */
 
 /* The node being dragged: the library carries it under the pointer, drawn lighter while it
    travels - the ghost and its dimmed original became one thing with the migration. */

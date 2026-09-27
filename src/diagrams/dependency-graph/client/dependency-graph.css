@@ -25,7 +25,7 @@
  * attachment names this module's own marker id, so it stays here; the marker's colour is the
  * shared `.canvas-arrowhead`.
  */
-.dependency-graph-relation path.dependency-graph-relation-line {
+.dependency-graph-relation .dependency-graph-relation-line {
   marker-end: url(#dependency-graph-arrowhead);
 }
 
