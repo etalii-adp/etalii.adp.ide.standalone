@@ -1,4 +1,3 @@
-using EtAlii.Adp.Authentication;
 using Microsoft.Extensions.Options;
 using Xunit;
 

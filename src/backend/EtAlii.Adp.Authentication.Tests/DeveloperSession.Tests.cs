@@ -1,5 +1,4 @@
 #if DEBUG
-using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Authentication.Wire;
 using Grpc.Core;
 using Grpc.Core.Testing;

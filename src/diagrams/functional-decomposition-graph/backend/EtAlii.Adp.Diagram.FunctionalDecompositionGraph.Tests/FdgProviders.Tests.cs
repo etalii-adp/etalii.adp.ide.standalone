@@ -142,14 +142,14 @@ public sealed class FdgProvidersTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotEqual(_original, File.ReadAllBytes(Body));
+        Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
 
         // Act: one undo, through the history the set used.
         var undone = await _historyStacks.Get(_folder).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public sealed class FdgProvidersTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(_original, File.ReadAllBytes(Body));
+        Assert.Equal(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
     }
 
     [Fact]

@@ -99,11 +99,11 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
         {
             var exported = await ExportAsync(services, folder, module, seen);
             var path = IoPath.Combine(target, file + ".json");
-            var existing = File.Exists(path) ? File.ReadAllText(path).ReplaceLineEndings("\n") : null;
+            var existing = File.Exists(path) ? (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).ReplaceLineEndings("\n") : null;
             if (existing != exported)
             {
                 Directory.CreateDirectory(target);
-                File.WriteAllText(path, exported.ReplaceLineEndings("\r\n"), new UTF8Encoding(false));
+                await File.WriteAllTextAsync(path, exported.ReplaceLineEndings("\r\n"), new UTF8Encoding(false), TestContext.Current.CancellationToken);
                 stale.Add(file);
             }
         }
