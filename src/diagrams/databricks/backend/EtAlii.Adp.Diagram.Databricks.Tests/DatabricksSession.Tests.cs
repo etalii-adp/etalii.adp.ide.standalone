@@ -233,10 +233,10 @@ public class DatabricksSessionTests : IDisposable
         Assert.Contains("task:publish", AddedBy(deltas));
         Assert.Contains("task:ingest", RemovedBy(deltas));
 
-        // Add before Remove, which is what this module's Diff emits - Requirement 4.3 guesses
-        // the opposite order and the code is what counts.
-        Assert.IsType<DiagramAddDelta>(deltas[0]);
-        Assert.IsType<DiagramRemoveDelta>(deltas[1]);
+        // Remove before Add - the shared diff's order (backend-centralization R4.5), where this
+        // used to pin the Add-first order this module's own Diff emitted.
+        Assert.IsType<DiagramRemoveDelta>(deltas[0]);
+        Assert.IsType<DiagramAddDelta>(deltas[1]);
     }
 
     [Fact]
