@@ -58,7 +58,7 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
     public CausalLoopDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
-    public string Save(string path, CausalLoopDocumentEntry entry)
+    public DocumentSaveResult Save(string path, CausalLoopDocumentEntry entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(entry);
@@ -75,14 +75,14 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
             // that could not read the body, then a save, and the .cld was gone. The file on disk is
             // the only copy left; leave it alone.
             _logger.Warning("Refusing to write {Path}: it could not be read ({Error})", path, entry.Error);
-            return $"This causal loop diagram could not be read, so it was not written. {entry.Error}";
+            return DocumentSaveResult.Failure($"This causal loop diagram could not be read, so it was not written. {entry.Error}");
         }
 
         // Re-parsed from the document being written, so the model and the bytes cannot disagree; the
         // lifecycle caches exactly this entry, whether or not the write lands.
         var parsed = CausalLoopParser.Parse(entry.Document);
         var result = _lifecycle.Save(path, entry with { Model = parsed.Model, Problems = parsed.Problems });
-        return result.Failed ? result.Error : "";
+        return result;
     }
 
     /// <inheritdoc />

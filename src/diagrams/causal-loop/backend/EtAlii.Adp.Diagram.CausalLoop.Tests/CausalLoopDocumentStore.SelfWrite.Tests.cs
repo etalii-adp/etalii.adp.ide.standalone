@@ -63,7 +63,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         var refused = 0;
         for (var i = 0; i < 2000; i++)
         {
-            if (store.Save(path, store.GetOrLoad(path)).Length > 0)
+            if (store.Save(path, store.GetOrLoad(path)).Failed)
             {
                 refused++;
             }

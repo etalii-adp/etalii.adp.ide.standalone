@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -370,7 +371,7 @@ public class CausalLoopSessionTests : IDisposable
 
         public CausalLoopDocumentEntry GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
 
-        public string Save(string path, CausalLoopDocumentEntry entry) => inner.Save(path, entry);
+        public DocumentSaveResult Save(string path, CausalLoopDocumentEntry entry) => inner.Save(path, entry);
 
         public void Forget(string path) => inner.Forget(path);
 

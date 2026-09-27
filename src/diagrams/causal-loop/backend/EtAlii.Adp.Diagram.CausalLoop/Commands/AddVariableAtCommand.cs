@@ -42,10 +42,10 @@ public sealed class AddVariableAtCommandHandler(ICausalLoopDocumentStore documen
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var saveError = documents.Save(command.BodyPath, entry);
-        if (saveError.Length > 0)
+        var saved = documents.Save(command.BodyPath, entry);
+        if (saved.Failed)
         {
-            return Task.FromResult(CommandResult.Failure(saveError));
+            return Task.FromResult(CommandResult.Failure(saved.Error));
         }
 
         RegistrationPosition? priorPosition;

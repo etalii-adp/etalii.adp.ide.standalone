@@ -27,8 +27,8 @@ public interface ICausalLoopDocumentStore : IReloadableDocumentStore
     /// edit and the save, and reported success for it; the argument is what makes that
     /// unwritable rather than merely discouraged.
     /// </param>
-    /// <returns>An error to report, or empty when it was written.</returns>
-    string Save(string path, CausalLoopDocumentEntry entry);
+    /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
+    DocumentSaveResult Save(string path, CausalLoopDocumentEntry entry);
 
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
