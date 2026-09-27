@@ -1,4 +1,3 @@
-using System.Text;
 using EtAlii.Adp.Documents;
 using Xunit;
 
