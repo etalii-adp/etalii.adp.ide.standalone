@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ghg-triggers-and-notes/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-27T13:22:41.117Z",
+      "trigger": "initial",
+      "approvalId": "approval_1790515360394_b9waz54jm",
+      "approvalTitle": "ghg-triggers-and-notes: design (document, commands, four library additions, examples)"
+    }
+  ]
+}
