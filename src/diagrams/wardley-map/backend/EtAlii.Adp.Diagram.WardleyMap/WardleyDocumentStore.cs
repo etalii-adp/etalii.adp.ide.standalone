@@ -64,7 +64,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
             .ToArray();
     }
 
-    public WardleyPublishResult Save(string path, WardleyDocument document)
+    public DocumentSaveResult Save(string path, WardleyDocument document)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(document);
@@ -80,7 +80,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
             // while the document on disk still held the old position. What WardleyMapFlowTests
             // caught intermittently was not a flaky test: a failed save answered as a successful
             // one. The identities and their sidecar are left as they were, as is the session.
-            return WardleyPublishResult.Failed(result.Error);
+            return result;
         }
 
         // The edit may have added or removed elements, so identities are re-reconciled against
@@ -91,7 +91,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         var warning = _sidecar.Write(path, reconciled);
 
         Changed?.Invoke(this, new WardleyDocumentChangedEventArgs(path));
-        return WardleyPublishResult.WithWarning(warning);
+        return warning.Length == 0 ? DocumentSaveResult.Ok : DocumentSaveResult.WithWarning(warning);
     }
 
     public void Touch(string path)

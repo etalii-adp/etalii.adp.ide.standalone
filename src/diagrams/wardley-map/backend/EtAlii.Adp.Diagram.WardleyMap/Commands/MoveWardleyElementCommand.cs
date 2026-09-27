@@ -88,7 +88,7 @@ public sealed class MoveWardleyElementCommandHandler : ICommandHandler<MoveWardl
         }
 
         var published = _documents.Save(command.BodyPath, document);
-        return Task.FromResult(published.Error.Length == 0
+        return Task.FromResult(!published.Failed
             ? CommandResult.Success( new RestoreWardleyLineCommand(command.BodyPath, line, before), published.Warning)
             : CommandResult.Failure(published.Error));
     }

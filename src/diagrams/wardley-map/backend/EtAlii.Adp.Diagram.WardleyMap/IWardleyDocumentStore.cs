@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
@@ -44,10 +46,13 @@ public interface IWardleyDocumentStore
     /// Writes the document back atomically and tells every session on it (Requirement 3.6).
     /// </summary>
     /// <returns>
-    /// <c>""</c> when the document reached the disk, and a sentence the user can read when it
-    /// did not. **A caller must surface it rather than drop it.** The edit survives in memory
-    /// either way, so a caller that ignores this answers the user with a save that never
-    /// happened - which is what this returned nothing at all in order to do.
+    /// A result whose <see cref="DocumentSaveResult.Error"/> is empty when the document reached the
+    /// disk and a sentence the user can read when it did not, and whose
+    /// <see cref="DocumentSaveResult.Warning"/> carries an identity sidecar that could not be written
+    /// beside a document that was. **A caller must surface it rather than drop it.** The edit
+    /// survives in memory either way, so a caller that ignores this answers the user with a save
+    /// that never happened - which is what this returned nothing at all in order to do. The shape was
+    /// this module's own <c>WardleyPublishResult</c> until backend-centralization R3.1 shared it.
     /// </returns>
     /// <remarks>
     /// <b>The document is a parameter rather than something this looked up, and that is the fix for
@@ -57,7 +62,7 @@ public interface IWardleyDocumentStore
     /// command's inverse on the undo stack for a change that never happened. Passing the document
     /// makes that ordering unrepresentable: what the caller edited is what gets written.
     /// </remarks>
-    WardleyPublishResult Save(string path, WardleyDocument document);
+    DocumentSaveResult Save(string path, WardleyDocument document);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.
