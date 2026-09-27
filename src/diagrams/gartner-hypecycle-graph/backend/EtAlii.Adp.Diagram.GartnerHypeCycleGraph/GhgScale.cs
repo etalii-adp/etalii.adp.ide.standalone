@@ -41,6 +41,10 @@ public static partial class GhgScale
     public static int MonthIndex(int year, int month) => (year * 12) + (month - 1);
 
     /// <summary>A <c>YYYY-MM</c> date as a month index, or null when it is not one.</summary>
+    /// <remarks>
+    /// A year before 1 is written as ISO 8601 writes it: signed and astronomical, so <c>0000</c> is
+    /// 1 BCE and <c>-3200</c> is 3201 BCE, with four to six digits after the sign.
+    /// </remarks>
     public static int? ParseMonth(string? text)
     {
         if (text is null)
@@ -59,11 +63,14 @@ public static partial class GhgScale
         return month is >= 1 and <= 12 ? MonthIndex(year, month) : null;
     }
 
-    /// <summary>A month index as the document writes it: <c>YYYY-MM</c>.</summary>
+    /// <summary>A month index as the document writes it: <c>YYYY-MM</c>, or <c>-YYYY-MM</c> before year 0.</summary>
     public static string FormatMonth(int monthIndex)
     {
-        var year = Math.DivRem(monthIndex, 12, out var month);
-        return string.Create(CultureInfo.InvariantCulture, $"{year:D4}-{month + 1:D2}");
+        // Floored, not truncated: month index -1 is December of year -1, not month 0 of year 0.
+        var year = (int)Math.Floor(monthIndex / 12.0);
+        var month = monthIndex - (year * 12);
+        var sign = year < 0 ? "-" : "";
+        return string.Create(CultureInfo.InvariantCulture, $"{sign}{Math.Abs(year):D4}-{month + 1:D2}");
     }
 
     /// <summary>The canvas x of the start of a month.</summary>
@@ -88,6 +95,6 @@ public static partial class GhgScale
     /// <summary>The row whose vertical middle is nearest <paramref name="y"/>.</summary>
     public static int RowAtMiddle(double y) => RowAtTop(y - (TrendHeight / 2));
 
-    [GeneratedRegex(@"^(\d{4})-(\d{2})$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^(-\d{4,6}|\d{4})-(\d{2})$", RegexOptions.CultureInvariant)]
     private static partial Regex MonthExpression();
 }
