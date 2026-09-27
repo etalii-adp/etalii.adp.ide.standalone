@@ -9,6 +9,12 @@ export interface CenteredBoxElementProps extends React.SVGProps<SVGGElement> {
   /** A short indicator line in the top-right corner - glyphs saying "has notes", "is folded". */
   indicators?: string;
   indicatorsClassName?: string;
+  /**
+   * The class the drawn box itself carries - where a module's stylesheet reaches its fill and
+   * outline, rather than by a descendant `rect` selector that would reach whatever else the group
+   * holds.
+   */
+  boxClassName?: string;
   /** Extra content drawn after the box and text. */
   children?: React.ReactNode;
 }
@@ -28,6 +34,7 @@ export function CenteredBoxElement({
   text,
   indicators,
   indicatorsClassName,
+  boxClassName,
   children,
   style,
   ...groupProps
@@ -36,7 +43,7 @@ export function CenteredBoxElement({
     <g transform={`translate(${x} ${y})`} {...groupProps}>
       {/* Painted here rather than on the group: an inherited stroke loses to the one this rect
           already states through its class (task 28). */}
-      <rect style={style} x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={rx} />
+      <rect className={boxClassName} style={style} x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={rx} />
       {/*
         NO TEXT NODE AT ALL when there is nothing to say. The empty-string placeholder dates
         from when every shape drew its own single label; a type that declares `labels` passes

@@ -92,11 +92,17 @@ function definitionOf(): DiagramDefinition {
         classNames: [
           { className: "mindmap-node", on: "element" },
           { className: "mindmap-node-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
+          // The box's own class, so the stylesheet reaches the box and nothing else the library
+          // draws in the node's group. `.mindmap-node rect` reached the library's selection ring
+          // too and painted an opaque box over the label (59f1ed3a; client-centralization
+          // Requirement 3.2).
+          { className: "mindmap-node-box" },
         ],
         labels: [
           {
             text: { path: "payload.text" },
             editable: true,
+            className: "mindmap-node-label",
           },
           {
             // The corner glyphs: notes, a link, a folded branch. Joined by the fold rather than
@@ -107,7 +113,7 @@ function definitionOf(): DiagramDefinition {
             offset: { x: 0, y: 12 },
             align: "end",
             insetX: 4,
-            className: "mindmap-node-indicators",
+            className: "mindmap-node-label mindmap-node-indicators",
           },
         ],
         // A branch leaves a node SIDEWAYS at mid-height, whatever the angle - the difference

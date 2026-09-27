@@ -142,7 +142,12 @@ const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       // On the ELEMENT rather than the shape: a boundary is its frame AND its label, and the
       // test that reads its text reads the whole thing. A card is the other way round, because
       // what a drag moves is the styled box's own group.
-      classNames: [{ className: "c4-boundary", on: "element" }],
+      classNames: [
+        { className: "c4-boundary", on: "element" },
+        // The dashed outline's own class, so the stylesheet reaches the frame and nothing else
+        // the library draws in the boundary's group (client-centralization Requirement 3.1).
+        { className: "c4-boundary-outline" },
+      ],
       labels: [{ text: { template: "{payload.name} [{payload.kind}]" }, placement: "above", className: "c4-boundary-label" }],
       anchors: { kind: "edge" },
       sizing: "model",

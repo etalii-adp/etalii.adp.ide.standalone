@@ -241,13 +241,13 @@
   font-size: 14px;
 }
 
-.wardley-annotation circle {
+.wardley-annotation-glyph {
   fill: var(--color-surface);
   stroke: var(--color-text);
   stroke-width: 1.5;
 }
 
-.wardley-annotation text {
+.wardley-annotation-label {
   fill: var(--color-text);
   font-family: var(--font-sans);
   font-size: 12px;

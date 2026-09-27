@@ -640,7 +640,9 @@ sequenceDiagram
 
 **A custom property must be defined, and must say both modes.** A `var(--x)` that resolves to nothing falls through to its fallback in BOTH themes, which reads as working until somebody switches theme. A module's own palette is declared on its canvas class and redeclared under the dark scheme; type stacks are exempt, because a font is the same in both.
 
-**The guards.** `themeTokens.test.ts` walks every custom property in the tree and requires each to resolve to a theme token or to one the same stylesheet declares, and a local palette that declares one mode fails.
+**A module styles its shapes by the classes it declares on them, never by element type.** A class declared `on: "shape"` lands on the drawn body itself - the box's `rect`, the frame's outline, the centred box's `rect` - and a mark's circle or rule carries its class suffixed `-glyph`, as its caption carries `-label`. `.mindmap-node rect` once matched the library's own selection ring in that group and painted an opaque box over the label; a selector naming a type reaches whatever the library draws there, today and later.
+
+**The guards.** `themeTokens.test.ts` walks every custom property in the tree and requires each to resolve to a theme token or to one the same stylesheet declares, and a local palette that declares one mode fails. `noModuleReachesLibraryShapes.test.ts` fails on any module stylesheet selector naming an SVG element type.
 
 ## Tests a module writes, and what a module must not do
 
@@ -654,7 +656,7 @@ sequenceDiagram
 
 **The canvas test harness** beside it, `canvasHarness.ts`, holds what every canvas test used to write for itself (client-centralization Requirement 10): `pointer` builds a pointer event jsdom can carry, `idsPushed` reads the ids a canvas pushed for a `LibrarySelectionHarness`, and `fakeContextConnection` is the one fake of the context connection, every member a `vi.fn()` - pass only the members a test drives, and mount it as `useContextConnection: () => connection` with `connection` built once. jsdom's missing pointer capture is stubbed in `test-setup.ts` for every test. A module's `renderCanvas` stays its own: its props differ per module.
 
-**The guards that walk module clients — seventeen of them, measured rather than recalled:**
+**The guards that walk module clients — eighteen of them, measured rather than recalled:**
 
 | Guard | What it forbids | The shared mechanism instead |
 | --- | --- | --- |
@@ -672,11 +674,12 @@ sequenceDiagram
 | `themeTokens.test.ts` | a custom property defined nowhere, or a palette declaring one mode | a theme token, or a local palette declaring both |
 | `fileUrlPaths.test.ts` | a hand-built file URL | the shared path helpers |
 | `noModuleSendsAKeystroke.test.ts` | a module sending the backend a keystroke, or building one to send | `backendKey` on the action's declaration |
+| `noModuleReachesLibraryShapes.test.ts` | a module stylesheet selecting an SVG element type, which reaches the shapes the library draws | a class the module declares on its own shape |
 | `noCanvasTestCopiesAHelper.test.ts` | a canvas test declaring its own pointer-capture stub, pointer-event factory, `pushedIds` adapter or context-connection fake | `test-setup.ts` and `canvasHarness.ts` |
 | `everyCanvasHasOneRefusalSurface.test.tsx` | a module's own refusal line or status, or one that replaces the library's | the library's frame around every canvas |
 | `diagramModuleClientApi.test.ts` | this document drifting from the module-facing surface — an undocumented name, a stale entry, a changed excerpt, a diagram naming nothing real | an entry here |
 
-**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; seventeen is what the tree holds now, with `client-centralization` task 6 adding `noModuleSendsAKeystroke.test.ts`, task 3 `everyCanvasHasOneRefusalSurface.test.tsx` and task 11 `noCanvasTestCopiesAHelper.test.ts`, so that figure is a timestamp rather than a count.
+**How that list was found, and what it misses.** A client test counts as walking module clients when it names the diagrams folder in a path literal AND reads the filesystem — `readdirSync`, `statSync` or `import.meta.glob`. The requirements named eight of these; eighteen is what the tree holds now, with `client-centralization` task 6 adding `noModuleSendsAKeystroke.test.ts`, task 3 `everyCanvasHasOneRefusalSurface.test.tsx`, task 4 `noModuleReachesLibraryShapes.test.ts` and task 11 `noCanvasTestCopiesAHelper.test.ts`, so that figure is a timestamp rather than a count.
 
 **The rule has two blind spots, and both have already mattered.** It does not find a test that walks ENTIRELY through a helper, because the rule reads the test file's own text: a test that delegates every filesystem read to an imported module names no folder and calls nothing the rule looks for. And it does not find a guard that walks something OTHER than module clients — `channelResolvesRatherThanRejects.test.tsx` drives every value-returning context-channel method over a rejecting transport and fails naming any it cannot classify, which constrains a module exactly as the seventeen above do, and appears in no table here. **So this table is the guards that walk MODULE CLIENTS, not every guard a module is subject to** — read it as the first list rather than the complete one.
 
