@@ -181,7 +181,7 @@ public sealed partial class DiagramService
             session.Changed -= OnChanged;
             if (registersViewport)
             {
-                _viewports.Remove(watchId, bodyPath);
+                _viewports.Remove(watchId, bodyPath, session);
             }
 
             _logger.Information("Closed {BodyPath} on watch {WatchId}", bodyPath, watchId);

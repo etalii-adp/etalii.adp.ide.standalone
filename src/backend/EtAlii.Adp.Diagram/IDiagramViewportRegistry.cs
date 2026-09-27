@@ -21,6 +21,11 @@ public interface IDiagramViewportRegistry
     /// </summary>
     IDiagramSession? Find(ShortGuid watchId, string bodyPath);
 
-    /// <summary>The stream is closing; drop its registration.</summary>
-    void Remove(ShortGuid watchId, string bodyPath);
+    /// <summary>
+    /// The stream is closing; drop its registration - and only its own. A second stream for the
+    /// same diagram on the same connection may have registered in between, as the client's
+    /// development remount opens one before the first has closed; removing by key alone would
+    /// take that one's registration with it, and every move would find no open stream.
+    /// </summary>
+    void Remove(ShortGuid watchId, string bodyPath, IDiagramSession session);
 }
