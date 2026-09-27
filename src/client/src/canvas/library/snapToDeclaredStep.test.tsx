@@ -1,3 +1,6 @@
+import { readFileSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { DiagramCanvas, snapToStep } from "./DiagramCanvas";
@@ -112,6 +115,38 @@ describe("snapToStep - the rule itself", () => {
     expect(snapToStep(37, -10)).toBe(37);
   });
 });
+
+/**
+ * The backend's golden fixture for the row rule (backend-centralization task 19), which its own
+ * suite reads too: a row canvas's preview and placement id name the row the backend persists.
+ * Compared with Object.is, so a -0 row fails rather than passing as 0.
+ */
+describe("snapToStep - against the backend's row-rounding fixture", () => {
+  const fixture = JSON.parse(readFileSync(join(sourceRoot(), "fixtures", "cross-tier", "row-rounding.json"), "utf8")) as {
+    cases: { y: number; rowHeight: number; row: number; why: string }[];
+  };
+
+  it("lands every case on the fixture's row", () => {
+    expect(fixture.cases.length).toBeGreaterThan(10);
+    for (const sample of fixture.cases) {
+      expect(Object.is(snapToStep(sample.y, sample.rowHeight) / sample.rowHeight, sample.row), `${sample.y} / ${sample.rowHeight}: ${sample.why}`).toBe(true);
+    }
+  });
+});
+
+/** The repository's `src`, found from this file: the folder holding both `diagrams/` and `.editorconfig`. */
+function sourceRoot(): string {
+  let directory = dirname(fileURLToPath(import.meta.url));
+  for (let depth = 0; depth < 12; depth++) {
+    const hasModules = statSync(join(directory, "diagrams"), { throwIfNoEntry: false })?.isDirectory() === true;
+    const hasStyleRules = statSync(join(directory, ".editorconfig"), { throwIfNoEntry: false })?.isFile() === true;
+    if (hasModules && hasStyleRules) {
+      return directory;
+    }
+    directory = dirname(directory);
+  }
+  throw new Error("The src folder was not found above this test file.");
+}
 
 describe("a drag lands on the declared step", () => {
   it("reports a snapped position on release", () => {
