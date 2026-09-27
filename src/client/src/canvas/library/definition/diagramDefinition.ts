@@ -1006,7 +1006,7 @@ export interface ToolboxItemDefinition {
 }
 
 /** The layout modes a definition may allow (Requirement 8.1). */
-export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph";
+export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph" | "row-packed";
 
 export interface LayoutDefinition {
   /**
@@ -1023,6 +1023,39 @@ export interface LayoutDefinition {
   dragUnderAutomaticLayout?: "repin-to-manual" | "reclaimed-displacement";
   /** The direction a `tree` mode grows in, where that mode is allowed. */
   treeDirection?: "left-to-right" | "right-to-left" | "top-down" | "bottom-up";
+  /**
+   * What the `row-packed` mode draws every element as: one `width` for all, packed along the
+   * rows they already sit on, each at least `gap` after the one before it on its row.
+   * Required where that mode is allowed.
+   */
+  rowPacked?: RowPackedDeclaration;
+  /**
+   * Parts of the definition replaced while a mode is active, merged shallowly over it - the
+   * way a mode says which gestures and chrome it switches off. `layout` itself is never
+   * overridden, so the modes and the toggle stay put while switching.
+   */
+  modeOverrides?: Partial<Record<LayoutMode, Partial<Omit<DiagramDefinition, "layout">>>>;
+  /**
+   * A two-state switch between the first mode and `on`, drawn as a toggle button directly
+   * below the filter box's legend. Declared, it replaces the switcher row.
+   */
+  toggle?: LayoutToggleDeclaration;
+}
+
+/** See {@link LayoutDefinition.rowPacked}. */
+export interface RowPackedDeclaration {
+  /** The width every element is drawn with. */
+  width: number;
+  /** The least space between two elements on one row. */
+  gap: number;
+}
+
+/** See {@link LayoutDefinition.toggle}. */
+export interface LayoutToggleDeclaration {
+  /** The button's caption. */
+  caption: string;
+  /** The mode the button's pressed state stands for; the first mode is its unpressed state. */
+  on: LayoutMode;
 }
 
 /** Whether pointer drags move elements at all, before per-type overrides (Requirement 5.2). */
