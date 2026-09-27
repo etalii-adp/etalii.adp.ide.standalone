@@ -48,24 +48,6 @@ interface Listed {
 /** Rules for classes the shipped examples do not draw at rest - live, and why none shows. */
 const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
   {
-    reason: "library capabilities added for the hype cycle graph (4e89ae93) - the segmented arrow banner, along-edge anchors, the bottom ruler and the filter - which no shipped canvas declares until that module lands",
-    classes: [
-      "library-anchor-hit",
-      "library-attachment-highlight",
-      "library-boundary-handle",
-      "library-canvas-with-bottom-ruler",
-      "library-edge-strip",
-      "library-filter",
-      "library-filter-error",
-      "library-filter-input",
-      "library-filter-input-invalid",
-      "library-ruler",
-      "library-ruler-tick",
-      "library-segment",
-      "library-segment-divider",
-    ],
-  },
-  {
     reason: "drawn only while a gesture is in progress - a drag, a connect, or an in-place label edit - and a mounted example is at rest",
     classes: [
       "c4-node-dragging",
@@ -80,11 +62,12 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
       "inline-label-editor-body",
       "inline-label-editor-error",
       "inline-label-editor-field",
+      "library-attachment-highlight",
     ],
   },
   {
     reason: "drawn only on a selected element or connection, and nothing is selected here",
-    classes: ["library-resize-handle", "library-adjust-handle", "library-span-anchor", "library-span-anchor-hit"],
+    classes: ["library-resize-handle", "library-adjust-handle", "library-span-anchor", "library-span-anchor-hit", "library-anchor-hit"],
   },
   {
     reason: "the library frame's refusal and status lines, shown only while a canvas opens, is refused or is unavailable - every example opens",
@@ -93,6 +76,10 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
   {
     reason: "a module's own message for a diagram with nothing to draw, and every shipped example has content",
     classes: ["ansible-canvas-message", "canvas-host-message", "causal-loop-message", "dotnet-dependency-canvas-message", "helm-canvas-message"],
+  },
+  {
+    reason: "the filter's refusal of a query it cannot parse, shown only after the user types one",
+    classes: ["library-filter-error", "library-filter-input-invalid"],
   },
   {
     reason: "shown only after the user changes the view: a hidden or re-shown ambient package, a stage the user has shut (stages open expanded)",
@@ -186,6 +173,8 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "sparql-surface",
       "timeline-canvas",
       "timeline-surface",
+      "ghg-canvas",
+      "ghg-surface",
     ],
   },
   {
@@ -264,6 +253,7 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "wardley-annotation",
       "wardley-kind-component",
       "wardley-kind-submap",
+      "ghg-influence",
     ],
   },
   {
@@ -289,6 +279,7 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "timeline-connection-hit",
       "shacl-edge-line",
       "timeline-connection-line",
+      "ghg-label",
     ],
   },
   {

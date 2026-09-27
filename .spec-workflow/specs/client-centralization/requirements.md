@@ -55,7 +55,7 @@ This specification is the result of that scan, measured on `develop` between 202
 
 #### Acceptance Criteria
 
-1. WHEN any code estimates how wide text will be THEN it SHALL use **one exported metric**. Today there are at least three values for one character: 7 px in `labels.ts:45` and `labelPlacement.ts:35`, **8 px in the library's own content sizing** (`DiagramCanvas.tsx:2925`) and 5.5 px in `c4` (`C4Canvas.tsx:51`).
+1. WHEN any code estimates how wide text will be THEN it SHALL use **one exported metric**. Today there are at least three values for one character: 7 px in `labels.ts:45` and `labelPlacement.ts:35`, **8 px in the library's own content sizing** (`DiagramCanvas.tsx:2925`) and 5.5 px in `c4` (`C4Canvas.tsx:51`). The one metric is the backend's shared one, characters × font size × 0.55, applied at the label's font size rather than as a fixed pixel count (the user's chat ruling, 2026-09-27). OwlCanvas's own fit (6.2 px per character, `OwlCanvas.tsx:494`) is a fifth copy and moves onto it.
 2. WHEN text is trimmed to a box THEN it SHALL use **one fit function**, replacing the identical formula written twice inside the library (`labels.ts:51` and `SpanElement.tsx:145`) and `c4`'s own `typeLineFitted`.
 3. WHEN this is implemented THEN a label SHALL NOT be sized by one metric and trimmed by another, which is the drift behind the recurring overflow reports on `databricks`, `c4` and `shacl`.
 4. WHERE the backend computes the box a label must fit into THEN the metric is **Architect 1's**, and this specification cites its fixture rather than keeping a second copy. `c4`'s own word wrap (`descriptionLines`) belongs to Architect 1's `functional-decomposition-graph` `wrap` and is not re-implemented here.
@@ -144,7 +144,7 @@ This specification is the result of that scan, measured on `develop` between 202
 1. WHEN any change in this specification is made THEN the only permitted visible changes SHALL be these four, and **everything else SHALL be invisible**:
    - theme-correct colours on `azure-pipeline`, `dotnet-dependency-graph`, `helm-charts`, `causal-loop` and the editors, mostly in the dark theme (Requirement 1);
    - refusals becoming visible on `ansible-structure`, `azure-pipeline`, `c4` and `mindmap`, and one appearance for the refusal line and the loading and unavailable text on all sixteen canvases (Requirement 2);
-   - a trimmed label gaining or losing a character where the metric was 5.5 or 8 (Requirement 4);
+   - a label trimmed, wrapped or content-sized at a different length, because every client width estimate now uses the backend's shared metric, characters × font size × 0.55 (backend-centralization Requirement 10), at the label's own font size. This includes OWL's own trim, which the scan missed as a fifth copy (Requirement 4; the user's chat ruling, 2026-09-27);
    - `ansible-structure` reporting the backend's own sentence when a move fails (Requirement 7).
 2. WHEN a test changes THEN it SHALL change only where it pinned behaviour a named criterion above changes, it SHALL name that criterion, and it SHALL change only that far — the general rule `centralized-selection` Requirement 11.1 now carries.
 
