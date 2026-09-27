@@ -62,19 +62,21 @@ internal sealed class MindmapSession : IDiagramSession
         _viewport = viewport;
         var after = _mapper.Visible(document, view, _viewport);
 
-        // What newly falls in view is added; what fell out is removed (Requirement 11.5).
+        // What fell out is removed; what newly falls in view is added (Requirement 11.5). Removals
+        // first, the one order every module sends (backend-centralization R4.5): an add is an
+        // upsert keyed on id, so removing first can never delete what the same batch just added.
         var removed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
         var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
 
         var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
         if (removed.Length > 0)
         {
             deltas.Add(new DiagramRemoveDelta(removed));
+        }
+
+        if (appeared.Length > 0)
+        {
+            deltas.Add(new DiagramAddDelta(appeared));
         }
 
         return deltas;
@@ -177,16 +179,17 @@ internal sealed class MindmapSession : IDiagramSession
 
     private IReadOnlyList<DiagramDelta> Relayout(MindmapDocument document, MindmapConnectionView view, IReadOnlyList<string> removedIds)
     {
+        // Removals first, then what is visible now (backend-centralization R4.5).
         var visible = _mapper.Visible(document, view, _viewport);
         var deltas = new List<DiagramDelta>();
-        if (visible.Count > 0)
-        {
-            deltas.Add(new DiagramAddDelta(visible));
-        }
-
         if (removedIds.Count > 0)
         {
             deltas.Add(new DiagramRemoveDelta(removedIds));
+        }
+
+        if (visible.Count > 0)
+        {
+            deltas.Add(new DiagramAddDelta(visible));
         }
 
         return deltas;
