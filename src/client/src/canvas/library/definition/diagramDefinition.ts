@@ -234,6 +234,16 @@ export interface AnchorEnablement {
    * has always done.
    */
   edgeSides?: "all" | "horizontal" | "vertical";
+  /**
+   * Where a connection end on this element is DRAWN, as opposed to where the gesture that made it
+   * started. `"edge"` draws every end on the element by edge intersection towards the other end,
+   * whatever named anchor was pulled, and leaves the anchor name out of `connection-drawn` - so a
+   * small circle can offer handles to start a connection from, while its line leaves the outline
+   * facing its target and the document stores nothing for that end. Unset, or `"anchor"`, draws
+   * an end at the anchor it names, as always. Meaningless on `along` anchors, which the validator
+   * rejects.
+   */
+  attachDrawnBy?: "anchor" | "edge";
 }
 
 export type AnchorSet = AnchorPositions & AnchorEnablement;

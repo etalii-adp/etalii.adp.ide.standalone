@@ -287,12 +287,14 @@ interface AdjustDragPreview {
 interface ConnectPreview {
   relation: RelationTypeDefinition;
   sourceId: string;
+  /** The source element's type, so the release knows whether its end is drawn by edge. */
+  sourceType: string;
   sourceAnchor?: string;
   /** Where along its edge the gesture began, for a source declaring `along` anchors. */
   sourceAttachment?: EdgeAttachment;
   from: Point;
   point: Point;
-  target?: { elementId: string; anchor?: string; attachment?: EdgeAttachment };
+  target?: { elementId: string; type: string; anchor?: string; attachment?: EdgeAttachment };
   valid: boolean;
 }
 
@@ -771,7 +773,9 @@ export function DiagramCanvasCore({
       if (attachment !== undefined && type?.anchors.kind === "along") {
         return attachmentPointOf(attachment, bounds, attachmentLayoutOf(element, type, bounds));
       }
-      if (anchor !== undefined && type !== undefined) {
+      // An end on a type drawn by edge ignores the anchor that started the gesture, so the line
+      // leaves the outline facing the other end rather than the handle it was pulled from.
+      if (anchor !== undefined && type !== undefined && type.anchors.attachDrawnBy !== "edge") {
         const named = anchorPoints(type.anchors, bounds).find((candidate) => candidate.name === anchor);
         if (named !== undefined) {
           return named.point;
@@ -813,6 +817,16 @@ export function DiagramCanvasCore({
         if (onOutline !== null) {
           return onOutline;
         }
+      }
+
+      // A type drawn by edge is a small shape starting lines in every direction, where the box's
+      // corner would leave a visible gap beside a round outline. Other ellipses keep the box answer
+      // `outline.ts` explains, so no existing drawing moves.
+      if (type?.anchors.attachDrawnBy === "edge" && !isCustomShape(type.shape) && shapeOf(type.shape, sourceOf(element)) === "ellipse" && (dx !== 0 || dy !== 0)) {
+        const a = bounds.width / 2;
+        const b = bounds.height / 2;
+        const scale = 1 / Math.sqrt((dx * dx) / (a * a) + (dy * dy) / (b * b));
+        return { x: centre.x + dx * scale, y: centre.y + dy * scale };
       }
 
       return edgePointOf(box, dx, dy);
@@ -1079,12 +1093,13 @@ export function DiagramCanvasCore({
           frame.move({
             relation: drawn,
             sourceId: target.element.id,
+            sourceType: target.element.type,
             sourceAnchor: target.anchor,
             sourceAttachment: target.attachment,
-            from: target.at,
+            from: drawnByEdge(elementTypes.get(target.element.type)) ? attachmentPoint(target.element, undefined, point) : target.at,
             point,
             target: valid && candidate !== undefined
-              ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
+              ? { elementId: candidate.id, type: candidate.type, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
               : undefined,
             valid,
           });
@@ -1247,8 +1262,7 @@ export function DiagramCanvasCore({
               relationType: preview.relation.id,
               sourceElementId: preview.sourceId,
               targetElementId: preview.target.elementId,
-              sourceAnchor: preview.sourceAnchor,
-              targetAnchor: preview.target.anchor,
+              ...anchorNamesOf(preview, elementTypes),
               ...attachmentsOf(preview),
             });
           } else if (preview !== null && preview.relation.emptyRelease === "complete" && elementAt(preview.point) === undefined) {
@@ -1258,7 +1272,7 @@ export function DiagramCanvasCore({
               kind: "connection-released-on-empty",
               relationType: preview.relation.id,
               sourceElementId: preview.sourceId,
-              sourceAnchor: preview.sourceAnchor,
+              ...(drawnByEdge(elementTypes.get(preview.sourceType)) ? {} : { sourceAnchor: preview.sourceAnchor }),
               position: preview.point,
             });
           }
@@ -1465,10 +1479,11 @@ export function DiagramCanvasCore({
     frame.move({
       relation: drawn,
       sourceId: active.element.id,
+      sourceType: active.element.type,
       from: active.from,
       point,
       target: valid && candidate !== undefined
-        ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
+        ? { elementId: candidate.id, type: candidate.type, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
         : undefined,
       valid,
     });
@@ -1498,12 +1513,11 @@ export function DiagramCanvasCore({
         relationType: preview.relation.id,
         sourceElementId: preview.sourceId,
         targetElementId: preview.target.elementId,
-        sourceAnchor: preview.sourceAnchor,
-        targetAnchor: preview.target.anchor,
+        ...anchorNamesOf(preview, elementTypes),
         ...attachmentsOf(preview),
       });
     }
-  }, [connectValue, raise]);
+  }, [connectValue, raise, elementTypes]);
 
   // An interrupted right draw (pointer cancel, capture lost) reverts the shared connect frame
   // rather than committing it: were it left set, the next anchor drag's `??=` would reuse this
@@ -3477,6 +3491,22 @@ function connectionEnds(
   const to = attachmentPoint(target, connection.targetAnchor, { x: source.x, y: source.y }, connection.targetAttachment);
   void elementTypes;
   return [from, to];
+}
+
+/** Whether ends on elements of this type are drawn by edge intersection whatever anchor started them. */
+function drawnByEdge(type: ElementTypeDefinition | undefined): boolean {
+  return type?.anchors.attachDrawnBy === "edge";
+}
+
+/**
+ * The anchor names a finished connect gesture carries, leaving out an end on a type drawn by edge:
+ * the handle it was pulled from says nothing about where the end is drawn, so nothing is stored.
+ */
+function anchorNamesOf(preview: ConnectPreview, elementTypes: Map<string, ElementTypeDefinition>): { sourceAnchor?: string; targetAnchor?: string } {
+  return {
+    ...(preview.sourceAnchor !== undefined && !drawnByEdge(elementTypes.get(preview.sourceType)) ? { sourceAnchor: preview.sourceAnchor } : {}),
+    ...(preview.target?.anchor !== undefined && !drawnByEdge(elementTypes.get(preview.target.type)) ? { targetAnchor: preview.target.anchor } : {}),
+  };
 }
 
 /** The attachments a finished connect gesture carries, leaving out the ends that have none. */

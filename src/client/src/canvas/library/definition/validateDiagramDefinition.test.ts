@@ -193,3 +193,15 @@ describe("validateDiagramDefinition, a filter's element types", () => {
     expect(validateDiagramDefinition(scopedTo(["nobody"])).some((problem) => problem.includes('filter applies to element type "nobody"'))).toBe(true);
   });
 });
+
+describe("validateDiagramDefinition, attachDrawnBy", () => {
+  it("rejects attachDrawnBy on along anchors, and accepts it on named anchors", () => {
+    const withAnchors = (anchors: DiagramDefinition["elementTypes"][number]["anchors"]): DiagramDefinition => ({
+      ...goodDefinition(),
+      elementTypes: [{ id: "node", shape: "ellipse", anchors, sizing: "model" }, goodDefinition().elementTypes[1]!],
+    });
+
+    expect(validateDiagramDefinition(withAnchors({ kind: "compass", positions: ["n"], attachDrawnBy: "edge" }))).toEqual([]);
+    expect(validateDiagramDefinition(withAnchors({ kind: "along", edges: ["top"], attachDrawnBy: "edge" })).some((problem) => problem.includes("attachDrawnBy on along anchors"))).toBe(true);
+  });
+});

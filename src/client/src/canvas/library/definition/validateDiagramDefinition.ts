@@ -55,6 +55,9 @@ function validateBody(definition: DiagramDefinition): string[] {
         `Element type "${element.id}" names custom shape "${element.shape.customShape}" without supplying its renderer and edge function.`,
       );
     }
+    if (element.anchors.kind === "along" && element.anchors.attachDrawnBy !== undefined) {
+      problems.push(`Element type "${element.id}" declares attachDrawnBy on along anchors, which record where an end sits and are never drawn by edge.`);
+    }
   }
 
   for (const relation of definition.relationTypes) {
