@@ -116,3 +116,37 @@ describe("a declared filter", () => {
     expect(container.querySelector(".library-filter")).toBeNull();
   });
 });
+
+describe("a declared filter legend", () => {
+  function legendOf(legend: NonNullable<DiagramDefinition["filter"]>["legend"]) {
+    const { container } = render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvasCore definition={{ ...definition, filter: { ...definition.filter!, legend } }} model={modelOf()} events={{}} />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+    return container;
+  }
+
+  it("draws a swatch and a caption per entry, in order, under the filter box", () => {
+    // Arrange, act.
+    const container = legendOf([
+      { caption: "First", swatchClass: "swatch-one" },
+      { caption: "Second", swatchClass: "swatch-two" },
+    ]);
+
+    // Assert: inside the filter's box, after its input.
+    const legend = container.querySelector(".library-filter .library-filter-input ~ .library-filter-legend")!;
+    expect(legend, "no legend under the filter box").not.toBeNull();
+    const entries = [...legend.querySelectorAll(".library-filter-legend-entry")].map((entry) => ({
+      caption: entry.textContent,
+      swatch: entry.querySelector(".library-filter-legend-swatch")?.classList.contains(entry.textContent === "First" ? "swatch-one" : "swatch-two"),
+    }));
+    expect(entries).toEqual([{ caption: "First", swatch: true }, { caption: "Second", swatch: true }]);
+  });
+
+  it("draws no legend where the filter declares none", () => {
+    expect(legendOf(undefined).querySelector(".library-filter-legend")).toBeNull();
+  });
+});

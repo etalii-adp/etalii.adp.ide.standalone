@@ -396,7 +396,7 @@ export const TOOLBOX_EXAMPLE: ToolboxDefinition = {
 
 ### Chrome
 
-**Declarations:** `ChromeDeclaration`, `ChromeLegendDeclaration`, `ChromeTextDeclaration`, `RulerDeclaration`, `RulerRung`, `MonthScale`, `CalendarStep`, `FilterDeclaration`
+**Declarations:** `ChromeDeclaration`, `ChromeLegendDeclaration`, `ChromeTextDeclaration`, `RulerDeclaration`, `RulerRung`, `MonthScale`, `CalendarStep`, `FilterDeclaration`, `FilterLegendEntry`
 
 **What it is for.** The text around the diagram rather than the diagram — loading and unavailable states, a title, a legend, rulers.
 
@@ -416,9 +416,9 @@ Source: [`src/client/src/canvas/library/examples/chrome.example.ts`](../src/clie
 
 **Related.** [Styling](#styling) for the classes chrome uses, and [Events, and how a module answers them](#events-and-how-a-module-answers-them) for what a declared action raises.
 
-**Their members.** `ChromeLegendDeclaration` carries `entries`, `swatchClass`, `when`, `className`; `ChromeTextDeclaration` carries `text`, `when`, `typography`, `className`; `RulerDeclaration` carries `orientation`, `edge`, `unitsPerCanvasUnit`, `scale`, `origin`, `ladder`, `minSpacingPx`, `className`, `when`; `RulerRung` carries `every`, `label`; `MonthScale` carries `unit`, `unitsPerStep`, `origin`; `FilterDeclaration` carries `field`, `label`.
+**Their members.** `ChromeLegendDeclaration` carries `entries`, `swatchClass`, `when`, `className`; `ChromeTextDeclaration` carries `text`, `when`, `typography`, `className`; `RulerDeclaration` carries `orientation`, `edge`, `unitsPerCanvasUnit`, `scale`, `origin`, `ladder`, `minSpacingPx`, `className`, `when`; `RulerRung` carries `every`, `label`; `MonthScale` carries `unit`, `unitsPerStep`, `origin`; `FilterDeclaration` carries `field`, `label`, `legend`; `FilterLegendEntry` carries `caption`, `swatchClass`.
 
-**A ruler on the bottom edge, and a filter box.** A ruler declaring `edge: "bottom"` is drawn by the canvas as a strip under the diagram that follows the view. Its `scale` may be a `MonthScale` - a fixed number of canvas units per calendar month from a `YYYY-MM` origin - instead of `unitsPerCanvasUnit`, and a rung's `every` may be any `CalendarStep`, `"decade"` included. A definition's `filter` - a `FilterDeclaration` on the DiagramDefinition rather than in chrome, declared here because it is the other piece of view furniture - shows a box that takes a tag expression (`and`, `or`, `not`, parentheses) and hides every element whose tags at `field` do not match, with the connections touching them. The filter is view state: nothing is sent to the backend.
+**A ruler on the bottom edge, and a filter box.** A ruler declaring `edge: "bottom"` is drawn by the canvas as a strip under the diagram that follows the view. Its `scale` may be a `MonthScale` - a fixed number of canvas units per calendar month from a `YYYY-MM` origin - instead of `unitsPerCanvasUnit`, and a rung's `every` may be any `CalendarStep`, `"decade"` included. A definition's `filter` - a `FilterDeclaration` on the DiagramDefinition rather than in chrome, declared here because it is the other piece of view furniture - shows a box that takes a tag expression (`and`, `or`, `not`, parentheses) and hides every element whose tags at `field` do not match, with the connections touching them. The filter is view state: nothing is sent to the backend. Its optional `legend` draws a small key under the box, one swatch and caption per `FilterLegendEntry`; the swatch carries the entry's `swatchClass`, so the module colours it with the rule that colours what it stands for, as the hype cycle graph does for its four phases.
 
 ## The canvas
 

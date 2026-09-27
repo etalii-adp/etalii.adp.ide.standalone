@@ -1144,6 +1144,18 @@ export interface FilterDeclaration {
   field: BindingPath;
   /** The filter box's placeholder. */
   label: string;
+  /**
+   * A small key drawn under the box: one swatch and one caption per entry, in order. The swatch
+   * carries `swatchClass`, so a module colours it with the same stylesheet rule that colours what
+   * it stands for. Omitted, the box has none.
+   */
+  legend?: readonly FilterLegendEntry[];
+}
+
+/** One line of a filter box's legend. See {@link FilterDeclaration.legend}. */
+export interface FilterLegendEntry {
+  caption: string;
+  swatchClass: string;
 }
 
 export interface DiagramDefinition {

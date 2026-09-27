@@ -2128,6 +2128,16 @@ export function DiagramCanvasCore({
               {filterError}
             </div>
           )}
+          {definition.filter.legend !== undefined && definition.filter.legend.length > 0 && (
+            <ul className="library-filter-legend" aria-label="Legend">
+              {definition.filter.legend.map((entry) => (
+                <li key={entry.caption} className="library-filter-legend-entry">
+                  <span className={`library-filter-legend-swatch ${entry.swatchClass}`} aria-hidden="true" />
+                  {entry.caption}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
