@@ -100,7 +100,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - **The mirror direction is this task's too, by criterion 11.4**: a class a canvas emits that no rule claims fails unless it is listed with a reason. It is the same walk over the same two lists in the opposite direction, so one guard serves both. It was assigned to `canvas-single-scrollbar` on 2026-09-23, and that specification fixed the instance that motivated it - `library-canvas-surface`, emitted with no CSS rule, now a block box (`b2b8ba03`) - and completed without the guard. So the guard's first run in this direction will not find that instance; it exists to find the next one.
   - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 13. Gate, land, and check the record against the code
+- [x] 13. Gate, land, and check the record against the code
   - Four gates on the merged tree; both port files reverted; **the coverage diff re-run against files and strings rather than task claims**; and the permitted-visible-change list checked against what actually changed — the two theme fixes, the refusal surface, a trimmed label's character, and ansible's move message. **Anything else visible is a defect, not a side effect.**
   - _Requirements: 12.1, 12.2_
 
