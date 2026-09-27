@@ -67,9 +67,9 @@ A module stylesheet may select **its own declared classes**, and may not select 
 
 `canvas/label/textMetrics.ts` (new) exports the metric and the fit:
 
-- `CHAR_WIDTH` — one number, replacing 7 in `labels.ts`, 7 in `labelPlacement.ts`, 8 in `DiagramCanvas`'s content sizing and 5.5 in `c4`;
+- `AVERAGE_ADVANCE` — 0.55 of the font size, the backend's shared metric, replacing 7 in `labels.ts`, 7 in `labelPlacement.ts`, 8 in `DiagramCanvas`'s content sizing, 5.5 in `c4` and 6.2 in `rdf`'s OWL canvas;
 - `widthOf(text, fontSize)` — the estimate, used where no measured width exists;
-- `fitToWidth(text, width)` — the ellipsis, replacing the formula written twice in the library and `c4`'s `typeLineFitted`.
+- `fitToWidth(text, width, fontSize)` — the ellipsis, replacing the formula written twice in the library and `c4`'s `typeLineFitted`.
 
 **Where the backend computes the box** (c4 clamps a card at 240), the metric is Architect 1's and this module cites its fixture; the fit stays here. `c4`'s word wrap goes to Architect 1's `functional-decomposition-graph` `wrap`.
 

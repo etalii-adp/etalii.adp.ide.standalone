@@ -97,37 +97,6 @@ public sealed class AnsibleElementMapper
     }
 
     /// <summary>
-    /// What to send a connection whose diagram was <paramref name="previous"/> and is now
-    /// <paramref name="current"/>: the ids that went away, then everything that is there now.
-    /// </summary>
-    /// <remarks>
-    /// Add is an upsert, so re-sending an unchanged element is correct but wasteful; only ids
-    /// that genuinely disappeared need removing first. Nothing here is an edit delta, because
-    /// nothing here is edited - the folder changed and this is what it says now.
-    /// </remarks>
-    public IReadOnlyList<DiagramDelta> Diff(IReadOnlyList<DiagramElement> previous, IReadOnlyList<DiagramElement> current)
-    {
-        ArgumentNullException.ThrowIfNull(previous);
-        ArgumentNullException.ThrowIfNull(current);
-
-        var deltas = new List<DiagramDelta>();
-
-        var live = current.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        var gone = previous.Select(element => element.Id).Where(id => !live.Contains(id)).ToArray();
-        if (gone.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(gone));
-        }
-
-        if (current.Count > 0)
-        {
-            deltas.Add(new DiagramAddDelta(current));
-        }
-
-        return deltas;
-    }
-
-    /// <summary>
     /// The computed layout with authored positions overlaid: a node the registration's
     /// <c>layout:</c> block names sits where the user put it, every other node stays where the
     /// layout engine put it (Requirement 1.4).

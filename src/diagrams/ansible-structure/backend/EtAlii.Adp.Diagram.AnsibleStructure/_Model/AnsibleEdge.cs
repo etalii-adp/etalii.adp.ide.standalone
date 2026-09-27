@@ -26,7 +26,16 @@ public sealed record AnsibleEdge(
     /// and an unresolvable edge both have an identity - and so an edge keeps the same id when
     /// the role it names finally appears.
     /// </summary>
-    public string Id => $"edge:{SourceId}|{Kind}|{Directive.Target}";
+    /// <remarks>
+    /// <b>A <see cref="AnsibleEdgeKind.Targets"/> edge adds the inventory it reaches.</b> One
+    /// <c>hosts:</c> pattern yields one edge per inventory that defines it, so the pattern alone
+    /// named two edges with one id and the canvas drew only one of them. Such an edge is only
+    /// ever made resolved - a pattern nothing defines yields no edge - so the inventory is always
+    /// there to add, and the reason the other kinds leave the resolved id out does not apply.
+    /// </remarks>
+    public string Id => Kind == AnsibleEdgeKind.Targets
+        ? $"edge:{SourceId}|{Kind}|{Directive.Target}|{TargetId}"
+        : $"edge:{SourceId}|{Kind}|{Directive.Target}";
 
     /// <summary>Whether Ansible resolves this during the run rather than before it - drawn dashed (Requirement 5.4).</summary>
     public bool IsDynamic => Directive.IsDynamic;
