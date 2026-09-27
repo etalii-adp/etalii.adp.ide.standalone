@@ -32,6 +32,10 @@ public class GhgDocumentTests
         "no-trailing-newline.ghg",
         "malformed-entries.ghg",
         "not-yaml.ghg",
+        "triggers-and-notes.ghg",
+        "rule-influence-into-trigger.ghg",
+        "rule-trigger-date.ghg",
+        "rule-note-position.ghg",
     ];
 
     [Theory]

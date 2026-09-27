@@ -23,6 +23,9 @@ public class GhgRulesTests
         { GhgRuleIds.DanglingReference, "rule-dangling-reference.ghg" },
         { GhgRuleIds.DuplicateId, "rule-duplicate-id.ghg" },
         { GhgRuleIds.UnreadableEntry, "rule-unreadable-entry.ghg" },
+        { GhgRuleIds.InfluenceIntoTrigger, "rule-influence-into-trigger.ghg" },
+        { GhgRuleIds.TriggerDate, "rule-trigger-date.ghg" },
+        { GhgRuleIds.NotePosition, "rule-note-position.ghg" },
     };
 
     /// <summary>Each fixture breaks exactly its rule, and nothing else - and still opens with its trends.</summary>
@@ -41,7 +44,7 @@ public class GhgRulesTests
     }
 
     [Fact]
-    public void TheNineRuleIds_EachHaveAFixture()
+    public void EveryRuleId_HasAFixture()
     {
         Assert.Equal(GhgRuleIds.All.Order(StringComparer.Ordinal), EveryRule.Select(row => row.Data.Item1).Order(StringComparer.Ordinal));
     }
