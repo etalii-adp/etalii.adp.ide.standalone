@@ -49,14 +49,15 @@ public sealed class GhgElementMapper
 
         var (trends, influences) = Drawable(model);
         var byId = trends.ToDictionary(trend => trend.Id, StringComparer.Ordinal);
+        var unit = model.TimeUnit;
 
         var shownIds = trends
-            .Where(trend => Overlaps(Bounds(trend), viewport))
+            .Where(trend => Overlaps(Bounds(trend, unit), viewport))
             .Select(trend => trend.Id)
             .ToHashSet(StringComparer.Ordinal);
 
         var shownInfluences = influences
-            .Where(influence => Overlaps(Union(Bounds(byId[influence.From]), Bounds(byId[influence.To])), viewport))
+            .Where(influence => Overlaps(Union(Bounds(byId[influence.From], unit), Bounds(byId[influence.To], unit)), viewport))
             .ToArray();
 
         foreach (var influence in shownInfluences)
@@ -67,7 +68,7 @@ public sealed class GhgElementMapper
 
         return
         [
-            .. trends.Where(trend => shownIds.Contains(trend.Id)).Select(Trend),
+            .. trends.Where(trend => shownIds.Contains(trend.Id)).Select(trend => Trend(trend, unit)),
             .. shownInfluences.Select(Influence),
         ];
     }
@@ -93,11 +94,11 @@ public sealed class GhgElementMapper
 
     private readonly record struct Box(double MinX, double MinY, double MaxX, double MaxY);
 
-    private static Box Bounds(GhgTrend trend)
+    private static Box Bounds(GhgTrend trend, GhgTimeUnit unit)
     {
-        var left = GhgScale.XOf(trend.Start!.Value);
+        var left = GhgScale.XOf(trend.Start!.Value, unit);
         var top = GhgScale.TopOf(trend.Row);
-        return new Box(left, top, left + GhgScale.WidthOf(trend.Months), top + GhgScale.TrendHeight);
+        return new Box(left, top, left + GhgScale.WidthOf(trend.Months, unit), top + GhgScale.TrendHeight);
     }
 
     private static Box Union(Box a, Box b) =>
@@ -106,14 +107,15 @@ public sealed class GhgElementMapper
     private static bool Overlaps(Box box, DiagramViewport viewport) =>
         box.MaxX >= viewport.MinX && box.MinX <= viewport.MaxX && box.MaxY >= viewport.MinY && box.MinY <= viewport.MaxY;
 
-    private static DiagramElement Trend(GhgTrend trend)
+    private static DiagramElement Trend(GhgTrend trend, GhgTimeUnit unit)
     {
-        var width = GhgScale.WidthOf(trend.Months);
+        var width = GhgScale.WidthOf(trend.Months, unit);
         var payload = new GhgTrendPayload
         {
             Name = trend.Name,
             Phases = trend.VisiblePhases,
             Width = width,
+            Unit = unit.Name,
         };
         payload.Boundaries.AddRange(GhgPhases.FractionsOf(trend));
         payload.Tags.AddRange(trend.Tags);
@@ -121,7 +123,7 @@ public sealed class GhgElementMapper
         // The document holds the start month and the row; the library draws from the centre.
         return Pack(
             trend.Id,
-            GhgScale.XOf(trend.Start!.Value) + (width / 2),
+            GhgScale.XOf(trend.Start!.Value, unit) + (width / 2),
             GhgScale.TopOf(trend.Row) + (GhgScale.TrendHeight / 2),
             TrendType,
             payload);

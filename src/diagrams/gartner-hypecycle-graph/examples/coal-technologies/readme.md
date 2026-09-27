@@ -22,7 +22,7 @@ Thirty-four technologies around coal, from the Newcomen pumping engine of 1712 t
 | Dragged boundaries | The steam locomotive's Peak ends with railway mania, and carbon capture's with the stalled projects after 2015; every other trend's phases are even |
 | Descriptions | On most trends and some influences, kept in the document and never drawn |
 
-**Tags make meaningful filters**, for example `power`; `gasification or liquids`; and `upcoming or conceptual`. The other tags are `mining`, `steam`, `safety`, `automation`, `iron`, `gas`, `transport`, `chemistry`, `environment`, `policy`, `climate`, `heat` and `reuse`.
+**Tags make meaningful filters**, for example `power` alone; `gasification` and `liquids` with the filter on Any; and `upcoming` and `conceptual` on Any. The other tags are `mining`, `steam`, `safety`, `automation`, `iron`, `gas`, `transport`, `chemistry`, `environment`, `policy`, `climate`, `heat` and `reuse`.
 
 ## What it does not demonstrate
 

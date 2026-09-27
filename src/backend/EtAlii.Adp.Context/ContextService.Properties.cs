@@ -93,7 +93,7 @@ public sealed partial class ContextService
             Group = definition.Group,
         };
 
-        // Only a Choice has any, and an empty repeated field costs nothing on the wire - so this
+        // Only a Choice, a Slider and a Tags row have any, and an empty repeated field costs nothing on the wire - so this
         // adds nothing to every property that is not one.
         property.Candidates.AddRange(definition.Choices);
         return property;

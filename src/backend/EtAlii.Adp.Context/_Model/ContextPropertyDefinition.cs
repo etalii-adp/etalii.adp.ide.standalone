@@ -42,7 +42,8 @@ namespace EtAlii.Adp.Context;
 /// </param>
 /// <param name="Candidates">
 /// What a <see cref="ContextPropertyEditor.Choice"/> property may be set to, in the order the
-/// list should offer them. Empty for every other editor.
+/// list should offer them; for a <see cref="ContextPropertyEditor.Tags"/> property, the tags its
+/// field looks the typed text up among. Empty for every other editor.
 /// <para>
 /// Supplied by the provider because only the provider knows: the valid values of a pipeline
 /// stage's <c>dependsOn</c> are the other stages in that file, which the grid has no way to find

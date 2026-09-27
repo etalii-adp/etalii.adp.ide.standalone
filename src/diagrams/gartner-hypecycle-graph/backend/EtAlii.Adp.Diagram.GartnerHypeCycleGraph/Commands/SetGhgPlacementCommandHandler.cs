@@ -23,7 +23,7 @@ public sealed class SetGhgPlacementCommandHandler(IGhgDocumentStore documents) :
                 return GhgEdits.NoSpan();
             }
 
-            var start = GhgScale.NearestMonthAt(command.X);
+            var start = GhgScale.NearestMonthAt(command.X, model.TimeUnit);
             var shift = start - trend.Start!.Value;
             return GhgWriter.SetSpan(
                 document,

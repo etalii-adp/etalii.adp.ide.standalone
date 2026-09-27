@@ -20,11 +20,20 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <b>A month is carried as one integer</b>, <c>year * 12 + (month - 1)</c>, which makes a span a
 /// subtraction and a move an addition. It is written back as <c>YYYY-MM</c>.
 /// </para>
+/// <para>
+/// <b>A document may draw in a coarser step</b> - a year, a decade or a century, named by its
+/// <see cref="GhgTimeUnit"/> - so that thousands of years fit on a canvas. Every step is
+/// <see cref="UnitsPerStep"/> units wide and a snap lands on the start of a step. The methods that
+/// take no unit are the month's, which is every document's unit unless it names another.
+/// </para>
 /// </remarks>
 public static partial class GhgScale
 {
-    /// <summary>Canvas units per month.</summary>
-    public const int UnitsPerMonth = 4;
+    /// <summary>Canvas units per step of a diagram's time unit, whichever unit it is.</summary>
+    public const int UnitsPerStep = 4;
+
+    /// <summary>Canvas units per month, in a diagram drawn in months.</summary>
+    public const int UnitsPerMonth = UnitsPerStep;
 
     /// <summary>The date at x = 0.</summary>
     public const string OriginDate = "1900-01";
@@ -75,17 +84,33 @@ public static partial class GhgScale
     }
 
     /// <summary>The canvas x of the start of a month.</summary>
-    public static double XOf(int monthIndex) => (monthIndex - OriginMonth) * (double)UnitsPerMonth;
+    public static double XOf(int monthIndex) => XOf(monthIndex, GhgTimeUnit.Month);
+
+    /// <summary>The canvas x of the start of a month, in a diagram drawn in <paramref name="unit"/>.</summary>
+    public static double XOf(int monthIndex, GhgTimeUnit unit) => (monthIndex - OriginMonth) * (double)UnitsPerStep / unit.Months;
 
     /// <summary>The month whose start is nearest <paramref name="x"/> - what a month snap lands on.</summary>
-    public static int NearestMonthAt(double x) =>
-        OriginMonth + (int)Math.Round(x / UnitsPerMonth, MidpointRounding.AwayFromZero);
+    public static int NearestMonthAt(double x) => NearestMonthAt(x, GhgTimeUnit.Month);
+
+    /// <summary>
+    /// The start of the step nearest <paramref name="x"/> in a diagram drawn in <paramref name="unit"/> -
+    /// what a snap lands on, so a trend moved in a diagram of years starts in a January.
+    /// </summary>
+    public static int NearestMonthAt(double x, GhgTimeUnit unit) =>
+        OriginMonth + ((int)Math.Round(x / UnitsPerStep, MidpointRounding.AwayFromZero) * unit.Months);
 
     /// <summary>The month <paramref name="x"/> falls inside - what a drop at a mid-month x means.</summary>
-    public static int MonthContaining(double x) => OriginMonth + (int)Math.Floor(x / UnitsPerMonth);
+    public static int MonthContaining(double x) => MonthContaining(x, GhgTimeUnit.Month);
+
+    /// <summary>The start of the step <paramref name="x"/> falls inside, in a diagram drawn in <paramref name="unit"/>.</summary>
+    public static int MonthContaining(double x, GhgTimeUnit unit) =>
+        OriginMonth + ((int)Math.Floor(x / UnitsPerStep) * unit.Months);
 
     /// <summary>The width of a span of months.</summary>
-    public static double WidthOf(int months) => months * (double)UnitsPerMonth;
+    public static double WidthOf(int months) => WidthOf(months, GhgTimeUnit.Month);
+
+    /// <summary>The width of a span of months, in a diagram drawn in <paramref name="unit"/>.</summary>
+    public static double WidthOf(int months, GhgTimeUnit unit) => months * (double)UnitsPerStep / unit.Months;
 
     /// <summary>The top edge of a row.</summary>
     public static double TopOf(int row) => row * RowStep;

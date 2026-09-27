@@ -24,7 +24,7 @@ It is the close-up of the last few trends in [digital-trends](../digital-trends/
 | Dragged boundaries | Scaling laws, large language models, chat assistants, prompt engineering, tool use, autonomous agents, multi-agent systems and vibe coding have phase boundaries placed on a dated turn in their story; every other trend's phases are even |
 | Descriptions | On most trends and some influences, kept in the document and never drawn |
 
-**Tags make meaningful filters**, for example `agents`; `agents and coding`; and `upcoming or conceptual`. The other tags are `language`, `architecture`, `models`, `alignment`, `multimodal`, `products`, `society`, `tooling`, `data`, `techniques` and `science`.
+**Tags make meaningful filters**, for example `agents` alone; `agents` and `coding` with the filter on All; and `upcoming` and `conceptual` on Any. The other tags are `language`, `architecture`, `models`, `alignment`, `multimodal`, `products`, `society`, `tooling`, `data`, `techniques` and `science`.
 
 ## What it does not demonstrate
 

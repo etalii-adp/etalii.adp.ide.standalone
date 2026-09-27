@@ -1132,12 +1132,12 @@ export interface SegmentDeclaration {
 }
 
 /**
- * A filter box over the canvas: elements whose tag list does not match the typed expression are
- * not drawn, and neither is any connection touching them.
+ * A filter box over the canvas: the reader chooses tags as chips, looked up among the tags the
+ * diagram's elements carry, and an element having none of them - or, with the box's switch on
+ * All, not every one of them - is not drawn, nor is any connection touching it.
  *
- * The expression is `a and (b or c)` - `and` binding tighter than `or`, case-insensitive, a tag
- * being any run of non-space characters other than the keywords and parentheses. It is view
- * state, held by the canvas and never sent anywhere, and it survives every model update.
+ * Tags compare without regard to case. The chosen tags are view state, held by the canvas and
+ * never sent anywhere, and they survive every model update.
  */
 export interface FilterDeclaration {
   /** A path to the element's tags: an array of strings. */

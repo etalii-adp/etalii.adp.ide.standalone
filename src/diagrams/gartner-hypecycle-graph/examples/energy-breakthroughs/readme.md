@@ -22,7 +22,7 @@ Thirty-three energy trends from the first fission and fusion experiments of the 
 | Dragged boundaries | The stellarator, the tokamak, inertial confinement fusion, cold fusion, fission power, molten salt reactors, small modular reactors, solar photovoltaics and room-temperature superconductors have phase boundaries placed on a dated event; every other trend's phases are even |
 | Descriptions | On most trends and some influences, kept in the document and never drawn |
 
-**Tags make meaningful filters**, for example `fusion`; `nuclear or fusion`; and `upcoming or conceptual`. The other tags are `science`, `materials`, `space`, `solar`, `wind`, `geothermal`, `storage`, `hydrogen`, `transport`, `grid` and `ai`.
+**Tags make meaningful filters**, for example `fusion` alone; `nuclear` and `fusion` with the filter on Any; and `upcoming` and `conceptual` on Any. The other tags are `science`, `materials`, `space`, `solar`, `wind`, `geothermal`, `storage`, `hydrogen`, `transport`, `grid` and `ai`.
 
 ## What it does not demonstrate
 

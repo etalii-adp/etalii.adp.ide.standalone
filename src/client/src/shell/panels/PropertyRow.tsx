@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ContextPropertyEditor } from "../../generated/context-contract_pb";
 import { type ContextProperty } from "../../generated/context_pb";
+import { TagInput } from "../../components/TagInput";
 
 export interface PropertyRowProps {
   property: ContextProperty;
@@ -15,7 +16,15 @@ const KNOWN_EDITORS = new Set<ContextPropertyEditor>([
   ContextPropertyEditor.TOGGLE,
   ContextPropertyEditor.CHOICE,
   ContextPropertyEditor.SLIDER,
+  ContextPropertyEditor.TAGS,
 ]);
+
+/** A TAGS value's tags: separated by commas, trimmed, blanks dropped. */
+const tagsOf = (value: string) =>
+  value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
 
 /**
  * One row of the property grid: a label, and a value that can be edited unless its owner said
@@ -255,6 +264,26 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
             </datalist>
             <span className="property-grid-slider-value">{draft}</span>
           </span>
+        ) : property.editor === ContextPropertyEditor.TAGS ? (
+          <TagInput
+            className="property-grid-input-tags"
+            label={property.label}
+            tags={tagsOf(draft)}
+            suggestions={property.candidates}
+            onChange={(tags) => {
+              // Adding or removing a chip is a finished edit, as picking from a list is: the
+              // change is the commit, one history entry per chip.
+              const next = tags.join(", ");
+              setDraft(next);
+              setEditing(false);
+              void onCommit(next).then((failure) => {
+                setError(failure);
+                if (failure.length > 0) {
+                  setDraft(property.value);
+                }
+              });
+            }}
+          />
         ) : property.editor === ContextPropertyEditor.TOGGLE ? (
           <input
             type="checkbox"

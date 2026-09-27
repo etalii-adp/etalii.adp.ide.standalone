@@ -20,7 +20,7 @@ It is the smaller companion to [technology-trends](../technology-trends/readme.m
 | Dragged boundaries | The dot-com bubble, blockchain and virtual reality have phase boundaries placed by hand; every other trend's phases are even |
 | Descriptions | On some trends and some influences, kept in the document and never drawn |
 
-**Tags make meaningful filters**, for example `ai`; `communication and computing`; and `media or commerce`. The other tags are `data`, `security`, `society`, `finance` and `science`.
+**Tags make meaningful filters**, for example `ai` alone; `communication` and `computing` with the filter on All; and `media` and `commerce` on Any. The other tags are `data`, `security`, `society`, `finance` and `science`.
 
 ## What it does not demonstrate
 
