@@ -10,21 +10,21 @@ It is the close-up of the last few trends in [digital-trends](../digital-trends/
 
 **Its dates and influences are illustrative, not a claim.** Every start date up to 2026 is plausible to the month, and every influence is one a history of the field would recognise. **Dates after 2026 are projections**: human-agent teams, autonomous research agents, continual learning, verified code generation, agent economies, recursive self-improvement and the stop of every trend still running are guesses, drawn so the diagram can show what is expected as well as what happened.
 
-**Each influence is dated, and its anchors follow from that date.** An influence attaches to the phase each trend was in at the month it acted, and its anchor sits as far along that phase as the month does. Influences on one phase therefore line up in the order they happened: on the Peak of coding agents, code completion arrives before reasoning models, and reasoning models before the Model Context Protocol.
+**Each influence is dated, and its anchors are spread by the rule every example follows.** An influence attaches to the phase each trend was in at the month it acted. Where on that phase it sits is placed by the anchor-spreading rule shared by all the examples: an influence never arrives before it leaves, and the influences sharing one edge of a phase spread across it rather than stacking in one spot.
 
 ## What it shows
 
 | Part | In this example |
 | --- | --- |
 | Trends | 35, in five clusters of rows: foundations, models, tooling, agents, and what comes next, with an empty row between every two rows of trends |
-| Influences | 56, each attached to the phase of each trend in which it acted, at the point in that phase when it acted |
+| Influences | 56, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
 | Phase counts | Every count from 1 to 4: word embeddings and the Transformer show all four phases, most agent trends only a Peak |
 | Upcoming and conceptual ideas | Human-agent teams and agent-to-agent protocols are tagged `upcoming`; autonomous research agents, continual learning, verified code generation, agent economies and recursive self-improvement are tagged `conceptual` |
 | Both directions | Autonomous agents pushed for tool use in 2023, and tool use pulled autonomous agents out of their trough in 2025: one influence per direction is allowed |
 | Dragged boundaries | Scaling laws, large language models, chat assistants, prompt engineering, tool use, autonomous agents, multi-agent systems and vibe coding have phase boundaries placed on a dated turn in their story; every other trend's phases are even |
 | Descriptions | On most trends and some influences, kept in the document and never drawn |
 
-**Tags make meaningful filters**, for example `agents`; `agents and coding`; and `upcoming or conceptual`. The other tags are `language`, `architecture`, `models`, `alignment`, `multimodal`, `products`, `society`, `tooling`, `data`, `techniques` and `science`.
+**Tags make meaningful filters**, for example `agents` alone; `agents` and `coding` with the filter on All; and `upcoming` and `conceptual` on Any. The other tags are `language`, `architecture`, `models`, `alignment`, `multimodal`, `products`, `society`, `tooling`, `data`, `techniques` and `science`.
 
 ## What it does not demonstrate
 

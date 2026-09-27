@@ -78,10 +78,6 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
     classes: ["ansible-canvas-message", "canvas-host-message", "causal-loop-message", "dotnet-dependency-canvas-message", "helm-canvas-message"],
   },
   {
-    reason: "the filter's refusal of a query it cannot parse, shown only after the user types one",
-    classes: ["library-filter-error", "library-filter-input-invalid"],
-  },
-  {
     reason: "shown only after the user changes the view: a hidden or re-shown ambient package, a stage the user has shut (stages open expanded)",
     classes: ["dotnet-dependency-canvas-filtered", "pipeline-stage-count"],
   },
