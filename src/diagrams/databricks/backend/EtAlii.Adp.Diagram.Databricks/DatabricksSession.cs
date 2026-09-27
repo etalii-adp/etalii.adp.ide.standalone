@@ -107,7 +107,7 @@ public sealed class DatabricksSession : IDiagramSession
         _viewport = viewport;
 
         var after = Visible();
-        var deltas = _mapper.Diff(_delivered, after);
+        var deltas = DiagramDiff.Between(_delivered, after);
         _delivered = after;
 
         return deltas;
@@ -234,7 +234,7 @@ public sealed class DatabricksSession : IDiagramSession
             // they can see must not arrive as an add for a box they would then have to be sent a
             // remove for.
             var current = Visible();
-            var deltas = _mapper.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)

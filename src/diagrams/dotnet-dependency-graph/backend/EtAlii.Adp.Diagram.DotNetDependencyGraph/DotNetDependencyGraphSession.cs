@@ -114,7 +114,7 @@ internal sealed class DotNetDependencyGraphSession : IDiagramSession
         lock (_deliveredGate)
         {
             var after = _mapper.Elements(graph, Stored());
-            var deltas = _mapper.Diff(_delivered, after);
+            var deltas = DiagramDiff.Between(_delivered, after);
             _delivered = after;
             return deltas;
         }

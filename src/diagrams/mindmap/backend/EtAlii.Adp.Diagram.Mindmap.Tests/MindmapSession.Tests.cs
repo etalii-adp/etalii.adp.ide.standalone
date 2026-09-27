@@ -256,6 +256,55 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
+    public void UpdateView_ThatBothRemovesAndAdds_RemovesFirst()
+    {
+        // Arrange. backend-centralization R4.5: one order for every module, removals first,
+        // because the client folds an add as an upsert keyed on id - removing first can never
+        // delete what the same batch just added. A pan from the root to a far grandchild both
+        // drops the root and brings the grandchild in, so the order is actually exercised; a
+        // widening only adds and would pass against either order.
+        var session = Open();
+        var elements = AddedElements(session.Baseline());
+        var document = _documents.GetOrLoad(_bodyPath);
+        var grandchild = document.Root.Children.SelectMany(child => child.Children).First();
+        var far = elements.Single(element => element.Id == grandchild.Id);
+        _ = session.UpdateView(new DiagramViewport(-20, -20, 20, 20));
+
+        // Act.
+        var moved = session.UpdateView(new DiagramViewport(far.X - 1, far.Y - 1, far.X + 1, far.Y + 1));
+
+        // Assert.
+        Assert.Collection(
+            moved,
+            removed => Assert.Contains(document.Root.Id, Assert.IsType<DiagramRemoveDelta>(removed).ElementIds),
+            added => Assert.Contains(Assert.IsType<DiagramAddDelta>(added).Elements, element => element.Id == grandchild.Id));
+    }
+
+    [Fact]
+    public async Task AStructuralChange_RemovesWhatItNames_BeforeItAddsWhatIsVisible()
+    {
+        // Arrange. The same order on the structure-change path (backend-centralization R4.5),
+        // which mindmap keeps as its own reaction (R5.3) but not its own order.
+        var session = Open();
+        _ = session.Baseline();
+        var pushes = new List<IReadOnlyList<DiagramDelta>>();
+        session.Changed += (_, args) => pushes.Add(args.Deltas);
+        var document = _documents.GetOrLoad(_bodyPath);
+
+        // Act.
+        document.Remove(document.Find("ID_88117420")!);
+        _documents.Save(_bodyPath, document, new MindmapStructureChanged(["ID_88117420"]));
+
+        // Assert.
+        var deltas = Assert.Single(pushes);
+        Assert.Collection(
+            deltas,
+            removed => Assert.Equal(["ID_88117420"], Assert.IsType<DiagramRemoveDelta>(removed).ElementIds),
+            added => Assert.IsType<DiagramAddDelta>(added));
+        await session.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Dispose_ForgetsThisConnectionsView()
     {
         // Arrange.

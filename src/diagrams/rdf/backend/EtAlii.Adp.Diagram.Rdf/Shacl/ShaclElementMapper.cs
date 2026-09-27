@@ -21,8 +21,6 @@ public sealed class ShaclElementMapper
     /// <inheritdoc cref="ShapeType" />
     public const string TruncationType = "w3c/shacl+truncation";
 
-    private readonly RdfElementMapper _family = new();
-
     /// <summary>The drawn shapes, plus the family truncation banner when the budget cut them.</summary>
     public IReadOnlyList<DiagramElement> Elements(
         ShaclProjectionResult projection,
@@ -99,11 +97,6 @@ public sealed class ShaclElementMapper
 
         return elements;
     }
-
-    /// <summary>The family diff, reused verbatim - one delta vocabulary for every reading.</summary>
-    public IReadOnlyList<DiagramDelta> Diff(
-        IReadOnlyList<DiagramElement> before,
-        IReadOnlyList<DiagramElement> after) => _family.Diff(before, after);
 
     private static ShaclTargetKindProto KindOf(ShaclTargetKind kind) => kind switch
     {

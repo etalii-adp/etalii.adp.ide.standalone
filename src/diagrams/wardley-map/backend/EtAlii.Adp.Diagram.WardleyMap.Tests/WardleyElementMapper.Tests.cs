@@ -237,7 +237,7 @@ public class WardleyElementMapperTests
         var identities = WardleyIdentities.Reconcile(map, []);
 
         // Act.
-        var deltas = _mapper.Diff(_mapper.Elements(map, identities), _mapper.Elements(map, identities));
+        var deltas = DiagramDiff.Between(_mapper.Elements(map, identities), _mapper.Elements(map, identities));
 
         // Assert.
         Assert.Empty(deltas);
@@ -253,7 +253,7 @@ public class WardleyElementMapperTests
         var after = ParseText("component Alpha [0.5, 0.5]\n");
 
         // Act.
-        var deltas = _mapper.Diff(_mapper.Elements(before, identities), _mapper.Elements(after, identities));
+        var deltas = DiagramDiff.Between(_mapper.Elements(before, identities), _mapper.Elements(after, identities));
 
         // Assert.
         var add = Assert.IsType<DiagramAddDelta>(Assert.Single(deltas));
@@ -269,7 +269,7 @@ public class WardleyElementMapperTests
         var after = ParseText("component Alpha [0.9, 0.1]\n");
 
         // Act.
-        var deltas = _mapper.Diff(
+        var deltas = DiagramDiff.Between(
             _mapper.Elements(before, identities),
             _mapper.Elements(after, WardleyIdentities.Reconcile(after, identities)));
 
