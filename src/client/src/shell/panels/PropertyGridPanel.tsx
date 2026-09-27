@@ -176,6 +176,21 @@ export function PropertyGridPanel() {
 
   const chain = levelsOf(selection, levels);
   const innermostLevel = chain[chain.length - 1];
+  const groups = groupsOf(properties);
+  const ungrouped = groups.filter((group) => group.name.length === 0);
+  const titled = groups.filter((group) => group.name.length > 0);
+  const renderGroup = (group: { name: string; properties: ContextProperty[] }) => (
+    <div className="property-grid-group" key={group.name}>
+      {group.name.length > 0 && <h4 className="property-grid-group-title">{group.name}</h4>}
+      {group.properties.map((property) => (
+        <PropertyRow
+          key={property.id}
+          property={previewed?.[property.id] !== undefined ? { ...property, value: previewed[property.id]! } : property}
+          onCommit={(value) => commit(property.id, value)}
+        />
+      ))}
+    </div>
+  );
 
   // Shown innermost first: the element or relation being worked on leads, and the diagram or
   // folder it sits in follows as context. `chain` itself stays outermost first, because that is
@@ -210,19 +225,7 @@ export function PropertyGridPanel() {
                 </div>
               )}
 
-              {isInnermost &&
-                groupsOf(properties).map((group) => (
-                  <div className="property-grid-group" key={group.name}>
-                    {group.name.length > 0 && <h4 className="property-grid-group-title">{group.name}</h4>}
-                    {group.properties.map((property) => (
-                      <PropertyRow
-                        key={property.id}
-                        property={previewed?.[property.id] !== undefined ? { ...property, value: previewed[property.id]! } : property}
-                        onCommit={(value) => commit(property.id, value)}
-                      />
-                    ))}
-                  </div>
-                ))}
+              {isInnermost && ungrouped.map(renderGroup)}
 
               {element === undefined && (
                 <div className="property-grid-row">
@@ -244,6 +247,10 @@ export function PropertyGridPanel() {
                 <dt>Selected in</dt>
                 <dd>{sourceLabel(level.source)}</dd>
               </div>
+
+              {/* The titled groups come last, so the level's own rows above never read as
+                  belonging to whichever group heading happened to precede them. */}
+              {isInnermost && titled.map(renderGroup)}
             </dl>
           </section>
         );

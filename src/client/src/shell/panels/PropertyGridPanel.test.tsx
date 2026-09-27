@@ -228,6 +228,27 @@ describe("PropertyGridPanel", () => {
     expect(levelsOf(contextState.selection, contextState.levels)).toHaveLength(2);
   });
 
+  it("shows a level's own rows before its titled groups, so none reads as part of a group", async () => {
+    // Arrange.
+    const node = selectionFor(ContextSelectionSource.DIAGRAM_CANVAS, new Uint8Array(16).fill(2), ["First day"], NONE_DETAIL);
+    contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, new Uint8Array(16).fill(1), ["design.adp"], { case: "child", value: node });
+    contextState.levels = [entryDetail(EntryKind.FILE), elementDetail("First day")];
+    backend.properties = [
+      property({ id: "mindmap.text", label: "Text", value: "First day" }),
+      property({ id: "mindmap.identifier", label: "Identifier", value: "ID_1", group: "Model" }),
+    ];
+
+    // Act.
+    render(<PropertyGridPanel />);
+    const model = await screen.findByRole("heading", { name: "Model" });
+
+    // Assert.
+    const kind = screen.getAllByText("Kind")[0];
+    const text = screen.getByLabelText("Text");
+    expect(text.compareDocumentPosition(kind) & Node.DOCUMENT_POSITION_FOLLOWING, "Kind came before the ungrouped rows").toBeTruthy();
+    expect(kind.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING, "Kind sat under the Model heading").toBeTruthy();
+  });
+
   // ---- editing ------------------------------------------------------------------------
 
   /** Selects a diagram element, which is what has properties worth editing. */
