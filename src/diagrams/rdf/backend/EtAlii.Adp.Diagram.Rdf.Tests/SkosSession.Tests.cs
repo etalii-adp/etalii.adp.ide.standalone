@@ -320,7 +320,7 @@ public class SkosSessionTests : IDisposable
         // viewport rather than culled by all of them, which is the safe direction but not a
         // silent one.
         var text = File.ReadAllText(IoPath.Combine(ThesaurusFolder(), "business-economics.ttl"));
-        var model = RdfParser.Parse(RdfDocument.Parse(text));
+        var model = RdfParser.Parse(LineDocument.Parse(text));
         var projection = SkosProjection.Project(model, int.MaxValue);
 
         // Act.

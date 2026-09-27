@@ -38,6 +38,7 @@ public class DatabricksDocumentStoreTests : IDisposable
     [InlineData("crlf-line-endings.yml")]
     [InlineData("lf-line-endings.yml")]
     [InlineData("no-trailing-newline.yml")]
+    [InlineData("tied-line-endings.yml")]
     public void SavingAnUntouchedDocument_LeavesTheFileByteIdentical(string name)
     {
         // Arrange.

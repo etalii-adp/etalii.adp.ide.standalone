@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
@@ -13,7 +15,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// <param name="Error">Why the file could not be parsed; empty when it could.</param>
 /// <param name="ErrorLine">The line the parser stopped at, 1-based; 0 when there was no error.</param>
 public sealed record RdfDocumentEntry(
-    RdfDocument Document,
+    LineDocument Document,
     RdfModel Model,
     string Error,
     int ErrorLine)

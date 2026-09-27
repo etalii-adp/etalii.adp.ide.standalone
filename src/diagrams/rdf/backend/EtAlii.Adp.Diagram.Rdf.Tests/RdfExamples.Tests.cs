@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -48,7 +49,7 @@ public class RdfExamplesTests
     public void EveryDocument_ParsesAndValidatesClean(string relativePath)
     {
         // Arrange.
-        var document = RdfDocument.Parse(File.ReadAllText(IoPath.Combine(ExamplesFolder, relativePath)));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine(ExamplesFolder, relativePath)));
 
         // Act.
         var model = RdfParser.Parse(document);
@@ -87,7 +88,7 @@ public class RdfExamplesTests
     public void TheLaureatesFile_ReallyExceedsTheBudget()
     {
         // Arrange.
-        var document = RdfDocument.Parse(File.ReadAllText(IoPath.Combine(ExamplesFolder, "nobel", "laureates.ttl")));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine(ExamplesFolder, "nobel", "laureates.ttl")));
         var model = RdfParser.Parse(document);
 
         // Act.

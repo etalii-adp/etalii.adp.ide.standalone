@@ -18,7 +18,7 @@ internal static class PipelineWriter
 {
     /// <summary>Appends a library entry after the pipeline's last one.</summary>
     public static string InsertLibrary(
-        DatabricksDocument document, PipelineModel pipeline, string kind, string path)
+        LineDocument document, PipelineModel pipeline, string kind, string path)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(pipeline);
@@ -85,7 +85,7 @@ internal static class PipelineWriter
     /// no libraries has nothing to run, and the published schema requires at least one.
     /// </summary>
     public static string RemoveLibrary(
-        DatabricksDocument document, PipelineModel pipeline, string kind, string path)
+        LineDocument document, PipelineModel pipeline, string kind, string path)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(pipeline);
@@ -123,7 +123,7 @@ internal static class PipelineWriter
     /// file's syntax: quoting and the trailing comma in JSON, the value style in YAML.
     /// </summary>
     public static string SetScalar(
-        DatabricksDocument document, PipelineModel pipeline, string key, string value)
+        LineDocument document, PipelineModel pipeline, string key, string value)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(pipeline);

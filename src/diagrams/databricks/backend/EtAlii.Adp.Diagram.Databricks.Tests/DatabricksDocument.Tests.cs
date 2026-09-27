@@ -5,9 +5,11 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.Databricks.Tests;
 
 /// <summary>
-/// The line CST's one promise: a document nothing has spliced comes back byte-identical, whatever
-/// its line endings, and edits touch only the lines they concern (databricks-diagrams
-/// Requirement 2.1).
+/// The line CST's one promise, on this module's own corpus: a document nothing has spliced comes
+/// back byte-identical, whatever its line endings, and edits touch only the lines they concern
+/// (databricks-diagrams Requirement 2.1). The document is core's <see cref="LineDocument"/>, which
+/// replaced this module's own copy (backend-centralization Requirement 1.1); these stay here
+/// because the corpus they prove it against is this module's.
 /// </summary>
 public class DatabricksDocumentTests
 {
@@ -21,6 +23,7 @@ public class DatabricksDocumentTests
     [InlineData("crlf-line-endings.yml")]
     [InlineData("lf-line-endings.yml")]
     [InlineData("no-trailing-newline.yml")]
+    [InlineData("tied-line-endings.yml")]
     [InlineData("broken.yml")]
     public void AnUntouchedDocument_RoundTrips_ByteIdentically(string name)
     {
@@ -28,7 +31,7 @@ public class DatabricksDocumentTests
         var text = File.ReadAllText(Fixture(name));
 
         // Act.
-        var document = DatabricksDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
         Assert.Equal(text, document.Text);
@@ -42,7 +45,7 @@ public class DatabricksDocumentTests
         // newline must move the missing terminator to the new last line, so the append's own
         // undo comes back byte for byte.
         var text = File.ReadAllText(Fixture("no-trailing-newline.yml"));
-        var document = DatabricksDocument.Parse(text);
+        var document = LineDocument.Parse(text);
         var lastLine = document.Lines[^1].Text;
 
         // Act.
@@ -60,7 +63,7 @@ public class DatabricksDocumentTests
     public void Replace_TouchesOnlyTheRangesLines()
     {
         // Arrange.
-        var document = DatabricksDocument.Parse("a: 1\r\nb: 2\r\nc: 3\r\n");
+        var document = LineDocument.Parse("a: 1\r\nb: 2\r\nc: 3\r\n");
 
         // Act.
         document.Replace(new LineRange(1, 1), ["b: 22"]);
@@ -73,8 +76,28 @@ public class DatabricksDocumentTests
     public void DominantEnding_FollowsTheFile_AndTiesGoToTheHouseStyle()
     {
         // Arrange & act & assert.
-        Assert.Equal("\n", DatabricksDocument.Parse("a: 1\nb: 2\n").DominantEnding);
-        Assert.Equal("\r\n", DatabricksDocument.Parse("a: 1\r\nb: 2\r\n").DominantEnding);
-        Assert.Equal("\r\n", DatabricksDocument.Parse("").DominantEnding);
+        Assert.Equal("\n", LineDocument.Parse("a: 1\nb: 2\n").DominantEnding);
+        Assert.Equal("\r\n", LineDocument.Parse("a: 1\r\nb: 2\r\n").DominantEnding);
+        Assert.Equal("\r\n", LineDocument.Parse("").DominantEnding);
+    }
+
+    [Fact]
+    public void ATiedFile_GivesAnInsertedLineCrlf()
+    {
+        // Arrange.
+        // As many LF endings as CRLF, so neither is the majority and the tie rule alone decides
+        // which ending a new line takes (backend-centralization Requirement 1.2).
+        var text = File.ReadAllText(Fixture("tied-line-endings.yml"));
+        var document = LineDocument.Parse(text);
+        var endings = document.Lines.Select(line => line.Ending).ToList();
+        Assert.Equal(endings.Count(ending => ending == "\n"), endings.Count(ending => ending == "\r\n"));
+
+        // Act.
+        document.Insert(2, ["  owner: data-platform"]);
+
+        // Assert.
+        Assert.Equal("\r\n", document.Lines[2].Ending);
+        document.Remove(new LineRange(2, 2));
+        Assert.Equal(text, document.Text);
     }
 }

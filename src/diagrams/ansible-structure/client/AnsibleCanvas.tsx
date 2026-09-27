@@ -73,7 +73,9 @@ const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       id: "node",
       shape: "box",
       classNames: [
-        { className: "ansible-node" },
+        // The whole element, labels and all: the group the library makes focusable and hovers, which
+        // the hover and focus rules anchor on. Every other class here lands on the box itself.
+        { className: "ansible-node", on: "element" },
         { className: { template: "ansible-node-{payload.kindClass}" } },
         { className: { template: "ansible-play-{payload.playSlot}" }, when: { path: "payload.playSlot", is: "present" } },
         { className: "ansible-play-none", when: { path: "payload.playSlot", is: "absent" } },

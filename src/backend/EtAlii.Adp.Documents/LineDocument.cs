@@ -33,6 +33,15 @@ namespace EtAlii.Adp.Documents;
 /// splice - the XML mindmap, the two parsed-DOM YAML readers - are deliberately not asked to
 /// adopt it (Requirement 3.3).
 /// </para>
+/// <para>
+/// Databricks, rdf and azure-pipeline held three more copies, and moved onto this one later
+/// (backend-centralization Requirement 1.1). Databricks' and rdf's were this class under another
+/// name. Azure-pipeline's had drifted twice, and this class's behaviour won both times by the
+/// user's ruling: a tie between LF and CRLF counts gave a newly inserted line LF there and CRLF
+/// here, and a range ending before it started had no refusal of its own - one ending the line
+/// before it started has a length of zero, so a replace spliced its lines in as an insertion
+/// rather than refusing (Requirements 1.2 and 1.4).
+/// </para>
 /// </remarks>
 public sealed class LineDocument
 {

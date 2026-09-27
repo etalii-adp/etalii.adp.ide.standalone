@@ -31,7 +31,7 @@ public sealed partial class DiagramService
             {
                 // The client is told only that it failed; the log keeps what it asked for.
                 _logger.Warning("Refusing to open {Path} as text on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, "The file cannot be opened as text."));
+                throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The file cannot be opened as text."));
             }
 
             var forcedId = request.EditorId == "*" ? ResolvedEditorIdOf(forcedPath) : request.EditorId;
@@ -39,7 +39,7 @@ public sealed partial class DiagramService
             if (forcedFactory is null)
             {
                 _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: no {EditorId} editor is deployed", forcedPath, watchId, forcedId);
-                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"No '{forcedId}' editor is deployed."));
+                throw new RpcException(new Status(PermanentRefusal.CannotOpen, $"No '{forcedId}' editor is deployed."));
             }
 
             _logger.Debug("Opening {FullPath} as text in the {EditorId} editor (forced) on watch {WatchId}", forcedPath, forcedId, watchId);
@@ -52,7 +52,7 @@ public sealed partial class DiagramService
             if (factory is null)
             {
                 _logger.Warning("Refusing to open {BodyPath} on watch {WatchId}: no session factory is deployed for {Origin}", diagramBody, watchId, origin.Key);
-                throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
+                throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"'{origin}' diagrams cannot be opened yet."));
             }
 
             _logger.Debug("Routed {FullPath} to {Origin}, body {BodyPath}, on watch {WatchId}", string.Join('/', request.Path.Segments), origin.Key, diagramBody, watchId);
@@ -69,7 +69,7 @@ public sealed partial class DiagramService
             if (editorFactory is null)
             {
                 _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: the {EditorId} editor registered no session factory", fullPath, watchId, editorDefinitionId);
-                throw new RpcException(new Status(StatusCode.Unimplemented, $"The '{editorDefinitionId}' editor registered no session factory."));
+                throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"The '{editorDefinitionId}' editor registered no session factory."));
             }
 
             _logger.Debug("Opening {FullPath} in the {EditorId} editor on watch {WatchId}", fullPath, editorDefinitionId, watchId);
@@ -81,7 +81,7 @@ public sealed partial class DiagramService
             // The refusal every misrouted open lands on: without this line there is nothing
             // anywhere saying which file was asked for, and people debug it blind.
             _logger.Warning("Refusing to open {Path} on watch {WatchId}: neither a diagram type nor an editor claims it", string.Join('/', request.Path.Segments), watchId);
-            throw new RpcException(new Status(StatusCode.FailedPrecondition, "The diagram cannot be opened."));
+            throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The diagram cannot be opened."));
         }
 
         await using var session = openedSession;

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using YamlDotNet.RepresentationModel;
 
 namespace EtAlii.Adp.Diagram.Databricks;
@@ -17,7 +18,7 @@ internal static class BundleParser
     private static readonly string[] _modelledRootKeys = ["bundle", "include", "variables", "resources", "targets"];
     private static readonly string[] _modelledResourceKinds = ["jobs", "pipelines"];
 
-    public static BundleModel Parse(YamlMappingNode? root, DatabricksDocument document)
+    public static BundleModel Parse(YamlMappingNode? root, LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         if (root is null)
@@ -37,13 +38,13 @@ internal static class BundleParser
             ReadUnknownRootKeys(root, document).Concat(unknownKinds).ToList());
     }
 
-    private static List<BundleInclude> ReadIncludes(YamlMappingNode root, DatabricksDocument document) =>
+    private static List<BundleInclude> ReadIncludes(YamlMappingNode root, LineDocument document) =>
         DatabricksYaml.Sequence(root, "include")
             .OfType<YamlScalarNode>()
             .Select(node => new BundleInclude(node.Value ?? "", DatabricksYaml.Range(node, document)))
             .ToList();
 
-    private static List<BundleVariable> ReadVariables(YamlMappingNode root, DatabricksDocument document)
+    private static List<BundleVariable> ReadVariables(YamlMappingNode root, LineDocument document)
     {
         var variables = new List<BundleVariable>();
         var mapping = DatabricksYaml.Mapping(root, "variables");
@@ -73,7 +74,7 @@ internal static class BundleParser
     }
 
     private static List<BundleResource> ReadResources(
-        YamlMappingNode root, DatabricksDocument document, out List<UnknownNode> unknownKinds)
+        YamlMappingNode root, LineDocument document, out List<UnknownNode> unknownKinds)
     {
         var resources = new List<BundleResource>();
         unknownKinds = [];
@@ -116,7 +117,7 @@ internal static class BundleParser
         return resources;
     }
 
-    private static List<BundleTarget> ReadTargets(YamlMappingNode root, DatabricksDocument document)
+    private static List<BundleTarget> ReadTargets(YamlMappingNode root, LineDocument document)
     {
         var targets = new List<BundleTarget>();
         var mapping = DatabricksYaml.Mapping(root, "targets");
@@ -147,7 +148,7 @@ internal static class BundleParser
     /// The resources a target overrides: everything keyed under its own <c>resources:</c>, as
     /// kind/key pairs - the override edges of Requirement 3.3.
     /// </summary>
-    private static List<BundleResource> ReadOverrides(YamlMappingNode target, DatabricksDocument document)
+    private static List<BundleResource> ReadOverrides(YamlMappingNode target, LineDocument document)
     {
         var overrides = new List<BundleResource>();
         var mapping = DatabricksYaml.Mapping(target, "resources");
@@ -175,7 +176,7 @@ internal static class BundleParser
         return overrides;
     }
 
-    private static IEnumerable<UnknownNode> ReadUnknownRootKeys(YamlMappingNode root, DatabricksDocument document)
+    private static IEnumerable<UnknownNode> ReadUnknownRootKeys(YamlMappingNode root, LineDocument document)
     {
         foreach (var (keyNode, value) in root.Children)
         {

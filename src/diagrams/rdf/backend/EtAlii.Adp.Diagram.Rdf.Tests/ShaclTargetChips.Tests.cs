@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -19,7 +20,7 @@ public class ShaclTargetChipsTests
         """;
 
     private static ShaclProjectionResult Project(string body) =>
-        ShaclProjection.Project(RdfParser.Parse(RdfDocument.Parse(Prelude + body)));
+        ShaclProjection.Project(RdfParser.Parse(LineDocument.Parse(Prelude + body)));
 
     /// <summary>
     /// The invariant a placeholder node or dangling edge would break: the projection's whole
@@ -28,7 +29,7 @@ public class ShaclTargetChipsTests
     /// </summary>
     private static void AssertElementUniverseIsShapesOnly(string body)
     {
-        var model = RdfParser.Parse(RdfDocument.Parse(Prelude + body));
+        var model = RdfParser.Parse(LineDocument.Parse(Prelude + body));
         var shapeIds = ShaclShapeDiscovery.Discover(model).Select(shape => ShaclProjection.IdOf(shape.Key)).ToHashSet(StringComparer.Ordinal);
         var projection = ShaclProjection.Project(model);
 

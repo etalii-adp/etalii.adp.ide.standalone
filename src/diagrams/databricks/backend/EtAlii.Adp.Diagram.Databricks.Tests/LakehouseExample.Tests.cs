@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -30,7 +31,7 @@ public class LakehouseExampleTests
 
     private static DatabricksDocumentEntry Load(string relativePath)
     {
-        var document = DatabricksDocument.Parse(File.ReadAllText(IoPath.Combine(Lakehouse, relativePath)));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine(Lakehouse, relativePath)));
         var root = DatabricksYaml.Root(document);
         return new DatabricksDocumentEntry(
             document,

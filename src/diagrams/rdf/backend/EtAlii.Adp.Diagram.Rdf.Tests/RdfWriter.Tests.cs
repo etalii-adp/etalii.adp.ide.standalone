@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -18,9 +19,9 @@ public class RdfWriterTests
         + "\r\n"
         + "ex:bob ex:name \"Bob\" .\r\n";
 
-    private static (RdfDocument Document, RdfModel Model) Load(string text)
+    private static (LineDocument Document, RdfModel Model) Load(string text)
     {
-        var document = RdfDocument.Parse(text);
+        var document = LineDocument.Parse(text);
         return (document, RdfParser.Parse(document));
     }
 

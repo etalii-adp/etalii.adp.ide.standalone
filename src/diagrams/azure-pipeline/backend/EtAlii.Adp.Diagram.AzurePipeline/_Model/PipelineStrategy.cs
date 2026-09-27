@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
@@ -20,11 +22,11 @@ public sealed record PipelineStrategy(
     PipelineStrategyKind Kind,
     int Multiplicity,
     string MultiplicityExpression,
-    PipelineLineRange Lines)
+    LineRange Lines)
 {
     /// <summary>The absence of a <c>strategy</c> key.</summary>
     public static PipelineStrategy None { get; } =
-        new(PipelineStrategyKind.None, 1, "", PipelineLineRange.Single(0));
+        new(PipelineStrategyKind.None, 1, "", new LineRange(0, 0));
 
     /// <summary>Whether this is one of the three deployment strategies.</summary>
     public bool IsDeployment =>

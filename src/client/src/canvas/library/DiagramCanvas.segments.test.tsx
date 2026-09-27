@@ -219,6 +219,55 @@ describe("a draggable segment boundary", () => {
     expect(tip).toBe("212,16");
   });
 
+  it("tells the module where every boundary is drawn while the drag is in flight, and when it is over", () => {
+    // Arrange.
+    const log: string[] = [];
+    const { container } = renderBanner(bannerOf(4, [0.25, 0.5, 0.75]), draggableDefinition(), {
+      onElementPreviewed: ({ bounds, boundaries }) => log.push(bounds === null ? "over" : `drawn ${bounds.x}+${bounds.width} at ${boundaries?.join(",")}`),
+      onSegmentBoundaryMoved: ({ x }) => log.push(`moved ${x}`),
+    });
+
+    // Act: mid-drag...
+    dragBoundary(container, 1, 200, 211, false);
+
+    // Assert: the snapped landing, with the other boundaries where they are drawn.
+    expect(log, "nothing told the module where the boundary was until the release, so the property grid could only catch up then").toContain("drawn 0+400 at 100,212,300");
+    expect(log.every((line) => line.startsWith("drawn"))).toBe(true);
+    const drawnLines = log.length;
+
+    // Act: ...then released.
+    fireEvent(container.querySelector('[data-boundary="1"]')!, pointer("pointerup", { clientX: 211, clientY: 16 }));
+
+    // Assert: the write first, then the end of the preview.
+    expect(log.slice(drawnLines)).toEqual(["moved 212", "over"]);
+  });
+
+  it("keeps a released boundary where it landed until the model answers", () => {
+    // Arrange.
+    const definition = draggableDefinition();
+    const view = (element: DiagramModelElement) => (
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvasCore definition={definition} model={{ elements: [element], connections: [] }} events={{}} />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>
+    );
+    const { container, rerender } = render(view(bannerOf(4, [0.25, 0.5, 0.75])));
+    const tipOf = () => dividersOf(container)[1]!.getAttribute("points")!.split(" ")[1]!;
+
+    // Act: released at 212, the model not yet changed.
+    dragBoundary(container, 1, 200, 211);
+
+    // Assert: still drawn at the landing, not back at 200 for the length of the round trip.
+    expect(tipOf(), "the release reverted the boundary to the model's old position until the backend answered, which is a flicker").toBe("212,16");
+
+    // Act: the model answers with a slightly different place.
+    rerender(view(bannerOf(4, [0.25, 0.52, 0.75])));
+
+    // Assert: the model's answer is what is drawn now.
+    expect(tipOf()).toBe("208,16");
+  });
+
   it("has no handle where the declaration does not ask for one", () => {
     // Arrange, act.
     const { container } = renderBanner(bannerOf(4, [0.25, 0.5, 0.75]));

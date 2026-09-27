@@ -146,7 +146,7 @@ describe("a connection attached along an edge", () => {
 
   afterEach(() => restore?.());
 
-  function bannerDefinition(): DiagramDefinition {
+  function bannerDefinition(route: "straight" | "cubic-bezier" = "straight"): DiagramDefinition {
     return {
       elementTypes: [
         {
@@ -158,7 +158,7 @@ describe("a connection attached along an edge", () => {
         },
       ],
       relationTypes: [
-        { id: "flows", route: "straight", endpoints: { source: { elementTypes: ["banner"] }, target: { elementTypes: ["banner"] }, allowSelf: false } },
+        { id: "flows", route, endpoints: { source: { elementTypes: ["banner"] }, target: { elementTypes: ["banner"] }, allowSelf: false } },
       ],
       layout: { modes: ["manual"] },
       dragging: "enabled",
@@ -170,11 +170,11 @@ describe("a connection attached along an edge", () => {
   const banner = (id: string, x: number, y: number, width = 400): DiagramModelElement =>
     ({ id, type: "banner", x, y, width, height: 32, payload: { boundaries: [0.25, 0.5, 0.75] } });
 
-  function renderModel(elements: DiagramModelElement[], connections: DiagramModelConnection[] = [], onConnectionDrawn = vi.fn()) {
+  function renderModel(elements: DiagramModelElement[], connections: DiagramModelConnection[] = [], onConnectionDrawn = vi.fn(), route: "straight" | "cubic-bezier" = "straight") {
     const result = render(
       <DiagramViewProvider>
         <DiagramToolboxProvider>
-          <DiagramCanvasCore definition={bannerDefinition()} model={{ elements, connections }} events={{ onConnectionDrawn }} />
+          <DiagramCanvasCore definition={bannerDefinition(route)} model={{ elements, connections }} events={{ onConnectionDrawn }} />
         </DiagramToolboxProvider>
       </DiagramViewProvider>,
     );
@@ -210,6 +210,93 @@ describe("a connection attached along an edge", () => {
 
     // Assert: a quarter along the new stretch. An end stored as an offset would stay at 109.
     expect(startOf(container)).toEqual({ x: 234, y: 0 });
+  });
+
+  it("leaves and arrives square to the edge on a curved route, so the arrowhead meets the border at 90 degrees", () => {
+    // Arrange, act: from a's TOP edge to b's BOTTOM edge, b below and to the right of a.
+    const { container } = renderModel([banner("a", 200, 16), banner("b", 600, 216)], [attached], vi.fn(), "cubic-bezier");
+    const d = container.querySelector('[data-connection-id="c"] path.canvas-connection-line')!.getAttribute("d")!;
+    const [sx, sy, c1x, c1y, c2x, c2y, ex, ey] = [...d.matchAll(/-?[\d.]+/g)].map((match) => Number(match[0]));
+
+    // Assert: the first control point is straight above the start (a top edge leaves upward) and
+    // the second straight below the end (a bottom edge is arrived at from below), so the tangent
+    // at each end - which is the direction the arrowhead points - is the edge's normal.
+    expect({ x: c1x - sx, up: c1y < sy }, "the curve leaves the top edge sideways: the arrowhead and the tail cross the border at a slant").toEqual({ x: 0, up: true });
+    expect({ x: c2x - ex, below: c2y > ey }, "the curve arrives at the bottom edge sideways").toEqual({ x: 0, below: true });
+  });
+
+  describe("an end handle on a selected connection", () => {
+    function renderSelected(movableEnds: boolean, onConnectionEndMoved = vi.fn()) {
+      const plain = bannerDefinition("cubic-bezier");
+      const definition: DiagramDefinition = { ...plain, relationTypes: [{ ...plain.relationTypes[0]!, movableEnds }] };
+      const view = (connection: DiagramModelConnection) => (
+        <DiagramViewProvider>
+          <DiagramToolboxProvider>
+            <DiagramCanvasCore
+              definition={definition}
+              model={{ elements: [banner("a", 200, 16), banner("b", 600, 216)], connections: [connection] }}
+              events={{ onConnectionEndMoved }}
+              selection={[{ kind: "connection", id: "c" }]}
+            />
+          </DiagramToolboxProvider>
+        </DiagramViewProvider>
+      );
+      const result = render(view(attached));
+      return { ...result, onConnectionEndMoved, rerenderWith: (connection: DiagramModelConnection) => result.rerender(view(connection)) };
+    }
+
+    const endOf = (container: HTMLElement) => {
+      const d = container.querySelector('[data-connection-id="c"] path.canvas-connection-line')!.getAttribute("d")!;
+      const numbers = [...d.matchAll(/-?[\d.]+/g)].map((match) => Number(match[0]));
+      return { x: numbers[numbers.length - 2], y: numbers[numbers.length - 1] };
+    };
+
+    it("is drawn, round, on each end of a selected connection whose relation declares movable ends", () => {
+      // Arrange, act.
+      const { container } = renderSelected(true);
+
+      // Assert: at the start (109, 0) and at the end (b's first segment's bottom, halfway).
+      const handles = [...container.querySelectorAll("circle.library-end-handle")].map((handle) => `${handle.getAttribute("data-end")} ${handle.getAttribute("cx")},${handle.getAttribute("cy")}`);
+      expect(handles, "a selected influence showed no handle on its ends, so an end could not be moved").toEqual(["source 109,0", "target 442,232"]);
+
+      // Assert: drawn after every element, so a trend's edge strip above the line cannot take the
+      // press meant for the handle - which it did, in a browser, before the handles had a layer.
+      const handle = container.querySelector("circle.library-end-handle")!;
+      for (const element of container.querySelectorAll("[data-element-id]")) {
+        expect(element.compareDocumentPosition(handle) & Node.DOCUMENT_POSITION_FOLLOWING, `the handle is drawn beneath ${element.getAttribute("data-element-id")}`).toBeTruthy();
+      }
+    });
+
+    it("is not drawn where the relation does not declare it", () => {
+      // Arrange, act.
+      const { container } = renderSelected(false);
+
+      // Assert.
+      expect(container.querySelector("circle.library-end-handle")).toBeNull();
+    });
+
+    it("slides the end along its own edge into another segment, and raises the new attachment on release", () => {
+      // Arrange: b's bottom edge; its third segment's bottom runs 584..684 at y 232.
+      const { container, onConnectionEndMoved } = renderSelected(true);
+      const target = container.querySelector('circle.library-end-handle[data-end="target"]')!;
+
+      // Act: dragged right and up, nearer b's TOP edge than its bottom - it must stay on the bottom.
+      fireEvent(target, pointer("pointerdown", { button: 0, clientX: 442, clientY: 332 }));
+      fireEvent(target, pointer("pointermove", { clientX: 634, clientY: 305 }));
+
+      // Assert: mid-drag, the line already ends on the edge under the pointer.
+      expect(endOf(container)).toEqual({ x: 634, y: 232 });
+
+      // Act.
+      fireEvent(target, pointer("pointerup", { clientX: 634, clientY: 305 }));
+
+      // Assert: the same edge, the third segment, halfway along it.
+      expect(onConnectionEndMoved).toHaveBeenCalledTimes(1);
+      expect(onConnectionEndMoved.mock.calls[0][0]).toEqual({ kind: "connection-end-moved", connectionId: "c", end: "target", attachment: { edge: "bottom", region: 2, at: 0.5 } });
+
+      // Assert: still drawn where it was released while the model has not answered.
+      expect(endOf(container), "the end jumped back to where it was until the backend answered").toEqual({ x: 634, y: 232 });
+    });
   });
 
   it("records where a gesture started and ended, as edge, segment and fraction", () => {

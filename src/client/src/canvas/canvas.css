@@ -466,6 +466,15 @@
   cursor: grab;
 }
 
+/* A selected connection's end, slid along the edge it is attached to. */
+.library-end-handle {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  cursor: ew-resize;
+}
+
 /* ---- Connections ------------------------------------------------------------------- */
 
 .canvas-connection-line {

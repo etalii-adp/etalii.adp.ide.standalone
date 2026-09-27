@@ -93,6 +93,17 @@
   font-family: var(--font-sans);
 }
 
+/*
+ * The two axis titles, "Value chain" and "Evolution". The library composes the class from the
+ * axis's own (`wardley-axis` + `-title`); this rule was once written for `.wardley-axis-label`,
+ * a name nothing draws, so the titles rendered in the default fill and weight.
+ */
+.wardley-axis-title {
+  fill: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
 .wardley-axis-end {
   fill: var(--color-text-muted);
   font-family: var(--font-sans);

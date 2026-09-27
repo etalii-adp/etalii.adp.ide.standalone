@@ -270,7 +270,7 @@ const COMMENT_TYPE: ElementTypeDefinition = {
 
 **Whether a module needs it.** `relationTypes` is declared by all 14 modules. `acyclic` is declared by one, the functional decomposition graph (both read at `5b44878d`).
 
-**Its shape.** A `RelationTypeDefinition` carries `id`, `route`, `style`, `label`, `adjustable`, `selectable`, `className`, `lineClassName`, `hitClassName`, `emptyRelease` and `hideWhenAttachmentHidden`, which leaves a connection undrawn while the segment one of its ends attaches to is not shown. A route the built-ins do not cover is a `CustomRouteRef` — `customRoute` and `path`. An `AcyclicRule` carries `relationTypes`: the relation ids a cycle may not be formed from, so a "depends on" edge can refuse a cycle while other relation types stay free to form one.
+**Its shape.** A `RelationTypeDefinition` carries `id`, `route`, `style`, `label`, `adjustable`, `movableEnds`, `selectable`, `className`, `lineClassName`, `hitClassName`, `emptyRelease` and `hideWhenAttachmentHidden`, which leaves a connection undrawn while the segment one of its ends attaches to is not shown. A route the built-ins do not cover is a `CustomRouteRef` — `customRoute` and `path`. An `AcyclicRule` carries `relationTypes`: the relation ids a cycle may not be formed from, so a "depends on" edge can refuse a cycle while other relation types stay free to form one.
 
 Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx)
 
@@ -297,7 +297,7 @@ Source: [`src/diagrams/functional-decomposition-graph/client/FdgCanvas.tsx`](../
 
 **Which relation a connect gesture draws.** The press sees only the source, so it starts with the `activeTool` relation if the runtime names one, and otherwise with the first relation whose source admits the element. Over a target, the canvas keeps that relation if it admits the target's type. If it does not, and no `activeTool` is named, it draws the first relation that admits BOTH ends - the source's anchor included - and the connect checks then run on the relation actually drawn. So a notation whose relations are told apart by what they point at can draw each of them from the same element: the functional decomposition graph's screen owns a child screen, an action, data or a function through four different relations. **A named `activeTool` still wins**: a target it does not admit is refused, not drawn as some other relation. A definition whose starting relation already admits every target it meets never reaches the search, so it draws exactly what it did before this behaviour arrived (`5ce04fbc`).
 
-**Their members.** `RouteEnds` carries `source`, `target`; `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`, `perPair` - `"ordered"` allows one connection of the type per direction between two elements, `"unordered"` one per pair.
+**Their members.** `RouteEnds` carries `source`, `target`, `sourceEdge`, `targetEdge` (the edge an end is attached along, which a `cubic-bezier` route leaves and meets square on); `RouteLabelRule` carries `placement`, `offset`, `editable`; `ConnectionStyle` carries `stroke`, `strokeWidth`, `dash`, `startMarker`, `endMarker`, `cornerRadius`; `CustomMarkerRef` carries `customMarker`, `path`; `EndpointConstraint` carries `elementTypes`, `anchors`; `Cardinality` carries `maxFromSource`, `maxIntoTarget`, `perPair` - `"ordered"` allows one connection of the type per direction between two elements, `"unordered"` one per pair.
 
 **Their members.** `RelationTypeDefinition` carries `endpoints`, `adorn`.
 
@@ -451,7 +451,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## Events, and how a module answers them
 
-**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`
+**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`, `ElementPreviewed`, `ConnectionEndMoved`
 
 **What it is for.** **Every event is a request, never a report.** The canvas raises what a user did; the module decides what happens and sends it to the backend. Nothing is applied to the model by the library on its own.
 
@@ -495,9 +495,11 @@ sequenceDiagram
     end
 ```
 
+**`ElementPreviewed` is the other member that is not a request.** It is raised on every frame of a move, a resize or a boundary drag with the element's drawn rectangle and its inner boundaries, and once more with `bounds: null` after the gesture's final event. Nothing is written for it: it is there so a module can show what the release will write while the gesture is still going, which is what `showPropertyPreview` is for (see [The context channel](#the-context-channel)).
+
 **Their members.** `DiagramViewport` carries `x`, `y`, `width`, `height`; `SelectionChanged` carries `kind`, `selection`.
 
-**Their members.** `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
+**Their members.** `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `ConnectionEndMoved` carries `connectionId`, `end`, `attachment`; `ElementPreviewed` carries `elementId`, `bounds`, `boundaries`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
 
 ## Selection
 
@@ -525,7 +527,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## The context channel
 
-**Declarations:** `useContextConnection`, `elementSourceOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`
+**Declarations:** `useContextConnection`, `elementSourceOf`, `ActionOutcome`, `useContextProblems`, `Problem`, `ProblemSeverity`, `showPropertyPreview`, `settlePropertyPreview`, `endPropertyPreview`
 
 **What it is for.** Running an action against the backend. A prompt the backend asks in return — an inline rename among them — is answered by the shell and the library, not by the module.
 
@@ -546,6 +548,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 ```
 
 **Their members.** `ActionOutcome` carries `accepted`, `error`.
+
+**A value shown before it is written.** `showPropertyPreview(elementId, values)` puts values in the property grid in place of what the backend last said, for that element while it is selected, and writes nothing; a module calls it from `ElementPreviewed` so Start, Stop or a phase's end follow a drag. `settlePropertyPreview` says the release wrote them, so they stay until the grid has read the answer and the old value never flashes back; `endPropertyPreview` ends the gesture, dropping a preview nothing wrote at once. The hype cycle graph is the first user.
 
 ## Refusals and status
 

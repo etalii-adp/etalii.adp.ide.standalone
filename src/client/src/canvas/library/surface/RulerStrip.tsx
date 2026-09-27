@@ -1,5 +1,7 @@
+import { useSyncExternalStore } from "react";
 import { canvasPositionOf, resolveTicks, rulerRangeOf, type RulerDeclaration } from "../definition/chrome";
 import type { BindingSource } from "../definition/binding";
+import type { GestureValue } from "../gestureFrame";
 
 /** The strip's width in pixels when nothing has been measured - jsdom, or the first paint. */
 const UNMEASURED_WIDTH_PX = 800;
@@ -9,9 +11,16 @@ export interface RulerStripProps {
   source: BindingSource;
   /** The visible rectangle's left edge and width, in canvas units. */
   view: { x: number; w: number };
+  /**
+   * A pan in flight, which the drawing follows through its viewBox attribute before the view is
+   * state. Subscribed, so the ticks move with the drawing rather than jumping on the release.
+   */
+  panning?: GestureValue<{ x: number; w: number }>;
   /** The surface's measured width in pixels, or null before it has one. */
   widthPx: number | null;
 }
+
+const noSubscription = () => () => {};
 
 /**
  * A declared ruler pinned to the BOTTOM of the viewport: chrome, not diagram.
@@ -22,7 +31,9 @@ export interface RulerStripProps {
  * drawing uses, so a tick sits over the canvas x it names at every pan and zoom, and the ladder
  * is walked for however many labels the strip's width can hold.
  */
-export function RulerStrip({ declaration, source, view, widthPx }: RulerStripProps) {
+export function RulerStrip({ declaration, source, view: settled, panning, widthPx }: RulerStripProps) {
+  const live = useSyncExternalStore(panning?.subscribe ?? noSubscription, () => panning?.get() ?? null);
+  const view = live ?? settled;
   if (!(view.w > 0)) {
     return null;
   }
