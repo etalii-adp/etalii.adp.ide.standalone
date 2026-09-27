@@ -47,6 +47,54 @@ public class GhgExampleInfluencePhaseTests
         Assert.True(wrong.Count == 0, $"These influences join phases that never meet in time: {string.Join("; ", wrong)}.");
     }
 
+    /// <summary>
+    /// An influence reaches its effect no earlier than it leaves its cause: the date under its From
+    /// end is at or before the date under its To end (Peter, 2026-09-27: "take into consideration
+    /// logical order of how influences could have happened").
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Examples))]
+    public void EveryInfluence_ArrivesNoEarlierThanItLeaves(string name)
+    {
+        var model = Model(name);
+        var trends = model.Trends.ToDictionary(trend => trend.Id);
+        var wrong = new List<string>();
+
+        foreach (var influence in Drawn(model, trends))
+        {
+            var leaves = DateOf(trends[influence.From], influence.FromEnd);
+            var arrives = DateOf(trends[influence.To], influence.ToEnd);
+            if (arrives < leaves)
+            {
+                wrong.Add($"{influence.Id} (leaves {GhgScale.FormatMonth((int)leaves)}, arrives {GhgScale.FormatMonth((int)arrives)})");
+            }
+        }
+
+        Assert.True(wrong.Count == 0, $"These influences arrive before they leave: {string.Join("; ", wrong)}.");
+    }
+
+    /// <summary>
+    /// The ends sharing one edge of one phase are spread across it rather than stacked at one spot:
+    /// they cover at least a fifth of the phase (Peter, 2026-09-27: "spread the influence relations
+    /// anchor positions more across a phase").
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Examples))]
+    public void TheEndsOnAPhaseEdge_AreSpreadAcrossIt(string name)
+    {
+        var model = Model(name);
+        var trends = model.Trends.ToDictionary(trend => trend.Id);
+        var stacked = Drawn(model, trends)
+            .SelectMany(influence => new[] { (Trend: influence.From, End: influence.FromEnd), (Trend: influence.To, End: influence.ToEnd) })
+            .GroupBy(end => (end.Trend, end.End.Phase, end.End.Edge))
+            .Where(slot => slot.Count() >= 2)
+            .Where(slot => slot.Max(end => end.End.At!.Value) - slot.Min(end => end.End.At!.Value) < 0.2)
+            .Select(slot => $"{slot.Key.Trend} {slot.Key.Phase}/{slot.Key.Edge} ({string.Join(", ", slot.Select(end => end.End.At))})")
+            .ToList();
+
+        Assert.True(stacked.Count == 0, $"These phase edges stack their influences in one spot: {string.Join("; ", stacked)}.");
+    }
+
     /// <summary>Peter asked for at least one empty row between any two rows that hold trends.</summary>
     [Fact]
     public void TechnologyTrends_LeavesAnEmptyRowBetweenEveryTwoRowsOfTrends()
@@ -54,6 +102,20 @@ public class GhgExampleInfluencePhaseTests
         var rows = Model("technology-trends").Trends.Select(trend => trend.Row).Distinct().Order().ToList();
 
         Assert.All(rows.Zip(rows.Skip(1)), pair => Assert.True(pair.Second - pair.First >= 2, $"Rows {pair.First} and {pair.Second} both hold trends with no empty row between them."));
+    }
+
+    /// <summary>The influences drawn: both ends readable and on a visible phase.</summary>
+    private static IEnumerable<GhgInfluence> Drawn(GhgModel model, Dictionary<string, GhgTrend> trends) =>
+        model.Influences.Where(influence =>
+            influence.FromEnd.IsReadable && influence.ToEnd.IsReadable &&
+            influence.FromEnd.PhaseIndex < trends[influence.From].VisiblePhases &&
+            influence.ToEnd.PhaseIndex < trends[influence.To].VisiblePhases);
+
+    /// <summary>The date under an end: its fraction along its phase's span.</summary>
+    private static double DateOf(GhgTrend trend, GhgEnd end)
+    {
+        var (start, stop) = PhaseSpan(trend, end.PhaseIndex);
+        return start + (end.At!.Value * (stop - start));
     }
 
     private static (int Start, int Stop) PhaseSpan(GhgTrend trend, int phase)

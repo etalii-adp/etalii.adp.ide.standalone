@@ -16,6 +16,7 @@ Thirty-three energy trends from the first fission and fusion experiments of the 
 | --- | --- |
 | Trends | 33, in five clusters of rows: fusion, fission, renewables, storage and hydrogen, and the grid, with an empty row between every two rows of trends |
 | Influences | 46, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Anchors | Placed by [`spread-anchors.py`](../spread-anchors.py): each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: fission, solar and lithium-ion show all four phases; most fusion variants a Peak or a Trough |
 | Upcoming and conceptual ideas | Fusion power plants are tagged `upcoming`; lunar helium-3, space-based solar power, superhot rock geothermal and room-temperature superconductors are tagged `conceptual` |
 | A trend that fizzled | Cold fusion and room-temperature superconductors show a Peak and a Trough and stop there |

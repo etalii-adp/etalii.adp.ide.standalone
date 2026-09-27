@@ -18,6 +18,7 @@ It is the close-up of the last few trends in [digital-trends](../digital-trends/
 | --- | --- |
 | Trends | 35, in five clusters of rows: foundations, models, tooling, agents, and what comes next, with an empty row between every two rows of trends |
 | Influences | 56, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Anchors | Placed by [`spread-anchors.py`](../spread-anchors.py): each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: word embeddings and the Transformer show all four phases, most agent trends only a Peak |
 | Upcoming and conceptual ideas | Human-agent teams and agent-to-agent protocols are tagged `upcoming`; autonomous research agents, continual learning, verified code generation, agent economies and recursive self-improvement are tagged `conceptual` |
 | Both directions | Autonomous agents pushed for tool use in 2023, and tool use pulled autonomous agents out of their trough in 2025: one influence per direction is allowed |

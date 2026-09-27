@@ -22,6 +22,7 @@ The classic hype cycle chart shows one curve and plots each technology as a dot 
 | Influences | 263, most of them between clusters, each attached to the phase of each trend in which it acted: the two phases overlap in time, or, where one trend ended before the other began, it acts from its last phase on the other's Peak |
 | Phase counts | Every count from 1 to 4: trends of the past show all four phases, recent ones such as AI agents, fusion or small modular reactors only a Peak |
 | Edges | Influences attach to the top and the bottom edge of every one of the four phases |
+| Anchors | Placed by [`spread-anchors.py`](../spread-anchors.py): each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | A hidden influence | Autonomous vehicles to urban air mobility is attached to the Slope of a trend that shows only two phases, so it is hidden, and kept in the file |
 | Both directions | The steam engine influenced coal, and coal the steam engine: one influence per direction is allowed |
 | Dragged boundaries | The steam engine, nuclear power, the dot-com bubble, railway mania, symbolic AI, solar photovoltaics, large language models and virtual reality have phase boundaries placed by hand; every other trend's phases are even |
