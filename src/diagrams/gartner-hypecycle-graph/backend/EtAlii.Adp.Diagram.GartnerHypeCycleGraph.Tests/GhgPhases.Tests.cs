@@ -156,6 +156,9 @@ public class GhgPhasesTests
     [InlineData("1900")]
     [InlineData("19000-01")]
     [InlineData("1900-1")]
+    [InlineData("-900-01")]
+    [InlineData("+1900-01")]
+    [InlineData("-1234567-01")]
     public void AMonthThatIsNotYyyyMm_DoesNotParse(string text) => Assert.Null(GhgScale.ParseMonth(text));
 
     private static (double X, double Y, double Width) Drawn(GhgElementMapper mapper, GhgTrend trend)
