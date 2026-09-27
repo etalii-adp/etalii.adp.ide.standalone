@@ -23,6 +23,23 @@
   fill: var(--color-diagram-hype-plateau);
 }
 
+/* The filter box's legend: each swatch in the colour of the phase it names. */
+.library-filter-legend-swatch.ghg-peak {
+  background: var(--color-diagram-hype-peak);
+}
+
+.library-filter-legend-swatch.ghg-trough {
+  background: var(--color-diagram-hype-trough);
+}
+
+.library-filter-legend-swatch.ghg-slope {
+  background: var(--color-diagram-hype-slope);
+}
+
+.library-filter-legend-swatch.ghg-plateau {
+  background: var(--color-diagram-hype-plateau);
+}
+
 .ghg-trend .library-segment-divider {
   stroke: var(--color-diagram-hype-chevron);
 }

@@ -19,6 +19,9 @@ export const GhgRelationTypes = { influence: "influence" } as const;
 /** The four phases, in order: the segment index is the index here. */
 export const GHG_PHASES = ["peak", "trough", "slope", "plateau"] as const;
 
+/** The phases as a reader names them, in the order of {@link GHG_PHASES} - as the property grid titles them. */
+export const GHG_PHASE_TITLES = ["Peak", "Trough", "Slope", "Plateau"] as const;
+
 /** The full Gartner names, which the segments show as tooltips. */
 export const GHG_PHASE_TOOLTIPS = [
   "Peak of Inflated Expectations",
