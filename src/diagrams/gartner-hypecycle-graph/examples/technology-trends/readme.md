@@ -27,7 +27,7 @@ The classic hype cycle chart shows one curve and plots each technology as a dot 
 | Dragged boundaries | The steam engine, nuclear power, the dot-com bubble, railway mania, symbolic AI, solar photovoltaics, large language models and virtual reality have phase boundaries placed by hand; every other trend's phases are even |
 | Descriptions | On trends and on influences, kept in the document and never drawn |
 
-**Tags make at least three meaningful filters**: `energy`; `communication and computing`; and `transport or energy`. Each matches some trends and hides the rest. The other tags are `industry`, `society`, `science`, `health` and `finance`.
+**Tags make at least three meaningful filters**: `energy` alone; `communication` and `computing` with the filter on All; and `transport` and `energy` on Any. Each matches some trends and hides the rest. The other tags are `industry`, `society`, `science`, `health` and `finance`.
 
 ## What it does not demonstrate
 
