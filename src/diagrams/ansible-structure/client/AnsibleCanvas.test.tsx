@@ -163,6 +163,32 @@ describe("AnsibleCanvas", () => {
     expect(inline).toEqual([]);
   });
 
+  it("paints a node's play slot: the stylesheet's rule for that slot matches the box that carries it", async () => {
+    // The slot class and `ansible-node-box` both land on the SHAPE (a class declaration's `on`
+    // defaults to it), so a descendant rule `.ansible-play-0 .ansible-node-box` matched nothing
+    // and every play drew in the default fill. Asked of the rendered box with the stylesheet's
+    // own selectors, so the rule and the markup cannot drift apart without this failing.
+    // Arrange: resolved from the workspace the runner starts in (src/client), as C4's test does.
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const css = readFileSync(resolve(process.cwd(), "../diagrams/ansible-structure/client/ansible-structure.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, " ");
+    const selectorsFor = (slot: number) =>
+      [...css.matchAll(/([^{}]+)\{[^{}]*--ansible-node-fill[^{}]*\}/g)]
+        .flatMap((rule) => rule[1]!.split(","))
+        .map((selector) => selector.trim())
+        .filter((selector) => new RegExp(`\\.ansible-play-${slot}(?![\\w-])`).test(selector));
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the positive control on the reader first, so an empty selector list cannot pass.
+    const box = container.querySelector('[data-element-id="role:nginx"] .ansible-node-box');
+    expect(box?.getAttribute("class")).toContain("ansible-play-0");
+    const selectors = selectorsFor(0);
+    expect(selectors.length, "the stylesheet has no per-play rule for slot 0").toBeGreaterThan(0);
+    expect(selectors.some((selector) => box!.matches(selector)), `no rule for slot 0 matches the play's box: ${selectors.join(" | ")}`).toBe(true);
+  });
+
   // ---- scrollbars and drag (Requirements 1.1, 1.2, 6.1-6.3) --------------------------------
 
   it("shows the shared scrollbars over the canvas", () => {
