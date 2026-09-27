@@ -1050,8 +1050,8 @@ export type DiagramBackground = BackgroundDeclaration;
  * An axis whose step resolves to nothing, or to a non-positive number, does not snap that element.
  *
  * <b>This names a rule the tree already agreed on in five places rather than inventing one.</b>
- * `TimelineCanvas`'s and `DependencyGraphCanvas`'s `nearestRow` are byte-identical bodies
- * differing only in which height they close over; `TimelineRows.ToNearestRow` and
+ * `TimelineCanvas`'s and `DependencyGraphCanvas`'s `nearestRow` were byte-identical bodies
+ * differing only in which height they closed over, and now call `snapToStep`; `TimelineRows.ToNearestRow` and
  * `DependencyGraphRows.ToNearestRow` are the same arithmetic on the backend; and the binding
  * vocabulary's `round: "nearest"` is the same rule a third time. The library owns it now, so a
  * sixth copy is never written.

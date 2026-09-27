@@ -5,7 +5,7 @@ import { useContextConnection } from "@client/shell/context/ContextConnectionPro
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { DiagramCanvas, snapToStep } from "@client/canvas/library/DiagramCanvas";
 import type { DiagramDefinition, LabelDeclaration } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
@@ -123,15 +123,13 @@ const ROWS_PER_UNIT = 1 / ROW_HEIGHT;
 const HINT_ABOVE = ELEMENT_HEIGHT / 2 + 8;
 
 /**
- * The nearest row for a module-space y, matching TimelineRows.ToNearestRow's away-from-zero midpoint.
- *
- * Kept here rather than imported: the library's `snapToStep` is library-internal (module-client-api-readme's
- * design lists it so). A dragged element's position already arrives snapped by the declaration,
- * so for a move this only turns an exact row back into its index.
+ * The nearest row for a module-space y, by the library's one rounding rule - halves away from
+ * zero, never negative zero - which TimelineRows.ToNearestRow shares on the backend. A dragged
+ * element's position already arrives snapped by the declaration, so for a move this only turns
+ * an exact row back into its index.
  */
-function nearestRow(y: number): number {
-  const exact = y / ROW_HEIGHT;
-  return exact >= 0 ? Math.floor(exact + 0.5) : -Math.floor(-exact + 0.5);
+export function nearestRow(y: number): number {
+  return snapToStep(y, ROW_HEIGHT) / ROW_HEIGHT;
 }
 
 function formatSeconds(seconds: number, dateOnly: boolean): string {
