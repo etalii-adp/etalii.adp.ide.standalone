@@ -154,6 +154,20 @@ describe("PropertyRow", () => {
     expect(onCommit.mock.calls.map(([value]) => value)).toEqual(["industry", "industry, transport"]);
   });
 
+  it("shows a read-only value of several lines one line a row", () => {
+    // Arrange, act: a trend phase's influences, as the GHG provider sends them.
+    const { container } = render(
+      <PropertyRow
+        property={property({ id: "ghg.peak-influences", label: "Influence", value: "Coal power · Peak\nRailways · Slope", editor: ContextPropertyEditor.TEXT, readOnlyReason: "Draw, reattach or delete an influence on the canvas." })}
+        onCommit={vi.fn(async () => "")}
+      />,
+    );
+
+    // Assert: each entry is its own line, not run together into one.
+    const lines = [...container.querySelectorAll(".property-grid-value .property-grid-value-line")].map((line) => line.textContent);
+    expect(lines, "the entries were drawn as one run-on line").toEqual(["Coal power · Peak", "Railways · Slope"]);
+  });
+
   it("takes the next edit after a commit that rejected", async () => {
     // Arrange.
     // The first write faults the way a dropped connection faults - by rejecting, not by

@@ -177,9 +177,12 @@ export function PropertyGridPanel() {
   const chain = levelsOf(selection, levels);
   const innermostLevel = chain[chain.length - 1];
 
+  // Shown innermost first: the element or relation being worked on leads, and the diagram or
+  // folder it sits in follows as context. `chain` itself stays outermost first, because that is
+  // the order the backend's details arrive in and `levelsOf` pairs them by position.
   return (
     <div className="property-grid">
-      {chain.map(({ level, detail }) => {
+      {[...chain].reverse().map(({ level, detail }) => {
         const segments = level.path?.segments ?? [];
         const element = detail?.detail.case === "element" ? detail.detail.value : undefined;
         const name = element?.text ?? segments[segments.length - 1] ?? "";

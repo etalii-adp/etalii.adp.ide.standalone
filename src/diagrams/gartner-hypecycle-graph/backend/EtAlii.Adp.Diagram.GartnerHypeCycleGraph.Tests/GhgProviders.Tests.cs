@@ -120,8 +120,60 @@ public sealed class GhgProvidersTests : IDisposable
             GhgContextPropertyProvider.NameProperty, GhgContextPropertyProvider.DescriptionProperty, GhgContextPropertyProvider.TagsProperty,
             GhgContextPropertyProvider.StartProperty, GhgContextPropertyProvider.StopProperty, GhgContextPropertyProvider.PhasesProperty,
             .. GhgContextPropertyProvider.BoundaryProperties,
+            .. Enumerable.Range(0, 4).SelectMany(phase => new[] { GhgContextPropertyProvider.InfluencesProperties[phase], GhgContextPropertyProvider.InfluencedByProperties[phase] }),
         ], rows);
-        Assert.All(await RowsOf("steam-engine"), row => Assert.True(row.IsEditable, row.Id));
+        Assert.All(
+            (await RowsOf("steam-engine")).Where(row => !IsInfluenceList(row.Id)),
+            row => Assert.True(row.IsEditable, row.Id));
+    }
+
+    private static bool IsInfluenceList(string id) =>
+        GhgContextPropertyProvider.InfluencesProperties.Contains(id) || GhgContextPropertyProvider.InfluencedByProperties.Contains(id);
+
+    /// <summary>
+    /// Each phase has its own group holding two lists: the influences leaving it and the ones
+    /// arriving at it, one "trend · phase" a line, or None - on the example's steam engine, which
+    /// influences from its Peak, Slope and Plateau and is influenced at its Peak.
+    /// </summary>
+    [Fact]
+    public async Task EachPhase_ListsItsInfluences_AndWhatInfluencesIt()
+    {
+        var rows = await RowsOf("steam-engine");
+        string Value(IReadOnlyList<string> ids, int phase) => Assert.Single(rows, row => row.Id == ids[phase]).Value;
+        var influences = GhgContextPropertyProvider.InfluencesProperties;
+        var influencedBy = GhgContextPropertyProvider.InfluencedByProperties;
+
+        Assert.Equal("Coal power · Peak\nFactory system · Peak\nIndustrial Revolution · Peak", Value(influences, 0));
+        Assert.Equal("Coke iron smelting · Peak\nCoal power · Peak", Value(influencedBy, 0));
+        Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influences, 1));
+        Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influencedBy, 1));
+        Assert.Equal("Steamboats · Peak\nOcean steamships · Peak", Value(influences, 2));
+        Assert.Equal("Railways · Peak", Value(influences, 3));
+        Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influencedBy, 3));
+
+        // Grouped by phase, labelled as asked, and shown rather than edited.
+        Assert.All(rows.Where(row => IsInfluenceList(row.Id)), row =>
+        {
+            Assert.False(row.IsEditable, row.Id);
+            Assert.Contains(row.Label, new[] { "Influence", "Influenced by" });
+        });
+        Assert.Equal(["Peak", "Peak", "Trough", "Trough", "Slope", "Slope", "Plateau", "Plateau"], rows.Where(row => IsInfluenceList(row.Id)).Select(row => row.Group));
+    }
+
+    /// <summary>
+    /// A hidden phase still lists the influences attached to it, so none goes missing from the grid;
+    /// a hidden phase with none is not listed at all.
+    /// </summary>
+    [Fact]
+    public async Task AHiddenPhase_IsListedOnlyWhileAnInfluenceAttachesToIt()
+    {
+        var resolver = new ContextPropertyResolver([_properties]);
+        var set = await resolver.SetAsync(Target("steam-engine"), GhgContextPropertyProvider.PhasesProperty, "Peak", TestContext.Current.CancellationToken);
+        Assert.True(set.IsSuccess, set.Error);
+
+        var groups = (await RowsOf("steam-engine")).Where(row => IsInfluenceList(row.Id)).Select(row => row.Group).Distinct();
+
+        Assert.Equal(["Peak", "Slope (hidden)", "Plateau (hidden)"], groups);
     }
 
     /// <summary>Requirement 6.5: an influence's From and To are shown, not edited.</summary>
