@@ -147,7 +147,7 @@ describe("AnsibleCanvas", () => {
     const { container } = renderCanvas();
 
     // Assert.
-    const role = container.querySelector('[data-element-id="role:nginx"] .ansible-node');
+    const role = container.querySelector('[data-element-id="role:nginx"] .ansible-node-box');
     expect(role?.getAttribute("class")).toContain("ansible-play-0");
     // Nothing inline on the drawing but geometry: the palette lives in the stylesheet so a theme
     // change is a CSS change. Scoped to the svg rather than the whole container, because the
@@ -187,6 +187,40 @@ describe("AnsibleCanvas", () => {
     const selectors = selectorsFor(0);
     expect(selectors.length, "the stylesheet has no per-play rule for slot 0").toBeGreaterThan(0);
     expect(selectors.some((selector) => box!.matches(selector)), `no rule for slot 0 matches the play's box: ${selectors.join(" | ")}`).toBe(true);
+  });
+
+  it("draws something every node-box rule in the stylesheet matches: per kind, hollow, per play, hover and focus", async () => {
+    // Every rule a node's box is styled by was written as `.ansible-node-<kind> .ansible-node-box`,
+    // a descendant, while the kind class and the box class were declared on the same shape - so
+    // the per-kind dashes and weights, the hollow hatching and the hover and focus treatment all
+    // matched nothing. This asks each rule of the rendered drawing rather than of the markup's
+    // intent. Hover and focus are states jsdom cannot enter, so their pseudo-class is dropped and
+    // the rest of the selector must still find the box it would restyle.
+    // Arrange: every kind, each in its own play slot so all six are drawn, and a hollow role.
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const css = readFileSync(resolve(process.cwd(), "../diagrams/ansible-structure/client/ansible-structure.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, " ");
+    const selectors = [...css.matchAll(/([^{}]+)\{[^{}]*\}/g)]
+      .flatMap((rule) => rule[1]!.split(","))
+      .map((selector) => selector.trim())
+      .filter((selector) => /\.ansible-node-box(?![\w-])/.test(selector));
+    currentModel = modelOf(
+      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK, { playIndex: 0 }),
+      element("play:a.yml#0", "ansible/structure+play", AnsibleElementKind.PLAY, { playIndex: 1 }, 200),
+      element("role:r", "ansible/structure+role", AnsibleElementKind.ROLE, { playIndex: 2 }, 400),
+      element("taskfile:roles/r/tasks/t.yml", "ansible/structure+taskfile", AnsibleElementKind.TASK_FILE, { playIndex: 3 }, 600),
+      element("inventory:inventories/p", "ansible/structure+inventory", AnsibleElementKind.INVENTORY, { playIndex: 4 }, 800),
+      element("vars:inventories/p/group_vars", "ansible/structure+vars", AnsibleElementKind.VARIABLE_FOLDER, { playIndex: 5 }, 1000),
+      element("role:empty", "ansible/structure+role", AnsibleElementKind.ROLE, { hollow: true }, 1200),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the positive control on the reader first, so an empty list cannot pass.
+    expect(selectors.length, "the reader found too few node-box rules").toBeGreaterThanOrEqual(16);
+    const unmatched = selectors.filter((selector) => container.querySelector(selector.replace(/:(hover|focus-visible)(?![\w-])/g, "")) === null);
+    expect(unmatched, "these node-box rules match nothing the canvas draws").toEqual([]);
   });
 
   // ---- scrollbars and drag (Requirements 1.1, 1.2, 6.1-6.3) --------------------------------
@@ -464,7 +498,7 @@ describe("AnsibleCanvas", () => {
   it("reveals a node's file on double click", () => {
     // Act.
     const { container } = renderCanvas();
-    fireEvent.doubleClick(container.querySelector('[data-element-id="role:nginx"] .ansible-node')!);
+    fireEvent.doubleClick(container.querySelector('[data-element-id="role:nginx"] .ansible-node-box')!);
 
     // Assert.
     // The jump from the picture to the file is most of what this diagram type is for.

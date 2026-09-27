@@ -89,28 +89,32 @@
 /*
  * Each node kind gets its own outline weight and dash, so the kinds stay apart for a reader who
  * cannot tell the fills apart - colour is never the only thing carrying the distinction.
+ *
+ * Compound, like the palette below: the kind class and `ansible-node-box` are both on the shape,
+ * so the descendant form these were first written in matched nothing. Hover and focus above stay
+ * descendant, because `ansible-node` is on the focusable group around the shape.
  */
-.ansible-node-playbook .ansible-node-box {
+.ansible-node-playbook.ansible-node-box {
   --ansible-node-stroke: var(--color-primary);
   stroke-width: 2;
 }
 
-.ansible-node-play .ansible-node-box {
+.ansible-node-play.ansible-node-box {
   --ansible-node-stroke: var(--color-primary);
   stroke-dasharray: 6 3;
 }
 
-.ansible-node-role .ansible-node-box {
+.ansible-node-role.ansible-node-box {
   rx: 10px;
 }
 
-.ansible-node-taskfile .ansible-node-box {
+.ansible-node-taskfile.ansible-node-box {
   --ansible-node-fill: var(--color-surface);
   stroke-dasharray: 2 2;
 }
 
-.ansible-node-inventory .ansible-node-box,
-.ansible-node-vars .ansible-node-box {
+.ansible-node-inventory.ansible-node-box,
+.ansible-node-vars.ansible-node-box {
   --ansible-node-fill: var(--color-surface);
   --ansible-node-stroke: var(--color-text-muted);
 }
@@ -119,7 +123,7 @@
  * A role folder with nothing Ansible would run in it. Hatched rather than merely greyed: the
  * point is that it looks unfinished, because it is.
  */
-.ansible-node-hollow .ansible-node-box {
+.ansible-node-hollow.ansible-node-box {
   stroke-dasharray: 4 4;
   opacity: 0.6;
 }
