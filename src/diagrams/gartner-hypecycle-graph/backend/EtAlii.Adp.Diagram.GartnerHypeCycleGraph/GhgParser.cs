@@ -32,6 +32,7 @@ public static class GhgParser
     internal const string HeaderKey = "gartner-hypecycle-graph";
     private const string TrendsKey = "trends";
     private const string InfluencesKey = "influences";
+    private const string UnitKey = "unit";
 
     /// <summary>The keys a trend entry may carry. Anything else survives and is reported.</summary>
     private static readonly string[] TrendKeys =
@@ -69,7 +70,26 @@ public static class GhgParser
             ReadTrends(root, document, problems),
             ReadInfluences(root, document, problems),
             problems,
-            version);
+            version,
+            ReadUnit(root, document, problems));
+    }
+
+    /// <summary>The top-level <c>unit:</c>, or the month when there is none. An unknown unit is reported and drawn in months.</summary>
+    private static GhgTimeUnit ReadUnit(YamlMappingNode root, LineDocument document, List<GhgProblem> problems)
+    {
+        if (Node(root, UnitKey) is not { } node)
+        {
+            return GhgTimeUnit.Month;
+        }
+
+        if (node is YamlScalarNode scalar && GhgTimeUnit.Named(scalar.Value) is { } unit)
+        {
+            return unit;
+        }
+
+        var names = string.Join(", ", GhgTimeUnit.All.Select(known => known.Name));
+        problems.Add(new GhgProblem(LineOf(node, document), $"`{UnitKey}` is not one of {names}; the diagram is drawn in months."));
+        return GhgTimeUnit.Month;
     }
 
     private static int? ReadVersion(YamlMappingNode root, LineDocument document, List<GhgProblem> problems)

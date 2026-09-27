@@ -3,10 +3,13 @@ using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
-/// <summary>Adds a trend one year long from the snapped drop month, with all four phases.</summary>
+/// <summary>
+/// Adds a trend twelve steps of the diagram's time unit long - a year in a diagram of months - from
+/// the start of the step it was dropped in, with all four phases.
+/// </summary>
 public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICommandHandler<AddGhgTrendCommand>
 {
-    /// <summary>A new trend's length in months.</summary>
+    /// <summary>A new trend's length in steps of the diagram's time unit; months, in a diagram of months.</summary>
     public const int DefaultMonths = 12;
 
     /// <summary>A new trend's name, numbered when it is taken.</summary>
@@ -31,12 +34,12 @@ public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICo
                 return GhgEdit.Refused("That id is already used in this graph.");
             }
 
-            var start = GhgScale.MonthContaining(minted.X);
+            var start = GhgScale.MonthContaining(minted.X, model.TimeUnit);
             var trend = new GhgTrend(
                 minted.TrendId,
                 UniqueName(model),
                 start,
-                start + DefaultMonths,
+                start + (DefaultMonths * model.TimeUnit.Months),
                 GhgScale.RowAtMiddle(minted.Y),
                 GhgPhases.Count,
                 [null, null, null],
