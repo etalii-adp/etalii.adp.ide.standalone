@@ -5,8 +5,17 @@
          green gate until the user cleaned them by hand. Measured before raising: with these two at
          error the tree still builds green, and a planted instance of each is refused. Setting
          dotnet_diagnostic.<rule>.severity in src/.editorconfig did NOT work for these - twice, on a
-         forced rebuild - and why is not known. -->
-    <WarningsAsErrors>$(WarningsAsErrors);xUnit1031;xUnit1051</WarningsAsErrors>
+         forced rebuild - and why is not known. CA1849 (a blocking call in an async method) joined
+         them on 2026-09-27, after the user converted two dozen by hand; its severity in
+         src/.editorconfig turns it on, and this line is what makes it fail the build. -->
+    <WarningsAsErrors>$(WarningsAsErrors);xUnit1031;xUnit1051;CA1849</WarningsAsErrors>
+    <!-- IDE0005 (an unnecessary using) reports nothing unless the compiler is asked for a
+         documentation file, whatever its severity in src/.editorconfig. The file is wanted for that
+         rule alone, so the documentation-comment warnings it switches on are off: CS1591 (a missing
+         comment) everywhere, and the malformed-comment ones measured on the tree when this went in.
+         Checking the comments themselves is a separate decision nobody has made. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1574;CS1734;CS1570;CS0419</NoWarn>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

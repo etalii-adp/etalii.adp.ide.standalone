@@ -184,7 +184,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert. Both files, and the `.adp` carrying exactly its MIME line.
         Assert.True(submitted.Completed, submitted.Error);
-        Assert.Equal("wardley/map\r\n", File.ReadAllText(IoPath.Combine(_projectFolder, "strategy.adp")));
+        Assert.Equal("wardley/map\r\n", await File.ReadAllTextAsync(IoPath.Combine(_projectFolder, "strategy.adp"), TestContext.Current.CancellationToken));
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "strategy.owm")), "the .owm sibling was not created");
     }
 
@@ -232,7 +232,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert. y = 0.4 is a visibility of 0.6; x = 0.8 is the maturity as written.
         Assert.Equal("", moved.Error);
-        var text = File.ReadAllText(IoPath.Combine(_projectFolder, "tea.owm"));
+        var text = await File.ReadAllTextAsync(IoPath.Combine(_projectFolder, "tea.owm"), TestContext.Current.CancellationToken);
         Assert.Contains("component Kettle [0.6, 0.8]", text, StringComparison.Ordinal);
 
         // Act, continued.
@@ -241,7 +241,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Assert. Byte-identical, not merely equivalent: the undo restores the LINE, so
         // `[0.43, 0.35]` does not come back as a differently-rounded pair (Requirement 3.1).
         Assert.True(undone.Accepted, undone.Error);
-        Assert.Equal(Map, File.ReadAllText(IoPath.Combine(_projectFolder, "tea.owm")));
+        Assert.Equal(Map, await File.ReadAllTextAsync(IoPath.Combine(_projectFolder, "tea.owm"), TestContext.Current.CancellationToken));
     }
 
     [Fact]

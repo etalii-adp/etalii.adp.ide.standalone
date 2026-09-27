@@ -148,6 +148,15 @@ dotnet_style_qualification_for_property = false:warning
 # gates passed on them, and a hand cleanup after a green gate means the gate was the wrong shape.
 dotnet_diagnostic.IDE0001.severity = warning
 dotnet_diagnostic.IDE0002.severity = warning
+# An unnecessary using. Hidden by default, and silent at any severity unless the project generates a
+# documentation file - src/Directory.Build.props turns that on for exactly this rule. The user pruned
+# unused usings from seven files by hand on 2026-09-27 after all four gates passed on them.
+dotnet_diagnostic.IDE0005.severity = warning
+# A synchronous call inside an async method that has an async overload (File.ReadAllText where
+# File.ReadAllTextAsync exists). Off by default; the user converted two dozen of these in tests by hand
+# on 2026-09-27. Once async, xUnit1051 (an error, see src/Directory.Build.props) makes the call pass
+# TestContext.Current.CancellationToken. Synchronous calls in synchronous methods are not flagged.
+dotnet_diagnostic.CA1849.severity = warning
 
 # Language keywords vs BCL types preferences
 # Silent in Microsoft's own template: preferring 'int' over 'Int32' is treated

@@ -185,7 +185,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         var pendingA = callA.ResponseStream.MoveNext(ctsA.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
         await Task.Delay(WatcherStartupGrace, TestContext.Current.CancellationToken);
-        File.WriteAllText(IoPath.Combine(_projectFolder, "new.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "new.txt"), "", TestContext.Current.CancellationToken);
 
         // Act.
         Assert.True(await pendingA, "Expected a HierarchyChange message on connection A but the stream ended or timed out.");

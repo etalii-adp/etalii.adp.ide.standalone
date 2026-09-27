@@ -210,7 +210,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "renamed.txt" }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(submitted.Completed);
         Assert.False(File.Exists(IoPath.Combine(_projectFolder, "original.txt")));
-        Assert.Equal("content", File.ReadAllText(IoPath.Combine(_projectFolder, "renamed.txt")));
+        Assert.Equal("content", await File.ReadAllTextAsync(IoPath.Combine(_projectFolder, "renamed.txt"), TestContext.Current.CancellationToken));
 
         var change = await pendingChange;
         Assert.Equal((ShortGuid)entryId, (ShortGuid)change.Renamed.EntryId);
