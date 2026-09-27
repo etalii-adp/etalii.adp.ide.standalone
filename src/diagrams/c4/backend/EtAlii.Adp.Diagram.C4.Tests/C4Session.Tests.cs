@@ -189,6 +189,35 @@ public class C4SessionTests : IDisposable
     }
 
     [Fact]
+    public async Task AChangeToAnotherDocument_IsNotThisSessionsBusiness()
+    {
+        // Arrange: the store serves every open model, so a session has to filter by its own. The
+        // diff sends only what differs, so a session that re-rendered on another document's
+        // change would stay silent whenever its own view had not moved. So this session's view is
+        // changed WITHOUT telling it - a position written straight into its layout sidecar - and a
+        // session that re-rendered on the other document's change would now push the person.
+        var body = WriteModel();
+        var other = WriteModel("other.dsl");
+        await using var session = Open(body, null);
+        _ = session.Baseline();
+        _ = _documents.GetOrLoad(other);
+        Assert.Equal("", new C4LayoutSidecar().Write(body, "context", "u", new C4SidecarPosition(4321, 1234)));
+
+        var pushed = new List<IReadOnlyList<DiagramDelta>>();
+        session.Changed += (_, args) => pushed.Add(args.Deltas);
+
+        // Act.
+        _documents.Touch(other);
+        var pushedForTheOther = pushed.Count;
+        _documents.Touch(body);
+
+        // Assert: nothing for the other document, and the same change to its own document does
+        // move the person - which is what makes the silence mean something.
+        Assert.Equal(0, pushedForTheOther);
+        Assert.Contains(Added(Assert.Single(pushed)), element => element.Id == "u");
+    }
+
+    [Fact]
     public async Task UpdateView_NarrowingToNothing_RemovesWhatLeft()
     {
         // Arrange.
