@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -8,7 +9,9 @@ namespace EtAlii.Adp.Diagram.AzurePipeline.Tests;
 /// The round trip is this module's headline correctness property: a pipeline ADP did not change
 /// comes back byte-identical (Requirement 3.1). These read the corpus from disk exactly as the
 /// backend will, and compare bytes rather than strings - a comparison on strings would pass on a
-/// file whose line endings had been rewritten, which is the failure most worth catching.
+/// file whose line endings had been rewritten, which is the failure most worth catching. The
+/// document is core's <see cref="LineDocument"/>, which replaced this module's own copy
+/// (backend-centralization Requirement 1.1); these stay here because the corpus is this module's.
 /// </summary>
 public class PipelineDocumentTests
 {
@@ -34,7 +37,7 @@ public class PipelineDocumentTests
         var original = File.ReadAllBytes(path);
 
         // Act.
-        var document = PipelineDocument.Parse(File.ReadAllText(path));
+        var document = LineDocument.Parse(File.ReadAllText(path));
         var written = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(document.Text);
 
         // Assert.
@@ -49,7 +52,7 @@ public class PipelineDocumentTests
         var text = File.ReadAllText(FixturePath("edge-crlf.yml"));
 
         // Act.
-        var document = PipelineDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
         Assert.All(document.Lines.Take(document.Lines.Count - 1), line => Assert.Equal("\r\n", line.Ending));
@@ -63,7 +66,7 @@ public class PipelineDocumentTests
         const string text = "trigger:\n  - main";
 
         // Act.
-        var document = PipelineDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
         Assert.Equal(text, document.Text);
@@ -77,7 +80,7 @@ public class PipelineDocumentTests
         const string text = "trigger:\n  - main\n";
 
         // Act.
-        var document = PipelineDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
         Assert.Equal(2, document.Lines.Count);
@@ -91,7 +94,7 @@ public class PipelineDocumentTests
         const string text = "a: 1\r\nb: 2\nc: 3\r\n";
 
         // Act.
-        var document = PipelineDocument.Parse(text);
+        var document = LineDocument.Parse(text);
 
         // Assert.
         Assert.Equal(text, document.Text);
@@ -102,10 +105,10 @@ public class PipelineDocumentTests
     public void Replace_ChangesItsOwnLinesAndNothingElse()
     {
         // Arrange.
-        var document = PipelineDocument.Parse("a: 1\nb: 2\nc: 3\n");
+        var document = LineDocument.Parse("a: 1\nb: 2\nc: 3\n");
 
         // Act.
-        document.Replace(PipelineLineRange.Single(1), ["b: replaced"]);
+        document.Replace(new LineRange(1, 1), ["b: replaced"]);
 
         // Assert.
         Assert.Equal("a: 1\nb: replaced\nc: 3\n", document.Text);
@@ -115,10 +118,10 @@ public class PipelineDocumentTests
     public void Replace_OverSeveralLines_KeepsTheSurroundingOnes()
     {
         // Arrange.
-        var document = PipelineDocument.Parse("keep\nold one\nold two\nkeep too\n");
+        var document = LineDocument.Parse("keep\nold one\nold two\nkeep too\n");
 
         // Act.
-        document.Replace(new PipelineLineRange(1, 2), ["new"]);
+        document.Replace(new LineRange(1, 2), ["new"]);
 
         // Assert.
         Assert.Equal("keep\nnew\nkeep too\n", document.Text);
@@ -128,10 +131,10 @@ public class PipelineDocumentTests
     public void Replace_OfTheLastLine_OfAFileWithoutATrailingNewline_StillHasNone()
     {
         // Arrange: the splice must inherit the ending the range had, not the document's.
-        var document = PipelineDocument.Parse("a: 1\nb: 2");
+        var document = LineDocument.Parse("a: 1\nb: 2");
 
         // Act.
-        document.Replace(PipelineLineRange.Single(1), ["b: replaced"]);
+        document.Replace(new LineRange(1, 1), ["b: replaced"]);
 
         // Assert.
         Assert.Equal("a: 1\nb: replaced", document.Text);
@@ -141,7 +144,7 @@ public class PipelineDocumentTests
     public void Insert_AtTheEndOfAFileWithoutATrailingNewline_DoesNotRunTheLinesTogether()
     {
         // Arrange.
-        var document = PipelineDocument.Parse("a: 1\nb: 2");
+        var document = LineDocument.Parse("a: 1\nb: 2");
 
         // Act.
         document.Insert(2, ["c: 3"]);
@@ -159,11 +162,11 @@ public class PipelineDocumentTests
         // acquired on the way is exactly the kind of one-byte difference a reviewer notices and
         // nobody can explain.
         const string original = "a: 1\nb: 2";
-        var document = PipelineDocument.Parse(original);
+        var document = LineDocument.Parse(original);
 
         // Act.
         document.Insert(2, ["c: 3", "d: 4"]);
-        document.Remove(new PipelineLineRange(2, 3));
+        document.Remove(new LineRange(2, 3));
 
         // Assert.
         Assert.Equal(original, document.Text);
@@ -173,7 +176,7 @@ public class PipelineDocumentTests
     public void AppendingToATerminatedFile_KeepsItTerminated()
     {
         // Arrange: the other half of the same rule - a file that ends in a newline goes on doing so.
-        var document = PipelineDocument.Parse("a: 1\nb: 2\n");
+        var document = LineDocument.Parse("a: 1\nb: 2\n");
 
         // Act.
         document.Insert(2, ["c: 3"]);
@@ -186,7 +189,7 @@ public class PipelineDocumentTests
     public void Insert_AdoptsTheDocumentsOwnEnding()
     {
         // Arrange: an edit must not introduce a second convention into a consistent file.
-        var document = PipelineDocument.Parse("a: 1\r\nb: 2\r\n");
+        var document = LineDocument.Parse("a: 1\r\nb: 2\r\n");
 
         // Act.
         document.Insert(1, ["inserted"]);
@@ -199,10 +202,10 @@ public class PipelineDocumentTests
     public void Remove_TakesItsLinesAndLeavesTheRest()
     {
         // Arrange.
-        var document = PipelineDocument.Parse("a: 1\nb: 2\nc: 3\n");
+        var document = LineDocument.Parse("a: 1\nb: 2\nc: 3\n");
 
         // Act.
-        document.Remove(PipelineLineRange.Single(1));
+        document.Remove(new LineRange(1, 1));
 
         // Assert.
         Assert.Equal("a: 1\nc: 3\n", document.Text);
@@ -214,18 +217,18 @@ public class PipelineDocumentTests
         // Arrange: the property Requirement 3.2 actually asks for, checked on a real document
         // rather than a toy - a comment-heavy one, since comments are what a serialiser loses.
         var text = File.ReadAllText(FixturePath("edge-comments.yml"));
-        var document = PipelineDocument.Parse(text);
+        var document = LineDocument.Parse(text);
         var target = document.Lines
             .Select((line, index) => (line, index))
             .First(pair => pair.line.Text.Contains("displayName: Build", StringComparison.Ordinal))
             .index;
-        var before = document.Lines.Select(line => line.ToString()).ToArray();
+        var before = document.Lines.Select(line => line.Text + line.Ending).ToArray();
 
         // Act.
-        document.Replace(PipelineLineRange.Single(target), ["          displayName: Renamed   # trailing again"]);
+        document.Replace(new LineRange(target, target), ["          displayName: Renamed   # trailing again"]);
 
         // Assert.
-        var after = document.Lines.Select(line => line.ToString()).ToArray();
+        var after = document.Lines.Select(line => line.Text + line.Ending).ToArray();
         Assert.Equal(before.Length, after.Length);
         for (var i = 0; i < before.Length; i++)
         {
@@ -245,9 +248,43 @@ public class PipelineDocumentTests
     {
         // Arrange: an off-by-one in a splice rewrites somebody's pipeline, so it is a
         // programming error rather than something to absorb.
-        var document = PipelineDocument.Parse("a: 1\n");
+        var document = LineDocument.Parse("a: 1\n");
 
         // Act & assert.
-        Assert.Throws<ArgumentOutOfRangeException>(() => document.Replace(PipelineLineRange.Single(5), ["x"]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => document.Replace(new LineRange(5, 5), ["x"]));
+    }
+
+    [Fact]
+    public void ATiedFile_GivesAnInsertedLineCrlf()
+    {
+        // Arrange: as many LF endings as CRLF, so neither is the majority and the tie rule alone
+        // decides. This module's own copy gave LF here; core gives CRLF, the house style, and
+        // core's rule is the one that stands (backend-centralization Requirement 1.2).
+        var text = File.ReadAllText(FixturePath("edge-tied-endings.yml"));
+        var document = LineDocument.Parse(text);
+        var endings = document.Lines.Select(line => line.Ending).ToList();
+        Assert.Equal(endings.Count(ending => ending == "\n"), endings.Count(ending => ending == "\r\n"));
+
+        // Act.
+        document.Insert(1, ["  - release/*"]);
+
+        // Assert.
+        Assert.Equal("\r\n", document.Lines[1].Ending);
+    }
+
+    [Fact]
+    public void ARangeEndingTheLineBeforeItStarts_IsRefused()
+    {
+        // Arrange: such a range has a length of zero, so without a refusal of its own a replace
+        // splices its lines in as an insertion and a remove quietly does nothing. This module's
+        // own copy did both; core refuses, and core's rule is the one that stands
+        // (backend-centralization Requirement 1.4).
+        const string text = "a: 1\nb: 2\nc: 3\n";
+        var document = LineDocument.Parse(text);
+
+        // Act & assert.
+        Assert.Throws<ArgumentOutOfRangeException>(() => document.Replace(new LineRange(2, 1), ["x: 9"]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => document.Remove(new LineRange(2, 1)));
+        Assert.Equal(text, document.Text);
     }
 }

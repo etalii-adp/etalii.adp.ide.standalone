@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 public class RdfLayoutTests
 {
     private static RdfProjectionResult Project(string text) =>
-        RdfProjection.Project(RdfParser.Parse(RdfDocument.Parse(text)));
+        RdfProjection.Project(RdfParser.Parse(LineDocument.Parse(text)));
 
     private const string Banded =
         "@prefix ex: <http://example.org/> .\r\n"

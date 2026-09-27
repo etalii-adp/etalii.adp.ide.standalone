@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
@@ -6,7 +7,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
-/// Reads a <see cref="PipelineDocument"/> into a <see cref="PipelineModel"/>, recording for every
+/// Reads a <see cref="LineDocument"/> into a <see cref="PipelineModel"/>, recording for every
 /// element the lines that declare it.
 /// </summary>
 /// <remarks>
@@ -48,7 +49,7 @@ public sealed class PipelineParser
         ["parallel"] = PipelineStrategyKind.Parallel,
     };
 
-    private readonly PipelineDocument _document;
+    private readonly LineDocument _document;
     private readonly PipelineTemplates? _resolver;
     private readonly string _documentPath;
     private readonly string _source;
@@ -58,7 +59,7 @@ public sealed class PipelineParser
     private PipelinePool _pipelinePool = PipelinePool.None;
 
     private PipelineParser(
-        PipelineDocument document,
+        LineDocument document,
         PipelineTemplates? resolver,
         string documentPath,
         string source,
@@ -78,7 +79,7 @@ public sealed class PipelineParser
     /// The document is not YAML this can read. It carries the line, which is what a reader needs
     /// in order to go and fix it (Requirement 3.6).
     /// </exception>
-    public static PipelineModel Parse(PipelineDocument document)
+    public static PipelineModel Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         return new PipelineParser(document, null, "", "", []).Read();
@@ -91,7 +92,7 @@ public sealed class PipelineParser
     /// <param name="document">The document to read.</param>
     /// <param name="resolver">Bounds which files may be followed, and remembers what it read.</param>
     /// <param name="documentPath">Where the document lives, absolute - relative references start here.</param>
-    public static PipelineModel Parse(PipelineDocument document, PipelineTemplates resolver, string documentPath)
+    public static PipelineModel Parse(LineDocument document, PipelineTemplates resolver, string documentPath)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(resolver);
@@ -169,7 +170,7 @@ public sealed class PipelineParser
 
     private static PipelineStage ImplicitStage(
         IReadOnlyList<PipelineJob> jobs,
-        PipelineLineRange lines,
+        LineRange lines,
         PipelinePool pool,
         string source) =>
         new(
@@ -190,7 +191,7 @@ public sealed class PipelineParser
 
     private static PipelineJob ImplicitJob(
         IReadOnlyList<PipelineStep> steps,
-        PipelineLineRange lines,
+        LineRange lines,
         PipelinePool pool,
         string source) =>
         new(
@@ -653,7 +654,7 @@ public sealed class PipelineParser
         PipelineTemplateSlot slot,
         string reference,
         YamlMappingNode declaration,
-        PipelineLineRange lines)
+        LineRange lines)
     {
         // "path@resource" names a template in another repository, which is the commonest reason
         // one cannot be followed - so the two halves are separated here rather than at resolution.
@@ -755,7 +756,7 @@ public sealed class PipelineParser
     /// stage after it, and a splice would eat it.
     /// </para>
     /// </remarks>
-    private PipelineLineRange Range(YamlNode node)
+    private LineRange Range(YamlNode node)
     {
         var last = _document.Lines.Count - 1;
         var extent = EndMark(node);
@@ -772,7 +773,7 @@ public sealed class PipelineParser
             end--;
         }
 
-        return new PipelineLineRange(start, end);
+        return new LineRange(start, end);
     }
 
     /// <summary>

@@ -29,7 +29,7 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
     // lifecycle's own default and what this store did before it (R2.2) - so no unavailable document
     // is declared here.
     private readonly WritableDocumentLifecycle<DatabricksDocumentEntry> _lifecycle = new(
-        (path, text) => Parse(path, DatabricksDocument.Parse(text)),
+        (path, text) => Parse(path, LineDocument.Parse(text)),
         entry => entry.Document.Text);
 
     /// <inheritdoc />
@@ -92,7 +92,7 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
     /// not YAML (or JSON - the same door) is an ordinary state for a file somebody is editing,
     /// so it is carried as an entry with an error rather than thrown out of the store.
     /// </summary>
-    private static DatabricksDocumentEntry Parse(string path, DatabricksDocument document)
+    private static DatabricksDocumentEntry Parse(string path, LineDocument document)
     {
         try
         {

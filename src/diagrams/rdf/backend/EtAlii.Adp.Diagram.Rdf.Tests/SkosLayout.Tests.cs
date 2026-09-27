@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -17,7 +18,7 @@ public class SkosLayoutTests
 
     private static SkosLayoutResult Layout(string turtle)
     {
-        var projection = SkosProjection.Project(RdfParser.Parse(RdfDocument.Parse(Prelude + turtle)));
+        var projection = SkosProjection.Project(RdfParser.Parse(LineDocument.Parse(Prelude + turtle)));
         return SkosLayout.Layout(projection);
     }
 
@@ -70,7 +71,7 @@ public class SkosLayoutTests
             ex:b a skos:Concept ; skos:inScheme ex:scheme ; skos:broader ex:c .
             ex:c a skos:Concept ; skos:inScheme ex:scheme ; skos:broader ex:a .
             """;
-        var projection = SkosProjection.Project(RdfParser.Parse(RdfDocument.Parse(Prelude + turtle)));
+        var projection = SkosProjection.Project(RdfParser.Parse(LineDocument.Parse(Prelude + turtle)));
         var result = SkosLayout.Layout(projection);
 
         // Assert: one cycle naming all three, the excluded edge the lowest-sorting

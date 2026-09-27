@@ -101,7 +101,7 @@ public class OwlProvidersTests : IDisposable
         var execution = await _actions.ExecuteAsync(
             Target(body, gesture), RdfContextActionProvider.SubclassActionId, TestContext.Current.CancellationToken);
         Assert.IsType<ContextExecutionCompleted>(execution);
-        var model = RdfParser.Parse(RdfDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
+        var model = RdfParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
         Assert.Contains(model.Triples, t =>
             t.Subject is IriTerm { Iri: $"{Ns}Topping" }
             && t.Predicate.Iri == OwlVocabulary.SubClassOf
@@ -150,7 +150,7 @@ public class OwlProvidersTests : IDisposable
         var commit = await _actions.CommitAsync(
             Target(body, placement), RdfContextActionProvider.AddClassActionId, ":Dessert", "", TestContext.Current.CancellationToken);
         Assert.Equal("", commit.Error);
-        var model = RdfParser.Parse(RdfDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
+        var model = RdfParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
         Assert.Contains(model.Triples, t =>
             t.Subject is IriTerm { Iri: $"{Ns}Dessert" }
             && t.Predicate.Iri == RdfVocabulary.Type

@@ -19,7 +19,7 @@ internal static class BundleWriter
     /// refusal factory.
     /// </summary>
     public static string AddResourceSkeleton(
-        DatabricksDocument document, BundleModel bundle, string kind, string key)
+        LineDocument document, BundleModel bundle, string kind, string key)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(bundle);
@@ -64,7 +64,7 @@ internal static class BundleWriter
     }
 
     /// <summary>Rewrites the bundle's name.</summary>
-    public static string SetName(DatabricksDocument document, BundleModel bundle, string name)
+    public static string SetName(LineDocument document, BundleModel bundle, string name)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(bundle);
@@ -120,7 +120,7 @@ internal static class BundleWriter
     /// The line declaring a root-level key - at column zero, so a target's own nested
     /// <c>resources:</c> is never mistaken for the document's.
     /// </summary>
-    private static int RootKeyLine(DatabricksDocument document, string key)
+    private static int RootKeyLine(LineDocument document, string key)
     {
         for (var i = 0; i < document.Lines.Count; i++)
         {
@@ -134,7 +134,7 @@ internal static class BundleWriter
     }
 
     /// <summary>The last line still belonging to the root key starting at <paramref name="keyLine"/>: everything up to the next column-zero key.</summary>
-    private static int RegionEnd(DatabricksDocument document, int keyLine)
+    private static int RegionEnd(LineDocument document, int keyLine)
     {
         for (var i = keyLine + 1; i < document.Lines.Count; i++)
         {

@@ -35,6 +35,7 @@ public class RdfDocumentStoreTests : IDisposable
     [InlineData("crlf-line-endings.ttl")]
     [InlineData("lf-line-endings.ttl")]
     [InlineData("no-trailing-newline.ttl")]
+    [InlineData("tied-line-endings.ttl")]
     [InlineData("simple.nt")]
     public void SavingAnUntouchedDocument_LeavesTheFileByteIdentical(string name)
     {

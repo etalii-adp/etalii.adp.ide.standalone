@@ -36,7 +36,7 @@ public class DatabricksDocumentFactoryTests
         var factory = new DatabricksDocumentFactory(new DiagramOrigin("databricks", "job"));
 
         // Act.
-        var document = DatabricksDocument.Parse(factory.CreateEmptyDocument("Nightly Ingest"));
+        var document = LineDocument.Parse(factory.CreateEmptyDocument("Nightly Ingest"));
         var job = Assert.Single(JobParser.Parse(DatabricksYaml.Root(document), document));
 
         // Assert.
@@ -52,7 +52,7 @@ public class DatabricksDocumentFactoryTests
         var factory = new DatabricksDocumentFactory(new DiagramOrigin("databricks", "pipeline"));
 
         // Act.
-        var document = DatabricksDocument.Parse(factory.CreateEmptyDocument("bronze"));
+        var document = LineDocument.Parse(factory.CreateEmptyDocument("bronze"));
         var pipeline = Assert.Single(PipelineParser.Parse(DatabricksYaml.Root(document), document));
 
         // Assert.

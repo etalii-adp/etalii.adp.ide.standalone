@@ -43,7 +43,8 @@ because it would make the round-trip test a test of ADP's own idea of YAML.
 | `edge-expressions.yml` | `${{ }}` at compile time and `$[ ]`-style runtime conditions, in `displayName`, `condition` and around a whole stage — including `${{ if }}`, where whether a stage exists at all is not knowable statically (Requirements 3.4, 8.4). |
 | `edge-anchors.yml` | YAML anchors, aliases and a merge key. A serialiser would expand these and lose the author's intent, which is the clearest single argument for the concrete syntax tree. Also carries `dependsOn: []`. |
 | `edge-indentation.yml` | Sequence entries not indented under their key — valid YAML, and precisely the shape a reformatter silently "fixes". |
-| `edge-crlf.yml` | CRLF throughout. Every other file is LF, so the pair proves the writer preserves what it read rather than imposing a house style. |
+| `edge-crlf.yml` | CRLF throughout. Every other file but the next is LF, so the pair proves the writer preserves what it read rather than imposing a house style. |
+| `edge-tied-endings.yml` | As many LF endings as CRLF, so neither is the majority and the tie rule alone decides which ending a newly inserted line takes: CRLF, core's rule, where this module's own document once chose LF (backend-centralization Requirement 1.2). |
 | `edge-broken-graph.yml` | Deliberately wrong, so the validator has something real to catch: a dangling `dependsOn`, a two-stage cycle, and a stage nothing can reach (Requirements 10.2–10.4). It is **not** expected to be a valid pipeline; it is expected to round-trip byte-identically anyway, because a broken pipeline is exactly when a user needs ADP not to make it worse. |
 
 ## What a fixture is not for
