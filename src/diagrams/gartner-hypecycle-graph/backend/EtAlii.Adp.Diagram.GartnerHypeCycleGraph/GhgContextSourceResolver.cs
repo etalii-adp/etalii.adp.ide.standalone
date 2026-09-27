@@ -223,8 +223,8 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
     }
 
     private static string NameOf(GhgModel model, string id) =>
-        model.Trends.FirstOrDefault(trend => trend.Id == id) is { Name.Length: > 0 } trend ? trend.Name
-        : model.Triggers.FirstOrDefault(trigger => trigger.Id == id) is { Name.Length: > 0 } trigger ? trigger.Name
+        model.Trends.FirstOrDefault(t => t.Id == id) is { Name.Length: > 0 } trend ? trend.Name
+        : model.Triggers.FirstOrDefault(g => g.Id == id) is { Name.Length: > 0 } trigger ? trigger.Name
         : id;
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>

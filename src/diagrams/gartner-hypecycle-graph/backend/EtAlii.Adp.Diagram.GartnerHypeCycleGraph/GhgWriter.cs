@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 public readonly record struct GhgEdit(string? Refusal)
 {
     /// <summary>The edit was spliced into the document.</summary>
-    public static GhgEdit Applied { get; } = new((string?)null);
+    public static GhgEdit Applied { get; } = new(null);
 
     /// <summary>The edit was refused, and this is why.</summary>
     public static GhgEdit Refused(string because) => new(because);
