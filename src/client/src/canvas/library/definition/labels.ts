@@ -37,6 +37,20 @@ export interface LaidOutLabel {
   /** Which declaration produced it, and which line of it - what an editor and a test address. */
   declarationIndex: number;
   lineIndex: number;
+  /** Which of the declaration's `columns` drew it; absent for the line itself. */
+  columnIndex?: number;
+}
+
+/**
+ * A key unique among one element's laid-out lines, for React to tell them apart.
+ *
+ * Declaration and line alone are not enough: a declaration with `columns` draws its line AND each
+ * column at the same declaration and line index, so SHACL's three-cell constraint row gave three
+ * children one key and React warned that it could duplicate or drop them on update.
+ */
+export function labelKey(line: LaidOutLabel): string {
+  const base = `${line.declarationIndex}-${line.lineIndex}`;
+  return line.columnIndex === undefined ? base : `${base}-c${line.columnIndex}`;
 }
 
 /**
@@ -402,11 +416,11 @@ export function layoutLabels(
 
     lines.forEach((line, lineIndex) => {
       const y = stack ? base.y + stackStart + lineIndex * stack.lineHeight : base.y;
-      for (const column of declaration.columns ?? []) {
+      (declaration.columns ?? []).forEach((column, columnIndex) => {
         // The entry's OWN root: for a collection, the item this line came from.
         const text = resolveOneAt(column.text, entries[lineIndex]!.root);
         if (text === null) {
-          continue;
+          return;
         }
 
         const align = column.align ?? "start";
@@ -422,8 +436,9 @@ export function layoutLabels(
           className: classOf(column.className, entries[lineIndex]!.root),
           declarationIndex,
           lineIndex,
+          columnIndex,
         });
-      }
+      });
 
       laidOut.push({
         text: region !== null
