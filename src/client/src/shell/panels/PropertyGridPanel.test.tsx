@@ -208,7 +208,7 @@ describe("PropertyGridPanel", () => {
     });
   });
 
-  it("shows every level of a chain, outermost first", () => {
+  it("shows every level of a chain, innermost first", () => {
     // Arrange.
     const inner = selectionFor(ContextSelectionSource.DIAGRAM_CANVAS, new Uint8Array(16).fill(2), ["root", "node"], {
       case: "action",
@@ -221,7 +221,7 @@ describe("PropertyGridPanel", () => {
 
     // Act and assert, step by step.
     const headings = screen.getAllByRole("heading").map((h) => h.textContent);
-    expect(headings).toEqual(["docs", "node"]);
+    expect(headings).toEqual(["node", "docs"]);
     expect(screen.getByText("Folder")).toBeTruthy();
     expect(screen.getByText("No")).toBeTruthy();
     expect(screen.getByText("Diagram")).toBeTruthy();
