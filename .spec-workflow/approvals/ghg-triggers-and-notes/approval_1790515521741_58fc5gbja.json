@@ -3,8 +3,10 @@
   "title": "ghg-triggers-and-notes: tasks (12 tasks, 53 of 53 criteria claimed)",
   "filePath": ".spec-workflow/specs/ghg-triggers-and-notes/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-27T13:25:21.741Z",
   "category": "spec",
-  "categoryName": "ghg-triggers-and-notes"
+  "categoryName": "ghg-triggers-and-notes",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-27T13:29:17.399Z"
 }
