@@ -59,6 +59,25 @@ describe("the metric and the fit agree", () => {
   });
 });
 
+/**
+ * The backend's golden fixture for the metric (backend-centralization task 20), which its own
+ * suite reads too: the width a box was sized for on one tier is the width fitted on the other.
+ */
+describe("the metric, against the backend's text-metric fixture", () => {
+  const fixture = JSON.parse(readFileSync(join(sourceRoot(), "fixtures", "cross-tier", "text-metric.json"), "utf8")) as {
+    averageAdvance: number;
+    tolerance: number;
+    cases: { text: string; fontSize: number; width: number }[];
+  };
+
+  it("estimates every case's width", () => {
+    expect(fixture.cases.length).toBeGreaterThan(10);
+    for (const sample of fixture.cases) {
+      expect(Math.abs(widthOf(sample.text, sample.fontSize) - sample.width), `${sample.text} at ${sample.fontSize}`).toBeLessThanOrEqual(fixture.tolerance);
+    }
+  });
+});
+
 /** Code, with its comments blanked so prose about a metric is not mistaken for one. */
 function codeOf(source: string): string {
   return source
