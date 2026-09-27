@@ -137,7 +137,7 @@ public class TimelineElementMapperTests
         var after = _mapper.Elements(Parse(TwoElementsAndAConnection));
 
         // Act & assert.
-        Assert.Empty(_mapper.Diff(before, after));
+        Assert.Empty(DiagramDiff.Between(before, after));
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class TimelineElementMapperTests
         var after = _mapper.Elements(Parse(edited));
 
         // Act.
-        var deltas = _mapper.Diff(before, after);
+        var deltas = DiagramDiff.Between(before, after);
 
         // Assert.
         // An edit is an add carrying the new state; a removal is a remove naming the id.

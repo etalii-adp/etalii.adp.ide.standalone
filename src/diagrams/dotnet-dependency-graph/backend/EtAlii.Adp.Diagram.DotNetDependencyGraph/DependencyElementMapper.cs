@@ -101,37 +101,6 @@ public sealed class DependencyElementMapper
         return elements;
     }
 
-    /// <summary>
-    /// What changed between two renderings. Remove-then-add for what actually differs, which is
-    /// the whole of what a derived diagram needs: nothing here is edited in place.
-    /// </summary>
-    public IReadOnlyList<DiagramDelta> Diff(IReadOnlyList<DiagramElement> before, IReadOnlyList<DiagramElement> after)
-    {
-        ArgumentNullException.ThrowIfNull(before);
-        ArgumentNullException.ThrowIfNull(after);
-
-        var beforeById = before.ToDictionary(element => element.Id, StringComparer.Ordinal);
-        var afterById = after.ToDictionary(element => element.Id, StringComparer.Ordinal);
-
-        var gone = before.Where(element => !afterById.ContainsKey(element.Id)).Select(element => element.Id).ToArray();
-        var arrived = after
-            .Where(element => !beforeById.TryGetValue(element.Id, out var existing) || !Same(existing, element))
-            .ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (gone.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(gone));
-        }
-
-        if (arrived.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(arrived));
-        }
-
-        return deltas;
-    }
-
     /// <summary>The stored position where there is one, the computed one otherwise.</summary>
     private static (double X, double Y) PositionOf(
         string id,
@@ -145,12 +114,6 @@ public sealed class DependencyElementMapper
 
         return computed.TryGetValue(id, out var position) ? position : (0, 0);
     }
-
-    private static bool Same(DiagramElement left, DiagramElement right) =>
-        left.X.Equals(right.X) &&
-        left.Y.Equals(right.Y) &&
-        string.Equals(left.Type, right.Type, StringComparison.Ordinal) &&
-        left.Payload.Span.SequenceEqual(right.Payload.Span);
 
     private static ReadOnlyMemory<byte> Payload(Wire.DependencyElementPayload payload) => payload.ToByteArray();
 }

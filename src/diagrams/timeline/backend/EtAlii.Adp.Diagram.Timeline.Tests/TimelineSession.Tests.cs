@@ -94,7 +94,7 @@ public class TimelineSessionTests : IDisposable
     }
 
     [Fact]
-    public void AChangedViewport_AddsWhatAppearedThenRemovesWhatLeft()
+    public void AChangedViewport_RemovesWhatLeftThenAddsWhatAppeared()
     {
         // Arrange: the fixture's period sits on row 0 in early 2026, the moment on row 2 a
         // fortnight later, and one connection joins them. This is the test the task calls the
@@ -117,10 +117,11 @@ public class TimelineSessionTests : IDisposable
         var dropped = Assert.IsType<DiagramRemoveDelta>(Assert.Single(narrowed));
         Assert.Equal(["bbb", "ccc"], dropped.ElementIds.Order());
 
-        // Panning to the moment's row is one delta of each, Add first.
+        // Panning to the moment's row is one delta of each, Remove first - the shared diff's
+        // order (backend-centralization R4.5), where this used to pin Add first.
         Assert.Equal(2, moved.Count);
-        var appeared = Assert.IsType<DiagramAddDelta>(moved[0]);
-        var departed = Assert.IsType<DiagramRemoveDelta>(moved[1]);
+        var departed = Assert.IsType<DiagramRemoveDelta>(moved[0]);
+        var appeared = Assert.IsType<DiagramAddDelta>(moved[1]);
         Assert.Equal("bbb", Assert.Single(appeared.Elements).Id);
         Assert.Equal("aaa", Assert.Single(departed.ElementIds));
     }

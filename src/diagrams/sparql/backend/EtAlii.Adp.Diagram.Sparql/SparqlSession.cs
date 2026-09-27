@@ -80,26 +80,12 @@ public sealed class SparqlSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        var before = Render().Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         _viewport = viewport;
         var after = Render();
 
-        // Add for what appeared, then Remove for what left - the order every adopting session
-        // emits in, and the opposite of what Requirement 4.3 anticipated.
-        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
-        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
-        if (departed.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(departed));
-        }
-
+        // The shared diff against what this connection holds (backend-centralization R4.1):
+        // what left is removed first, then what appeared or changed is added (R4.5).
+        var deltas = DiagramDiff.Between(_delivered, after);
         _delivered = after;
         return deltas;
     }
@@ -216,7 +202,7 @@ public sealed class SparqlSession : IDiagramSession
         try
         {
             var current = Render();
-            var deltas = _mapper.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)

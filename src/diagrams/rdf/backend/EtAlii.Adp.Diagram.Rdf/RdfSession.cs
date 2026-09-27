@@ -94,7 +94,7 @@ public sealed class RdfSession : IDiagramSession
         _viewport = viewport;
 
         var current = Render();
-        var deltas = _mapper.Diff(_delivered, current);
+        var deltas = DiagramDiff.Between(_delivered, current);
         _delivered = current;
 
         return deltas;
@@ -239,7 +239,7 @@ public sealed class RdfSession : IDiagramSession
         {
             _laidOut = null;
             var current = Render();
-            var deltas = _mapper.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)

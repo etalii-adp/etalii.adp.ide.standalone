@@ -1,0 +1,35 @@
+# LLMs and agents
+
+Thirty-five trends in large language models and agentic development, from word embeddings in 2013 through the Transformer, ChatGPT, retrieval, tool use and reasoning models to coding agents, spec-driven development and ideas that have not started yet, drawn as a Gartner hype cycle graph and related by the influences they had on one another.
+
+It is the close-up of the last few trends in [digital-trends](../digital-trends/readme.md): the same notation over thirteen years instead of sixty.
+
+## Hand-authored, and why
+
+**This example was written for ADP, and it is exempt from the published-data rule**, for the reason the technology-trends readme gives: the notation is ADP's own, so no published corpus of it exists.
+
+**Its dates and influences are illustrative, not a claim.** Every start date up to 2026 is plausible to the month, and every influence is one a history of the field would recognise. **Dates after 2026 are projections**: human-agent teams, autonomous research agents, continual learning, verified code generation, agent economies, recursive self-improvement and the stop of every trend still running are guesses, drawn so the diagram can show what is expected as well as what happened.
+
+**Each influence is dated, and its anchors follow from that date.** An influence attaches to the phase each trend was in at the month it acted, and its anchor sits as far along that phase as the month does. Influences on one phase therefore line up in the order they happened: on the Peak of coding agents, code completion arrives before reasoning models, and reasoning models before the Model Context Protocol.
+
+## What it shows
+
+| Part | In this example |
+| --- | --- |
+| Trends | 35, in five clusters of rows: foundations, models, tooling, agents, and what comes next, with an empty row between every two rows of trends |
+| Influences | 56, each attached to the phase of each trend in which it acted, at the point in that phase when it acted |
+| Phase counts | Every count from 1 to 4: word embeddings and the Transformer show all four phases, most agent trends only a Peak |
+| Upcoming and conceptual ideas | Human-agent teams and agent-to-agent protocols are tagged `upcoming`; autonomous research agents, continual learning, verified code generation, agent economies and recursive self-improvement are tagged `conceptual` |
+| Both directions | Autonomous agents pushed for tool use in 2023, and tool use pulled autonomous agents out of their trough in 2025: one influence per direction is allowed |
+| Dragged boundaries | Scaling laws, large language models, chat assistants, prompt engineering, tool use, autonomous agents, multi-agent systems and vibe coding have phase boundaries placed on a dated turn in their story; every other trend's phases are even |
+| Descriptions | On most trends and some influences, kept in the document and never drawn |
+
+**Tags make meaningful filters**, for example `agents`; `agents and coding`; and `upcoming or conceptual`. The other tags are `language`, `architecture`, `models`, `alignment`, `multimodal`, `products`, `society`, `tooling`, `data`, `techniques` and `science`.
+
+## What it does not demonstrate
+
+- **A document that breaks the rules.** The validator reports nothing for it; the broken documents are the test fixtures.
+- **A hidden influence.** Every influence here attaches to a phase its trends show; technology-trends has one that is hidden.
+- **Trends before 2013.** For the longer view, see digital-trends and technology-trends.
+- **A trend whose phases are researched.** The dragged boundaries sit on well-known turns, not on a measured hype curve.
+- **Influences that are uncertain or disputed.** The notation has no way to say so, and the projections after 2026 are the most uncertain of all.

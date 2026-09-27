@@ -304,11 +304,6 @@ public class ShaclSessionTests : IDisposable
 
         var restored = widened.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         Assert.Subset(restored, removed);
-
-        // Add before Remove - what the reference implementations emit, and what this module's
-        // own mapper already produced. Requirement 4.3 anticipated the opposite.
-        var kinds = widened.Select(delta => delta is DiagramAddDelta ? 0 : 1).ToList();
-        Assert.Equal(kinds.OrderBy(kind => kind).ToList(), kinds);
     }
 
     [Fact]

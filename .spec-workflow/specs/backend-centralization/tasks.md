@@ -113,24 +113,24 @@ The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *alre
   - Equality is equal position, type and payload. **Removals first, then additions**, settled by the design.
   - A table-driven test over add, remove, move, retype and payload-change. **Seen to fail against an equality that ignores payload.**
   - _Requirements: 4.1, 4.4, 4.5_
-- [ ] 12. Convert the five modules that compute their own deltas
+- [x] 12. Convert the five modules that compute their own deltas
   - Files: ansible-structure, helm-charts, azure-pipeline, c4 and causal-loop sessions, and their tests
   - _Requirements: 4.2_
 - [x] 13. The shared document-change handler
   - Files: new in `EtAlii.Adp.Diagram`, plus its tests. It raises diagram deltas, for the same reason as task 11 (the user's chat ruling, 2026-09-25).
   - A session ignores changes to other paths. **A test drives two sessions on two paths and asserts the second hears nothing**, seen to fail against a handler that ignores the path.
   - _Requirements: 5.1_
-- [ ] 14. Convert azure-pipeline, c4 and causal-loop onto the handler
+- [x] 14. Convert azure-pipeline, c4 and causal-loop onto the handler
   - Files: those three sessions and their tests
   - _Requirements: 5.2_
-- [ ] 15. mindmap keeps reacting to its own structural change
+- [x] 15. mindmap keeps reacting to its own structural change
   - Files: mindmap's session and tests
   - Permitted by criterion, and pinned by a test for the same reason as task 10.
   - _Requirements: 5.3_
 
 ## Group 4 — The line document, independent of the above
 
-- [ ] 16. The shared line document, and the three modules onto it
+- [x] 16. The shared line document, and the three modules onto it
   - Files: `LineDocument` in `EtAlii.Adp.Documents`, plus databricks, rdf and azure-pipeline and their tests
   - Read and split once. **A file with as many LF endings as CRLF is written back as CRLF by azure-pipeline**, which is the tie rule the criterion names.
   - **An unchanged document comes back byte-identical**, which is the existing per-module round-trip guard and is why those fixtures are `-text` in `.gitattributes`.
@@ -139,7 +139,7 @@ The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *alre
 
 ## Group 5 — The two small shared edits
 
-- [ ] 17. One restore-document edit, and three modules onto it
+- [x] 17. One restore-document edit, and three modules onto it
   - Files: the command and its handler in `EtAlii.Adp.History`, `IReloadableDocumentStore` in `EtAlii.Adp.Documents` - no new references, since History already references Documents - plus causal-loop, databricks and rdf, and their tests (the user's chat ruling, 2026-09-25, replacing the earlier Documents → History reference, which the Common dissolution made a cycle).
   - The command is generic over the module's store, because the dispatcher finds a handler by the command's type: one non-generic restore registered by several modules would reach whichever registered last, and reload the wrong store.
   - Usable by a fourth module without copying, which the criterion requires and a second consumer proves.
@@ -151,33 +151,33 @@ The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *alre
 
 ## Group 6 — The cross-tier rules, last because each needs a fixture two suites read
 
-- [ ] 19. Row rounding, with its golden fixture
+- [x] 19. Row rounding, with its golden fixture
   - Files: the shared function, the fixture, backend tests
   - _Requirements: 9.1, 9.2_
-- [ ] 20. The text width metric, with its golden fixture
+- [x] 20. The text width metric, with its golden fixture
   - Files: the shared metric, the fixture, backend tests
   - **Padding, minimum and maximum stay each module's own decision**; only the metric is shared, so a module that sizes a box differently is not made wrong by this task.
   - _Requirements: 10.1, 10.2, 10.3_
-- [ ] 21. The gesture id grammar, with its golden fixture
+- [x] 21. The gesture id grammar, with its golden fixture
   - Files: the shared grammar, the fixture, backend tests, and the five modules that build or parse gesture ids today - causal-loop, databricks, dependency-graph, rdf and timeline - moved onto it, as R11.1 requires (the user's chat ruling, 2026-09-25).
   - Building and parsing `new:` and `rel:` ids. R11.2's refusal of an empty end is already on `develop`; this task adopts it rather than reimplementing it.
   - _Requirements: 11.1, 11.3_
-- [ ] 22. The element and relation type strings, with their fixture
+- [x] 22. The element and relation type strings, with their fixture
   - Files: the shared list, the fixture, backend tests
   - A backend constant changing without the fixture fails a backend test. **Seen to fail by changing a constant and leaving the fixture alone.**
   - _Requirements: 12.1, 12.2_
-- [ ] 23. The permanent-refusal status codes, with their fixture
+- [x] 23. The permanent-refusal status codes, with their fixture
   - Files: the shared list, the fixture, backend tests
   - _Requirements: 13.1, 13.2_
 
 ## Group 7 — The closing verification, which cannot be done earlier
 
-- [ ] 24. Behaviour changes only where a criterion says so
+- [x] 24. Behaviour changes only where a criterion says so
   - Files: the implementation log, and whichever tests changed
   - **Every existing test that changed in this work is listed with the criterion that permitted it.** A test that changed for convenience rather than for a criterion is a finding, and the log says which it was.
   - **R2.4 authorises sparql's one behaviour change, and the log names it.** Before: a reload that could not read replaced a good query with an error entry. After: the last good query is kept, because keep-last-good on reload applies to every store and a module's declared state governs only the first open (the user's chat ruling, 2026-09-25).
   - _Requirements: 8.1_
-- [ ] 25. The closing gate on a fresh tree, and the coverage diff traced to code
+- [x] 25. The closing gate on a fresh tree, and the coverage diff traced to code
   - Files: the implementation log
   - The full backend suite and every module's byte-identical round-trip pass. **On a newly created worktree**, because every other gate reads `obj/` and a generated-code break is invisible to them.
   - **The coverage diff is run a second time here, traced to files and strings rather than to a task's promise** — the first run asked *did anybody claim this?*, and this one asks *does the code show this?*
