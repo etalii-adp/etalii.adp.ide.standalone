@@ -98,11 +98,12 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         Assert.DoesNotContain(narrowed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements), element => element.Id == rightmost.Id);
         Assert.Contains(rightmost.Id, narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
 
-        // ...and moving across added the far element and removed the near one, in that order.
+        // ...and moving across removed the near element and added the far one, in that order:
+        // removals first, the one order every module sends (backend-centralization R4.5).
         Assert.Contains(moved.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements), element => element.Id == rightmost.Id);
         Assert.Contains(leftmost.Id, moved.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
-        Assert.IsType<DiagramAddDelta>(moved[0]);
-        Assert.IsType<DiagramRemoveDelta>(moved[1]);
+        Assert.IsType<DiagramRemoveDelta>(moved[0]);
+        Assert.IsType<DiagramAddDelta>(moved[1]);
     }
 
     /// <summary>A viewport tight around one element, in the module's own units.</summary>
@@ -221,5 +222,41 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         Assert.NotNull(deltas);
         var add = deltas.OfType<DiagramAddDelta>().Single();
         Assert.Contains(add.Elements, element => element.Id == "values:values-prod.yaml");
+    }
+
+    /// <summary>
+    /// A chart change sends what changed, not the whole chart again (backend-centralization
+    /// R4.2): every element the push adds is new or differs from what this connection already
+    /// holds, and an element the change did not touch is not resent.
+    /// </summary>
+    [Fact]
+    public async Task ADiskChange_ResendsOnlyWhatChanged()
+    {
+        // Arrange.
+        await using var session = Session();
+        var delivered = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements
+            .ToDictionary(element => element.Id, StringComparer.Ordinal);
+        using var pushed = new ManualResetEventSlim();
+        IReadOnlyList<DiagramDelta>? deltas = null;
+        session.Changed += (_, e) =>
+        {
+            deltas = e.Deltas;
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: This works.
+            pushed.Set();
+        };
+
+        // Act.
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "values-prod.yaml"), "replicaCount: 3\n", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(pushed.Wait(WaitLimit, TestContext.Current.CancellationToken), "The session never pushed the change.");
+        Assert.NotNull(deltas);
+        var added = deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToArray();
+        Assert.Contains(added, element => element.Id == "values:values-prod.yaml");
+        Assert.DoesNotContain(added, element =>
+            delivered.TryGetValue(element.Id, out var was) && DiagramDiff.Same(was, element));
+        // The chart node sits where it sat, so it is the element a resend-everything would send.
+        Assert.DoesNotContain(added, element => element.Id == "chart");
     }
 }

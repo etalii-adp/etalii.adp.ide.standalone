@@ -125,34 +125,6 @@ public sealed class HelmElementMapper
         box.X <= viewport.MaxX && box.Right >= viewport.MinX &&
         box.Y <= viewport.MaxY && box.Bottom >= viewport.MinY;
 
-    /// <summary>
-    /// What to send a connection whose diagram was <paramref name="previous"/> and is now
-    /// <paramref name="current"/>: the ids that went away, then everything that is there now.
-    /// Add is an upsert, so re-sending an unchanged element is correct; only ids that genuinely
-    /// disappeared need removing first.
-    /// </summary>
-    public IReadOnlyList<DiagramDelta> Diff(IReadOnlyList<DiagramElement> previous, IReadOnlyList<DiagramElement> current)
-    {
-        ArgumentNullException.ThrowIfNull(previous);
-        ArgumentNullException.ThrowIfNull(current);
-
-        var deltas = new List<DiagramDelta>();
-
-        var live = current.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        var gone = previous.Select(element => element.Id).Where(id => !live.Contains(id)).ToArray();
-        if (gone.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(gone));
-        }
-
-        if (current.Count > 0)
-        {
-            deltas.Add(new DiagramAddDelta(current));
-        }
-
-        return deltas;
-    }
-
     private static DiagramElement NodeElement(HelmChart chart, HelmGraph graph, HelmNode node, HelmBox box)
     {
         var payload = new Wire.HelmElementPayload
