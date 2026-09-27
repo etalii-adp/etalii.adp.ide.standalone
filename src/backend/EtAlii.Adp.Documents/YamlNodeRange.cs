@@ -22,14 +22,28 @@ namespace EtAlii.Adp.Documents;
 /// in the comment introducing the stage after it, and a splice would eat it.
 /// </para>
 /// <para>
-/// <b>What a comment is comes from <see cref="Line.IsComment"/>, and that is the one real difference
-/// the four copies this replaces had.</b> Their range bodies were identical. databricks, dependency-graph
-/// and timeline trim leading whitespace of every kind before looking for <c>#</c>, while azure-pipeline's
-/// own line type trimmed spaces only. So a comment line indented with a TAB was trimmed from a range by
-/// three modules and kept inside it by the fourth - where a splice would then eat it. The three win
-/// (R7.2): a tab-led comment is a comment. Whether YamlDotNet accepts a tab-led comment line in block
-/// context, and so whether the difference could ever be reached end to end, was not measured when
-/// this was written.
+/// <b>What a comment is, and the one real difference the four copies this replaces had.</b> Their
+/// range bodies were identical; what differed was the line type's comment test. databricks,
+/// dependency-graph and timeline trimmed leading whitespace of every kind before looking for
+/// <c>#</c>, while azure-pipeline's own line type trimmed spaces only. So a line whose first
+/// non-space character is a TAB followed by <c>#</c> was trimmed from a range by three modules and
+/// kept by the fourth. <b>azure-pipeline's rule is kept</b>, under the design's S7 rule that the
+/// three win unless azure-pipeline's variant is shown to handle an input they get wrong - and it
+/// was shown, by measurement against YamlDotNet on 2026-09-27. YamlDotNet refuses most tab-led
+/// comment lines in block context outright ("found invalid tab as indentation"), the ones it accepts
+/// lie past the end mark of the last token before them, and a flow node's end mark sits on the line
+/// of its own last token - so a genuine tab-led comment never reaches a range's end. The only way
+/// such a line does is as the last CONTENT line of a block
+/// scalar: of 695 generated inputs YamlDotNet accepted, the two rules disagreed on 127, and in every
+/// one the disputed line was scalar content, which the three modules' rule cut out of the element
+/// that holds it. YAML indents with spaces alone, so a line is a trailing comment when its first
+/// non-space character is <c>#</c> - which is why this does not use <see cref="Line.IsComment"/>,
+/// whose general rule causal-loop's own format reads.
+/// </para>
+/// <para>
+/// <b>What this still gets wrong</b>, in all four copies alike and so not R7's to change: a block
+/// scalar whose last content line starts, after its spaces, with <c>#</c> has that line trimmed as
+/// though it were a comment.
 /// </para>
 /// <para>
 /// An alias resolves to the node it points at, which YAML requires to have been declared earlier in
@@ -42,10 +56,28 @@ public static class YamlNodeRange
     /// <summary>The lines <paramref name="node"/> occupies in <paramref name="lines"/>.</summary>
     /// <param name="node">A node parsed from the text <paramref name="lines"/> hold.</param>
     /// <param name="lines">The document's lines, in order - <c>LineDocument.Lines</c> for most modules.</param>
-    public static LineRange Of(YamlNode node, IReadOnlyList<Line> lines)
+    public static LineRange Of(YamlNode node, IReadOnlyList<Line> lines) => Of(node, lines, LineText);
+
+    /// <summary>
+    /// The lines a mapping entry occupies - its key and its value together, which is what removing or
+    /// moving the entry has to take (databricks's form).
+    /// </summary>
+    public static LineRange Of(YamlNode key, YamlNode value, IReadOnlyList<Line> lines) =>
+        Of(key, value, lines, LineText);
+
+    /// <summary>
+    /// The lines <paramref name="node"/> occupies, for a module that still holds its lines in a type of
+    /// its own - databricks and azure-pipeline, until they read through <see cref="LineDocument"/>.
+    /// </summary>
+    /// <param name="node">A node parsed from the text <paramref name="lines"/> hold.</param>
+    /// <param name="lines">The document's lines, in order.</param>
+    /// <param name="text">A line's text without its terminator. Only the text is read, so the
+    /// blank-and-comment rule is this type's, whatever the line type's own tests say.</param>
+    public static LineRange Of<TLine>(YamlNode node, IReadOnlyList<TLine> lines, Func<TLine, string> text)
     {
         ArgumentNullException.ThrowIfNull(node);
         ArgumentNullException.ThrowIfNull(lines);
+        ArgumentNullException.ThrowIfNull(text);
 
         var last = lines.Count - 1;
         var extent = EndMark(node);
@@ -58,7 +90,7 @@ public static class YamlNodeRange
             end--;
         }
 
-        while (end > start && (lines[end].IsBlank || lines[end].IsComment))
+        while (end > start && SaysNothing(text(lines[end])))
         {
             end--;
         }
@@ -67,17 +99,23 @@ public static class YamlNodeRange
     }
 
     /// <summary>
-    /// The lines a mapping entry occupies - its key and its value together, which is what removing or
-    /// moving the entry has to take (databricks's form).
+    /// The lines a mapping entry occupies, for a module that still holds its lines in a type of its own.
     /// </summary>
-    public static LineRange Of(YamlNode key, YamlNode value, IReadOnlyList<Line> lines)
+    public static LineRange Of<TLine>(YamlNode key, YamlNode value, IReadOnlyList<TLine> lines, Func<TLine, string> text)
     {
-        var keyRange = Of(key, lines);
-        var valueRange = Of(value, lines);
+        var keyRange = Of(key, lines, text);
+        var valueRange = Of(value, lines, text);
         return new LineRange(
             Math.Min(keyRange.Start, valueRange.Start),
             Math.Max(keyRange.End, valueRange.End));
     }
+
+    // A blank line, or a YAML comment line: the first non-SPACE character is '#'. Spaces only,
+    // because YAML indents with nothing else - see the remarks for the measurement behind it.
+    private static bool SaysNothing(string text) =>
+        string.IsNullOrWhiteSpace(text) || text.TrimStart(' ').StartsWith('#');
+
+    private static string LineText(Line line) => line.Text;
 
     // The furthest end mark in a node's subtree.
     private static Mark EndMark(YamlNode node)
