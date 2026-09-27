@@ -308,6 +308,37 @@ public class PipelineSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task AChangeToADifferentFile_IsNotEvenRenderedForThisSession()
+    {
+        // Arrange: the shared diff sends only what differs, so a session that re-rendered on
+        // another file's change would stay silent whenever its own view had not moved - and the
+        // test above would pass against a session that ignored the path altogether. So this
+        // session's view is changed WITHOUT telling it, by toggling the connection's view
+        // directly rather than through the announcing view state: a session that re-rendered on
+        // the other file's change would now push the stage's jobs.
+        var mine = Write(TwoStages);
+        var theirs = IoPath.Combine(_workspace, "other.yml");
+        await File.WriteAllTextAsync(theirs, TwoStages, TestContext.Current.CancellationToken);
+        var watchId = ShortGuid.NewShortGuid();
+        await using var session = OpenWith(mine, watchId);
+        session.Baseline();
+        _views.For(watchId, mine).Toggle("Build");
+        var pushed = new List<DiagramDeltasEventArgs>();
+        session.Changed += (_, args) => pushed.Add(args);
+
+        // Act.
+        _store.GetOrLoad(_workspace, theirs);
+        _store.Touch(_workspace, theirs);
+        var pushedForTheirs = pushed.Count;
+        _store.Touch(_workspace, mine);
+
+        // Assert: nothing for the other file, and the same change to its own file does push the
+        // jobs - which is what makes the silence mean something.
+        Assert.Equal(0, pushedForTheirs);
+        Assert.Contains("Build/Compile", AddedIds(Assert.Single(pushed).Deltas));
+    }
+
+    [Fact]
     public async Task ADisposedSession_HearsNothingMore()
     {
         // Arrange: a connection that closed its diagram must not keep the session alive through
