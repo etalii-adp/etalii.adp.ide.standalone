@@ -215,42 +215,6 @@ public sealed class SparqlElementMapper
         box.X <= viewport.MaxX && box.X + box.Width >= viewport.MinX &&
         box.Y <= viewport.MaxY && box.Y + box.Height >= viewport.MinY;
 
-    /// <summary>The difference between two renderings, as adds and removes - a change is an add carrying the element in its new state.</summary>
-    public IReadOnlyList<DiagramDelta> Diff(
-        IReadOnlyList<DiagramElement> before,
-        IReadOnlyList<DiagramElement> after)
-    {
-        ArgumentNullException.ThrowIfNull(before);
-        ArgumentNullException.ThrowIfNull(after);
-
-        var previous = before.ToDictionary(element => element.Id, StringComparer.Ordinal);
-        var deltas = new List<DiagramDelta>();
-
-        var changed = after
-            .Where(element => !previous.TryGetValue(element.Id, out var was) || !Same(was, element))
-            .ToArray();
-        if (changed.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(changed));
-        }
-
-        var current = after.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        var gone = before.Select(element => element.Id).Where(id => !current.Contains(id)).ToArray();
-        if (gone.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(gone));
-        }
-
-        return deltas;
-    }
-
-    /// <summary>Whether two renderings of one element say the same thing - not the record's own equality, which compares payload memory by reference.</summary>
-    private static bool Same(DiagramElement left, DiagramElement right) =>
-        left.X.Equals(right.X)
-        && left.Y.Equals(right.Y)
-        && left.Type == right.Type
-        && left.Payload.Span.SequenceEqual(right.Payload.Span);
-
     private static DiagramElement Pack(string id, RegistrationPosition at, string type, IMessage payload) =>
         new(id, at.X, at.Y, type, $"type.googleapis.com/{payload.Descriptor.FullName}", payload.ToByteArray());
 }
