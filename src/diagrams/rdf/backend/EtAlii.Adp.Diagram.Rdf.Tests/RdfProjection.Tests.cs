@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -14,7 +15,7 @@ public class RdfProjectionTests
     private static RdfProjectionResult ProjectFixture(string name)
     {
         var text = File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name));
-        return RdfProjection.Project(RdfParser.Parse(RdfDocument.Parse(text)));
+        return RdfProjection.Project(RdfParser.Parse(LineDocument.Parse(text)));
     }
 
     [Fact]
@@ -71,7 +72,7 @@ public class RdfProjectionTests
             builder.Append($"ex:s{i:D3} ex:knows ex:s{(i + 1):D3} .\r\n");
         }
 
-        var model = RdfParser.Parse(RdfDocument.Parse(builder.ToString()));
+        var model = RdfParser.Parse(LineDocument.Parse(builder.ToString()));
 
         // Act.
         var projection = RdfProjection.Project(model, budget: 10);
@@ -94,7 +95,7 @@ public class RdfProjectionTests
     public void ADisplayName_FallsBackFromPrefixedName_ToLocalName()
     {
         // Arrange & act: the foaf namespace is not declared, so no prefix reaches it.
-        var model = RdfParser.Parse(RdfDocument.Parse(
+        var model = RdfParser.Parse(LineDocument.Parse(
             "@prefix ex: <http://example.org/> .\r\nex:a ex:p <http://xmlns.com/foaf/0.1/Person> .\r\n"));
         var projection = RdfProjection.Project(model);
 

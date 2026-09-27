@@ -30,7 +30,7 @@ public static class RdfWriter
     /// States one more triple: appended to the subject's existing statement as a <c>;</c>
     /// continuation matching its indentation, or as a new statement at the end of the document.
     /// </summary>
-    public static string AddTriple(RdfDocument document, RdfModel model, string subjectIri, string predicateIri, RdfTerm objectTerm)
+    public static string AddTriple(LineDocument document, RdfModel model, string subjectIri, string predicateIri, RdfTerm objectTerm)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -92,7 +92,7 @@ public static class RdfWriter
     /// stranded separator where it shares a line, and the whole statement - block and terminating
     /// <c>.</c> - where it is the statement's last triple.
     /// </summary>
-    public static string RemoveTriple(RdfDocument document, RdfModel model, RdfTriple triple)
+    public static string RemoveTriple(LineDocument document, RdfModel model, RdfTriple triple)
     {
         ArgumentNullException.ThrowIfNull(triple);
 
@@ -126,7 +126,7 @@ public static class RdfWriter
     /// came from, and this splice shifts everything after it, so a caller that collects several
     /// triples from one model and then loops over that captured list will write wrong bytes on
     /// the second call - silently, with no exception and no refusal. Re-run
-    /// <see cref="RdfParser.Parse(RdfDocument)"/> after each removal and find the next victim in
+    /// <see cref="RdfParser.Parse(LineDocument)"/> after each removal and find the next victim in
     /// the fresh model, as <see cref="RemoveResource"/> does.
     /// </para>
     /// <para>
@@ -138,7 +138,7 @@ public static class RdfWriter
     /// blank-rooted triple on its own it would take an unrelated statement with it.
     /// </para>
     /// </remarks>
-    internal static string RemoveTripleAnchored(RdfDocument document, RdfModel model, RdfTriple triple)
+    internal static string RemoveTripleAnchored(LineDocument document, RdfModel model, RdfTriple triple)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -181,7 +181,7 @@ public static class RdfWriter
     /// Removes every triple the IRI-named resource is subject or object of, bottom-up so earlier
     /// removals never shift what later ones splice.
     /// </summary>
-    public static string RemoveResource(RdfDocument document, RdfModel model, string iri)
+    public static string RemoveResource(LineDocument document, RdfModel model, string iri)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -228,7 +228,7 @@ public static class RdfWriter
     /// Renames a term everywhere it occurs - subject, predicate, object, datatype, prefixed or
     /// full - in one operation, so no reference is ever stranded. Collisions are refused first.
     /// </summary>
-    public static string RenameTerm(RdfDocument document, RdfModel model, string oldIri, string newIri)
+    public static string RenameTerm(LineDocument document, RdfModel model, string oldIri, string newIri)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -277,7 +277,7 @@ public static class RdfWriter
     /// Pass a null <paramref name="language"/> and <paramref name="datatypeIri"/> for a plain
     /// string; they are mutually exclusive, language winning where both arrive.
     /// </remarks>
-    public static string ReplaceObjectLiteral(RdfDocument document, RdfModel model, RdfTriple triple, string lexical, string? language, string? datatypeIri)
+    public static string ReplaceObjectLiteral(LineDocument document, RdfModel model, RdfTriple triple, string lexical, string? language, string? datatypeIri)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -314,7 +314,7 @@ public static class RdfWriter
     }
 
     /// <summary>Declares one more prefix, beside the existing declaration run.</summary>
-    public static string AddPrefix(RdfDocument document, RdfModel model, string prefix, string iri)
+    public static string AddPrefix(LineDocument document, RdfModel model, string prefix, string iri)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
@@ -443,7 +443,7 @@ public static class RdfWriter
     /// Removes the characters in <c>[start, end)</c>, joining what remains of the first and last
     /// affected lines - and removing lines that are left holding only whitespace.
     /// </summary>
-    private static void RemoveRegion(RdfDocument document, int start, int end)
+    private static void RemoveRegion(LineDocument document, int start, int end)
     {
         var starts = LineStarts(document.Text);
         var firstLine = LineOf(starts, start);
@@ -469,7 +469,7 @@ public static class RdfWriter
     }
 
     /// <summary>Replaces the characters in <c>[start, end)</c> with <paramref name="replacement"/>, one line out.</summary>
-    private static void ReplaceRegion(RdfDocument document, int start, int end, string replacement)
+    private static void ReplaceRegion(LineDocument document, int start, int end, string replacement)
     {
         var starts = LineStarts(document.Text);
         var firstLine = LineOf(starts, start);

@@ -59,7 +59,7 @@ public class ShaclExamplesTests
         foreach (var body in bodies)
         {
             var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
-            var model = RdfParser.Parse(RdfDocument.Parse(text));
+            var model = RdfParser.Parse(LineDocument.Parse(text));
             Assert.NotEmpty(model.Triples);
 
             // Every registration resolves, and the reading draws something.
@@ -81,7 +81,7 @@ public class ShaclExamplesTests
     [Fact]
     public void TheSpecCorpus_ExercisesRequirement94sConstructList()
     {
-        var model = RdfParser.Parse(RdfDocument.Parse(
+        var model = RdfParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(ExamplesRoot(), "w3c-shacl", "spec-examples.ttl"))));
         var projection = ShaclProjection.Project(model);
 
@@ -102,7 +102,7 @@ public class ShaclExamplesTests
     [Fact]
     public void TheDeployedShapes_DrawTheirOutwardTargetsAsChips_AndTheirCyclesAsEdges()
     {
-        var model = RdfParser.Parse(RdfDocument.Parse(
+        var model = RdfParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(ExamplesRoot(), "fair-data-point", "navigation-shapes.ttl"))));
         var projection = ShaclProjection.Project(model);
 

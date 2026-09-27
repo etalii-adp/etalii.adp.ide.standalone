@@ -126,29 +126,6 @@ public class YamlNodeRangeTests
         Assert.Equal(new LineRange(1, 4), range);
     }
 
-    [Fact]
-    public void AModulesOwnLineType_GetsTheSameRangeAsLine()
-    {
-        // databricks and azure-pipeline still hold their lines in types of their own, and reach the
-        // rule through the overload that reads a line's text. The same input must give the same range
-        // through both doors, including the trailing trim, or the two doors are two rules.
-        const string text =
-            "elements:\n" +
-            "  - id: a\n" +
-            "    notes: |\n" +
-            "      line one\n" +
-            "\n" +
-            "  # introduces b\n" +
-            "  - id: b\n";
-        var element = Elements(text)[0];
-        var texts = text.Split('\n')[..^1];
-
-        var range = YamlNodeRange.Of(element, texts, line => line);
-
-        Assert.Equal(YamlNodeRange.Of(element, LineDocument.Parse(text).Lines), range);
-        Assert.Equal(new LineRange(1, 3), range);
-    }
-
     private static YamlMappingNode Root(string text)
     {
         var stream = new YamlStream();

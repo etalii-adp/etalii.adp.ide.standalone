@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,9 +12,9 @@ namespace EtAlii.Adp.Diagram.AzurePipeline.Tests;
 public class PipelineParserExecutionTests
 {
     private static PipelineModel ParseFixture(string name) =>
-        PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
 
-    private static PipelineModel Parse(string text) => PipelineParser.Parse(PipelineDocument.Parse(text));
+    private static PipelineModel Parse(string text) => PipelineParser.Parse(LineDocument.Parse(text));
 
     [Fact]
     public void APipelineLevelPool_ReachesAJobThatDeclaresNone()

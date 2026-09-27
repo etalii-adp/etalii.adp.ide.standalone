@@ -55,7 +55,7 @@ public sealed partial class RdfValidator(DiagramOrigin origin) : IDiagramValidat
 
         // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
         // Reason: Can still be null if the document is empty.
-        var document = RdfDocument.Parse(request.Document ?? "");
+        var document = LineDocument.Parse(request.Document ?? "");
         RdfModel model;
         try
         {

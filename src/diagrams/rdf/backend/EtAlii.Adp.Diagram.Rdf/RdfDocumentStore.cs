@@ -28,7 +28,7 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
     // lifecycle's own default and what this store did before it (R2.2) - so no unavailable document
     // is declared here.
     private readonly WritableDocumentLifecycle<RdfDocumentEntry> _lifecycle = new(
-        (path, text) => Parse(path, RdfDocument.Parse(text)),
+        (path, text) => Parse(path, LineDocument.Parse(text)),
         entry => entry.Document.Text);
 
     /// <inheritdoc />
@@ -91,7 +91,7 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
     /// Turtle is an ordinary state for a file somebody is editing, so it is carried as an entry
     /// with an error rather than thrown out of the store (Requirement 1.5).
     /// </summary>
-    private static RdfDocumentEntry Parse(string path, RdfDocument document)
+    private static RdfDocumentEntry Parse(string path, LineDocument document)
     {
         try
         {

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -35,7 +36,7 @@ public class PipelineTemplatesTests : IDisposable
     private PipelineModel ParseInWorkspace(string relativePath)
     {
         var path = IoPath.Combine(_workspace, relativePath.Replace('/', IoPath.DirectorySeparatorChar));
-        var document = PipelineDocument.Parse(File.ReadAllText(path));
+        var document = LineDocument.Parse(File.ReadAllText(path));
         return PipelineParser.Parse(document, new PipelineTemplates(_workspace), path);
     }
 
@@ -282,9 +283,9 @@ public class PipelineTemplatesTests : IDisposable
         var two = IoPath.Combine(_workspace, "two.yml");
 
         // Act.
-        var first = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(one)), resolver, one);
+        var first = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(one)), resolver, one);
         File.WriteAllText(shared, "jobs:\n  - job: After\n    steps:\n      - script: x\n");
-        var second = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(two)), resolver, two);
+        var second = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(two)), resolver, two);
 
         // Assert.
         // The staleness is the point, and is why the document store calls Forget when a file
@@ -303,11 +304,11 @@ public class PipelineTemplatesTests : IDisposable
         var shared = Write("templates/shared.yml", "jobs:\n  - job: Shared\n    steps:\n      - script: x\n");
         var resolver = new PipelineTemplates(_workspace);
         var one = IoPath.Combine(_workspace, "one.yml");
-        PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(one)), resolver, one);
+        PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(one)), resolver, one);
 
         // Act.
         File.Delete(shared);
-        var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(one)), resolver, one);
+        var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(one)), resolver, one);
 
         // Assert.
         Assert.Equal(PipelineTemplateUnresolvedReason.NotFound, Assert.Single(model.Unresolved).Reason);
@@ -321,12 +322,12 @@ public class PipelineTemplatesTests : IDisposable
         var shared = Write("templates/shared.yml", "jobs:\n  - job: Before\n    steps:\n      - script: x\n");
         var resolver = new PipelineTemplates(_workspace);
         var path = IoPath.Combine(_workspace, "one.yml");
-        PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)), resolver, path);
+        PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)), resolver, path);
 
         // Act.
         File.WriteAllText(shared, "jobs:\n  - job: After\n    steps:\n      - script: x\n");
         resolver.Forget();
-        var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)), resolver, path);
+        var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)), resolver, path);
 
         // Assert.
         Assert.Equal("After", model.Jobs.Single().Name);
@@ -337,7 +338,7 @@ public class PipelineTemplatesTests : IDisposable
     {
         // Arrange: the parse-only overload makes no attempt, which is different from trying and
         // failing - so it must not put a template in the unresolved list and claim it did.
-        var document = PipelineDocument.Parse("stages:\n  - template: templates/anything.yml\n");
+        var document = LineDocument.Parse("stages:\n  - template: templates/anything.yml\n");
 
         // Act.
         var model = PipelineParser.Parse(document);

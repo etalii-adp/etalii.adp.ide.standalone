@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -11,7 +12,7 @@ public class PipelineParserTests
 {
     private static IReadOnlyList<PipelineModel> Parse(string name)
     {
-        var document = DatabricksDocument.Parse(
+        var document = LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", name)));
         return PipelineParser.Parse(DatabricksYaml.Root(document), document);
     }

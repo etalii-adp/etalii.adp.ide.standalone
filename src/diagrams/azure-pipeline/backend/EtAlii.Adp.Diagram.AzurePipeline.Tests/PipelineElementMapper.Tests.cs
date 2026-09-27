@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -15,9 +16,9 @@ public class PipelineElementMapperTests
     private static readonly PipelineElementMapper _mapper = new(PipelineMetrics.Default);
 
     private static PipelineModel ParseFixture(string name) =>
-        PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
 
-    private static PipelineModel Parse(string text) => PipelineParser.Parse(PipelineDocument.Parse(text));
+    private static PipelineModel Parse(string text) => PipelineParser.Parse(LineDocument.Parse(text));
 
     private static PipelineElementPayload PayloadOf(DiagramElement element) =>
         PipelineElementPayload.Parser.ParseFrom(element.Payload.ToArray());
@@ -66,7 +67,7 @@ public class PipelineElementMapperTests
     public void AnEditElsewhereInTheFile_DoesNotChangeAnElementsId()
     {
         // Arrange: the reason ids are paths - a selection must not be lost on every keystroke.
-        var document = PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "multi-stage.yml")));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "multi-stage.yml")));
         var before = Map(PipelineParser.Parse(document)).Select(element => element.Id).ToList();
 
         // Act.
@@ -95,7 +96,7 @@ public class PipelineElementMapperTests
         var mapped = 0;
         foreach (var path in fixtures)
         {
-            var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
+            var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
             var expanded = model.Stages.Select(stage => stage.Id).ToArray();
 
             // Act.
@@ -523,7 +524,7 @@ public class PipelineElementMapperTests
         var inspected = 0;
         foreach (var path in fixtures)
         {
-            var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
+            var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
 
             // Act.
             var elements = Map(model, model.Stages.Select(stage => stage.Id).ToArray());

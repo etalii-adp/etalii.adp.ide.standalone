@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -23,9 +24,9 @@ public class PipelineLayoutTests
         HeaderHeight: 20);
 
     private static PipelineModel ParseFixture(string name) =>
-        PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
+        PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", name))));
 
-    private static PipelineModel Parse(string text) => PipelineParser.Parse(PipelineDocument.Parse(text));
+    private static PipelineModel Parse(string text) => PipelineParser.Parse(LineDocument.Parse(text));
 
     private static PipelineArrangement ArrangeStages(PipelineModel model) =>
         PipelineLayout.Arrange(PipelineGraphBuilder.OfStages(model), _metrics);
@@ -132,7 +133,7 @@ public class PipelineLayoutTests
     public void EveryArrow_PointsForward(string yaml)
     {
         // Arrange: the property the layering exists to produce.
-        var model = PipelineParser.Parse(PipelineDocument.Parse(yaml));
+        var model = PipelineParser.Parse(LineDocument.Parse(yaml));
         var graph = PipelineGraphBuilder.OfStages(model);
         if (graph.Cycles.Count > 0)
         {
@@ -161,7 +162,7 @@ public class PipelineLayoutTests
 
         // Act.
         var first = ArrangeStages(model);
-        var second = ArrangeStages(PipelineParser.Parse(PipelineDocument.Parse(
+        var second = ArrangeStages(PipelineParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine("Fixtures", "multi-stage.yml")))));
 
         // Assert.
@@ -175,7 +176,7 @@ public class PipelineLayoutTests
     {
         // Arrange: an edit that does not touch the graph must not rearrange the diagram, or every
         // rename becomes a diff of the whole picture (Requirement 7.2).
-        var document = PipelineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "multi-stage.yml")));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine("Fixtures", "multi-stage.yml")));
         var before = ArrangeStages(PipelineParser.Parse(document));
 
         // Act.

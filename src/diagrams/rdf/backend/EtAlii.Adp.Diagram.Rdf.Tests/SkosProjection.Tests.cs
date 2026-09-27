@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
@@ -17,7 +18,7 @@ public class SkosProjectionTests
         """;
 
     private static SkosProjectionResult Project(string turtle, int budget = RdfProjection.DefaultBudget) =>
-        SkosProjection.Project(RdfParser.Parse(RdfDocument.Parse(Prelude + turtle)), budget);
+        SkosProjection.Project(RdfParser.Parse(LineDocument.Parse(Prelude + turtle)), budget);
 
     [Fact]
     public void EitherAssertedDirection_IsOneEdge_AndNothingIsCompleted()
@@ -139,7 +140,7 @@ public class SkosProjectionTests
     public void PolyhierarchyDrawsOnce_AndSkosXlIsDetectedButNeverRead()
     {
         // Arrange.
-        var model = RdfParser.Parse(RdfDocument.Parse(Prelude + """
+        var model = RdfParser.Parse(LineDocument.Parse(Prelude + """
             @prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> .
             ex:a a skos:Concept .
             ex:b a skos:Concept .

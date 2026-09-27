@@ -25,7 +25,7 @@ public sealed class PipelineTemplates
 {
     private static readonly ILogger _logger = Log.ForContext<PipelineTemplates>();
 
-    private readonly Dictionary<string, PipelineDocument?> _documents = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, LineDocument?> _documents = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Creates a resolver bounded by <paramref name="workspaceRoot"/>.</summary>
     public PipelineTemplates(string workspaceRoot)
@@ -100,7 +100,7 @@ public sealed class PipelineTemplates
     /// read - which is recorded as a failure like any other rather than thrown, since one broken
     /// template must not take the whole diagram down.
     /// </summary>
-    public PipelineDocument? Read(string path)
+    public LineDocument? Read(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         if (_documents.TryGetValue(path, out var cached))
@@ -108,10 +108,10 @@ public sealed class PipelineTemplates
             return cached;
         }
 
-        PipelineDocument? document;
+        LineDocument? document;
         try
         {
-            document = PipelineDocument.Parse(SharedDocumentReader.ReadAllText(path));
+            document = LineDocument.Parse(SharedDocumentReader.ReadAllText(path));
         }
         catch (IOException error)
         {

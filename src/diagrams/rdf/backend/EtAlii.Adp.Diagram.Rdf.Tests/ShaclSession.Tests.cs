@@ -273,7 +273,7 @@ public class ShaclSessionTests : IDisposable
             .Single(candidate => candidate.Origin == ServiceCollectionAddShaclExtension.ShaclOrigin);
 
         var text = factory.CreateEmptyDocument("Person");
-        var projection = ShaclProjection.Project(RdfParser.Parse(RdfDocument.Parse(text)));
+        var projection = ShaclProjection.Project(RdfParser.Parse(LineDocument.Parse(text)));
 
         var card = Assert.Single(projection.Cards);
         Assert.Equal("ex:PersonShape", card.Display);

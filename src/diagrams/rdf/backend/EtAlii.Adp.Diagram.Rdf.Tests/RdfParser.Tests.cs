@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Tests;
 /// </summary>
 public class RdfParserTests
 {
-    private static RdfModel Parse(string text) => RdfParser.Parse(RdfDocument.Parse(text));
+    private static RdfModel Parse(string text) => RdfParser.Parse(LineDocument.Parse(text));
 
     private static RdfModel ParseFixture(string name)
     {

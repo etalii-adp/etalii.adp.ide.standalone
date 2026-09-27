@@ -55,29 +55,11 @@ public static class YamlNodeRange
 {
     /// <summary>The lines <paramref name="node"/> occupies in <paramref name="lines"/>.</summary>
     /// <param name="node">A node parsed from the text <paramref name="lines"/> hold.</param>
-    /// <param name="lines">The document's lines, in order - <c>LineDocument.Lines</c> for most modules.</param>
-    public static LineRange Of(YamlNode node, IReadOnlyList<Line> lines) => Of(node, lines, LineText);
-
-    /// <summary>
-    /// The lines a mapping entry occupies - its key and its value together, which is what removing or
-    /// moving the entry has to take (databricks's form).
-    /// </summary>
-    public static LineRange Of(YamlNode key, YamlNode value, IReadOnlyList<Line> lines) =>
-        Of(key, value, lines, LineText);
-
-    /// <summary>
-    /// The lines <paramref name="node"/> occupies, for a module that still holds its lines in a type of
-    /// its own - databricks and azure-pipeline, until they read through <see cref="LineDocument"/>.
-    /// </summary>
-    /// <param name="node">A node parsed from the text <paramref name="lines"/> hold.</param>
-    /// <param name="lines">The document's lines, in order.</param>
-    /// <param name="text">A line's text without its terminator. Only the text is read, so the
-    /// blank-and-comment rule is this type's, whatever the line type's own tests say.</param>
-    public static LineRange Of<TLine>(YamlNode node, IReadOnlyList<TLine> lines, Func<TLine, string> text)
+    /// <param name="lines">The document's lines, in order - <c>LineDocument.Lines</c>.</param>
+    public static LineRange Of(YamlNode node, IReadOnlyList<Line> lines)
     {
         ArgumentNullException.ThrowIfNull(node);
         ArgumentNullException.ThrowIfNull(lines);
-        ArgumentNullException.ThrowIfNull(text);
 
         var last = lines.Count - 1;
         var extent = EndMark(node);
@@ -90,7 +72,8 @@ public static class YamlNodeRange
             end--;
         }
 
-        while (end > start && SaysNothing(text(lines[end])))
+        // The line's TEXT, judged by this type's own rule - never Line.IsComment; see the remarks.
+        while (end > start && SaysNothing(lines[end].Text))
         {
             end--;
         }
@@ -99,12 +82,13 @@ public static class YamlNodeRange
     }
 
     /// <summary>
-    /// The lines a mapping entry occupies, for a module that still holds its lines in a type of its own.
+    /// The lines a mapping entry occupies - its key and its value together, which is what removing or
+    /// moving the entry has to take (databricks's form).
     /// </summary>
-    public static LineRange Of<TLine>(YamlNode key, YamlNode value, IReadOnlyList<TLine> lines, Func<TLine, string> text)
+    public static LineRange Of(YamlNode key, YamlNode value, IReadOnlyList<Line> lines)
     {
-        var keyRange = Of(key, lines, text);
-        var valueRange = Of(value, lines, text);
+        var keyRange = Of(key, lines);
+        var valueRange = Of(value, lines);
         return new LineRange(
             Math.Min(keyRange.Start, valueRange.Start),
             Math.Max(keyRange.End, valueRange.End));
@@ -114,8 +98,6 @@ public static class YamlNodeRange
     // because YAML indents with nothing else - see the remarks for the measurement behind it.
     private static bool SaysNothing(string text) =>
         string.IsNullOrWhiteSpace(text) || text.TrimStart(' ').StartsWith('#');
-
-    private static string LineText(Line line) => line.Text;
 
     // The furthest end mark in a node's subtree.
     private static Mark EndMark(YamlNode node)

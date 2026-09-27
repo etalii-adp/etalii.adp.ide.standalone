@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
@@ -46,7 +48,7 @@ public sealed record PipelineStage(
     bool IsImplicit,
     IReadOnlyList<PipelineJob> Jobs,
     string Template,
-    PipelineLineRange Lines)
+    LineRange Lines)
 {
     /// <summary>Whether this element came from a template, and so may not be edited here.</summary>
     public bool IsFromTemplate => Template.Length > 0;
