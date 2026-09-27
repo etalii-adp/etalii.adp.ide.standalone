@@ -3,7 +3,7 @@
  *
  * Everything visual lives here rather than in HelmCanvas.tsx - tech.md's centralised-styling
  * rule - including the per-kind palette: the backend sends a KIND and this file turns it into
- * a colour, which keeps a theme change a stylesheet change rather than a protocol change.
+ * one of the theme's --color-diagram-helm-* hues, so a theme change is a theme change.
  */
 
 .helm-canvas-frame {
@@ -19,49 +19,6 @@
   background: var(--color-surface);
   touch-action: none;
   cursor: grab;
-}
-
-/*
- * THE PER-KIND PALETTE, DECLARED. It used to be read and never written: fifteen --helm-* names
- * were read and three declared, so the twelve below were hard-coded literals wearing a token's
- * clothes - `var(--helm-chart-fill, rgb(61 123 217 / 14%))` looks customisable and is not.
- * A reader who believed helm had a palette would have built on something that did not exist.
- *
- * Declared here on ansible-structure's pattern: owned by the module, and redeclared under the
- * dark scheme below so a kind keeps its hue while the ground changes. One hue per kind, muted
- * fills so labels stay readable.
- */
-.helm-canvas {
-  --helm-chart-fill: rgb(61 123 217 / 14%);
-  --helm-chart-stroke: #3d7bd9;
-  --helm-subchart-fill: rgb(52 152 160 / 14%);
-  --helm-subchart-stroke: #3498a0;
-  --helm-dependency-fill: rgb(142 84 196 / 14%);
-  --helm-dependency-stroke: #8e54c4;
-  --helm-values-fill: rgb(46 160 100 / 14%);
-  --helm-values-stroke: #2ea064;
-  --helm-template-fill: rgb(196 130 32 / 14%);
-  --helm-template-stroke: #c48220;
-  --helm-meta-fill: rgb(120 120 130 / 12%);
-  --helm-meta-stroke: #78787f;
-}
-
-/* The same six hues, lifted so they still read against the dark surface they are mixed into. */
-@media (prefers-color-scheme: dark) {
-  .helm-canvas {
-    --helm-chart-fill: rgb(125 180 240 / 18%);
-    --helm-chart-stroke: #7db4f0;
-    --helm-subchart-fill: rgb(110 205 212 / 18%);
-    --helm-subchart-stroke: #6ecdd4;
-    --helm-dependency-fill: rgb(184 140 228 / 18%);
-    --helm-dependency-stroke: #b88ce4;
-    --helm-values-fill: rgb(110 205 150 / 18%);
-    --helm-values-stroke: #6ecd96;
-    --helm-template-fill: rgb(232 176 90 / 18%);
-    --helm-template-stroke: #e8b05a;
-    --helm-meta-fill: rgb(165 165 178 / 16%);
-    --helm-meta-stroke: #a5a5b2;
-  }
 }
 
 .helm-canvas:active {
@@ -82,7 +39,7 @@
 
 .helm-canvas-message code {
   font-family: var(--font-mono);
-  background: var(--color-surface-raised, rgb(0 0 0 / 6%));
+  background: var(--color-surface-raised);
   padding: 0 0.25rem;
   border-radius: 3px;
 }
@@ -94,8 +51,8 @@
 }
 
 .helm-node-box {
-  fill: var(--helm-node-fill, var(--color-surface-raised));
-  stroke: var(--helm-node-stroke, var(--color-border));
+  fill: var(--color-surface-raised);
+  stroke: var(--color-border);
   stroke-width: 1.5;
 }
 
@@ -107,56 +64,61 @@
   user-select: none;
 }
 
-/* A node whose artifact did not parse: visibly marked, never hidden. */
-.helm-node-unreadable .helm-node-box {
-  stroke: var(--color-danger);
-  stroke-dasharray: 4 3;
+/*
+ * The per-kind palette: one theme hue per kind, whole for the outline and mixed into a muted fill
+ * so labels stay readable. COMPOUND, NOT DESCENDANT: the kind class and helm-node-box are both
+ * declared on the shape, so `.helm-node-chart .helm-node-box` matched nothing and every kind drew
+ * in the default fill until 2026-09-27.
+ */
+.helm-node-chart.helm-node-box {
+  fill: color-mix(in srgb, var(--color-diagram-helm-chart) 14%, transparent);
+  stroke: var(--color-diagram-helm-chart);
 }
 
-/* The per-kind palette: one hue per kind, muted fills so labels stay readable. */
-.helm-node-chart .helm-node-box {
-  --helm-node-fill: var(--helm-chart-fill, rgb(61 123 217 / 14%));
-  --helm-node-stroke: var(--helm-chart-stroke, #3d7bd9);
+.helm-node-values.helm-node-box {
+  fill: color-mix(in srgb, var(--color-diagram-helm-values) 14%, transparent);
+  stroke: var(--color-diagram-helm-values);
 }
 
-.helm-node-values .helm-node-box {
-  --helm-node-fill: var(--helm-values-fill, rgb(46 160 100 / 14%));
-  --helm-node-stroke: var(--helm-values-stroke, #2ea064);
+.helm-node-schema.helm-node-box,
+.helm-node-lock.helm-node-box,
+.helm-node-crds.helm-node-box {
+  fill: color-mix(in srgb, var(--color-text-muted) 12%, transparent);
+  stroke: var(--color-text-muted);
 }
 
-.helm-node-schema .helm-node-box,
-.helm-node-lock .helm-node-box,
-.helm-node-crds .helm-node-box {
-  --helm-node-fill: var(--helm-meta-fill, rgb(120 120 130 / 12%));
-  --helm-node-stroke: var(--helm-meta-stroke, #78787f);
+.helm-node-template.helm-node-box {
+  fill: color-mix(in srgb, var(--color-diagram-helm-template) 14%, transparent);
+  stroke: var(--color-diagram-helm-template);
 }
 
-.helm-node-template .helm-node-box {
-  --helm-node-fill: var(--helm-template-fill, rgb(196 130 32 / 14%));
-  --helm-node-stroke: var(--helm-template-stroke, #c48220);
+.helm-node-dependency.helm-node-box {
+  fill: color-mix(in srgb, var(--color-diagram-helm-dependency) 14%, transparent);
+  stroke: var(--color-diagram-helm-dependency);
 }
 
-.helm-node-dependency .helm-node-box {
-  --helm-node-fill: var(--helm-dependency-fill, rgb(142 84 196 / 14%));
-  --helm-node-stroke: var(--helm-dependency-stroke, #8e54c4);
-}
-
-.helm-node-subchart .helm-node-box,
-.helm-node-archive .helm-node-box {
-  --helm-node-fill: var(--helm-subchart-fill, rgb(52 152 160 / 14%));
-  --helm-node-stroke: var(--helm-subchart-stroke, #3498a0);
+.helm-node-subchart.helm-node-box,
+.helm-node-archive.helm-node-box {
+  fill: color-mix(in srgb, var(--color-diagram-helm-subchart) 14%, transparent);
+  stroke: var(--color-diagram-helm-subchart);
 }
 
 /* An archive is sealed: hatched, so its difference from an unpacked subchart is visible. */
-.helm-node-archive .helm-node-box {
+.helm-node-archive.helm-node-box {
   stroke-dasharray: 6 3;
+}
+
+/* A node whose artifact did not parse: visibly marked, never hidden. After the kinds, so it wins. */
+.helm-node-unreadable.helm-node-box {
+  stroke: var(--color-danger);
+  stroke-dasharray: 4 3;
 }
 
 /* ---- edges ------------------------------------------------------------------------------- */
 
 .helm-edge-line {
   fill: none;
-  stroke: var(--helm-edge-stroke, var(--color-text-muted));
+  stroke: var(--color-text-muted);
   stroke-width: 1.5;
 }
 
@@ -169,22 +131,22 @@
 }
 
 .helm-edge-declares .helm-edge-line {
-  --helm-edge-stroke: var(--helm-dependency-stroke, #8e54c4);
+  stroke: var(--color-diagram-helm-dependency);
 }
 
 .helm-edge-resolves .helm-edge-line {
-  --helm-edge-stroke: var(--helm-subchart-stroke, #3498a0);
+  stroke: var(--color-diagram-helm-subchart);
 }
 
 /* The values stack and its reach: dashed, because they describe layering rather than use. */
 .helm-edge-overrides .helm-edge-line,
 .helm-edge-configures .helm-edge-line {
-  --helm-edge-stroke: var(--helm-values-stroke, #2ea064);
+  stroke: var(--color-diagram-helm-values);
   stroke-dasharray: 5 4;
 }
 
 .helm-edge-includes .helm-edge-line {
-  --helm-edge-stroke: var(--helm-template-stroke, #c48220);
+  stroke: var(--color-diagram-helm-template);
   stroke-dasharray: 2 3;
 }
 
