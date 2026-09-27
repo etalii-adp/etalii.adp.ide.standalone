@@ -1525,8 +1525,8 @@ notes:
       They carry no phases.
     at: 1761-01
     row: 145
-    width: 200
-    height: 48
+    width: 360
+    height: 56
 influences:
   - id: iron-smelting--steam-engine
     from: iron-smelting

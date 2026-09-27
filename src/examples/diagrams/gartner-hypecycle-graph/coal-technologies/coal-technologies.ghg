@@ -315,8 +315,8 @@ notes:
       See the readme.
     at: 2042-01
     row: 40
-    width: 200
-    height: 64
+    width: 260
+    height: 80
 influences:
   - id: coke-smelting--newcomen-engine
     from: coke-smelting
