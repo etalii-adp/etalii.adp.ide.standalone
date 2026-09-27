@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/ghg-compact-mode/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-27T12:20:49.543Z",
       "trigger": "initial",
+      "approvalId": "approval_1790511648917_ogcv2p3xs",
+      "approvalTitle": "ghg-compact-mode tasks: five library tasks, then module, docs, browser pass"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-27T12:37:56.753Z",
+      "trigger": "approved",
       "approvalId": "approval_1790511648917_ogcv2p3xs",
       "approvalTitle": "ghg-compact-mode tasks: five library tasks, then module, docs, browser pass"
     }

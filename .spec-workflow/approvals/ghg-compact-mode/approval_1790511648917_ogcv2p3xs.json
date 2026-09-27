@@ -3,8 +3,10 @@
   "title": "ghg-compact-mode tasks: five library tasks, then module, docs, browser pass",
   "filePath": ".spec-workflow/specs/ghg-compact-mode/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-27T12:20:48.917Z",
   "category": "spec",
-  "categoryName": "ghg-compact-mode"
+  "categoryName": "ghg-compact-mode",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-27T12:37:56.764Z"
 }
