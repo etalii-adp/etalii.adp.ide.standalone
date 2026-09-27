@@ -99,13 +99,13 @@
 
 ## The module half
 
-- [ ] 13. Check the waits, before writing any module code
+- [x] 13. Check the waits, before writing any module code
   - File: the implementation log only
   - Establish on `develop`, by measurement: tasks 1 to 11 have landed (name each capability's type or function and the commit), and the shared backend pieces FDG uses exist (`RestoreDocumentCommand<TStore>`, `LineDocument`, `LineSplice`, `AdpFileWriter`, the `new:` / `rel:` gesture grammar, `useDiagramStream`).
   - If a piece is missing, stop and report rather than writing a module-local copy (Requirement 1.2).
   - _Requirements: 1.2_
 
-- [ ] 14. The `.ghg` document: parse, splice, round-trip
+- [x] 14. The `.ghg` document: parse, splice, round-trip
   - File: `src/diagrams/gartner-hypecycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph/GhgParser.cs`, `GhgWriter.cs`, `_Model/*.cs`, `GhgDocumentFactory.cs` (all new), `.gitattributes`, fixtures under `.../EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests/Fixtures/`
   - The header `gartner-hypecycle-graph: 1`, then `trends:` and `influences:` with the keys the design lists: dates `YYYY-MM`, `row`, `phases`, the optional `peak-end`, `trough-end` and `slope-end` only when dragged, `tags` as a flow sequence, and influence ends as phase, edge and a two-decimal `at`. Each entry keeps its line range for `LineSplice`. **The parser never throws**: an unknown key or malformed entry is passed over and survives, and a YAML error yields an empty model with the text kept and a problem with its line. The factory writes the header with `trends: []` and `influences: []`.
   - Guard: a byte-identical round trip over fixtures with CRLF, LF, no final newline, comments and blank lines, with `*.ghg -text` added first and checked by `git ls-files --eol`; an edit rewrites only its entry's lines; a malformed document yields a model and a problem; the factory's document parses with no problems.
@@ -113,7 +113,7 @@
   - _Waits on: task 13_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-- [ ] 15. The time scale and the phase boundaries, computed once
+- [x] 15. The time scale and the phase boundaries, computed once
   - File: `.../GhgScale.cs`, `.../GhgPhases.cs` (new), tests, and a checked-in scale fixture shared with task 20
   - `GhgScale`: `UNITS_PER_MONTH = 4`, origin 1900-01, `TREND_HEIGHT = 32`, `ROW_STEP = 56`, month ↔ x. `GhgPhases`: the four phase names, their full Gartner names, and `BoundariesOf(trend)` as the design's three rules. A move shifts `start`, `stop` and every stored boundary by the same months; a resize scales stored offsets by new span over old, rounds to a month and keeps each phase at least a month. Every trend shares one height, so width is the only size a trend has.
   - Guard: `BoundariesOf` over even, one-dragged, two-dragged and dragged-beyond-the-last-phase cases; a move keeps boundaries exact; a resize scales and snaps them; x of a trend's left and right edge equals its start and stop through the fixture.
@@ -121,7 +121,7 @@
   - _Waits on: task 14_
   - _Requirements: 3.1, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 16. The rules and the validator
+- [x] 16. The rules and the validator
   - File: `.../GhgRuleSet.cs`, `.../GhgValidator.cs` (new), tests
   - Report each breach under the design's rule ids: `ghg.duplicate-influence`, `ghg.self-influence`, `ghg.stop-before-start`, `ghg.phase-count`, `ghg.boundary-order`, `ghg.bad-attachment`, `ghg.dangling-reference`, `ghg.duplicate-id`, `ghg.unreadable-entry`. An influence hidden by a phase count counts like any other.
   - Guard: one fixture per rule id carrying exactly that breach; **A → B plus B → A is NOT reported**; a duplicate whose first copy is attached to a hidden phase IS reported; each breaching document still opens.
@@ -129,7 +129,7 @@
   - _Waits on: task 14_
   - _Requirements: 2.4, 6.4, 7.3_
 
-- [ ] 17. Store, session, mapper and the backend definition
+- [x] 17. Store, session, mapper and the backend definition
   - File: `.../GhgDocumentStore.cs`, `.../IGhgDocumentStore.cs`, `.../GhgDocumentReloader.cs`, `.../GhgSession.cs`, `.../GhgSessionFactory.cs`, `.../GhgElementMapper.cs`, `.../GhgContextSourceResolver.cs`, `.../Diagram.cs`, `.../ServiceCollection.AddGartnerHypeCycleGraph.cs`, `src/diagrams/gartner-hypecycle-graph/api/gartner-hypecycle-graph.proto` (all new), tests
   - As FDG's, on the shared store lifecycle. The mapper sends `GhgTrendPayload { name, phases, boundaries[], tags[], width }` with boundaries as fractions from `BoundariesOf`, and `GhgInfluencePayload { from_element_id, to_element_id, source_attachment, target_attachment }`. **A Description is never sent.** Influences on hidden phases are sent unchanged; hiding them is the canvas's job (task 5). `Diagram.cs` declares `public static DiagramDefinition HypeCycleGraph` with its `Build`. Lands with task 21's example, because registering the session factory makes the host require a seeded example.
   - Guard: a session over the example delivers every trend with its computed boundaries; a Description set through the property grid never appears in a delta; an influence on a hidden phase is still in the delta; the definition is discovered into the catalog.
@@ -137,7 +137,7 @@
   - _Waits on: tasks 14, 15 and 16_
   - _Requirements: 12.3, 7.2_
 
-- [ ] 18. The commands, each with its inverse
+- [x] 18. The commands, each with its inverse
   - File: `.../Commands/*.cs` (new), tests
   - The design's table: `AddGhgTrendCommand`, `RemoveGhgTrendCommand` (with its influences, one edit), `SetGhgPlacementCommand`, `SetGhgSpanCommand`, `SetGhgBoundaryCommand`, `ClearGhgBoundariesCommand`, `SetGhgPhasesCommand`, `RenameGhgTrendCommand`, `SetGhgTagsCommand`, `SetGhgDescriptionCommand`, `AddGhgInfluenceCommand`, `SetGhgAttachmentCommand`, `RemoveGhgInfluenceCommand`. Each inverse is `RestoreDocumentCommand<IGhgDocumentStore>`. Span and boundary edits snap to a month and keep every phase at least a month. The connect command refuses a self-influence and a second influence in the same direction, hidden or not. Each refusal returns the writer's sentence and leaves the document unchanged.
   - Guard: every edit then its undo gives the original bytes; deleting a trend with two influences restores all three on undo; a boundary drag that would make a phase shorter than a month is refused or clamped; a scripted duplicate A → B is refused with a sentence, and B → A is accepted; each refusal leaves the bytes unchanged.
@@ -145,7 +145,7 @@
   - _Waits on: tasks 14, 15 and 16_
   - _Requirements: 11.2, 11.3, 6.4, 6.6, 7.4, 3.2, 3.5, 4.6, 8.1_
 
-- [ ] 19. Toolbox, action and property providers
+- [x] 19. Toolbox, action and property providers
   - File: `.../GhgToolboxProvider.cs`, `.../GhgContextActionProvider.cs`, `.../GhgContextPropertyProvider.cs` (new), tests
   - The toolbox offers one **Trend** in a group **Hype cycle**; a drop creates a trend one year long from the snapped drop month with all four phases. A trend's properties: Name, Start and Stop (`YYYY-MM`), Phases as a SLIDER with the four candidates, Tags as a comma-separated LINE, Description. An influence's: Description, and read-only From and To ("Steam engine · Plateau"). Actions include *Even phases*. In read-only mode nothing that edits is offered.
   - Guard: the toolbox item is data from the backend; a drop at a mid-month x creates a trend starting at that month's start with `phases: 4`; the Phases row is a SLIDER with exactly the four candidates; an influence's From and To are read-only; read-only mode offers no editing action or writable property.
@@ -153,7 +153,7 @@
   - _Waits on: task 18_
   - _Requirements: 11.1, 11.4, 12.1, 12.2, 5.2, 7.1, 8.1_
 
-- [ ] 20. The client module: registration, definition, handlers
+- [x] 20. The client module: registration, definition, handlers
   - File: `src/diagrams/gartner-hypecycle-graph/client/register.ts`, `GhgCanvas.tsx`, `ghgIds.ts`, `ghgModel.ts`, `ghg.css`, `readme.md`, `package.json` (all new), tests
   - The design's definition: element type `trend` on `arrow-banner`, width-only `sizing: "user"`, `segments` (max 4, count and boundaries bound to the payload, chevron divider, draggable boundaries, the four class names, the four full Gartner names as tooltips); one editable label on `payload.name` placed `before`; anchors `{ kind: "along", edges: ["top", "bottom"], regions: "segments" }` with `visible: false`. Relation type `influence`: cubic bezier, arrow end marker only, `allowSelf: false`, `perPair: "ordered"`, `hideWhenAttachmentHidden: true`. Snap `x: { step: 4, origin: 0 }`, `y: { step: 56 }`. One bottom ruler; the filter on `tags`. Layout `manual`. Handlers turn each library event into its one route and nothing else. No selection, gesture or label code.
   - Guard: the definition passes `validateDiagramDefinition`; `declarativeModules` and the other module guards pass against it unchanged; each library event produces its one route; over the example, A → B is allowed, a second A → B is not highlighted, B → A is, a self-influence is not, and an influence hidden by a phase still blocks its duplicate; a vertical drop snaps the trend's middle to a row; the client's month ↔ x agrees with task 15's fixture.
@@ -161,7 +161,7 @@
   - _Waits on: tasks 1 to 11 and 17_
   - _Requirements: 1.1, 1.3, 3.6, 5.1, 5.3, 6.1, 7.3, 13.1_
 
-- [ ] 21. The technology-trends example
+- [x] 21. The technology-trends example
   - File: `src/diagrams/gartner-hypecycle-graph/examples/technology-trends/technology-trends.ghg`, `technology-trends.adp`, `readme.md`, the seeded copy under `src/examples/`, tests
   - About 200 hand-authored trends from roughly 1760 to today in the design's clusters, with plausible dates, related trends on nearby rows, and influences attached to the phase in which they acted. It exercises every phase count, influences on each phase's top and bottom edges, at least one influence hidden by a lowered phase count, dragged boundaries on some trends, Descriptions on trends and influences, and tags that make at least the three filters `energy`, `communication and computing` and `transport or energy`. The readme carries the requirements' purpose statement, says why the example is hand-authored, that its dates and influences are illustrative and not a historical claim, and what it does not demonstrate.
   - Guard: the validator reports nothing; `ExampleRegistration.Tests.cs` opens it against the deployed catalog; asserted from the parsed model, not by eye: each phase count 1 to 4 occurs, each phase has an influence on its top and on its bottom edge, at least one influence is hidden, and each of the three filters matches at least one trend and excludes at least one.
@@ -169,18 +169,18 @@
   - _Waits on: task 17 (lands with it)_
   - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
 
-- [ ] 22. Catalog and authoring documentation
+- [x] 22. Catalog and authoring documentation
   - File: `docs/diagrams.md`, `docs/creating-a-diagram-module.md`, the Notion Diagrams entry
   - When this specification's tasks are approved, move the `gartner/hypecycle-graph` row from 💡 Identified to 📝 Specified naming this specification, and move it with the type's state after that; keep the Notion entry in step. Document the library capabilities of tasks 1 to 10 where module authors are pointed for a definition, and update any touch point the module moves.
   - Guard: the documentation-links test passes; the row's origin matches the `.adp` registration and the client registration's mime, asserted rather than read.
   - _Requirements: 15.1, 15.2_
 
-- [ ] 23. The coverage diff, before the tasks card and again after implementing
+- [x] 23. The coverage diff, before the tasks card and again after implementing
   - File: the implementation log only
   - Run the criterion-to-claim diff over this document and the approved requirements: 71 criteria, each claimed, and no claim naming a criterion that does not exist. Run it again when the work is done, traced to files and strings rather than to a task's promise.
   - _Requirements: 15.3_
 
-- [ ] 24. The browser pass
+- [x] 24. The browser pass
   - File: `tests.md`
   - An entry covering, in a real browser, everything Requirement 16.1 lists: the banner and chevrons at each phase count in both themes; the phase tooltips; the name before the banner, right-aligned; month snapping on drag and resize and row snapping; phases even until a boundary is dragged, the dragged boundary staying put and scaling with a resize; influences on each phase's top and bottom edges keeping their place on resize; a same-direction duplicate refused and the opposite direction accepted; influences hiding and reappearing with the phase count and present in the saved file while hidden; tag filtering with and, or and parentheses; the axis pinned to the bottom while scrolling and zooming; and pan, zoom, drag and a filter change on the 200-trend example without visible lag.
   - **jsdom is not evidence for any of these**: it applies no CSS and lays out no text.
