@@ -107,7 +107,10 @@ describe("the technology-trends example in compact mode", () => {
         expect(byStart[index].box.left).toBeGreaterThanOrEqual(byStart[index - 1].box.left);
       }
     }
-    const rows = Map.groupBy(placed, (entry) => entry.row);
+    const rows = new Map<number, typeof placed>();
+    for (const entry of placed) {
+      rows.set(entry.row, [...(rows.get(entry.row) ?? []), entry]);
+    }
     for (const row of rows.values()) {
       const lefts = row.map((entry) => entry.box.left).sort((a, b) => a - b);
       for (let index = 1; index < lefts.length; index += 1) {
