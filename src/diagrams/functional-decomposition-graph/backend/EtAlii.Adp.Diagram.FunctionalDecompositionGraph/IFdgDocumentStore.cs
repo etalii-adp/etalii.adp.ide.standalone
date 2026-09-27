@@ -39,7 +39,7 @@ public interface IFdgDocumentStore : IReloadableDocumentStore
     event EventHandler<FdgDocumentChangedEventArgs>? Changed;
 }
 
-/// <summary>The document at <paramref name="Path"/> was replaced.</summary>
+/// <summary>The document at <paramref name="path"/> was replaced.</summary>
 public sealed class FdgDocumentChangedEventArgs(string path) : EventArgs
 {
     /// <summary>The body path whose document changed.</summary>

@@ -125,6 +125,7 @@ public sealed class WritableDocumentLifecycle<TDocument>
     }
 
     /// <summary>Writes <paramref name="document"/> to <paramref name="path"/> and caches it.</summary>
+    /// <param name="path">The path of the document to write.</param>
     /// <param name="document">
     /// <b>The document the caller edited, and the only one this can write.</b> There is no cache
     /// read anywhere on this path, and that is the whole of the design rather than a detail of it:
