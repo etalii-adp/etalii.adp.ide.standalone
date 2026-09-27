@@ -1183,6 +1183,12 @@ export interface FilterDeclaration {
    * it stands for. Omitted, the box has none.
    */
   legend?: readonly FilterLegendEntry[];
+  /**
+   * The element types the filter applies to. An element of any other type is never hidden by it,
+   * keeps its connections, and offers none of its tags as suggestions - a remark box carrying no
+   * tags stays on the canvas under every filter. Omitted, the filter applies to every type.
+   */
+  elementTypes?: readonly string[];
 }
 
 /** One line of a filter box's legend. See {@link FilterDeclaration.legend}. */

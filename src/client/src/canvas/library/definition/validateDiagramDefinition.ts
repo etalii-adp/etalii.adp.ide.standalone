@@ -78,6 +78,13 @@ function validateBody(definition: DiagramDefinition): string[] {
     }
   }
 
+  // A filter scoped to a type nobody declares leaves that type's elements hidden or kept by accident.
+  for (const elementType of definition.filter?.elementTypes ?? []) {
+    if (!knownElementTypes.has(elementType)) {
+      problems.push(`The filter applies to element type "${elementType}", which this definition does not declare.`);
+    }
+  }
+
   // An acyclic rule naming a relation nobody declares enforces nothing, and enforces it silently:
   // the walk simply never covers an edge, so the diagram admits the cycle the author forbade. That
   // is a definition bug of exactly the shape this function exists to catch - a typo in an id.

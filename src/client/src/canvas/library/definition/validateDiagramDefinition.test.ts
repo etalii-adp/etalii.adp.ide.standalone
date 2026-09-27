@@ -181,3 +181,15 @@ describe("validateDiagramDefinition", () => {
     expect(interactive.adjustable).toBe(true);
   });
 });
+
+describe("validateDiagramDefinition, a filter's element types", () => {
+  it("rejects a filter scoped to an element type nobody declares, and accepts a declared one", () => {
+    const scopedTo = (elementTypes: string[]): DiagramDefinition => ({
+      ...goodDefinition(),
+      filter: { field: "payload.tags", label: "Filter", elementTypes },
+    });
+
+    expect(validateDiagramDefinition(scopedTo(["node"]))).toEqual([]);
+    expect(validateDiagramDefinition(scopedTo(["nobody"])).some((problem) => problem.includes('filter applies to element type "nobody"'))).toBe(true);
+  });
+});

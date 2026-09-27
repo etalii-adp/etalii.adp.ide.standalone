@@ -178,3 +178,68 @@ describe("a declared filter legend", () => {
     expect(legendOf(undefined).querySelector(".library-filter-legend")).toBeNull();
   });
 });
+
+describe("a filter scoped to element types", () => {
+  const scoped: DiagramDefinition = {
+    ...definition,
+    elementTypes: [...definition.elementTypes, { id: "remark", shape: "box", anchors: { kind: "edge" }, sizing: "model" }],
+    relationTypes: [
+      { id: "link", route: "straight", endpoints: { source: { elementTypes: ["item", "remark"] }, target: { elementTypes: ["item", "remark"] }, allowSelf: false } },
+    ],
+    filter: { ...definition.filter!, elementTypes: ["item"] },
+  };
+
+  const scopedModel: DiagramModel = {
+    elements: [
+      ...modelOf().elements,
+      { id: "r1", type: "remark", x: 0, y: 200, width: 100, height: 40, payload: {} },
+      { id: "r2", type: "remark", x: 200, y: 200, width: 100, height: 40, payload: { tags: ["hidden-remark-tag"] } },
+    ],
+    connections: [...modelOf().connections, { id: "r1-r2", type: "link", sourceId: "r1", targetId: "r2" }],
+  };
+
+  const canvasWith = (definitionUnderTest: DiagramDefinition) => (
+    <DiagramViewProvider>
+      <DiagramToolboxProvider>
+        <DiagramCanvasCore definition={definitionUnderTest} model={scopedModel} events={{}} />
+      </DiagramToolboxProvider>
+    </DiagramViewProvider>
+  );
+
+  it("never hides an element of another type, nor a connection between two of them", () => {
+    // Arrange.
+    const { container } = render(canvasWith(scoped));
+
+    // Act: `transport` matches only `c` among the items.
+    chooseTag(container, "transport");
+
+    // Assert: the unmatched items go, both remarks and their connection stay.
+    expect(drawnElements(container)).toEqual(["c", "r1", "r2"]);
+    expect(drawnConnections(container)).toEqual(["r1-r2"]);
+  });
+
+  it("does not suggest the tags of an element of another type", () => {
+    // Arrange.
+    const { container } = render(canvasWith(scoped));
+    const field = container.querySelector(".library-filter .tag-input-field")!;
+
+    // Act.
+    fireEvent.change(field, { target: { value: "e" } });
+
+    // Assert: the remark's tag is not offered.
+    const offered = [...container.querySelectorAll(".tag-input-suggestion")].map((option) => option.textContent);
+    expect(offered).toContain("energy");
+    expect(offered).not.toContain("hidden-remark-tag");
+  });
+
+  it("hides an untagged element of any type when the scope is omitted, as before", () => {
+    // Arrange.
+    const { container } = render(canvasWith({ ...scoped, filter: definition.filter }));
+
+    // Act.
+    chooseTag(container, "transport");
+
+    // Assert: the untagged remark goes with the rest.
+    expect(drawnElements(container)).toEqual(["c"]);
+  });
+});

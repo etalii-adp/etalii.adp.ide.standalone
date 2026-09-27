@@ -442,7 +442,14 @@ export function DiagramCanvasCore({
       return byElement;
     }
 
+    // An element of a type outside the filter's scope has no entry at all, so it is never hidden
+    // and its tags are never suggested.
+    const scope = filter.elementTypes === undefined ? undefined : new Set(filter.elementTypes);
     for (const element of elements) {
+      if (scope !== undefined && !scope.has(element.type)) {
+        continue;
+      }
+
       const tags = valueAtPath(filter.field, sourceOf(element));
       byElement.set(element.id, Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : []);
     }
