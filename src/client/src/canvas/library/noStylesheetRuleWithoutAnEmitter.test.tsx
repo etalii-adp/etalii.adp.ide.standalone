@@ -350,9 +350,6 @@ vi.mock("@connectrpc/connect", async (importOriginal) => {
         {},
         {
           get: (_target, property) => {
-            if (property === "open") {
-              return () => openStream();
-            }
             if (property === "watch") {
               return () => parked;
             }
@@ -369,11 +366,16 @@ vi.mock("@client/auth/AuthContext", () => {
 });
 
 const watchId = new Uint8Array(16);
+// The deltas ride the tab's one stream: a canvas is handed `openStream()` as its diagram stream. One
+// object, as the provider's is memoised: the hook keys its effect on it, so a fresh one per render
+// would re-open the stream on every render.
+const workspaceStreams = { openDiagramStream: () => openStream(), watchHierarchy: () => parked };
 vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
     useContextConnection: () => connection,
+    useWorkspaceStreams: () => workspaceStreams,
     useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
     useContextSelection: () => ({ selection: null, levels: [], actions: [] }),
     useContextProblems: () => null,

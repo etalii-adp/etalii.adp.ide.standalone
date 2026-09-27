@@ -3,9 +3,11 @@ import { Code, ConnectError, createClient, type Client } from "@connectrpc/conne
 import { useAuth } from "@client/auth/AuthContext";
 import { reportedCall, useCanvasRefusalReporter } from "@client/canvas/library/surface/canvasRefusals";
 import { useCanvasStatusReporter } from "@client/canvas/library/surface/canvasStatus";
+import { create } from "@bufbuild/protobuf";
+import { PathSchema } from "@client/generated/connection_pb";
 import type { Delta } from "@client/generated/deltas_pb";
 import { DiagramService } from "@client/generated/diagrams_pb";
-import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useWorkspaceStreams } from "@client/shell/context/ContextConnectionProvider";
 
 /**
  * How long a dropped stream waits before re-opening - the one place this number is written.
@@ -51,7 +53,7 @@ export interface DiagramStreamResult<TModel> {
 
 /**
  * The transport, lifecycle, retry and state shared by every diagram type's stream hook: opens
- * the diagram at `path` over `DiagramService.Open` and folds its delta stream into a model with
+ * the diagram at `path` on the tab's one stream and folds its delta stream into a model with
  * `applyDelta`, re-baselining on reconnect. A dropped stream re-opens with the same request;
  * the first message is always the current document, so the client re-baselines without a
  * protocol of its own.
@@ -67,6 +69,10 @@ export interface DiagramStreamResult<TModel> {
  *
  * The view report is no longer among them: it is shared, in `viewReport.ts` beside this file, and
  * a module builds it with `viewReportOf` on that same client.
+ *
+ * The deltas ride the tab's one `WorkspaceService.Watch` stream rather than a `DiagramService.Open`
+ * call of their own (two-tab-connection-wedge Requirement 3.1): {@link useWorkspaceStreams} hands
+ * out a stream shaped like the call it replaced, so nothing below changed but the call.
  *
  * This is the only place the stream is opened. Nine modules once hand-rolled their own open loop
  * and drifted from this one - a clean end re-opened at once and kept the stale model - so they
@@ -88,6 +94,7 @@ export function useDiagramStream<TModel>(
 ): DiagramStreamResult<TModel> {
   const { transport } = useAuth();
   const { watchId } = useContextConnection();
+  const { openDiagramStream } = useWorkspaceStreams();
   const [model, setModel] = useState<TModel>(emptyModel);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -120,8 +127,8 @@ export function useDiagramStream<TModel>(
     void (async () => {
       while (active) {
         try {
-          const stream = client.open(
-            { projectId: { value: projectId }, watchId: { value: watchId }, path: { segments: [...path] }, editorId },
+          const stream = openDiagramStream(
+            { path: create(PathSchema, { segments: [...path] }), editorId },
             { signal: controller.signal },
           );
           for await (const delta of stream) {
@@ -173,7 +180,7 @@ export function useDiagramStream<TModel>(
     // path is compared by value through pathKey, not by array identity; emptyModel and
     // applyDelta are a module's own constants, stable by construction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, projectId, watchId, pathKey, editorId]);
+  }, [openDiagramStream, pathKey, editorId]);
 
   // Inside a canvas, the stream reports what the canvas is doing, and the library's surface says it
   // in one appearance (client-centralization Requirement 2.3). A module draws no status of its own.

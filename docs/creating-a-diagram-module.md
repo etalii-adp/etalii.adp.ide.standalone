@@ -162,7 +162,7 @@ with no single value beneath it — type badges, a computed summary — is not m
 
 **Every diagram module implements this, and the test is behavioural: a view *change* produces deltas.** A module that reports its viewport once when the diagram opens has implemented the first frame of the loop, not the loop; so has one whose `UpdateView` accepts a viewport and returns `[]`. Twelve of the thirteen shipped modules implement it, so a new one that skips it is the odd one out rather than the norm. The thirteenth, dotnet-dependency-graph, answers every view report with the whole graph, deliberately and with a comment on its `UpdateView` saying why. It is an exception on the record, not a precedent.
 
-The mechanism is two correlated legs, and neither is yours to build: `Open` streams a baseline and every later change, while `UpdateView` is a unary call saying what the reader can currently see, correlated to the stream by `watch_id` and path. The backend answers a view report with the deltas that bring the connection into line.
+The mechanism is two correlated legs, and neither is yours to build: the open streams a baseline and every later change - on the tab's one `WorkspaceService.Watch` stream, which `useDiagramStream` opens for you - while `UpdateView` is a unary call saying what the reader can currently see, correlated to the stream by `watch_id` and path. The backend answers a view report with the deltas that bring the connection into line.
 
 **The client half is written once and is not yours to build**: `viewReportOf` in your stream hook,
 `useViewReport` in your canvas, your viewport in your own units and nothing else. The entry is

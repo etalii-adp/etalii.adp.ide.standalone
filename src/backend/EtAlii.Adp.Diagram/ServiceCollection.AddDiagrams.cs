@@ -1,3 +1,4 @@
+using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
 using EtAlii.Adp.Hierarchy;
@@ -25,6 +26,14 @@ public static class ServiceCollectionAddDiagramsExtension
         services.AddSingleton<DiagramDocumentFactories>();
         services.AddSingleton<DiagramSessionFactories>();
         services.AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>();
+
+        // A tab's one stream (two-tab-connection-wedge Requirement 3.1) runs the hierarchy watch,
+        // the context stream and the diagram pump in-process, so the three services it composes
+        // are resolvable as ordinary services as well as mapped as gRPC ones.
+        services.AddSingleton<WorkspaceConnections>();
+        services.TryAddTransient<HierarchyService>();
+        services.TryAddTransient<ContextService>();
+        services.TryAddTransient<DiagramService>();
 
         // The watcher-to-store bridge: an external write to an open diagram's body or .adp
         // reaches the owning store's Reload, which is what carries it to every open session

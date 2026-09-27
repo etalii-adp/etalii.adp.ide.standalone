@@ -53,8 +53,13 @@ vi.mock("@client/auth/AuthContext", () => {
 });
 
 const watchId = new Uint8Array(16);
+// The deltas ride the tab's one stream now; the stream the hook is handed is still `open`'s. One
+// object, as the provider's is memoised: the hook keys its effect on it, so a fresh one per render
+// would re-open the stream on every render.
+const workspaceStreams = { openDiagramStream: () => open() };
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   useContextConnection: () => ({ watchId }),
+  useWorkspaceStreams: () => workspaceStreams,
 }));
 
 let reported: CanvasStreamState[] = [];
