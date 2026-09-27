@@ -82,7 +82,7 @@ internal sealed class AnsibleSession : IDiagramSession
 
         _viewport = viewport;
         var after = _mapper.Visible(project, AnsibleGraph.Derive(project), _viewport, Stored());
-        var deltas = _mapper.Diff(_delivered, after);
+        var deltas = DiagramDiff.Between(_delivered, after);
         _delivered = after;
         return deltas;
     }
@@ -165,7 +165,7 @@ internal sealed class AnsibleSession : IDiagramSession
         }
 
         var after = _mapper.Visible(args.Project, AnsibleGraph.Derive(args.Project), _viewport, Stored());
-        var deltas = _mapper.Diff(_delivered, after);
+        var deltas = DiagramDiff.Between(_delivered, after);
         _delivered = after;
 
         if (deltas.Count > 0)

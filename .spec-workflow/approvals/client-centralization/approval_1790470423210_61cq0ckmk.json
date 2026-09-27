@@ -3,8 +3,10 @@
   "title": "client-centralization requirements: backend's shared width metric everywhere, OWL moves onto it (Req 4.1, 12.1; chat rulings 2026-09-27)",
   "filePath": ".spec-workflow/specs/client-centralization/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-27T00:53:43.210Z",
   "category": "spec",
-  "categoryName": "client-centralization"
+  "categoryName": "client-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-27T01:18:24.996Z"
 }

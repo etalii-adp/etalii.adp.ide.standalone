@@ -15,10 +15,12 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// </para>
 /// <para>
 /// A change of any shape - an edit through this connection, an edit through another, a git pull
-/// underneath - arrives the same way: the store raises its event and the whole view is delivered
-/// again as an Add. Adds are upserts, so re-delivering is a complete answer for anything that
-/// still exists (Requirement 11.5). What no longer exists has to be said explicitly, which is why
-/// this session remembers what it has already told the connection about.
+/// underneath, a stage opened or closed - arrives the same way: the view is rendered again and
+/// diffed against what this connection was last given. What is new or changed is added, which is
+/// how an edit reaches the canvas (Requirement 11.5), and what is gone is removed, since nothing
+/// else would take it off. Both the diff and the reaction to the store's event are the shared ones
+/// (backend-centralization R4 and R5), and <see cref="DiagramDocumentChangeHandler"/> keeps the
+/// one record of what this connection holds.
 /// </para>
 /// </remarks>
 public sealed class PipelineSession : IDiagramSession
@@ -33,10 +35,10 @@ public sealed class PipelineSession : IDiagramSession
     private readonly PipelineViewState _views;
 
     /// <summary>
-    /// What this connection has been told about. Kept so a change can say what disappeared: a
-    /// stage somebody deleted would otherwise stay on the canvas, because nothing mentions it.
+    /// What this connection was last given, and the one way it is changed: a stage somebody
+    /// deleted would otherwise stay on the canvas, because nothing mentions it again.
     /// </summary>
-    private HashSet<string> _delivered = new(StringComparer.Ordinal);
+    private readonly DiagramDocumentChangeHandler _changes;
 
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
@@ -61,6 +63,10 @@ public sealed class PipelineSession : IDiagramSession
         _documents = documents;
         _mapper = mapper;
         _views = views;
+        _changes = new DiagramDocumentChangeHandler(
+            bodyPath,
+            Render,
+            deltas => Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas)));
         _documents.Changed += OnDocumentChanged;
         _views.ElementExpanded += OnElementExpanded;
     }
@@ -72,7 +78,7 @@ public sealed class PipelineSession : IDiagramSession
 
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        var elements = Deliver();
+        var elements = _changes.Deliver();
         return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
@@ -88,7 +94,7 @@ public sealed class PipelineSession : IDiagramSession
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
         _viewport = viewport;
-        return Difference();
+        return _changes.Refresh();
     }
 
     /// <summary>Whether this connection has <paramref name="stageId"/> open.</summary>
@@ -110,18 +116,17 @@ public sealed class PipelineSession : IDiagramSession
             return;
         }
 
-        var deltas = Difference();
-        if (deltas.Count > 0)
-        {
-            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-        }
-
         _logger.Debug(
-            "Watch {WatchId} {Action} {ElementId}, pushing {Count} deltas",
+            "Watch {WatchId} {Action} {ElementId}",
             _watchId,
             args.Expanded ? "opened" : "closed",
-            args.ElementId,
-            deltas.Count);
+            args.ElementId);
+
+        // A toggle is answered exactly as a change to this session's own document is: render,
+        // diff against what was delivered, raise if there is anything. Going through the handler
+        // rather than through a Refresh and a raise of its own keeps the raise under the handler's
+        // lock, so a toggle's push and a document change's push cannot overtake one another.
+        _changes.OnDocumentChanged(_bodyPath);
     }
 
     /// <summary>
@@ -154,89 +159,17 @@ public sealed class PipelineSession : IDiagramSession
     }
 
     /// <summary>
-    /// The deltas carrying this connection from what it has to what it should have.
+    /// What this connection should be seeing - every change is diffed against the last of these.
     /// </summary>
-    /// <remarks>
-    /// The "before" is what was actually delivered rather than a freshly computed view, so this
-    /// stays correct even when the two differ - which is the case that matters, since it is the
-    /// only one where a delta is doing any work.
-    /// </remarks>
-    private IReadOnlyList<DiagramDelta> Difference()
-    {
-        var before = _delivered;
-        var after = Deliver();
-
-        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
-        var removed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
-        if (removed.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(removed));
-        }
-
-        return deltas;
-    }
-
-    /// <summary>
-    /// What this connection should be seeing, recorded as what it now has.
-    /// </summary>
-    /// <remarks>
-    /// Everything that leaves this session goes through here, so there is one place that knows
-    /// what the connection holds and no way to deliver elements without recording them.
-    /// </remarks>
-    private IReadOnlyList<DiagramElement> Deliver()
+    private IReadOnlyList<DiagramElement> Render()
     {
         var entry = _documents.GetOrLoad(_rootPath, _bodyPath);
         // A file that does not parse has an empty model, so this delivers nothing and the diagram
         // shows as unavailable - the honest answer, and it keeps a half-read pipeline from being
         // drawn as though it were the whole one.
-        var elements = entry.IsUsable ? _mapper.Visible(entry.Model, _viewport, _views.For(_watchId, _bodyPath).ExpandedIds) : [];
-        _delivered = elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        return elements;
+        return entry.IsUsable ? _mapper.Visible(entry.Model, _viewport, _views.For(_watchId, _bodyPath).ExpandedIds) : [];
     }
 
-    private void OnDocumentChanged(object? sender, PipelineDocumentChangedEventArgs args)
-    {
-        if (!string.Equals(args.Path, _bodyPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        // Everything is re-delivered rather than only what appeared. An edited element keeps its
-        // id, so a difference would find nothing to add and the connection would never learn the
-        // new state - and Requirement 11.5 says an edit *is* an Add carrying the element as it now
-        // is. Adds are upserts, so re-sending what did not change costs a message and nothing else.
-        var before = _delivered;
-        var elements = Deliver();
-        var gone = before.Except(elements.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (elements.Count > 0)
-        {
-            deltas.Add(new DiagramAddDelta(elements));
-        }
-
-        if (gone.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(gone));
-        }
-
-        if (deltas.Count > 0)
-        {
-            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
-        }
-
-        _logger.Debug(
-            "Pushed {Count} elements and {Removed} removals to watch {WatchId} after {Path} changed",
-            elements.Count,
-            gone.Length,
-            _watchId,
-            args.Path);
-    }
+    private void OnDocumentChanged(object? sender, PipelineDocumentChangedEventArgs args) =>
+        _changes.OnDocumentChanged(args.Path);
 }

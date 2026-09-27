@@ -1,4 +1,4 @@
-using System.Globalization;
+using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
@@ -10,14 +10,15 @@ namespace EtAlii.Adp.Diagram.CausalLoop;
 /// Three drawn kinds and one gesture. <c>variable:{id}</c> and <c>loop:{identifier}</c> name one
 /// statement each; <c>link:{from}|{to}</c> names a link by its two ends, because a link has no
 /// identity of its own in the document beyond the pair it joins. <c>new:{x},{y}</c> is not an
-/// element at all - it is where the user asked for something to be created.
+/// element at all - it is where the user asked for something to be created. That id and the
+/// <c>rel:</c> one are built and parsed by the shared <see cref="GestureIds"/> grammar
+/// (backend-centralization R11.1).
 /// </remarks>
 public static class CausalLoopSelection
 {
     private const string VariablePrefix = "variable:";
     private const string LoopPrefix = "loop:";
     private const string LinkPrefix = "link:";
-    private const string PlacementPrefix = "new:";
 
     /// <summary>The variable an id names, or null.</summary>
     public static string? VariableOf(string? elementId) =>
@@ -45,52 +46,26 @@ public static class CausalLoopSelection
     }
 
     /// <summary>The id the canvas writes when a user asks for something new at a point.</summary>
-    public static string PlacementFor(double x, double y) =>
-        string.Create(CultureInfo.InvariantCulture, $"{PlacementPrefix}{x},{y}");
+    public static string PlacementFor(double x, double y) => GestureIds.Placement(x, y);
 
     /// <summary>Whether an id is a placement rather than an element.</summary>
-    public static bool IsPlacement(string? elementId) =>
-        elementId is not null && elementId.StartsWith(PlacementPrefix, StringComparison.Ordinal);
+    public static bool IsPlacement(string? elementId) => GestureIds.IsPlacement(elementId);
 
     /// <summary>The point a placement id names, or null when the id is not a placement or is malformed.</summary>
-    public static (double X, double Y)? PlacementPoint(string? elementId)
-    {
-        if (elementId is null || !elementId.StartsWith(PlacementPrefix, StringComparison.Ordinal))
-        {
-            return null;
-        }
+    public static (double X, double Y)? PlacementPoint(string? elementId) =>
+        GestureIds.TryParsePlacement(elementId, out var x, out var y) ? (x, y) : null;
 
-        var body = elementId[PlacementPrefix.Length..];
-        var comma = body.IndexOf(',', StringComparison.Ordinal);
-        if (comma <= 0 ||
-            !double.TryParse(body[..comma], NumberStyles.Float, CultureInfo.InvariantCulture, out var x) ||
-            !double.TryParse(body[(comma + 1)..], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
-        {
-            return null;
-        }
-
-        return (x, y);
-    }
-
-    /// <summary>The id a right-drag connect carries: <c>rel:{from}-&gt;{to}</c>, the two ends of the link to state.</summary>
-    private const string RelationPrefix = "rel:";
-
-    /// <summary>The id the canvas writes when a link is drawn from one variable to another.</summary>
-    public static string RelationFor(string from, string to) => $"{RelationPrefix}{from}->{to}";
+    /// <summary>
+    /// The id the canvas writes when a link is drawn from one variable to another - the id a
+    /// right-drag connect carries: <c>rel:{from}-&gt;{to}</c>, the two ends of the link to state.
+    /// </summary>
+    public static string RelationFor(string from, string to) => GestureIds.Relation(from, to);
 
     /// <summary>The two ends the relation id names, or null when it is not one or either end is empty.</summary>
-    public static (string From, string To)? RelationOf(string? elementId)
-    {
-        if (elementId is null || !elementId.StartsWith(RelationPrefix, StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        var body = elementId[RelationPrefix.Length..];
-        var arrow = body.IndexOf("->", StringComparison.Ordinal);
-
-        // Both ends, as the other modules' relation ids require: 'rel:a->' read as a link to an
-        // empty id, which the writer emitted as 'link a ->  +'.
-        return arrow > 0 && arrow + 2 < body.Length ? (body[..arrow], body[(arrow + 2)..]) : null;
-    }
+    /// <remarks>
+    /// Both ends, as the shared grammar requires (R11.2): 'rel:a->' once read as a link to an empty
+    /// id, which the writer emitted as 'link a ->  +'.
+    /// </remarks>
+    public static (string From, string To)? RelationOf(string? elementId) =>
+        GestureIds.TryParseRelation(elementId, out var from, out var to) ? (from, to) : null;
 }

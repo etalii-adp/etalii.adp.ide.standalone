@@ -1,13 +1,15 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>
 /// The declared font metric the layout sizes nodes with (Requirement 5.6). Real metrics exist
 /// only in the browser; these are the module's estimate of them, and the client draws boxes
 /// at the size the backend computed from them rather than re-measuring (Requirement 5.7).
+/// The text's own width is the shared <see cref="TextMetric"/>; the padding and minimum around it are this module's.
 /// </summary>
 /// <param name="FontFamily">What the canvas renders node text in; carried so client and backend name the same face.</param>
 /// <param name="FontSize">In canvas units (CSS pixels).</param>
-/// <param name="AverageAdvance">The estimated width of one character, as a fraction of <paramref name="FontSize"/>.</param>
 /// <param name="LineHeight">As a fraction of <paramref name="FontSize"/>.</param>
 /// <param name="HorizontalPadding">Inside the node box, each side.</param>
 /// <param name="VerticalPadding">Inside the node box, top and bottom.</param>
@@ -22,7 +24,6 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 public sealed record MindmapMetrics(
     string FontFamily = "system-ui, sans-serif",
     double FontSize = 14,
-    double AverageAdvance = 0.55,
     double LineHeight = 1.4,
     double HorizontalPadding = 10,
     double VerticalPadding = 6,
@@ -36,8 +37,7 @@ public sealed record MindmapMetrics(
     /// <summary>The box a node with <paramref name="text"/> occupies.</summary>
     public MindmapSize Measure(string text)
     {
-        var characters = text.Length;
-        var width = Math.Max(MinimumWidth, characters * FontSize * AverageAdvance + 2 * HorizontalPadding);
+        var width = Math.Max(MinimumWidth, TextMetric.WidthOf(text, FontSize) + 2 * HorizontalPadding);
         var height = FontSize * LineHeight + 2 * VerticalPadding;
         return new MindmapSize(Math.Round(width, 2), Math.Round(height, 2));
     }

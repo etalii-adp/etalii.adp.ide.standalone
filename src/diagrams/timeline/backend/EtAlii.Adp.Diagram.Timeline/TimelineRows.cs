@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
@@ -22,13 +24,10 @@ public static class TimelineRows
     /// The row nearest a y - what a vertical drag snaps to on release (Requirement 6.2).
     /// </summary>
     /// <remarks>
-    /// <see cref="Math.Round(double, MidpointRounding)"/> with
-    /// <see cref="MidpointRounding.AwayFromZero"/> rather than the default banker's rounding:
-    /// the exact midpoint between rows 0 and 1 must resolve the same way as the midpoint between
-    /// rows 1 and 2, or dragging an element to the boundary snaps up on odd rows and down on even
-    /// ones - an off-by-one a user would perceive as flaky snapping rather than as a bug they
-    /// could report.
+    /// The rule is <see cref="RowRounding.ToNearestRow"/>, shared with every row canvas and pinned by
+    /// the golden fixture the client reads too (backend-centralization R9): halves round away from
+    /// zero, so the midpoint between two rows resolves the same way on every row and on both sides
+    /// of the origin.
     /// </remarks>
-    public static int ToNearestRow(double y) =>
-        (int)Math.Round(y / Height, MidpointRounding.AwayFromZero);
+    public static int ToNearestRow(double y) => RowRounding.ToNearestRow(y, Height);
 }

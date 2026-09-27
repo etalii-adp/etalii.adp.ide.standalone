@@ -107,13 +107,14 @@ public class CausalLoopSessionTests : IDisposable
             narrowed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
             element => element.Id == far.Id);
 
-        // ...and moving across added the far one and took back the near one, in that order.
+        // ...and moving across took back the near one and added the far one, in that order: the
+        // shared diff removes first, one order for every module (backend-centralization R4.5).
         Assert.Contains(
             moved.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
             element => element.Id == far.Id);
         Assert.Contains(near.Id, moved.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
-        Assert.IsType<DiagramAddDelta>(moved[0]);
-        Assert.IsType<DiagramRemoveDelta>(moved[1]);
+        Assert.IsType<DiagramRemoveDelta>(moved[0]);
+        Assert.IsType<DiagramAddDelta>(moved[1]);
     }
 
     [Fact]
@@ -262,6 +263,90 @@ public class CausalLoopSessionTests : IDisposable
     }
 
     [Fact]
+    public void AChangeToAnotherDocument_IsNotThisSessionsBusiness()
+    {
+        // Arrange: the store serves every open diagram, so a session has to filter by its own. The
+        // diff sends only what differs, so a session that re-rendered on another document's
+        // change would stay silent whenever its own view had not moved. So this session's view is
+        // changed WITHOUT telling it - a position written straight into its registration - and a
+        // session that re-rendered on the other document's change would now push the variable.
+        var session = Session();
+        session.Baseline();
+        var otherPath = IoPath.Combine(_root, "other.cld");
+        File.WriteAllText(otherPath, Corpus);
+        _ = _store.GetOrLoad(otherPath);
+        File.WriteAllText(
+            _registrationPath,
+            "systems/causal-loop-diagram\r\nbody: feedback.cld\r\nlayout:\r\n  variable:a: 5000 6000\r\n");
+
+        var pushed = new List<IReadOnlyList<DiagramDelta>>();
+        session.Changed += (_, args) => pushed.Add(args.Deltas);
+
+        // Act.
+        _store.Reload(otherPath);
+        var pushedForTheOther = pushed.Count;
+        _store.Reload(_bodyPath);
+
+        // Assert: nothing for the other document, and the same change to its own document does
+        // move the variable - which is what makes the silence mean something.
+        Assert.Equal(0, pushedForTheOther);
+        var moved = Assert.Single(
+            Assert.Single(pushed).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
+            element => element.Id == "variable:a");
+        Assert.Equal(5000, moved.X);
+    }
+
+    /// <summary>
+    /// backend-centralization R5.2: only a read failure is caught. This session used to catch
+    /// every failure while re-rendering and log it as its own error, which hid a defect behind
+    /// the same kind of line as a locked file; a defect now reaches whoever raised the change.
+    /// </summary>
+    [Fact]
+    public void ADefectWhileReRenderingAChange_ReachesTheCaller()
+    {
+        // Arrange.
+        var store = new FailingStore(_store);
+        var session = new CausalLoopSession(_bodyPath, _registrationPath, store, new CausalLoopElementMapper());
+        session.Baseline();
+        var pushed = 0;
+        session.Changed += (_, _) => pushed++;
+        store.Failure = new InvalidOperationException("a defect");
+
+        // Act & assert.
+        Assert.Throws<InvalidOperationException>(() => _store.Reload(_bodyPath));
+        Assert.Equal(0, pushed);
+    }
+
+    /// <summary>
+    /// backend-centralization R5.1: a file that vanished or locked mid-reload costs that push and
+    /// nothing else - no exception reaches the caller, and the next change tries again.
+    /// </summary>
+    [Fact]
+    public void AReadFailureWhileReRenderingAChange_CostsOnlyThatPush()
+    {
+        // Arrange.
+        var store = new FailingStore(_store);
+        var session = new CausalLoopSession(_bodyPath, _registrationPath, store, new CausalLoopElementMapper());
+        session.Baseline();
+        var pushed = new List<IReadOnlyList<DiagramDelta>>();
+        session.Changed += (_, args) => pushed.Add(args.Deltas);
+        File.WriteAllText(_bodyPath, Corpus + "variable d \"Delta\"\r\n");
+        store.Failure = new IOException("locked");
+
+        // Act.
+        _store.Reload(_bodyPath);
+        var pushedWhileLocked = pushed.Count;
+        store.Failure = null;
+        _store.Reload(_bodyPath);
+
+        // Assert: nothing while locked, and the next change catches the diagram up.
+        Assert.Equal(0, pushedWhileLocked);
+        Assert.Contains(
+            Assert.Single(pushed).OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
+            element => element.Id == "variable:d");
+    }
+
+    [Fact]
     public void AnUnreadableDocument_DrawsNothingRatherThanThrowing()
     {
         // Arrange.
@@ -270,5 +355,27 @@ public class CausalLoopSessionTests : IDisposable
 
         // Act & assert.
         Assert.Empty(session.Baseline());
+    }
+
+    /// <summary>The real store, except that reading from it throws whatever a test sets.</summary>
+    private sealed class FailingStore(CausalLoopDocumentStore inner) : ICausalLoopDocumentStore
+    {
+        public Exception? Failure { get; set; }
+
+        public event EventHandler<CausalLoopDocumentChangedEventArgs>? Changed
+        {
+            add => inner.Changed += value;
+            remove => inner.Changed -= value;
+        }
+
+        public CausalLoopDocumentEntry GetOrLoad(string path) => Failure is null ? inner.GetOrLoad(path) : throw Failure;
+
+        public string Save(string path, CausalLoopDocumentEntry entry) => inner.Save(path, entry);
+
+        public void Forget(string path) => inner.Forget(path);
+
+        public void Reload(string path) => inner.Reload(path);
+
+        public void BodyDeleted(string path) => inner.BodyDeleted(path);
     }
 }

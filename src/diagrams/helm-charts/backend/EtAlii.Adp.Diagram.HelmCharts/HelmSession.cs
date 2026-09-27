@@ -85,34 +85,15 @@ internal sealed class HelmSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        var chart = _store.GetOrLoad(_folder);
-        var graph = HelmGraph.Derive(chart);
-        var boxes = Boxes(chart, graph);
-
-        var before = _mapper.Visible(chart, graph, boxes, _viewport)
-            .Select(element => element.Id)
-            .ToHashSet(StringComparer.Ordinal);
         _viewport = viewport;
-        var after = _mapper.Visible(chart, graph, boxes, _viewport);
+        var after = Render();
 
-        // Add for what appeared, then Remove for what left - the order both reference
-        // sessions emit in, which is the opposite of what Requirement 4.3 anticipated.
-        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
-        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
-        if (departed.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(departed));
-        }
-
-        // What this connection now holds, so a chart change diffs against the narrowed set
-        // rather than against the whole diagram it last saw at baseline.
+        // Diffed against what this connection holds, by the shared diff every module uses
+        // (backend-centralization R4): a Remove for what left the view, then an Add for what
+        // came into it - removals first, the one order R4.5 settles, where this used to add
+        // first. It is also what a chart change diffs against next, so that diffs against the
+        // narrowed set rather than against the whole diagram last seen at baseline.
+        var deltas = DiagramDiff.Between(_delivered, after);
         _delivered = after;
         return deltas;
     }
@@ -174,8 +155,8 @@ internal sealed class HelmSession : IDiagramSession
     /// <summary>
     /// Every box the chart currently has: computed positions first, stored ones winning
     /// element by element, sizes staying measured - a stale stored id simply has nothing to
-    /// override (core's own overlay semantics). Shared by the render and the view diff so the
-    /// two can never disagree about where an element sits.
+    /// override (core's own overlay semantics). Every render - baseline, view report and chart
+    /// change - goes through it, so no two of them can disagree about where an element sits.
     /// </summary>
     private IReadOnlyDictionary<string, HelmBox> Boxes(HelmChart chart, HelmGraph graph)
     {
@@ -207,7 +188,7 @@ internal sealed class HelmSession : IDiagramSession
         try
         {
             var current = Render();
-            var deltas = _mapper.Diff(_delivered, current);
+            var deltas = DiagramDiff.Between(_delivered, current);
             _delivered = current;
 
             if (deltas.Count > 0)

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>Where an element sits and how big it is, in canvas units with the view's origin at (0,0).</summary>
@@ -20,7 +22,8 @@ public readonly record struct C4Box(double X, double Y, double Width, double Hei
 /// The declared font metric the layout sizes C4 boxes with. Real metrics exist only in the
 /// browser; these are the module's estimate, and the client draws each box at the size the
 /// backend computed rather than re-measuring - the discipline the mindmap module arrived at,
-/// applied here from the start.
+/// applied here from the start. The text's own width is the shared <see cref="TextMetric"/>; the
+/// padding, minimum and maximum around it are this module's.
 /// </summary>
 /// <remarks>
 /// A C4 box carries three things, which is why it is taller than a mindmap node: the name, the
@@ -29,7 +32,6 @@ public readonly record struct C4Box(double X, double Y, double Width, double Hei
 public sealed record C4Metrics(
     string FontFamily = "system-ui, sans-serif",
     double FontSize = 14,
-    double AverageAdvance = 0.55,
     double LineHeight = 1.4,
     double HorizontalPadding = 12,
     double VerticalPadding = 10,
@@ -59,5 +61,5 @@ public sealed record C4Metrics(
         return new C4Box(0, 0, Math.Round(width, 2), Math.Round(height, 2));
     }
 
-    private double TextWidth(string text) => text.Length * FontSize * AverageAdvance;
+    private double TextWidth(string text) => TextMetric.WidthOf(text, FontSize);
 }
