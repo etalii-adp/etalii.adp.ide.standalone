@@ -87,6 +87,7 @@ import type {
   EdgeAttachment,
   EdgeName,
   ElementTypeDefinition,
+  LayoutMode,
   RelationTypeDefinition,
   ShapeSelection,
 } from "./definition/diagramDefinition";
@@ -360,7 +361,16 @@ export function DiagramCanvasCore({
   // Memoized because two registrations key on its identity: a fresh object per render
   // would re-register the toolbox every render, and the provider's setState would render
   // again - a loop. The config object is a prop; its identity is the caller's contract.
-  const definition = useMemo(() => effectiveDefinition(statedDefinition, config), [statedDefinition, config]);
+  //
+  // The active layout mode is VIEW STATE: a host that sets `activeLayoutMode` decides it, and a
+  // canvas nobody configures answers its own switcher and toggle. It is read from the stated
+  // layout, which no mode overrides, and chooses which of the mode's overrides the canvas reads.
+  const [viewLayoutMode, setViewLayoutMode] = useState<LayoutMode | undefined>(undefined);
+  const activeLayoutMode = config?.activeLayoutMode ?? viewLayoutMode ?? statedDefinition.layout.modes[0] ?? "manual";
+  const definition = useMemo(
+    () => effectiveDefinition(statedDefinition, config, activeLayoutMode),
+    [statedDefinition, config, activeLayoutMode],
+  );
   const elementTypes = useMemo(
     () => new Map(definition.elementTypes.map((type) => [type.id, type])),
     [definition.elementTypes],
@@ -372,21 +382,30 @@ export function DiagramCanvasCore({
   // The layout seam (Requirement 8.1): the active mode's algorithm places the elements, and
   // everything downstream - rendering, hit-testing, anchors, fit - reads the placed set.
   // Manual/external returns null and the model's own positions pass through untouched.
-  const activeLayoutMode = config?.activeLayoutMode ?? definition.layout.modes[0] ?? "manual";
-  const layoutPositions = useMemo(() => {
-    const algorithm = layoutAlgorithmFor(activeLayoutMode);
-    if (algorithm === undefined) {
-      return null; // an unimplemented mode lays out as manual - the honest fallback
-    }
-    const input: LayoutInput = {
+  // Laid out over every element of the model, never only those the filter leaves: filtering hides,
+  // it does not re-place what is left.
+  const layoutAlgorithm = layoutAlgorithmFor(activeLayoutMode);
+  const layoutInput = useMemo<LayoutInput>(
+    () => ({
       elements: model.elements.map((element) => {
         const bounds = elementBounds(element, elementTypes.get(element.type));
         return { id: element.id, x: element.x, y: element.y, width: bounds.width, height: bounds.height, parentId: element.parentId };
       }),
       connections: model.connections.map((connection) => ({ sourceId: connection.sourceId, targetId: connection.targetId })),
-    };
-    return algorithm.place(input, definition.layout);
-  }, [activeLayoutMode, model, elementTypes, definition.layout]);
+    }),
+    [model, elementTypes],
+  );
+  const layoutToggle = statedDefinition.layout.toggle;
+  /** A switch the reader made: held as view state, and raised for a host that wants to know. */
+  const switchLayoutMode = (mode: LayoutMode) => {
+    setViewLayoutMode(mode);
+    raise({ kind: "layout-mode-changed", mode });
+  };
+  const layoutPositions = useMemo(
+    // An unimplemented mode lays out as manual - the honest fallback.
+    () => (layoutAlgorithm === undefined ? null : layoutAlgorithm.place(layoutInput, definition.layout)),
+    [layoutAlgorithm, layoutInput, definition.layout],
+  );
 
   const elements = useMemo(
     () =>
@@ -394,7 +413,7 @@ export function DiagramCanvasCore({
         ? model.elements
         : model.elements.map((element) => {
             const at = layoutPositions.get(element.id);
-            return at === undefined ? element : { ...element, x: at.x, y: at.y };
+            return at === undefined ? element : { ...element, x: at.x, y: at.y, width: at.width ?? element.width };
           }),
     [model.elements, layoutPositions],
   );
@@ -1510,7 +1529,11 @@ export function DiagramCanvasCore({
     }
 
     event.preventDefault();
-    raise({ kind: "element-dropped", elementType: payload, position: toCanvasPoint(event.clientX, event.clientY) });
+    // Under a layout that re-places elements, the pointer's position means nothing to a module that
+    // places by the model's own positions; the layout's inverse says what it stands for there.
+    const pointer = toCanvasPoint(event.clientX, event.clientY);
+    const position = layoutAlgorithm?.inverse?.(pointer, layoutInput, definition.layout) ?? pointer;
+    raise({ kind: "element-dropped", elementType: payload, position });
   };
 
   // ---- keyboard: delete --------------------------------------------------------------------
@@ -2108,14 +2131,14 @@ export function DiagramCanvasCore({
         )}
       </svg>
 
-      {definition.layout.modes.length > 1 && (
+      {definition.layout.modes.length > 1 && definition.layout.toggle === undefined && (
         <div className="library-layout-switcher" data-testid="layout-switcher">
           {definition.layout.modes.map((mode) => (
             <button
               key={mode}
               type="button"
               className={mode === activeLayoutMode ? "library-layout-active" : undefined}
-              onClick={() => raise({ kind: "layout-mode-changed", mode })}
+              onClick={() => switchLayoutMode(mode)}
             >
               {mode}
             </button>
@@ -2153,6 +2176,17 @@ export function DiagramCanvasCore({
                 </li>
               ))}
             </ul>
+          )}
+          {layoutToggle !== undefined && (
+            <button
+              type="button"
+              className="library-layout-toggle"
+              data-testid="layout-toggle"
+              aria-pressed={activeLayoutMode === layoutToggle.on}
+              onClick={() => switchLayoutMode(activeLayoutMode === layoutToggle.on ? (definition.layout.modes[0] ?? "manual") : layoutToggle.on)}
+            >
+              {layoutToggle.caption}
+            </button>
           )}
         </div>
       )}
