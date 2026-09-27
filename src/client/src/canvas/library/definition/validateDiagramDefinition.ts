@@ -20,6 +20,12 @@ export function validateDiagramDefinition(definition: DiagramDefinition): readon
   if (layout.modes.includes("row-packed") && layout.rowPacked === undefined) {
     problems.push("The layout allows row-packed without declaring rowPacked: the mode has no width to draw with.");
   }
+  const declaredTypes = new Set(definition.elementTypes.map((type) => type.id));
+  for (const type of layout.rowPacked?.types ?? []) {
+    if (!declaredTypes.has(type)) {
+      problems.push(`The row-packed layout gives its width to element type "${type}", which this definition does not declare.`);
+    }
+  }
   if (layout.toggle !== undefined) {
     if (!layout.modes.includes(layout.toggle.on)) {
       problems.push(`The layout toggle switches to "${layout.toggle.on}", which the layout does not allow.`);

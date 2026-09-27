@@ -1063,10 +1063,22 @@ export interface LayoutDefinition {
 
 /** See {@link LayoutDefinition.rowPacked}. */
 export interface RowPackedDeclaration {
-  /** The width every element is drawn with. */
+  /** The width every element of the listed types is drawn with - every element, without `types`. */
   width: number;
   /** The least space between two elements on one row. */
   gap: number;
+  /**
+   * The element types drawn at `width`. An element of any other type keeps its own width and
+   * height, and is still placed in the order of its left edge and clear of its neighbours on every
+   * row it covers. Omitted, every element takes the width.
+   */
+  types?: readonly string[];
+  /**
+   * The distance between two row lines. Declared, an element occupies every row line from
+   * `floor(top / rowStep)` to `floor((bottom - 1) / rowStep)`, so one two rows tall keeps both
+   * clear; omitted, an element's row is its centre's height, as for elements one row tall.
+   */
+  rowStep?: number;
 }
 
 /** See {@link LayoutDefinition.toggle}. */

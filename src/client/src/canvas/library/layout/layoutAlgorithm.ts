@@ -15,6 +15,8 @@ export interface LayoutElement {
   height: number;
   /** The tree parent, where the notation nests structurally. */
   parentId?: string;
+  /** The element's type, for a layout that treats types differently. */
+  type?: string;
   /**
    * The room this element needs clear before its left edge - a label drawn to its left. A layout
    * that packs elements side by side keeps it free of the element before; omitted, none.

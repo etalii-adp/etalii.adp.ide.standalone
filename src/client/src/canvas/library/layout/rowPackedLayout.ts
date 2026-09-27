@@ -10,9 +10,34 @@ interface Packed {
   placedLeft: number;
 }
 
+/** Whether the declared width applies to this element: to every element when no types are listed. */
+function takesWidth(element: LayoutElement, declaration: RowPackedDeclaration): boolean {
+  return declaration.types === undefined || (element.type !== undefined && declaration.types.includes(element.type));
+}
+
+/** The width an element is placed with: the declared one, or its own. */
+function widthOf(element: LayoutElement, declaration: RowPackedDeclaration): number {
+  return takesWidth(element, declaration) ? declaration.width : element.width;
+}
+
 /**
- * The one packing both directions read: every element at the declared width, in the order of
- * its manual left edge, on the row its manual centre sits on.
+ * The rows an element occupies: every row line its top-to-bottom span crosses where a row step is
+ * declared, and otherwise the one its centre sits on.
+ */
+function rowsOf(element: LayoutElement, declaration: RowPackedDeclaration): number[] {
+  const step = declaration.rowStep;
+  if (step === undefined) {
+    return [element.y];
+  }
+  const first = Math.floor((element.y - element.height / 2) / step);
+  const last = Math.max(first, Math.floor((element.y + element.height / 2 - 1) / step));
+  return Array.from({ length: last - first + 1 }, (_, index) => first + index);
+}
+
+/**
+ * The one packing both directions read: every element at its placed width (see
+ * {@link widthOf}), in the order of its manual left edge, on the rows it covers (see
+ * {@link rowsOf}).
  *
  * Elements starting at one manual x are placed as a group. The group's x is the larger of where
  * the previous group ended up and where each row it touches is free again (its last element's
@@ -42,19 +67,30 @@ function pack(input: LayoutInput, declaration: RowPackedDeclaration): Packed[] {
 
     let groupX = previous ?? group[0].manualLeft;
     for (const { element } of group) {
-      const free = rowEnd.get(element.y);
-      if (free !== undefined) {
-        groupX = Math.max(groupX, free + declaration.gap + (element.leading ?? 0));
+      for (const row of rowsOf(element, declaration)) {
+        const free = rowEnd.get(row);
+        if (free !== undefined) {
+          groupX = Math.max(groupX, free + declaration.gap + (element.leading ?? 0));
+        }
       }
     }
 
+    // A later member of the group follows an earlier one on any row they share.
     const placedRows = new Set<number>();
     let rightmost = groupX;
     for (const entry of group) {
-      const row = entry.element.y;
-      const placedLeft = placedRows.has(row) ? rowEnd.get(row)! + declaration.gap + (entry.element.leading ?? 0) : groupX;
-      placedRows.add(row);
-      rowEnd.set(row, placedLeft + declaration.width);
+      const rows = rowsOf(entry.element, declaration);
+      let placedLeft = groupX;
+      for (const row of rows) {
+        if (placedRows.has(row)) {
+          placedLeft = Math.max(placedLeft, rowEnd.get(row)! + declaration.gap + (entry.element.leading ?? 0));
+        }
+      }
+      const right = placedLeft + widthOf(entry.element, declaration);
+      for (const row of rows) {
+        placedRows.add(row);
+        rowEnd.set(row, right);
+      }
       rightmost = Math.max(rightmost, placedLeft);
       packed.push({ ...entry, placedLeft });
     }
@@ -80,7 +116,8 @@ export const rowPackedLayout: LayoutAlgorithm = {
     }
     const positions = new Map<string, LayoutPlacement>();
     for (const { element, placedLeft } of pack(input, declaration)) {
-      positions.set(element.id, { x: placedLeft + declaration.width / 2, y: element.y, width: declaration.width });
+      const width = widthOf(element, declaration);
+      positions.set(element.id, takesWidth(element, declaration) ? { x: placedLeft + width / 2, y: element.y, width } : { x: placedLeft + width / 2, y: element.y });
     }
     return positions;
   },

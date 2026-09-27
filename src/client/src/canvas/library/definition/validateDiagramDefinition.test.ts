@@ -205,3 +205,15 @@ describe("validateDiagramDefinition, attachDrawnBy", () => {
     expect(validateDiagramDefinition(withAnchors({ kind: "along", edges: ["top"], attachDrawnBy: "edge" })).some((problem) => problem.includes("attachDrawnBy on along anchors"))).toBe(true);
   });
 });
+
+describe("validateDiagramDefinition, row-packed types", () => {
+  it("rejects a row-packed width for an element type nobody declares", () => {
+    const packed = (types: string[]): DiagramDefinition => ({
+      ...goodDefinition(),
+      layout: { modes: ["manual", "row-packed"], rowPacked: { width: 48, gap: 4, types } },
+    });
+
+    expect(validateDiagramDefinition(packed(["node"]))).toEqual([]);
+    expect(validateDiagramDefinition(packed(["nobody"])).some((problem) => problem.includes('element type "nobody"'))).toBe(true);
+  });
+});

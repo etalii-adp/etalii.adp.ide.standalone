@@ -399,6 +399,7 @@ export function DiagramCanvasCore({
           width: bounds.width,
           height: bounds.height,
           parentId: element.parentId,
+          type: element.type,
           leading: leadingOf(element, type),
         };
       }),
