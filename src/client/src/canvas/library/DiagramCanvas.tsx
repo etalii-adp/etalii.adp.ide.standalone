@@ -33,14 +33,26 @@ import { SpanElement } from "../elements/span/SpanElement";
 import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
-import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
-import { layoutLabels, wrappedLabelRegion } from "./definition/labels";
+import { asideLabelPlacement, beforeLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
+import { BEFORE_GAP, layoutLabels, wrappedLabelRegion } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
-import { actionForGesture, actionForKey } from "./definition/actions";
+import { actionForGesture, actionForKey, flagOf } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
 import { outlineEdgePoint, outlineOf } from "./shapes/outline";
+import {
+  attachmentAlong,
+  attachmentPointOf,
+  boundaryLanding,
+  nearestAttachment,
+  resolveSegments,
+  segmentCountOf,
+  type MovedBoundary,
+  type SegmentLayout,
+} from "./shapes/segments";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
+import { RulerStrip } from "./surface/RulerStrip";
+import { matchesTags, parseTagExpression, type TagExpression } from "./filter/tagExpression";
 import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
 import { useLibrarySelection, type CanvasSource, type LibraryContextIntegration } from "./librarySelection";
@@ -69,11 +81,13 @@ import type {
   CustomShapeState,
   DiagramDefinition,
   DropTargetDeclaration,
+  EdgeAttachment,
+  EdgeName,
   ElementTypeDefinition,
   RelationTypeDefinition,
   ShapeSelection,
 } from "./definition/diagramDefinition";
-import { holds, resolveNumber, resolveOne, type Binding, type BindingSource } from "./definition/binding";
+import { holds, resolveNumber, resolveOne, valueAtPath, type Binding, type BindingSource } from "./definition/binding";
 import { useContextPrompt } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 
@@ -213,8 +227,9 @@ export interface DiagramCanvasProps {
 /** What a press lands on; the shared arbiter threads it through untouched. */
 type PressTarget =
   | { kind: "element"; element: DiagramModelElement }
-  | { kind: "anchor"; element: DiagramModelElement; anchor: string | undefined; at: Point }
+  | { kind: "anchor"; element: DiagramModelElement; anchor: string | undefined; at: Point; attachment?: EdgeAttachment }
   | { kind: "resize"; element: DiagramModelElement; side: ResizedSide }
+  | { kind: "boundary"; element: DiagramModelElement; index: number; x: number }
   | { kind: "connection"; connection: DiagramModelConnection }
   | { kind: "adjust"; connection: DiagramModelConnection; from: Point }
   | { kind: "background"; view: ViewBox };
@@ -244,6 +259,11 @@ interface ResizeDragPreview {
   delta: number;
 }
 
+/** A segment boundary being dragged: the element, the boundary, and where it would land. */
+interface BoundaryDragPreview extends MovedBoundary {
+  id: string;
+}
+
 /** A connection-adjust in flight: the waypoint under the pointer - the second added kind. */
 interface AdjustDragPreview {
   connectionId: string;
@@ -255,9 +275,11 @@ interface ConnectPreview {
   relation: RelationTypeDefinition;
   sourceId: string;
   sourceAnchor?: string;
+  /** Where along its edge the gesture began, for a source declaring `along` anchors. */
+  sourceAttachment?: EdgeAttachment;
   from: Point;
   point: Point;
-  target?: { elementId: string; anchor?: string };
+  target?: { elementId: string; anchor?: string; attachment?: EdgeAttachment };
   valid: boolean;
 }
 
@@ -367,6 +389,48 @@ export function DiagramCanvasCore({
 
   const elementsById = useMemo(() => new Map(elements.map((element) => [element.id, element])), [elements]);
 
+  // THE FILTER IS VIEW STATE, held here and nowhere else: never raised, never sent, and untouched
+  // by a new model, so a delta arriving mid-read does not clear what the reader typed. A text that
+  // does not parse leaves the last expression that did applied, and says why under the box.
+  const [filterText, setFilterText] = useState("");
+  const [filterExpression, setFilterExpression] = useState<TagExpression | null>(null);
+  const [filterError, setFilterError] = useState<string | null>(null);
+  const onFilterChange = (text: string) => {
+    setFilterText(text);
+    const parsed = parseTagExpression(text);
+    if (parsed.ok) {
+      setFilterExpression(parsed.expression);
+      setFilterError(null);
+    } else {
+      setFilterError(parsed.message);
+    }
+  };
+
+  /** The elements the filter hides: those whose tags do not match. None without a declared filter. */
+  const filteredOut = useMemo(() => {
+    const hidden = new Set<string>();
+    const filter = definition.filter;
+    if (filter === undefined || filterExpression === null) {
+      return hidden;
+    }
+
+    for (const element of elements) {
+      const tags = valueAtPath(filter.field, sourceOf(element));
+      const list = Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
+      if (!matchesTags(filterExpression, list)) {
+        hidden.add(element.id);
+      }
+    }
+
+    return hidden;
+  }, [definition.filter, filterExpression, elements]);
+
+  /** What is drawn and hit-tested: every placed element the filter does not hide. */
+  const visibleElements = useMemo(
+    () => (filteredOut.size === 0 ? elements : elements.filter((element) => !filteredOut.has(element.id))),
+    [elements, filteredOut],
+  );
+
   const svgRef = useRef<SVGSVGElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewBox | null>(null);
@@ -413,6 +477,8 @@ export function DiagramCanvasCore({
   const resizeValue = useMemo(() => createGestureValue<ResizeDragPreview>(), []);
   const resizeFrameRef = useRef<GestureFrame<ResizeDragPreview> | null>(null);
   const adjustValue = useMemo(() => createGestureValue<AdjustDragPreview>(), []);
+  const boundaryValue = useMemo(() => createGestureValue<BoundaryDragPreview>(), []);
+  const boundaryFrameRef = useRef<GestureFrame<BoundaryDragPreview> | null>(null);
   const adjustFrameRef = useRef<GestureFrame<AdjustDragPreview> | null>(null);
   const panFrameRef = useRef<GestureFrame<ViewBox> | null>(null);
   const panLatestRef = useRef<ViewBox | null>(null);
@@ -428,6 +494,8 @@ export function DiagramCanvasCore({
       resizeFrameRef.current = null;
       adjustFrameRef.current?.cancel();
       adjustFrameRef.current = null;
+      boundaryFrameRef.current?.cancel();
+      boundaryFrameRef.current = null;
       panFrameRef.current?.cancel();
       panFrameRef.current = null;
     },
@@ -562,9 +630,14 @@ export function DiagramCanvasCore({
    * never disagree.
    */
   const attachmentPoint = useCallback(
-    (element: DiagramModelElement, anchor: string | undefined, towards: Point): Point => {
+    (element: DiagramModelElement, anchor: string | undefined, towards: Point, attachment?: EdgeAttachment): Point => {
       const type = elementTypes.get(element.type);
       const bounds = elementBounds(element, type);
+      // A continuous attachment is a fraction of a region, recomputed from the element's bounds
+      // and segments NOW - which is what makes a resize carry the end with it.
+      if (attachment !== undefined && type?.anchors.kind === "along") {
+        return attachmentPointOf(attachment, bounds, attachmentLayoutOf(element, type, bounds));
+      }
       if (anchor !== undefined && type !== undefined) {
         const named = anchorPoints(type.anchors, bounds).find((candidate) => candidate.name === anchor);
         if (named !== undefined) {
@@ -614,6 +687,19 @@ export function DiagramCanvasCore({
     [elementTypes],
   );
 
+  /** Where on a target's edges a connect gesture over `point` would attach, for an along-anchored type. */
+  const alongAttachmentAt = useCallback(
+    (candidate: DiagramModelElement, point: Point): EdgeAttachment | undefined => {
+      const type = elementTypes.get(candidate.type);
+      if (type?.anchors.kind !== "along") {
+        return undefined;
+      }
+      const bounds = elementBounds(candidate, type);
+      return nearestAttachment(point, bounds, type.anchors.edges, attachmentLayoutOf(candidate, type, bounds));
+    },
+    [elementTypes],
+  );
+
   /**
    * Whether the definition admits this relation between these two elements - the verdict the
    * connect gesture consults on every move, so refusal happens under the pointer rather than
@@ -642,6 +728,25 @@ export function DiagramCanvasCore({
           (connection) => connection.type === relation.id && connection.targetId === target.id,
         ).length;
         if (incoming >= cardinality.maxIntoTarget) {
+          return false;
+        }
+      }
+
+      /*
+       * ONE PER PAIR, a check of its own beside the caps: a second connection of this relation
+       * between the same two elements - the same way round, or either way for `unordered`. It
+       * reads the MODEL, so a connection that is hidden rather than drawn still blocks its
+       * duplicate: hidden is how it is shown, not whether the document holds it.
+       */
+      const perPair = cardinality?.perPair;
+      if (perPair !== undefined) {
+        const duplicate = model.connections.some(
+          (connection) =>
+            connection.type === relation.id &&
+            ((connection.sourceId === sourceId && connection.targetId === target.id) ||
+              (perPair === "unordered" && connection.sourceId === target.id && connection.targetId === sourceId)),
+        );
+        if (duplicate) {
           return false;
         }
       }
@@ -729,29 +834,49 @@ export function DiagramCanvasCore({
     [raise],
   );
 
-  /** The topmost element whose bounds contain the point - later in the model draws on top. */
+  /** The topmost drawn element whose bounds contain the point - later in the model draws on top. */
   const elementAt = useCallback(
     (point: Point): DiagramModelElement | undefined => {
-      for (let i = elements.length - 1; i >= 0; i--) {
-        const bounds = boundsOf(elements[i]);
+      for (let i = visibleElements.length - 1; i >= 0; i--) {
+        const bounds = boundsOf(visibleElements[i]);
         if (
           point.x >= bounds.x &&
           point.x <= bounds.x + bounds.width &&
           point.y >= bounds.y &&
           point.y <= bounds.y + bounds.height
         ) {
-          return elements[i];
+          return visibleElements[i];
         }
       }
       return undefined;
     },
-    [elements, boundsOf],
+    [visibleElements, boundsOf],
   );
 
   // A press on a type declared unselectable is a press on the background: the selection clears
   // (centralized-selection Requirement 2.3). Omitted means selectable, so nothing changes for a
   // definition that says nothing.
   const selectableElement = (element: DiagramModelElement) => elementTypes.get(element.type)?.selectable !== false;
+
+  /**
+   * Where a dragged segment boundary would rest: on the definition's `snap.x` lattice, and at
+   * least one step from its neighbours. The preview and the release both land through this, so
+   * what the drag shows is what the module is told.
+   */
+  const boundaryLandingOf = (element: DiagramModelElement, index: number, x: number): number => {
+    const type = elementTypes.get(element.type);
+    if (type?.segments === undefined) {
+      return x;
+    }
+
+    const bounds = elementBounds(element, type);
+    const source = sourceOf(element);
+    const layout = resolveSegments(type.segments, source, bounds);
+    const axis = definition.snap?.x;
+    const step = axis === undefined ? 1 : (declaredNumberOf(axis.step, source) ?? 1);
+    const origin = axis?.origin === undefined ? 0 : (declaredNumberOf(axis.origin, source) ?? 0);
+    return boundaryLanding(layout, bounds, index, x, step, origin);
+  };
   const selectableConnection = (connection: DiagramModelConnection) => relationTypes.get(connection.type)?.selectable !== false;
 
   const gesture = usePointerGesture<PressTarget>({
@@ -765,7 +890,8 @@ export function DiagramCanvasCore({
           select(selectableConnection(target.connection) ? { kind: "connection", id: target.connection.id } : null);
           break;
         case "anchor":
-          // An unmoved press on an anchor selects its element: the anchor is part of it.
+        case "boundary":
+          // An unmoved press on an anchor or a boundary selects its element: both are part of it.
           select(selectableElement(target.element) ? { kind: "element", id: target.element.id } : null);
           break;
         case "background":
@@ -814,9 +940,12 @@ export function DiagramCanvasCore({
             relation: drawn,
             sourceId: target.element.id,
             sourceAnchor: target.anchor,
+            sourceAttachment: target.attachment,
             from: target.at,
             point,
-            target: valid && candidate !== undefined ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn) } : undefined,
+            target: valid && candidate !== undefined
+              ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
+              : undefined,
             valid,
           });
           break;
@@ -824,7 +953,17 @@ export function DiagramCanvasCore({
         case "resize": {
           const frame = (resizeFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(resizeValue)]));
           const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
-          frame.move({ id: target.element.id, side: target.side, delta: alongSide(target.side, dx, dy) * scale });
+          // Snapped DURING the gesture, through the same rule the release uses, so the edge the
+          // reader watches is the edge the module is told about.
+          frame.move({ id: target.element.id, side: target.side, delta: resizeLanding(definition, elementTypes, target.element, target.side, alongSide(target.side, dx, dy) * scale) });
+          break;
+        }
+        case "boundary": {
+          // The banner redraws with the boundary under the pointer, snapped and clamped exactly as
+          // the release will be - one element re-renders per frame, as a resize does.
+          const frame = (boundaryFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(boundaryValue)]));
+          const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
+          frame.move({ id: target.element.id, index: target.index, x: boundaryLandingOf(target.element, target.index, target.x + dx * scale) });
           break;
         }
         case "adjust": {
@@ -911,7 +1050,8 @@ export function DiagramCanvasCore({
           resizeFrameRef.current = null;
           const scale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
           frame?.commit();
-          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, alongSide(target.side, dx, dy) * scale);
+          const delta = resizeLanding(definition, elementTypes, target.element, target.side, alongSide(target.side, dx, dy) * scale);
+          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, delta);
           raise({ kind: "element-resized", elementId: target.element.id, side: target.side, bounds });
           break;
         }
@@ -932,6 +1072,7 @@ export function DiagramCanvasCore({
               targetElementId: preview.target.elementId,
               sourceAnchor: preview.sourceAnchor,
               targetAnchor: preview.target.anchor,
+              ...attachmentsOf(preview),
             });
           } else if (preview !== null && preview.relation.emptyRelease === "complete" && elementAt(preview.point) === undefined) {
             // The definition declared an empty release meaningful - the create-and-relate
@@ -943,6 +1084,17 @@ export function DiagramCanvasCore({
               sourceAnchor: preview.sourceAnchor,
               position: preview.point,
             });
+          }
+          break;
+        }
+        case "boundary": {
+          const frame = boundaryFrameRef.current;
+          boundaryFrameRef.current = null;
+          const scale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
+          frame?.commit();
+          const landing = boundaryLandingOf(target.element, target.index, target.x + dx * scale);
+          if (landing !== target.x) {
+            raise({ kind: "segment-boundary-moved", elementId: target.element.id, index: target.index, x: landing });
           }
           break;
         }
@@ -975,6 +1127,8 @@ export function DiagramCanvasCore({
       resizeFrameRef.current = null;
       adjustFrameRef.current?.revert();
       adjustFrameRef.current = null;
+      boundaryFrameRef.current?.revert();
+      boundaryFrameRef.current = null;
       panFrameRef.current?.revert();
       panFrameRef.current = null;
       panLatestRef.current = null;
@@ -1111,11 +1265,11 @@ export function DiagramCanvasCore({
       from: active.from,
       point,
       target: valid && candidate !== undefined
-        ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn) }
+        ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, drawn), attachment: alongAttachmentAt(candidate, point) }
         : undefined,
       valid,
     });
-  }, [surfaceRectAtGestureStart, connectValue, elementAt, connectVerdict, relationOnto, elementTypes, boundsOf]);
+  }, [surfaceRectAtGestureStart, connectValue, elementAt, connectVerdict, relationOnto, elementTypes, boundsOf, alongAttachmentAt]);
 
   const endRightConnect = useCallback((event: React.PointerEvent) => {
     const active = rightConnectRef.current;
@@ -1143,6 +1297,7 @@ export function DiagramCanvasCore({
         targetElementId: preview.target.elementId,
         sourceAnchor: preview.sourceAnchor,
         targetAnchor: preview.target.anchor,
+        ...attachmentsOf(preview),
       });
     }
   }, [connectValue, raise]);
@@ -1439,6 +1594,11 @@ export function DiagramCanvasCore({
               : asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, text);
           }
 
+          // Over the text, which ends left of the element - never over the element itself.
+          if (declared.placement === "before") {
+            return beforeLabelPlacement({ x: bounds.x, y: bounds.y + bounds.height / 2 }, BEFORE_GAP, text);
+          }
+
           // A PLAIN CENTRED LABEL OPENS OVER THE ELEMENT, which is what `placement: "inside"`
           // meant and what a single-label type wants: the editor is the box. A label that
           // states an offset or an editor box is one line of a composite card, and opens over
@@ -1534,8 +1694,8 @@ export function DiagramCanvasCore({
   // hit-testing (which walks the model backwards) and painting agree about what is on top.
   const ordered = useMemo(() => {
     const isFrame = (element: DiagramModelElement) => elementTypes.get(element.type)?.shape === "frame";
-    return [...elements.filter(isFrame), ...elements.filter((element) => !isFrame(element))];
-  }, [elements, elementTypes]);
+    return [...visibleElements.filter(isFrame), ...visibleElements.filter((element) => !isFrame(element))];
+  }, [visibleElements, elementTypes]);
 
   // A type marked beneathConnections paints before the connections - an opaque container
   // whose members' edges must stay visible over it; everything else keeps the
@@ -1548,6 +1708,30 @@ export function DiagramCanvasCore({
     () => ordered.filter((element) => elementTypes.get(element.type)?.beneathConnections !== true),
     [ordered, elementTypes],
   );
+
+  /**
+   * The connections that are drawn: every one in the model, less those attached to a segment their
+   * element is not drawing where the relation asks for that. Not drawn means not hit-tested and
+   * not selectable either, because nothing is there to press - and the model is untouched, so the
+   * count going back up draws them again where they were.
+   */
+  const drawnConnections = useMemo(() => {
+    const attachedToHidden = (elementId: string, attachment: EdgeAttachment | undefined): boolean => {
+      if (attachment?.region === undefined) {
+        return false;
+      }
+      const element = elementsById.get(elementId);
+      const type = element !== undefined ? elementTypes.get(element.type) : undefined;
+      return element !== undefined && type?.segments !== undefined && attachment.region >= segmentCountOf(type.segments, sourceOf(element));
+    };
+
+    return model.connections.filter((connection) =>
+      // A connection touching an element the filter hides goes with it: an arrow to nothing
+      // would say something the reader has just asked not to see.
+      !filteredOut.has(connection.sourceId) && !filteredOut.has(connection.targetId) &&
+      (relationTypes.get(connection.type)?.hideWhenAttachmentHidden !== true ||
+        (!attachedToHidden(connection.sourceId, connection.sourceAttachment) && !attachedToHidden(connection.targetId, connection.targetAttachment))));
+  }, [model.connections, elementsById, elementTypes, relationTypes, filteredOut]);
 
   const isSelected = (kind: SelectedItem["kind"], id: string) =>
     selection.some((item) => item.kind === kind && item.id === id);
@@ -1572,6 +1756,26 @@ export function DiagramCanvasCore({
     }
   };
 
+  /**
+   * The press on one stretch of an along-anchored element's edge. The point pressed decides the
+   * attachment, so it is read from the event - a strip has no single point of its own, the way a
+   * named anchor's dot does - and the connect gesture then runs exactly as an anchor drag's.
+   */
+  const edgePress = (element: DiagramModelElement) => (edge: EdgeName, region: number | undefined): PointerPressWiring => {
+    const wiring = gesture.press({ kind: "anchor", element, anchor: undefined, at: { x: element.x, y: element.y } });
+    return {
+      ...wiring,
+      onPointerDown: (event) => {
+        const type = elementTypes.get(element.type);
+        const bounds = elementBounds(element, type);
+        const layout = attachmentLayoutOf(element, type, bounds);
+        const attachment = attachmentAlong(toCanvasPoint(event.clientX, event.clientY), bounds, edge, region, layout);
+        const at = attachmentPointOf(attachment, bounds, layout);
+        gesture.press({ kind: "anchor", element, anchor: undefined, at, attachment }).onPointerDown(event);
+      },
+    };
+  };
+
   const renderLibraryElement = (element: DiagramModelElement) => (
     <LibraryElement
       key={element.id}
@@ -1579,6 +1783,8 @@ export function DiagramCanvasCore({
       type={elementTypes.get(element.type)}
       dragValue={dragValue}
       resizeValue={resizeValue}
+      boundaryValue={boundaryValue}
+      boundaryPress={(index, x) => gesture.press({ kind: "boundary", element, index, x })}
       resizable={elementTypes.get(element.type)?.sizing === "user"}
       resizableHeight={elementTypes.get(element.type)?.sizing === "user" && elementTypes.get(element.type)?.resize === "both"}
       resizePress={(side) => gesture.press({ kind: "resize", element, side })}
@@ -1586,17 +1792,27 @@ export function DiagramCanvasCore({
       connectValue={connectValue}
       press={gesture.press({ kind: "element", element })}
       anchorPress={(anchor, at) => gesture.press({ kind: "anchor", element, anchor, at })}
+      edgePress={edgePress(element)}
       onContextMenu={onItemContextMenu(element.id)}
       onDoubleClick={() => dispatchElementGesture(element.id, "activate")}
     />
   );
+
+  // The rulers the library draws itself: the bottom ones. Their bindings resolve against the
+  // model's background, which is where diagram-level data lives - no element owns an axis.
+  const bottomRulers = (definition.chrome?.rulers ?? []).filter((ruler) => ruler.edge === "bottom");
+  const chromeSource: BindingSource = { element: { id: "__chrome__", type: "__chrome__", x: 0, y: 0 }, payload: model.background };
 
   // The surface's own pan/deselect wiring, composed with the right-drag connect on the svg below
   // so both live in this one gesture layer rather than in a module.
   const backgroundWiring = gesture.background({ kind: "background", view: effectiveView });
 
   return (
-    <div ref={rootRef} className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
+    <div
+      ref={rootRef}
+      className={["library-canvas", bottomRulers.length > 0 ? "library-canvas-with-bottom-ruler" : "", className ?? ""].filter(Boolean).join(" ")}
+      data-testid="library-canvas"
+    >
       <svg
         ref={svgRef}
         // `canvas-drawing`, never `canvas-host`: the host class is for the *container* and
@@ -1663,7 +1879,7 @@ export function DiagramCanvasCore({
 
         {beneathConnections.map((element) => renderLibraryElement(element))}
 
-        {model.connections.map((connection) => (
+        {drawnConnections.map((connection) => (
           <LibraryConnection
             key={connection.id}
             connection={connection}
@@ -1730,6 +1946,29 @@ export function DiagramCanvasCore({
           ))}
         </div>
       )}
+
+      {definition.filter !== undefined && (
+        <div className="library-filter" data-testid="library-filter">
+          <input
+            type="search"
+            className={`library-filter-input${filterError !== null ? " library-filter-input-invalid" : ""}`}
+            placeholder={definition.filter.label}
+            aria-label={definition.filter.label}
+            aria-invalid={filterError !== null}
+            value={filterText}
+            onChange={(event) => onFilterChange(event.target.value)}
+          />
+          {filterError !== null && (
+            <div className="library-filter-error" role="alert">
+              {filterError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {bottomRulers.map((ruler, index) => (
+        <RulerStrip key={index} declaration={ruler} source={chromeSource} view={effectiveView} widthPx={paneSize?.width ?? null} />
+      ))}
 
       <CanvasScrollbars
         horizontal={{ viewStart: effectiveView.x, viewSpan: effectiveView.w, ...scrollExtentOf(fitBox.x, fitBox.x + fitBox.w, { factor: 0.5 }) }}
@@ -1915,12 +2154,15 @@ function LibraryElement({
   dragValue,
   connectValue,
   resizeValue,
+  boundaryValue,
+  boundaryPress,
   resizable,
   resizableHeight,
   resizePress,
   selected,
   press,
   anchorPress,
+  edgePress,
   onContextMenu,
   onDoubleClick,
 }: {
@@ -1929,12 +2171,15 @@ function LibraryElement({
   dragValue: GestureValue<ElementDragOffset>;
   connectValue: GestureValue<ConnectPreview>;
   resizeValue: GestureValue<ResizeDragPreview>;
+  boundaryValue: GestureValue<BoundaryDragPreview>;
+  boundaryPress: (index: number, x: number) => PointerPressWiring;
   resizable: boolean;
   resizableHeight: boolean;
   resizePress: (side: ResizedSide) => PointerPressWiring;
   selected: boolean;
   press: PointerPressWiring;
   anchorPress: (anchor: string | undefined, at: Point) => PointerPressWiring;
+  edgePress: (edge: EdgeName, region: number | undefined) => PointerPressWiring;
   onContextMenu: (event: React.MouseEvent) => void;
   onDoubleClick: (event: React.MouseEvent) => void;
 }) {
@@ -1962,8 +2207,21 @@ function LibraryElement({
   });
   // The resize preview rides the same seam: only the element whose edge is being dragged
   // re-renders per frame with its live bounds - the amendment's first added kind (R1.5).
+  // Which stretch of edge a connect gesture would attach to on THIS element, as a primitive so
+  // only the element whose answer changed re-renders - the region under the pointer is shown even
+  // where the element's anchors are invisible, so the gesture is never blind.
+  const attachmentKey = useSyncExternalStore(connectValue.subscribe, (): string | undefined => {
+    const preview = connectValue.get();
+    const attachment = preview?.target?.elementId === element.id ? preview.target.attachment : undefined;
+    return attachment === undefined ? undefined : `${attachment.edge}:${attachment.region ?? ""}`;
+  });
   const resize = useSyncExternalStore(resizeValue.subscribe, () => {
     const value = resizeValue.get();
+    return value !== null && value.id === element.id ? value : null;
+  });
+  // A boundary drag rides the same seam: only the element whose boundary moves re-renders.
+  const movedBoundary = useSyncExternalStore(boundaryValue.subscribe, () => {
+    const value = boundaryValue.get();
     return value !== null && value.id === element.id ? value : null;
   });
   const shifted: DiagramModelElement = offset ? { ...element, x: element.x + offset.dx, y: element.y + offset.dy } : element;
@@ -2012,8 +2270,41 @@ function LibraryElement({
       aria-label={accessibleName ?? undefined}
     >
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
-        {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" }, highlight)}
+        {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" }, highlight, movedBoundary ?? undefined)}
       </ShapeErrorBoundary>
+      {type?.anchors.kind === "along" && edgeStrips(type.anchors.edges, bounds, attachmentLayoutOf(resizing, type, bounds, movedBoundary ?? undefined)).map((strip) => (
+        <rect
+          key={`edge-${strip.edge}-${strip.region ?? "all"}`}
+          className="library-edge-strip"
+          data-edge={strip.edge}
+          data-region={strip.region}
+          x={strip.x}
+          y={strip.y}
+          width={strip.width}
+          height={strip.height}
+          {...edgePress(strip.edge, strip.region)}
+        />
+      ))}
+      {attachmentKey !== undefined && type?.anchors.kind === "along" && (
+        <AttachmentHighlight attachmentKey={attachmentKey} bounds={bounds} layout={attachmentLayoutOf(resizing, type, bounds)} />
+      )}
+      {type?.segments?.draggableBoundaries === true && !isCustomShape(type.shape) && shapeOf(type.shape, sourceOf(resizing)) === "arrow-banner" && (
+        // One handle per inner boundary, over its divider: a thin strip the full height of the
+        // banner, dragged sideways. Drawn always rather than when selected, because a boundary is
+        // what a reader reaches for without first thinking of the element as a thing to select.
+        resolveSegments(type.segments, sourceOf(resizing), bounds, movedBoundary ?? undefined).dividers.map((divider) => (
+          <rect
+            key={`boundary-${divider.index}`}
+            className="library-boundary-handle"
+            data-boundary={divider.index}
+            x={divider.x - 4}
+            y={bounds.y}
+            width={8}
+            height={bounds.height}
+            {...boundaryPress(divider.index, divider.x)}
+          />
+        ))
+      )}
       {resizable && selected && (
         // The resize adorners a user-sized element earns when selected: each edge strip
         // drives the arbiter and raises element-resized on release (sizing: "user", R2.5).
@@ -2034,7 +2325,9 @@ function LibraryElement({
           test can press them and a user only sees them when they matter (Requirement 2.4).
           Their COLOUR is painted inline with the element they belong to, so the two cannot
           disagree and no module rule outranks it (task 28); the stylesheet dresses them at rest. */}
-      {type !== undefined &&
+      {/* `visible: false` keeps every anchor's press target and drops its dot: the circle is still
+          there to start a connection from, and draws nothing at rest or on hover. */}
+      {type !== undefined && flagOf(type.anchors.visible, sourceOf(element), true) &&
         anchorPoints(type.anchors, bounds).map((anchor) => (
           <circle
             key={anchor.name ?? `${anchor.point.x},${anchor.point.y}`}
@@ -2044,6 +2337,18 @@ function LibraryElement({
             cy={anchor.point.y}
             r={5}
             style={highlighted({}, highlight)}
+            {...anchorPress(anchor.name, anchor.point)}
+          />
+        ))}
+      {type !== undefined && !flagOf(type.anchors.visible, sourceOf(element), true) &&
+        anchorPoints(type.anchors, bounds).map((anchor) => (
+          <circle
+            key={anchor.name ?? `${anchor.point.x},${anchor.point.y}`}
+            className="library-anchor-hit"
+            data-anchor={anchor.name}
+            cx={anchor.point.x}
+            cy={anchor.point.y}
+            r={5}
             {...anchorPress(anchor.name, anchor.point)}
           />
         ))}
@@ -2068,7 +2373,7 @@ function LibraryConnection({
   relation: RelationTypeDefinition | undefined;
   elementsById: Map<string, DiagramModelElement>;
   elementTypes: Map<string, ElementTypeDefinition>;
-  attachmentPoint: (element: DiagramModelElement, anchor: string | undefined, towards: Point) => Point;
+  attachmentPoint: (element: DiagramModelElement, anchor: string | undefined, towards: Point, attachment?: EdgeAttachment) => Point;
   adjustValue: GestureValue<AdjustDragPreview>;
   dragValue: GestureValue<ElementDragOffset>;
   selected: boolean;
@@ -2204,8 +2509,9 @@ function renderShape(
   bounds: ConnectorBox,
   state?: import("./definition/diagramDefinition").CustomShapeState,
   highlight = false,
+  movedBoundary?: MovedBoundary,
 ): ReactNode {
-  const body = renderShapeBody(element, type, bounds, state, highlight);
+  const body = renderShapeBody(element, type, bounds, state, highlight, movedBoundary);
   if (type?.labels === undefined && type?.decorations === undefined && type?.tooltip === undefined) {
     return body;
   }
@@ -2559,6 +2865,7 @@ function renderShapeBody(
   bounds: ConnectorBox,
   state?: import("./definition/diagramDefinition").CustomShapeState,
   highlight = false,
+  movedBoundary?: MovedBoundary,
 ): ReactNode {
   const label = type?.labels !== undefined ? "" : (element.label ?? "");
   if (type === undefined) {
@@ -2672,6 +2979,12 @@ function renderShapeBody(
           style={paint}
         />
       );
+    case "arrow-banner":
+      // Segmented where the type declares segments, and a plain outline otherwise - the same
+      // outline either way, so the edge point and the text region never disagree with the fill.
+      return type.segments !== undefined
+        ? segmentedBanner(bounds, resolveSegments(type.segments, source, bounds, movedBoundary), type.segments, label, paint, shapeClass)
+        : outlinePolygon(bounds, shape, label, paint, shapeClass);
     case "superellipse":
     case "trapezoid":
     case "diode":
@@ -2708,6 +3021,52 @@ function outlinePolygon(
     <g>
       <polygon className={className} points={points} style={paint} />
       {centredText({ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }, label)}
+    </g>
+  );
+}
+
+/**
+ * An arrow banner cut into its drawn segments: one filled path per segment, carrying that
+ * segment's class and tooltip, the dividers between them, and the outline stroked over the lot.
+ *
+ * <b>The point is part of the last drawn segment's path</b>, so resting on it shows that
+ * segment's tooltip without a second hit area. The outline is drawn last with no fill, so the
+ * element's stroke and its highlight read around the whole banner rather than per segment.
+ */
+function segmentedBanner(
+  bounds: ConnectorBox,
+  layout: SegmentLayout,
+  declaration: import("./definition/diagramDefinition").SegmentDeclaration,
+  label: string,
+  paint: React.CSSProperties,
+  className: string,
+): ReactNode {
+  const outline = outlineOf("arrow-banner", bounds).map((point) => `${point.x},${point.y}`).join(" ");
+  return (
+    <g>
+      {layout.segments.map((segment) => {
+        const tooltip = declaration.tooltips?.[segment.index];
+        return (
+          <path
+            key={`segment-${segment.index}`}
+            className={["library-segment", declaration.classNames?.[segment.index]].filter(Boolean).join(" ")}
+            data-segment={segment.index}
+            d={`M ${segment.polygon.map((point) => `${point.x} ${point.y}`).join(" L ")} Z`}
+          >
+            {tooltip !== undefined ? <title>{tooltip}</title> : null}
+          </path>
+        );
+      })}
+      {layout.dividers.map((divider) => (
+        <polyline
+          key={`divider-${divider.index}`}
+          className="library-segment-divider"
+          data-divider={divider.index}
+          points={divider.points.map((point) => `${point.x},${point.y}`).join(" ")}
+        />
+      ))}
+      <polygon className={className} points={outline} style={{ ...paint, fill: "none" }} />
+      {label === "" ? null : centredText({ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }, label)}
     </g>
   );
 }
@@ -2826,7 +3185,7 @@ function connectionEnds(
   connection: DiagramModelConnection,
   elementsById: Map<string, DiagramModelElement>,
   elementTypes: Map<string, ElementTypeDefinition>,
-  attachmentPoint: (element: DiagramModelElement, anchor: string | undefined, towards: Point) => Point,
+  attachmentPoint: (element: DiagramModelElement, anchor: string | undefined, towards: Point, attachment?: EdgeAttachment) => Point,
   drag: ElementDragOffset | null = null,
 ): [Point, Point] | null {
   const source = draggedInto(elementsById.get(connection.sourceId), drag);
@@ -2835,13 +3194,81 @@ function connectionEnds(
     return null;
   }
 
-  const from = attachmentPoint(source, connection.sourceAnchor, { x: target.x, y: target.y });
-  const to = attachmentPoint(target, connection.targetAnchor, { x: source.x, y: source.y });
+  const from = attachmentPoint(source, connection.sourceAnchor, { x: target.x, y: target.y }, connection.sourceAttachment);
+  const to = attachmentPoint(target, connection.targetAnchor, { x: source.x, y: source.y }, connection.targetAttachment);
   void elementTypes;
   return [from, to];
 }
 
-/** Every anchor an anchor set declares, resolved into the element's bounds. */
+/** The attachments a finished connect gesture carries, leaving out the ends that have none. */
+function attachmentsOf(preview: ConnectPreview): { sourceAttachment?: EdgeAttachment; targetAttachment?: EdgeAttachment } {
+  return {
+    ...(preview.sourceAttachment !== undefined ? { sourceAttachment: preview.sourceAttachment } : {}),
+    ...(preview.target?.attachment !== undefined ? { targetAttachment: preview.target.attachment } : {}),
+  };
+}
+
+/**
+ * The segment layout an element's attachments are measured against - only where its anchors are
+ * `along` with `regions: "segments"` and its type declares segments. Undefined otherwise, and an
+ * attachment then runs along the whole edge.
+ */
+function attachmentLayoutOf(
+  element: DiagramModelElement,
+  type: ElementTypeDefinition | undefined,
+  bounds: ConnectorBox,
+  moved?: MovedBoundary,
+): SegmentLayout | undefined {
+  if (type?.anchors.kind !== "along" || type.anchors.regions !== "segments" || type.segments === undefined) {
+    return undefined;
+  }
+
+  return resolveSegments(type.segments, sourceOf(element), bounds, moved);
+}
+
+/** How far an edge strip reaches either side of its edge: a press target, not a line. */
+const EDGE_STRIP_REACH = 4;
+
+/** The press strips an along-anchored element offers: one per segment on a segmented edge, one per edge otherwise. */
+function edgeStrips(
+  edges: readonly EdgeName[],
+  bounds: ConnectorBox,
+  layout: SegmentLayout | undefined,
+): { edge: EdgeName; region?: number; x: number; y: number; width: number; height: number }[] {
+  const strips: { edge: EdgeName; region?: number; x: number; y: number; width: number; height: number }[] = [];
+  for (const edge of edges) {
+    if (edge === "top" || edge === "bottom") {
+      const y = (edge === "top" ? bounds.y : bounds.y + bounds.height) - EDGE_STRIP_REACH;
+      const spans = layout !== undefined
+        ? layout.segments.map((segment) => ({ region: segment.index as number | undefined, ...segment[edge] }))
+        : [{ region: undefined, from: bounds.x, to: bounds.x + bounds.width }];
+      for (const span of spans) {
+        strips.push({ edge, region: span.region, x: span.from, y, width: Math.max(0, span.to - span.from), height: EDGE_STRIP_REACH * 2 });
+      }
+      continue;
+    }
+
+    const x = (edge === "left" ? bounds.x : bounds.x + bounds.width) - EDGE_STRIP_REACH;
+    strips.push({ edge, x, y: bounds.y, width: EDGE_STRIP_REACH * 2, height: bounds.height });
+  }
+
+  return strips;
+}
+
+/** The stretch of edge a connect gesture would attach to, drawn on its target while the drag is in flight. */
+function AttachmentHighlight({ attachmentKey, bounds, layout }: { attachmentKey: string; bounds: ConnectorBox; layout: SegmentLayout | undefined }) {
+  const [edge, region] = attachmentKey.split(":") as [EdgeName, string];
+  const segment = region !== "" ? layout?.segments[Number(region)] : undefined;
+  if (edge === "top" || edge === "bottom") {
+    const span = segment !== undefined ? segment[edge] : { from: bounds.x, to: bounds.x + bounds.width };
+    const y = edge === "top" ? bounds.y : bounds.y + bounds.height;
+    return <line className="library-attachment-highlight" data-attachment={attachmentKey} x1={span.from} y1={y} x2={span.to} y2={y} pointerEvents="none" />;
+  }
+
+  const x = edge === "left" ? bounds.x : bounds.x + bounds.width;
+  return <line className="library-attachment-highlight" data-attachment={attachmentKey} x1={x} y1={bounds.y} x2={x} y2={bounds.y + bounds.height} pointerEvents="none" />;
+}
+
 /**
  * Whether a connect gesture may leave this element as this relation. The anchor it starts from is
  * part of the gesture's meaning: skos files a concept under another from its TOP anchor and
@@ -2859,6 +3286,10 @@ function sourceAdmits(relation: RelationTypeDefinition, element: DiagramModelEle
 export function anchorPoints(anchors: AnchorSet, bounds: ConnectorBox): readonly { name?: string; point: Point }[] {
   switch (anchors.kind) {
     case "edge":
+      return [];
+    case "along":
+      // No points at all: an along-anchored element takes a connection anywhere on its edges,
+      // through the edge strips drawn for it rather than through dots.
       return [];
     case "compass":
       return anchors.positions.map((position) => ({ name: position, point: compassPoint(position, bounds) }));
@@ -2954,6 +3385,46 @@ function resizedBounds(bounds: ConnectorBox, side: ResizedSide, delta: number): 
     return { ...bounds, y: top, height: bounds.y + bounds.height - top };
   }
   return { ...bounds, height: Math.max(bounds.height + delta, 1) };
+}
+
+/**
+ * How far a resize carries the moving edge once the definition's `snap.x` has had its say: the
+ * vertical edges land on the lattice, and never nearer the far edge than one step. The far edge is
+ * never moved - a resize changes one edge, and snapping must not quietly change the other.
+ *
+ * Only the vertical edges, because `snap.x` is what a width is measured against; a type whose
+ * height is resizable keeps today's unsnapped top and bottom. Without a declared `snap.x`, or for
+ * an element whose bound step resolves to nothing, the delta is returned as it came.
+ */
+function resizeLanding(
+  definition: { snap?: import("./definition/diagramDefinition").SnapDeclaration },
+  elementTypes: ReadonlyMap<string, ElementTypeDefinition>,
+  element: DiagramModelElement,
+  side: ResizedSide,
+  delta: number,
+): number {
+  const axis = definition.snap?.x;
+  if (axis === undefined || (side !== "left" && side !== "right")) {
+    return delta;
+  }
+
+  const source = sourceOf(element);
+  const step = declaredNumberOf(axis.step, source);
+  if (step === null || !(step > 0)) {
+    return delta;
+  }
+
+  const origin = axis.origin === undefined ? 0 : (declaredNumberOf(axis.origin, source) ?? 0);
+  const bounds = elementBounds(element, elementTypes.get(element.type));
+  const left = bounds.x;
+  const right = bounds.x + bounds.width;
+  if (side === "right") {
+    const landed = Math.max(left + step, origin + snapToStep(right + delta - origin, step));
+    return landed - right;
+  }
+
+  const landed = Math.min(right - step, origin + snapToStep(left + delta - origin, step));
+  return landed - left;
 }
 
 /** The pointer delta along the dragged side's own axis. */

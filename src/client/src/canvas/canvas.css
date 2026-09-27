@@ -279,6 +279,13 @@
   cursor: crosshair;
 }
 
+/* An anchor whose type declares `visible: false`: the press target without the dot. */
+.library-anchor-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
 /* A span's anchors do have a hit circle behind them, so these may stay inert. */
 .library-span-anchor {
   fill: var(--color-surface, #ffffff);
@@ -352,6 +359,111 @@
 /* A refused target reads as refused before the button is released. */
 .library-connect-preview-invalid {
   stroke: var(--color-danger, #dc2626);
+}
+
+/* A segment of an arrow banner. A module fills it through the class its declaration names -
+ * `.library-segment.my-phase { fill: ... }` - and this is only the fill a segment has without one. */
+.library-segment {
+  fill: var(--color-surface, #ffffff);
+  stroke: none;
+}
+
+/* The chevron or line between two segments: a line, never a region - `fill: none` for the same
+ * reason the connect preview has it. A module recolours the stroke per notation. */
+.library-segment-divider {
+  fill: none;
+  stroke: var(--color-border, #8892a6);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+/* A segment boundary's drag handle: invisible, the full height of the banner, dragged sideways. */
+.library-boundary-handle {
+  fill: transparent;
+  stroke: none;
+  cursor: ew-resize;
+}
+
+/* A stretch of an along-anchored element's edge, pressed to start a connection. Invisible: the
+ * cursor says it can be pressed, and the stretch it would attach to lights up as a target. */
+.library-edge-strip {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+/* The stretch of edge a connection being drawn would attach to. A line, never a region. */
+.library-attachment-highlight {
+  fill: none;
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 3;
+  pointer-events: none;
+}
+
+/* A declared filter box, at the canvas's top edge. */
+.library-filter {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: min(420px, calc(100% - 40px));
+}
+
+.library-filter-input {
+  width: 100%;
+  min-width: 240px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--color-text, #1f2430);
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #d6dae2);
+  border-radius: 4px;
+}
+
+.library-filter-input-invalid {
+  border-color: var(--color-danger, #dc2626);
+}
+
+.library-filter-error {
+  font-size: 11px;
+  color: var(--color-danger, #dc2626);
+  background: var(--color-surface, #ffffff);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* A declared bottom ruler: HTML pinned to the canvas's own box, so it never scrolls away. */
+.library-ruler {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24px;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border, #d6dae2);
+  background: color-mix(in srgb, var(--color-surface, #ffffff) 85%, transparent);
+  pointer-events: none;
+}
+
+.library-ruler-tick {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  color: var(--color-text-muted, #5a6376);
+  font-size: 10px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Both scrollbars sit above a bottom ruler: its height plus the shared default inset. */
+.library-canvas-with-bottom-ruler .canvas-scrollbar-horizontal {
+  bottom: 30px;
+}
+
+.library-canvas-with-bottom-ruler .canvas-scrollbar-vertical {
+  bottom: 44px;
 }
 
 .library-resize-handle {

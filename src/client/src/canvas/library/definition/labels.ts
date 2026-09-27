@@ -240,6 +240,9 @@ function alignedX(align: "start" | "middle" | "end", bounds: ShapeBounds, insetX
   }
 }
 
+/** How far a `before` label's right edge sits from the element's left edge. */
+export const BEFORE_GAP = 8;
+
 /** How far from an edge an aligned label or column sits, when it does not say. */
 const LABEL_INSET = 8;
 
@@ -287,6 +290,10 @@ function placementOf(
         ? { x: element.labelAt.x + at.x, y: element.labelAt.y + 4 + at.y, anchor: "start" }
         : { x: bounds.x + bounds.width + 6 + at.x, y: centreY + 4 + at.y, anchor: "start" };
     }
+    case "before":
+      // The mirror of `beside`, end-anchored so the text's RIGHT edge is what is placed: 8 units
+      // left of the element whatever the name's length, so names read as a ragged-left column.
+      return { x: bounds.x - BEFORE_GAP, y: centreY + 4, anchor: "end" };
     case "inset":
     case "inside":
     default: {

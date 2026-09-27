@@ -14,6 +14,7 @@ const KNOWN_EDITORS = new Set<ContextPropertyEditor>([
   ContextPropertyEditor.TEXT,
   ContextPropertyEditor.TOGGLE,
   ContextPropertyEditor.CHOICE,
+  ContextPropertyEditor.SLIDER,
 ]);
 
 /**
@@ -171,6 +172,43 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
               </option>
             ))}
           </select>
+        ) : property.editor === ContextPropertyEditor.SLIDER ? (
+          <span className="property-grid-slider">
+            {/* One stop per candidate, in the order the provider gave them. The range's own value
+                is an INDEX, which is the input's business and never the backend's: what is
+                committed is the candidate at that index, exactly as CHOICE commits one. */}
+            <input
+              type="range"
+              className="property-grid-input property-grid-input-slider"
+              min={0}
+              max={Math.max(0, property.candidates.length - 1)}
+              step={1}
+              value={Math.max(0, property.candidates.indexOf(draft))}
+              list={`${property.id}-stops`}
+              aria-label={property.label}
+              aria-valuetext={draft}
+              onChange={(event) => {
+                const next = property.candidates[Number(event.target.value)];
+                if (next === undefined || next === draft) {
+                  return;
+                }
+                setDraft(next);
+                setEditing(false);
+                void onCommit(next).then((failure) => {
+                  setError(failure);
+                  if (failure.length > 0) {
+                    setDraft(property.value);
+                  }
+                });
+              }}
+            />
+            <datalist id={`${property.id}-stops`}>
+              {property.candidates.map((candidate, index) => (
+                <option key={candidate} value={index} label={candidate} />
+              ))}
+            </datalist>
+            <span className="property-grid-slider-value">{draft}</span>
+          </span>
         ) : property.editor === ContextPropertyEditor.TOGGLE ? (
           <input
             type="checkbox"

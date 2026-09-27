@@ -1,4 +1,4 @@
-import type { ConnectionStyle, ElementStyle, ShapePoint } from "../definition/diagramDefinition";
+import type { ConnectionStyle, EdgeAttachment, ElementStyle, ShapePoint } from "../definition/diagramDefinition";
 
 /**
  * What a module hands the canvas to draw: elements and connections in the definition's own
@@ -70,6 +70,13 @@ export interface DiagramModelConnection {
   /** The anchor names the connection attaches to; omitted means edge attachment. */
   sourceAnchor?: string;
   targetAnchor?: string;
+  /**
+   * Where each end sits along its element's edge, for an element declaring `{ kind: "along" }`
+   * anchors. A fraction of a region, so the end is recomputed from the element's bounds on every
+   * render and a resize carries it along. Omitted, the end attaches exactly as it always has.
+   */
+  sourceAttachment?: EdgeAttachment;
+  targetAttachment?: EdgeAttachment;
   label?: string;
   /**
    * Extra class names for the connection's group - for kinds a definition cannot enumerate

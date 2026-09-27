@@ -32,7 +32,7 @@ describe("outlineOf", () => {
   it("covers the three new shapes and the three existing polygons, and nothing else", () => {
     // Arrange, act and assert: the shapes with an outline are stated, and every one of them is a
     // real built-in - a list naming a shape the library does not have would guard nothing.
-    expect([...OUTLINED_SHAPES].sort()).toEqual(["diamond", "diode", "hexagon", "parallelogram", "superellipse", "trapezoid"]);
+    expect([...OUTLINED_SHAPES].sort()).toEqual(["arrow-banner", "diamond", "diode", "hexagon", "parallelogram", "superellipse", "trapezoid"]);
     for (const shape of OUTLINED_SHAPES) {
       expect(BUILT_IN_SHAPES).toContain(shape);
       expect(outlineOf(shape, boundsOf(160)).length).toBeGreaterThanOrEqual(3);

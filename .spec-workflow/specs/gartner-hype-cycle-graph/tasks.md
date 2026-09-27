@@ -8,7 +8,7 @@
 
 ## The library half
 
-- [ ] 1. The arrow banner, its segments, their tooltips, and the `before` label placement
+- [x] 1. The arrow banner, its segments, their tooltips, and the `before` label placement
   - File: `src/client/src/canvas/library/definition/diagramDefinition.ts`, `src/client/src/canvas/library/shapes/outline.ts`, `src/client/src/canvas/library/definition/labels.ts`, `src/client/src/canvas/library/DiagramCanvas.tsx`, `src/client/src/canvas/library/shapes/outline.test.ts`, `src/client/src/canvas/library/DiagramCanvas.segments.test.tsx` (new), `src/client/src/canvas/library/definition/labels.test.ts`
   - Add `"arrow-banner"` to `BuiltInShape`, `BUILT_IN_SHAPES` and `OUTLINED_SHAPES`, outline `(0,0) (w - p, 0) (w, h/2) (w - p, h) (0, h)` with `p = min(h/2, w/2)` (design L1). Add the optional `segments` declaration (`SegmentDeclaration`: `count` and `boundaries` bindings, `max`, `classNames`, `tooltips`, `divider: "chevron" | "line"`). Only the first `count` segments are drawn, the last drawn one ends in the point, and each segment exposes its own stretch of the top and bottom edges as a region for task 3. Resting the pointer on a segment shows its tooltip, and on the point shows the last drawn segment's (L11).
   - Add the `LabelPlacement` value `"before"`: right edge 8 units left of the element's left edge, vertically centred, end-anchored (design, *`before` placement*).
@@ -16,7 +16,7 @@
   - Seen to fail against: a banner that draws `max` segments whatever `count` says, and a `before` label that reuses `beside`'s start anchor.
   - _Requirements: 10.1, 10.2, 10.12, 4.1, 4.2, 4.3, 4.4, 5.1_
 
-- [ ] 2. Draggable segment boundaries
+- [x] 2. Draggable segment boundaries
   - File: `.../definition/diagramDefinition.ts`, `.../api/diagramEvents.ts`, `.../DiagramCanvas.tsx`, `.../DiagramCanvas.segments.test.tsx`
   - `SegmentDeclaration.draggableBoundaries?: boolean`. When true, each inner boundary between two drawn segments gets a horizontal drag handle over its divider, snapped with the element's `snap.x`. A drag raises the new event `segment-boundary-moved { elementId, index, x }` with `x` snapped, clamped so no segment becomes narrower than one snap step.
   - Guard: dragging boundary 1 raises the event with a snapped x; a drag past the next boundary clamps one step short of it; a declaration without `draggableBoundaries` renders no handle.
@@ -24,7 +24,7 @@
   - _Waits on: task 1_
   - _Requirements: 10.11, 10.12, 4.6_
 
-- [ ] 3. Continuous edge attachment
+- [x] 3. Continuous edge attachment
   - File: `.../definition/diagramDefinition.ts`, `.../api/diagramModel.ts`, `.../api/diagramEvents.ts`, `.../DiagramCanvas.tsx`, `.../DiagramCanvas.attachment.test.tsx`
   - `AnchorPositions` gains `{ kind: "along", edges, regions?: "segments" }`. `DiagramModelConnection` gains optional `sourceAttachment` and `targetAttachment` (`EdgeAttachment { edge, region?, at }`), `at` a fraction of the region's length. The end point is recomputed from the element's current bounds and segment boundaries on every render. `connection-drawn` carries both attachments; a connection without one behaves exactly as today.
   - Guard: a connection at `at: 0.25` of segment 2's top edge ends at that point, and after the element doubles in width it ends at 0.25 of the new segment 2; a gesture started over segment 1's bottom edge carries `{ edge: "bottom", region: 0 }`; the named-anchor suites pass unchanged.
@@ -32,14 +32,14 @@
   - _Waits on: task 1_
   - _Requirements: 10.3, 10.12, 6.2, 6.3_
 
-- [ ] 4. One connection per pair
+- [x] 4. One connection per pair
   - File: `.../definition/diagramDefinition.ts`, `.../DiagramCanvas.tsx`, `.../DiagramCanvas.acyclic.test.tsx` or `.../DiagramCanvas.perPair.test.tsx` (new)
   - `Cardinality.perPair?: "ordered" | "unordered"`. `connectVerdict` gains an independent check that refuses, and does not highlight, a target that already has a connection of that relation type with the source (`ordered`: same direction; `unordered`: either). The check reads the model, so hidden connections count.
   - Guard: with A → B present, `ordered` refuses A → B and allows B → A; `unordered` refuses both; a connection hidden by task 5 still blocks its duplicate; the type, cardinality and cycle checks each still refuse on their own.
   - Seen to fail against: a verdict that skips the check, and one that counts only drawn connections (the hidden-duplicate case then passes).
   - _Requirements: 10.4, 10.12, 6.4, 7.3_
 
-- [ ] 5. Conditional connection visibility
+- [x] 5. Conditional connection visibility
   - File: `.../definition/diagramDefinition.ts`, `.../DiagramCanvas.tsx`, `.../DiagramCanvas.segments.test.tsx`
   - `RelationTypeDefinition.hideWhenAttachmentHidden?: boolean`. A connection whose source or target attachment names a segment at or beyond the element's drawn `count` is not drawn, hit-tested or selectable, and stays in the model untouched.
   - Guard: lowering a banner's count from 4 to 2 removes the drawn path of a connection attached to segment 3 and leaves it in the model; raising it back draws it again.
@@ -47,49 +47,49 @@
   - _Waits on: tasks 1 and 3_
   - _Requirements: 10.5, 10.12, 7.2_
 
-- [ ] 6. Snapping while resizing
+- [x] 6. Snapping while resizing
   - File: `.../DiagramCanvas.tsx`, `.../DiagramCanvas.resize.test.tsx`, `.../snapToDeclaredStep.test.tsx`
   - The resize gesture applies the element's `snap.x` to the moving edge, during the gesture and on release; the far edge never moves; a resize is clamped to at least one step.
   - Guard: a width drag ending between two steps lands on the nearer one; a drag that would shrink below one step stops at one step; `timeline`'s resize suite passes unchanged.
   - Seen to fail against: a resize that snaps only on release (the during-gesture assertion fails).
   - _Requirements: 10.6, 10.12, 3.2_
 
-- [ ] 7. A rendered bottom ruler with a decade rung
+- [x] 7. A rendered bottom ruler with a decade rung
   - File: `.../definition/chrome.ts`, `.../definition/chrome.test.ts`, `.../DiagramCanvas.tsx`, `.../surface/` (the ruler strip, new), `.../DiagramCanvas.ruler.test.tsx` (new)
   - `DiagramCanvas` renders each `chrome.rulers` entry with `edge: "bottom"` as a strip pinned to the viewport's bottom in screen coordinates, ticks from `rulerRangeOf` and `resolveTicks` following horizontal pan and zoom. `RulerRung` gains `decade`. The ruler reads its scale from the declaration (`{ unit: "month", unitsPerStep: 4, origin: "1900-01" }` for this diagram).
   - Guard: the strip's top stays at the viewport bottom minus its height after a vertical scroll; a tick at 1950-01 stays over canvas x of 1950-01 after a pan and a zoom; the ladder steps months, quarters, years, decades as zoom falls.
   - Seen to fail against: a strip placed in canvas coordinates (it scrolls away), and a ladder without the decade rung (the 150-year assertion finds year ticks too dense to label).
   - _Requirements: 10.7, 10.12, 9.1, 9.2, 9.3_
 
-- [ ] 8. A canvas filter over a tag expression
+- [x] 8. A canvas filter over a tag expression
   - File: `.../definition/diagramDefinition.ts`, `src/client/src/canvas/library/filter/tagExpression.ts` (new), `.../filter/tagExpression.test.ts` (new), `.../DiagramCanvas.tsx`, `.../DiagramCanvas.filter.test.tsx` (new)
   - `DiagramDefinition.filter?: { field, label }`. When declared, the chrome shows a filter box; `parseTagExpression` implements `expr := term ("or" term)*`, `term := factor ("and" factor)*`, `factor := tag | "(" expr ")"`, case-insensitive. Non-matching elements and every connection touching them are not drawn. The filter is canvas view state, never sent to the backend, and survives deltas. A parse error keeps the last good filter and shows the error with its position.
   - Guard: `energy and (transport or industry)` matches `[energy, industry]` and not `[energy]`; `a or b and c` groups as `a or (b and c)`; an unbalanced parenthesis is an error at its position and leaves the previous filter applied; a filtered element's connections are not drawn; a delta does not clear the filter.
   - Seen to fail against: a parser that ignores precedence (the `a or b and c` case), and a filter that hides elements but not their connections.
   - _Requirements: 10.8, 10.12, 8.2, 8.3, 8.4_
 
-- [ ] 9. Invisible anchors
+- [x] 9. Invisible anchors
   - File: `.../DiagramCanvas.tsx`, `.../DiagramCanvas.declared.test.tsx`
   - `AnchorEnablement.visible: false` stops anchor dots being drawn at rest and on hover. Attachment still works, and during a connect gesture the valid-target highlight still shows the edge region under the pointer.
   - Guard: an element declaring `visible: false` renders no anchor dot on hover, and still highlights as a valid target during a drag.
   - Seen to fail against: today's canvas, which ignores `visible` (the no-dot assertion fails).
   - _Requirements: 10.10, 10.12, 6.5_
 
-- [ ] 10. A slider property editor
+- [x] 10. A slider property editor
   - File: `src/api/context-contract.proto`, `src/client/src/shell/panels/PropertyRow.tsx`, its test
   - `ContextPropertyEditor` gains `SLIDER = 4`; its stops are the existing `candidates`. `PropertyRow` renders a range input with one stop per candidate and the current candidate's label beside it, and commits the candidate as CHOICE does. An unknown editor number is still shown read-only.
   - Guard: a SLIDER row with four candidates renders four stops and commits the chosen candidate; an unknown editor number still renders read-only.
   - Seen to fail against: a row that commits the stop index rather than the candidate.
   - _Requirements: 10.9, 10.12, 7.1_
 
-- [ ] 11. The five hype cycle colour tokens and their contrast guard
+- [x] 11. The five hype cycle colour tokens and their contrast guard
   - File: `src/client/src/index.css`, `src/client/src/moduleThemeContrast.test.ts`
   - Add `--color-diagram-hype-peak`, `-trough`, `-slope`, `-plateau` and `-chevron` in both modes with the design's values. Add each fill against the chevron to the contrast pairs.
   - Guard: every pair clears 3:1 in both modes (the design computes 4.96:1 or better).
   - Seen to fail against: a planted light chevron of `#cbd5e1`.
   - _Requirements: 4.5_
 
-- [ ] 12. Move `timeline` onto the rendered ruler, or record why not
+- [x] 12. Move `timeline` onto the rendered ruler, or record why not
   - File: `src/diagrams/timeline/client/TimelineCanvas.tsx`, `TimelineRuler.tsx`, their tests, the implementation log
   - Declare `timeline`'s ruler through `chrome.rulers` with a seconds unit and remove `TimelineRuler.tsx`, **only if its tick output is unchanged**. If it would change what `timeline` draws, keep `TimelineRuler.tsx` and record the reason in the implementation log, as Requirement 10.7 allows.
   - Guard: `timeline`'s tick labels for its example at three zoom levels are byte-compared before and after.
