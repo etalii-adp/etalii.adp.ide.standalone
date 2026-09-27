@@ -125,7 +125,7 @@ function definitionFor(unit: GhgTimeUnit): DiagramDefinition {
     },
     filter: {
       field: "payload.tags",
-      label: "Filter by tags, e.g. energy and (transport or industry)",
+      label: "Filter by tags",
       // The key to the phase colours, each swatch painted by the rule that paints its phase.
       legend: GHG_PHASES.map((phase, index) => ({ caption: GHG_PHASE_TITLES[index], swatchClass: `ghg-${phase}` })),
     },

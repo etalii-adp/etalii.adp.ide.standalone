@@ -398,19 +398,35 @@
   max-width: min(420px, calc(100% - 40px));
 }
 
+/* The tag field and its any/all switch, side by side. */
+.library-filter-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .library-filter-input {
-  width: 100%;
+  flex: 1 1 auto;
   min-width: 240px;
-  padding: 4px 8px;
+  padding: 2px 4px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.library-filter-mode {
+  flex: none;
+  min-width: 3.2em;
+  padding: 3px 6px;
   font-size: 12px;
   color: var(--color-text, #1f2430);
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #d6dae2);
   border-radius: 4px;
+  cursor: pointer;
 }
 
-.library-filter-input-invalid {
-  border-color: var(--color-danger, #dc2626);
+.library-filter-mode[aria-pressed="true"] {
+  border-color: var(--color-primary, limegreen);
 }
 
 /* A filter box's legend: a row of small swatches and captions under the box. A module colours
@@ -440,14 +456,6 @@
   height: 10px;
   border: 1px solid var(--color-border, #d6dae2);
   border-radius: 2px;
-}
-
-.library-filter-error {
-  font-size: 11px;
-  color: var(--color-danger, #dc2626);
-  background: var(--color-surface, #ffffff);
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
 /* A declared bottom ruler: HTML pinned to the canvas's own box, so it never scrolls away. */
