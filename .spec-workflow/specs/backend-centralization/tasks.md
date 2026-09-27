@@ -84,7 +84,7 @@ The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *alre
   - Guard: the signature is the enforcement; the backstop is **behaviour, not structure** - interleave a `Reload` between a command's edit and its save and assert the edit survives, which is the exact sequence that lost data. **Seen red against a save that re-fetches**, or it is a green that means nothing.
   - **The central per-behaviour tests REPLACE evidence this group destroys, rather than adding to it.** R2.3, R2.4 and R2.5 are satisfied today by ten separate implementations, so the ten per-store suites are ten independent witnesses. Afterwards they all exercise the same code: **nine of them stop being evidence, because they agree only because they cannot disagree.** So this task carries one shared test per behaviour - self-write suppression, last-good-on-failure, and absence confirmed through `BodyDeleted` - and those tests are the suite's only real witnesses to them from then on. "We added some shared tests as well" and "the shared tests are now the only real witnesses" are different claims about what the suite proves.
   - _Requirements: 2.1, 2.2_
-- [ ] 6. Convert the nine writable stores onto it
+- [x] 6. Convert the nine writable stores onto it
   - Files: the nine writable module stores - azure-pipeline, c4, causal-loop, databricks, dependency-graph, mindmap, rdf, timeline and wardley-map - and their tests. Nine, not the ten this line first said, because sparql was counted here and again as task 7's read-only store (the user's chat ruling, 2026-09-25).
   - One store at a time, each landing independently. **Each converted module's existing session tests are the proof**, plus the c4 removal guard that `350b8f9e` landed.
   - **R2.4 and R2.5 land in the same change for each store, never R2.4 across the stores first.** `IDiagramDocumentReloader.BodyDeleted` defaults to a reload, which is right only while a failed read installs an empty document. A store given keep-last-good without forwarding `BodyDeleted` to the lifecycle keeps a deleted diagram forever (the user's chat ruling, 2026-09-25).
@@ -101,7 +101,7 @@ The three unclaimed are **R2.3, R4.3 and R11.2** — the three rows of the *alre
   - The three components learn of a deletion and of a lost-events window, and **on `Error` they read again rather than only logging**. The subscriptions this bullet first asked for landed at `a2318531`, but all three handlers only logged, so a lost-events window was still unlearned while the wiring guard called them compliant. **A publish arrives as `Renamed`**, which all three already handle (the user's chat ruling, 2026-09-25).
   - **The obligation is the criterion and the event set is today's mechanism**: a test asserts the component learns of a deletion and of a lost-events window, not that it subscribes to two named events, so a writer that publishes by other means fails rather than passes by habit.
   - _Requirements: 2.9_
-- [ ] 10. mindmap keeps its two documented departures
+- [x] 10. mindmap keeps its two documented departures
   - Files: mindmap's store and tests
   - Skipping documents it never loaded, and raising its own signal, are permitted by criterion. **A test pins each, so a later reader cannot quietly remove them as inconsistency.**
   - _Requirements: 2.8_
