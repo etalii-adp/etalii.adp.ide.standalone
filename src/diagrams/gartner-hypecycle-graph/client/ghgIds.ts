@@ -69,14 +69,29 @@ export const GhgScale = {
   rowStep: 56,
 } as const;
 
-/** The month index a snapped canvas x starts, or ends, at. */
-export function monthAt(x: number): number {
-  return GhgScale.originMonth + Math.round(x / GhgScale.unitsPerMonth);
+/**
+ * The steps a diagram's time axis may be drawn in, as the document's `unit:` names them, and how
+ * many months each spans. Every step is {@link GhgScale.unitsPerMonth} units wide, so a diagram of
+ * centuries fits ten thousand years where a diagram of months fits one lifetime. The dates stay
+ * months whatever the unit; the backend's `GhgTimeUnit` states the same four.
+ */
+export const GhgTimeUnits = { month: 1, year: 12, decade: 120, century: 1200 } as const;
+
+export type GhgTimeUnit = keyof typeof GhgTimeUnits;
+
+/** The unit a trend's payload names, or the month for anything else - a document that names none included. */
+export function timeUnitOf(name: string | undefined): GhgTimeUnit {
+  return name !== undefined && Object.hasOwn(GhgTimeUnits, name) ? (name as GhgTimeUnit) : "month";
 }
 
-/** The canvas x of the start of a month index. */
-export function xOfMonth(monthIndex: number): number {
-  return (monthIndex - GhgScale.originMonth) * GhgScale.unitsPerMonth;
+/** The month index a snapped canvas x starts, or ends, at: the start of the nearest step of `unit`. */
+export function monthAt(x: number, unit: GhgTimeUnit = "month"): number {
+  return GhgScale.originMonth + Math.round(x / GhgScale.unitsPerMonth) * GhgTimeUnits[unit];
+}
+
+/** The canvas x of the start of a month index, in a diagram drawn in `unit`. */
+export function xOfMonth(monthIndex: number, unit: GhgTimeUnit = "month"): number {
+  return ((monthIndex - GhgScale.originMonth) * GhgScale.unitsPerMonth) / GhgTimeUnits[unit];
 }
 
 /** A month index as the document writes it: `YYYY-MM`, or `-YYYY-MM` before year 0 (ISO 8601's astronomical years). */

@@ -8,6 +8,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <param name="Influences">The influence entries, in document order.</param>
 /// <param name="Problems">What the parser passed over, each with the line that caused it.</param>
 /// <param name="Version">The header's version, or <c>null</c> when the header is missing or unreadable.</param>
+/// <param name="Unit">The step the time axis is drawn in; <see cref="GhgTimeUnit.Month"/> when the document names none.</param>
 /// <remarks>
 /// The problems travel with the model rather than being thrown, as in FDG: a document with a bad
 /// entry still draws every entry that is good. There is no "is valid" here; validity is the rule
@@ -17,10 +18,14 @@ public sealed record GhgModel(
     IReadOnlyList<GhgTrend> Trends,
     IReadOnlyList<GhgInfluence> Influences,
     IReadOnlyList<GhgProblem> Problems,
-    int? Version)
+    int? Version,
+    GhgTimeUnit? Unit = null)
 {
     /// <summary>A document that declares nothing - the parser's answer to text it could not read at all.</summary>
     public static GhgModel Empty { get; } = new([], [], [], null);
+
+    /// <summary>The step the time axis is drawn in, never null.</summary>
+    public GhgTimeUnit TimeUnit => Unit ?? GhgTimeUnit.Month;
 
     /// <summary>The version this module writes, and the only one it understands.</summary>
     public const int CurrentVersion = 1;

@@ -140,6 +140,21 @@ public class GhgPhasesTests
             Assert.Equal(x, stoppingX + (stoppingWidth / 2));
         }
 
+        // Every unit, by name and size, and each fixture date at the x a diagram drawn in its unit gives it.
+        Assert.Equal(
+            GhgTimeUnit.All.Select(unit => (unit.Name, unit.Months)),
+            root.GetProperty("units").EnumerateObject().Select(unit => (unit.Name, unit.Value.GetInt32())));
+        foreach (var dated in root.GetProperty("unitDates").EnumerateArray())
+        {
+            var unit = GhgTimeUnit.Named(dated.GetProperty("unit").GetString())!;
+            var date = dated.GetProperty("date").GetString()!;
+            var x = dated.GetProperty("x").GetDouble();
+
+            Assert.Equal(x, GhgScale.XOf(GhgScale.ParseMonth(date)!.Value, unit));
+            Assert.Equal(date, GhgScale.FormatMonth(GhgScale.NearestMonthAt(x, unit)));
+            Assert.Equal(date, GhgScale.FormatMonth(GhgScale.MonthContaining(x + 1.5, unit)));
+        }
+
         foreach (var row in root.GetProperty("rows").EnumerateArray())
         {
             var number = row.GetProperty("row").GetInt32();

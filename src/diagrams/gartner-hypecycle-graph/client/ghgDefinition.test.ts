@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { validateDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import { canvasPositionOf, monthIndexOf } from "@client/canvas/library/definition/chrome";
-import { GHG_DEFINITION } from "./GhgCanvas";
-import { GhgScale, formatMonth, monthAt, xOfMonth } from "./ghgIds";
+import { GHG_DEFINITION, ghgDefinitionFor } from "./GhgCanvas";
+import { GhgScale, GhgTimeUnits, formatMonth, monthAt, timeUnitOf, xOfMonth, type GhgTimeUnit } from "./ghgIds";
 
 interface ScaleFixture {
   unitsPerMonth: number;
@@ -13,6 +13,8 @@ interface ScaleFixture {
   rowStep: number;
   months: { date: string; x: number }[];
   rows: { row: number; top: number; middle: number }[];
+  units: Record<string, number>;
+  unitDates: { unit: GhgTimeUnit; date: string; x: number }[];
 }
 
 /** The one statement of the time scale both tiers are held to (task 15 asserts the backend's). */
@@ -88,5 +90,53 @@ describe("the client's time scale agrees with the checked-in fixture", () => {
   it.each(FIXTURE.rows)("rests row $row's top at $top, so its middle is at $middle", ({ row, top, middle }) => {
     expect(row * GhgScale.rowStep).toBe(top);
     expect(top + GhgScale.trendHeight / 2).toBe(middle);
+  });
+
+  it("states the fixture's units", () => {
+    expect(GhgTimeUnits).toEqual(FIXTURE.units);
+  });
+
+  it.each(FIXTURE.unitDates)("puts $date at x $x in a diagram of $unit, through the module and through the ruler, and back", ({ unit, date, x }) => {
+    const month = monthIndexOf(date)!;
+    expect(xOfMonth(month, unit)).toBe(x);
+    expect(formatMonth(monthAt(x, unit))).toBe(date);
+    // A snap lands on the start of a step, so a date a third of a step late comes back to it.
+    expect(formatMonth(monthAt(x + 4 / 3, unit))).toBe(date);
+    expect(canvasPositionOf(ghgDefinitionFor(unit).chrome!.rulers![0], { element: { id: "c", type: "c", x: 0, y: 0 } }, month)).toBeCloseTo(x, 9);
+  });
+});
+
+describe("a diagram drawn in a coarser unit", () => {
+  const units = Object.keys(GhgTimeUnits) as GhgTimeUnit[];
+
+  it.each(units)("passes the library's validation in %s", (unit) => {
+    expect(validateDiagramDefinition(ghgDefinitionFor(unit))).toEqual([]);
+  });
+
+  it("differs from the month's only in its ruler: the same shapes, relations, actions and snap", () => {
+    const { chrome: _decadeChrome, ...decade } = ghgDefinitionFor("decade");
+    const { chrome: _monthChrome, ...month } = GHG_DEFINITION;
+    expect(decade).toEqual(month);
+  });
+
+  it.each([
+    ["month", ["month", "quarter", "year", "decade", "decade x10", "decade x100"]],
+    ["year", ["year", "decade", "decade x10", "decade x100"]],
+    ["decade", ["decade", "decade x10", "decade x100"]],
+    ["century", ["decade x10", "decade x100"]],
+  ] as const)("labels no rung finer than a step, in %s", (unit, rungs) => {
+    const ruler = ghgDefinitionFor(unit).chrome!.rulers![0];
+    expect(ruler.scale).toEqual({ unit: "month", unitsPerStep: 4 / GhgTimeUnits[unit], origin: "1900-01" });
+    expect(ruler.ladder.map((rung) => {
+      const every = rung.every as { calendar: string; count?: number };
+      return every.count === undefined ? every.calendar : `${every.calendar} x${every.count}`;
+    })).toEqual(rungs);
+  });
+
+  it("is chosen by the unit every trend carries, and a month for anything it does not name", () => {
+    expect(timeUnitOf("century")).toBe("century");
+    expect(timeUnitOf("")).toBe("month");
+    expect(timeUnitOf(undefined)).toBe("month");
+    expect(timeUnitOf("toString")).toBe("month");
   });
 });
