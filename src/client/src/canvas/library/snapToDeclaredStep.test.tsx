@@ -1,6 +1,5 @@
-import { readFileSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { DiagramCanvas, snapToStep } from "./DiagramCanvas";
@@ -9,6 +8,7 @@ import type { DiagramModel, DiagramModelElement } from "./api/diagramModel";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { pointer } from "@client/canvas/library/testing/canvasHarness";
+import { sourceRoot } from "@client/diagramModuleClientApi.surface";
 
 /**
  * A dragged element comes to rest on the lattice its diagram type declares.
@@ -133,20 +133,6 @@ describe("snapToStep - against the backend's row-rounding fixture", () => {
     }
   });
 });
-
-/** The repository's `src`, found from this file: the folder holding both `diagrams/` and `.editorconfig`. */
-function sourceRoot(): string {
-  let directory = dirname(fileURLToPath(import.meta.url));
-  for (let depth = 0; depth < 12; depth++) {
-    const hasModules = statSync(join(directory, "diagrams"), { throwIfNoEntry: false })?.isDirectory() === true;
-    const hasStyleRules = statSync(join(directory, ".editorconfig"), { throwIfNoEntry: false })?.isFile() === true;
-    if (hasModules && hasStyleRules) {
-      return directory;
-    }
-    directory = dirname(directory);
-  }
-  throw new Error("The src folder was not found above this test file.");
-}
 
 describe("a drag lands on the declared step", () => {
   it("reports a snapped position on release", () => {
