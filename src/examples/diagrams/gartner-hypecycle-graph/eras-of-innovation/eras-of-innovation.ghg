@@ -323,11 +323,11 @@ influences:
     from: city-states
     from-phase: peak
     from-edge: bottom
-    from-at: 0.62
+    from-at: 0.57
     to: writing
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.45
     description: Temple and palace accounts needed records.
   - id: bronze--wheel
     from: bronze
@@ -342,66 +342,66 @@ influences:
     from: writing
     from-phase: peak
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.58
     to: mathematics
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.41
   - id: city-states--written-law
     from: city-states
     from-phase: slope
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.61
     to: written-law
     to-phase: peak
     to-edge: top
-    to-at: 0.23
+    to-at: 0.25
   - id: writing--written-law
     from: writing
     from-phase: trough
     from-edge: bottom
-    from-at: 0.78
+    from-at: 0.64
     to: written-law
     to-phase: peak
     to-edge: top
-    to-at: 0.61
+    to-at: 0.66
   - id: writing--alphabet
     from: writing
     from-phase: slope
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.52
     to: alphabet
     to-phase: peak
     to-edge: top
-    to-at: 0.71
+    to-at: 0.72
   - id: sailing--alphabet
     from: sailing
     from-phase: trough
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.61
     to: alphabet
     to-phase: peak
     to-edge: top
-    to-at: 0.19
+    to-at: 0.24
     description: Phoenician traders spread their letters around the Mediterranean.
   - id: bronze--iron
     from: bronze
     from-phase: plateau
     from-edge: top
-    from-at: 0.76
+    from-at: 0.60
     to: iron
     to-phase: peak
     to-edge: bottom
-    to-at: 0.18
+    to-at: 0.40
   - id: city-states--coinage
     from: city-states
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: coinage
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
   - id: alphabet--philosophy
     from: alphabet
     from-phase: plateau
@@ -415,11 +415,11 @@ influences:
     from: mathematics
     from-phase: plateau
     from-edge: top
-    from-at: 0.33
+    from-at: 0.30
     to: philosophy
     to-phase: peak
     to-edge: bottom
-    to-at: 0.15
+    to-at: 0.22
   - id: iron--concrete
     from: iron
     from-phase: slope
@@ -433,130 +433,130 @@ influences:
     from: writing
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: paper
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
   - id: mathematics--zero
     from: mathematics
     from-phase: plateau
     from-edge: top
-    from-at: 0.94
+    from-at: 0.72
     to: zero
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
   - id: paper--printing-press
     from: paper
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.69
+    from-at: 0.60
     to: printing-press
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.40
   - id: zero--banking
     from: zero
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.30
+    from-at: 0.29
     to: banking
     to-phase: peak
     to-edge: top
-    to-at: 0.65
+    to-at: 0.69
   - id: coinage--banking
     from: coinage
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.70
+    from-at: 0.60
     to: banking
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.28
   - id: compass--exploration
     from: compass
     from-phase: slope
-    from-edge: bottom
-    from-at: 0.62
-    to: exploration
-    to-phase: peak
-    to-edge: top
-    to-at: 0.54
-  - id: sailing--exploration
-    from: sailing
-    from-phase: plateau
-    from-edge: bottom
-    from-at: 0.96
-    to: exploration
-    to-phase: peak
-    to-edge: top
-    to-at: 0.04
-  - id: gunpowder--exploration
-    from: gunpowder
-    from-phase: slope
-    from-edge: bottom
-    from-at: 0.64
-    to: exploration
-    to-phase: peak
-    to-edge: top
-    to-at: 0.27
-  - id: banking--exploration
-    from: banking
-    from-phase: trough
     from-edge: bottom
     from-at: 0.56
     to: exploration
     to-phase: peak
     to-edge: top
-    to-at: 0.80
+    to-at: 0.58
+  - id: sailing--exploration
+    from: sailing
+    from-phase: plateau
+    from-edge: bottom
+    from-at: 0.60
+    to: exploration
+    to-phase: peak
+    to-edge: top
+    to-at: 0.17
+  - id: gunpowder--exploration
+    from: gunpowder
+    from-phase: slope
+    from-edge: bottom
+    from-at: 0.57
+    to: exploration
+    to-phase: peak
+    to-edge: top
+    to-at: 0.33
+  - id: banking--exploration
+    from: banking
+    from-phase: trough
+    from-edge: bottom
+    from-at: 0.53
+    to: exploration
+    to-phase: peak
+    to-edge: top
+    to-at: 0.82
     description: Joint ventures paid for voyages no one could fund alone.
   - id: printing-press--scientific-method
     from: printing-press
     from-phase: trough
     from-edge: bottom
-    from-at: 0.71
+    from-at: 0.61
     to: scientific-method
     to-phase: peak
     to-edge: top
-    to-at: 0.54
+    to-at: 0.58
     description: Printed books let results be checked and built on.
   - id: clock--scientific-method
     from: clock
     from-phase: slope
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.58
     to: scientific-method
     to-phase: peak
     to-edge: top
-    to-at: 0.75
+    to-at: 0.79
   - id: zero--scientific-method
     from: zero
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.79
+    from-at: 0.72
     to: scientific-method
     to-phase: peak
     to-edge: top
-    to-at: 0.05
+    to-at: 0.39
   - id: philosophy--scientific-method
     from: philosophy
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.60
     to: scientific-method
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.17
   - id: scientific-method--steam-engine
     from: scientific-method
     from-phase: plateau
     from-edge: top
-    from-at: 0.32
+    from-at: 0.30
     to: steam-engine
     to-phase: peak
     to-edge: bottom
-    to-at: 0.33
+    to-at: 0.41
   - id: steam-engine--factories
     from: steam-engine
     from-phase: trough
@@ -570,47 +570,47 @@ influences:
     from: exploration
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: factories
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
   - id: scientific-method--vaccination
     from: scientific-method
     from-phase: plateau
     from-edge: top
-    from-at: 0.90
+    from-at: 0.72
     to: vaccination
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.40
   - id: scientific-method--electricity
     from: scientific-method
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.60
     to: electricity
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.40
   - id: steam-engine--railways
     from: steam-engine
     from-phase: slope
+    from-edge: bottom
+    from-at: 0.55
+    to: railways
+    to-phase: peak
+    to-edge: top
+    to-at: 0.70
+  - id: factories--railways
+    from: factories
+    from-phase: trough
     from-edge: bottom
     from-at: 0.61
     to: railways
     to-phase: peak
     to-edge: top
-    to-at: 0.67
-  - id: factories--railways
-    from: factories
-    from-phase: trough
-    from-edge: bottom
-    from-at: 0.70
-    to: railways
-    to-phase: peak
-    to-edge: top
-    to-at: 0.21
+    to-at: 0.25
   - id: electricity--telegraph
     from: electricity
     from-phase: trough
@@ -634,57 +634,57 @@ influences:
     from: vaccination
     from-phase: trough
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.58
     to: germ-theory
     to-phase: peak
     to-edge: top
-    to-at: 0.29
+    to-at: 0.38
   - id: factories--combustion-engine
     from: factories
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.54
     to: combustion-engine
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.46
   - id: electricity--radio
     from: electricity
     from-phase: slope
     from-edge: top
-    from-at: 0.60
+    from-at: 0.55
     to: radio
     to-phase: peak
     to-edge: bottom
-    to-at: 0.34
+    to-at: 0.41
   - id: combustion-engine--powered-flight
     from: combustion-engine
     from-phase: peak
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.63
     to: powered-flight
     to-phase: peak
     to-edge: top
-    to-at: 0.22
+    to-at: 0.34
     description: Light petrol engines made powered flight possible.
   - id: germ-theory--antibiotics
     from: germ-theory
     from-phase: slope
     from-edge: top
-    from-at: 0.69
+    from-at: 0.61
     to: antibiotics
     to-phase: peak
     to-edge: bottom
-    to-at: 0.29
+    to-at: 0.38
   - id: electricity--computer
     from: electricity
     from-phase: plateau
     from-edge: top
-    from-at: 0.68
+    from-at: 0.59
     to: computer
     to-phase: peak
     to-edge: bottom
-    to-at: 0.17
+    to-at: 0.23
   - id: radio--computer
     from: radio
     from-phase: slope
@@ -698,117 +698,117 @@ influences:
     from: electricity
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.37
+    from-at: 0.32
     to: nuclear-power
     to-phase: peak
     to-edge: top
-    to-at: 0.11
+    to-at: 0.29
   - id: combustion-engine--green-revolution
     from: combustion-engine
     from-phase: slope
     from-edge: bottom
-    from-at: 0.54
+    from-at: 0.52
     to: green-revolution
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.45
   - id: powered-flight--space-flight
     from: powered-flight
     from-phase: slope
     from-edge: top
-    from-at: 0.58
+    from-at: 0.55
     to: space-flight
     to-phase: peak
     to-edge: bottom
-    to-at: 0.43
+    to-at: 0.46
   - id: computer--space-flight
     from: computer
     from-phase: peak
     from-edge: bottom
-    from-at: 0.80
+    from-at: 0.76
     to: space-flight
     to-phase: peak
     to-edge: top
-    to-at: 0.32
+    to-at: 0.40
   - id: computer--internet
     from: computer
     from-phase: trough
     from-edge: bottom
-    from-at: 0.37
+    from-at: 0.32
     to: internet
     to-phase: peak
     to-edge: top
-    to-at: 0.27
+    to-at: 0.38
   - id: telegraph--internet
     from: telegraph
     from-phase: plateau
     from-edge: top
-    from-at: 0.96
+    from-at: 0.60
     to: internet
     to-phase: peak
     to-edge: bottom
-    to-at: 0.04
+    to-at: 0.28
   - id: germ-theory--genetic-engineering
     from: germ-theory
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.60
     to: genetic-engineering
     to-phase: peak
     to-edge: top
-    to-at: 0.16
+    to-at: 0.28
   - id: computer--genetic-engineering
     from: computer
     from-phase: trough
     from-edge: bottom
-    from-at: 0.87
+    from-at: 0.78
     to: genetic-engineering
     to-phase: peak
     to-edge: top
-    to-at: 0.63
+    to-at: 0.68
   - id: radio--mobile-phone
     from: radio
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.58
     to: mobile-phone
     to-phase: peak
     to-edge: top
-    to-at: 0.23
+    to-at: 0.26
   - id: internet--mobile-phone
     from: internet
     from-phase: peak
     from-edge: bottom
-    from-at: 0.78
+    from-at: 0.74
     to: mobile-phone
     to-phase: peak
     to-edge: top
-    to-at: 0.65
+    to-at: 0.69
   - id: electricity--renewables
     from: electricity
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.93
+    from-at: 0.72
     to: renewables
     to-phase: peak
     to-edge: top
-    to-at: 0.04
+    to-at: 0.40
   - id: internet--artificial-intelligence
     from: internet
     from-phase: trough
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.78
     to: artificial-intelligence
     to-phase: peak
     to-edge: top
-    to-at: 0.63
+    to-at: 0.68
     description: The web supplied the data modern AI learns from.
   - id: computer--artificial-intelligence
     from: computer
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.96
+    from-at: 0.60
     to: artificial-intelligence
     to-phase: peak
     to-edge: top
-    to-at: 0.23
+    to-at: 0.28
