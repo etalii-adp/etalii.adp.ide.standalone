@@ -71,7 +71,9 @@ const TRIGGER_TYPE: ElementTypeDefinition = {
   ],
   labels: [{ text: { template: "{payload.name} · {payload.when}" }, placement: "before", editable: true, className: "canvas-node-label ghg-label" }],
   tooltip: { template: "Trigger: {payload.name}, {payload.whenLong}" },
-  anchors: { kind: "compass", positions: ["n", "e", "s"], attachDrawnBy: "edge" },
+  // No dots are drawn: the handles still start an influence, but a small circle ringed with dots
+  // reads as a different shape (Peter, 2026-09-27).
+  anchors: { kind: "compass", positions: ["n", "e", "s"], attachDrawnBy: "edge", visible: false },
   sizing: "model",
 };
 

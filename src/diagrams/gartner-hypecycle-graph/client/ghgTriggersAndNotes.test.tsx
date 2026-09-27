@@ -134,6 +134,14 @@ describe("a trigger, drawn", () => {
     expect(handlesOf("remark")).toEqual(["left", "right", "top", "bottom"]);
   });
 
+  it("draws no anchor dots, while its handles still take a press", () => {
+    const { container } = renderModel();
+    const element = container.querySelector('[data-element-id="transistor"]')!;
+
+    expect(element.querySelectorAll(".library-anchor"), "the trigger is ringed with anchor dots").toHaveLength(0);
+    expect(element.querySelectorAll(".library-anchor-hit")).toHaveLength(3);
+  });
+
   it("starts an influence from a handle, and the line leaves its outline, not the handle", () => {
     const { container, onConnectionDrawn } = renderModel({ elements: MODEL.elements, connections: [] });
     const handle = container.querySelector('[data-element-id="transistor"] [data-anchor="n"]')!;
