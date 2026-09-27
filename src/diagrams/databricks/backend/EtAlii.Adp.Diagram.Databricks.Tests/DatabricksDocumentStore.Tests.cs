@@ -52,7 +52,7 @@ public class DatabricksDocumentStoreTests : IDisposable
         var refusal = _store.Save(path, entry);
 
         // Assert.
-        Assert.Equal("", refusal);
+        Assert.Equal("", refusal.Error);
         Assert.Equal(original, File.ReadAllBytes(path));
     }
 
@@ -84,7 +84,7 @@ public class DatabricksDocumentStoreTests : IDisposable
         Assert.NotEqual("", entry.Error);
         Assert.True(entry.ErrorLine >= 1);
         // The broken file is never made worse: the save is refused with the reason.
-        Assert.Contains("does not parse", refusal, StringComparison.Ordinal);
+        Assert.Contains("does not parse", refusal.Error, StringComparison.Ordinal);
     }
 
     [Fact]
