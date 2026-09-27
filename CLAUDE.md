@@ -124,6 +124,12 @@ Run `dotnet format style --verify-no-changes --severity info` (from `src/backend
 
 **Before pushing a worktree's branch for a pull request into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](.spec-workflow/steering/processes.md#checking-that-the-conventions-are-actually-followed).
 
+**Three rules the user enforced by hand on 2026-09-27, and the gates now refuse:**
+
+- **No blocking call inside an `async` method.** Where an async overload exists, await it - `await File.ReadAllTextAsync(...)`, not `File.ReadAllText(...)`. A synchronous call in a synchronous method is fine; do not convert a method to `async` just to satisfy this. CA1849, an error through `src/Directory.Build.props`.
+- **In a test, pass `TestContext.Current.CancellationToken`** to every call that takes a token. xUnit1051, already an error; it follows automatically once the call above is async.
+- **No `using` the file does not need** - including a parent of the file's own namespace (`EtAlii.Adp.Authentication` inside `EtAlii.Adp.Authentication.Tests`) and one an alias already covers. IDE0005, a warning the format gate refuses. It only fires because `src/Directory.Build.props` generates a documentation file; remove that and the rule goes silent while the gate stays green.
+
 ## Folders and namespaces
 
 **A folder that should not contribute to the namespace is fixed in the project's `.DotSettings`, not by touching the namespace.** The namespace rules themselves are already right - do not "correct" a namespace to match a folder. What is wrong in that situation is the *folder*, which is still marked as a namespace provider, and Rider's way to say otherwise is a per-folder boolean in `<Project>.csproj.DotSettings`:
