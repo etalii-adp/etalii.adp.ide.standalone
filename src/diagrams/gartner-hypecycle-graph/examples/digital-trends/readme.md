@@ -16,6 +16,7 @@ It is the smaller companion to [technology-trends](../technology-trends/readme.m
 | --- | --- |
 | Trends | 30, placed in rows so that no two in a row overlap in time |
 | Influences | 41, each attached to the phase of each trend in which it acted |
+| Anchors | Placed by [`spread-anchors.py`](../spread-anchors.py): each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: settled trends show all four phases, recent ones such as quantum computing and AI agents only a Peak |
 | Dragged boundaries | The dot-com bubble, blockchain and virtual reality have phase boundaries placed by hand; every other trend's phases are even |
 | Descriptions | On some trends and some influences, kept in the document and never drawn |
