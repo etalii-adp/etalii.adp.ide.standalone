@@ -133,6 +133,54 @@ describe("HelmCanvas", () => {
     }
   });
 
+  it("draws something every node-box rule in the stylesheet matches: per kind and unreadable", async () => {
+    // The kind class, `helm-node-unreadable` and `helm-node-box` are all declared on the SHAPE (a
+    // class declaration's `on` defaults to it), so rules written as `.helm-node-chart .helm-node-box`,
+    // a descendant, matched nothing: every kind drew in the default fill and an unreadable node was
+    // never dashed. ansible-structure had the same defect (#68). This asks each rule of the
+    // rendered drawing, so the rule and the markup cannot drift apart without it failing.
+    // Arrange: resolved from the workspace the runner starts in (src/client), as ansible's test does.
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const css = readFileSync(resolve(process.cwd(), "../diagrams/helm-charts/client/helm-charts.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, " ");
+    const selectors = [...css.matchAll(/([^{}]+)\{[^{}]*\}/g)]
+      .flatMap((rule) => rule[1]!.split(","))
+      .map((selector) => selector.trim())
+      .filter((selector) => /\.helm-node-box(?![\w-])/.test(selector));
+    currentModel = modelOf(
+      element("chart", "helm/chart+chart", HelmElementKind.CHART),
+      element("values:values.yaml", "helm/chart+values", HelmElementKind.VALUES, {}, 200),
+      element("schema:values.schema.json", "helm/chart+schema", HelmElementKind.SCHEMA, {}, 400),
+      element("tpl:templates/d.yaml", "helm/chart+template", HelmElementKind.TEMPLATE, {}, 600),
+      element("crds", "helm/chart+crds", HelmElementKind.CRDS, {}, 800),
+      element("dep:redis", "helm/chart+dependency", HelmElementKind.DEPENDENCY, {}, 1000),
+      element("sub:charts/redis", "helm/chart+subchart", HelmElementKind.SUBCHART, {}, 1200),
+      element("tgz:charts/x.tgz", "helm/chart+archive", HelmElementKind.ARCHIVE, {}, 1400),
+      element("lock:Chart.lock", "helm/chart+lock", HelmElementKind.LOCK, { unreadable: true }, 1600),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the positive control on the reader first, so an empty list cannot pass.
+    expect(selectors.length, "the reader found too few node-box rules").toBeGreaterThanOrEqual(8);
+    const unmatched = selectors.filter((selector) => container.querySelector(selector) === null);
+    expect(unmatched, "these node-box rules match nothing the canvas draws").toEqual([]);
+  });
+
+  it("paints from the theme alone: the stylesheet declares no colour of its own", async () => {
+    // client-centralization 1.2, by the user's ruling of 2026-09-27: helm's per-kind hues are
+    // theme tokens (`--color-diagram-helm-*`), so a --helm-* name, declared or read, is a second
+    // palette the theme cannot see.
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const css = readFileSync(resolve(process.cwd(), "../diagrams/helm-charts/client/helm-charts.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, " ");
+
+    expect(css).toContain("--color-diagram-helm-chart");
+    expect([...css.matchAll(/--helm-[\w-]+/g)].map((name) => name[0])).toEqual([]);
+    expect([...css.matchAll(/#[0-9a-f]{3,8}\b|rgba?\(/gi)].map((literal) => literal[0])).toEqual([]);
+  });
+
   it("draws an edge between delivered ends and a stub for an open end", () => {
     // Arrange.
     const resolved = create(HelmElementPayloadSchema, {
