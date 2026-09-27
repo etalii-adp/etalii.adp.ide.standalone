@@ -15,7 +15,7 @@ public class GhgEnergyAndAgentsExamplesTests
     {
         { "energy-breakthroughs", 33, 57 },
         { "llms-and-agents", 35, 67 },
-        { "coal-technologies", 34, 54 },
+        { "coal-technologies", 34, 57 },
         { "electric-vehicles", 28, 48 },
         { "internet-evolution", 34, 56 },
         { "warfare-in-ukraine", 29, 53 },

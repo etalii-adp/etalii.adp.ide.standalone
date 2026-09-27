@@ -363,6 +363,30 @@ triggers:
     row: 11
     tags: [transport, knowledge]
     description: The first artificial satellite, and the start of the space race.
+  - id: code-of-hammurabi
+    name: Code of Hammurabi
+    date: -1754-01
+    row: 13
+    tags: [society]
+    description: Babylonian laws carved on a stele for anyone to read.
+  - id: bronze-age-collapse
+    name: Late Bronze Age collapse
+    date: -1177-01
+    row: 3
+    tags: [society, materials]
+    description: Trade in tin failed with the palace states, and iron took its place.
+  - id: library-of-alexandria
+    name: Library of Alexandria founded
+    date: -0285-01
+    row: 7
+    tags: [knowledge]
+    description: A royal library that set out to hold every book in the world.
+  - id: cai-lun-paper
+    name: Cai Lun presents paper to the emperor
+    date: 0105-01
+    row: 1
+    tags: [knowledge]
+    description: Paper made from bark, hemp and rags, reported to the Han court.
 influences:
   - id: horse-riding--wheel
     from: horse-riding
@@ -406,20 +430,20 @@ influences:
     from: city-states
     from-phase: slope
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.59
     to: written-law
     to-phase: peak
     to-edge: top
-    to-at: 0.25
+    to-at: 0.18
   - id: writing--written-law
     from: writing
     from-phase: trough
     from-edge: bottom
-    from-at: 0.64
+    from-at: 0.62
     to: written-law
     to-phase: peak
     to-edge: top
-    to-at: 0.66
+    to-at: 0.46
   - id: writing--alphabet
     from: writing
     from-phase: slope
@@ -492,7 +516,7 @@ influences:
     to: paper
     to-phase: peak
     to-edge: bottom
-    to-at: 0.40
+    to-at: 0.28
   - id: mathematics--zero
     from: mathematics
     from-phase: plateau
@@ -933,3 +957,33 @@ influences:
     to-phase: peak
     to-edge: top
     to-at: 0.24
+  - id: code-of-hammurabi--written-law
+    from: code-of-hammurabi
+    to: written-law
+    to-phase: peak
+    to-edge: top
+    to-at: 0.79
+  - id: bronze-age-collapse--iron
+    from: bronze-age-collapse
+    to: iron
+    to-phase: peak
+    to-edge: top
+    to-at: 0.41
+  - id: bronze-age-collapse--alphabet
+    from: bronze-age-collapse
+    to: alphabet
+    to-phase: trough
+    to-edge: top
+    to-at: 0.56
+  - id: library-of-alexandria--philosophy
+    from: library-of-alexandria
+    to: philosophy
+    to-phase: trough
+    to-edge: top
+    to-at: 0.46
+  - id: cai-lun-paper--paper
+    from: cai-lun-paper
+    to: paper
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.68
