@@ -4,9 +4,9 @@ Two things every diagram canvas needs and none of them should write: the stream 
 diagram and folds its deltas into a model, and the report that tells the backend what the reader
 can currently see.
 
-- `useDiagramStream.ts` — transport, lifecycle, retry and state for `DiagramService.Open`. It
-  folds the delta stream into a model with the module's own `applyDelta`, re-baselines on
-  reconnect, and hands back the service client so a module can build its own unary calls on it.
+- `useDiagramStream.ts` — transport, lifecycle, retry and state for a diagram's delta stream,
+  which rides the tab's one `WorkspaceService.Watch` stream. It folds the delta stream into a
+  model with the module's own `applyDelta`, re-baselines on reconnect, and hands back the service client so a module can build its own unary calls on it.
   What stays per module is the model type, its empty value and the response-to-model mapping.
 - `viewReport.ts` — the client half of the view-delta loop: the `Viewport` and `ViewBox` types,
   `VIEW_REPORT_DEBOUNCE_MS`, `shownRectOf` (view box to reported rectangle) and `viewReportOf`

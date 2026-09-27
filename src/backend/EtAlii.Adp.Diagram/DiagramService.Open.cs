@@ -12,6 +12,24 @@ public sealed partial class DiagramService
 {
     public override async Task Open(OpenDiagramRequest request, IServerStreamWriter<Delta> responseStream, ServerCallContext context)
     {
+        var opened = OpenSession(SessionContext.GetUserId(context), request);
+        await PumpAsync(opened, responseStream.WriteAsync, context.CancellationToken);
+    }
+
+    /// <summary>
+    /// A diagram session that <see cref="OpenSession"/> resolved and opened, not yet pumping: the
+    /// half of an open that can refuse, separated from the half that runs for the stream's life,
+    /// so a caller can answer the refusal before it commits to a stream.
+    /// </summary>
+    public sealed record OpenedDiagram(IDiagramSession Session, string BodyPath, ShortGuid WatchId);
+
+    /// <summary>
+    /// Resolves what <paramref name="request"/> names and opens its session, or refuses with an
+    /// <see cref="RpcException"/> carrying a <see cref="PermanentRefusal"/> code. The caller owns the
+    /// session from here: <see cref="PumpAsync"/> disposes it.
+    /// </summary>
+    public OpenedDiagram OpenSession(ShortGuid userId, OpenDiagramRequest request)
+    {
         var watchId = (ShortGuid)request.WatchId;
 
         // Diagrams first, unconditionally: a file the router claims opens exactly as it
@@ -27,7 +45,7 @@ public sealed partial class DiagramService
             // family is deliberately not consulted: this is the one way a diagram-routed file
             // opens as text at all, and the one way its diagram stream and its text stream can
             // coexist on one connection (modular-text-editors Requirements 5.2, 5.3).
-            if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var forcedRoot, out var forcedPath))
+            if (!TryResolveTextFile(request.ProjectId, request.Path, userId, out var forcedRoot, out var forcedPath))
             {
                 // The client is told only that it failed; the log keeps what it asked for.
                 _logger.Warning("Refusing to open {Path} as text on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
@@ -46,7 +64,7 @@ public sealed partial class DiagramService
             bodyPath = forcedPath;
             openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forcedRoot, forcedPath), forcedId);
         }
-        else if (TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var diagramBody, out var origin, out var registrationPath))
+        else if (TryResolveBody(request.ProjectId, request.Path, userId, out var rootPath, out var diagramBody, out var origin, out var registrationPath))
         {
             var factory = _sessionFactories.Find(origin);
             if (factory is null)
@@ -63,7 +81,7 @@ public sealed partial class DiagramService
             // store as a Reload and every open session as pushed deltas (Requirement 5.3).
             _reloadBridge.Track(rootPath, bodyPath, registrationPath, origin);
         }
-        else if (TryResolveEditor(request.ProjectId, request.Path, context, out var editorRoot, out var fullPath, out var editorDefinitionId))
+        else if (TryResolveEditor(request.ProjectId, request.Path, userId, out var editorRoot, out var fullPath, out var editorDefinitionId))
         {
             var editorFactory = _editorSessionFactories.Find(editorDefinitionId);
             if (editorFactory is null)
@@ -84,6 +102,18 @@ public sealed partial class DiagramService
             throw new RpcException(new Status(PermanentRefusal.CannotOpen, "The diagram cannot be opened."));
         }
 
+        return new OpenedDiagram(openedSession, bodyPath, watchId);
+    }
+
+    /// <summary>
+    /// Writes an opened session's baseline, then every later change, to <paramref name="write"/>
+    /// until <paramref name="cancellationToken"/> ends it - to its own <c>Open</c> call, or to the
+    /// tab's one <c>WorkspaceService.Watch</c> stream (two-tab-connection-wedge Requirement 3.1).
+    /// Disposes the session when it returns.
+    /// </summary>
+    public async Task PumpAsync(OpenedDiagram opened, Func<Delta, CancellationToken, Task> write, CancellationToken cancellationToken)
+    {
+        var (openedSession, bodyPath, watchId) = opened;
         await using var session = openedSession;
         var channel = Channel.CreateUnbounded<Delta>();
 
@@ -134,15 +164,15 @@ public sealed partial class DiagramService
 
             foreach (var delta in baseline)
             {
-                await responseStream.WriteAsync(DiagramWire.ToProto(delta), context.CancellationToken);
+                await write(DiagramWire.ToProto(delta), cancellationToken);
             }
 
-            await foreach (var delta in channel.Reader.ReadAllAsync(context.CancellationToken))
+            await foreach (var delta in channel.Reader.ReadAllAsync(cancellationToken))
             {
-                await responseStream.WriteAsync(delta, context.CancellationToken);
+                await write(delta, cancellationToken);
             }
         }
-        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             _logger.Debug("Diagram stream on watch {WatchId} closed by the client", watchId);
         }
@@ -161,7 +191,7 @@ public sealed partial class DiagramService
     private bool TryResolveBody(
         Documents.Wire.ShortGuid projectId,
         Path path,
-        ServerCallContext context,
+        ShortGuid userId,
         out string rootPath,
         out string bodyPath,
         out DiagramOrigin origin,
@@ -171,7 +201,6 @@ public sealed partial class DiagramService
         origin = null!;
         registrationPath = null;
 
-        var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))
         {
             return false;

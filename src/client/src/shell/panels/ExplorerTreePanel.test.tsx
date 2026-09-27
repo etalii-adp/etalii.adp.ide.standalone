@@ -49,7 +49,7 @@ vi.mock("../../auth/AuthContext", () => ({
 }));
 
 vi.mock("@connectrpc/connect", () => ({
-  createClient: () => ({ listEntries, watchHierarchy }),
+  createClient: () => ({ listEntries }),
 }));
 
 vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
@@ -58,6 +58,8 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut, clearReveal }),
     useContextSelection: () => ({ ...contextState, levels: [], preview: null, connected: true }),
+    // The hierarchy's changes ride the tab's one stream, handed out by the provider.
+    useWorkspaceStreams: () => ({ openDiagramStream: vi.fn(), watchHierarchy }),
   };
 });
 

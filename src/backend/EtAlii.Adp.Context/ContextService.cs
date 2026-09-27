@@ -107,9 +107,21 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
         return new SelectResponse();
     }
 
-    public override async Task Watch(WatchContextRequest request, IServerStreamWriter<ContextMessage> responseStream, ServerCallContext context)
+    public override Task Watch(WatchContextRequest request, IServerStreamWriter<ContextMessage> responseStream, ServerCallContext context) =>
+        RunWatchAsync(SessionContext.GetUserId(context), request, responseStream.WriteAsync, context.CancellationToken);
+
+    /// <summary>
+    /// The context stream itself, written to whatever carries it: its own <c>Watch</c> call, or the
+    /// tab's one <c>WorkspaceService.Watch</c> stream (two-tab-connection-wedge Requirement 3.1).
+    /// Refuses with an <see cref="RpcException"/> before anything is registered; the first message
+    /// written is the connection's baseline.
+    /// </summary>
+    public async Task RunWatchAsync(
+        ShortGuid userId,
+        WatchContextRequest request,
+        Func<ContextMessage, CancellationToken, Task> write,
+        CancellationToken cancellationToken)
     {
-        var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
             _logger.Warning("Refused a context stream for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
@@ -121,14 +133,14 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
 
         // What applies when nothing is selected: the project root's actions, discovered once
         // here and carried on every "nothing selected" message for this connection.
-        var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath, watchId), context.CancellationToken);
+        var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath, watchId), cancellationToken);
 
         // The project's own actions - undo and redo - which belong to the project rather than
         // the selection and travel on their own message (diagram-undo-redo Deviation 1). The
         // connection's lifetime drives the project's history: retained here, released below.
         _historyStacks.Retain(rootPath);
         var projectActions = await _contextActionResolver.DiscoverAsync(
-            HistoryActionsBroadcaster.ProjectTarget(rootPath), context.CancellationToken);
+            HistoryActionsBroadcaster.ProjectTarget(rootPath), cancellationToken);
 
         // An open project's problems stay current without anyone asking: the maintenance
         // watcher follows its files, and if the startup pass is still working through the
@@ -149,12 +161,12 @@ public sealed partial class ContextService : Wire.ContextService.ContextServiceB
 
         try
         {
-            await foreach (var message in channel.Reader.ReadAllAsync(context.CancellationToken))
+            await foreach (var message in channel.Reader.ReadAllAsync(cancellationToken))
             {
-                await responseStream.WriteAsync(message, context.CancellationToken);
+                await write(message, cancellationToken);
             }
         }
-        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // Expected: the client closed the stream - not a real error.
             _logger.Debug("Context stream on watch {WatchId} was closed by the client", watchId);
