@@ -7,6 +7,7 @@ using EtAlii.Adp.Diagram.Databricks;
 using EtAlii.Adp.Diagram.DependencyGraph;
 using EtAlii.Adp.Diagram.DotNetDependencyGraph;
 using EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
+using EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 using EtAlii.Adp.Diagram.HelmCharts;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
@@ -124,6 +125,9 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("functional-decomposition-graph", new(
             [FdgElementMapper.UiChildType, FdgElementMapper.OwnsActionType, FdgElementMapper.OwnsDataType, FdgElementMapper.OwnsFunctionType, FdgElementMapper.ShowsType],
             [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType])),
+        new("gartner-hypecycle-graph", new(
+            [GhgElementMapper.InfluenceType],
+            [GhgElementMapper.TrendType])),
         new("helm-charts", new(
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),

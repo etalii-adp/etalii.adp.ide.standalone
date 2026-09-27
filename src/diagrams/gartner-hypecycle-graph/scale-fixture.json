@@ -1,0 +1,21 @@
+{
+  "description": "The hype cycle graph's time scale and rows, stated once for both tiers. The backend's GhgScale and the client's ruler declaration and month-to-x conversion are each asserted against this file, so neither can drift alone.",
+  "unitsPerMonth": 4,
+  "origin": "1900-01",
+  "trendHeight": 32,
+  "rowStep": 56,
+  "months": [
+    { "date": "1900-01", "x": 0 },
+    { "date": "1900-02", "x": 4 },
+    { "date": "1899-12", "x": -4 },
+    { "date": "1765-01", "x": -6480 },
+    { "date": "1950-01", "x": 2400 },
+    { "date": "2007-06", "x": 5156 },
+    { "date": "2026-09", "x": 6080 }
+  ],
+  "rows": [
+    { "row": 0, "top": 0, "middle": 16 },
+    { "row": 1, "top": 56, "middle": 72 },
+    { "row": 7, "top": 392, "middle": 408 }
+  ]
+}
