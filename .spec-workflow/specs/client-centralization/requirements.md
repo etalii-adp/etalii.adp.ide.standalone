@@ -47,7 +47,7 @@ This specification is the result of that scan, measured on `develop` between 202
 
 1. WHEN a module stylesheet selects a shape THEN it SHALL select a **declared class**, and SHALL NOT select an SVG element type (`rect`, `path`, `circle`, `ellipse`, `polygon`, `line`, `text`) **by descendant**. There are 21 such rules today: `c4` 8, `sparql` 5, `mindmap` 3, `causal-loop` 2, `databricks` 1, `wardley-map` 2.
 2. WHEN this is implemented THEN the incident behind it SHALL be impossible to repeat: `.mindmap-node rect` matched the library's own ring, because the ring is a `rect` in that group, and painted an opaque box over the label (`59f1ed3a`).
-3. WHEN the guard is written THEN it SHALL fail on any such selector, and `ringsSurviveModuleStyles.test.tsx` SHALL become a special case of it rather than a second guard.
+3. WHEN the guard is written THEN it SHALL fail on any such selector, and `ringsSurviveModuleStyles.test.tsx`, renamed `highlightSurvivesModuleStyles.test.tsx`, SHALL stay as its mounted half, which sees a ring hidden by means other than a type selector (the user's chat ruling, 2026-09-27).
 
 ### Requirement 4 — One character metric and one fit
 
@@ -141,11 +141,17 @@ This specification is the result of that scan, measured on `develop` between 202
 
 #### Acceptance Criteria
 
-1. WHEN any change in this specification is made THEN the only permitted visible changes SHALL be these four, and **everything else SHALL be invisible**:
+1. WHEN any change in this specification is made THEN the only permitted visible changes SHALL be these, and **everything else SHALL be invisible**:
    - theme-correct colours on `azure-pipeline`, `dotnet-dependency-graph`, `helm-charts`, `causal-loop` and the editors, mostly in the dark theme (Requirement 1);
    - refusals becoming visible on `ansible-structure`, `azure-pipeline`, `c4` and `mindmap`, and one appearance for the refusal line and the loading and unavailable text on all sixteen canvases (Requirement 2);
    - a label trimmed, wrapped or content-sized at a different length, because every client width estimate now uses the backend's shared metric, characters × font size × 0.55 (backend-centralization Requirement 10), at the label's own font size. This includes OWL's own trim, which the scan missed as a fifth copy (Requirement 4; the user's chat ruling, 2026-09-27);
-   - `ansible-structure` reporting the backend's own sentence when a move fails (Requirement 7).
+   - `ansible-structure` reporting the backend's own sentence when a move fails (Requirement 7);
+   - `causal-loop` refusing a link whose end is not a variable, with "Draw a link between two variables.", where it sent an empty or truncated id (Requirement 9);
+   - `ansible-structure`'s play colours, per-kind outlines, hollow-role hatching, hover and focus, and `wardley-map`'s muted bold axis titles, which were written but matched nothing (the user's chat ruling, 2026-09-27, "Fix both");
+   - `helm-charts`' per-kind node colours and its unreadable-node dashing, which matched nothing for the same reason, now painted from the theme's `--color-diagram-helm-*` (the user's chat ruling, 2026-09-27, "Map to theme");
+   - monospace text in `ansible-structure`, `helm-charts` and `skos` taking the defined `--font-mono` stack, and `wardley-map`'s `--font-sans` declarations taking effect (Requirement 1);
+   - an element whose type declares no colour painting `--color-surface` and `--color-text` rather than `#3b6ea5` on `#fff` (Requirement 1);
+   - the refusal line clearing on the next gesture and dismissing on a click, and the text editor's save failure and loading text moving onto the library's line (the user's chat ruling, 2026-09-25).
 2. WHEN a test changes THEN it SHALL change only where it pinned behaviour a named criterion above changes, it SHALL name that criterion, and it SHALL change only that far — the general rule `centralized-selection` Requirement 11.1 now carries.
 
 ## Non-Functional Requirements

@@ -108,6 +108,6 @@ One worktree for the whole specification, one Developer owning it until every ta
 
 ## Requirement coverage
 
-Every acceptance criterion in the approved requirements was checked against every task claim above, mechanically, in both directions. **Forty-three criteria** (4, 5, 3, 4, 4, 3, 4, 3, 3, 5, 3 and 2 across Requirements 1 to 12), all claimed, and no claim names a criterion that does not exist.
+Every acceptance criterion in the approved requirements was checked against every task claim above, mechanically, in both directions. **Forty-four criteria** (4, 5, 3, 4, 4, 3, 4, 3, 3, 5, 4 and 2 across Requirements 1 to 12; 11.4 was added on 2026-09-23), all claimed, and no claim names a criterion that does not exist.
 
 **No criterion is unclaimed.** Requirement 12 is the specification's own bar rather than a piece of work: 12.1 is claimed by every task that may change something visible, and 12.2 by task 13, which re-runs the diff against the code and judges the visible changes against the list. A claim is a promise, not proof — task 13 is where each is traced to a file and a string.
