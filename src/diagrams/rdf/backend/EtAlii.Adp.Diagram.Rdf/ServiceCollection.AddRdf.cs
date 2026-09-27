@@ -52,7 +52,7 @@ public static class ServiceCollectionAddRdfExtension
         services.AddSingleton<ICommandHandler<RenameRdfTermCommand>, RenameRdfTermCommandHandler>();
         services.AddSingleton<ICommandHandler<ReplaceRdfObjectLiteralCommand>, ReplaceRdfObjectLiteralCommandHandler>();
         services.AddSingleton<ICommandHandler<AddRdfPrefixCommand>, AddRdfPrefixCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreRdfDocumentCommand>, RestoreRdfDocumentCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IRdfDocumentStore>>, RestoreDocumentCommandHandler<IRdfDocumentStore>>();
 
         // The rules, resolved by origin through core's validator registry, so the family's
         // problems reach the Errors and Warnings panel like any other type's (Requirement 7).
