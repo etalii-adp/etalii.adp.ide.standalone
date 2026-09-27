@@ -3,8 +3,10 @@
   "title": "Design: Requirement 3's stream reduction, as built (task 5, one stream per tab)",
   "filePath": ".spec-workflow/specs/two-tab-connection-wedge/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-27T13:51:25.473Z",
   "category": "spec",
-  "categoryName": "two-tab-connection-wedge"
+  "categoryName": "two-tab-connection-wedge",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-27T17:15:39.312Z"
 }
