@@ -58,12 +58,12 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : ICom
             document.InsertLine(insertAt.Value + (uint)index, lines[index]);
         }
 
-        var error = documents.Save(command.BodyPath, document);
-        if (error.Length != 0)
+        var saved = documents.Save(command.BodyPath, document);
+        if (saved.Failed)
         {
             // The body never reached the disk, so writing a registration pointing at a view
             // it does not contain would be worse than stopping here.
-            return Task.FromResult(CommandResult.Failure(error));
+            return Task.FromResult(CommandResult.Failure(saved.Error));
         }
 
         try
