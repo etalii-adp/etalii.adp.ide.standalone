@@ -23,6 +23,11 @@ message GhgTrendPayload {
   repeated string tags = 4;
   // The span in canvas units: months times the scale's units per month.
   double width = 5;
+  // The diagram's time unit - "month", "year", "decade" or "century" - which sets the scale the
+  // width and position are drawn in. It is the same on every trend, because the diagram stream has
+  // no diagram-level payload; the client reads it from any trend it holds, and changing it changes
+  // every trend's payload bytes, so a delta carries it like any other change.
+  string unit = 6;
 }
 
 // Where one end of an influence attaches: an edge of one phase of a trend, and how far along it.

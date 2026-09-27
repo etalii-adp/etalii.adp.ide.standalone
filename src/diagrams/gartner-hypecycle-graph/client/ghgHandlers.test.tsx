@@ -4,6 +4,7 @@ import { create } from "@bufbuild/protobuf";
 import { GhgAttachmentSchema, GhgInfluencePayloadSchema, GhgTrendPayloadSchema } from "@client/generated/gartner-hypecycle-graph_pb";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel } from "@client/canvas/library/api/diagramModel";
+import type { DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarness";
 import { emptyModel, type GhgModel } from "./ghgModel";
 import { clearPropertyPreview, usePropertyPreview } from "@client/shell/panels/propertyPreview";
@@ -17,7 +18,7 @@ import { clearPropertyPreview, usePropertyPreview } from "@client/shell/panels/p
  * exactly as the library would raise it and what reaches the transports is all that is measured.
  */
 
-let captured: { events: DiagramEventHandlers; model: DiagramModel } | null = null;
+let captured: { events: DiagramEventHandlers; model: DiagramModel; definition: DiagramDefinition } | null = null;
 let currentModel: GhgModel = emptyModel;
 let executed: { actionId: string; targetId: string }[] = [];
 let properties: { propertyId: string; value: string; targetId: string }[] = [];
@@ -27,8 +28,8 @@ type Source = { source: { value: { value: string } } };
 const idOf = (source: unknown) => (source as Source).source.value.value;
 
 vi.mock("@client/canvas/library/DiagramCanvas", () => ({
-  DiagramCanvas: (props: { events: DiagramEventHandlers; model: DiagramModel }) => {
-    captured = { events: props.events, model: props.model };
+  DiagramCanvas: (props: { events: DiagramEventHandlers; model: DiagramModel; definition: DiagramDefinition }) => {
+    captured = { events: props.events, model: props.model, definition: props.definition };
     return null;
   },
 }));
@@ -67,7 +68,7 @@ const connection = fakeContextConnection({
   },
 });
 
-const { GhgCanvas } = await import("./GhgCanvas");
+const { GhgCanvas, GHG_DEFINITION, ghgDefinitionFor } = await import("./GhgCanvas");
 
 /** Steam engine: 1760-01 to 1860-01 on row 3 - 400 months, 1,600 units wide, its left at x -560. */
 function modelWith(): GhgModel {
@@ -253,6 +254,31 @@ describe("the hype cycle graph canvas answers each library event through its one
 
     expect(executed).toEqual([]);
     expect(events.onLabelCommitRequested).toBeUndefined();
+  });
+
+  it("draws a diagram whose trends name no unit in months", () => {
+    renderCanvas();
+
+    expect(captured!.definition).toBe(GHG_DEFINITION);
+  });
+
+  it("draws a diagram of decades with the decade's definition, and writes the decade a dragged edge snaps to", async () => {
+    // Every trend carries the diagram's unit, as the backend sends it.
+    for (const trend of currentModel.trends.values()) {
+      trend.payload.unit = "decade";
+    }
+    const events = renderCanvas();
+
+    // x 40 is 2000-01 in decades (four units a decade from 1900), and x 41 snaps back to it.
+    events.onElementResized!({ kind: "element-resized", elementId: "steam-engine", side: "right", bounds: { x: -560, y: 168, width: 601, height: 32 } });
+    events.onSegmentBoundaryMoved!({ kind: "segment-boundary-moved", elementId: "steam-engine", index: 0, x: -2159 });
+    await settle();
+
+    expect(captured!.definition).toBe(ghgDefinitionFor("decade"));
+    expect(properties).toEqual([
+      { propertyId: "ghg.stop", value: "2000-01", targetId: "steam-engine" },
+      { propertyId: "ghg.peak-end", value: "-3500-01", targetId: "steam-engine" },
+    ]);
   });
 
   it("hands the library each trend at its centre and width, with its phases, boundaries, tags and attachments", () => {

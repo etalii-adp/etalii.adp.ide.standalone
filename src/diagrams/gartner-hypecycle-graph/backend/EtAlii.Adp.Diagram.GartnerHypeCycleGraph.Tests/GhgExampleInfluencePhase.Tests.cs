@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </summary>
 public class GhgExampleInfluencePhaseTests
 {
-    public static TheoryData<string> Examples => ["technology-trends", "digital-trends", "energy-breakthroughs", "llms-and-agents"];
+    public static TheoryData<string> Examples => ["technology-trends", "digital-trends", "energy-breakthroughs", "llms-and-agents", "eras-of-innovation"];
 
     private static GhgModel Model(string name) => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(name))));
 
