@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { createEvent, fireEvent, render } from "@testing-library/react";
 import { DiagramCanvasCore } from "@client/canvas/library/DiagramCanvas";
 import { effectiveDefinition } from "@client/canvas/library/api/diagramRuntimeConfig";
 import { validateDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
@@ -67,7 +67,7 @@ describe("the hype cycle graph's compact mode, declared", () => {
       const definition = ghgDefinitionFor(unit);
       expect(definition.layout.modes).toEqual(["manual", "row-packed"]);
       expect(definition.layout.toggle).toEqual({ caption: "Compact", on: "row-packed" });
-      expect(definition.layout.rowPacked).toEqual({ width: COMPACT_WIDTH, gap: GhgScale.unitsPerMonth });
+      expect(definition.layout.rowPacked).toEqual({ width: COMPACT_WIDTH, gap: GhgScale.unitsPerMonth, types: ["trend"], rowStep: GhgScale.rowStep });
       expect(validateDiagramDefinition(definition)).toEqual([]);
     }
   });
@@ -97,7 +97,8 @@ describe("the technology-trends example in compact mode", () => {
   it("draws every trend at one width, in the order they start, never two touching on a row", { timeout: 30_000 }, () => {
     const { container } = renderCompact(model);
 
-    const placed = model.elements.map((element) => ({
+    // The trends: a trigger and a note keep their own size, which the next describe block holds.
+    const placed = model.elements.filter((element) => element.type === "trend").map((element) => ({
       name: element.label ?? "",
       start: element.x - element.width! / 2,
       row: element.y,
@@ -169,5 +170,146 @@ describe("the technology-trends example in compact mode", () => {
     fireEvent(body, pointer("pointerup", clientOf(container, box.left + 200, box.top + 100)));
 
     expect(onElementMoved).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ghg-triggers-and-notes task 8: triggers and notes in the compact placement, among the trends, at
+ * their own size, and fixed in place - read off what the canvas draws and raises.
+ */
+describe("triggers and notes in compact mode", () => {
+  const middleOf = (row: number) => row * GhgScale.rowStep + GhgScale.trendHeight / 2;
+  const trend = (id: string, left: number, row: number) => ({
+    id, type: "trend", x: left + 200, y: middleOf(row), width: 400, height: GhgScale.trendHeight, label: id,
+    payload: { name: id, phases: 4, boundaries: [], tags: [], snapX: 0, snapY: 0 },
+  });
+
+  /** Early and late on row 1, a trigger dated between them, and a note two rows tall starting after early. */
+  const MODEL: DiagramModel = {
+    elements: [
+      trend("early", 0, 1),
+      trend("late", 400, 1),
+      trend("below", 150, 2),
+      { id: "spark", type: "trigger", x: 200, y: middleOf(1), width: 16, height: 16, label: "Spark", payload: { name: "Spark", when: "1904", whenLong: "1904", tags: [], snapX: -8, snapY: 8 } },
+      { id: "remark", type: "note", x: 100 + 80, y: GhgScale.rowStep + 32, width: 160, height: 64, label: "A remark", payload: { text: "A remark", snapX: 0, snapY: 0 } },
+    ],
+    connections: [],
+  };
+
+  function renderWith(events: Record<string, unknown> = {}, selected = "early") {
+    const result = render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvasCore definition={GHG_DEFINITION} model={MODEL} events={events} selection={[{ kind: "element", id: selected }]} />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+    fireEvent.click(result.container.querySelector(".library-layout-toggle")!);
+    return result;
+  }
+
+  /** Where a shape's own group is translated to: shapes draw about their centre inside it. */
+  const translationOf = (shape: Element) => {
+    const [, x, y] = /translate\((-?[\d.]+)[ ,]+(-?[\d.]+)\)/.exec(shape.parentElement!.getAttribute("transform") ?? "") ?? [, "0", "0"];
+    return { x: Number(x), y: Number(y) };
+  };
+
+  /** The circle's drawn centre and radius. */
+  const circleOf = (container: HTMLElement, id: string) => {
+    const circle = container.querySelector(`[data-element-id="${id}"] ellipse`)!;
+    const at = translationOf(circle);
+    return { cx: at.x + Number(circle.getAttribute("cx") ?? 0), cy: at.y + Number(circle.getAttribute("cy") ?? 0), r: Number(circle.getAttribute("rx")) };
+  };
+
+  /** The note's drawn box. */
+  const noteBox = (container: HTMLElement) => {
+    const rect = container.querySelector('[data-element-id="remark"] rect.ghg-note-box')!;
+    const at = translationOf(rect);
+    const left = at.x + Number(rect.getAttribute("x"));
+    const top = at.y + Number(rect.getAttribute("y"));
+    return { left, top, right: left + Number(rect.getAttribute("width")), bottom: top + Number(rect.getAttribute("height")) };
+  };
+
+  it("places a trigger between the trends starting before and after its date, on its row, at its own size", () => {
+    const { container } = renderWith();
+    const spark = circleOf(container, "spark");
+
+    expect(spark.r).toBe(8);
+    expect(spark.cy).toBe(middleOf(1));
+    expect(spark.cx - spark.r).toBeGreaterThan(drawnBox(container, "early").right);
+    expect(spark.cx + spark.r).toBeLessThan(drawnBox(container, "late").left);
+  });
+
+  it("keeps a note's size, and nothing overlaps it on either row it covers", () => {
+    const { container } = renderWith();
+    const note = noteBox(container);
+
+    expect([note.right - note.left, note.bottom - note.top]).toEqual([160, 64]);
+    for (const id of ["early", "late", "below"]) {
+      const box = drawnBox(container, id);
+      const sharesARow = box.top < note.bottom && box.bottom > note.top;
+      const overlaps = sharesARow && box.left < note.right && box.right > note.left;
+      expect(overlaps, `${id} overlaps the note`).toBe(false);
+    }
+  });
+
+  it("drags neither, and offers the note no resize", () => {
+    const onElementMoved = vi.fn();
+    const { container } = renderWith({ onElementMoved }, "remark");
+    const spark = circleOf(container, "spark");
+    const circle = container.querySelector('[data-element-id="spark"] ellipse')!;
+
+    fireEvent(circle, pointer("pointerdown", { button: 0, ...clientOf(container, spark.cx, spark.cy) }));
+    fireEvent(circle, pointer("pointermove", clientOf(container, spark.cx + 100, spark.cy + 100)));
+    fireEvent(circle, pointer("pointerup", clientOf(container, spark.cx + 100, spark.cy + 100)));
+
+    expect(onElementMoved).not.toHaveBeenCalled();
+    expect(container.querySelectorAll('[data-element-id="remark"] .library-resize-handle')).toHaveLength(0);
+  });
+
+  it("still draws an influence from a trigger", () => {
+    const onConnectionDrawn = vi.fn();
+    const { container } = renderWith({ onConnectionDrawn });
+    const spark = circleOf(container, "spark");
+    const late = drawnBox(container, "late");
+    const handle = container.querySelector('[data-element-id="spark"] [data-anchor="e"]')!;
+    const over = clientOf(container, late.left + 4, late.top + 2);
+
+    fireEvent(handle, pointer("pointerdown", { button: 0, ...clientOf(container, spark.cx + 8, spark.cy) }));
+    fireEvent(handle, pointer("pointermove", over));
+    fireEvent(handle, pointer("pointerup", over));
+
+    expect(onConnectionDrawn).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ sourceElementId: "spark", targetElementId: "late" }));
+  });
+
+  it("dates a trigger dropped between two trends between theirs", () => {
+    const onElementDropped = vi.fn();
+    const { container } = renderWith({ onElementDropped });
+    const early = drawnBox(container, "early");
+    const late = drawnBox(container, "late");
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const at = clientOf(container, (early.left + late.left) / 2, middleOf(4));
+    const drop = createEvent.drop(surface, { dataTransfer: { types: ["application/x-adp-toolbox-item"], getData: () => "trigger", dropEffect: "" } });
+    Object.defineProperty(drop, "clientX", { value: at.clientX });
+    Object.defineProperty(drop, "clientY", { value: at.clientY });
+
+    fireEvent(surface, drop);
+
+    expect(onElementDropped).toHaveBeenCalledTimes(1);
+    const { x } = onElementDropped.mock.calls[0][0].position;
+    expect(x).toBeGreaterThan(0);
+    expect(x).toBeLessThan(400);
+  });
+
+  it("switches on and off without a single edit raised", () => {
+    const edits = { onElementMoved: vi.fn(), onElementResized: vi.fn(), onElementDropped: vi.fn(), onConnectionDrawn: vi.fn(), onElementDeleted: vi.fn(), onActionInvoked: vi.fn() };
+    const { container } = renderWith(edits);
+
+    fireEvent.click(container.querySelector(".library-layout-toggle")!);
+    fireEvent.click(container.querySelector(".library-layout-toggle")!);
+
+    for (const [name, handler] of Object.entries(edits)) {
+      expect(handler, name).not.toHaveBeenCalled();
+    }
   });
 });

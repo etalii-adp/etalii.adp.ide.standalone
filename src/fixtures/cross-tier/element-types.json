@@ -94,7 +94,9 @@
     },
     "gartner-hypecycle-graph": {
       "elements": [
-        "gartner/hypecycle-graph+trend"
+        "gartner/hypecycle-graph+note",
+        "gartner/hypecycle-graph+trend",
+        "gartner/hypecycle-graph+trigger"
       ],
       "relations": [
         "gartner/hypecycle-graph+influence"

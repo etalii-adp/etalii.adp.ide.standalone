@@ -74,7 +74,7 @@ public sealed class GhgSessionTests : IDisposable
     {
         var model = Parse();
         var hidden = model.Influences.Single(influence =>
-            influence.FromEnd.PhaseIndex >= model.Trends.Single(trend => trend.Id == influence.From).VisiblePhases);
+            model.Trends.SingleOrDefault(trend => trend.Id == influence.From) is { } from && influence.FromEnd.PhaseIndex >= from.VisiblePhases);
         await using var session = Open();
 
         var delivered = Delivered(session.Baseline()).Single(element => element.Id == hidden.Id);

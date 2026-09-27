@@ -15,7 +15,8 @@ Twenty-nine trends in how warfare is changing, centred on the war in Ukraine: th
 | Part | In this example |
 | --- | --- |
 | Trends | 29, in four clusters of rows: before 2014; from 2014; from 2022; and what comes next, with an empty row between every two rows of trends |
-| Influences | 42, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Influences | 53, each attached to the phase of each trend in which it acted, and never arriving before it leaves |
+| Triggers | 7, each a circle at the month it happened, with an influence on every trend it set off |
 | Short cycles | Strike drones, anti-tank missiles, satellite communications, rocket artillery and FPV drones each reached their Trough within months to two years, as countermeasures caught up |
 | Phase counts | Every count from 1 to 4: precision munitions, GPS and armed drones show all four phases, most trends since 2022 only a Peak |
 | Upcoming and conceptual ideas | Drone walls, ground robots and laser air defence are tagged `upcoming`; autonomous drone swarms and human-machine combat teams are tagged `conceptual` |
@@ -23,6 +24,20 @@ Twenty-nine trends in how warfare is changing, centred on the war in Ukraine: th
 | Descriptions | On most trends and some influences, kept in the document and never drawn |
 
 **Tags make meaningful filters**, for example `drones` alone; `drones` and `ew` with the filter on All; and `upcoming` and `conceptual` on Any. The other tags are `strike`, `navigation`, `space`, `command`, `cyber`, `doctrine`, `intelligence`, `infantry`, `software`, `naval`, `air-defence`, `ai`, `industry`, `logistics` and `policy`.
+
+## Triggers
+
+A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
+
+- **Annexation of Crimea**, March 2014: on Hybrid warfare and Electronic warfare.
+- **Downing of MH17**, July 2014: on Open-source intelligence.
+- **NotPetya cyberattack**, June 2017: on Cyber warfare.
+- **Second Nagorno-Karabakh War**, September 2020: on Medium-altitude strike drones and Loitering munitions.
+- **Full-scale invasion**, February 2022: on Man-portable anti-tank missiles, Satellite communications at the front and Battlefield management software.
+- **Sinking of the cruiser Moskva**, April 2022: on Uncrewed surface vessels.
+- **Operation Spiderweb**, June 2025: on Mass drone production.
+
+**No trend here was a moment**: each spans years, so none was rewritten as a trigger.
 
 ## What it does not demonstrate
 

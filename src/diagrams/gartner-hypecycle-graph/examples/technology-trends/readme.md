@@ -18,8 +18,10 @@ The classic hype cycle chart shows one curve and plots each technology as a dot 
 
 | Part | In this example |
 | --- | --- |
-| Trends | 200, in six clusters of rows: industry, energy, transport, communication, computing, and society, with an empty row between every two rows of trends |
-| Influences | 263, most of them between clusters, each attached to the phase of each trend in which it acted: the two phases overlap in time, or, where one trend ended before the other began, it acts from its last phase on the other's Peak |
+| Trends | 197, in six clusters of rows: industry, energy, transport, communication, computing, and society, with an empty row between every two rows of trends |
+| Influences | 274, most of them between clusters, each attached to the phase of each trend in which it acted: the two phases overlap in time, or, where one trend ended before the other began, it acts from its last phase on the other's Peak |
+| Triggers | 9, each a circle at the month it happened, with an influence on every trend it set off |
+| Notes | 1, in the society rows, saying what the circles are |
 | Phase counts | Every count from 1 to 4: trends of the past show all four phases, recent ones such as AI agents, fusion or small modular reactors only a Peak |
 | Edges | Influences attach to the top and the bottom edge of every one of the four phases |
 | Anchors | Placed by [`spread-anchors.py`](../spread-anchors.py): each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
@@ -29,6 +31,22 @@ The classic hype cycle chart shows one curve and plots each technology as a dot 
 | Descriptions | On trends and on influences, kept in the document and never drawn |
 
 **Tags make at least three meaningful filters**: `energy` alone; `communication` and `computing` with the filter on All; and `transport` and `energy` on Any. Each matches some trends and hides the rest. The other tags are `industry`, `society`, `science`, `health` and `finance`.
+
+## Triggers
+
+A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
+
+- **Watt's separate condenser patent**, January 1769: on Steam engine and Factory system.
+- **Wall Street Crash**, October 1929: on Welfare state.
+- **Nuclear fission**, December 1938: on Nuclear power and Nuclear fusion.
+- **Sputnik 1**, October 1957: on Space flight, ARPANET and Communication satellites.
+- **Oil crises**, October 1973: on Solar photovoltaics, Wind power and Nuclear power.
+- **iPhone announced**, January 2007: on Smartphones and App stores.
+- **2008 financial crisis**, September 2008: on Cryptocurrency and Sharing economy.
+- **COVID-19 declared a pandemic**, March 2020: on Remote work, mRNA vaccines and Telemedicine.
+- **ChatGPT launched**, November 2022: on Generative AI and AI regulation.
+
+**Three trends were moments, and became triggers.** *Oil crises* is now the 1973 oil crisis at October 1973; *2008 financial crisis* is dated at the collapse of Lehman Brothers, September 2008, rather than at the first frozen funds of August 2007; and *Nuclear fission* is its discovery, December 1938. Each kept its id, name, tags and description, and every influence it sent. Two influences it received were dropped, because nothing influences a moment: *Petroleum* on the oil crises, and *Global financial markets* on the financial crisis.
 
 ## What it does not demonstrate
 

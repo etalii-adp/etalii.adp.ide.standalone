@@ -20,6 +20,12 @@ export function validateDiagramDefinition(definition: DiagramDefinition): readon
   if (layout.modes.includes("row-packed") && layout.rowPacked === undefined) {
     problems.push("The layout allows row-packed without declaring rowPacked: the mode has no width to draw with.");
   }
+  const declaredTypes = new Set(definition.elementTypes.map((type) => type.id));
+  for (const type of layout.rowPacked?.types ?? []) {
+    if (!declaredTypes.has(type)) {
+      problems.push(`The row-packed layout gives its width to element type "${type}", which this definition does not declare.`);
+    }
+  }
   if (layout.toggle !== undefined) {
     if (!layout.modes.includes(layout.toggle.on)) {
       problems.push(`The layout toggle switches to "${layout.toggle.on}", which the layout does not allow.`);
@@ -55,6 +61,9 @@ function validateBody(definition: DiagramDefinition): string[] {
         `Element type "${element.id}" names custom shape "${element.shape.customShape}" without supplying its renderer and edge function.`,
       );
     }
+    if (element.anchors.kind === "along" && element.anchors.attachDrawnBy !== undefined) {
+      problems.push(`Element type "${element.id}" declares attachDrawnBy on along anchors, which record where an end sits and are never drawn by edge.`);
+    }
   }
 
   for (const relation of definition.relationTypes) {
@@ -75,6 +84,13 @@ function validateBody(definition: DiagramDefinition): string[] {
       problems.push(
         `Relation type "${relation.id}" names custom route "${relation.route.customRoute}" without supplying its path builder.`,
       );
+    }
+  }
+
+  // A filter scoped to a type nobody declares leaves that type's elements hidden or kept by accident.
+  for (const elementType of definition.filter?.elementTypes ?? []) {
+    if (!knownElementTypes.has(elementType)) {
+      problems.push(`The filter applies to element type "${elementType}", which this definition does not declare.`);
     }
   }
 

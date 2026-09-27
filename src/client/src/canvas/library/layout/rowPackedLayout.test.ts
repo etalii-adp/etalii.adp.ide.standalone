@@ -158,3 +158,132 @@ describe("row-packed inverse", () => {
     expect(leftOf(after.get("new")!)).toBeLessThanOrEqual(leftOf(after.get("late")!));
   });
 });
+
+/**
+ * A population mixing types: `trend`s take the declared width, while `dot`s and `note`s keep their
+ * own - the notes two rows tall. Rows are 56 apart, and an element covers every row line its span
+ * crosses, so the properties above are re-proven per ROW LINE, not per centre.
+ */
+describe("row-packed placement with a width per type and elements across rows", () => {
+  const ROW = 56;
+  const mixed: LayoutDefinition = { modes: ["manual", "row-packed"], rowPacked: { width: WIDTH, gap: GAP, types: ["trend"], rowStep: ROW } };
+
+  /** An element by type, manual left edge, width, top and height; the layout reads centres. */
+  const shaped = (id: string, type: string, left: number, width: number, top: number, height: number): LayoutElement =>
+    ({ id, type, x: left + width / 2, y: top + height / 2, width, height });
+
+  const trendAt = (id: string, left: number, span: number, row: number) => shaped(id, "trend", left, span, row * ROW, 32);
+  const dotAt = (id: string, left: number, row: number) => shaped(id, "dot", left - 8, 16, row * ROW + 8, 16);
+  const noteAt = (id: string, left: number, row: number) => shaped(id, "note", left, 100, row * ROW, 100);
+
+  const MIXED: LayoutElement[] = Array.from({ length: 45 }, (_, index) => {
+    const left = (index * 37) % 400 - (((index * 37) % 400) % 8);
+    const row = index % 5;
+    return index % 3 === 0 ? trendAt(`e${index}`, left, 4 + ((index * 53) % 900), row) : index % 3 === 1 ? dotAt(`e${index}`, left, row) : noteAt(`e${index}`, left, row);
+  });
+
+  const place = (elements: LayoutElement[], declaration = mixed) =>
+    rowPackedLayout.place(inputOf(elements), declaration) as Map<string, LayoutPlacement>;
+
+  /** The placed left edge and width of an element. */
+  const span = (positions: Map<string, LayoutPlacement>, element: LayoutElement) => {
+    const at = positions.get(element.id)!;
+    const width = at.width ?? element.width;
+    return { left: at.x - width / 2, right: at.x + width / 2 };
+  };
+
+  /** Every row line an element's span crosses. */
+  const rowLines = (element: LayoutElement) => {
+    const first = Math.floor((element.y - element.height / 2) / ROW);
+    const last = Math.floor((element.y + element.height / 2 - 1) / ROW);
+    return Array.from({ length: last - first + 1 }, (_, index) => first + index);
+  };
+
+  it("keeps time order across types", () => {
+    const positions = place(shuffled(MIXED, 5));
+    const manualLeft = (element: LayoutElement) => element.x - element.width / 2;
+
+    for (const a of MIXED) {
+      for (const b of MIXED) {
+        if (manualLeft(a) < manualLeft(b)) {
+          expect(span(positions, a).left).toBeLessThanOrEqual(span(positions, b).left);
+        }
+      }
+    }
+  });
+
+  it("never lets two elements covering one row line come closer than the gap", () => {
+    const positions = place(MIXED);
+
+    const lines = new Map<number, { left: number; right: number }[]>();
+    for (const element of MIXED) {
+      for (const line of rowLines(element)) {
+        lines.set(line, [...(lines.get(line) ?? []), span(positions, element)]);
+      }
+    }
+    for (const spans of lines.values()) {
+      const sorted = [...spans].sort((a, b) => a.left - b.left);
+      for (let index = 1; index < sorted.length; index += 1) {
+        expect(sorted[index].left - sorted[index - 1].right).toBeGreaterThanOrEqual(GAP);
+      }
+    }
+  });
+
+  it("keeps nothing on the first row of a two-row note from overlapping it", () => {
+    // The note covers rows 0 and 1, its centre on row line 0's far side at y 50; a trend on row 0
+    // starts after it and must clear it. Keyed by the centre alone, row 0 would look empty.
+    const note = noteAt("note", 0, 0);
+    const later = trendAt("later", 10, 40, 0);
+    const below = trendAt("below", 20, 40, 1);
+
+    const positions = place([note, later, below]);
+
+    expect(span(positions, later).left, "the trend on the note's first row overlaps it").toBeGreaterThanOrEqual(100 + GAP);
+    expect(span(positions, below).left, "the trend on the note's second row overlaps it").toBeGreaterThanOrEqual(100 + GAP);
+  });
+
+  it("places each element as far left as time order and its rows allow", () => {
+    const positions = place([trendAt("a", 0, 400, 0), dotAt("d", 100, 0), trendAt("c", 50, 8, 1)]);
+
+    expect(span(positions, trendAt("a", 0, 400, 0)).left).toBe(0);
+    expect(span(positions, trendAt("c", 50, 8, 1)).left).toBe(0);
+    expect(span(positions, dotAt("d", 100, 0)).left).toBe(WIDTH + GAP);
+  });
+
+  it("gives the same placement for every order the elements arrive in", () => {
+    const reference = place(MIXED);
+
+    for (const seed of [1, 2, 3, 99]) {
+      expect(place(shuffled(MIXED, seed))).toEqual(reference);
+    }
+  });
+
+  it("draws the listed type at the declared width and leaves every other its own", () => {
+    const positions = place(MIXED);
+
+    for (const element of MIXED) {
+      expect(positions.get(element.id)!.width, element.id).toBe(element.type === "trend" ? WIDTH : undefined);
+      expect(positions.get(element.id)!.y).toBe(element.y);
+    }
+  });
+
+  it("gives every element the declared width when no types are listed", () => {
+    const positions = place(MIXED, { ...mixed, rowPacked: { width: WIDTH, gap: GAP } });
+
+    for (const element of MIXED) {
+      expect(positions.get(element.id)!.width).toBe(WIDTH);
+    }
+  });
+
+  it("inverts a drop between a listed and an unlisted element to a manual x between theirs", () => {
+    const pair = [trendAt("early", 0, 40, 0), dotAt("late", 400, 0)];
+    const positions = place(pair);
+    const early = span(positions, pair[0]).left;
+    const late = span(positions, pair[1]).left;
+
+    const manual = rowPackedLayout.inverse!({ x: (early + late) / 2, y: 3 * ROW + 16 }, inputOf(pair), mixed);
+
+    expect(manual.x).toBeGreaterThan(0);
+    expect(manual.x).toBeLessThan(400 - 8);
+  });
+});

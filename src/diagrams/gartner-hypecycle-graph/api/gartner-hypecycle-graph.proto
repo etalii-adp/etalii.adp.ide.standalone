@@ -28,6 +28,37 @@ message GhgTrendPayload {
   // no diagram-level payload; the client reads it from any trend it holds, and changing it changes
   // every trend's payload bytes, so a delta carries it like any other change.
   string unit = 6;
+  // The snap origins, both 0 for a trend. Every element type binds the same two paths, so a trigger
+  // can offset its own to put its centre on a step line and a row's middle.
+  double snap_x = 7;
+  double snap_y = 8;
+}
+
+// One trigger: a moment in time drawn as a circle half a trend's height across, its centre at the
+// start of its month and on its row's middle. It has no phases, and is only ever an influence's source.
+// A DESCRIPTION IS NEVER SENT, as for a trend.
+message GhgTriggerPayload {
+  string name = 1;
+  repeated string tags = 2;
+  // The diagram's time unit, as on a trend.
+  string unit = 3;
+  // The date in the diagram's unit, drawn after the name: "Dec 1947" in a diagram of months,
+  // "1947" in one of years or coarser. The backend formats it because it owns the unit.
+  string when = 4;
+  // The same date in full, for the tooltip: "December 1947", or "1947".
+  string when_long = 5;
+  // The snap origin that puts the circle's centre on a step line: minus half its diameter.
+  double snap_x = 6;
+  // The snap origin that puts the circle's centre on a row's middle.
+  double snap_y = 7;
+}
+
+// One note: the author's own text in a box, word-wrapped, taking part in no relation. Its size is in
+// canvas units, not in time, so a change of unit leaves it its size.
+message GhgNotePayload {
+  string text = 1;
+  double width = 2;
+  double height = 3;
 }
 
 // Where one end of an influence attaches: an edge of one phase of a trend, and how far along it.
@@ -41,7 +72,7 @@ message GhgAttachment {
   double at = 3;
 }
 
-// One influence, from one trend to another. The endpoints are here because the client cannot
+// One influence, from a trend or a trigger to a trend. One from a trigger has no source attachment. The endpoints are here because the client cannot
 // draw an edge without them, as in every module. An attachment the document states unreadably is
 // left unset, and the connection is then drawn as one with no attachment.
 message GhgInfluencePayload {

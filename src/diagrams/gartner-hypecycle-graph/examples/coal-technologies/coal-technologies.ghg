@@ -271,6 +271,52 @@ trends:
     phases: 1
     tags: [power, conceptual]
     description: Turning carbon into electricity electrochemically, without burning it.
+triggers:
+  - id: rainhill-trials
+    name: Rainhill trials
+    date: 1829-10
+    row: 13
+    tags: [steam, transport]
+    description: Stephenson's Rocket won the trials for the Liverpool and Manchester Railway, and with them the case for the steam locomotive.
+  - id: pearl-street-station
+    name: Pearl Street Station opens
+    date: 1882-09
+    row: 15
+    tags: [power]
+    description: Edison's first commercial central power station, in Manhattan, burned coal to light the streets around it.
+  - id: great-smog
+    name: Great Smog of London
+    date: 1952-12
+    row: 37
+    tags: [environment, policy]
+    description: Five days of coal smoke trapped under fog in London; thousands died, and the Clean Air Act followed in 1956.
+  - id: us-clean-air-act
+    name: US Clean Air Act
+    date: 1970-12
+    row: 23
+    tags: [environment, policy]
+    description: Federal limits on sulphur dioxide made scrubbers a condition of building a coal plant.
+  - id: oil-crisis-1973
+    name: 1973 oil crisis
+    date: 1973-10
+    row: 33
+    tags: [policy, liquids]
+    description: The oil embargo made fuels and gas made from coal look strategic again.
+  - id: paris-agreement
+    name: Paris Agreement
+    date: 2015-12
+    row: 41
+    tags: [climate, policy]
+    description: The goal of holding warming well below two degrees put a date on unabated coal power.
+notes:
+  - id: note-projections
+    text: |-
+      Everything drawn after 2026 is a projection, not a record.
+      See the readme.
+    at: 2042-01
+    row: 40
+    width: 260
+    height: 80
 influences:
   - id: coke-smelting--newcomen-engine
     from: coke-smelting
@@ -344,11 +390,11 @@ influences:
     from: watt-steam-engine
     from-phase: slope
     from-edge: bottom
-    from-at: 0.62
+    from-at: 0.59
     to: steam-locomotive
     to-phase: peak
     to-edge: top
-    to-at: 0.39
+    to-at: 0.26
   - id: coal-gas-lighting--coal-tar-chemistry
     from: coal-gas-lighting
     from-phase: trough
@@ -372,11 +418,11 @@ influences:
     from: coal-power-stations
     from-phase: peak
     from-edge: top
-    from-at: 0.36
+    from-at: 0.47
     to: mechanised-coal-cutting
     to-phase: peak
     to-edge: bottom
-    to-at: 0.75
+    to-at: 0.96
     description: Electric motors drove the first reliable coal cutters.
   - id: coal-power-stations--smoke-abatement
     from: coal-power-stations
@@ -474,7 +520,7 @@ influences:
     from: smoke-abatement
     from-phase: plateau
     from-edge: top
-    from-at: 0.60
+    from-at: 0.72
     to: flue-gas-desulfurisation
     to-phase: peak
     to-edge: bottom
@@ -484,11 +530,11 @@ influences:
     from: electrostatic-precipitators
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.43
+    from-at: 0.50
     to: flue-gas-desulfurisation
     to-phase: peak
     to-edge: top
-    to-at: 0.60
+    to-at: 0.72
   - id: surface-mining--mountaintop-removal
     from: surface-mining
     from-phase: trough
@@ -595,29 +641,29 @@ influences:
     from: coal-power-stations
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.52
+    from-at: 0.53
     to: coal-phase-out
     to-phase: peak
     to-edge: top
-    to-at: 0.18
+    to-at: 0.35
   - id: mountaintop-removal--coal-phase-out
     from: mountaintop-removal
     from-phase: slope
     from-edge: bottom
-    from-at: 0.65
+    from-at: 0.68
     to: coal-phase-out
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.58
   - id: carbon-capture-and-storage--coal-phase-out
     from: carbon-capture-and-storage
     from-phase: trough
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.79
     to: coal-phase-out
     to-phase: peak
     to-edge: top
-    to-at: 0.79
+    to-at: 0.83
     description: Without working capture, closing the plants was the remaining route.
   - id: coal-gasification--coal-to-hydrogen
     from: coal-gasification
@@ -632,11 +678,11 @@ influences:
     from: carbon-capture-and-storage
     from-phase: trough
     from-edge: bottom
-    from-at: 0.30
+    from-at: 0.50
     to: coal-to-hydrogen
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.71
   - id: coal-phase-out--coal-plant-repowering
     from: coal-phase-out
     from-phase: peak
@@ -694,3 +740,57 @@ influences:
     to-edge: top
     to-at: 0.40
     description: Electricity from coal without a flame.
+  - id: rainhill-trials--steam-locomotive
+    from: rainhill-trials
+    to: steam-locomotive
+    to-phase: peak
+    to-edge: top
+    to-at: 0.69
+  - id: pearl-street-station--coal-power-stations
+    from: pearl-street-station
+    to: coal-power-stations
+    to-phase: peak
+    to-edge: top
+    to-at: 0.04
+  - id: great-smog--smoke-abatement
+    from: great-smog
+    to: smoke-abatement
+    to-phase: plateau
+    to-edge: top
+    to-at: 0.42
+  - id: great-smog--electrostatic-precipitators
+    from: great-smog
+    to: electrostatic-precipitators
+    to-phase: slope
+    to-edge: bottom
+    to-at: 0.45
+  - id: us-clean-air-act--flue-gas-desulfurisation
+    from: us-clean-air-act
+    to: flue-gas-desulfurisation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: oil-crisis-1973--coal-gasification
+    from: oil-crisis-1973
+    to: coal-gasification
+    to-phase: trough
+    to-edge: top
+    to-at: 0.93
+  - id: oil-crisis-1973--fischer-tropsch
+    from: oil-crisis-1973
+    to: fischer-tropsch
+    to-phase: slope
+    to-edge: bottom
+    to-at: 0.41
+  - id: paris-agreement--coal-phase-out
+    from: paris-agreement
+    to: coal-phase-out
+    to-phase: peak
+    to-edge: top
+    to-at: 0.16
+  - id: paris-agreement--carbon-capture-and-storage
+    from: paris-agreement
+    to: carbon-capture-and-storage
+    to-phase: trough
+    to-edge: bottom
+    to-at: 0.20

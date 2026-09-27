@@ -250,6 +250,8 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "wardley-kind-component",
       "wardley-kind-submap",
       "ghg-influence",
+      "ghg-trigger",
+      "ghg-note",
     ],
   },
   {

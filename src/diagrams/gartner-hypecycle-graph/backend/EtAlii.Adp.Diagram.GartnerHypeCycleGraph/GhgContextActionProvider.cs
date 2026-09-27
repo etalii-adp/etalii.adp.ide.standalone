@@ -32,13 +32,19 @@ public sealed class GhgContextActionProvider : IContextActionProvider
     /// <summary>Add a trend at a drop or a placement.</summary>
     public const string AddTrendActionId = "ghg.add.trend";
 
+    /// <summary>Add a trigger at a drop or a placement.</summary>
+    public const string AddTriggerActionId = "ghg.add.trigger";
+
+    /// <summary>Add a note at a drop or a placement.</summary>
+    public const string AddNoteActionId = "ghg.add.note";
+
     /// <summary>Draw an influence for a finished connect gesture.</summary>
     public const string ConnectActionId = "ghg.connect.influence";
 
-    /// <summary>Rename a trend in place.</summary>
+    /// <summary>Rename a trend or trigger in place, or edit a note's text in place.</summary>
     public const string RenameActionId = "ghg.rename";
 
-    /// <summary>Remove a trend and every influence touching it.</summary>
+    /// <summary>Remove a trend or trigger and every influence touching it, or a note.</summary>
     public const string RemoveActionId = "ghg.remove";
 
     /// <summary>Return a trend's phases to even (Requirement 3.5).</summary>
@@ -94,6 +100,30 @@ public sealed class GhgContextActionProvider : IContextActionProvider
             return Result([new ContextActionGroupDefinition(actions)]);
         }
 
+        if (GhgEdits.TriggerOf(model, target.ElementId) is not null)
+        {
+            return Result(
+            [
+                new ContextActionGroupDefinition(
+                [
+                    new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
+                    new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
+                ]),
+            ]);
+        }
+
+        if (GhgEdits.NoteOf(model, target.ElementId) is not null)
+        {
+            return Result(
+            [
+                new ContextActionGroupDefinition(
+                [
+                    new ContextActionDefinition(RenameActionId, "Edit text…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
+                    new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
+                ]),
+            ]);
+        }
+
         if (GhgEdits.InfluenceOf(model, target.ElementId) is not null)
         {
             return Result(
@@ -109,7 +139,15 @@ public sealed class GhgContextActionProvider : IContextActionProvider
         // gesture each discover what may be executed against them.
         if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
         {
-            return Result([new ContextActionGroupDefinition([new ContextActionDefinition(AddTrendActionId, "Add trend here", "mdi-plus")])]);
+            return Result(
+            [
+                new ContextActionGroupDefinition(
+                [
+                    new ContextActionDefinition(AddTrendActionId, "Add trend here", "mdi-plus"),
+                    new ContextActionDefinition(AddTriggerActionId, "Add trigger here", "mdi-circle-slice-8"),
+                    new ContextActionDefinition(AddNoteActionId, "Add note here", "mdi-note-text-outline"),
+                ]),
+            ]);
         }
 
         if (GhgGestures.TryParseRelation(target.ElementId, out _, out _, out _, out _))
@@ -135,6 +173,8 @@ public sealed class GhgContextActionProvider : IContextActionProvider
 
         var model = entry.Model;
         var trend = GhgEdits.TrendOf(model, target.ElementId);
+        var trigger = GhgEdits.TriggerOf(model, target.ElementId);
+        var note = GhgEdits.NoteOf(model, target.ElementId);
 
         switch (actionId)
         {
@@ -144,35 +184,53 @@ public sealed class GhgContextActionProvider : IContextActionProvider
                     ? await DispatchAsync(target, new AddGhgTrendCommand(body, x, y), cancellationToken)
                     : new ContextExecutionFailed("A trend is added by dropping it where it starts.");
 
+            case AddTriggerActionId:
+                return GestureIds.TryParsePlacement(target.ElementId, out var triggerX, out var triggerY)
+                    ? await DispatchAsync(target, new AddGhgTriggerCommand(body, triggerX, triggerY), cancellationToken)
+                    : new ContextExecutionFailed("A trigger is added by dropping it where it happened.");
+
+            case AddNoteActionId:
+                // Added empty; the canvas opens its editor when it arrives, as the note's type declares.
+                return GestureIds.TryParsePlacement(target.ElementId, out var noteX, out var noteY)
+                    ? await DispatchAsync(target, new AddGhgNoteCommand(body, noteX, noteY), cancellationToken)
+                    : new ContextExecutionFailed("A note is added by dropping it where it applies.");
+
             case ConnectActionId:
                 // The whole gesture in one stateless call; the command refuses what the rules refuse.
                 return GhgGestures.TryParseRelation(target.ElementId, out var from, out var fromEnd, out var to, out var toEnd)
                     ? await DispatchAsync(target, new AddGhgInfluenceCommand(body, from, fromEnd, to, toEnd), cancellationToken)
                     : new ContextExecutionFailed("An influence is drawn from one trend to another.");
 
-            case RenameActionId when trend is not null:
-                // In place, over the trend's own label.
+            case RenameActionId when trend is not null || trigger is not null:
+                // In place, over the element's own label - the name alone, never a trigger's date.
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename", "mdi-pencil-outline", "Name", trend.Name, "Rename", target.ElementId));
+                    "Rename", "mdi-pencil-outline", "Name", trend?.Name ?? trigger!.Name, "Rename", target.ElementId));
+
+            case RenameActionId when note is not null:
+                // In place and multi-line, over the note's own wrapped text.
+                return new ContextExecutionRequiresInput(new ContextInputRequest(
+                    "Edit text", "mdi-pencil-outline", "Text", note.Text, "Save", target.ElementId));
 
             case EvenPhasesActionId when trend is not null:
                 return await DispatchAsync(target, new ClearGhgBoundariesCommand(body, trend.Id), cancellationToken);
 
-            case RemoveActionId when trend is not null:
+            case RemoveActionId when trend is not null || trigger is not null || note is not null:
             {
                 // Says how many influences go with it before it runs; with none, no ceremony.
-                var going = model.Influences.Count(influence => influence.From == trend.Id || influence.To == trend.Id);
+                var id = target.ElementId;
+                var what = trend is not null ? "trend" : "trigger";
+                var going = note is not null ? 0 : model.Influences.Count(influence => influence.From == id || influence.To == id);
                 if (going == 0)
                 {
-                    return await DispatchAsync(target, new RemoveGhgTrendCommand(body, trend.Id), cancellationToken);
+                    return await DispatchAsync(target, new RemoveGhgElementCommand(body, id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
                     "Remove",
                     "mdi-delete-outline",
                     going == 1
-                        ? "Removing this trend also removes the 1 influence to or from it."
-                        : $"Removing this trend also removes the {going} influences to or from it.",
+                        ? $"Removing this {what} also removes the 1 influence to or from it."
+                        : $"Removing this {what} also removes the {going} influences to or from it.",
                     "Remove",
                     Danger: true));
             }
@@ -194,11 +252,20 @@ public sealed class GhgContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        // The one value asked for is a name, and the only wrong one is an empty one.
+        // The one value asked for is a name or a note's text, and the only wrong one is an empty name:
+        // a note may be emptied.
+        if (actionId != RenameActionId || !string.IsNullOrWhiteSpace(value))
+        {
+            return ValueTask.FromResult(ContextValidationResult.Accepted);
+        }
+
+        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
         return ValueTask.FromResult(
-            actionId == RenameActionId && string.IsNullOrWhiteSpace(value)
-                ? ContextValidationResult.Rejected("A trend needs a name.")
-                : ContextValidationResult.Accepted);
+            entry.IsUsable && GhgEdits.NoteOf(entry.Model, target.ElementId) is not null
+                ? ContextValidationResult.Accepted
+                : ContextValidationResult.Rejected(entry.IsUsable && GhgEdits.TriggerOf(entry.Model, target.ElementId) is not null
+                    ? "A trigger needs a name."
+                    : "A trend needs a name."));
     }
 
     /// <inheritdoc />
@@ -215,12 +282,12 @@ public sealed class GhgContextActionProvider : IContextActionProvider
         var body = target.ResolvedFullPath;
         var id = target.ElementId;
         var entry = _documents.GetOrLoad(body);
-        var isTrend = entry.IsUsable && GhgEdits.TrendOf(entry.Model, id) is not null;
+        var isElement = entry.IsUsable && GhgEdits.IsElement(entry.Model, id);
 
         ICommand? command = actionId switch
         {
-            RenameActionId when isTrend => new RenameGhgTrendCommand(body, id, value),
-            RemoveActionId when isTrend => new RemoveGhgTrendCommand(body, id),
+            RenameActionId when isElement => new RenameGhgElementCommand(body, id, value),
+            RemoveActionId when isElement => new RemoveGhgElementCommand(body, id),
             _ => null,
         };
 

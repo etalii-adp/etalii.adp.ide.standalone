@@ -181,3 +181,39 @@ describe("validateDiagramDefinition", () => {
     expect(interactive.adjustable).toBe(true);
   });
 });
+
+describe("validateDiagramDefinition, a filter's element types", () => {
+  it("rejects a filter scoped to an element type nobody declares, and accepts a declared one", () => {
+    const scopedTo = (elementTypes: string[]): DiagramDefinition => ({
+      ...goodDefinition(),
+      filter: { field: "payload.tags", label: "Filter", elementTypes },
+    });
+
+    expect(validateDiagramDefinition(scopedTo(["node"]))).toEqual([]);
+    expect(validateDiagramDefinition(scopedTo(["nobody"])).some((problem) => problem.includes('filter applies to element type "nobody"'))).toBe(true);
+  });
+});
+
+describe("validateDiagramDefinition, attachDrawnBy", () => {
+  it("rejects attachDrawnBy on along anchors, and accepts it on named anchors", () => {
+    const withAnchors = (anchors: DiagramDefinition["elementTypes"][number]["anchors"]): DiagramDefinition => ({
+      ...goodDefinition(),
+      elementTypes: [{ id: "node", shape: "ellipse", anchors, sizing: "model" }, goodDefinition().elementTypes[1]!],
+    });
+
+    expect(validateDiagramDefinition(withAnchors({ kind: "compass", positions: ["n"], attachDrawnBy: "edge" }))).toEqual([]);
+    expect(validateDiagramDefinition(withAnchors({ kind: "along", edges: ["top"], attachDrawnBy: "edge" })).some((problem) => problem.includes("attachDrawnBy on along anchors"))).toBe(true);
+  });
+});
+
+describe("validateDiagramDefinition, row-packed types", () => {
+  it("rejects a row-packed width for an element type nobody declares", () => {
+    const packed = (types: string[]): DiagramDefinition => ({
+      ...goodDefinition(),
+      layout: { modes: ["manual", "row-packed"], rowPacked: { width: 48, gap: 4, types } },
+    });
+
+    expect(validateDiagramDefinition(packed(["node"]))).toEqual([]);
+    expect(validateDiagramDefinition(packed(["nobody"])).some((problem) => problem.includes('element type "nobody"'))).toBe(true);
+  });
+});

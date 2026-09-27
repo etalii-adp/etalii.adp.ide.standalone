@@ -335,3 +335,144 @@ describe("a connection attached along an edge", () => {
   });
 });
 
+
+/**
+ * A small circle that STARTS a connection from a named handle but whose end is drawn by edge: the
+ * handle is where the gesture begins, the outline facing the other end is where the line leaves.
+ */
+describe("a source whose drawn end attaches by edge", () => {
+  const EXTENT = { x: 0, y: -100, width: 800, height: 400 };
+  let restore: (() => void) | undefined;
+
+  beforeEach(() => {
+    const original = SVGSVGElement.prototype.getBoundingClientRect;
+    SVGSVGElement.prototype.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, x: 0, y: 0, width: EXTENT.width, height: EXTENT.height, right: EXTENT.width, bottom: EXTENT.height, toJSON: () => ({}) }) as DOMRect;
+    restore = () => { SVGSVGElement.prototype.getBoundingClientRect = original; };
+  });
+
+  afterEach(() => restore?.());
+
+  function definitionWith(attachDrawnBy: "anchor" | "edge" | undefined, movableEnds = false): DiagramDefinition {
+    return {
+      elementTypes: [
+        { id: "dot", shape: "ellipse", anchors: { kind: "compass", positions: ["n", "e", "s"], ...(attachDrawnBy !== undefined ? { attachDrawnBy } : {}) }, sizing: "model" },
+        { id: "bar", shape: "box", anchors: { kind: "along", edges: ["top", "bottom"] }, sizing: "model" },
+      ],
+      relationTypes: [
+        {
+          id: "sets-off",
+          route: "straight",
+          endpoints: { source: { elementTypes: ["dot", "bar"] }, target: { elementTypes: ["bar"] }, allowSelf: false, cardinality: { perPair: "ordered" } },
+          movableEnds,
+        },
+      ],
+      layout: { modes: ["manual"] },
+      dragging: "enabled",
+      extent: EXTENT,
+    };
+  }
+
+  /** The dot is 16 across, centred on (100, 100); the bars span y 84..116. */
+  const elements: DiagramModelElement[] = [
+    { id: "dot", type: "dot", x: 100, y: 100, width: 16, height: 16 },
+    { id: "bar", type: "bar", x: 400, y: 100, width: 200, height: 32 },
+    { id: "bar2", type: "bar", x: 400, y: 250, width: 200, height: 32 },
+  ];
+
+  const existing: DiagramModelConnection = { id: "c", type: "sets-off", sourceId: "dot", targetId: "bar", sourceAnchor: "n", targetAttachment: { edge: "top", at: 0.5 } };
+
+  function renderWith(definition: DiagramDefinition, connections: DiagramModelConnection[], selected = false) {
+    const onConnectionDrawn = vi.fn();
+    const result = render(
+      <DiagramViewProvider>
+        <DiagramToolboxProvider>
+          <DiagramCanvasCore
+            definition={definition}
+            model={{ elements, connections }}
+            events={{ onConnectionDrawn }}
+            {...(selected ? { selection: [{ kind: "connection" as const, id: "c" }] } : {})}
+          />
+        </DiagramToolboxProvider>
+      </DiagramViewProvider>,
+    );
+    return { ...result, onConnectionDrawn };
+  }
+
+  /** Drags from the dot's `n` handle and releases at canvas (x, y). */
+  const connectFromNorth = (container: HTMLElement, x: number, y: number) => {
+    const handle = container.querySelector('[data-element-id="dot"] [data-anchor="n"]')!;
+    fireEvent(handle, pointer("pointerdown", { button: 0, clientX: 100, clientY: 92 - EXTENT.y }));
+    fireEvent(handle, pointer("pointermove", { clientX: x, clientY: y - EXTENT.y }));
+    fireEvent(handle, pointer("pointerup", { clientX: x, clientY: y - EXTENT.y }));
+  };
+
+  const startOf = (container: HTMLElement) => {
+    const d = container.querySelector('[data-connection-id="c"] path.canvas-connection-line')!.getAttribute("d")!;
+    const [, x, y] = /^M (-?[\d.]+) (-?[\d.]+)/.exec(d)!;
+    return { x: Number(x), y: Number(y) };
+  };
+
+  it("offers start handles on the circle", () => {
+    const { container } = renderWith(definitionWith("edge"), []);
+    expect(["n", "e", "s"].map((name) => container.querySelector(`[data-element-id="dot"] [data-anchor="${name}"]`) !== null)).toEqual([true, true, true]);
+  });
+
+  it("draws the line from the outline facing the target, not from the anchor it names", () => {
+    // Arrange, act: stored with the `n` anchor that started it; the target lies to the right.
+    const { container } = renderWith(definitionWith("edge"), [existing]);
+
+    // Assert: on the circle's right side, eight from its centre.
+    const start = startOf(container);
+    expect(start.x, `the line left the n anchor at ${start.x},${start.y}`).toBeGreaterThan(106);
+    expect(Math.hypot(start.x - 100, start.y - 100)).toBeCloseTo(8, 0);
+  });
+
+  it("leaves the round outline itself on a diagonal, not the corner of the box around it", () => {
+    // Arrange, act: towards bar2, down and to the right.
+    const { container } = renderWith(definitionWith("edge"), [{ ...existing, targetId: "bar2" }]);
+
+    // Assert: on the circle. The box's answer lies about eight and a half from the centre.
+    const start = startOf(container);
+    expect(Math.hypot(start.x - 100, start.y - 100)).toBeCloseTo(8, 1);
+  });
+
+  it("still draws from the named anchor when the type does not declare it", () => {
+    const { container } = renderWith(definitionWith(undefined), [existing]);
+    expect(startOf(container)).toEqual({ x: 100, y: 92 });
+  });
+
+  it("raises no source anchor, and the target's attachment along its edge", () => {
+    // Arrange.
+    const { container, onConnectionDrawn } = renderWith(definitionWith("edge"), []);
+
+    // Act: released just inside the bar's top edge, halfway along it.
+    connectFromNorth(container, 400, 86);
+
+    // Assert.
+    expect(onConnectionDrawn).toHaveBeenCalledTimes(1);
+    const event = onConnectionDrawn.mock.calls[0][0];
+    expect(event).toMatchObject({ sourceElementId: "dot", targetElementId: "bar", targetAttachment: { edge: "top", at: 0.5 } });
+    expect("sourceAnchor" in event, "the event names the handle the gesture started from").toBe(false);
+  });
+
+  it("refuses a second connection to the same target under perPair ordered, and allows one to another target", () => {
+    // Arrange.
+    const { container, onConnectionDrawn } = renderWith(definitionWith("edge"), [existing]);
+
+    // Act: again to `bar`, then to `bar2`.
+    connectFromNorth(container, 400, 86);
+    connectFromNorth(container, 400, 236);
+
+    // Assert: only the second was raised.
+    expect(onConnectionDrawn.mock.calls.map((call) => call[0].targetElementId)).toEqual(["bar2"]);
+  });
+
+  it("draws an end handle on the target end only, and only with movable ends", () => {
+    const handlesOf = (movableEnds: boolean) =>
+      [...renderWith(definitionWith("edge", movableEnds), [existing], true).container.querySelectorAll("circle.library-end-handle")].map((handle) => handle.getAttribute("data-end"));
+
+    expect(handlesOf(true)).toEqual(["target"]);
+    expect(handlesOf(false)).toEqual([]);
+  });
+});

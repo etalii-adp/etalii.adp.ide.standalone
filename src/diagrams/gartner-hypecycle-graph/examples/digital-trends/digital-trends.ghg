@@ -29,7 +29,7 @@ trends:
     name: Personal computer
     start: 1975-01
     stop: 2010-01
-    row: 3
+    row: 4
     phases: 4
     tags: [computing]
     description: From the Altair and the Apple II to the IBM PC and its clones.
@@ -37,7 +37,7 @@ trends:
     name: Graphical user interface
     start: 1973-03
     stop: 2000-01
-    row: 4
+    row: 5
     phases: 4
     tags: [computing]
     description: Windows, icons and a mouse, from the Xerox Alto to the Macintosh and Windows.
@@ -45,7 +45,7 @@ trends:
     name: Internet
     start: 1969-10
     stop: 2010-01
-    row: 5
+    row: 6
     phases: 4
     tags: [communication]
     description: From ARPANET to TCP/IP everywhere.
@@ -53,14 +53,14 @@ trends:
     name: Email
     start: 1971-10
     stop: 2005-01
-    row: 6
+    row: 7
     phases: 4
     tags: [communication]
   - id: cybersecurity
     name: Cybersecurity
     start: 1988-11
     stop: 2026-01
-    row: 7
+    row: 8
     phases: 4
     tags: [security]
     description: Taken seriously after the Morris worm.
@@ -68,7 +68,7 @@ trends:
     name: Open source
     start: 1983-09
     stop: 2015-01
-    row: 8
+    row: 9
     phases: 4
     tags: [computing, society]
     description: From the GNU project through Linux to the default way software is built.
@@ -76,7 +76,7 @@ trends:
     name: World Wide Web
     start: 1989-03
     stop: 2012-01
-    row: 9
+    row: 10
     phases: 4
     tags: [communication, media]
   - id: search-engines
@@ -101,49 +101,49 @@ trends:
     name: E-commerce
     start: 1995-07
     stop: 2020-01
-    row: 10
+    row: 11
     phases: 4
     tags: [commerce]
   - id: mobile-phones
     name: Mobile phones
     start: 1983-10
     stop: 2010-01
-    row: 11
+    row: 12
     phases: 4
     tags: [communication]
   - id: wifi
     name: Wi-Fi
     start: 1997-09
     stop: 2020-01
-    row: 12
+    row: 13
     phases: 4
     tags: [communication]
   - id: broadband
     name: Broadband
     start: 1999-01
     stop: 2020-01
-    row: 13
+    row: 14
     phases: 4
     tags: [communication]
   - id: software-as-a-service
     name: Software as a service
     start: 1999-03
     stop: 2026-01
-    row: 14
+    row: 15
     phases: 4
     tags: [computing, commerce]
   - id: internet-of-things
     name: Internet of things
     start: 1999-01
     stop: 2026-01
-    row: 15
+    row: 16
     phases: 3
     tags: [computing, communication]
   - id: social-media
     name: Social media
     start: 2004-02
     stop: 2026-01
-    row: 4
+    row: 5
     phases: 4
     tags: [media, society]
   - id: streaming-media
@@ -157,7 +157,7 @@ trends:
     name: Cloud computing
     start: 2006-08
     stop: 2026-01
-    row: 16
+    row: 17
     phases: 4
     tags: [computing]
     description: Rented infrastructure by the hour, starting with Amazon Web Services.
@@ -172,14 +172,14 @@ trends:
     name: Big data
     start: 2008-01
     stop: 2022-01
-    row: 6
+    row: 7
     phases: 4
     tags: [data]
   - id: blockchain
     name: Blockchain and cryptocurrency
     start: 2009-01
     stop: 2030-01
-    row: 17
+    row: 18
     phases: 3
     peak-end: 2017-12
     trough-end: 2019-01
@@ -188,7 +188,7 @@ trends:
     name: Deep learning
     start: 2012-09
     stop: 2030-01
-    row: 3
+    row: 4
     phases: 3
     tags: [ai, data]
     description: Neural networks that finally worked, from AlexNet on.
@@ -196,7 +196,7 @@ trends:
     name: Virtual reality
     start: 2012-08
     stop: 2030-01
-    row: 5
+    row: 6
     phases: 3
     peak-end: 2016-06
     trough-end: 2021-01
@@ -205,7 +205,7 @@ trends:
     name: Quantum computing
     start: 2016-05
     stop: 2035-01
-    row: 9
+    row: 10
     phases: 1
     tags: [computing, science]
   - id: 5g
@@ -219,7 +219,7 @@ trends:
     name: Large language models
     start: 2020-06
     stop: 2030-01
-    row: 8
+    row: 9
     phases: 2
     tags: [ai]
     description: From GPT-3 on, language became a general interface to computing.
@@ -227,9 +227,58 @@ trends:
     name: AI agents
     start: 2024-01
     stop: 2032-01
-    row: 6
+    row: 7
     phases: 1
     tags: [ai]
+triggers:
+  - id: morris-worm
+    name: Morris worm
+    date: 1988-11
+    row: 11
+    tags: [security]
+    description: The first worm to spread widely over the Internet, which led to the first computer emergency response team.
+  - id: ibm-pc-launch
+    name: IBM PC launched
+    date: 1981-08
+    row: 3
+    tags: [computing]
+    description: An open architecture that made the personal computer a business machine and a market for clones.
+  - id: mosaic-release
+    name: Mosaic browser released
+    date: 1993-04
+    row: 13
+    tags: [communication, media]
+    description: The first widely used graphical browser, which put images inline with text.
+  - id: nasdaq-crash
+    name: Nasdaq peak and crash
+    date: 2000-03
+    row: 3
+    tags: [finance]
+    description: The Nasdaq peaked on 10 March 2000 and lost three quarters of its value by 2002.
+  - id: iphone-announced
+    name: iPhone announced
+    date: 2007-01
+    row: 3
+    tags: [communication, computing]
+    description: A phone that was a touch-screen computer first.
+  - id: bitcoin-white-paper
+    name: Bitcoin white paper
+    date: 2008-10
+    row: 19
+    tags: [finance]
+    description: Satoshi Nakamoto's paper describing a peer-to-peer electronic cash system.
+  - id: alexnet
+    name: AlexNet wins ImageNet
+    date: 2012-09
+    row: 3
+    tags: [ai]
+    description: A deep convolutional network trained on GPUs halved the error rate of the image recognition challenge.
+  - id: chatgpt-launch
+    name: ChatGPT launched
+    date: 2022-11
+    row: 12
+    tags: [ai]
+    description: A chat interface to a large language model reached a hundred million users in two months.
 influences:
   - id: mainframe-computing--minicomputers
     from: mainframe-computing
@@ -263,11 +312,11 @@ influences:
     from: minicomputers
     from-phase: trough
     from-edge: bottom
-    from-at: 0.63
+    from-at: 0.59
     to: personal-computer
     to-phase: peak
     to-edge: top
-    to-at: 0.41
+    to-at: 0.27
   - id: graphical-user-interface--personal-computer
     from: graphical-user-interface
     from-phase: peak
@@ -329,11 +378,11 @@ influences:
     from: world-wide-web
     from-phase: peak
     from-edge: top
-    from-at: 0.84
+    from-at: 0.85
     to: search-engines
     to-phase: peak
     to-edge: bottom
-    to-at: 0.27
+    to-at: 0.47
   - id: world-wide-web--dot-com-bubble
     from: world-wide-web
     from-phase: trough
@@ -356,11 +405,11 @@ influences:
     from: search-engines
     from-phase: peak
     from-edge: bottom
-    from-at: 0.66
+    from-at: 0.70
     to: e-commerce
     to-phase: peak
     to-edge: top
-    to-at: 0.33
+    to-at: 0.36
   - id: dot-com-bubble--broadband
     from: dot-com-bubble
     from-phase: peak
@@ -440,20 +489,20 @@ influences:
     from: mobile-phones
     from-phase: plateau
     from-edge: top
-    from-at: 0.60
+    from-at: 0.96
     to: smartphones
     to-phase: peak
     to-edge: bottom
-    to-at: 0.58
+    to-at: 0.65
   - id: wifi--smartphones
     from: wifi
     from-phase: trough
     from-edge: top
-    from-at: 0.57
+    from-at: 0.60
     to: smartphones
     to-phase: peak
     to-edge: bottom
-    to-at: 0.15
+    to-at: 0.30
   - id: open-source--smartphones
     from: open-source
     from-phase: plateau
@@ -462,17 +511,17 @@ influences:
     to: smartphones
     to-phase: peak
     to-edge: bottom
-    to-at: 0.83
+    to-at: 0.85
     description: Android is built on Linux.
   - id: smartphones--social-media
     from: smartphones
     from-phase: peak
     from-edge: bottom
-    from-at: 0.28
+    from-at: 0.36
     to: social-media
     to-phase: peak
     to-edge: top
-    to-at: 0.85
+    to-at: 0.92
     description: Social media moved into everyone's pocket.
   - id: smartphones--streaming-media
     from: smartphones
@@ -588,20 +637,20 @@ influences:
     from: cloud-computing
     from-phase: slope
     from-edge: top
-    from-at: 0.64
+    from-at: 0.62
     to: large-language-models
     to-phase: peak
     to-edge: bottom
-    to-at: 0.36
+    to-at: 0.25
   - id: large-language-models--ai-agents
     from: large-language-models
     from-phase: peak
     from-edge: top
-    from-at: 0.76
+    from-at: 0.79
     to: ai-agents
     to-phase: peak
     to-edge: bottom
-    to-at: 0.40
+    to-at: 0.68
   - id: quantum-computing--cybersecurity
     from: quantum-computing
     from-phase: peak
@@ -612,3 +661,69 @@ influences:
     to-edge: bottom
     to-at: 0.74
     description: Quantum computers threaten today's public-key cryptography.
+  - id: morris-worm--cybersecurity
+    from: morris-worm
+    to: cybersecurity
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.40
+  - id: ibm-pc-launch--personal-computer
+    from: ibm-pc-launch
+    to: personal-computer
+    to-phase: peak
+    to-edge: top
+    to-at: 0.76
+  - id: mosaic-release--world-wide-web
+    from: mosaic-release
+    to: world-wide-web
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.72
+  - id: mosaic-release--search-engines
+    from: mosaic-release
+    to: search-engines
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.19
+  - id: nasdaq-crash--dot-com-bubble
+    from: nasdaq-crash
+    to: dot-com-bubble
+    to-phase: trough
+    to-edge: bottom
+    to-at: 0.40
+  - id: iphone-announced--smartphones
+    from: iphone-announced
+    to: smartphones
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.14
+  - id: iphone-announced--mobile-phones
+    from: iphone-announced
+    to: mobile-phones
+    to-phase: plateau
+    to-edge: top
+    to-at: 0.55
+  - id: bitcoin-white-paper--blockchain
+    from: bitcoin-white-paper
+    to: blockchain
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.40
+  - id: alexnet--deep-learning
+    from: alexnet
+    to: deep-learning
+    to-phase: peak
+    to-edge: top
+    to-at: 0.40
+  - id: chatgpt-launch--large-language-models
+    from: chatgpt-launch
+    to: large-language-models
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.71
+  - id: chatgpt-launch--ai-agents
+    from: chatgpt-launch
+    to: ai-agents
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.26

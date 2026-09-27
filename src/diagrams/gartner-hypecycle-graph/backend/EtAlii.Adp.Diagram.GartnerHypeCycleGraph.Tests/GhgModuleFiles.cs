@@ -13,6 +13,10 @@ internal static class GhgModuleFiles
     /// <summary>The <c>.ghg</c> body of the example in <c>examples/<paramref name="name"/>/</c>.</summary>
     public static string ExampleNamed(string name) => Existing(Path.Combine(ModuleFolder, "examples", name, name + ".ghg"));
 
+    /// <summary>The same example's copy under <c>src/examples/diagrams/gartner-hypecycle-graph/</c>, which ships with the product.</summary>
+    public static string ShippedExampleNamed(string name) =>
+        Existing(Path.Combine(ModuleFolder, "..", "..", "examples", "diagrams", "gartner-hypecycle-graph", name, name + ".ghg"));
+
     /// <summary>The scale fixture the backend and the client both assert against.</summary>
     public static string ScaleFixture => Existing(Path.Combine(ModuleFolder, "scale-fixture.json"));
 

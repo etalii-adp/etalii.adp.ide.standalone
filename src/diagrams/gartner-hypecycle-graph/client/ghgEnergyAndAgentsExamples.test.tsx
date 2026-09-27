@@ -26,17 +26,19 @@ beforeEach(() => {
 afterEach(() => restore?.());
 
 describe.each([
-  { name: "energy-breakthroughs", trends: 33, influences: 46 },
-  { name: "llms-and-agents", trends: 35, influences: 56 },
-  { name: "coal-technologies", trends: 34, influences: 45 },
-  { name: "electric-vehicles", trends: 28, influences: 40 },
-  { name: "internet-evolution", trends: 34, influences: 46 },
-  { name: "warfare-in-ukraine", trends: 29, influences: 42 },
-])("the $name example, as this definition reads it", ({ name, trends, influences }) => {
-  it(`is read in full: ${trends} trends and ${influences} influences, none of them hidden`, () => {
+  { name: "energy-breakthroughs", trends: 33, triggers: 7, notes: 0, influences: 57 },
+  { name: "llms-and-agents", trends: 35, triggers: 7, notes: 0, influences: 67 },
+  { name: "coal-technologies", trends: 34, triggers: 6, notes: 1, influences: 54 },
+  { name: "electric-vehicles", trends: 28, triggers: 6, notes: 0, influences: 48 },
+  { name: "internet-evolution", trends: 34, triggers: 7, notes: 0, influences: 56 },
+  { name: "warfare-in-ukraine", trends: 29, triggers: 7, notes: 0, influences: 53 },
+])("the $name example, as this definition reads it", ({ name, trends, triggers, notes, influences }) => {
+  it(`is read in full: ${trends} trends, ${triggers} triggers, ${notes} notes and ${influences} influences, none of them hidden`, () => {
     const example = readExample(name);
 
     expect(example.trends).toHaveLength(trends);
+    expect(example.triggers).toHaveLength(triggers);
+    expect(example.notes).toHaveLength(notes);
     expect(example.influences).toHaveLength(influences);
     expect(example.influences.filter((influence) => isHidden(influence, example.trends))).toEqual([]);
   });
@@ -52,7 +54,7 @@ describe.each([
       </DiagramViewProvider>,
     );
 
-    expect(container.querySelectorAll("[data-element-id]")).toHaveLength(trends);
+    expect(container.querySelectorAll("[data-element-id]")).toHaveLength(trends + triggers + notes);
     expect(container.querySelectorAll("[data-connection-id]")).toHaveLength(influences);
   });
 });

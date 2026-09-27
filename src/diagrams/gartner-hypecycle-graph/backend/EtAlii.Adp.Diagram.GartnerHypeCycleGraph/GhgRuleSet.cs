@@ -19,12 +19,16 @@ public static class GhgRuleIds
     public const string DanglingReference = "ghg.dangling-reference";
     public const string DuplicateId = "ghg.duplicate-id";
     public const string UnreadableEntry = "ghg.unreadable-entry";
+    public const string InfluenceIntoTrigger = "ghg.influence-into-trigger";
+    public const string TriggerDate = "ghg.trigger-date";
+    public const string NotePosition = "ghg.note-position";
 
-    /// <summary>The nine, in the design's order.</summary>
+    /// <summary>The twelve: the nine of the design's order, then the three triggers and notes added.</summary>
     public static readonly IReadOnlyList<string> All =
     [
         DuplicateInfluence, SelfInfluence, StopBeforeStart, PhaseCount, BoundaryOrder,
         BadAttachment, DanglingReference, DuplicateId, UnreadableEntry,
+        InfluenceIntoTrigger, TriggerDate, NotePosition,
     ];
 }
 
@@ -59,6 +63,7 @@ public static class GhgRuleSet
             .Where(trend => trend.Id.Length > 0)
             .Select(trend => trend.Id)
             .ToHashSet(StringComparer.Ordinal);
+        var triggerIds = TriggerIds(model);
 
         List<GhgBreach> breaches = [];
         breaches.AddRange(DuplicateInfluences(model));
@@ -66,11 +71,29 @@ public static class GhgRuleSet
         breaches.AddRange(Spans(model));
         breaches.AddRange(PhaseCounts(model));
         breaches.AddRange(BoundaryOrders(model));
-        breaches.AddRange(BadAttachments(model));
-        breaches.AddRange(DanglingReferences(model, trendIds));
+        breaches.AddRange(BadAttachments(model, triggerIds));
+        breaches.AddRange(DanglingReferences(model, trendIds, triggerIds));
         breaches.AddRange(DuplicateIds(model));
         breaches.AddRange(model.Problems.Select(problem => new GhgBreach(GhgRuleIds.UnreadableEntry, problem.Message, [], problem.Line)));
+        breaches.AddRange(InfluencesIntoTriggers(model, triggerIds));
+        breaches.AddRange(TriggerDates(model));
+        breaches.AddRange(NotePositions(model));
         return breaches;
+    }
+
+    /// <summary>
+    /// The ids naming a trigger and no trend: an id shared with a trend is the trend's, and the
+    /// sharing is <c>ghg.duplicate-id</c>'s to report.
+    /// </summary>
+    public static HashSet<string> TriggerIds(GhgModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var trendIds = model.Trends.Select(trend => trend.Id).ToHashSet(StringComparer.Ordinal);
+        return model.Triggers
+            .Where(trigger => trigger.Id.Length > 0 && !trendIds.Contains(trigger.Id))
+            .Select(trigger => trigger.Id)
+            .ToHashSet(StringComparer.Ordinal);
     }
 
     /// <summary>Whether a new influence from <paramref name="from"/> to <paramref name="to"/> would repeat one in the same direction.</summary>
@@ -148,13 +171,17 @@ public static class GhgRuleSet
         }
     }
 
-    private static IEnumerable<GhgBreach> BadAttachments(GhgModel model)
+    /// <summary>
+    /// Ends that do not read. A trigger's end states nothing, by design, so neither the end leaving
+    /// a trigger nor one arriving at it is checked: the second is <c>ghg.influence-into-trigger</c>'s.
+    /// </summary>
+    private static IEnumerable<GhgBreach> BadAttachments(GhgModel model, HashSet<string> triggerIds)
     {
         foreach (var influence in model.Influences)
         {
-            foreach (var (side, end) in new[] { ("from", influence.FromEnd), ("to", influence.ToEnd) })
+            foreach (var (side, id, end) in new[] { ("from", influence.From, influence.FromEnd), ("to", influence.To, influence.ToEnd) })
             {
-                if (!end.IsReadable)
+                if (!triggerIds.Contains(id) && !end.IsReadable)
                 {
                     yield return new GhgBreach(
                         GhgRuleIds.BadAttachment,
@@ -166,23 +193,67 @@ public static class GhgRuleSet
         }
     }
 
-    private static IEnumerable<GhgBreach> DanglingReferences(GhgModel model, HashSet<string> trendIds)
+    /// <summary>
+    /// A <c>from</c> naming neither a trend nor a trigger, or a <c>to</c> naming no trend. A <c>to</c>
+    /// naming a trigger is not dangling - it names something - and is reported as
+    /// <c>ghg.influence-into-trigger</c> instead.
+    /// </summary>
+    private static IEnumerable<GhgBreach> DanglingReferences(GhgModel model, HashSet<string> trendIds, HashSet<string> triggerIds)
     {
         foreach (var influence in model.Influences)
         {
-            foreach (var id in new[] { influence.From, influence.To }.Where(id => !trendIds.Contains(id)))
+            if (!trendIds.Contains(influence.From) && !triggerIds.Contains(influence.From))
             {
                 yield return new GhgBreach(
                     GhgRuleIds.DanglingReference,
-                    $"`{influence.Id}` names `{id}`, which is not a trend in this document.",
-                    [influence.Id, id],
+                    $"`{influence.Id}` comes from `{influence.From}`, which is not a trend or a trigger in this document.",
+                    [influence.Id, influence.From],
+                    influence.Range.Start);
+            }
+
+            if (!trendIds.Contains(influence.To) && !triggerIds.Contains(influence.To))
+            {
+                yield return new GhgBreach(
+                    GhgRuleIds.DanglingReference,
+                    $"`{influence.Id}` names `{influence.To}`, which is not a trend in this document.",
+                    [influence.Id, influence.To],
                     influence.Range.Start);
             }
         }
     }
 
+    /// <summary>An influence always ends at a trend: a trigger is a moment, and nothing influences a moment.</summary>
+    private static IEnumerable<GhgBreach> InfluencesIntoTriggers(GhgModel model, HashSet<string> triggerIds) =>
+        model.Influences
+            .Where(influence => triggerIds.Contains(influence.To))
+            .Select(influence => new GhgBreach(
+                GhgRuleIds.InfluenceIntoTrigger,
+                $"`{influence.Id}` ends at the trigger `{influence.To}`; an influence cannot end at a trigger.",
+                [influence.Id, influence.To],
+                influence.Range.Start));
+
+    private static IEnumerable<GhgBreach> TriggerDates(GhgModel model) =>
+        model.Triggers
+            .Where(trigger => trigger.Date is null)
+            .Select(trigger => new GhgBreach(
+                GhgRuleIds.TriggerDate,
+                $"`{trigger.Id}` has no `date` written as YYYY-MM; a trigger cannot be drawn without one.",
+                [trigger.Id],
+                trigger.Range.Start));
+
+    private static IEnumerable<GhgBreach> NotePositions(GhgModel model) =>
+        model.Notes
+            .Where(note => !note.IsPlaceable)
+            .Select(note => new GhgBreach(
+                GhgRuleIds.NotePosition,
+                $"`{note.Id}` needs an `at` written as YYYY-MM and a `width` and `height` that are positive numbers; it cannot be drawn without them.",
+                [note.Id],
+                note.Range.Start));
+
     private static IEnumerable<GhgBreach> DuplicateIds(GhgModel model) =>
         model.Trends.Select(trend => (trend.Id, trend.Range.Start))
+            .Concat(model.Triggers.Select(trigger => (trigger.Id, trigger.Range.Start)))
+            .Concat(model.Notes.Select(note => (note.Id, note.Range.Start)))
             .Concat(model.Influences.Select(influence => (influence.Id, influence.Range.Start)))
             .Where(entry => entry.Id.Length > 0)
             .GroupBy(entry => entry.Id, StringComparer.Ordinal)

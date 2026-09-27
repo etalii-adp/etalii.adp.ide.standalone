@@ -31,12 +31,20 @@ public static class GhgParser
 {
     internal const string HeaderKey = "gartner-hypecycle-graph";
     private const string TrendsKey = "trends";
+    private const string TriggersKey = "triggers";
+    private const string NotesKey = "notes";
     private const string InfluencesKey = "influences";
     private const string UnitKey = "unit";
 
     /// <summary>The keys a trend entry may carry. Anything else survives and is reported.</summary>
     private static readonly string[] TrendKeys =
         ["id", "name", "start", "stop", "row", "phases", "peak-end", "trough-end", "slope-end", "tags", "description"];
+
+    /// <summary>The keys a trigger entry may carry.</summary>
+    private static readonly string[] TriggerKeys = ["id", "name", "date", "row", "tags", "description"];
+
+    /// <summary>The keys a note entry may carry.</summary>
+    private static readonly string[] NoteKeys = ["id", "text", "at", "row", "width", "height"];
 
     /// <summary>The keys an influence entry may carry.</summary>
     private static readonly string[] InfluenceKeys =
@@ -66,12 +74,15 @@ public static class GhgParser
 
         List<GhgProblem> problems = [];
         var version = ReadVersion(root, document, problems);
-        return new GhgModel(
-            ReadTrends(root, document, problems),
-            ReadInfluences(root, document, problems),
-            problems,
-            version,
-            ReadUnit(root, document, problems));
+        var trends = ReadTrends(root, document, problems);
+        var triggers = ReadTriggers(root, document, problems);
+        var notes = ReadNotes(root, document, problems);
+        var influences = ReadInfluences(root, document, problems, trends, triggers);
+        return new GhgModel(trends, influences, problems, version, ReadUnit(root, document, problems))
+        {
+            Triggers = triggers,
+            Notes = notes,
+        };
     }
 
     /// <summary>The top-level <c>unit:</c>, or the month when there is none. An unknown unit is reported and drawn in months.</summary>
@@ -143,8 +154,83 @@ public static class GhgParser
         return trends;
     }
 
-    private static List<GhgInfluence> ReadInfluences(YamlMappingNode root, LineDocument document, List<GhgProblem> problems)
+    /// <summary>
+    /// The triggers. A missing or malformed <c>date</c> is not reported here but by
+    /// <c>ghg.trigger-date</c>, so one breach is reported once.
+    /// </summary>
+    private static List<GhgTrigger> ReadTriggers(YamlMappingNode root, LineDocument document, List<GhgProblem> problems)
     {
+        List<GhgTrigger> triggers = [];
+        foreach (var node in Sequence(root, TriggersKey))
+        {
+            if (node is not YamlMappingNode mapping)
+            {
+                problems.Add(new GhgProblem(LineOf(node, document), "A trigger entry is not a mapping and was passed over."));
+                continue;
+            }
+
+            ReportUnknownKeys(mapping, TriggerKeys, document, problems, "trigger");
+
+            triggers.Add(new GhgTrigger(
+                Scalar(mapping, "id") ?? "",
+                Scalar(mapping, "name") ?? "",
+                GhgScale.ParseMonth(Scalar(mapping, "date")),
+                Integer(mapping, "row", 0, document, problems),
+                Tags(mapping, document, problems),
+                Scalar(mapping, "description") ?? "",
+                Range(mapping, document)));
+        }
+
+        return triggers;
+    }
+
+    /// <summary>
+    /// The notes. A missing or malformed <c>at</c>, <c>width</c> or <c>height</c> is not reported
+    /// here but by <c>ghg.note-position</c>.
+    /// </summary>
+    private static List<GhgNote> ReadNotes(YamlMappingNode root, LineDocument document, List<GhgProblem> problems)
+    {
+        List<GhgNote> notes = [];
+        foreach (var node in Sequence(root, NotesKey))
+        {
+            if (node is not YamlMappingNode mapping)
+            {
+                problems.Add(new GhgProblem(LineOf(node, document), "A note entry is not a mapping and was passed over."));
+                continue;
+            }
+
+            ReportUnknownKeys(mapping, NoteKeys, document, problems, "note");
+
+            notes.Add(new GhgNote(
+                Scalar(mapping, "id") ?? "",
+                Scalar(mapping, "text") ?? "",
+                GhgScale.ParseMonth(Scalar(mapping, "at")),
+                Integer(mapping, "row", 0, document, problems),
+                Number(mapping, "width"),
+                Number(mapping, "height"),
+                Range(mapping, document)));
+        }
+
+        return notes;
+    }
+
+    /// <summary>A number, or null when it is missing or is not one.</summary>
+    private static double? Number(YamlMappingNode mapping, string key) =>
+        double.TryParse(Scalar(mapping, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : null;
+
+    /// <summary>
+    /// The influences. One from a trigger has no <c>from</c> end: it is read as <see cref="GhgEnd.None"/>,
+    /// and any <c>from-*</c> key found on it is reported and otherwise ignored.
+    /// </summary>
+    private static List<GhgInfluence> ReadInfluences(
+        YamlMappingNode root,
+        LineDocument document,
+        List<GhgProblem> problems,
+        IReadOnlyList<GhgTrend> trends,
+        IReadOnlyList<GhgTrigger> triggers)
+    {
+        var trendIds = trends.Select(trend => trend.Id).ToHashSet(StringComparer.Ordinal);
+        var triggerIds = triggers.Select(trigger => trigger.Id).Where(id => !trendIds.Contains(id)).ToHashSet(StringComparer.Ordinal);
         List<GhgInfluence> influences = [];
         foreach (var node in Sequence(root, InfluencesKey))
         {
@@ -156,10 +242,23 @@ public static class GhgParser
 
             ReportUnknownKeys(mapping, InfluenceKeys, document, problems, "influence");
 
+            var from = Scalar(mapping, "from") ?? "";
+            var fromTrigger = triggerIds.Contains(from);
+            if (fromTrigger)
+            {
+                foreach (var key in new[] { "from-phase", "from-edge", "from-at" })
+                {
+                    if (Node(mapping, key) is { } stray)
+                    {
+                        problems.Add(new GhgProblem(LineOf(stray, document), $"`{key}` is ignored on an influence from a trigger, which has no phases; the line is kept."));
+                    }
+                }
+            }
+
             influences.Add(new GhgInfluence(
                 Scalar(mapping, "id") ?? "",
-                Scalar(mapping, "from") ?? "",
-                End(mapping, "from"),
+                from,
+                fromTrigger ? GhgEnd.None : End(mapping, "from"),
                 Scalar(mapping, "to") ?? "",
                 End(mapping, "to"),
                 Scalar(mapping, "description") ?? "",

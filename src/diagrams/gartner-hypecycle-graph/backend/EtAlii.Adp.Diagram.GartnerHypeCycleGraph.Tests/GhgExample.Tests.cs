@@ -85,7 +85,7 @@ public class GhgExampleTests
         var trends = model.Trends.ToDictionary(trend => trend.Id);
 
         Assert.Contains(model.Influences, influence =>
-            influence.FromEnd.PhaseIndex >= trends[influence.From].VisiblePhases ||
+            (trends.TryGetValue(influence.From, out var from) && influence.FromEnd.PhaseIndex >= from.VisiblePhases) ||
             influence.ToEnd.PhaseIndex >= trends[influence.To].VisiblePhases);
     }
 

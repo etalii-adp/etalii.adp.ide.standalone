@@ -225,6 +225,43 @@ trends:
     phases: 1
     tags: [batteries, conceptual]
     description: Close to petrol's energy density on paper, far from it in the lab.
+triggers:
+  - id: prius-unveiled
+    name: Toyota Prius unveiled
+    date: 1997-10
+    row: 11
+    tags: [vehicles]
+    description: The first mass-produced hybrid car was shown in Tokyo and went on sale in Japan that December.
+  - id: tesla-roadster-unveiled
+    name: Tesla Roadster unveiled
+    date: 2006-07
+    row: 17
+    tags: [vehicles, batteries]
+    description: A sports car running on thousands of laptop lithium-ion cells.
+  - id: dieselgate
+    name: Dieselgate
+    date: 2015-09
+    row: 13
+    tags: [policy]
+    description: Volkswagen admitted to cheating emissions tests, and the case for clean diesel collapsed.
+  - id: model-3-deliveries
+    name: Model 3 deliveries begin
+    date: 2017-07
+    row: 5
+    tags: [vehicles]
+    description: The first electric car built for the volume market by a company that made nothing else.
+  - id: us-inflation-reduction-act
+    name: US Inflation Reduction Act
+    date: 2022-08
+    row: 7
+    tags: [policy]
+    description: Tax credits tied to where batteries and their minerals are made.
+  - id: eu-2035-agreement
+    name: EU 2035 combustion-car deal
+    date: 2022-10
+    row: 13
+    tags: [policy]
+    description: The European Parliament and Council agreed that new cars sold from 2035 must emit no CO2.
 influences:
   - id: lead-acid-battery--early-electric-cars
     from: lead-acid-battery
@@ -269,11 +306,11 @@ influences:
     from: nickel-metal-hydride
     from-phase: trough
     from-edge: bottom
-    from-at: 0.73
+    from-at: 0.75
     to: hybrid-cars
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.70
   - id: lithium-ion-batteries--lithium-iron-phosphate
     from: lithium-ion-batteries
     from-phase: peak
@@ -309,26 +346,26 @@ influences:
     to: battery-electric-cars
     to-phase: peak
     to-edge: top
-    to-at: 0.17
+    to-at: 0.15
     description: The crushed EV1 became the story Tesla set out to rewrite.
   - id: lithium-ion-batteries--battery-electric-cars
     from: lithium-ion-batteries
     from-phase: trough
     from-edge: bottom
-    from-at: 0.62
+    from-at: 0.64
     to: battery-electric-cars
     to-phase: peak
     to-edge: top
-    to-at: 0.34
+    to-at: 0.44
   - id: hybrid-cars--battery-electric-cars
     from: hybrid-cars
     from-phase: trough
     from-edge: bottom
-    from-at: 0.53
+    from-at: 0.54
     to: battery-electric-cars
     to-phase: peak
     to-edge: top
-    to-at: 0.60
+    to-at: 0.66
   - id: battery-electric-cars--charging-standards
     from: battery-electric-cars
     from-phase: peak
@@ -365,7 +402,7 @@ influences:
     to: battery-electric-cars
     to-phase: peak
     to-edge: top
-    to-at: 0.82
+    to-at: 0.84
   - id: ev-incentives--electric-buses
     from: ev-incentives
     from-phase: peak
@@ -415,11 +452,11 @@ influences:
     from: battery-electric-cars
     from-phase: trough
     from-edge: top
-    from-at: 0.51
+    from-at: 0.61
     to: gigafactories
     to-phase: peak
     to-edge: bottom
-    to-at: 0.21
+    to-at: 0.22
   - id: ev-incentives--fuel-cell-cars
     from: ev-incentives
     from-phase: peak
@@ -470,11 +507,11 @@ influences:
     from: gigafactories
     from-phase: peak
     from-edge: bottom
-    from-at: 0.52
+    from-at: 0.42
     to: electric-trucks
     to-phase: peak
     to-edge: top
-    to-at: 0.70
+    to-at: 0.69
   - id: battery-electric-cars--battery-swapping
     from: battery-electric-cars
     from-phase: slope
@@ -488,11 +525,11 @@ influences:
     from: gigafactories
     from-phase: peak
     from-edge: bottom
-    from-at: 0.81
+    from-at: 0.87
     to: battery-recycling
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.70
   - id: battery-electric-cars--solid-state-batteries
     from: battery-electric-cars
     from-phase: slope
@@ -515,11 +552,11 @@ influences:
     from: gigafactories
     from-phase: peak
     from-edge: top
-    from-at: 0.39
+    from-at: 0.54
     to: lithium-iron-phosphate
     to-phase: trough
     to-edge: bottom
-    to-at: 0.75
+    to-at: 0.91
     description: Iron-phosphate cells came back into mainstream cars.
   - id: lithium-ion-batteries--sodium-ion-batteries
     from: lithium-ion-batteries
@@ -594,3 +631,51 @@ influences:
     to-phase: peak
     to-edge: top
     to-at: 0.42
+  - id: prius-unveiled--hybrid-cars
+    from: prius-unveiled
+    to: hybrid-cars
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: tesla-roadster-unveiled--battery-electric-cars
+    from: tesla-roadster-unveiled
+    to: battery-electric-cars
+    to-phase: peak
+    to-edge: top
+    to-at: 0.29
+  - id: dieselgate--ev-incentives
+    from: dieselgate
+    to: ev-incentives
+    to-phase: peak
+    to-edge: top
+    to-at: 0.65
+  - id: dieselgate--battery-electric-cars
+    from: dieselgate
+    to: battery-electric-cars
+    to-phase: trough
+    to-edge: top
+    to-at: 0.41
+  - id: model-3-deliveries--gigafactories
+    from: model-3-deliveries
+    to: gigafactories
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: us-inflation-reduction-act--battery-recycling
+    from: us-inflation-reduction-act
+    to: battery-recycling
+    to-phase: peak
+    to-edge: top
+    to-at: 0.28
+  - id: us-inflation-reduction-act--gigafactories
+    from: us-inflation-reduction-act
+    to: gigafactories
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.66
+  - id: eu-2035-agreement--ev-incentives
+    from: eu-2035-agreement
+    to: ev-incentives
+    to-phase: trough
+    to-edge: top
+    to-at: 0.47
