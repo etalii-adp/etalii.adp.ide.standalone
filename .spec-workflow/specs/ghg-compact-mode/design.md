@@ -1,0 +1,189 @@
+# Design Document
+
+## Overview
+
+Compact mode is a **second layout mode** of the hype cycle graph's canvas. The shared library already has a seam for layout modes: `LayoutDefinition.modes`, an algorithm per mode behind `layoutAlgorithmFor`, and a canvas that renders, hit-tests and anchors against the placed set. This design fills the four gaps the requirements measured, all of them in the library, and then has the module declare them:
+
+1. a layout algorithm, **`row-packed`**, that gives every element one declared width and packs elements into their rows in the order of their manual x (Requirement 3, 7.1);
+2. **per-mode definition overrides**, so a mode can switch off moving, resizing, boundary dragging and the ruler by declaration (Requirement 4, 7.2);
+3. an **inverse** on a layout algorithm, so a drop is raised in the model's own space (Requirement 6, 7.3);
+4. a **layout toggle** drawn below the filter box's legend, with the active mode held as view state in the canvas (Requirement 1, 7.4).
+
+The module then adds a `row-packed` mode, its overrides and a toggle captioned *Compact* to `definitionFor(unit)`, and nothing else. The backend does not change (Requirement 8.2).
+
+The three open questions stand at their defaults, because no ruling was given before the requirements were approved: the toggle is **not remembered** (Q1), a trend keeps its **stored row** (Q2), and phases are split **evenly** (Q3).
+
+## Steering Document Alignment
+
+### Technical Standards (tech.md)
+
+- No layout computation crosses the wire (diagram-library Requirement 8.3, restated in `layoutAlgorithm.ts`): `row-packed` and its inverse run on the client.
+- Every library addition is proven by a library test seen to fail before the change (Requirement 7.5).
+
+### Project Structure (structure.md)
+
+- Library code stays under `src/client/src/canvas/library/`; the module's change stays in `src/diagrams/gartner-hypecycle-graph/client/GhgCanvas.tsx`. No module name appears in a library declaration.
+
+## Code Reuse Analysis
+
+### Existing Components to Leverage
+
+- **`LayoutAlgorithm` / `LAYOUT_ALGORITHMS`** (`layout/layoutAlgorithm.ts`): `row-packed` is one more entry. The canvas's layout `useMemo` in `DiagramCanvas.tsx` already feeds every placed element to rendering, hit-testing, anchors and fit, so connecting and selecting in compact mode come for free (Requirement 5.1 to 5.4).
+- **`DiagramRuntimeConfig.definitionOverrides`** and **`effectiveDefinition`** (`api/diagramRuntimeConfig.ts`): the shallow merge a per-mode override needs already exists. The per-mode override reuses the same function, with the mode's overrides applied before the runtime's.
+- **`draggingEnabled`**, the **`resizable`** prop, the **`draggableBoundaries`** branch and **`bottomRulers`** in `DiagramCanvas.tsx`: each already reads the definition. Given the effective definition for the active mode, each switches off with no new code in it (Requirement 4.1 to 4.4).
+- **`FilterDeclaration.legend`**: the toggle is drawn inside the same `library-filter` block, directly after the legend.
+- **`AddGhgTrendCommandHandler`**: already turns a placement point into a start month (`GhgScale.MonthContaining`) and a row (`GhgScale.RowAtMiddle`) and gives the trend `DefaultMonths` steps and four phases. Given a drop already translated to true-time space, it needs no change (Requirement 6.3, 8.2).
+
+### Integration Points
+
+- **`element-dropped`**: raised with the translated position instead of the pointer's where the active layout has an inverse. The module's `onElementDropped` is unchanged.
+- **`layout-mode-changed`**: still raised on a switch, so a host that wants to remember the mode can (Q1's other options remain open without redesign).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  M[DiagramModel: true-time x, y, width] --> L{active mode}
+  L -- manual --> P[placed = model]
+  L -- row-packed --> R[rowPacked.place: x, y, width per element]
+  R --> P
+  P --> Draw[render, hit-test, anchors, fit]
+  D[drop at pointer] --> I{layout has inverse?}
+  I -- yes --> Inv[rowPacked.inverse: point in model space]
+  I -- no --> Raw[pointer position]
+  Inv --> E[element-dropped]
+  Raw --> E
+  T[Compact toggle] --> S[canvas view state: active mode]
+  S --> L
+  S --> O[effectiveDefinition: definition + modeOverrides]
+  O --> Draw
+```
+
+### The active mode
+
+The canvas holds `const [viewLayoutMode, setViewLayoutMode] = useState<LayoutMode | undefined>()`. The active mode is `config?.activeLayoutMode ?? viewLayoutMode ?? definition.layout.modes[0]`, so a host that sets the mode still wins, and a canvas nobody configures (every module today) now answers its own switch. The switcher's buttons and the toggle both set it and raise `layout-mode-changed`. Because it is component state, it survives model updates and is lost when the diagram closes (Q1, Requirement 1.3, 1.4). Selection, the filter and the viewport are separate state and are untouched by a switch (Requirement 1.6).
+
+### The effective definition per mode
+
+```ts
+export interface LayoutDefinition {
+  // existing: modes, dragUnderAutomaticLayout, treeDirection
+  /** Replaces parts of the definition while a mode is active; merged shallowly, as definitionOverrides is. */
+  modeOverrides?: Partial<Record<LayoutMode, Partial<Omit<DiagramDefinition, "layout">>>>;
+  /** A two-state switch between the first mode and `on`, drawn below the filter box's legend. */
+  toggle?: { caption: string; on: LayoutMode };
+  /** Parameters of the row-packed mode. */
+  rowPacked?: { width: number; gap: number };
+}
+```
+
+`effectiveDefinition` becomes `effectiveDefinition(definition, config, activeMode)`: the definition, then `definition.layout.modeOverrides?.[activeMode]`, then the runtime's overrides. `layout` itself cannot be overridden per mode, which keeps the mode list and the toggle stable while switching. `validateDiagramDefinition` validates each mode's merged definition as well as the base, and rejects a `toggle.on` that is not in `modes`, a `toggle` on a definition with other than two modes, and `rowPacked` missing when `row-packed` is allowed.
+
+### The row-packed layout
+
+`LayoutPositions` widens from `Map<string, ShapePoint>` to `Map<string, ShapePoint & { width?: number }>`. The canvas applies `width` when present: `{ ...element, x: at.x, y: at.y, width: at.width ?? element.width }`. Existing algorithms return no width and are unaffected.
+
+`rowPacked.place(input, layout)`:
+
+1. Sort the elements by manual `x` (their start date), ties by `id`, which makes the result deterministic (Requirement 3.1).
+2. Walk them in that order, keeping `rowEnd: Map<number, number>` keyed by the element's manual `y` (its row, Q2, Requirement 3.3) and `last: { manualX, x }` for the previous element.
+3. Take the elements a group at a time, a group being those with the same manual x (the same start). The group's x is `max(last.x, rowEnd[y] + gap for every row y the group touches)`, where `last.x` is the previous group's x and `rowEnd[y]` is where the last element placed on row y ends (absent for an empty row). The first element of the group on each row is placed at the group's x; a second one on the same row, which only happens when two trends share a start and a row, is placed at that row's end plus `gap`. Then `rowEnd[y]` is updated and `last.x` becomes the largest x placed in the group, so a later group is never left of any trend that started before it. The very first group takes its own manual x. Placing a group together is what makes equal starts on different rows share x (3.2) whatever order their ids sort in.
+4. Return `{ x, y: manualY, width }` for every element.
+
+That is one sort and one pass, O(n log n) (Performance). The three properties the requirement names follow directly: step 3 never places a group left of an earlier-starting one (time order, 3.2), never places an element within `gap` of the previous element on its row (no overlap, 3.3), and takes exactly the largest of the lower bounds, so no position further left satisfies them all (leftmost, 3.4). The placement is computed over `model.elements`, before the tag filter removes anything, so filtering never moves a trend (3.5). It re-runs whenever the model changes, because the layout `useMemo` depends on `model` (3.6).
+
+Placing the first element at its own manual x means a compact graph starts where its true-time counterpart starts, so switching does not throw the view far off.
+
+### The inverse, for drops
+
+`LayoutAlgorithm` gains an optional `inverse?(point, input, layout): ShapePoint`. For `row-packed`, with the elements placed as above and sorted by placed x:
+
+- Between two placed elements `a` and `b` with `a.x <= point.x < b.x`: `manualX = a.manualX + (point.x - a.x) / (b.x - a.x) * (b.manualX - a.manualX)` (Requirement 6.1).
+- Left of the first or right of the last: extrapolate from that element at one manual `width` per placed `width`, which is one default trend length per compact width (Requirement 6.2). With `width` equal to the default trend width in the manual space, this is the identity in scale.
+- With no elements: the point unchanged (6.2).
+- `y` is unchanged, since rows are kept.
+
+The canvas calls it in the drop handler when the active algorithm has one, before raising `element-dropped` (7.3). The backend then snaps the month and the row as it does for any drop (6.3). A drop between two trends therefore gets a start between theirs, is placed after the earlier one by step 3, and before the later one unless both share its row and it does not fit (6.4); the test for 6.5 drops between two trends on different rows, which is the case the property holds for exactly.
+
+Both functions are exported from one module, `layout/rowPackedLayout.ts`, and the inverse calls the same placement function rather than re-deriving it (Requirement 6.5).
+
+### The toggle
+
+In the `library-filter` block of `DiagramCanvas.tsx`, directly after the legend, when `definition.layout.toggle` is declared: a `<button type="button" className="library-layout-toggle" aria-pressed={active === toggle.on}>` with the caption. A click switches between `modes[0]` and `toggle.on`. When a toggle is declared, the `library-layout-switcher` row is not drawn, since both would switch the same state (7.4). A definition with a toggle and no filter is rejected by the validator, because the toggle has nowhere to sit; no such definition exists today and the hype cycle declares both.
+
+The button's pressed and unpressed look uses existing theme tokens (`--color-*` in `index.css`), so both themes are covered by the tokens already contrast-tested (Requirement 1.2).
+
+## Components and Interfaces
+
+### `layout/rowPackedLayout.ts` (new, library)
+
+- **Purpose:** the `row-packed` algorithm and its inverse.
+- **Interfaces:** `rowPackedLayout: LayoutAlgorithm` with `mode: "row-packed"`, `place`, `inverse`.
+- **Dependencies:** `LayoutInput`, `LayoutDefinition.rowPacked`.
+- **Reuses:** the `LayoutAlgorithm` seam; registered in `LAYOUT_ALGORITHMS`.
+
+### `LayoutDefinition` and `LayoutMode` (library, `definition/diagramDefinition.ts`)
+
+- **Change:** `LayoutMode` gains `"row-packed"`; `LayoutDefinition` gains `modeOverrides`, `toggle` and `rowPacked`.
+
+### `effectiveDefinition` (library, `api/diagramRuntimeConfig.ts`)
+
+- **Change:** takes the active mode and applies its overrides between the definition and the runtime's overrides.
+
+### `DiagramCanvas.tsx` (library)
+
+- **Changes:** the active mode as view state; the effective definition computed for the active mode; a layout width applied to placed elements; the drop translated through the inverse; the toggle drawn below the legend, and the switcher suppressed where a toggle is declared.
+
+### `GhgCanvas.tsx` (module)
+
+- **Change:** `definitionFor(unit)` adds to `layout`:
+
+```ts
+layout: {
+  modes: ["manual", "row-packed"],
+  toggle: { caption: "Compact", on: "row-packed" },
+  rowPacked: { width: DEFAULT_TREND_WIDTH, gap: GhgScale.unitsPerMonth },
+  modeOverrides: {
+    "row-packed": {
+      elementTypes: [compactTrendType],
+      dragging: "disabled",
+      chrome: { rulers: [] },
+    },
+  },
+},
+```
+
+where `compactTrendType` is the trend type with `sizing: "model"` (no resize handles), `draggable: false`, `segments.draggableBoundaries: false` and `segments.boundaries` omitted (even phases, Q3, Requirement 2.3), and `DEFAULT_TREND_WIDTH` is `12 * GhgScale.unitsPerMonth`, the width of a trend `AddGhgTrendCommandHandler.DefaultMonths` steps long at any unit, since a step is always `unitsPerMonth` canvas units wide (Requirement 2.1). The event handlers do not change: `onElementDropped` already forwards the position it is given.
+
+## Data Models
+
+None change. The `.ghg` document, the wire model and the backend's commands are as they are (Requirement 1.3, 8.2, Reliability).
+
+## Error Handling
+
+1. **A module declares a toggle without a filter, or a toggle on other than two modes.** `validateDiagramDefinition` rejects it at module load, as it rejects any invalid definition today; the module's definition test fails.
+2. **An element without a manual row under `row-packed`.** Every element has a `y`; elements sharing a `y` share a row. Nothing to handle.
+3. **A drop the backend refuses in compact mode** (for example a start before the earliest representable month after extrapolation). The refusal is shown on the canvas's refusal line as for any drop, and the document is unchanged (gartner-hype-cycle-graph Requirement 11.3).
+
+## Testing Strategy
+
+### Unit Testing (library, vitest)
+
+- `rowPackedLayout.test.ts`: time order kept, no overlap within `gap` on a row, leftmost placement, determinism on shuffled input, equal starts sharing x on different rows, width applied to every element; the inverse interpolating between two elements, extrapolating at both ends, the identity with no elements, and a drop between two trends on different rows placed between them by `place` (Requirement 3.7, 6.5). Each seen to fail against a stub that returns the manual positions.
+- `diagramRuntimeConfig.test.ts`: mode overrides applied, and applied under the runtime's overrides.
+- `validateDiagramDefinition.test.ts`: the three new rejections.
+- `DiagramCanvas` tests: the toggle drawn after the legend with `aria-pressed`; a click switching the mode and raising `layout-mode-changed`; no resize handle, drag or boundary handle under an override that turns them off; the ruler not drawn under `rulers: []`; a drop raised with the inverse's position (Requirement 7.5).
+
+### Module Testing
+
+- `ghgDefinition.test.ts`: the definition declares `row-packed`, the *Compact* toggle and the overrides, and every merged definition validates for every time unit.
+
+### End-to-End Testing
+
+- A `tests.md` entry covering Requirement 9.2 in a real browser, in both themes, on the `technology-trends` example (about 200 trends): toggle, equal widths and even phases, order and no overlap, no gestures offered, the ruler hidden and back, an influence drawn in compact and seen in true-time, a drop between two trends with approximated dates, and `git diff` on the `.ghg` file empty after toggling.
+
+## Documentation
+
+- `docs/creating-a-diagram-module.md` gains `row-packed`, `modeOverrides`, `toggle` and the inverse under the layout section (Requirement 9.1).
+- `docs/diagrams.md`'s `gartner/hypecycle-graph` row mentions compact mode and names this specification.
+- `docs/architecture.md` is checked for a sentence about layout modes made false by the view-state change, and updated in the same change if so.
