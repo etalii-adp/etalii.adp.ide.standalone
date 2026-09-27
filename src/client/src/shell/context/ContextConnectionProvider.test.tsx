@@ -4,6 +4,7 @@ import { create } from "@bufbuild/protobuf";
 import { ContextSelectionSource } from "../../generated/context-contract_pb";
 import { ContextMessageSchema, ContextSelectionAction, type ContextMessage } from "../../generated/context_pb";
 import { ProblemSetState, ProblemSeverity } from "../../generated/problems_pb";
+import { WorkspaceMessageSchema, type WorkspaceMessage } from "../../generated/workspace_pb";
 import {
   ContextConnectionProvider,
   NONE_DETAIL,
@@ -19,13 +20,17 @@ import {
   useProjectActions,
 } from "./ContextConnectionProvider";
 
-/** A server stream the test feeds by hand and can end (to exercise a reconnect). */
-class FakeStream implements AsyncIterable<ContextMessage> {
-  private queue: ContextMessage[] = [];
-  private waiters: Array<(result: IteratorResult<ContextMessage>) => void> = [];
+/**
+ * A server stream the test feeds by hand and can end (to exercise a reconnect). The tab's one
+ * stream is `WorkspaceService.Watch`, so a pushed context message arrives wrapped as its member.
+ */
+class FakeStream implements AsyncIterable<WorkspaceMessage> {
+  private queue: WorkspaceMessage[] = [];
+  private waiters: Array<(result: IteratorResult<WorkspaceMessage>) => void> = [];
   private ended = false;
 
-  push(message: ContextMessage) {
+  push(context: ContextMessage) {
+    const message = create(WorkspaceMessageSchema, { message: { case: "context", value: context } });
     const waiter = this.waiters.shift();
     if (waiter) {
       waiter({ value: message, done: false });
@@ -37,11 +42,11 @@ class FakeStream implements AsyncIterable<ContextMessage> {
   end() {
     this.ended = true;
     for (const waiter of this.waiters.splice(0)) {
-      waiter({ value: undefined as unknown as ContextMessage, done: true });
+      waiter({ value: undefined as unknown as WorkspaceMessage, done: true });
     }
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<ContextMessage> {
+  [Symbol.asyncIterator](): AsyncIterator<WorkspaceMessage> {
     return {
       next: () => {
         const queued = this.queue.shift();
@@ -49,7 +54,7 @@ class FakeStream implements AsyncIterable<ContextMessage> {
           return Promise.resolve({ value: queued, done: false });
         }
         if (this.ended) {
-          return Promise.resolve({ value: undefined as unknown as ContextMessage, done: true });
+          return Promise.resolve({ value: undefined as unknown as WorkspaceMessage, done: true });
         }
         return new Promise((resolve) => this.waiters.push(resolve));
       },

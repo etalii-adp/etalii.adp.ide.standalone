@@ -26,6 +26,7 @@ import {
   selectionFor,
   useContextConnection,
   useContextSelection,
+  useWorkspaceStreams,
 } from "../context/ContextConnectionProvider";
 
 export interface TreeNode {
@@ -479,6 +480,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
   const { transport } = useAuth();
   const hierarchyClient = useMemo(() => createClient(HierarchyService, transport), [transport]);
   const { watchId, select, executeAction, clearReveal } = useContextConnection();
+  const { watchHierarchy } = useWorkspaceStreams();
   const { selection, actions, pendingReveal } = useContextSelection();
 
   const [state, setState] = useState<TreeState>(EMPTY_TREE_STATE);
@@ -535,10 +537,9 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
 
     void (async () => {
       try {
-        const stream = hierarchyClient.watchHierarchy(
-          { projectId: { value: projectId }, watchId: { value: watchId } },
-          { signal: abortController.signal },
-        );
+        // The changes ride the tab's one stream rather than a WatchHierarchy call of their own
+        // (two-tab-connection-wedge Requirement 3.1); the feed fails when that stream drops.
+        const stream = watchHierarchy({ signal: abortController.signal });
         for await (const message of stream) {
           if (message.message.case !== "change") {
             continue;

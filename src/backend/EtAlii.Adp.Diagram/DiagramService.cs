@@ -55,7 +55,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out var bodyPath, out _, out _))
         {
             _logger.Warning("Refused to move {ElementId} on watch {WatchId}: {Path} does not resolve to an open diagram", request.ElementId, watchId, string.Join('/', request.Path.Segments));
             return new MoveElementResponse { Error = "The diagram is not open." };
@@ -97,7 +97,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     public override Task<DescribeToolboxResponse> DescribeToolbox(DescribeToolboxRequest request, ServerCallContext context)
     {
         var response = new DescribeToolboxResponse();
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out _, out var origin, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, SessionContext.GetUserId(context), out _, out _, out var origin, out _))
         {
             // Unresolvable is answered with an empty toolbox, the same non-revealing shape an
             // unauthorized DiscoverActions gets: the palette simply has nothing to offer.
@@ -167,13 +167,13 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     private bool TryResolveEditor(
         Documents.Wire.ShortGuid projectId,
         Path path,
-        ServerCallContext context,
+        ShortGuid userId,
         out string rootPath,
         out string fullPath,
         out string editorId)
     {
         editorId = "";
-        if (!TryResolveTextFile(projectId, path, context, out rootPath, out fullPath))
+        if (!TryResolveTextFile(projectId, path, userId, out rootPath, out fullPath))
         {
             return false;
         }
@@ -195,13 +195,12 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     private bool TryResolveTextFile(
         Documents.Wire.ShortGuid projectId,
         Path path,
-        ServerCallContext context,
+        ShortGuid userId,
         out string rootPath,
         out string fullPath)
     {
         fullPath = "";
 
-        var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))
         {
             return false;
@@ -231,7 +230,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
 
     public override async Task<SaveTextResponse> SaveText(SaveTextRequest request, ServerCallContext context)
     {
-        if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var rootPath, out var fullPath))
+        if (!TryResolveTextFile(request.ProjectId, request.Path, SessionContext.GetUserId(context), out var rootPath, out var fullPath))
         {
             // The content is deliberately not logged - only which file the save asked for.
             _logger.Warning("Refused to save {Path}: it does not resolve inside the project any more", string.Join('/', request.Path.Segments));
