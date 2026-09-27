@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/ghg-compact-mode/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-27T12:10:53.731Z",
       "trigger": "initial",
+      "approvalId": "approval_1790511052474_8so6vhyyz",
+      "approvalTitle": "ghg-compact-mode design: row-packed layout, per-mode overrides, drop inverse, Compact toggle"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-27T12:19:11.929Z",
+      "trigger": "approved",
       "approvalId": "approval_1790511052474_8so6vhyyz",
       "approvalTitle": "ghg-compact-mode design: row-packed layout, per-mode overrides, drop inverse, Compact toggle"
     }
