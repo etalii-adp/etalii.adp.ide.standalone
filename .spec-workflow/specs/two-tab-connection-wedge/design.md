@@ -84,9 +84,12 @@ the rest is a decision.
 
 ### What is deliberately NOT reused
 
-- **No new abstraction over the three streams.** Requirement 3 permits collapsing them and this
-  design does not do it, because under TLS the count stops being a correctness question and a
-  multiplexing layer built now would be built against a constraint about to be removed.
+- **No new abstraction over the three streams - withdrawn on 2026-09-27.** Requirement 3 permits
+  collapsing them, and this design first declined to, because under TLS the count stops being a
+  correctness question. The user then asked for the reduction anyway, in chat on 2026-09-27, when
+  offered task 5 as optional. It is built as robustness rather than as the fix, and is described
+  under *Requirement 3's stream reduction, as built*. The reasoning above is still true; it is no
+  longer the decision.
 - **No detection of pool exhaustion.** Requirement 5.2 forbids it and the reason is structural: a
   queued request and an unanswered one are identical from inside the page. Every attempt to tell
   them apart during this investigation failed, six times.
@@ -149,6 +152,38 @@ why, because from inside the page it cannot.
 Where the recovery can be offered it should be - closing other tabs - phrased as a suggestion
 rather than a diagnosis.
 
+### Requirement 3's stream reduction, as built
+
+Added 2026-09-27 for task 5. **A tab holds one long-lived stream, `WorkspaceService.Watch`**
+(`src/api/workspace.proto`), where it held three. Over cleartext that raises the limit from two
+tabs to six; it does not remove it, and it is not recorded as the fix for Requirement 1
+(Requirement 3.2). Under TLS it changes nothing a user can see.
+
+- **One member per source.** `WorkspaceMessage` carries the context's `ContextMessage`, the
+  hierarchy's `HierarchyMessage` and a `DiagramStreamMessage` per diagram delta. A feature that
+  needs to push something new adds a member, never a stream - because every stream added divides
+  the cleartext tab count again.
+- **A diagram joins by unary call.** grpc-web cannot send on a stream it is reading, and a second
+  streaming call per document would defeat the purpose, so `OpenDiagram` starts a diagram's pump on
+  the connection under a client-generated stream id and `CloseDiagram` stops it - the same two
+  correlated one-way legs the rest of the API uses. Refusals keep `DiagramService.Open`'s permanent
+  codes, so the client still tells "cannot be opened here" from "the connection dropped". A pump that
+  fails on its own sends `DiagramStreamEnded`, which the client treats as a dropped stream.
+- **No new behaviour.** The hierarchy watch, the context stream and the diagram pump are the same
+  code their own RPCs run, handed a writer onto the one stream (`RunWatchAsync`, `OpenSession` and
+  `PumpAsync`). Those three RPCs stay declared, because the backend's flow tests drive the sources
+  through them; the client opens none of them.
+- **Lifetimes.** Ending the Watch call ends every diagram stream it carried (`WorkspaceConnections`,
+  keyed by watch id like the other per-connection stores). The client waits for the context's
+  baseline - written once the backend has registered the connection - before it opens a diagram, and
+  on a drop every diagram stream ends and re-opens after the reconnect, exactly as a dropped `Open`
+  call did.
+- **The guard counts the transport, not the text.** `oneStreamPerTab.test.tsx` mounts the shell's
+  provider, the explorer and an open document against a client that reads each method's kind from the
+  real service descriptor, and asserts the peak of live server streams is 1. It was seen to fail at
+  2 with the explorer put back on `WatchHierarchy`, and again with the document put back on
+  `DiagramService.Open`.
+
 ## Error Handling
 
 ### Error scenarios
@@ -188,7 +223,8 @@ different limit wedges at a different tab count, not never. This is recorded rat
    matters most if 1 is deferred.
 3. The incomplete-request bound.
 4. Requirement 3's stream reduction: **only if the production decision comes back as cleartext**,
-   at which point it stops being optional.
+   at which point it stops being optional. The decision came back as TLS and the reduction was built
+   anyway, at the user's request on 2026-09-27 - see *Requirement 3's stream reduction, as built*.
 
 Steps 2 and 3 do not depend on step 1 and should not be sequenced behind it, because they are
 exactly what protects the product in the case where the TLS decision goes the other way.
