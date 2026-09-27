@@ -93,6 +93,37 @@ public class AnsibleGraphTests
             e => Assert.Equal("db", e.Directive.Target));
     }
 
+    /// <summary>
+    /// One pattern reaching two inventories is two edges, so it must be two ids: the canvas
+    /// keys an element on its id, and two edges sharing one draw as one - the second overwrites
+    /// the first - while the shared diff refuses a rendering that repeats an id at all.
+    /// </summary>
+    [Fact]
+    public void AHostsPatternReachingTwoInventories_IsTwoEdgesWithTwoIds()
+    {
+        // Act.
+        var targets = EdgesOf(Graph("infrastructure"), AnsibleEdgeKind.Targets);
+
+        // Assert.
+        Assert.Equal(4, targets.Length);
+        Assert.Equal(targets.Length, targets.Select(e => e.Id).Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Theory]
+    [InlineData("infrastructure")]
+    [InlineData("broken")]
+    [InlineData("ini-inventory")]
+    [InlineData("unconventional")]
+    public void EveryNodeAndEdge_HasAnIdNothingElseInTheGraphHas(string fixture)
+    {
+        // Act.
+        var graph = Graph(fixture);
+        var ids = graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)).ToArray();
+
+        // Assert.
+        Assert.Empty(ids.GroupBy(id => id, StringComparer.Ordinal).Where(group => group.Count() > 1).Select(group => group.Key));
+    }
+
     // ---- static versus dynamic, and what the file wrote --------------------------------------
 
     [Fact]
