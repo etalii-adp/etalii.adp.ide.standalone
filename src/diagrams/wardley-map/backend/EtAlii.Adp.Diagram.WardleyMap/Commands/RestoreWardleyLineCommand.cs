@@ -52,7 +52,7 @@ public sealed class RestoreWardleyLineCommandHandler : ICommandHandler<RestoreWa
         document.ReplaceLine(command.Line, command.Text);
         var published = _documents.Save(command.BodyPath, document);
 
-        return Task.FromResult(published.Error.Length == 0
+        return Task.FromResult(!published.Failed
             ? CommandResult.Success(command with { Text = replaced }, published.Warning)
             : CommandResult.Failure(published.Error));
     }

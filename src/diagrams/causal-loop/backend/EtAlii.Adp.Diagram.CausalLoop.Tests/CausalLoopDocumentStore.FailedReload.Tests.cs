@@ -178,7 +178,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
 
         var answer = store.Save(path, store.GetOrLoad(path));
 
-        Assert.NotEqual("", answer);
+        Assert.NotEqual("", answer.Error);
         Assert.Equal(Text, File.ReadAllText(path));
     }
 }

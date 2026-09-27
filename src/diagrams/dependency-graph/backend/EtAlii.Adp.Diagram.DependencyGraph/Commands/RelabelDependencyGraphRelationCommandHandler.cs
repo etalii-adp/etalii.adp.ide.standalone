@@ -36,9 +36,9 @@ public sealed class RelabelDependencyGraphRelationCommandHandler : ICommandHandl
         var inverse = new RelabelDependencyGraphRelationCommand(command.BodyPath, command.RelationId, relation.Label);
         DependencyGraphWriter.SetRelationLabel(entry.Document, relation, command.Label);
 
-        var error = _documents.Save(command.BodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = _documents.Save(command.BodyPath, entry);
+        return Task.FromResult(!saved.Failed
             ? CommandResult.Success(inverse)
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 }

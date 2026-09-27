@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
@@ -31,8 +33,8 @@ public interface ITimelineDocumentStore
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
     /// </remarks>
-    /// <returns>Empty on success, or why it was not written.</returns>
-    string Save(string path, TimelineDocumentEntry entry);
+    /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
+    DocumentSaveResult Save(string path, TimelineDocumentEntry entry);
 
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);

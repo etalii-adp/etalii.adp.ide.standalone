@@ -68,9 +68,9 @@ internal sealed class RemovePipelineElementCommandHandler(IPipelineDocumentStore
             .ToList();
 
         new PipelineWriter(entry.Document).RemoveElement(target);
-        var error = documents.Save(command.RootPath, command.BodyPath, entry);
-        return Task.FromResult(error.Length > 0
-            ? CommandResult.Failure(error)
+        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
+        return Task.FromResult(saved.Failed
+            ? CommandResult.Failure(saved.Error)
             : CommandResult.Success(new RestorePipelineLinesCommand(
                 command.RootPath,
                 command.BodyPath,
@@ -128,10 +128,10 @@ internal sealed class RestorePipelineLinesCommandHandler(IPipelineDocumentStore 
         }
 
         new PipelineWriter(entry.Document).InsertElement(null, Math.Max(command.AtLine - 1, 0), command.Lines);
-        var error = documents.Save(command.RootPath, command.BodyPath, entry);
-        if (error.Length > 0)
+        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
+        if (saved.Failed)
         {
-            return Task.FromResult(CommandResult.Failure(error));
+            return Task.FromResult(CommandResult.Failure(saved.Error));
         }
 
         // Redoing the undo removes it again - and the element is found by id, which is what it

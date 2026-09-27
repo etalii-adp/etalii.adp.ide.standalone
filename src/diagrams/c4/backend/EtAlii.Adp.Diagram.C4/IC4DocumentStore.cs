@@ -1,3 +1,5 @@
+using EtAlii.Adp.Documents;
+
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>What changed about a C4 document, for the sessions that show it.</summary>
@@ -31,12 +33,13 @@ public interface IC4DocumentStore
     /// that unwritable rather than merely discouraged.
     /// </param>
     /// <returns>
-    /// <c>""</c> when the document reached the disk, and a sentence the user can read when
-    /// it did not. **A caller must surface it rather than drop it.** The edit survives in
-    /// memory either way, so a caller that ignores this answers the user with a save that
-    /// never happened - which is exactly what returning nothing at all allowed.
+    /// <see cref="DocumentSaveResult.Ok"/> when the document reached the disk, and a failure whose
+    /// <see cref="DocumentSaveResult.Error"/> is a sentence the user can read when it did not
+    /// (backend-centralization R3.1). **A caller must surface it rather than drop it.** The edit
+    /// survives in memory either way, so a caller that ignores this answers the user with a save
+    /// that never happened - which is exactly what returning nothing at all allowed.
     /// </returns>
-    string Save(string path, C4Document document);
+    DocumentSaveResult Save(string path, C4Document document);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.

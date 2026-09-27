@@ -36,10 +36,10 @@ internal static class RdfEdits
             return Task.FromResult(CommandResult.Failure(refusal));
         }
 
-        var error = documents.Save(bodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = documents.Save(bodyPath, entry);
+        return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RestoreDocumentCommand<IRdfDocumentStore>(bodyPath, before, self))
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 
     /// <summary>

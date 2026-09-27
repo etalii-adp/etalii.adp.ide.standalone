@@ -33,7 +33,7 @@ public interface IDatabricksDocumentStore : IReloadableDocumentStore
     /// Writes the document back and tells every session on it. Refuses while the document does
     /// not parse, so a file that is already broken is never made worse (Requirement 2.3).
     /// </summary>
-    /// <returns>Empty on success, or why it was not written.</returns>
+    /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
     /// <remarks>
     /// <b>The entry is a parameter rather than something this looked up, and that is the fix for a
     /// data-loss defect.</b> It used to call <see cref="GetOrLoad"/> itself, so it wrote whatever was
@@ -42,7 +42,7 @@ public interface IDatabricksDocumentStore : IReloadableDocumentStore
     /// command's inverse on the undo stack for a change that never happened. Passing the entry makes
     /// that ordering unrepresentable: what the caller edited is what gets written.
     /// </remarks>
-    string Save(string path, DatabricksDocumentEntry entry);
+    DocumentSaveResult Save(string path, DatabricksDocumentEntry entry);
 
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
