@@ -7,7 +7,7 @@ This is a workspace package (`@adp/diagram-gartner-hypecycle-graph-client`). It 
 - **`register.ts`** claims the mime type `gartner/hypecycle-graph` and imports this module's stylesheet.
 - **`ghgIds.ts`** states every id the client and the backend agree on — the element and relation types, the actions, the properties the canvas sets and the shortcut — and the time scale: four canvas units a month from 1900-01, rows 56 apart, a trend 32 tall. `../scale-fixture.json` states the same numbers, and both tiers are tested against it.
 - **`ghgModel.ts`** folds the delta stream: an add is an upsert keyed on id, and only a remove removes.
-- **`ghgExample.ts`** reads the technology-trends example for the tests; nothing in the canvas imports it.
+- **`ghgExample.ts`** reads an example (technology-trends unless another is named) for the tests; nothing in the canvas imports it.
 
 ## What this canvas declares
 

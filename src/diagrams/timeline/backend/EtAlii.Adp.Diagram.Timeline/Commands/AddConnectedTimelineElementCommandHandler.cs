@@ -59,10 +59,10 @@ public sealed class AddConnectedTimelineElementCommandHandler : ICommandHandler<
         TimelineWriter.InsertConnection(
             entry.Document, reparsed, command.RelationId, source, target, "");
 
-        var error = _documents.Save(command.BodyPath, entry);
-        return Task.FromResult(error.Length == 0
+        var saved = _documents.Save(command.BodyPath, entry);
+        return Task.FromResult(!saved.Failed
             ? CommandResult.Success(new RemoveTimelineElementCommand(
                 command.BodyPath, command.NewElementId, RemoveEmptiedConnectionsSection: !hadSection))
-            : CommandResult.Failure(error));
+            : CommandResult.Failure(saved.Error));
     }
 }

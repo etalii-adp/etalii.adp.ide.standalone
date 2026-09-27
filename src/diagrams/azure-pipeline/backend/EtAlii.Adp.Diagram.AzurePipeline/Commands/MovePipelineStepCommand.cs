@@ -76,9 +76,9 @@ internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore docu
             return Task.FromResult(CommandResult.Success());
         }
 
-        if (documents.Save(command.RootPath, command.BodyPath, entry) is { Length: > 0 } error)
+        if (documents.Save(command.RootPath, command.BodyPath, entry) is { Failed: true } saved)
         {
-            return Task.FromResult(CommandResult.Failure(error));
+            return Task.FromResult(CommandResult.Failure(saved.Error));
         }
 
         // Undo moves it back to where it was. Ids are positional, so the step that is now at

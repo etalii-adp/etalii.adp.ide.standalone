@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { capacityOf, fitToCapacity, LABEL_FONT_SIZE } from "@client/canvas/label/textMetrics";
 
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
@@ -490,9 +491,8 @@ export function labelFor(node: OwlNode, widthPx: number): string {
  * across half the canvas.
  */
 export function fit(text: string, widthPx: number): string {
-  // ~0.55em per character at the label's size, with a little padding inside the outline.
-  const budget = Math.max(6, Math.floor((widthPx - 16) / 6.2));
-  return text.length <= budget ? text : `${text.slice(0, budget - 1).trimEnd()}…`;
+  // The shared metric at the label's size, with a little padding inside the outline.
+  return fitToCapacity(text, capacityOf(widthPx - 16, LABEL_FONT_SIZE));
 }
 
 /** Whether an equivalence axiom touches this node - what doubles its outline, per the notation. */

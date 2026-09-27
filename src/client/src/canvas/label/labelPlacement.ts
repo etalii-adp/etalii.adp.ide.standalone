@@ -1,4 +1,5 @@
 import type { LabelPlacement } from "../../shell/panels/InlineLabelPlacementContext";
+import { LABEL_FONT_SIZE, widthOf } from "./textMetrics";
 
 /**
  * Where an inline editor goes, for the three shapes a canvas actually draws. Pure arithmetic:
@@ -28,11 +29,9 @@ export interface LabelPoint {
 }
 
 /**
- * Per-character width estimate and floor for a label with no box of its own. Generic text
- * metrics rather than any module's vocabulary, and deliberately the same numbers the shared
- * element components already use for the same purpose.
+ * The floor for a label with no box of its own; its width is the shared estimate in
+ * {@link widthOf}, the one the element components size and trim by.
  */
-const ESTIMATED_CHAR_WIDTH = 7;
 const MINIMUM_ESTIMATED_WIDTH = 80;
 const TEXT_LABEL_HEIGHT = 16;
 
@@ -92,7 +91,7 @@ export function midpointLabelPlacement(
   measuredWidth: number | null = null,
 ): LabelPlacement {
   const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
-  const width = measuredWidth ?? Math.max(text.length * ESTIMATED_CHAR_WIDTH, MINIMUM_ESTIMATED_WIDTH);
+  const width = measuredWidth ?? Math.max(widthOf(text, LABEL_FONT_SIZE), MINIMUM_ESTIMATED_WIDTH);
 
   return {
     x: middle.x - width / 2,
@@ -124,7 +123,7 @@ export function asideLabelPlacement(
   text: string,
   measuredWidth: number | null = null,
 ): LabelPlacement {
-  const width = measuredWidth ?? Math.max(text.length * ESTIMATED_CHAR_WIDTH, MINIMUM_ESTIMATED_WIDTH);
+  const width = measuredWidth ?? Math.max(widthOf(text, LABEL_FONT_SIZE), MINIMUM_ESTIMATED_WIDTH);
 
   return {
     x: at.x + gap,
@@ -145,7 +144,7 @@ export function beforeLabelPlacement(
   text: string,
   measuredWidth: number | null = null,
 ): LabelPlacement {
-  const width = measuredWidth ?? Math.max(text.length * ESTIMATED_CHAR_WIDTH, MINIMUM_ESTIMATED_WIDTH);
+  const width = measuredWidth ?? Math.max(widthOf(text, LABEL_FONT_SIZE), MINIMUM_ESTIMATED_WIDTH);
 
   return {
     x: at.x - gap - width,

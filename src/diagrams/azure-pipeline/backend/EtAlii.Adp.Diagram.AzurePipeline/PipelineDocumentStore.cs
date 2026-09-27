@@ -60,7 +60,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return _lifecycle.GetOrLoad(path);
     }
 
-    public string Save(string rootPath, string path, PipelineDocumentEntry entry)
+    public DocumentSaveResult Save(string rootPath, string path, PipelineDocumentEntry entry)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -71,7 +71,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
             // Writing a document whose model is empty because it never parsed would replace a file
             // somebody can still fix with one this module invented.
             _logger.Warning("Refusing to write {Path}: it does not parse ({Error})", path, entry.Error);
-            return $"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}";
+            return DocumentSaveResult.Failure($"{IoPath.GetFileName(path)} does not parse, so it was not written. {entry.Error}");
         }
 
         // The document's own lines are authoritative and unchanged by writing them out, but what
@@ -82,11 +82,11 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         var result = _lifecycle.Save(path, reparsed);
         if (result.Failed)
         {
-            return result.Error;
+            return result;
         }
 
         Changed?.Invoke(this, new PipelineDocumentChangedEventArgs(path, reparsed.Model));
-        return "";
+        return DocumentSaveResult.Ok;
     }
 
     public void Touch(string rootPath, string path)

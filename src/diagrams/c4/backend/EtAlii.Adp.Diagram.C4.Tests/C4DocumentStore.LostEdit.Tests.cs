@@ -76,7 +76,7 @@ public class C4DocumentStoreLostEditTests : IDisposable
         var error = store.Save(path, document);
 
         // Assert.
-        Assert.Equal("", error);
+        Assert.Equal("", error.Error);
         var written = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // The save reported success, so the edit it reported success for has to be in the file.

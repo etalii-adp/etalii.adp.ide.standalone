@@ -49,7 +49,7 @@ One worktree for the whole specification, one Developer owning it until every ta
   - **Guard: no module stylesheet selects an SVG element type by descendant.** It absorbs `highlightSurvivesModuleStyles`, which stays as the rendered half.
   - _Requirements: 3.1, 3.2, 3.3, 12.1_
 
-- [ ] 5. One character metric and one fit
+- [x] 5. One character metric and one fit
   - Files: `canvas/label/textMetrics.ts` (new), `labels.ts:45-51`, `labelPlacement.ts:35`, `DiagramCanvas.tsx:2925`, `SpanElement.tsx:145`, `C4Canvas.tsx:51`
   - One exported metric replaces 7, 7, **8** and 5.5 px per character; one fit function replaces the formula written twice in the library and `c4`'s `typeLineFitted`. **A label must not be sized by one metric and trimmed by another** — the drift behind the overflow reports on `databricks`, `c4` and `shacl`.
   - **Where the backend computes the box** (c4 clamps at 240) the metric is Architect 1's and this task cites its fixture. **`c4`'s word wrap is not re-implemented here**; it belongs to `functional-decomposition-graph`'s `wrap`.
@@ -76,7 +76,7 @@ One worktree for the whole specification, one Developer owning it until every ta
 
 ## Group 3 — The seams, and the last sweep
 
-- [ ] 9. One row-rounding rule, shared with the backend
+- [x] 9. One row-rounding rule, shared with the backend
   - Files: `DiagramCanvas.tsx` (`snapToStep` exported), `DependencyGraphCanvas.tsx:166`, `TimelineCanvas.tsx:135`
   - The two byte-identical `nearestRow` copies go. **Architect 1 owns the rule** (the backend persists the row); this task cites its fixture, **including the halfway and negative-zero cases** five earlier copies got wrong, and tells Architect 1 that `snapToStep` is now module-facing.
   - _Requirements: 8.1, 8.2, 8.3_

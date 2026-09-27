@@ -19,6 +19,9 @@ export const GhgRelationTypes = { influence: "influence" } as const;
 /** The four phases, in order: the segment index is the index here. */
 export const GHG_PHASES = ["peak", "trough", "slope", "plateau"] as const;
 
+/** The phases as a reader names them, in the order of {@link GHG_PHASES} - as the property grid titles them. */
+export const GHG_PHASE_TITLES = ["Peak", "Trough", "Slope", "Plateau"] as const;
+
 /** The full Gartner names, which the segments show as tooltips. */
 export const GHG_PHASE_TOOLTIPS = [
   "Peak of Inflated Expectations",
@@ -76,9 +79,9 @@ export function xOfMonth(monthIndex: number): number {
   return (monthIndex - GhgScale.originMonth) * GhgScale.unitsPerMonth;
 }
 
-/** A month index as the document writes it: `YYYY-MM`. */
+/** A month index as the document writes it: `YYYY-MM`, or `-YYYY-MM` before year 0 (ISO 8601's astronomical years). */
 export function formatMonth(monthIndex: number): string {
   const year = Math.floor(monthIndex / 12);
   const month = monthIndex - year * 12 + 1;
-  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
+  return `${year < 0 ? "-" : ""}${String(Math.abs(year)).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
 }

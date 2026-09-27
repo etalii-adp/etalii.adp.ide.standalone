@@ -17,6 +17,7 @@ import { useViewReport } from "@client/diagrams/useViewReport";
 import {
   GHG_ACTION_IDS,
   GHG_PHASES,
+  GHG_PHASE_TITLES,
   GHG_PHASE_TOOLTIPS,
   GhgActions,
   GhgElementTypes,
@@ -103,7 +104,12 @@ export const GHG_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
       },
     ],
   },
-  filter: { field: "payload.tags", label: "Filter by tags, e.g. energy and (transport or industry)" },
+  filter: {
+    field: "payload.tags",
+    label: "Filter by tags, e.g. energy and (transport or industry)",
+    // The key to the phase colours, each swatch painted by the rule that paints its phase.
+    legend: GHG_PHASES.map((phase, index) => ({ caption: GHG_PHASE_TITLES[index], swatchClass: `ghg-${phase}` })),
+  },
   layout: { modes: ["manual"] },
   dragging: "enabled",
 });

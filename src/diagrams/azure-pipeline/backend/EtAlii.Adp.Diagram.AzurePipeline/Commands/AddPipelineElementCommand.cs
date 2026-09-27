@@ -53,9 +53,9 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
             return Task.FromResult(CommandResult.Failure(added.Error));
         }
 
-        var error = documents.Save(command.RootPath, command.BodyPath, entry);
-        return Task.FromResult(error.Length > 0
-            ? CommandResult.Failure(error)
+        var saved = documents.Save(command.RootPath, command.BodyPath, entry);
+        return Task.FromResult(saved.Failed
+            ? CommandResult.Failure(saved.Error)
             : CommandResult.Success(new RemovePipelineElementCommand(command.RootPath, command.BodyPath, added.ElementId)));
     }
 
