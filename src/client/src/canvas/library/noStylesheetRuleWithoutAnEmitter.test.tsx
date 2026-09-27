@@ -48,6 +48,24 @@ interface Listed {
 /** Rules for classes the shipped examples do not draw at rest - live, and why none shows. */
 const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
   {
+    reason: "library capabilities added for the hype cycle graph (4e89ae93) - the segmented arrow banner, along-edge anchors, the bottom ruler and the filter - which no shipped canvas declares until that module lands",
+    classes: [
+      "library-anchor-hit",
+      "library-attachment-highlight",
+      "library-boundary-handle",
+      "library-canvas-with-bottom-ruler",
+      "library-edge-strip",
+      "library-filter",
+      "library-filter-error",
+      "library-filter-input",
+      "library-filter-input-invalid",
+      "library-ruler",
+      "library-ruler-tick",
+      "library-segment",
+      "library-segment-divider",
+    ],
+  },
+  {
     reason: "drawn only while a gesture is in progress - a drag, a connect, or an in-place label edit - and a mounted example is at rest",
     classes: [
       "c4-node-dragging",
