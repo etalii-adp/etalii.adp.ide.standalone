@@ -92,7 +92,7 @@
   - _Requirements: 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec module-client-api-readme, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer who reads code | Task: Reduce the walkthrough's client material to summaries and links, add the readme to the link guard's document list, and record it in processes.md Keeping documentation true | Restrictions: Remove no backend material; leave no API detail in two places; the processes.md change is a spec-workflow edit and goes in its own commit | Success: the walkthrough names what the client half is and links for how; DocumentationLinksTests covers the readme and passes; set the task to [-] before starting, log with log-implementation, then [x]_
 
-- [ ] 11. See the diagrams render, and close the specification
+- [x] 11. See the diagrams render, and close the specification
   - File: (no source change) implementation log
   - Open the readme on GitHub's file view and in Rider's markdown preview with its Mermaid extension, confirm all five diagrams render, and record it. State in the readme what a parse cannot catch: a diagram that parses but shows the wrong flow.
   - Purpose: the one criterion a person owns, done and recorded rather than assumed
