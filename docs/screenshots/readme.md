@@ -19,7 +19,7 @@ The images the root readme shows, and how each was taken — precisely enough th
   else about the images is unchanged.
 - **Format and budget**: PNG; each image ≤ 300 KB, the workspace overview ≤ 1 MB.
 
-The whole procedure is executable: [`capture.mjs`](capture.mjs) drives all of the above with puppeteer-core (`npm i puppeteer-core`, then `node capture.mjs http://localhost:5480 .` — it expects Chrome at its standard Windows path; adjust the constant for another machine). Retaking one image means re-running the script and committing the changed file; the entries below say what each image must show, which is what to check before committing a retake.
+The whole procedure is executable: [`capture.mjs`](capture.mjs) drives all of the above with puppeteer-core (`npm i puppeteer-core`, then `node capture.mjs http://localhost:5480 .` — it expects Chrome at its standard Windows path; adjust the constant for another machine). Two optional arguments follow: the project's name, when `src/examples/` was added under another name than `Examples`, and a comma-separated list of image names, so `node capture.mjs http://localhost:5480 . Examples owl.png` retakes one image alone. Retaking an image means re-running the script and committing the changed file; the entries below say what each image must show, which is what to check before committing a retake. The script opens each document by its path in the explorer, not by the row's text, since row text repeats (four corpora have an `example 1`, and every folder-subject diagram is a row named `.adp`), and it exits non-zero naming any document that drew nothing.
 
 ## The images
 
@@ -31,9 +31,36 @@ The whole procedure is executable: [`capture.mjs`](capture.mjs) drives all of th
 | `timeline.png` | `diagrams/timeline/example-2/` → `roadmap.tml` → `roadmap.adp` | Periods and moments on rows, the year ruler along the bottom, connections drawn; Toolbox showing Element and Moment. Nothing selected. |
 | `azure-pipeline.png` | `diagrams/azure-pipeline/example 1/` → `multi-stage.yml` → `multi-stage.adp` | The stage graph left-to-right with its dependency edges. Nothing selected. |
 | `dependency-graph.png` | `diagrams/dependency-graph/example-1/` → `services.dgr` → `services.adp` | The service graph with labelled edges. Nothing selected. |
+| `c4-context.png` | `diagrams/c4/industrial-plant/architecture/` → `bottling-mes.dsl` → `bottling-mes.adp` | The system context: the Manufacturing Execution System in the middle, the five people above it and the external systems below; Toolbox showing Person and Software System. Nothing selected. |
+| `c4-component.png` | `diagrams/c4/industrial-plant/architecture/` → `bottling-mes.dsl` → `bottling-mes.order-service-components.adp` | The Order Service's components inside their dashed container boundary, with the containers and external system they talk to outside it; Toolbox adding Component. Nothing selected. |
+| `c4-system-landscape.png` | `diagrams/c4/reference/architecture/` → `courier.dsl` → `courier.landscape.adp` | The courier landscape: Courier Tracking between its people and the three external systems, with the key along the bottom. The industrial plant's own landscape holds one system and draws the same picture as its context view, hence the other corpus. Nothing selected. |
+| `functional-decomposition-graph.png` | `diagrams/functional-decomposition-graph/field-service/` → `field-service.fdg` → `field-service.adp` | UI elements, actions, data elements and functions in their four shapes, linked parent to child by bezier arrows, with the two comment notes; Toolbox showing all five kinds. Nothing selected. |
+| `causal-loop.png` | `diagrams/causal-loop/on-call/` → `on-call.cld` → `on-call.adp` | The on-call variables joined by polarised links, the delay marks on the slow ones, and the three named loops (R1-R3) at their centres; Toolbox showing Variable, Causal link and Feedback loop. Nothing selected. |
+| `hype-cycle.png` | `diagrams/gartner-hypecycle-graph/electric-vehicles/` → `electric-vehicles.ghg` → `electric-vehicles.adp` | The trends as banners on the year axis (1900 and 2000 labelled along the bottom), coloured by phase with the Peak/Trough/Slope/Plateau key and the tag filter above; Toolbox showing Trend, Trigger and Note. **Not fitted**: fitting a century-long axis squeezes every banner into a sliver, so the document's stored view is kept. Nothing selected. |
+| `ansible-structure.png` | `diagrams/ansible-structure/example 1/infrastructure/` → `.adp` | The playbooks, roles and inventories of the folder, with import, role and dependency edges labelled; the Toolbox saying the type offers no elements, since it is read from the folder. Nothing selected. |
+| `helm-chart.png` | `diagrams/helm-charts/hello-world/` → `.adp` | The chart, its values file, the templates and the helper they include, with the include edges labelled. Nothing selected. |
+| `dotnet-dependency-graph.png` | `diagrams/dotnet-dependency-graph/pipeline-toolkit/` → `PipelineToolkit.slnx` → `PipelineToolkit.adp` | The four projects with their target frameworks on the left, the NuGet packages with their versions on the right, and the reference edges between them; Serilog outlined, showing the two versions referenced (3.1.1 and 4.4.0). Nothing selected. |
+| `databricks-bundle.png` | `diagrams/databricks/lakehouse/` → `databricks.yml` → `databricks.adp` | The bundle, its pipeline resource, and the `dev` and `prod` targets as regions, `prod` naming its two overrides; Toolbox showing Job and Pipeline. Nothing selected. |
+| `databricks-pipeline.png` | `diagrams/databricks/lakehouse/` → `databricks.yml` → `databricks.pipeline.adp` | Three source libraries flowing into the Bronze to gold pipeline and on to its target catalog, with the compute and notification cards below. Nothing selected. |
+| `databricks-job.png` | `diagrams/databricks/lakehouse/resources/` → `nightly-ingest.yml` → `nightly-ingest.adp` | The job's task DAG, the condition task's `true` and `false` branches labelled, and the job cluster card; Toolbox showing the three task kinds. Nothing selected. |
+| `rdf.png` | `diagrams/rdf/w3c-turtle/` → `example-1.ttl` → `example-1.adp` | The two resources of the Turtle specification's first example as cards, their types and literal properties as rows (the Russian label with its `@ru` tag), and the `rel:enemyOf` edge between them. Nothing selected. |
+| `owl.png` | `diagrams/owl/prov-o/` → `prov-o.ttl` → `prov-o.adp` | PROV-O's classes as VOWL circles with property edges between them, fitted and then **zoomed in twice** so the labels read, so the rim of the drawing is cut off. Toolbox showing Class, Object property, Datatype property and Individual. Nothing selected. |
+| `shacl.png` | `diagrams/shacl/fair-data-point/` → `navigation-shapes.ttl` → `navigation-shapes.adp` | The five navigation node shapes as cards with their targets and property rows (path and cardinality), and the edges between shapes. Nothing selected. |
+| `sparql.png` | `diagrams/sparql/w3c-sparql/` → `optional.rq` → `optional.adp` | The `SELECT` frame, the `?x` pattern with its `foaf:name` edge, and the `OPTIONAL` group as a region holding `?mbox`. Nothing selected. |
 | `markdown-editor.png` | `editors/markdown/` → `guide.md` | The three-part editor: heading outline above, CodeMirror text left, rendered preview right — and the status line reading **Saved**, since nothing was edited. |
+| `plain-text-editor.png` | `editors/plain/` → `crlf-notes.txt` | The plain-text editor: line numbers and the four lines of the note in a monospace face, and the status line reading **Saved**. |
 
-Each diagram capture clicks **Fit to View** after opening (where the toolbar offers it), so the content's framing does not depend on the previous session's pan and zoom. Two captures that follow one row of this table should differ only in rendering noise.
+Each diagram capture clicks **Fit to View** after opening (where the toolbar offers it), so the content's framing does not depend on the previous session's pan and zoom; the two exceptions, `hype-cycle.png` and `owl.png`, say so in their rows. Two captures that follow one row of this table should differ only in rendering noise.
+
+## Not captured, 2026-09-28
+
+Three designers the catalogue lists as Prototype or better have no image, because every example the repository holds renders in a way that would misrepresent the designer rather than show it. Each is a picture to add once its rendering is fixed.
+
+| Designer | What the capture showed |
+|---|---|
+| `c4/dynamic` | An empty canvas under its title, for both `bottling-mes.batch-release.adp` and `courier.parcel-scanned.adp`: no element arrives within 20 seconds. |
+| `c4/deployment` | Every deployment node, infrastructure node and container instance laid out in one flat row with nothing nested, for both `bottling-mes.plant-deployment.adp` and `courier.production.adp`. |
+| `w3c/skos` | `geographic-names.adp` draws every concept on one horizontal line, which reads as a rule across the canvas at any zoom; `business-economics.adp` draws nothing within 20 seconds. |
 
 ## `dependency-graph.png` was judged and NOT retaken, 2026-09-24 (canvas-single-scrollbar task 5)
 
