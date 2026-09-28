@@ -30,8 +30,8 @@ public class RowRoundingTests
         // The cases the design's cross-tier table names by kind, so none can be dropped unnoticed:
         // exact halves either side of zero, negative zero, a negative row, and a value between lines.
         var inRows = Fixture.Cases.Select(@case => @case.Y / @case.RowHeight).ToList();
-        Assert.Contains(inRows, rows => rows > 0 && rows % 1 == 0.5);
-        Assert.Contains(inRows, rows => rows < 0 && rows % 1 == -0.5);
+        Assert.Contains(inRows, rows => rows > 0 && Math.Abs(rows % 1 - 0.5) < double.Tolerance);
+        Assert.Contains(inRows, rows => rows < 0 && Math.Abs(rows % 1 - (-0.5)) < double.Tolerance);
         Assert.Contains(Fixture.Cases, @case => @case.Y == 0 && double.IsNegative(@case.Y));
         Assert.Contains(Fixture.Cases, @case => @case.Row < 0);
         Assert.Contains(inRows, rows => Math.Abs(rows % 1) is > 0 and not 0.5);

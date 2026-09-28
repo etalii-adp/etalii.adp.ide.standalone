@@ -42,7 +42,7 @@ public class C4MetricsTests
         var path = IoPath.Combine(LocateRepositoryRoot(), "src", "fixtures", "cross-tier", "text-metric.json");
         using var fixture = JsonDocument.Parse(File.ReadAllText(path));
         return fixture.RootElement.GetProperty("cases").EnumerateArray()
-            .Where(@case => @case.GetProperty("fontSize").GetDouble() == fontSize)
+            .Where(@case => Math.Abs(@case.GetProperty("fontSize").GetDouble() - fontSize) < double.Tolerance)
             .Select(@case => (@case.GetProperty("text").GetString()!, @case.GetProperty("width").GetDouble()))
             .ToList();
     }

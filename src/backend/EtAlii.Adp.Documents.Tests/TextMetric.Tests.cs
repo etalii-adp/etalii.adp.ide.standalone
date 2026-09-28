@@ -72,7 +72,7 @@ public class TextMetricTests
     public void TheDefaultFontSize_IsTheOneTheFixtureMeasuresAt()
     {
         var failures = Fixture.Cases
-            .Where(@case => @case.FontSize == Fixture.DefaultFontSize)
+            .Where(@case => Math.Abs(@case.FontSize - Fixture.DefaultFontSize) < double.Tolerance)
             .Where(@case => Math.Abs(TextMetric.WidthOf(@case.Text) - @case.Width) > Fixture.Tolerance)
             .Select(@case => $"\"{@case.Text}\": measured {TextMetric.WidthOf(@case.Text)}, expected {@case.Width}")
             .ToList();

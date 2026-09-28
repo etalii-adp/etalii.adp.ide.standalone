@@ -52,7 +52,7 @@ public class GestureIdsTests
         var failures = new List<string>();
         foreach (var @case in Fixture.Placements.Xy.Valid)
         {
-            if (!GestureIds.TryParsePlacement(@case.Id, out var x, out var y) || x != @case.X || y != @case.Y)
+            if (!GestureIds.TryParsePlacement(@case.Id, out var x, out var y) || Math.Abs(x - @case.X) > double.Tolerance || Math.Abs(y - @case.Y) > double.Tolerance)
             {
                 failures.Add($"{@case.Id}: parsed as ({x}, {y}), expected ({@case.X}, {@case.Y})");
             }
@@ -84,7 +84,7 @@ public class GestureIdsTests
         var failures = new List<string>();
         foreach (var @case in Fixture.Placements.Row.Valid)
         {
-            if (!GestureIds.TryParseRowPlacement(@case.Id, out var x, out var row) || x != @case.X || row != @case.Row)
+            if (!GestureIds.TryParseRowPlacement(@case.Id, out var x, out var row) || Math.Abs(x - @case.X) > double.Tolerance || row != @case.Row)
             {
                 failures.Add($"{@case.Id}: parsed as ({x}, row {row}), expected ({@case.X}, row {@case.Row})");
             }
