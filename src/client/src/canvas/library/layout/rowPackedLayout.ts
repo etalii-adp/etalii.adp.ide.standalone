@@ -15,9 +15,13 @@ function takesWidth(element: LayoutElement, declaration: RowPackedDeclaration): 
   return declaration.types === undefined || (element.type !== undefined && declaration.types.includes(element.type));
 }
 
-/** The width an element is placed with: the declared one, or its own. */
+/** The width an element is placed with: the declared one - its own share where the width is bound - or its own. */
 function widthOf(element: LayoutElement, declaration: RowPackedDeclaration): number {
-  return takesWidth(element, declaration) ? declaration.width : element.width;
+  if (!takesWidth(element, declaration)) {
+    return element.width;
+  }
+
+  return element.packedWidth ?? (typeof declaration.width === "number" ? declaration.width : element.width);
 }
 
 /**
@@ -57,6 +61,14 @@ function pack(input: LayoutInput, declaration: RowPackedDeclaration): Packed[] {
 
   const rowEnd = new Map<number, number>();
   const packed: Packed[] = [];
+  const placedById = new Map<string, Packed>();
+  // Where each element's causes are, when connections spread the packing.
+  const sourcesOf = new Map<string, string[]>();
+  if (declaration.followConnections === true) {
+    for (const connection of input.connections) {
+      sourcesOf.set(connection.targetId, [...(sourcesOf.get(connection.targetId) ?? []), connection.sourceId]);
+    }
+  }
   let previous: number | undefined;
   for (let start = 0; start < byStart.length; ) {
     let end = start;
@@ -67,6 +79,13 @@ function pack(input: LayoutInput, declaration: RowPackedDeclaration): Packed[] {
 
     let groupX = previous ?? group[0].manualLeft;
     for (const { element } of group) {
+      // After the middle of every cause already placed: effects stand to the right of causes.
+      for (const sourceId of sourcesOf.get(element.id) ?? []) {
+        const source = placedById.get(sourceId);
+        if (source !== undefined) {
+          groupX = Math.max(groupX, source.placedLeft + widthOf(source.element, declaration) / 2 + declaration.gap + (element.leading ?? 0));
+        }
+      }
       for (const row of rowsOf(element, declaration)) {
         const free = rowEnd.get(row);
         if (free !== undefined) {
@@ -92,7 +111,9 @@ function pack(input: LayoutInput, declaration: RowPackedDeclaration): Packed[] {
         rowEnd.set(row, right);
       }
       rightmost = Math.max(rightmost, placedLeft);
-      packed.push({ ...entry, placedLeft });
+      const placed = { ...entry, placedLeft };
+      packed.push(placed);
+      placedById.set(entry.element.id, placed);
     }
 
     previous = rightmost;

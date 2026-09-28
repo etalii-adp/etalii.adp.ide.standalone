@@ -28,7 +28,7 @@ afterEach(() => restore?.());
 describe.each([
   { name: "energy-breakthroughs", trends: 33, triggers: 7, notes: 0, influences: 57 },
   { name: "llms-and-agents", trends: 35, triggers: 7, notes: 0, influences: 67 },
-  { name: "coal-technologies", trends: 34, triggers: 6, notes: 1, influences: 54 },
+  { name: "coal-technologies", trends: 34, triggers: 9, notes: 1, influences: 57 },
   { name: "electric-vehicles", trends: 28, triggers: 6, notes: 0, influences: 48 },
   { name: "internet-evolution", trends: 34, triggers: 7, notes: 0, influences: 56 },
   { name: "warfare-in-ukraine", trends: 29, triggers: 7, notes: 0, influences: 53 },

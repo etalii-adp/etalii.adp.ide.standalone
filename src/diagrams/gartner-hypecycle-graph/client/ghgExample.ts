@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import { compactWidthOf } from "./GhgCanvas";
 import { GHG_PHASES, GhgElementTypes, GhgRelationTypes, GhgScale, timeUnitOf, xOfMonth, type GhgTimeUnit } from "./ghgIds";
 
 /**
@@ -98,7 +99,7 @@ export function exampleModel(ids?: readonly string[], name = "technology-trends"
       width,
       height: GhgScale.trendHeight,
       label: trend.name,
-      payload: { name: trend.name, phases: Number(trend.phases), tags: tagsOf(trend), snapX: 0, snapY: 0 },
+      payload: { name: trend.name, phases: Number(trend.phases), tags: tagsOf(trend), snapX: 0, snapY: 0, compactWidth: compactWidthOf(Number(trend.phases)) },
     };
   });
   const triggerElements = triggers.filter(keep).map((trigger): DiagramModelElement => ({

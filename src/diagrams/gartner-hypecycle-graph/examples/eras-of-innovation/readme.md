@@ -22,8 +22,8 @@ It is the long companion to [technology-trends](../technology-trends/readme.md) 
 | --- | --- |
 | Time unit | Decades, named in the document's `unit:` key |
 | Trends | 42, from the year -3500 to 2050, placed so that a trend shares a row only where its label clears the trend before it, with an empty row between any two rows of trends |
-| Influences | 66, each attached to the phase of each trend in which it acted |
-| Triggers | 9, each a circle at the month it happened, with an influence on every trend it set off |
+| Influences | 71, each attached to the phase of each trend in which it acted |
+| Triggers | 13, each a circle at the month it happened, with an influence on every trend it set off |
 | Anchors | Placed by `spread-anchors.py` in the examples folder: each influence arrives no earlier than it leaves, and the ends sharing one edge of a phase are spread across it in date order |
 | Phase counts | Every count from 1 to 4: ancient and early modern innovations show all four phases, recent ones such as renewables and artificial intelligence fewer |
 | Descriptions | On some trends and some influences, kept in the document and never drawn |
@@ -34,6 +34,10 @@ It is the long companion to [technology-trends](../technology-trends/readme.md) 
 
 A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
 
+- **Code of Hammurabi**, January -1754: on Written law.
+- **Late Bronze Age collapse**, January -1177: on Iron and The alphabet.
+- **Library of Alexandria founded**, January -285: on Philosophy.
+- **Cai Lun presents paper to the emperor**, January 105: on Paper.
 - **Black Death reaches Europe**, October 1347: on Banking and double-entry bookkeeping.
 - **Gutenberg Bible printed**, January 1455: on Printing press.
 - **Columbus reaches the Americas**, October 1492: on Ocean navigation.

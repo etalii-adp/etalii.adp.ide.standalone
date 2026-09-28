@@ -70,10 +70,10 @@ const influenceBetween = (from: string, to: string) => EXAMPLE.influences.find((
 
 describe("the technology-trends example, as this definition reads it", () => {
   it("is read in full, so a verdict below is about the whole example", () => {
-    // 197 trends, 9 triggers and 274 influences, as the example's readme states them.
+    // 197 trends, 25 triggers and 295 influences, as the example's readme states them.
     expect(EXAMPLE.trends).toHaveLength(197);
-    expect(EXAMPLE.triggers).toHaveLength(9);
-    expect(EXAMPLE.influences).toHaveLength(274);
+    expect(EXAMPLE.triggers).toHaveLength(25);
+    expect(EXAMPLE.influences).toHaveLength(295);
     expect(EXAMPLE.influences.filter((influence) => isHidden(influence, EXAMPLE.trends))).toHaveLength(1);
   });
 });

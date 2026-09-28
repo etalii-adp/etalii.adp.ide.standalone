@@ -20,7 +20,7 @@ import { BEFORE_GAP } from "@client/canvas/library/definition/labels";
  * can and cannot do while it is on.
  */
 
-const COMPACT_WIDTH = 12 * GhgScale.unitsPerMonth;
+const COMPACT_WIDTH = 24 * GhgScale.unitsPerMonth;
 const RECT = { width: 1000, height: 600 };
 let restore: (() => void) | undefined;
 
@@ -67,7 +67,13 @@ describe("the hype cycle graph's compact mode, declared", () => {
       const definition = ghgDefinitionFor(unit);
       expect(definition.layout.modes).toEqual(["manual", "row-packed"]);
       expect(definition.layout.toggle).toEqual({ caption: "Compact", on: "row-packed" });
-      expect(definition.layout.rowPacked).toEqual({ width: COMPACT_WIDTH, gap: GhgScale.unitsPerMonth, types: ["trend"], rowStep: GhgScale.rowStep });
+      expect(definition.layout.rowPacked).toEqual({
+        width: { path: "payload.compactWidth" },
+        gap: GhgScale.unitsPerMonth,
+        types: ["trend"],
+        rowStep: GhgScale.rowStep,
+        followConnections: true,
+      });
       expect(validateDiagramDefinition(definition)).toEqual([]);
     }
   });
@@ -94,7 +100,7 @@ describe("the technology-trends example in compact mode", () => {
 
   // All 200 trends are mounted and measured: well under a second alone, and several times that when
   // the backend suite runs every client test file at once, so it is given room rather than the default.
-  it("draws every trend at one width, in the order they start, never two touching on a row", { timeout: 30_000 }, () => {
+  it("draws every trend at its share of the compact width, in the order they start, never two touching on a row", { timeout: 30_000 }, () => {
     const { container } = renderCompact(model);
 
     // The trends: a trigger and a note keep their own size, which the next describe block holds.
@@ -102,10 +108,12 @@ describe("the technology-trends example in compact mode", () => {
       name: element.label ?? "",
       start: element.x - element.width! / 2,
       row: element.y,
+      phases: Number((element.payload as { phases: number }).phases),
       box: drawnBox(container, element.id),
     }));
+    // Twice a year's width with all four phases, and a quarter of that less per phase not shown.
     for (const entry of placed) {
-      expect(entry.box.right - entry.box.left).toBeCloseTo(COMPACT_WIDTH, 5);
+      expect(entry.box.right - entry.box.left, entry.name).toBeCloseTo((COMPACT_WIDTH * entry.phases) / 4, 5);
     }
     const byStart = [...placed].sort((a, b) => a.start - b.start);
     for (let index = 1; index < byStart.length; index += 1) {
@@ -125,6 +133,24 @@ describe("the technology-trends example in compact mode", () => {
         expect(ordered[index].box.left - ordered[index - 1].box.right).toBeGreaterThanOrEqual(room - 1e-6);
       }
     }
+  });
+
+  it("stands every influence's target after the middle of a source that starts earlier", { timeout: 30_000 }, () => {
+    const { container } = renderCompact(model);
+    const start = new Map(model.elements.map((element) => [element.id, element.x - element.width! / 2]));
+    const trends = new Set(model.elements.filter((element) => element.type === "trend").map((element) => element.id));
+
+    let checked = 0;
+    for (const influence of model.connections) {
+      if (!trends.has(influence.sourceId) || !trends.has(influence.targetId) || !(start.get(influence.sourceId)! < start.get(influence.targetId)!)) {
+        continue;
+      }
+      const source = drawnBox(container, influence.sourceId);
+      const target = drawnBox(container, influence.targetId);
+      expect(target.left, `${influence.id} lands before the middle of its source`).toBeGreaterThanOrEqual((source.left + source.right) / 2);
+      checked += 1;
+    }
+    expect(checked, "the example has influences between trends that start at different times").toBeGreaterThan(100);
   });
 
   it("draws no ruler, no resize handle and no boundary handle", () => {

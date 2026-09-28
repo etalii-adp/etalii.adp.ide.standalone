@@ -24,7 +24,7 @@ public class GhgErasExampleTests
         Assert.Empty(model.Problems);
         Assert.Same(GhgTimeUnit.Decade, model.TimeUnit);
         Assert.Equal(42, model.Trends.Count);
-        Assert.Equal(66, model.Influences.Count);
+        Assert.Equal(71, model.Influences.Count);
     }
 
     [Fact]

@@ -1518,6 +1518,102 @@ triggers:
     row: 107
     tags: [computing]
     description: A chat interface to a large language model reached a hundred million users in two months.
+  - id: bridgewater-canal
+    name: Bridgewater Canal opens
+    date: 1761-07
+    row: 47
+    tags: [transport, industry]
+    description: A canal built to carry coal to Manchester halved its price and set off canal mania.
+  - id: water-frame-patent
+    name: Arkwright's water frame patent
+    date: 1769-07
+    row: 3
+    tags: [industry]
+    description: A spinning machine too large for a cottage, which put spinning into mills.
+  - id: jenner-smallpox
+    name: Jenner's smallpox inoculation
+    date: 1796-05
+    row: 149
+    tags: [health, science]
+    description: Edward Jenner inoculated a boy with cowpox and showed he was protected from smallpox.
+  - id: voltaic-pile
+    name: Volta announces the electric pile
+    date: 1800-03
+    row: 23
+    tags: [energy, science]
+    description: "The first battery: a steady electric current for anyone who stacked zinc, copper and brine."
+  - id: oersted-compass
+    name: Oersted's compass needle moves
+    date: 1820-04
+    row: 27
+    tags: [science, energy]
+    description: "A current deflected a compass needle: electricity and magnetism were one thing."
+  - id: rainhill-trials
+    name: Rainhill trials
+    date: 1829-10
+    row: 51
+    tags: [transport]
+    description: Stephenson's Rocket won the trials for the Liverpool and Manchester Railway.
+  - id: faraday-induction
+    name: Faraday discovers induction
+    date: 1831-08
+    row: 31
+    tags: [science, energy]
+    description: "A moving magnet made a current: the principle of the dynamo and the transformer."
+  - id: daguerreotype
+    name: Daguerreotype announced
+    date: 1839-08
+    row: 69
+    tags: [communication, science]
+    description: The French government bought the process and gave it to the world.
+  - id: great-exhibition
+    name: Great Exhibition opens
+    date: 1851-05
+    row: 7
+    tags: [industry, society]
+    description: The Crystal Palace showed interchangeable American machinery and goods on display to the public.
+  - id: broad-street-pump
+    name: Broad Street cholera outbreak
+    date: 1854-08
+    row: 153
+    tags: [health, science]
+    description: John Snow traced a cholera outbreak to one water pump.
+  - id: drake-well
+    name: Drake's oil well strikes oil
+    date: 1859-08
+    row: 29
+    tags: [energy]
+    description: The first commercial oil well, at Titusville, Pennsylvania.
+  - id: telephone-patent
+    name: Bell's telephone patent
+    date: 1876-03
+    row: 77
+    tags: [communication]
+    description: Patent 174,465, granted three days before the first call.
+  - id: edison-lamp
+    name: Edison demonstrates his lamp
+    date: 1879-12
+    row: 35
+    tags: [energy]
+    description: A carbon-filament bulb that burned for hours, shown at Menlo Park.
+  - id: benz-motorwagen
+    name: Benz Patent-Motorwagen patented
+    date: 1886-01
+    row: 59
+    tags: [transport]
+    description: The first car built around an internal combustion engine.
+  - id: wright-flyer
+    name: Wright brothers' first flight
+    date: 1903-12
+    row: 47
+    tags: [transport]
+    description: Twelve seconds of controlled, powered flight at Kitty Hawk.
+  - id: model-t
+    name: Ford Model T launched
+    date: 1908-10
+    row: 9
+    tags: [industry, transport]
+    description: A car for everyone, and within five years the moving assembly line that built it.
 notes:
   - id: note-triggers
     text: |-
@@ -1572,20 +1668,20 @@ influences:
     from: mechanised-textiles
     from-phase: peak
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.61
     to: factory-system
     to-phase: peak
     to-edge: top
-    to-at: 0.45
+    to-at: 0.70
   - id: mechanised-textiles--industrial-revolution
     from: mechanised-textiles
     from-phase: peak
     from-edge: top
-    from-at: 0.48
+    from-at: 0.60
     to: industrial-revolution
     to-phase: peak
     to-edge: bottom
-    to-at: 0.73
+    to-at: 0.85
   - id: steam-engine--industrial-revolution
     from: steam-engine
     from-phase: peak
@@ -1617,21 +1713,21 @@ influences:
     from: canals
     from-phase: peak
     from-edge: top
-    from-at: 0.28
+    from-at: 0.55
     to: industrial-revolution
     to-phase: peak
     to-edge: bottom
-    to-at: 0.34
+    to-at: 0.60
     description: Coal moved at half the price by canal.
   - id: industrial-revolution--urbanisation
     from: industrial-revolution
     from-phase: peak
     from-edge: bottom
-    from-at: 0.46
+    from-at: 0.32
     to: urbanisation
     to-phase: peak
     to-edge: top
-    to-at: 0.44
+    to-at: 0.43
   - id: factory-system--labour-movement
     from: factory-system
     from-phase: slope
@@ -1645,11 +1741,11 @@ influences:
     from: urbanisation
     from-phase: trough
     from-edge: bottom
-    from-at: 0.31
+    from-at: 0.32
     to: public-health
     to-phase: peak
     to-edge: top
-    to-at: 0.11
+    to-at: 0.18
     description: Crowded cities made cholera a political problem.
   - id: steam-engine--steamboats
     from: steam-engine
@@ -1674,11 +1770,11 @@ influences:
     from: iron-smelting
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.60
+    from-at: 0.59
     to: railways
     to-phase: peak
     to-edge: top
-    to-at: 0.19
+    to-at: 0.16
   - id: railways--railway-mania
     from: railways
     from-phase: peak
@@ -1705,7 +1801,7 @@ influences:
     to: electric-telegraph
     to-phase: peak
     to-edge: top
-    to-at: 0.76
+    to-at: 0.80
     description: Railways needed signalling along the line, and gave the telegraph its wayleaves.
   - id: railways--mass-newspapers
     from: railways
@@ -1758,29 +1854,29 @@ influences:
     from: electric-battery
     from-phase: trough
     from-edge: bottom
-    from-at: 0.61
+    from-at: 0.64
     to: electric-telegraph
     to-phase: peak
     to-edge: top
-    to-at: 0.18
+    to-at: 0.36
   - id: electromagnetism--electric-telegraph
     from: electromagnetism
     from-phase: trough
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.59
     to: electric-telegraph
     to-phase: peak
     to-edge: top
-    to-at: 0.49
+    to-at: 0.60
   - id: electromagnetism--dynamo
     from: electromagnetism
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.28
+    from-at: 0.29
     to: dynamo
     to-phase: peak
     to-edge: top
-    to-at: 0.46
+    to-at: 0.70
   - id: electric-telegraph--telephone
     from: electric-telegraph
     from-phase: plateau
@@ -1822,11 +1918,11 @@ influences:
     from: dynamo
     from-phase: trough
     from-edge: bottom
-    from-at: 0.55
+    from-at: 0.57
     to: electric-light
     to-phase: peak
     to-edge: top
-    to-at: 0.49
+    to-at: 0.60
   - id: dynamo--electricity-grid
     from: dynamo
     from-phase: trough
@@ -1840,11 +1936,11 @@ influences:
     from: electric-light
     from-phase: peak
     from-edge: top
-    from-at: 0.77
+    from-at: 0.78
     to: electricity-grid
     to-phase: peak
     to-edge: bottom
-    to-at: 0.35
+    to-at: 0.37
     description: A market for electricity justified the first power stations.
   - id: alternating-current--electricity-grid
     from: alternating-current
@@ -1940,11 +2036,11 @@ influences:
     from: gas-lighting
     from-phase: slope
     from-edge: bottom
-    from-at: 0.57
+    from-at: 0.59
     to: electric-light
     to-phase: peak
     to-edge: top
-    to-at: 0.17
+    to-at: 0.34
     description: Edison priced electric light against gas.
   - id: machine-tools--interchangeable-parts
     from: machine-tools
@@ -1972,16 +2068,16 @@ influences:
     to: mass-production
     to-phase: peak
     to-edge: top
-    to-at: 0.21
+    to-at: 0.17
   - id: bicycle--automobile
     from: bicycle
     from-phase: trough
     from-edge: bottom
-    from-at: 0.62
+    from-at: 0.68
     to: automobile
     to-phase: peak
     to-edge: top
-    to-at: 0.19
+    to-at: 0.37
     description: Bicycle makers supplied the chains, bearings and pneumatic tyres.
   - id: bicycle--aviation
     from: bicycle
@@ -1997,20 +2093,20 @@ influences:
     from: internal-combustion
     from-phase: peak
     from-edge: bottom
-    from-at: 0.60
+    from-at: 0.62
     to: automobile
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.58
   - id: internal-combustion--aviation
     from: internal-combustion
     from-phase: trough
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.60
     to: aviation
     to-phase: peak
     to-edge: top
-    to-at: 0.42
+    to-at: 0.69
   - id: oil--internal-combustion
     from: oil
     from-phase: peak
@@ -2028,7 +2124,7 @@ influences:
     to: automobile
     to-phase: peak
     to-edge: top
-    to-at: 0.76
+    to-at: 0.80
   - id: automobile--mass-production
     from: automobile
     from-phase: trough
@@ -2047,16 +2143,16 @@ influences:
     to: mass-production
     to-phase: peak
     to-edge: top
-    to-at: 0.76
+    to-at: 0.79
   - id: mass-production--fordism
     from: mass-production
     from-phase: peak
     from-edge: bottom
-    from-at: 0.72
+    from-at: 0.74
     to: fordism
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.70
   - id: fordism--consumerism
     from: fordism
     from-phase: peak
@@ -2134,11 +2230,11 @@ influences:
     from: second-industrial-revolution
     from-phase: plateau
     from-edge: bottom
-    from-at: 0.62
+    from-at: 0.65
     to: mass-production
     to-phase: peak
     to-edge: top
-    to-at: 0.48
+    to-at: 0.58
   - id: chemical-industry--plastics
     from: chemical-industry
     from-phase: slope
@@ -3612,11 +3708,11 @@ influences:
     from: germ-theory
     from-phase: peak
     from-edge: top
-    from-at: 0.15
+    from-at: 0.32
     to: public-health
     to-phase: peak
     to-edge: bottom
-    to-at: 0.83
+    to-at: 0.95
   - id: germ-theory--antibiotics
     from: germ-theory
     from-phase: plateau
@@ -3630,11 +3726,11 @@ influences:
     from: vaccination
     from-phase: slope
     from-edge: bottom
-    from-at: 0.56
+    from-at: 0.57
     to: germ-theory
     to-phase: peak
     to-edge: top
-    to-at: 0.69
+    to-at: 0.76
   - id: blockchain--cryptocurrency
     from: blockchain
     from-phase: peak
@@ -3859,11 +3955,11 @@ influences:
     from: urbanisation
     from-phase: trough
     from-edge: bottom
-    from-at: 0.74
+    from-at: 0.75
     to: department-stores
     to-phase: peak
     to-edge: top
-    to-at: 0.33
+    to-at: 0.66
   - id: welfare-state--consumerism
     from: welfare-state
     from-phase: trough
@@ -3970,3 +4066,129 @@ influences:
     to-phase: peak
     to-edge: top
     to-at: 0.27
+  - id: bridgewater-canal--canals
+    from: bridgewater-canal
+    to: canals
+    to-phase: peak
+    to-edge: top
+    to-at: 0.04
+  - id: water-frame-patent--mechanised-textiles
+    from: water-frame-patent
+    to: mechanised-textiles
+    to-phase: peak
+    to-edge: top
+    to-at: 0.28
+  - id: water-frame-patent--factory-system
+    from: water-frame-patent
+    to: factory-system
+    to-phase: peak
+    to-edge: top
+    to-at: 0.26
+  - id: jenner-smallpox--vaccination
+    from: jenner-smallpox
+    to: vaccination
+    to-phase: peak
+    to-edge: top
+    to-at: 0.40
+  - id: voltaic-pile--electric-battery
+    from: voltaic-pile
+    to: electric-battery
+    to-phase: peak
+    to-edge: top
+    to-at: 0.41
+  - id: oersted-compass--electromagnetism
+    from: oersted-compass
+    to: electromagnetism
+    to-phase: peak
+    to-edge: top
+    to-at: 0.41
+  - id: rainhill-trials--railways
+    from: rainhill-trials
+    to: railways
+    to-phase: peak
+    to-edge: top
+    to-at: 0.38
+  - id: faraday-induction--dynamo
+    from: faraday-induction
+    to: dynamo
+    to-phase: peak
+    to-edge: top
+    to-at: 0.07
+  - id: faraday-induction--electric-telegraph
+    from: faraday-induction
+    to: electric-telegraph
+    to-phase: peak
+    to-edge: top
+    to-at: 0.15
+  - id: daguerreotype--photography
+    from: daguerreotype
+    to: photography
+    to-phase: peak
+    to-edge: top
+    to-at: 0.41
+  - id: great-exhibition--interchangeable-parts
+    from: great-exhibition
+    to: interchangeable-parts
+    to-phase: slope
+    to-edge: top
+    to-at: 0.61
+  - id: great-exhibition--department-stores
+    from: great-exhibition
+    to: department-stores
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: broad-street-pump--public-health
+    from: broad-street-pump
+    to: public-health
+    to-phase: peak
+    to-edge: top
+    to-at: 0.70
+  - id: broad-street-pump--germ-theory
+    from: broad-street-pump
+    to: germ-theory
+    to-phase: peak
+    to-edge: top
+    to-at: 0.17
+  - id: drake-well--oil
+    from: drake-well
+    to: oil
+    to-phase: peak
+    to-edge: top
+    to-at: 0.41
+  - id: telephone-patent--telephone
+    from: telephone-patent
+    to: telephone
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: edison-lamp--electric-light
+    from: edison-lamp
+    to: electric-light
+    to-phase: peak
+    to-edge: top
+    to-at: 0.17
+  - id: benz-motorwagen--automobile
+    from: benz-motorwagen
+    to: automobile
+    to-phase: peak
+    to-edge: top
+    to-at: 0.16
+  - id: wright-flyer--aviation
+    from: wright-flyer
+    to: aviation
+    to-phase: peak
+    to-edge: top
+    to-at: 0.27
+  - id: model-t--mass-production
+    from: model-t
+    to: mass-production
+    to-phase: peak
+    to-edge: top
+    to-at: 0.37
+  - id: model-t--fordism
+    from: model-t
+    to: fordism
+    to-phase: peak
+    to-edge: top
+    to-at: 0.24

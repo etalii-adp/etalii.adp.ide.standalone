@@ -308,6 +308,24 @@ triggers:
     row: 41
     tags: [climate, policy]
     description: The goal of holding warming well below two degrees put a date on unabated coal power.
+  - id: felling-disaster
+    name: Felling mine disaster
+    date: 1812-05
+    row: 1
+    tags: [mining, safety]
+    description: An explosion of firedamp killed 92 at Felling colliery and led to the call for a safe lamp.
+  - id: liverpool-manchester-railway
+    name: Liverpool and Manchester Railway opens
+    date: 1830-09
+    row: 15
+    tags: [steam, transport]
+    description: The first intercity railway worked entirely by steam locomotives.
+  - id: mauveine
+    name: Perkin makes mauveine
+    date: 1856-03
+    row: 9
+    tags: [chemistry]
+    description: A dye made by accident from coal tar, and the start of the synthetic dye industry.
 notes:
   - id: note-projections
     text: |-
@@ -356,7 +374,7 @@ influences:
     to: safety-lamp
     to-phase: peak
     to-edge: top
-    to-at: 0.40
+    to-at: 0.28
     description: Pumped mines went deeper, into the firedamp the lamp was made for.
   - id: watt-steam-engine--coal-gas-lighting
     from: watt-steam-engine
@@ -794,3 +812,21 @@ influences:
     to-phase: trough
     to-edge: bottom
     to-at: 0.20
+  - id: felling-disaster--safety-lamp
+    from: felling-disaster
+    to: safety-lamp
+    to-phase: peak
+    to-edge: top
+    to-at: 0.67
+  - id: liverpool-manchester-railway--steam-locomotive
+    from: liverpool-manchester-railway
+    to: steam-locomotive
+    to-phase: peak
+    to-edge: bottom
+    to-at: 0.45
+  - id: mauveine--coal-tar-chemistry
+    from: mauveine
+    to: coal-tar-chemistry
+    to-phase: peak
+    to-edge: top
+    to-at: 0.40

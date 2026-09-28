@@ -19,8 +19,8 @@ The classic hype cycle chart shows one curve and plots each technology as a dot 
 | Part | In this example |
 | --- | --- |
 | Trends | 197, in six clusters of rows: industry, energy, transport, communication, computing, and society, with an empty row between every two rows of trends |
-| Influences | 274, most of them between clusters, each attached to the phase of each trend in which it acted: the two phases overlap in time, or, where one trend ended before the other began, it acts from its last phase on the other's Peak |
-| Triggers | 9, each a circle at the month it happened, with an influence on every trend it set off |
+| Influences | 295, most of them between clusters, each attached to the phase of each trend in which it acted: the two phases overlap in time, or, where one trend ended before the other began, it acts from its last phase on the other's Peak |
+| Triggers | 25, each a circle at the month it happened, with an influence on every trend it set off |
 | Notes | 1, in the society rows, saying what the circles are |
 | Phase counts | Every count from 1 to 4: trends of the past show all four phases, recent ones such as AI agents, fusion or small modular reactors only a Peak |
 | Edges | Influences attach to the top and the bottom edge of every one of the four phases |
@@ -36,7 +36,23 @@ The classic hype cycle chart shows one curve and plots each technology as a dot 
 
 A trigger is a moment that set trends off - an invention, a political decision, a disaster. Each is drawn as a circle at the month it happened, on a row beside the trend it acted on most, and influences only ever leave it. **Its date is illustrative, like every date here, and is not a historical claim**; each influence lands on the phase the trend was in at that month, or on its Peak when the trend had not begun.
 
+- **Bridgewater Canal opens**, July 1761: on Canals.
 - **Watt's separate condenser patent**, January 1769: on Steam engine and Factory system.
+- **Arkwright's water frame patent**, July 1769: on Mechanised textiles and Factory system.
+- **Jenner's smallpox inoculation**, May 1796: on Vaccination.
+- **Volta announces the electric pile**, March 1800: on Electric battery.
+- **Oersted's compass needle moves**, April 1820: on Electromagnetism.
+- **Rainhill trials**, October 1829: on Railways.
+- **Faraday discovers induction**, August 1831: on Dynamo and Electric telegraph.
+- **Daguerreotype announced**, August 1839: on Photography.
+- **Great Exhibition opens**, May 1851: on Interchangeable parts and Department stores.
+- **Broad Street cholera outbreak**, August 1854: on Public health reform and Germ theory.
+- **Drake's oil well strikes oil**, August 1859: on Petroleum.
+- **Bell's telephone patent**, March 1876: on Telephone.
+- **Edison demonstrates his lamp**, December 1879: on Electric light.
+- **Benz Patent-Motorwagen patented**, January 1886: on Automobile.
+- **Wright brothers' first flight**, December 1903: on Aviation.
+- **Ford Model T launched**, October 1908: on Mass production and Fordism.
 - **Wall Street Crash**, October 1929: on Welfare state.
 - **Nuclear fission**, December 1938: on Nuclear power and Nuclear fusion.
 - **Sputnik 1**, October 1957: on Space flight, ARPANET and Communication satellites.
