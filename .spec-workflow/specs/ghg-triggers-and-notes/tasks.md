@@ -87,7 +87,7 @@
   - Guard: `ArchitecturePages.Tests` and every documentation guard pass.
   - _Requirements: 11.1, 11.2_
 
-- [-] 11. The browser pass
+- [x] 11. The browser pass
   - File: `tests.md`
   - **Waits on tasks 7, 8 and 9.** Write and run the entry Requirement 11.3 lists, in a real browser in both themes, signed in with the checked-in placeholder, and record the result of each step.
   - Guard: every step recorded as run, with its outcome; none recorded `pending`.
