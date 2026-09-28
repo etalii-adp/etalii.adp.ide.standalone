@@ -119,7 +119,7 @@ public sealed class SharedRestoreFlowTests : IClassFixture<WebApplicationFactory
         Assert.Same(edit, undone.Inverse);
 
         // Redo: the inverse of the restore is the original edit, which runs again.
-        var redone = await dispatcher.DispatchAsync(undone.Inverse, cancellationToken);
+        var redone = await dispatcher.DispatchAsync(undone.Inverse!, cancellationToken);
         Assert.True(redone.IsSuccess, redone.Error);
         Assert.Equal(afterEdit, await File.ReadAllTextAsync(path, cancellationToken));
         Assert.Equal(afterEdit, storeText());

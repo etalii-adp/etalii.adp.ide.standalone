@@ -202,6 +202,7 @@ internal static class OwlLayout
                 // diagonal, and a diagonal is what a fractional count draws.
                 var position = new RegistrationPosition(
                     placed % BandColumns * columnPitch,
+                    // ReSharper disable once PossibleLossOfFraction - Reason: On purpose: see above.
                     y + (placed / BandColumns) * rowPitch);
                 positions[banded[placed].Id] = position;
                 bottom = Math.Max(bottom, position.Y + rowPitch);
