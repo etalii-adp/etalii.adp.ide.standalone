@@ -153,6 +153,7 @@ public sealed class GhgProvidersTests : IDisposable
         Assert.Equal(GhgContextPropertyProvider.NoInfluences, Value(influencedBy, 3));
 
         // Grouped by phase, labelled as asked, and shown rather than edited.
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local - Reason: Used in a test case which is acceptable.
         Assert.All(rows.Where(row => IsInfluenceList(row.Id)), row =>
         {
             Assert.False(row.IsEditable, row.Id);

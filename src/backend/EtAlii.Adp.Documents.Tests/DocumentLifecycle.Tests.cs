@@ -187,8 +187,10 @@ public class DocumentLifecycleTests : IDisposable
         var refusalsLeft = 0;
         var lifecycle = Scripted(read: file =>
         {
+            // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             if (refusalsLeft > 0)
             {
+                // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
                 refusalsLeft--;
                 throw new IOException("The process cannot access the file because it is being used by another process.");
             }
@@ -216,8 +218,10 @@ public class DocumentLifecycleTests : IDisposable
         var vanishingsLeft = 0;
         var lifecycle = Scripted(read: file =>
         {
+            // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             if (vanishingsLeft > 0)
             {
+                // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
                 vanishingsLeft--;
                 throw new FileNotFoundException("gone for an instant", file);
             }
@@ -247,7 +251,9 @@ public class DocumentLifecycleTests : IDisposable
         // count it is given. Production's own count is a choice recorded beside its constant.
         var lifecycle = Scripted(attempts: 3, read: file =>
         {
+            // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             reads++;
+            // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             return refusing ? throw new IOException("held") : File.ReadAllText(file);
         });
         var good = lifecycle.GetOrLoad(path);

@@ -85,11 +85,13 @@ public class C4SessionUpdateViewOnTheRealCorpusTests : IDisposable
         // Act: the viewport report the client sends once its canvas has a size - the call that
         // never returned. Timed on this thread, exactly as the RPC would run it.
         var clock = Stopwatch.StartNew();
+        // ReSharper disable once AccessToDisposedClosure - Reason: Used in a test case which is acceptable.
         var deltas = RunWithin(() => session.UpdateView(new DiagramViewport(0, 0, 4000, 3000)), "the first view report");
         var first = clock.Elapsed;
 
         // And again, narrowed - a pan or a zoom, the second report of an ordinary session.
         clock.Restart();
+        // ReSharper disable once AccessToDisposedClosure - Reason: Used in a test case which is acceptable.
         _ = RunWithin(() => session.UpdateView(new DiagramViewport(500, 500, 1500, 1200)), "a narrowed view report");
         var second = clock.Elapsed;
 

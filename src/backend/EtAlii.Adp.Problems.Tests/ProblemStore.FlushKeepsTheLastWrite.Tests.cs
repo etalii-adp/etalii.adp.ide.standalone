@@ -63,6 +63,7 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
         {
             store.ReplaceFor(_root, ["services.adp"], [Verdict()]);
             var entry = store.EntryFor(_root);
+            // ReSharper disable once AccessToDisposedClosure - Reason: Used in a test case which is acceptable.
             store.BetweenClosingAndFlushing = () => store.OnDebounceElapsed(entry);
         }
 

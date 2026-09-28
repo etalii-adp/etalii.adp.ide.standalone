@@ -45,6 +45,7 @@ public class CausalLoopDocumentStoreSelfWriteTests : IDisposable
         string? first = null;
         var reloader = Task.Run(() =>
         {
+            // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             while (Volatile.Read(ref saving) == 1)
             {
                 // What the reload bridge does when the watcher reports the path.

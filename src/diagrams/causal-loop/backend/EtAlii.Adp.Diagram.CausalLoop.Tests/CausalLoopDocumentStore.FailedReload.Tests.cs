@@ -124,6 +124,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         var publishes = 0;
         var writer = Task.Run(() =>
         {
+            // ReSharper disable once AccessToDisposedClosure - Reason: Used in a test case which is acceptable.
             while (!stop.IsCancellationRequested)
             {
                 try

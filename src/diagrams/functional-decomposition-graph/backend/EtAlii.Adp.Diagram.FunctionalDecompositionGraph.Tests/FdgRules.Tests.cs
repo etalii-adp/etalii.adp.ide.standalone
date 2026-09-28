@@ -143,6 +143,8 @@ public class FdgRulesTests
     [Fact]
     public void NoRelation_AdmitsAComment()
     {
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+        // Reason: Used in a test case which is acceptable.
         Assert.All(FdgRelations.All, relation =>
         {
             Assert.DoesNotContain(FdgElementTypes.Comment, relation.Sources);

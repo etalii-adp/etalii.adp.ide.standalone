@@ -34,11 +34,13 @@ public class TextMetricTests
 
         // The cases the design's cross-tier table names by kind, so none can be dropped unnoticed:
         // an empty string, one character, a long string and a string with spaces, at two font sizes.
+        // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local - Reason: Used in a test case which is acceptable.
         Assert.Contains(Fixture.Cases, @case => @case.Text.Length == 0);
         Assert.Contains(Fixture.Cases, @case => @case.Text.Length == 1);
         Assert.Contains(Fixture.Cases, @case => @case.Text.Length > 50);
         Assert.Contains(Fixture.Cases, @case => @case.Text.Contains(' ', StringComparison.Ordinal));
         Assert.True(Fixture.Cases.Select(@case => @case.FontSize).Distinct().Count() >= 2, "the fixture has fewer than two font sizes");
+        // ReSharper restore ParameterOnlyUsedForPreconditionCheck.Local
     }
 
     [Fact]

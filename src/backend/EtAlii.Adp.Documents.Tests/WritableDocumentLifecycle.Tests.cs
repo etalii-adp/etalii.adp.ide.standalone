@@ -56,6 +56,7 @@ public class WritableDocumentLifecycleTests : IDisposable
         WritableDocumentLifecycle<Note>? lifecycle = null;
         lifecycle = Lifecycle(write: (destination, text) =>
         {
+            // ReSharper disable once AccessToModifiedClosure - Reason: Used in a test case which is acceptable.
             reloadedDuringSave = lifecycle!.Reload(destination);
             AdpFileWriter.Save(destination, text);
         });

@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 public readonly record struct FdgEdit(string? Refusal)
 {
     /// <summary>The edit was spliced into the document.</summary>
-    public static FdgEdit Applied { get; } = new((string?)null);
+    public static FdgEdit Applied { get; } = new(null);
 
     /// <summary>The edit was refused, and this is why.</summary>
     public static FdgEdit Refused(string because) => new(because);

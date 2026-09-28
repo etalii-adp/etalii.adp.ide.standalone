@@ -118,7 +118,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
         Assert.True(stale.Count == 0,
             $"These exported example models were stale and have been rewritten - commit them: {string.Join(", ", stale)}.");
         Assert.True(orphans.Count == 0,
-            $"These exported example models have no examples folder any more - delete them: {string.Join(", ", orphans!)}.");
+            $"These exported example models have no examples folder any more - delete them: {string.Join(", ", orphans)}.");
     }
 
     private static async Task<string> ExportAsync(IServiceProvider services, string source, string name, HashSet<string> seen)
