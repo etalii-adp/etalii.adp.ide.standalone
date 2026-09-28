@@ -42,12 +42,18 @@ describe("the shared canvas selection builders", () => {
     expect(elementIdOfKey(undefined)).toBeNull();
   });
 
-  it("builds an element source for actions and shortcuts", () => {
+  it("builds an element source for actions and shortcuts, naming the diagram it is in", () => {
+    // Arrange.
+    const diagram = new Uint8Array([7, 7, 7]);
+
     // Act.
-    const source = elementSourceOf("ddd");
+    const source = elementSourceOf("ddd", diagram);
 
     // Assert.
     expect(source.source.case).toBe("elementId");
     expect(source.source.case === "elementId" ? source.source.value.value : "").toBe("ddd");
+    // Without it the backend resolves the element under whatever the selection names, which after a
+    // tab switch is another diagram (ghg-triggers-and-notes task 11's browser pass).
+    expect(source.diagramEntryId?.value).toEqual(diagram);
   });
 });

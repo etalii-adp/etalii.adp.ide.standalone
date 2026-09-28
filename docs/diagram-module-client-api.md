@@ -545,7 +545,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **Whether a module needs it.** Any module whose actions do something. `useContextConnection` gives `executeAction`, which is how a module runs an action it answers itself — a drawn connection, a drop.
 
-**Its shape.** `elementSourceOf` builds the source an action is run against.
+**Its shape.** `elementSourceOf(elementId, entryId)` builds the source an action is run against: the element, and the `entryId` the canvas was given for its diagram. The diagram is required because the backend otherwise finds the element under whatever file the connection's selection names — after a switch of diagram tabs that is the other tab's file, and an edit made on one canvas was written into another diagram.
 
 **A keystroke is not a module's to send.** The same connection also offers `executeShortcut`, and it is the library's: a declared action names its key in `backendKey` (see [Actions, shortcuts and enablement](#actions-shortcuts-and-enablement)) and the library sends it. `contextShortcutOf` and `ContextShortcut`, which built that request, have no entry here for that reason, and `noModuleSendsAKeystroke.test.ts` fails on a module that names either, or `executeShortcut`.
 

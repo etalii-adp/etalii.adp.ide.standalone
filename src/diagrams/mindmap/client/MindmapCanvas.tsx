@@ -252,7 +252,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         return Math.abs(position.x - element.x) <= width / 2 && Math.abs(position.y - element.y) <= height / 2;
       });
       if (target !== undefined) {
-        void executeAction(elementType, elementSourceOf(target.id));
+        void executeAction(elementType, elementSourceOf(target.id, entryId));
       }
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),

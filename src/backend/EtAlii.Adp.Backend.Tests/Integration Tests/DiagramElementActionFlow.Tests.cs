@@ -252,6 +252,99 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         Assert.Equal("child", prompt.InputDialog.InitialValue); // the rename prompt carries that node's text
     }
 
+    [Fact]
+    public async Task AnElementNamingItsDiagram_ResolvesUnderThatDiagram_NotUnderTheSelectedOne()
+    {
+        // Arrange.
+        // Two diagrams whose nodes share an id, as two tabs of one project can. Found by the
+        // ghg-triggers-and-notes task 11 browser pass: after a switch of diagram tabs the
+        // connection's selection still named the other tab's file, so an influence drawn on one
+        // canvas was written into the other diagram.
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_projectFolder, "other.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_projectFolder, "other.mm"),
+            "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"other\" ID=\"ID_1\"/>\n</map>\n",
+            TestContext.Current.CancellationToken);
+
+        using var channel = CreateChannel();
+        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var watchId = ShortGuid.NewShortGuid();
+
+        var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
+        var otherId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "other.adp");
+
+        using var cts = CreateMessageTimeout();
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
+
+        // The tab the user left: its file is still the selection.
+        await contextClient.SelectAsync(
+            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(roadmapId, "ID_1") },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Act.
+        // The canvas now in front names its own diagram with the element.
+        var executed = await contextClient.ExecuteActionAsync(
+            new ExecuteActionRequest
+            {
+                ProjectId = projectId,
+                WatchId = watchId,
+                Source = new ContextSource { ElementId = new ElementId { Value = "ID_1" }, DiagramEntryId = otherId },
+                InteractionId = ShortGuid.NewShortGuid(),
+                Shortcut = new ContextShortcut { Key = "F2" },
+            },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(executed.Accepted, executed.Error);
+        var prompt = await pendingPrompt;
+        Assert.Equal("other", prompt.InputDialog.InitialValue); // the named diagram's node, not the selected one's
+    }
+
+    [Fact]
+    public async Task AnElementNamingItsDiagram_ResolvesWithNothingSelected()
+    {
+        // Arrange.
+        // Found by the same pass: a canvas clears the selection when the selected element leaves
+        // the drawn area, and every action it raised after that was refused as "This item is no
+        // longer available." until something was clicked.
+        using var channel = CreateChannel();
+        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var watchId = ShortGuid.NewShortGuid();
+
+        var roadmapId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
+
+        using var cts = CreateMessageTimeout();
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
+
+        // Act. Nothing is selected.
+        var executed = await contextClient.ExecuteActionAsync(
+            new ExecuteActionRequest
+            {
+                ProjectId = projectId,
+                WatchId = watchId,
+                Source = new ContextSource { ElementId = new ElementId { Value = "ID_1" }, DiagramEntryId = roadmapId },
+                InteractionId = ShortGuid.NewShortGuid(),
+                Shortcut = new ContextShortcut { Key = "F2" },
+            },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(executed.Accepted, executed.Error);
+        var prompt = await pendingPrompt;
+        Assert.Equal("roadmap", prompt.InputDialog.InitialValue);
+    }
+
     // ---- helpers ----------------------------------------------------------------------
 
     private static CancellationTokenSource CreateMessageTimeout()

@@ -40,9 +40,21 @@ export function elementSelectionOf(
   });
 }
 
-/** An element id as the `ContextSource` an action or shortcut executes against. */
-export function elementSourceOf(elementId: string): ContextSource {
-  return create(ContextSourceSchema, { source: { case: "elementId", value: { value: elementId } } });
+/**
+ * An element id as the `ContextSource` an action or shortcut executes against, with the `.adp` entry
+ * of the diagram it is in.
+ *
+ * <b>The diagram is required, not a convenience.</b> Without it the backend resolves the element under
+ * whatever file the connection's selection names, and a canvas cannot rely on that: after a switch
+ * of diagram tabs it still names the other tab's file, so an edit on one canvas was written into
+ * another diagram, and once the selected element leaves the drawn area it is cleared, so every edit
+ * was refused (found by ghg-triggers-and-notes task 11's browser pass).
+ */
+export function elementSourceOf(elementId: string, diagramEntryId: Uint8Array): ContextSource {
+  return create(ContextSourceSchema, {
+    source: { case: "elementId", value: { value: elementId } },
+    diagramEntryId: { value: diagramEntryId },
+  });
 }
 
 /** The element id a pushed selection chain names, wherever in the chain it sits. */

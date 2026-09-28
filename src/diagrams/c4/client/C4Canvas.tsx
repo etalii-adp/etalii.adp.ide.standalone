@@ -270,7 +270,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
         const { width, height } = node.payload;
         return Math.abs(position.x - node.x) <= width / 2 && Math.abs(position.y - node.y) <= height / 2;
       });
-      void executeAction(elementType, target !== undefined ? elementSourceOf(target.id) : undefined);
+      void executeAction(elementType, target !== undefined ? elementSourceOf(target.id, entryId) : undefined);
     },
     // Delete travels as the backend shortcut it always was, raised by the library's key path.
     onViewChanged: ({ viewport: next }) => setViewport(next),

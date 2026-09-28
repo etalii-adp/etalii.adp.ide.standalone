@@ -208,7 +208,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
 
   // A refusal needs nothing here: the call reports it to the library's refusal line.
   const runAction = (actionId: string, sourceId?: string) => {
-    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId, entryId) : undefined);
   };
 
   /**

@@ -278,7 +278,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
 
   /** Runs a backend action, threading its source; a refusal reaches the library's line by itself. */
   const runAction = (actionId: string, sourceId?: string) => {
-    void executeAction(actionId, sourceId !== undefined ? elementSourceOf(sourceId) : undefined);
+    void executeAction(actionId, sourceId !== undefined ? elementSourceOf(sourceId, entryId) : undefined);
   };
 
   const definition = useMemo(() => definitionOf(), []);
