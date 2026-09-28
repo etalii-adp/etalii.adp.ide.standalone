@@ -381,11 +381,11 @@ export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
 
   // Every route below reports its own refusal to the one line the library draws around the canvas.
   const runAction = (actionId: string, targetId: string) => {
-    void executeAction(actionId, elementSourceOf(targetId));
+    void executeAction(actionId, elementSourceOf(targetId, entryId));
   };
 
   const runProperty = (propertyId: string, value: string, targetId: string) => {
-    void setProperty(propertyId, value, elementSourceOf(targetId));
+    void setProperty(propertyId, value, elementSourceOf(targetId, entryId));
   };
 
   const events: DiagramEventHandlers = {

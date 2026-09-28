@@ -93,6 +93,14 @@ message ContextSource {
     // reason as `project`: the request already says which project's problems these are.
     google.protobuf.Empty problems = 4;
   }
+  // The diagram file an element_id is in, when the caller knows it - and a canvas always does.
+  // Given, the element resolves under that file; unset, under the file the connection's current
+  // selection names. The selection is not a safe stand-in for a canvas: after a switch of
+  // diagram tabs it still names the other tab's file, and once the selected element leaves the
+  // drawn area it is cleared and names nothing - so an edit made on one canvas was written into
+  // another diagram, or refused (found by ghg-triggers-and-notes task 11's browser pass).
+  // Ignored for every member but element_id.
+  ShortGuid diagram_entry_id = 5;
 }
 
 // Which surface produced a selection, so a consumer can tell "the explorer selected

@@ -195,11 +195,11 @@ export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   // Every route below - an action, a property, a move - reports its own refusal to the one line the
   // library draws around every canvas, and clears it when sent (client-centralization Requirement 2).
   const runAction = (actionId: string, targetId: string) => {
-    void executeAction(actionId, elementSourceOf(targetId));
+    void executeAction(actionId, elementSourceOf(targetId, entryId));
   };
 
   const runProperty = async (propertyId: string, value: number, targetId: string): Promise<boolean> => {
-    const outcome = await setProperty(propertyId, String(Math.round(value)), elementSourceOf(targetId));
+    const outcome = await setProperty(propertyId, String(Math.round(value)), elementSourceOf(targetId, entryId));
     return outcome.accepted;
   };
 

@@ -202,7 +202,7 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
 
   const runAction = (actionId: string, sourceId?: string) => {
     // A refusal needs nothing here: the call reports it to the library's refusal line.
-    void executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
+    void executeAction(actionId, sourceId ? elementSourceOf(sourceId, entryId) : undefined);
   };
 
   /** The card whose rectangle holds this canvas point, where one does. */

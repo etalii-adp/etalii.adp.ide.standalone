@@ -182,7 +182,7 @@ export function useLibrarySelection(
   const invokeDeclared = (invoked: ActionInvoked) => {
     const key = backendKeyOf(definition, invoked.actionId);
     if (key !== undefined && invoked.targetId !== undefined) {
-      void executeShortcut(contextShortcutOf(key), elementSourceOf(invoked.targetId)).then((outcome) => {
+      void executeShortcut(contextShortcutOf(key), elementSourceOf(invoked.targetId, source.entryId)).then((outcome) => {
         if (!outcome.accepted && outcome.error) {
           dispatchDiagramEvent(events, { kind: "action-refused", actionId: invoked.actionId, message: outcome.error });
         }

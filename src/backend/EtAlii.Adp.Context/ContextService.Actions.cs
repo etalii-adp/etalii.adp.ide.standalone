@@ -306,6 +306,23 @@ public sealed partial class ContextService
         // element of some other file than the selected one resolves to nothing, as it should.
         if (source.SourceCase == ContextSource.SourceOneofCase.ElementId)
         {
+            // A canvas names the diagram it draws, and that file wins over the selection's: after a
+            // switch of diagram tabs the selection still names the other tab's file, and once the
+            // selected element is culled from view the canvas clears it and it names nothing.
+            if (source.DiagramEntryId is { } diagramEntryId)
+            {
+                var diagramResolution = await _selectionResolver.ResolveLevelAsync(
+                    watchId, rootPath, ContextSelectionSource.Unspecified, new ContextSource { EntryId = diagramEntryId }, [], null, context.CancellationToken);
+                if (diagramResolution is not ResolvedContextLevel diagram)
+                {
+                    return null;
+                }
+
+                var inDiagram = await _selectionResolver.ResolveLevelAsync(
+                    watchId, rootPath, ContextSelectionSource.Unspecified, source, [], diagram.Level, context.CancellationToken);
+                return inDiagram is ResolvedContextLevel resolvedInDiagram ? resolvedInDiagram.Level.Target : null;
+            }
+
             var record = _selectionStore.Get(watchId);
             if (record is null)
             {
