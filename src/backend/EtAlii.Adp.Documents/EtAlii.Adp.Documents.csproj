@@ -41,7 +41,7 @@
          scripted read their existing refused-read and reload-race guards supply. Those two only: every
          other store uses the public constructor and the lifecycle's own retry. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.C4" />
-    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.CausalLoop" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.CausalLoopDiagram" />
   </ItemGroup>
 
   <ItemGroup>

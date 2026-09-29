@@ -9,6 +9,6 @@ describe("the timeline registration", () => {
     expect(registration.matches("generic/timeline")).toBe(true);
     expect(registration.matches("wardley/map")).toBe(false);
     expect(registration.matches("generic/swimlane")).toBe(false);
-    expect(registration.Canvas).toBeDefined();
+    expect(registration.Panel).toBeDefined();
   });
 });

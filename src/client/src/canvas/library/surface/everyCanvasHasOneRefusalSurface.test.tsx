@@ -19,7 +19,7 @@ import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarn
  *   2. more than one surface shows it - a module ADDING to the library's line;
  *   3. a module declares a rejection or status element of its own;
  *   4. the surface that appears is not the library's - the case a count cannot see, since three
- *      canvases (dotnet-dependency-graph, helm-charts, wardley-map) REPLACED the shared line with a
+ *      canvases (dotnet-dependency-graph, helm-chart, wardley-map) REPLACED the shared line with a
  *      class of their own, so one surface appeared, the count was right, and it was the wrong one.
  * The same is asserted of the status, opening and unavailable.
  *
@@ -82,11 +82,11 @@ const connection = fakeContextConnection({ watchId });
 
 vi.mock("@client/shell/panels/useToolboxItems", () => ({ useToolboxItems: () => [] }));
 
-const { diagramCanvases } = await import("@client/shell/panels/diagramCanvases");
+const { toolPanels } = await import("@client/shell/panels/toolPanels");
 
-const registered = diagramCanvases
-  .filter((registration) => registration.Canvas !== undefined)
-  .map((registration, index) => [`${index}: ${registration.Canvas!.name || "anonymous canvas"}`, registration.Canvas!] as const);
+const registered = toolPanels
+  .filter((registration) => registration.Panel !== undefined)
+  .map((registration, index) => [`${index}: ${registration.Panel!.name || "anonymous canvas"}`, registration.Panel!] as const);
 
 // ---- what counts as a surface ----
 

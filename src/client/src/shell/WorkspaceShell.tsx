@@ -5,7 +5,7 @@ import { NoticeHost } from "./context/NoticeHost";
 import { RibbonBar } from "./ribbon/RibbonBar";
 import { SplitPane } from "./panes/SplitPane";
 import { TabbedPane } from "./panes/TabbedPane";
-import { DiagramTabsPanel } from "./panels/DiagramTabsPanel";
+import { ToolTabsPanel } from "./panels/ToolTabsPanel";
 import { DiagramViewProvider } from "./panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "./panels/DiagramToolboxContext";
 import { InlineLabelPlacementProvider } from "./panels/InlineLabelPlacementContext";
@@ -61,7 +61,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
                     direction="vertical"
                     initialSplit={0.7}
                     minSize={120}
-                    first={<DiagramTabsPanel projectId={projectId} />}
+                    first={<ToolTabsPanel projectId={projectId} />}
                     second={
                       <TabbedPane
                         tabs={[

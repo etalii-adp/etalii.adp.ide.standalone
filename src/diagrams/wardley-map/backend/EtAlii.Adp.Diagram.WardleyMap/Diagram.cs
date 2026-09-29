@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `wardley/map`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `wardley/map`.</summary>
 public static class Diagram
 {
     /// <summary>
@@ -41,7 +41,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition WardleyMap { get; } = new(
         new DiagramOrigin("wardley", "map"),
-        "Wardley Map",
+        "Wardley map",
         "A value chain positioned against evolution, so a strategy can be argued about rather than asserted.",
         Icon: "mdi-chart-line",
         Extension: DocumentExtension,

@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.TogafAdm;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `togaf/adm`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `togaf/adm`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

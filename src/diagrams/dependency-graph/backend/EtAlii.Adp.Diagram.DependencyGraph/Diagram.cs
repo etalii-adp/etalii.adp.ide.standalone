@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `generic/dependencies`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `generic/dependencies`.</summary>
 public static class Diagram
 {
     /// <summary>
@@ -33,7 +33,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition DependencyGraph { get; } = new(
         new DiagramOrigin("generic", "dependencies"),
-        "Dependency Graph",
+        "Dependency graph",
         "What needs what - named nodes on rows, joined by directed depends-on edges, placed wherever the author puts them.",
         Icon: "mdi-graph-outline",
         Extension: DocumentExtension,

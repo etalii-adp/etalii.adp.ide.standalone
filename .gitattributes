@@ -101,7 +101,7 @@ src/client/src/generated/**   text eol=lf
 #
 # **Adding a diagram module?** If its documents are byte-compared, add its extension here. That is
 # the whole of the ceremony, and this comment is here so the reasoning does not have to be worked
-# out a sixth time - mindmap, c4, azure-pipeline, wardley-map and ansible-structure each
+# out a sixth time - mindmap, c4, azure-devops-pipeline, wardley-map and ansible-structure each
 # rediscovered it independently.
 *.mm    -text
 *.dsl   -text
@@ -133,7 +133,7 @@ src/client/src/generated/**   text eol=lf
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,
 # compose file and configuration document in the tree. Scoped to the one folder where the bytes are
 # the subject rather than the content.
-src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtures/** -text
+src/diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/Fixtures/** -text
 
 # The shared gate's fixtures are real runner logs, and the CRLF dotnet writes is part of what the
 # gate's verdict is tested against: a log normalised to LF on commit would test a shape no real
@@ -146,7 +146,7 @@ src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtu
 # cannot have that, because its documents ARE Databricks' own `databricks.yml`, job resource YAML
 # and pipeline settings JSON - `.yml` and `.json` are shared by every workflow, compose file and
 # manifest in the tree, so marking them repo-wide would freeze line endings for files where the
-# house style should simply apply. Hence a glob, like azure-pipeline's - but naming the
+# house style should simply apply. Hence a glob, like azure-devops-pipeline's - but naming the
 # byte-compared extensions individually rather than the folder wholesale. That narrowing is what
 # makes this glob safe where the withdrawn directory rule was not: `Fixtures/**` alone also
 # catches the readme that documents the corpus (and any recorded verdicts or exports that join it

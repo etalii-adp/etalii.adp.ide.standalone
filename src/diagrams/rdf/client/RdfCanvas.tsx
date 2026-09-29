@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { elementSourceOf } from "@client/canvas/selection";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps as ShellCanvasProps } from "@client/shell/panels/toolPanelRegistration";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import type { DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";

@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package etalii.adp.helm;
+
+// A sub-namespace rather than the module's own, following the ansible module's precedent and
+// for its reason: the wire shapes and the domain model share names (HelmEdge, kinds) because
+// they are genuinely the same concepts, flattened. Generating into the module namespace
+// collides with the _Model records outright (CS0101); a namespace says it once, and every use
+// site reads `Wire.HelmEdge` versus `HelmEdge` with no ambiguity left.
+option csharp_namespace = "EtAlii.Adp.Diagram.HelmChart.Wire";
+
+// The payload of one node or edge of a helm chart diagram, packed into the core Element's Any.
+// Defined in the module's own api folder; no core proto is edited to add it. Position, id and
+// type live on the core Element; this carries only what is a chart node's own.
+message HelmElementPayload {
+  string name = 1;                     // "nginx", "values.yaml", "deployment.yaml", "cache"
+  HelmElementKind kind = 2;
+
+  // Chart-root-relative, never absolute: what activation opens (Requirement 8.1). Segments,
+  // per the sibling modules' precedent; empty for a node with no backing artifact (a
+  // dependency declaration is a fact of Chart.yaml, not a file of its own).
+  repeated string chart_relative_path = 3;
+
+  HelmChartFacts chart = 4;            // CHART only
+  HelmValuesFacts values = 5;          // VALUES only
+  HelmTemplateFacts template = 6;      // TEMPLATE only
+  HelmDependencyFacts dependency = 7;  // DEPENDENCY only
+  HelmVendoredFacts vendored = 8;      // SUBCHART and ARCHIVE only
+  HelmEdge edge = 9;                   // EDGE only
+  int32 crd_count = 10;                // CRDS only
+  int32 lock_entry_count = 11;         // LOCK only
+
+  // The artifact did not parse: the node renders marked, carrying the parser's own words and
+  // line so the grid can show them (Requirement 3.1).
+  bool unreadable = 12;
+  string failure_message = 15;
+  uint32 failure_line = 16;
+
+  // The box the layout measured, so the canvas draws the true size and anchors connectors on
+  // actual edges - the mindmap lesson: the client draws what the backend computed.
+  double width = 13;
+  double height = 14;
+}
+
+enum HelmElementKind {
+  HELM_ELEMENT_KIND_UNSPECIFIED = 0;
+  CHART = 1;
+  VALUES = 2;
+  SCHEMA = 3;
+  TEMPLATE = 4;
+  CRDS = 5;
+  DEPENDENCY = 6;
+  SUBCHART = 7;
+  ARCHIVE = 8;
+  LOCK = 9;
+  EDGE = 10;
+}
+
+// Chart.yaml's own facts (CHART nodes; SUBCHART nodes carry a summary in HelmVendoredFacts).
+message HelmChartFacts {
+  string version = 1;
+  string app_version = 2;
+  string api_version = 3;
+  string chart_type = 4;               // "application" or "library"
+  string description = 5;
+  bool deprecated = 6;
+  bool legacy = 7;                     // apiVersion v1: requirements.yaml territory
+}
+
+message HelmValuesFacts {
+  bool is_default = 1;                 // values.yaml itself, versus an override layer
+  bool has_global = 2;                 // global: marks the node; no edge fan-out (R5.4)
+  int32 key_count = 3;
+}
+
+message HelmTemplateFacts {
+  HelmTemplateRole role = 1;
+  repeated string kinds = 2;           // literally-scanned only; never guessed (R3.2)
+  bool kinds_undetermined = 3;         // a manifest whose kind could not be read literally
+  repeated string defines = 4;         // a partial's exports
+}
+
+enum HelmTemplateRole {
+  HELM_TEMPLATE_ROLE_UNSPECIFIED = 0;
+  MANIFEST = 1;
+  PARTIAL = 2;
+  NOTES = 3;
+  TEST = 4;
+}
+
+message HelmDependencyFacts {
+  string chart_name = 1;               // the declared name; the node's own name is the effective one
+  string alias = 2;
+  string constraint = 3;               // verbatim, never evaluated
+  string repository = 4;
+  string condition = 5;
+  HelmConditionState condition_state = 6;
+  string pinned_version = 7;           // from the lock, displayed beside the constraint (R5.7)
+  bool resolved = 8;                   // something in charts/ answers it (R5.2)
+}
+
+enum HelmConditionState {
+  HELM_CONDITION_STATE_UNSPECIFIED = 0;
+  CONDITION_NONE = 1;
+  CONDITION_ON = 2;
+  CONDITION_OFF = 3;
+  CONDITION_MISSING = 4;               // the path is not in the default values (R10.6 warns)
+  CONDITION_UNKNOWN = 5;               // the path exists but is not a boolean, or values did not parse
+}
+
+message HelmVendoredFacts {
+  bool sealed = 1;                     // a .tgz: labeled by file name, never unpacked (R3.3)
+  bool declared = 2;                   // some dependency claims it; false is Undeclared (R10.4)
+  string chart_type = 3;
+  string chart_version = 4;
+  int32 template_count = 5;
+  int32 deeper_count = 6;              // nested charts/ summarized by count, never recursed (R3.4)
+}
+
+message HelmEdge {
+  string source_id = 1;
+  string target_id = 2;                // empty for an open end - there is no node to point at
+  HelmEdgeKind kind = 3;
+  string label = 4;                    // a constraint, a configuring key, an included name
+  bool open_end = 5;                   // Unvendored, or an include no local partial defines
+}
+
+enum HelmEdgeKind {
+  HELM_EDGE_KIND_UNSPECIFIED = 0;
+  DECLARES = 1;
+  RESOLVES = 2;
+  OVERRIDES = 3;
+  CONFIGURES = 4;
+  INCLUDES = 5;
+}

@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Documents;
 
 /// <summary>
 /// What a diagram-type module is: its origin/notation and its display title - mirroring one row
-/// of docs/diagrams.md's catalog table. Each diagram-type project exposes one or more of these
+/// of docs/tools.md's catalog table. Each diagram-type project exposes one or more of these
 /// through its own static <c>Diagram.Definitions</c> array - one entry for most types, seven
 /// for C4, whose types share a single engine and have no reason to be seven assemblies.
 /// </summary>

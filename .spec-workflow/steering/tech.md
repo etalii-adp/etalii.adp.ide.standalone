@@ -70,14 +70,14 @@ A module's `Diagram.cs` takes exactly one of two shapes, and which one is not a 
 A module's service registration lives in **one file** - `ServiceCollection.AddX.cs` - by default.
 
 * **Split into `ServiceCollection.AddX.cs` + `ServiceCollection.AddXCommands.cs` only once a concrete consumer - a test or another feature - needs the module's command handlers registered without its other seams** (session factory, toolbox provider, validator). The trigger is that need, not a line count or file size: no size threshold governs this, and none should be recorded.
-* The evidence behind the rule, measured rather than assumed: `wardley-map` and `mindmap` are split because real call sites register the commands alone (`AddWardleyMap.Tests`' commands-only fact; mindmap's `Commands.Tests`, `MindmapSession.Tests` and `MindmapTestProject`). `c4`, `azure-pipeline` and `ansible-structure` have no such consumer anywhere in their test suites, so they keep one file.
+* The evidence behind the rule, measured rather than assumed: `wardley-map` and `mindmap` are split because real call sites register the commands alone (`AddWardleyMap.Tests`' commands-only fact; mindmap's `Commands.Tests`, `MindmapSession.Tests` and `MindmapTestProject`). `c4`, `azure-devops-pipeline` and `ansible-structure` have no such consumer anywhere in their test suites, so they keep one file.
 * The rule is additive: a module that later gains such a consumer splits at that point - nothing prevents it, and nothing but that consumer justifies it.
 
 # Testing & quality
 
 * Tests should be runnable as part of the same local "F5 experience" - no separate environment or manual setup required to run the test suite.
 * Prefer fast, local unit/integration tests over end-to-end tests that depend on hosted infrastructure, given the local-first runtime model.
-* To test the modular diagram implementation, use the diagram types that are actually implemented, not a fixed list here: `docs/diagrams.md` is the catalog of record and marks each type's state, and `src/examples/` holds a document of each in one explorer tree. This bullet named Mindmap alone until 2026-09-04, which was true when Mindmap was the only module and quietly false for every module added after it - an enumeration in a document that is not the catalog goes stale the moment the catalog moves.
+* To test the modular diagram implementation, use the diagram types that are actually implemented, not a fixed list here: `docs/tools.md` is the catalog of record and marks each type's state, and `src/examples/` holds a document of each in one explorer tree. This bullet named Mindmap alone until 2026-09-04, which was true when Mindmap was the only module and quietly false for every module added after it - an enumeration in a document that is not the catalog goes stale the moment the catalog moves.
 * Test classes in C# should follow the filename `<Classname>.Tests` and the class name `<Classname>Tests`. Mind the dot.
 * Tests should follow the tripple a pattern: arrange, act, assert.
 

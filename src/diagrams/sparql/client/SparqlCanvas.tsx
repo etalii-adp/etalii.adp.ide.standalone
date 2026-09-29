@@ -9,7 +9,7 @@ import type {
 } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useSparqlStream } from "./useSparqlStream";
 import type { SparqlAnnotation, SparqlNode, SparqlRegion } from "./sparqlModel";
@@ -162,7 +162,7 @@ function annotationAnchor(
  * one gesture, a drag, and it lands in the registration's `layout:` block through
  * `moveElementTo`. Refusals come back from the backend with their own sentences (Requirement 5.4).
  */
-export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
+export function SparqlCanvas({ projectId, entryId, path }: ToolContentProps) {
   const { model, loading, failed, moveElementTo, reportView } = useSparqlStream(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 

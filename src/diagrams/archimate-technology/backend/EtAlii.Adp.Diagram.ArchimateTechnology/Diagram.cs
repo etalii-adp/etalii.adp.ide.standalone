@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.ArchimateTechnology;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `archimate/technology`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `archimate/technology`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

@@ -45,7 +45,7 @@ export type ActionInvocation =
    */
   /**
    * `activate` and `context-menu` were added by the single-label migrations (register entry
-   * G22). Three canvases - ansible-structure, dotnet-dependency-graph and helm-charts - hang
+   * G22). Three canvases - ansible-structure, dotnet-dependency-graph and helm-chart - hang
    * `onDoubleClick` and `onContextMenu` on the element they render, which is the OTHER reason
    * those three need a custom shape at all: not the drawing, the two handlers attached to it.
    * Declared, the library dispatches the module's own action id and the shape goes.

@@ -25,14 +25,14 @@ the canvas drag already offers, and announcing them adds noise rather than acces
 
 ## Who consumes it
 
-Every diagram canvas in the repository, without exception: ansible-structure, azure-pipeline,
-c4, databricks, dependency-graph, helm-charts, mindmap, rdf (with owl and skos), sparql,
+Every diagram canvas in the repository, without exception: ansible-structure, azure-devops-pipeline,
+c4, databricks, dependency-graph, helm-chart, mindmap, rdf (with owl and skos), sparql,
 timeline and wardley-map. The remaining modules under `src/diagrams/` have no client canvas at
 all, so there is nothing to give bars to.
 
 Two shapes of caller, and the difference is worth knowing before writing a third:
 
-- **A canvas driving an SVG `viewBox`** - c4, azure-pipeline, helm-charts, wardley-map - needs
+- **A canvas driving an SVG `viewBox`** - c4, azure-devops-pipeline, helm-chart, wardley-map - needs
   no measurement. Its view's span in content units *is* `w` and `h`, so `scrollAxesOf` is four
   numbers straight out of the view box and the extent, with no ref and no fallback for the
   frame before layout settles.

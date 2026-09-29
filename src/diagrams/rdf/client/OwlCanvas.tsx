@@ -13,7 +13,7 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useOwlStream } from "./useOwlStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isCard, isExpression, type OwlEdgeKind, type OwlModel, type OwlNode } from "./owlModel";
@@ -368,7 +368,7 @@ const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  * anchor drag between two nodes becomes the one stateless rel: gesture the backend answers -
  * between two classes the subclass axiom, anything else a predicate prompt (Requirement 6.1).
  */
-export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
+export function OwlCanvas({ projectId, entryId, path }: ToolContentProps) {
   const { model, loading, failed, reportView, moveElementTo } = useOwlStream(projectId, path);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);

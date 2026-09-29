@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only: the context resolver and property provider seams, and the diagram
+      session seam. The dependency runs this way and never back - core must compile and test
+      with this module absent (structure.md's dependency direction).
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!--
+      Read-only, so the parser only ever has to understand YAML, never reproduce it - and it
+      is pointed only at the chart's own YAML (Chart.yaml, values files, locks, crds/), never
+      at templates/, whose Go-templated content is not YAML until rendered. Its node marks
+      carry the line a value was declared on, which is what a problem points at.
+    -->
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The module's own wire payload, packed into the core Element's Any. Lives under the
+      module's api folder; core protos are never edited from here. The glob matches nothing
+      until the wire task adds helm-charts.proto, which is a no-op rather than an error.
+    -->
+    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.HelmChart.Tests" />
+  </ItemGroup>
+
+</Project>

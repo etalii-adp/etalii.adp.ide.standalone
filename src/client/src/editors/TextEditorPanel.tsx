@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Extension } from "@codemirror/state";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { markTabDirty } from "@client/shell/panels/dirtyTabs";
 import { BaseTextEditor, scrollToLine } from "./BaseTextEditor";
 import { useEditorText } from "./useEditorText";
@@ -14,12 +14,12 @@ import "./editors.css";
  * tech.md's Frontend-backend synchronization rule). A module wraps this with its own
  * extensions and any extra chrome - markdown's preview and outline.
  */
-export interface TextEditorPanelProps extends DiagramCanvasProps {
+export interface TextEditorPanelProps extends ToolContentProps {
   /** Module-supplied CodeMirror extensions. */
   extensions?: Extension[];
   /**
    * Overrides the save pipeline. Unset - the ordinary case - the panel saves through the
-   * stream's own `SaveText` call, which lands the write on the project's history (R6.2).
+   * editor service's `SaveText` call, which lands the write on the project's history (R6.2).
    */
   onSave?: (content: string) => Promise<string>;
   /** Extra chrome rendered beside the editor - markdown's preview pane. */

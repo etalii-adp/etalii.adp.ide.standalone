@@ -12,7 +12,7 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDatabricksStream } from "./useDatabricksStream";
 import { SIMULATED_ACTION_IDS, SIMULATED_MARKER, useSimulatedRun } from "./useSimulatedRun";
@@ -273,7 +273,7 @@ export function DatabricksCanvas({
   ariaLabel,
   connectable,
   interceptAction,
-}: DiagramCanvasProps & DatabricksCanvasConfig) {
+}: ToolContentProps & DatabricksCanvasConfig) {
   const { model, loading, failed, moveElementTo, reportView } = useDatabricksStream(projectId, path);
   const simulation = useSimulatedRun(model);
   const { executeAction } = useContextConnection();

@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { RdfCanvas } from "./RdfCanvas";
 import { OwlCanvas } from "./OwlCanvas";
 import { SkosCanvas } from "./SkosCanvas";
@@ -19,21 +19,21 @@ import "./shacl.css";
  * diagram types, exactly as the backend holds none and discovers `Diagram.Definitions` by
  * scanning its own assemblies.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "w3c/rdf",
-    Canvas: RdfCanvas,
+    Panel: RdfCanvas,
   },
   {
     matches: (mimeType) => mimeType === "w3c/owl",
-    Canvas: OwlCanvas,
+    Panel: OwlCanvas,
   },
   {
     matches: (mimeType) => mimeType === "w3c/skos",
-    Canvas: SkosCanvas,
+    Panel: SkosCanvas,
   },
   {
     matches: (mimeType) => mimeType === "w3c/shacl",
-    Canvas: ShaclCanvas,
+    Panel: ShaclCanvas,
   },
 ];

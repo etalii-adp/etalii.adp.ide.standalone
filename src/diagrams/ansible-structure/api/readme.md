@@ -10,7 +10,7 @@ before `ece03c36`).
 ## Two things about this proto worth knowing before editing it
 
 **It generates into `EtAlii.Adp.Diagram.AnsibleStructure.Wire`, not the module's own namespace.**
-Most modules generate into their own; this one, like causal-loop, helm-charts and
+Most modules generate into their own; this one, like causal-loop, helm-chart and
 dotnet-dependency-graph, cannot: its wire shapes and its domain model
 share four names — `AnsibleEdge`, `AnsibleEdgeKind`, `AnsibleRoleContents`,
 `AnsibleInventoryGroup` — because they are genuinely the same concepts, flattened for the wire.

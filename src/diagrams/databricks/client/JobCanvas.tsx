@@ -1,4 +1,4 @@
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { DatabricksCanvas } from "./DatabricksCanvas";
 
 /**
@@ -6,6 +6,6 @@ import { DatabricksCanvas } from "./DatabricksCanvas";
  * set - drag to reposition through the layout path, anchor drags for dependencies, toolbox
  * drops via placement ids (databricks-diagrams Requirement 4).
  */
-export function JobCanvas(props: DiagramCanvasProps) {
+export function JobCanvas(props: ToolContentProps) {
   return <DatabricksCanvas {...props} ariaLabel="Databricks job" connectable />;
 }

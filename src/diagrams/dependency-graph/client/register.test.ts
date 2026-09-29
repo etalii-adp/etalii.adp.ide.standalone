@@ -11,6 +11,6 @@ describe("the dependency graph registration", () => {
     // claimed it would put this canvas in front of every timeline in the workspace.
     expect(registration.matches("generic/timeline")).toBe(false);
     expect(registration.matches("wardley/map")).toBe(false);
-    expect(registration.Canvas).toBeDefined();
+    expect(registration.Panel).toBeDefined();
   });
 });

@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\diagrams\gartner-hypecycle-graph\backend\EtAlii.Adp.Diagram.GartnerHypeCycleGraph\EtAlii.Adp.Diagram.GartnerHypeCycleGraph.csproj" />
+    <ProjectReference Include="..\..\diagrams\gartner-hype-cycle-graph\backend\EtAlii.Adp.Diagram.GartnerHypeCycleGraph\EtAlii.Adp.Diagram.GartnerHypeCycleGraph.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />

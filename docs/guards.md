@@ -31,8 +31,8 @@
 | Guard | Where | The question it answers |
 | --- | --- | --- |
 | Zero writes (ansible) | `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/ZeroWrites.Tests.cs` | Does reading an Ansible project change anything of Ansible's in it? The claim the whole type turns on. |
-| Zero writes (helm) | `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts.Tests/ZeroWrites.Tests.cs` | The same for a chart — trivially today, because the module has no writer for chart content at all. |
-| Shape of sources (causal-loop) | `src/diagrams/causal-loop/backend/EtAlii.Adp.Diagram.CausalLoop.Tests/ShapeOfSources.Tests.cs` | What must this module's own files be, as files, regardless of what they say? |
+| Zero writes (helm) | `src/diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/ZeroWrites.Tests.cs` | The same for a chart — trivially today, because the module has no writer for chart content at all. |
+| Shape of sources (causal-loop) | `src/diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/ShapeOfSources.Tests.cs` | What must this module's own files be, as files, regardless of what they say? |
 | Example corpus (sparql) | `src/diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/ExampleCorpus.Tests.cs` | Does every vendored example parse, draw something, and report nothing above info? |
 
 ## Tree-wide guards, client

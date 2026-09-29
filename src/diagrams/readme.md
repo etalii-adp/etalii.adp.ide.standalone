@@ -2,7 +2,7 @@
 
 This folder contains every diagram type ADP supports, one module folder per diagram type. Each is a self-contained plugin: core code (`src/backend`, `src/client`) never depends on a specific diagram type, only on shared abstractions — a diagram module may depend on those, never the other way around.
 
-For the full catalog of diagram types — including ones only identified or specified, not yet implemented here — see [`docs/diagrams.md`](../../docs/diagrams.md). That document tracks each type's status (identified, specified, to-do, work-in-progress, implemented); this folder only contains the ones that have reached at least work-in-progress.
+For the full catalog of tool types — diagrams, designers and editors, including ones only identified or specified, not yet implemented here — see [`docs/tools.md`](../../docs/tools.md). That document tracks each type's status (identified, specified, to-do, work-in-progress, implemented); this folder only contains the ones that have reached at least work-in-progress.
 
 ## Module layout
 

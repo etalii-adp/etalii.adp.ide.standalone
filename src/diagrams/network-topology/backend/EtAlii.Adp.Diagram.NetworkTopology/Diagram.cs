@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.NetworkTopology;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `network/topology`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `network/topology`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

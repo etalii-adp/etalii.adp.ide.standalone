@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.ZachmanMatrix;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `zachman/matrix`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `zachman/matrix`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

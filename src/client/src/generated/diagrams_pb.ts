@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file diagrams.proto.
  */
 export const file_diagrams: GenFile = /*@__PURE__*/
-  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKbAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSEQoJZWRpdG9yX2lkGAQgASgJIpYBCg9TYXZlVGV4dFJlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEicKCHdhdGNoX2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSHgoEcGF0aBgDIAEoCzIQLmV0YWxpaS5hZHAuUGF0aBIPCgdjb250ZW50GAQgASgJIiEKEFNhdmVUZXh0UmVzcG9uc2USDQoFZXJyb3IYASABKAkirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAki6QEKEk1vdmVFbGVtZW50UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEhIKCmVsZW1lbnRfaWQYBCABKAkSFQoNbmV3X3BhcmVudF9pZBgFIAEoCRINCgVpbmRleBgGIAEoBRIlCghwb3NpdGlvbhgHIAEoCzITLmV0YWxpaS5hZHAuUG9pbnQyRCIkChNNb3ZlRWxlbWVudFJlc3BvbnNlEg0KBWVycm9yGAEgASgJImMKFkRlc2NyaWJlVG9vbGJveFJlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAiABKAsyEC5ldGFsaWkuYWRwLlBhdGgiYwoLVG9vbGJveEl0ZW0SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSDAoEaWNvbhgDIAEoCRITCgtkZXNjcmlwdGlvbhgEIAEoCRIWCg5kcm9wX2FjdGlvbl9pZBgFIAEoCSJBChdEZXNjcmliZVRvb2xib3hSZXNwb25zZRImCgVpdGVtcxgBIAMoCzIXLmV0YWxpaS5hZHAuVG9vbGJveEl0ZW0yjQMKDkRpYWdyYW1TZXJ2aWNlEjsKBE9wZW4SHi5ldGFsaWkuYWRwLk9wZW5EaWFncmFtUmVxdWVzdBoRLmV0YWxpaS5hZHAuRGVsdGEwARJLCgpVcGRhdGVWaWV3Eh0uZXRhbGlpLmFkcC5VcGRhdGVWaWV3UmVxdWVzdBoeLmV0YWxpaS5hZHAuVXBkYXRlVmlld1Jlc3BvbnNlEk4KC01vdmVFbGVtZW50Eh4uZXRhbGlpLmFkcC5Nb3ZlRWxlbWVudFJlcXVlc3QaHy5ldGFsaWkuYWRwLk1vdmVFbGVtZW50UmVzcG9uc2USWgoPRGVzY3JpYmVUb29sYm94EiIuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXF1ZXN0GiMuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXNwb25zZRJFCghTYXZlVGV4dBIbLmV0YWxpaS5hZHAuU2F2ZVRleHRSZXF1ZXN0GhwuZXRhbGlpLmFkcC5TYXZlVGV4dFJlc3BvbnNlQhqqAhdFdEFsaWkuQWRwLkRpYWdyYW0uV2lyZWIGcHJvdG8z", [file_shared, file_connection, file_deltas]);
+  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKbAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSEQoJZWRpdG9yX2lkGAQgASgJIq0BChFVcGRhdGVWaWV3UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEiQKBHZpZXcYBCABKAsyFi5ldGFsaWkuYWRwLlZpZXdVcGRhdGUiIwoSVXBkYXRlVmlld1Jlc3BvbnNlEg0KBWVycm9yGAEgASgJIukBChJNb3ZlRWxlbWVudFJlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEicKCHdhdGNoX2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSHgoEcGF0aBgDIAEoCzIQLmV0YWxpaS5hZHAuUGF0aBISCgplbGVtZW50X2lkGAQgASgJEhUKDW5ld19wYXJlbnRfaWQYBSABKAkSDQoFaW5kZXgYBiABKAUSJQoIcG9zaXRpb24YByABKAsyEy5ldGFsaWkuYWRwLlBvaW50MkQiJAoTTW92ZUVsZW1lbnRSZXNwb25zZRINCgVlcnJvchgBIAEoCSJjChZEZXNjcmliZVRvb2xib3hSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAIgASgLMhAuZXRhbGlpLmFkcC5QYXRoImMKC1Rvb2xib3hJdGVtEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEgwKBGljb24YAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSFgoOZHJvcF9hY3Rpb25faWQYBSABKAkiQQoXRGVzY3JpYmVUb29sYm94UmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy5ldGFsaWkuYWRwLlRvb2xib3hJdGVtMsYCCg5EaWFncmFtU2VydmljZRI7CgRPcGVuEh4uZXRhbGlpLmFkcC5PcGVuRGlhZ3JhbVJlcXVlc3QaES5ldGFsaWkuYWRwLkRlbHRhMAESSwoKVXBkYXRlVmlldxIdLmV0YWxpaS5hZHAuVXBkYXRlVmlld1JlcXVlc3QaHi5ldGFsaWkuYWRwLlVwZGF0ZVZpZXdSZXNwb25zZRJOCgtNb3ZlRWxlbWVudBIeLmV0YWxpaS5hZHAuTW92ZUVsZW1lbnRSZXF1ZXN0Gh8uZXRhbGlpLmFkcC5Nb3ZlRWxlbWVudFJlc3BvbnNlEloKD0Rlc2NyaWJlVG9vbGJveBIiLmV0YWxpaS5hZHAuRGVzY3JpYmVUb29sYm94UmVxdWVzdBojLmV0YWxpaS5hZHAuRGVzY3JpYmVUb29sYm94UmVzcG9uc2VCGqoCF0V0QWxpaS5BZHAuRGlhZ3JhbS5XaXJlYgZwcm90bzM", [file_shared, file_connection, file_deltas]);
 
 /**
  * @generated from message etalii.adp.OpenDiagramRequest
@@ -63,62 +63,6 @@ export const OpenDiagramRequestSchema: GenMessage<OpenDiagramRequest> = /*@__PUR
   messageDesc(file_diagrams, 0);
 
 /**
- * @generated from message etalii.adp.SaveTextRequest
- */
-export type SaveTextRequest = Message<"etalii.adp.SaveTextRequest"> & {
-  /**
-   * @generated from field: etalii.adp.ShortGuid project_id = 1;
-   */
-  projectId?: ShortGuid | undefined;
-
-  /**
-   * @generated from field: etalii.adp.ShortGuid watch_id = 2;
-   */
-  watchId?: ShortGuid | undefined;
-
-  /**
-   * project-relative path of the open text file
-   *
-   * @generated from field: etalii.adp.Path path = 3;
-   */
-  path?: Path | undefined;
-
-  /**
-   * the full text; the buffer re-applies the file's own terminators
-   *
-   * @generated from field: string content = 4;
-   */
-  content: string;
-};
-
-/**
- * Describes the message etalii.adp.SaveTextRequest.
- * Use `create(SaveTextRequestSchema)` to create a new message.
- */
-export const SaveTextRequestSchema: GenMessage<SaveTextRequest> = /*@__PURE__*/
-  messageDesc(file_diagrams, 1);
-
-/**
- * @generated from message etalii.adp.SaveTextResponse
- */
-export type SaveTextResponse = Message<"etalii.adp.SaveTextResponse"> & {
-  /**
-   * Empty on success; otherwise the module's own sentence - a refusal, a vanished file, a
-   * failed write - shown beside the editor's dirty indicator rather than swallowed.
-   *
-   * @generated from field: string error = 1;
-   */
-  error: string;
-};
-
-/**
- * Describes the message etalii.adp.SaveTextResponse.
- * Use `create(SaveTextResponseSchema)` to create a new message.
- */
-export const SaveTextResponseSchema: GenMessage<SaveTextResponse> = /*@__PURE__*/
-  messageDesc(file_diagrams, 2);
-
-/**
  * @generated from message etalii.adp.UpdateViewRequest
  */
 export type UpdateViewRequest = Message<"etalii.adp.UpdateViewRequest"> & {
@@ -148,7 +92,7 @@ export type UpdateViewRequest = Message<"etalii.adp.UpdateViewRequest"> & {
  * Use `create(UpdateViewRequestSchema)` to create a new message.
  */
 export const UpdateViewRequestSchema: GenMessage<UpdateViewRequest> = /*@__PURE__*/
-  messageDesc(file_diagrams, 3);
+  messageDesc(file_diagrams, 1);
 
 /**
  * @generated from message etalii.adp.UpdateViewResponse
@@ -167,7 +111,7 @@ export type UpdateViewResponse = Message<"etalii.adp.UpdateViewResponse"> & {
  * Use `create(UpdateViewResponseSchema)` to create a new message.
  */
 export const UpdateViewResponseSchema: GenMessage<UpdateViewResponse> = /*@__PURE__*/
-  messageDesc(file_diagrams, 4);
+  messageDesc(file_diagrams, 2);
 
 /**
  * @generated from message etalii.adp.MoveElementRequest
@@ -236,7 +180,7 @@ export type MoveElementRequest = Message<"etalii.adp.MoveElementRequest"> & {
  * Use `create(MoveElementRequestSchema)` to create a new message.
  */
 export const MoveElementRequestSchema: GenMessage<MoveElementRequest> = /*@__PURE__*/
-  messageDesc(file_diagrams, 5);
+  messageDesc(file_diagrams, 3);
 
 /**
  * @generated from message etalii.adp.MoveElementResponse
@@ -255,7 +199,7 @@ export type MoveElementResponse = Message<"etalii.adp.MoveElementResponse"> & {
  * Use `create(MoveElementResponseSchema)` to create a new message.
  */
 export const MoveElementResponseSchema: GenMessage<MoveElementResponse> = /*@__PURE__*/
-  messageDesc(file_diagrams, 6);
+  messageDesc(file_diagrams, 4);
 
 /**
  * @generated from message etalii.adp.DescribeToolboxRequest
@@ -279,7 +223,7 @@ export type DescribeToolboxRequest = Message<"etalii.adp.DescribeToolboxRequest"
  * Use `create(DescribeToolboxRequestSchema)` to create a new message.
  */
 export const DescribeToolboxRequestSchema: GenMessage<DescribeToolboxRequest> = /*@__PURE__*/
-  messageDesc(file_diagrams, 7);
+  messageDesc(file_diagrams, 5);
 
 /**
  * One draggable entry in the Toolbox panel. Dropping it on an element executes
@@ -324,7 +268,7 @@ export type ToolboxItem = Message<"etalii.adp.ToolboxItem"> & {
  * Use `create(ToolboxItemSchema)` to create a new message.
  */
 export const ToolboxItemSchema: GenMessage<ToolboxItem> = /*@__PURE__*/
-  messageDesc(file_diagrams, 8);
+  messageDesc(file_diagrams, 6);
 
 /**
  * @generated from message etalii.adp.DescribeToolboxResponse
@@ -341,7 +285,7 @@ export type DescribeToolboxResponse = Message<"etalii.adp.DescribeToolboxRespons
  * Use `create(DescribeToolboxResponseSchema)` to create a new message.
  */
 export const DescribeToolboxResponseSchema: GenMessage<DescribeToolboxResponse> = /*@__PURE__*/
-  messageDesc(file_diagrams, 9);
+  messageDesc(file_diagrams, 7);
 
 /**
  * One open diagram, as two correlated one-way legs (tech.md's "gRPC call shapes"): a browser
@@ -401,23 +345,6 @@ export const DiagramService: GenService<{
     methodKind: "unary";
     input: typeof DescribeToolboxRequestSchema;
     output: typeof DescribeToolboxResponseSchema;
-  },
-  /**
-   * Saves a text-editor tab's content. The write goes through a command on the project's
-   * history, so a save is one undo away like every other change (modular-text-editors
-   * Requirement 6.2), and the shared buffer preserves the file's encoding and each line's own
-   * terminator (Requirement 6.1). A unary call, within the Non-Functional "no new stream"
-   * rule's own wording: editor content rides "the existing per-connection Watch push and
-   * unary calls". Every open view of the file - diagram and text alike - learns of the write
-   * through the watcher as an ordinary pushed change, which is Requirement 5.3's whole
-   * both-views-stay-true guarantee.
-   *
-   * @generated from rpc etalii.adp.DiagramService.SaveText
-   */
-  saveText: {
-    methodKind: "unary";
-    input: typeof SaveTextRequestSchema;
-    output: typeof SaveTextResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_diagrams, 0);

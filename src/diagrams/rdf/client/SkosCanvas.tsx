@@ -8,7 +8,7 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useSkosStream } from "./useSkosStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { ALTERNATE, HIERARCHY, IRI_FALLBACK, MAPPING, type SkosCollection, type SkosConcept, type SkosModel, type SkosScheme } from "./skosModel";
@@ -233,7 +233,7 @@ const SKOS_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
  * the registration's `layout:` block as one undoable command, and a connect drag becomes the
  * stateless rel: gesture its starting anchor means.
  */
-export function SkosCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
+export function SkosCanvas({ projectId, entryId, path }: ToolContentProps) {
   const { model, loading, failed, reportView, moveElementTo } = useSkosStream(projectId, path);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);

@@ -41,10 +41,5 @@ public sealed partial class DiagramService
         return Task.FromResult(new UpdateViewResponse());
     }
 
-    private static bool IsInside(string rootPath, string fullPath)
-    {
-        var root = Path.GetFullPath(rootPath)
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsInside(string rootPath, string fullPath) => ProjectTextFile.IsInside(rootPath, fullPath);
 }

@@ -1,4 +1,4 @@
-using EtAlii.Adp.Diagram.CausalLoop;
+using EtAlii.Adp.Diagram.CausalLoopDiagram;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;

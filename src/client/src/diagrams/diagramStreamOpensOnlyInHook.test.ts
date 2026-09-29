@@ -100,7 +100,7 @@ describe("the diagram stream is opened only by useDiagramStream", () => {
     const walked = sourcesUnder(clientDirectories(root)).map((file) => relative(root, file).replaceAll("\\", "/"));
 
     // Assert: the completeness canary - the former offenders' folders are in the walk.
-    for (const module of ["databricks", "dependency-graph", "helm-charts", "rdf", "sparql", "timeline"]) {
+    for (const module of ["databricks", "dependency-graph", "helm-chart", "rdf", "sparql", "timeline"]) {
       expect(walked.some((file) => file.startsWith(`diagrams/${module}/client/`))).toBe(true);
     }
   });

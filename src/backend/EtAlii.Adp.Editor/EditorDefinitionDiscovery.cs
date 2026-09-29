@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Editor;
 /// for a static class named <c>Editor</c> with a public static <c>Definitions</c> property
 /// holding <see cref="EditorDefinition"/>s - the same scan the diagram family runs for its
 /// <c>Diagram</c> classes, extended rather than duplicated (modular-text-editors
-/// Requirement 1.3): the mechanical half is the shared <c>PluginDefinitionScan</c>, and the
+/// Requirement 1.3): the mechanical half is the shared <c>ToolDefinitionScan</c>, and the
 /// assembly walk is <see cref="ApplicationAssemblies.Find"/> itself.
 /// </summary>
 /// <remarks>
@@ -38,7 +38,7 @@ public sealed class EditorDefinitionDiscovery
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        var scan = PluginDefinitionScan.Scan<EditorDefinition>(assemblies, CandidateTypeName, DefinitionsPropertyName, "editor", _logger);
+        var scan = ToolDefinitionScan.Scan<EditorDefinition>(assemblies, CandidateTypeName, DefinitionsPropertyName, "editor", _logger);
 
         // Keyed by id so a duplicate is detected as it arrives; the value remembers which
         // assembly won so a later collision can be reported against it.

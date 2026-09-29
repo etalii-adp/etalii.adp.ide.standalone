@@ -1,13 +1,13 @@
 using EtAlii.Adp.Diagram.AnsibleStructure;
-using EtAlii.Adp.Diagram.AzurePipeline;
+using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 using EtAlii.Adp.Diagram.C4;
-using EtAlii.Adp.Diagram.CausalLoop;
+using EtAlii.Adp.Diagram.CausalLoopDiagram;
 using EtAlii.Adp.Diagram.Databricks;
 using EtAlii.Adp.Diagram.DependencyGraph;
 using EtAlii.Adp.Diagram.DotNetDependencyGraph;
 using EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 using EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
-using EtAlii.Adp.Diagram.HelmCharts;
+using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
@@ -50,13 +50,13 @@ internal static class ElementTypeCatalog
         new("ansible-structure",
             [AnsibleElementMapper.PlaybookType, AnsibleElementMapper.PlayType, AnsibleElementMapper.RoleType, AnsibleElementMapper.TaskFileType, AnsibleElementMapper.InventoryType, AnsibleElementMapper.VariableFolderType],
             [AnsibleElementMapper.EdgeType]),
-        new("azure-pipeline",
+        new("azure-devops-pipeline",
             [PipelineElementMapper.StageType, PipelineElementMapper.JobType, PipelineElementMapper.StepType, PipelineElementMapper.TemplateType],
             [PipelineElementMapper.EdgeType]),
         new("c4",
             [C4ElementMapper.NodeType, C4ElementMapper.BoundaryType, C4ElementMapper.ViewType],
             [C4ElementMapper.RelationshipType]),
-        new("causal-loop",
+        new("causal-loop-diagram",
             [CausalLoopElementMapper.VariableType, CausalLoopElementMapper.LoopType],
             [CausalLoopElementMapper.LinkType]),
         new("databricks",
@@ -71,10 +71,10 @@ internal static class ElementTypeCatalog
         new("functional-decomposition-graph",
             [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType],
             [FdgElementMapper.UiChildType, FdgElementMapper.OwnsActionType, FdgElementMapper.OwnsDataType, FdgElementMapper.OwnsFunctionType, FdgElementMapper.ShowsType]),
-        new("gartner-hypecycle-graph",
+        new("gartner-hype-cycle-graph",
             [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType],
             [GhgElementMapper.InfluenceType]),
-        new("helm-charts",
+        new("helm-chart",
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.CrdsType, HelmElementMapper.SubchartType, HelmElementMapper.ArchiveType, HelmElementMapper.LockType],
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType]),
         new("mindmap",

@@ -2,7 +2,6 @@
 using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
-using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
 using Serilog;
@@ -24,7 +23,6 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     private readonly DiagramSessionFactories _sessionFactories;
     private readonly EditorResolver _editorResolver;
     private readonly EditorSessionFactories _editorSessionFactories;
-    private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentReloadBridge _reloadBridge;
     private readonly IReadOnlyList<IDiagramToolboxProvider> _toolboxProviders;
 
@@ -35,11 +33,9 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         EditorResolver editorResolver,
         EditorSessionFactories editorSessionFactories,
         IDiagramViewportRegistry viewports,
-        IHistoryStackStore historyStacks,
         DiagramDocumentReloadBridge reloadBridge,
         IEnumerable<IDiagramToolboxProvider> toolboxProviders)
     {
-        _historyStacks = historyStacks;
         _projectStore = projectStore;
         _router = router;
         _sessionFactories = sessionFactories;
@@ -195,25 +191,8 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         Path path,
         ShortGuid userId,
         out string rootPath,
-        out string fullPath)
-    {
-        fullPath = "";
-
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))
-        {
-            return false;
-        }
-
-        var combined = System.IO.Path.Combine([rootPath, .. path.Segments]);
-        var full = System.IO.Path.GetFullPath(combined);
-        if (!IsInside(rootPath, full) || !File.Exists(full))
-        {
-            return false;
-        }
-
-        fullPath = full;
-        return true;
-    }
+        out string fullPath) =>
+        ProjectTextFile.TryResolve(_projectStore, projectId, path, userId, out rootPath, out fullPath);
 
     /// <summary>
     /// The definition id behind a forced <c>"*"</c>: whatever the resolver answers - the one
@@ -225,25 +204,4 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
             : throw new RpcException(new Status(
                 PermanentRefusal.CannotOpen,
                 $"No editor can open '{System.IO.Path.GetFileName(fullPath)}': rival editors claim it and none is the default."));
-
-    public override async Task<SaveTextResponse> SaveText(SaveTextRequest request, ServerCallContext context)
-    {
-        if (!TryResolveTextFile(request.ProjectId, request.Path, SessionContext.GetUserId(context), out var rootPath, out var fullPath))
-        {
-            // The content is deliberately not logged - only which file the save asked for.
-            _logger.Warning("Refused to save {Path}: it does not resolve inside the project any more", string.Join('/', request.Path.Segments));
-            return new SaveTextResponse { Error = "The file no longer exists." };
-        }
-
-        // Through the project's history, not straight to disk: a save is one undo away like
-        // every other change (Requirement 6.2). The write comes back to every open session of
-        // the file as an ordinary pushed change - each text session through its own watcher,
-        // each diagram through the reload bridge and its store - so the file on disk is the
-        // tie-breaker by construction (Requirements 5.3, 5.5).
-        var result = await _historyStacks.Get(rootPath).ExecuteAsync(
-            new SaveTextFileCommand(fullPath, request.Content), context.CancellationToken);
-
-        _logger.Information("Saved {FullPath} through the history: {Outcome}", fullPath, result.IsSuccess ? "ok" : result.Error);
-        return new SaveTextResponse { Error = result.IsSuccess ? "" : result.Error };
-    }
 }

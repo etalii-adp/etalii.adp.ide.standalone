@@ -41,7 +41,7 @@ public class DiagramTests
     public void TheDisplayTitleIsDependencyGraph()
     {
         // Assert.
-        Assert.Equal("Dependency Graph", Diagram.DependencyGraph.Title);
+        Assert.Equal("Dependency graph", Diagram.DependencyGraph.Title);
     }
 
     [Fact]

@@ -49,10 +49,10 @@ public sealed class DiagramDefinitionDiscovery
         ArgumentNullException.ThrowIfNull(assemblies);
 
         // The mechanical scan - which assemblies, which class name, which property shape - is
-        // shared with the editor family (PluginDefinitionScan, modular-text-editors
+        // shared with the editor family (ToolDefinitionScan, modular-text-editors
         // Requirement 1.3); everything below it is this family's own: the folder-subject
         // coherence rule, duplicate detection by origin, and the ordering.
-        var scan = PluginDefinitionScan.Scan<DiagramDefinition>(assemblies, CandidateTypeName, DefinitionsPropertyName, "diagram", _logger);
+        var scan = ToolDefinitionScan.Scan<DiagramDefinition>(assemblies, CandidateTypeName, DefinitionsPropertyName, "diagram", _logger);
         var scanned = scan.AssembliesScanned;
 
         // Keyed by origin so a duplicate is detected as it arrives; the value remembers which
@@ -141,5 +141,5 @@ public sealed class DiagramDefinitionDiscovery
     /// reads the same whichever check rejected it and the reason stays a property of its own.
     /// </summary>
     private static void LogMalformed(Type type, string assemblyName, string reason) =>
-        PluginDefinitionScan.LogMalformed(_logger, "diagram", type, assemblyName, reason);
+        ToolDefinitionScan.LogMalformed(_logger, "diagram", type, assemblyName, reason);
 }

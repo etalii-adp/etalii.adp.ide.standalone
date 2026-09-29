@@ -7,7 +7,7 @@ describe("the ansible-structure module's client registrations", () => {
     const registration = registrations.find((candidate) => candidate.matches("ansible/structure"));
 
     // Assert.
-    expect(registration?.Canvas).toBeDefined();
+    expect(registration?.Panel).toBeDefined();
     expect(registration?.unsupported).toBeUndefined();
   });
 
@@ -31,9 +31,9 @@ describe("the shell's discovery", () => {
     // Act.
     // The real claim: register.ts exporting the right thing is only half of it - the shell has
     // to pick the file up without anyone editing a list in it.
-    const { canvasFor } = await import("@client/shell/panels/diagramCanvases");
+    const { panelFor } = await import("@client/shell/panels/toolPanels");
 
     // Assert.
-    expect(canvasFor("ansible/structure")?.Canvas).toBeDefined();
+    expect(panelFor("ansible/structure")?.Panel).toBeDefined();
   }, 15_000);
 });

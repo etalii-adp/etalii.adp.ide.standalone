@@ -2,7 +2,7 @@ using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
-/// The seven C4 notations, cataloged in docs/diagrams.md as `c4/context`, `c4/container`,
+/// The seven C4 notations, cataloged in docs/tools.md as `c4/context`, `c4/container`,
 /// `c4/component`, `c4/code`, `c4/system-landscape`, `c4/dynamic` and `c4/deployment`.
 /// </summary>
 /// <remarks>
@@ -24,7 +24,7 @@ public static class Diagram
     /// <summary>The map to start with: the system in its world.</summary>
     public static DiagramDefinition SystemContext { get; } = new(
         new DiagramOrigin("c4", "context"),
-        "System Context",
+        "C4 system context diagram",
         "The system in its world: who uses it, and what it depends on. The map to start with.",
         Icon: "mdi-earth",
         Extension: DocumentExtension,
@@ -35,7 +35,7 @@ public static class Diagram
     /// <summary>Inside the system: its applications and data stores.</summary>
     public static DiagramDefinition Container { get; } = new(
         new DiagramOrigin("c4", "container"),
-        "Container",
+        "C4 container diagram",
         "The applications and data stores that make up a system, and how they talk to each other.",
         Icon: "mdi-package-variant",
         Extension: DocumentExtension);
@@ -43,7 +43,7 @@ public static class Diagram
     /// <summary>Inside one container: its components.</summary>
     public static DiagramDefinition Component { get; } = new(
         new DiagramOrigin("c4", "component"),
-        "Component",
+        "C4 component diagram",
         "The components inside one container, and how each collaborates with the others.",
         Icon: "mdi-puzzle-outline",
         Extension: DocumentExtension);
@@ -55,14 +55,14 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition Code { get; } = new(
         new DiagramOrigin("c4", "code"),
-        "Code (optional)",
+        "C4 code diagram",
         "The classes and their relations inside one component, at the level source code is written.",
         Icon: "mdi-code-braces");
 
     /// <summary>Above any single system: the enterprise around them.</summary>
     public static DiagramDefinition SystemLandscape { get; } = new(
         new DiagramOrigin("c4", "system-landscape"),
-        "System Landscape (supplementary)",
+        "C4 system landscape diagram",
         "Every system in an enterprise and how they relate, above any single one of them.",
         Icon: "mdi-terrain",
         Extension: DocumentExtension);
@@ -70,7 +70,7 @@ public static class Diagram
     /// <summary>One scenario, step by numbered step.</summary>
     public static DiagramDefinition Dynamic { get; } = new(
         new DiagramOrigin("c4", "dynamic"),
-        "Dynamic (supplementary)",
+        "C4 dynamic diagram",
         "How a handful of elements collaborate to serve one scenario, step by numbered step.",
         Icon: "mdi-motion-play-outline",
         Extension: DocumentExtension);
@@ -78,7 +78,7 @@ public static class Diagram
     /// <summary>The static model mapped onto the infrastructure it runs on.</summary>
     public static DiagramDefinition Deployment { get; } = new(
         new DiagramOrigin("c4", "deployment"),
-        "Deployment (supplementary)",
+        "C4 deployment diagram",
         "Which containers run on which infrastructure, in one environment.",
         Icon: "mdi-server-network",
         Extension: DocumentExtension);

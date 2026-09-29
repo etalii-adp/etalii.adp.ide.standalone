@@ -64,7 +64,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
 
 vi.mock("../../../diagrams/databricks/client/databricksModel", sentinelModel("applyDelta", "emptyModel"));
 vi.mock("../../../diagrams/dependency-graph/client/dependencyGraphModel", sentinelModel("applyDelta", "emptyModel"));
-vi.mock("../../../diagrams/helm-charts/client/helmModel", sentinelModel("applyDelta", "emptyModel"));
+vi.mock("../../../diagrams/helm-chart/client/helmModel", sentinelModel("applyDelta", "emptyModel"));
 vi.mock("../../../diagrams/rdf/client/owlModel", sentinelModel("applyOwlDelta", "emptyOwlModel"));
 vi.mock("../../../diagrams/rdf/client/rdfModel", sentinelModel("applyDelta", "emptyModel"));
 vi.mock("../../../diagrams/rdf/client/shaclModel", sentinelModel("applyShaclDelta", "emptyShaclModel"));
@@ -78,7 +78,7 @@ type StreamHook = (projectId: Uint8Array, path: readonly string[]) => { model: u
 const hooks: [string, StreamHook][] = [
   ["databricks", (await import("../../../diagrams/databricks/client/useDatabricksStream")).useDatabricksStream],
   ["dependency-graph", (await import("../../../diagrams/dependency-graph/client/useDependencyGraphStream")).useDependencyGraphStream],
-  ["helm-charts", (await import("../../../diagrams/helm-charts/client/useHelmStream")).useHelmStream],
+  ["helm-chart", (await import("../../../diagrams/helm-chart/client/useHelmStream")).useHelmStream],
   ["owl", (await import("../../../diagrams/rdf/client/useOwlStream")).useOwlStream],
   ["rdf", (await import("../../../diagrams/rdf/client/useRdfStream")).useRdfStream],
   ["shacl", (await import("../../../diagrams/rdf/client/useShaclStream")).useShaclStream],

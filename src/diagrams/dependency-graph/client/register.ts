@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { DependencyGraphCanvas } from "./DependencyGraphCanvas";
 import "@client/canvas/canvas.css";
 import "./dependency-graph.css";
@@ -10,9 +10,9 @@ import "./dependency-graph.css";
  * diagram types, exactly as the backend holds none and discovers `Diagram.Definitions` by
  * scanning its own assemblies. Adding this type meant adding a module, not editing the shell.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "generic/dependencies",
-    Canvas: DependencyGraphCanvas,
+    Panel: DependencyGraphCanvas,
   },
 ];

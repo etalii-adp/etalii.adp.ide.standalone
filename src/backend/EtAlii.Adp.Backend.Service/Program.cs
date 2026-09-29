@@ -83,6 +83,10 @@ builder.AddDiagramDefinitions(diagramDefinitions);
 var editorDefinitions = EditorDefinitionDiscovery.Discover();
 builder.AddEditorDefinitions(editorDefinitions);
 
+// The designer family's slot: the same walk, which finds no designer until the first designer
+// module arrives (see the readme in src/designers). Nothing registers them yet, so the result is only logged.
+_ = EtAlii.Adp.DesignerDefinitionDiscovery.Discover();
+
 var app = builder.Build();
 
 // Points Log.Logger at this host's pipeline - which is what the `Log.ForContext<T>()` in each
@@ -139,6 +143,7 @@ app.MapGrpcService<ProjectService>();
 app.MapGrpcService<HierarchyService>();
 app.MapGrpcService<ContextService>();
 app.MapGrpcService<DiagramService>();
+app.MapGrpcService<EditorService>();
 app.MapGrpcService<WorkspaceService>();
 
 app.MapClientApp();

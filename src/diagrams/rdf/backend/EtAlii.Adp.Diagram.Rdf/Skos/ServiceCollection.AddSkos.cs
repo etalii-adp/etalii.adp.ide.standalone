@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </summary>
 public static class ServiceCollectionAddSkosExtension
 {
-    /// <summary>The scheme reading's origin, as docs/diagrams.md writes it.</summary>
+    /// <summary>The scheme reading's origin, as docs/tools.md writes it.</summary>
     public static readonly DiagramOrigin SkosOrigin = new("w3c", "skos");
 
     public static IServiceCollection AddSkos(this IServiceCollection services)

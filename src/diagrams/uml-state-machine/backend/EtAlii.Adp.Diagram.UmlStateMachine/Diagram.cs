@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.UmlStateMachine;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `uml/state-machine`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `uml/state-machine`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

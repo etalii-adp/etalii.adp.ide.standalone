@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.MermaidSequence;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `mermaid/sequence`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `mermaid/sequence`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

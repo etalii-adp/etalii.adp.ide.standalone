@@ -72,7 +72,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
     /// <summary>The modules whose canvas draws more once a view is opened, by module or showcase folder name.</summary>
     private static readonly Dictionary<string, Action<IServiceProvider, DrawnView>> Expansions = new(StringComparer.Ordinal)
     {
-        ["azure-pipeline"] = DrawnConnectionsTests.ExpandPipelineViews,
+        ["azure-devops-pipeline"] = DrawnConnectionsTests.ExpandPipelineViews,
     };
 
     [Fact]

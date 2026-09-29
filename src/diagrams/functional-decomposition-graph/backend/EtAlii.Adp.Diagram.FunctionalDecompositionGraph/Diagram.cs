@@ -2,7 +2,7 @@ using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `etalii/functional-decomposition-graph`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `etalii/functional-decomposition-graph`.</summary>
 /// <remarks>
 /// <b>Without this class FDG never reaches the diagram catalog</b>, and nothing says so: the module was
 /// deployed beside the host from task 9 onwards and discovery simply found no <c>Definitions</c> to

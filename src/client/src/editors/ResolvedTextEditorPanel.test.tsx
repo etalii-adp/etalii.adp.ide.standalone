@@ -21,12 +21,12 @@ vi.mock("./TextEditorPanel", () => ({
   TextEditorPanel: ({ editorId }: { editorId?: string }) => <div data-testid="shared-panel">{editorId}</div>,
 }));
 
-vi.mock("@client/shell/panels/diagramCanvases", () => ({
-  canvasFor: (mimeType: string) =>
+vi.mock("@client/shell/panels/toolPanels", () => ({
+  panelFor: (mimeType: string) =>
     mimeType === "editor/markdown"
       ? {
           matches: () => true,
-          Canvas: ({ editorId }: { editorId?: string }) => <div data-testid="markdown-canvas">{editorId}</div>,
+          Panel: ({ editorId }: { editorId?: string }) => <div data-testid="markdown-canvas">{editorId}</div>,
         }
       : undefined,
 }));

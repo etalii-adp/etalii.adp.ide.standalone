@@ -7,7 +7,7 @@ describe("the mindmap module's client registrations", () => {
     const registration = registrations.find((candidate) => candidate.matches("freeplane/mindmap"));
 
     // Assert.
-    expect(registration?.Canvas).toBeDefined();
+    expect(registration?.Panel).toBeDefined();
     expect(registration?.unsupported).toBeUndefined();
   });
 

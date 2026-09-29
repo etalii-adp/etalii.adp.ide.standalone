@@ -12,16 +12,16 @@ public class DiagramTests
     /// <summary>Origin key, title, and whether the type keeps its body in a `.dsl` sibling.</summary>
     public static TheoryData<string, string, bool> EveryType() => new()
     {
-        { "c4/context", "System Context", true },
-        { "c4/container", "Container", true },
-        { "c4/component", "Component", true },
+        { "c4/context", "C4 system context diagram", true },
+        { "c4/container", "C4 container diagram", true },
+        { "c4/component", "C4 component diagram", true },
         // The one type with no document of its own: C4 discourages drawing this level, ADP
         // draws no canvas for it, and claiming `.dsl` would put it in the running for every
         // bare `.dsl` file in a project (c4-diagrams Requirement 11).
-        { "c4/code", "Code (optional)", false },
-        { "c4/system-landscape", "System Landscape (supplementary)", true },
-        { "c4/dynamic", "Dynamic (supplementary)", true },
-        { "c4/deployment", "Deployment (supplementary)", true },
+        { "c4/code", "C4 code diagram", false },
+        { "c4/system-landscape", "C4 system landscape diagram", true },
+        { "c4/dynamic", "C4 dynamic diagram", true },
+        { "c4/deployment", "C4 deployment diagram", true },
     };
 
     [Theory]

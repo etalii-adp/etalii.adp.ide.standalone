@@ -15,7 +15,7 @@ namespace EtAlii.Adp;
 /// dequeue, mark visited, load each unvisited reference, enqueue. Restricted to the
 /// <see cref="AssemblyPrefix"/> so it never descends into the framework.
 /// <para>
-/// Lives beside <see cref="PluginDefinitionScan"/> because the two are halves of the same
+/// Lives beside <see cref="ToolDefinitionScan"/> because the two are halves of the same
 /// discovery infrastructure - this answers <em>which assemblies</em>, the scan answers
 /// <em>what is in them</em> - and both the diagram and editor definition discoveries walk
 /// through here (backend-project-decomposition task 8: the walk left
