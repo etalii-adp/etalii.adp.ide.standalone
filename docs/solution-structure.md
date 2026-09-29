@@ -11,6 +11,7 @@ flowchart LR
     src --> backend["backend/<br/>the solution and the core projects"]
     src --> client["client/<br/>the React client"]
     src --> diagrams["diagrams/<br/>one folder per diagram type"]
+    src --> designers["designers/<br/>one folder per designer type - none yet"]
     src --> editors["editors/<br/>one folder per editor type"]
     src --> examples["examples/<br/>the showcase documents"]
     src --> fixtures["fixtures/<br/>test data both suites read"]
@@ -76,7 +77,7 @@ A diagram type is `src/diagrams/<type>/` with up to four parts:
 - `client/` — its canvas and registration
 - `examples/` — documents a reader can open
 
-Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
+Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers will be too, under `src/designers` with `EtAlii.Adp.Designer.<Type>`, once the first exists; today that folder holds only its readme. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
 
 ## Namespaces, and the folders that do not contribute
 
