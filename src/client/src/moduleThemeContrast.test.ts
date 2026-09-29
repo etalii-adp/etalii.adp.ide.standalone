@@ -7,7 +7,7 @@ import { contrastRatio, resolveToken, themeTokens, tokensRead } from "./themeCon
 /**
  * Two modules painted themselves out of the theme, and a user could see both.
  *
- * `azure-pipeline` read ten `--adp-*` names and `causal-loop` five `--vscode-*` names -
+ * `azure-devops-pipeline` read ten `--adp-*` names and `causal-loop` five `--vscode-*` names -
  * <b>and neither namespace was defined anywhere in the tree</b>, so every one of those
  * `var()`s had always resolved to its hard-coded fallback, identically in both themes. The
  * modules were not mis-themed; they were theme-blind. azure painted a light stage on the dark
@@ -79,8 +79,8 @@ describe("module colours honour the theme", () => {
   }
 
   describe("causal-loop's variable pill carries a readable label", () => {
-    const css = moduleFile("causal-loop", "causal-loop.css");
-    const canvas = moduleFile("causal-loop", "CausalLoopCanvas.tsx");
+    const css = moduleFile("causal-loop-diagram", "causal-loop.css");
+    const canvas = moduleFile("causal-loop-diagram", "CausalLoopCanvas.tsx");
     const sheets = [css, libraryCss];
 
     it("declares the label with a class some stylesheet paints, so it cannot inherit black", () => {
@@ -115,8 +115,8 @@ describe("module colours honour the theme", () => {
     }
   });
 
-  describe("azure-pipeline's stage carries a readable name", () => {
-    const sheets = [moduleFile("azure-pipeline", "azure-pipeline.css"), libraryCss];
+  describe("azure-devops-pipeline's stage carries a readable name", () => {
+    const sheets = [moduleFile("azure-devops-pipeline", "azure-pipeline.css"), libraryCss];
 
     for (const theme of ["light", "dark"] as const) {
       it(`reads in the ${theme} theme`, () => {
@@ -168,8 +168,8 @@ describe("module colours honour the theme", () => {
    */
   it("neither module reads a token the theme does not declare", () => {
     const offenders = [
-      ["causal-loop", moduleFile("causal-loop", "causal-loop.css")],
-      ["azure-pipeline", moduleFile("azure-pipeline", "azure-pipeline.css")],
+      ["causal-loop-diagram", moduleFile("causal-loop-diagram", "causal-loop.css")],
+      ["azure-devops-pipeline", moduleFile("azure-devops-pipeline", "azure-pipeline.css")],
     ].flatMap(([module, css]) =>
       [...new Set(tokensRead(css))]
         .filter((token) => resolveToken(tokens.light, token) === undefined)

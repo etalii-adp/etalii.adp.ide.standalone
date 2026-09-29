@@ -1,5 +1,5 @@
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Diagram.HelmCharts;
+using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.Problems;
@@ -41,7 +41,7 @@ public class HelmValidationFlowTests : IDisposable
 
         var services = new ServiceCollection();
         services.AddSingleton<IDiagramDefinitionCatalog>(
-            new TestDiagramDefinitionCatalog(Diagram.HelmCharts.Diagram.HelmCharts));
+            new TestDiagramDefinitionCatalog(Diagram.HelmChart.Diagram.HelmCharts));
         services.AddSingleton<DiagramFileRouter>();
         services.AddSingleton<DiagramValidators>();
         services.AddSingleton<ProjectValidator>();

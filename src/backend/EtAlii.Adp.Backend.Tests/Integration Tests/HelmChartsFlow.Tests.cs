@@ -17,7 +17,7 @@ using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
-using Wire = EtAlii.Adp.Diagram.HelmCharts.Wire;
+using Wire = EtAlii.Adp.Diagram.HelmChart.Wire;
 
 namespace EtAlii.Adp.Backend.Tests;
 

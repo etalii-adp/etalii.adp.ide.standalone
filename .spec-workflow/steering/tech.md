@@ -70,7 +70,7 @@ A module's `Diagram.cs` takes exactly one of two shapes, and which one is not a 
 A module's service registration lives in **one file** - `ServiceCollection.AddX.cs` - by default.
 
 * **Split into `ServiceCollection.AddX.cs` + `ServiceCollection.AddXCommands.cs` only once a concrete consumer - a test or another feature - needs the module's command handlers registered without its other seams** (session factory, toolbox provider, validator). The trigger is that need, not a line count or file size: no size threshold governs this, and none should be recorded.
-* The evidence behind the rule, measured rather than assumed: `wardley-map` and `mindmap` are split because real call sites register the commands alone (`AddWardleyMap.Tests`' commands-only fact; mindmap's `Commands.Tests`, `MindmapSession.Tests` and `MindmapTestProject`). `c4`, `azure-pipeline` and `ansible-structure` have no such consumer anywhere in their test suites, so they keep one file.
+* The evidence behind the rule, measured rather than assumed: `wardley-map` and `mindmap` are split because real call sites register the commands alone (`AddWardleyMap.Tests`' commands-only fact; mindmap's `Commands.Tests`, `MindmapSession.Tests` and `MindmapTestProject`). `c4`, `azure-devops-pipeline` and `ansible-structure` have no such consumer anywhere in their test suites, so they keep one file.
 * The rule is additive: a module that later gains such a consumer splits at that point - nothing prevents it, and nothing but that consumer justifies it.
 
 # Testing & quality

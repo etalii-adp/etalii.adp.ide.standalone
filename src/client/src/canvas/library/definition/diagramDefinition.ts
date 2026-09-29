@@ -354,7 +354,7 @@ export interface DecorationDeclaration {
    * A collection path: one decoration per entry, its own paths rooted at the ITEM, laid out
    * along {@link step} from {@link from}.
    *
-   * <b>Register entry G27, and four rows need it</b> - azure-pipeline's status indicators on a
+   * <b>Register entry G27, and four rows need it</b> - azure-devops-pipeline's status indicators on a
    * stage and on a job, mindmap's notes/link/folded glyphs, wardley's decorator badges. Every
    * one of them draws a VARIABLE NUMBER of small marks in a row, and a fixed list of
    * declarations cannot say "one per thing the model has". It is the same `each` labels and
@@ -766,7 +766,7 @@ export interface ElementTypeDefinition {
    * How an element reaches a screen reader and the keyboard.
    *
    * <b>Register entry G23, and the same three rows as G22</b> - ansible-structure,
-   * dotnet-dependency-graph and helm-charts each set `role`, `tabIndex` and an `aria-label` on
+   * dotnet-dependency-graph and helm-chart each set `role`, `tabIndex` and an `aria-label` on
    * the element they render. Left undeclared, migrating those three would quietly drop an
    * element out of the tab order and off the accessibility tree: a regression no test in this
    * repository would have reported, which is exactly why it belongs in the declaration rather
@@ -823,7 +823,7 @@ export interface ElementTypeDefinition {
   selectable?: boolean;
   /**
    * Paints this type's elements beneath the connections: an opaque container whose members'
-   * edges must stay visible over it - azure-pipeline's stage cards. Off, connections draw
+   * edges must stay visible over it - azure-devops-pipeline's stage cards. Off, connections draw
    * under every element as they always have.
    */
   beneathConnections?: boolean;

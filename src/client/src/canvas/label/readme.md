@@ -109,7 +109,7 @@ while editing the description alone.
   [centralized-selection](../../../../../.spec-workflow/specs/centralized-selection/requirements.md)
   (Requirement 2.1), so a relabelled edge can now be reached by a gesture, and the relabel prompt
   qualifies and should be marked.
-- **azure-pipeline** - display names, on stages, jobs, steps and templates. A stage's editor
+- **azure-devops-pipeline** - display names, on stages, jobs, steps and templates. A stage's editor
   covers its name line above the job count; a single-line box's covers it whole. The drawn
   label falls back from the display name to the element's own identifying name, which is a
   placeholder for an empty authored value rather than a second value - and clearing the
@@ -130,7 +130,7 @@ while editing the description alone.
 Every implemented module now has either an entry above or a recorded reason in its own
 client readme. The reasons divide in two, and the difference matters: **exempt** means the
 module has nothing this feature could attach to - the four RDF readings, whose drawn labels
-are prefixed names computed from IRIs, and ansible-structure, helm-charts, sparql and dotnet-dependency-graph,
+are prefixed names computed from IRIs, and ansible-structure, helm-chart, sparql and dotnet-dependency-graph,
 which offer no rename at all - while **pending** means a gesture is missing, not a reason:
 databricks' edges await edge selection. A module that later gains a rename adopts as ever:
 a module adopts by setting the marker on the prompts whose value is the label, and its canvas by

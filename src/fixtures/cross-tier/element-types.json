@@ -14,7 +14,7 @@
         "ansible/structure+edge"
       ]
     },
-    "azure-pipeline": {
+    "azure-devops-pipeline": {
       "elements": [
         "azure-devops/pipeline+job",
         "azure-devops/pipeline+stage",
@@ -35,7 +35,7 @@
         "c4/model+relationship"
       ]
     },
-    "causal-loop": {
+    "causal-loop-diagram": {
       "elements": [
         "systems/causal-loop+loop",
         "systems/causal-loop+variable"
@@ -92,7 +92,7 @@
         "etalii/functional-decomposition-graph+ui-child"
       ]
     },
-    "gartner-hypecycle-graph": {
+    "gartner-hype-cycle-graph": {
       "elements": [
         "gartner/hypecycle-graph+note",
         "gartner/hypecycle-graph+trend",
@@ -102,7 +102,7 @@
         "gartner/hypecycle-graph+influence"
       ]
     },
-    "helm-charts": {
+    "helm-chart": {
       "elements": [
         "helm/chart+archive",
         "helm/chart+chart",

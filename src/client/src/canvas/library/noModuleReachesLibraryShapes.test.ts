@@ -136,7 +136,7 @@ describe("no module stylesheet reaches a library shape by its type", () => {
     expect(walked.length, walked.join("\n")).toBeGreaterThanOrEqual(16);
     for (const sheet of [
       "diagrams/c4/client/c4.css",
-      "diagrams/causal-loop/client/causal-loop.css",
+      "diagrams/causal-loop-diagram/client/causal-loop.css",
       "diagrams/databricks/client/databricks.css",
       "diagrams/dependency-graph/client/dependency-graph.css",
       "diagrams/mindmap/client/mindmap.css",

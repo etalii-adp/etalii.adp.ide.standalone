@@ -105,7 +105,7 @@ describe("no module sends the backend a keystroke", () => {
     const walked = moduleSources(root).map((file) => relative(root, file).replaceAll("\\", "/"));
 
     // Assert: the completeness canary - the eleven former senders' folders are all in the walk.
-    for (const module of ["azure-pipeline", "c4", "databricks", "dependency-graph", "mindmap", "rdf", "timeline", "wardley-map"]) {
+    for (const module of ["azure-devops-pipeline", "c4", "databricks", "dependency-graph", "mindmap", "rdf", "timeline", "wardley-map"]) {
       expect(walked.some((file) => file.startsWith(`diagrams/${module}/client/`)), module).toBe(true);
     }
   });

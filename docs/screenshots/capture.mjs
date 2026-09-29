@@ -184,16 +184,16 @@ const shots = [
   { name: "mindmap.png", path: ["diagrams", "mindmap", "example 1", "mindmap.mm", "mindmap.adp"], collapse: ["diagrams", "mindmap"] },
   { name: "wardley-map.png", path: ["diagrams", "wardley-map", "example 1", "tea.owm", "tea.adp"], collapse: ["diagrams", "wardley-map"] },
   { name: "timeline.png", path: ["diagrams", "timeline", "example-2", "roadmap.tml", "roadmap.adp"], collapse: ["diagrams", "timeline"] },
-  { name: "azure-pipeline.png", path: ["diagrams", "azure-pipeline", "example 1", "multi-stage.yml", "multi-stage.adp"], collapse: ["diagrams", "azure-pipeline"] },
+  { name: "azure-pipeline.png", path: ["diagrams", "azure-devops-pipeline", "example 1", "multi-stage.yml", "multi-stage.adp"], collapse: ["diagrams", "azure-devops-pipeline"] },
   { name: "dependency-graph.png", path: ["diagrams", "dependency-graph", "example-1", "services.dgr", "services.adp"], collapse: ["diagrams", "dependency-graph"] },
   { name: "functional-decomposition-graph.png", path: ["diagrams", "functional-decomposition-graph", "field-service", "field-service.fdg", "field-service.adp"], collapse: ["diagrams", "functional-decomposition-graph"] },
-  { name: "causal-loop.png", path: ["diagrams", "causal-loop", "on-call", "on-call.cld", "on-call.adp"], collapse: ["diagrams", "causal-loop"] },
+  { name: "causal-loop.png", path: ["diagrams", "causal-loop-diagram", "on-call", "on-call.cld", "on-call.adp"], collapse: ["diagrams", "causal-loop-diagram"] },
   // Fitted, a hype cycle's century-long axis squeezes every banner into a sliver; the document's
   // own stored view is the readable one.
-  { name: "hype-cycle.png", path: ["diagrams", "gartner-hypecycle-graph", "electric-vehicles", "electric-vehicles.ghg", "electric-vehicles.adp"], fit: false, collapse: ["diagrams", "gartner-hypecycle-graph"] },
+  { name: "hype-cycle.png", path: ["diagrams", "gartner-hype-cycle-graph", "electric-vehicles", "electric-vehicles.ghg", "electric-vehicles.adp"], fit: false, collapse: ["diagrams", "gartner-hype-cycle-graph"] },
 
   { name: "ansible-structure.png", path: ["diagrams", "ansible-structure", "example 1", "infrastructure", ".adp"], collapse: ["diagrams", "ansible-structure"] },
-  { name: "helm-chart.png", path: ["diagrams", "helm-charts", "hello-world", ".adp"], collapse: ["diagrams", "helm-charts"] },
+  { name: "helm-chart.png", path: ["diagrams", "helm-chart", "hello-world", ".adp"], collapse: ["diagrams", "helm-chart"] },
   { name: "dotnet-dependency-graph.png", path: ["diagrams", "dotnet-dependency-graph", "pipeline-toolkit", "PipelineToolkit.slnx", "PipelineToolkit.adp"], collapse: ["diagrams", "dotnet-dependency-graph"] },
   { name: "databricks-bundle.png", path: ["diagrams", "databricks", "lakehouse", "databricks.yml", "databricks.adp"] },
   { name: "databricks-pipeline.png", path: ["diagrams", "databricks", "lakehouse", "databricks.yml", "databricks.pipeline.adp"] },

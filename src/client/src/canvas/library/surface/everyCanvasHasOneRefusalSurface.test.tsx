@@ -19,7 +19,7 @@ import { fakeContextConnection } from "@client/canvas/library/testing/canvasHarn
  *   2. more than one surface shows it - a module ADDING to the library's line;
  *   3. a module declares a rejection or status element of its own;
  *   4. the surface that appears is not the library's - the case a count cannot see, since three
- *      canvases (dotnet-dependency-graph, helm-charts, wardley-map) REPLACED the shared line with a
+ *      canvases (dotnet-dependency-graph, helm-chart, wardley-map) REPLACED the shared line with a
  *      class of their own, so one surface appeared, the count was right, and it was the wrong one.
  * The same is asserted of the status, opening and unavailable.
  *

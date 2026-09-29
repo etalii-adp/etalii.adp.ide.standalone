@@ -54,20 +54,20 @@
     <Project Path="../diagrams/c4/backend/EtAlii.Adp.Diagram.C4/EtAlii.Adp.Diagram.C4.csproj" />
     <Project Path="../diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/EtAlii.Adp.Diagram.C4.Tests.csproj" />
     <!-- Azure DevOps pipelines: a document the repository already owns, not one ADP creates. -->
-    <Project Path="../diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/EtAlii.Adp.Diagram.AzurePipeline.csproj" />
-    <Project Path="../diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/EtAlii.Adp.Diagram.AzurePipeline.Tests.csproj" />
+    <Project Path="../diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline/EtAlii.Adp.Diagram.AzureDevOpsPipeline.csproj" />
+    <Project Path="../diagrams/azure-devops-pipeline/backend/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests/EtAlii.Adp.Diagram.AzureDevOpsPipeline.Tests.csproj" />
     <!-- Databricks asset bundles, jobs and declarative pipelines: three MIME types, one engine. -->
     <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/EtAlii.Adp.Diagram.Databricks.csproj" />
     <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/EtAlii.Adp.Diagram.Databricks.Tests.csproj" />
     <!-- Helm charts: a folder-subject reading of the chart directory a repository already has. -->
-    <Project Path="../diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/EtAlii.Adp.Diagram.HelmCharts.csproj" />
-    <Project Path="../diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts.Tests/EtAlii.Adp.Diagram.HelmCharts.Tests.csproj" />
+    <Project Path="../diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart/EtAlii.Adp.Diagram.HelmChart.csproj" />
+    <Project Path="../diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/EtAlii.Adp.Diagram.HelmChart.Tests.csproj" />
     <!-- The W3C RDF family: one store and one Turtle/N-Triples parser, several readings over it. -->
     <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/EtAlii.Adp.Diagram.Rdf.csproj" />
     <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/EtAlii.Adp.Diagram.Rdf.Tests.csproj" />
     <!-- SPARQL queries: the RDF family's deliberate sibling - its own parser, no writer at all. -->
-    <Project Path="../diagrams/causal-loop/backend/EtAlii.Adp.Diagram.CausalLoop/EtAlii.Adp.Diagram.CausalLoop.csproj" />
-    <Project Path="../diagrams/causal-loop/backend/EtAlii.Adp.Diagram.CausalLoop.Tests/EtAlii.Adp.Diagram.CausalLoop.Tests.csproj" />
+    <Project Path="../diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram/EtAlii.Adp.Diagram.CausalLoopDiagram.csproj" />
+    <Project Path="../diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests.csproj" />
     <Project Path="../diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql/EtAlii.Adp.Diagram.Sparql.csproj" />
     <Project Path="../diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/EtAlii.Adp.Diagram.Sparql.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
@@ -97,8 +97,8 @@
     <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.csproj" />
     <Project Path="../diagrams/functional-decomposition-graph/backend/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests/EtAlii.Adp.Diagram.FunctionalDecompositionGraph.Tests.csproj" />
     <!-- The Gartner hype cycle graph: trends on a time axis, their phases, and the influences between them. -->
-    <Project Path="../diagrams/gartner-hypecycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.csproj" />
-    <Project Path="../diagrams/gartner-hypecycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.csproj" />
+    <Project Path="../diagrams/gartner-hype-cycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.csproj" />
+    <Project Path="../diagrams/gartner-hype-cycle-graph/backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests/EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.csproj" />
     <Project Path="../diagrams/gcp-architecture/backend/EtAlii.Adp.Diagram.GcpArchitecture/EtAlii.Adp.Diagram.GcpArchitecture.csproj" />
     <Project Path="../diagrams/generic-swimlane/backend/EtAlii.Adp.Diagram.GenericSwimlane/EtAlii.Adp.Diagram.GenericSwimlane.csproj" />
     <Project Path="../diagrams/iso-flowchart/backend/EtAlii.Adp.Diagram.IsoFlowchart/EtAlii.Adp.Diagram.IsoFlowchart.csproj" />

@@ -185,7 +185,7 @@ Sixteen provider tests passed throughout, because they build a target by hand an
 provider directly — skipping exactly the step that did not exist.
 
 - **Preconditions**: backend + client running; `src/examples` open as a project.
-- **Actions**: open `diagrams/causal-loop/on-call/on-call.adp`. Right-click a variable. Press
+- **Actions**: open `diagrams/causal-loop-diagram/on-call/on-call.adp`. Right-click a variable. Press
   Escape, then right-click empty canvas. Then choose **Arrange diagram**.
 - **Expected**:
   - Right-click on a variable opens a menu with **Add link from here…**, **Claim a loop from
@@ -335,8 +335,8 @@ curvature handle: one control point, offset perpendicular to the chord, always t
 loop.
 
 - **Preconditions**: backend + client running; `src/examples` open as a project.
-- **Actions**: open `diagrams/causal-loop/on-call/on-call.adp`, then
-  `diagrams/causal-loop/reference/reference.adp`.
+- **Actions**: open `diagrams/causal-loop-diagram/on-call/on-call.adp`, then
+  `diagrams/causal-loop-diagram/reference/reference.adp`.
 - **Expected**:
   - Two variables joined both ways draw an **ellipse** between them, not a single line. This is
     the case that was broken.
@@ -364,7 +364,7 @@ cannot prove is that a reader meets the finding, in the problems panel and in th
 without the document changing under them.
 
 - **Preconditions**: backend + client running; `src/examples` open as a project.
-- **Actions**: open `diagrams/causal-loop/reference/reference.adp`. Read the problems panel.
+- **Actions**: open `diagrams/causal-loop-diagram/reference/reference.adp`. Read the problems panel.
   Select the loop labelled `R3` on the canvas and read the Properties panel (see the preamble on
   finding it). Then close the tab and reopen it.
 - **Expected**:
@@ -389,7 +389,7 @@ A delay is drawn as short strokes across the arrow. That is the whole of its vis
 nothing in the backend suite can see whether it was painted.
 
 - **Preconditions**: backend + client running; `src/examples` open as a project.
-- **Actions**: open `diagrams/causal-loop/reference/reference.adp`. Find the link from
+- **Actions**: open `diagrams/causal-loop-diagram/reference/reference.adp`. Find the link from
   `crowding` to `sanitation`. Select it and read the Properties panel. Then right-click it.
 - **Expected**:
   - The link is drawn with the conventional strokes across it, and its polarity mark reads `−` at
@@ -414,7 +414,7 @@ one per variable — that last point is the one a test in the backend can assert
 can feel.
 
 - **Preconditions**: backend + client running; `src/examples` open as a project.
-- **Actions**: open `diagrams/causal-loop/on-call/on-call.adp`. Drag two or three variables into a
+- **Actions**: open `diagrams/causal-loop-diagram/on-call/on-call.adp`. Drag two or three variables into a
   deliberate mess. Right-click the canvas **background** — with nothing selected — and choose
   **Arrange diagram**. Then press Undo **once**.
 - **Expected**:
@@ -738,7 +738,7 @@ refuses something. Worth a look because a refusal that is silent reads as a bug.
 - **Expected**: the context menu offers nothing at all for that job. The Property Grid shows its
   properties with a reason beside each naming the template file the value lives in — not a greyed
   box with no explanation.
-- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `templates.adp`, whose `Build` stage draws its jobs from the local template `templates/build-jobs.yml`. **Show jobs** surfaced the job *“Compile from the template”*, annotated *“From diagrams/azure-pipeline/example 1/templates/build-jobs.yml: edit it there.”* Right-clicking that job the context menu offered **nothing at all**. Selecting it, the Property Grid showed its Name, Display name, Kind and Depends-on rows, each non-editable with the reason *“This comes from diagrams/azure-pipeline/example 1/templates/build-jobs.yml…”* — naming the template file, not a bare greyed box. (The repository-resource template `deploy-stages.yml@shared` also renders as a dashed indeterminate box saying how many stages run is decided when the pipeline runs — the same refuse-rather-than-guess principle.)
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `templates.adp`, whose `Build` stage draws its jobs from the local template `templates/build-jobs.yml`. **Show jobs** surfaced the job *“Compile from the template”*, annotated *“From diagrams/azure-devops-pipeline/example 1/templates/build-jobs.yml: edit it there.”* Right-clicking that job the context menu offered **nothing at all**. Selecting it, the Property Grid showed its Name, Display name, Kind and Depends-on rows, each non-editable with the reason *“This comes from diagrams/azure-devops-pipeline/example 1/templates/build-jobs.yml…”* — naming the template file, not a bare greyed box. (The repository-resource template `deploy-stages.yml@shared` also renders as a dashed indeterminate box saying how many stages run is decided when the pipeline runs — the same refuse-rather-than-guess principle.)
 
 ## A map authored in onlinewardleymaps.com opens looking like the same map (wardley-map, task 26)
 
@@ -1310,7 +1310,7 @@ space, which is one candidate to rule out.
 - **Preconditions**: backend + client running; `src/examples/` added as a project.
 - **Actions**: open `diagrams/wardley-map/example 1/tea.adp` (nested under `tea.owm` in the
   explorer) in a diagram tab; look at the Toolbox panel. Repeat for
-  `diagrams/azure-pipeline/example 1/multi-stage.adp`.
+  `diagrams/azure-devops-pipeline/example 1/multi-stage.adp`.
 - **Expected**: the wardley toolbox lists its eight entries (Component, Anchor, Market,
   Ecosystem, Submap, Pipeline, Note, Annotation) and the azure-pipeline toolbox lists that
   module's entries - not the "Open a diagram" placeholder. Once this passes, retake
@@ -1348,7 +1348,7 @@ space, which is one candidate to rule out.
 ## Every helm node kind navigates on double-click (helm-charts, task 7.4)
 
 - **Preconditions**: backend + client running; `src/examples/` added as a project.
-- **Actions**: open `diagrams/helm-charts/nginx/helm-chart.adp`; double-click, in turn: the
+- **Actions**: open `diagrams/helm-chart/nginx/helm-chart.adp`; double-click, in turn: the
   chart node, `values.yaml`, `values-prod.yaml`, a template, the `_helpers.tpl` partial, the
   `charts/common` subchart, and the `Chart.lock` node; then double-click the `cache`
   dependency node.
@@ -1361,7 +1361,7 @@ space, which is one candidate to rule out.
 ## A helm reposition lands in the .adp, survives a reopen, and undoes byte-for-byte (helm-charts, task 7.4)
 
 - **Preconditions**: backend + client running; `src/examples/` added as a project;
-  `diagrams/helm-charts/hello-world/helm-chart.adp` unmodified (one MIME line).
+  `diagrams/helm-chart/hello-world/helm-chart.adp` unmodified (one MIME line).
 - **Actions**: open the diagram; drag the chart node somewhere new; inspect the `.adp` in a
   text editor; close and reopen the diagram tab; press the undo shortcut; inspect the `.adp`
   again; run `git status` over the example.
@@ -2292,7 +2292,7 @@ remains for eyes is the styling and the feel. One signed-in session, `src/exampl
 ### A folder's colour is right before it is opened
 
 - **Actions**: open `src/examples/` fresh; look at `diagrams/ansible-structure/` and
-  `diagrams/helm-charts/` corpora folders WITHOUT expanding them.
+  `diagrams/helm-chart/` corpora folders WITHOUT expanding them.
 - **Expected**: a folder whose registration declares a folder subject shows the registered
   colour immediately - not only after expanding it. Guarded by
   `ListChildren_AFolderHoldingAFolderSubjectRegistration_IsRegistered_BeforeItIsEverExpanded`.
@@ -2905,7 +2905,7 @@ whether real glyphs fit. That half is the browser's, and it is this entry.
   2. `diagrams/c4/industrial-plant/architecture/`: all five `bottling-mes*.adp` views that draw
      elements (`mes-containers` and `plant-deployment` are the ones that failed)
   3. `diagrams/shacl/w3c-shacl/spec-examples.adp`
-  4. `diagrams/azure-pipeline/example 1/edge-indentation.adp`, the task 17 stage name
+  4. `diagrams/azure-devops-pipeline/example 1/edge-indentation.adp`, the task 17 stage name
 - **Expected**: 0 anchor mismatches, 0 overlaps, and nothing `outside` except a C4 boundary's
   name, which is declared `placement: "above"` its dashed frame. A long C4 description wraps
   inside its card, a long type line and a long SHACL summary end in `…`, and SHACL row paths
@@ -3331,7 +3331,7 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
 
 **Why this is a browser pass and not a test:** jsdom applies no CSS and lays out no text, so none of the rows below - a fill a stylesheet paints, a tooltip, a label's alignment, a drag that writes a date, the ruler pinned to the view - is evidenced by the module's own suites. Requirements 16.1 and 16.2.
 
-- **Preconditions**: a locally running developer build ("developer session" in the header), signed in with the checked-in placeholder. A **copy** of `src/diagrams/gartner-hypecycle-graph/examples/technology-trends/` (the `.adp` and the `.ghg`) added as a project - the rows below edit the document. Open `technology-trends.ghg` from Hierarchy. Before recording a failed row, check the origin still answers (`fetch('/favicon.ico')` settles in milliseconds). Read positions again before each gesture, since a theme or viewport change re-fits the canvas.
+- **Preconditions**: a locally running developer build ("developer session" in the header), signed in with the checked-in placeholder. A **copy** of `src/diagrams/gartner-hype-cycle-graph/examples/technology-trends/` (the `.adp` and the `.ghg`) added as a project - the rows below edit the document. Open `technology-trends.ghg` from Hierarchy. Before recording a failed row, check the origin still answers (`fetch('/favicon.ico')` settles in milliseconds). Read positions again before each gesture, since a theme or viewport change re-fits the canvas.
 - **Rows**:
   1. **Banner and chevrons, every phase count, both themes.** Set one trend's Phases slider to each of its four stops: the banner shows exactly that many phases, always the earliest, and ends in its point after the last. Read each segment's **computed** fill: light `#f7e7a1`, `#dfe3e8`, `#f6c99a`, `#cde8a8` with chevrons `#475569`; dark `#6b5a17`, `#475569`, `#7c4a1c`, `#3f6212` with chevrons `#e2e8f0`.
   2. **Tooltips.** Rest the pointer on each phase: Peak of Inflated Expectations, Trough of Disillusionment, Slope of Enlightenment, Plateau of Productivity.

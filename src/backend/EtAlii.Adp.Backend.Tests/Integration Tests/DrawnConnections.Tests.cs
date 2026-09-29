@@ -1,14 +1,14 @@
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.AnsibleStructure;
-using EtAlii.Adp.Diagram.AzurePipeline;
+using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 using EtAlii.Adp.Diagram.C4;
-using EtAlii.Adp.Diagram.CausalLoop;
+using EtAlii.Adp.Diagram.CausalLoopDiagram;
 using EtAlii.Adp.Diagram.Databricks;
 using EtAlii.Adp.Diagram.DependencyGraph;
 using EtAlii.Adp.Diagram.DotNetDependencyGraph;
 using EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 using EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
-using EtAlii.Adp.Diagram.HelmCharts;
+using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
@@ -103,14 +103,14 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         // a job's steps only while the job is too. So every stage and every job now drawn is opened, and
         // the helper calls this again with what that revealed - without it the job graph's arrows and
         // every step would never be visited at all.
-        new("azure-pipeline", new(
+        new("azure-devops-pipeline", new(
             [PipelineElementMapper.EdgeType],
             [PipelineElementMapper.StageType, PipelineElementMapper.JobType, PipelineElementMapper.StepType, PipelineElementMapper.TemplateType]),
             ExpandViews: ExpandPipelineViews),
         new("c4", new(
             [C4ElementMapper.RelationshipType],
             [C4ElementMapper.NodeType, C4ElementMapper.BoundaryType, C4ElementMapper.ViewType])),
-        new("causal-loop", new(
+        new("causal-loop-diagram", new(
             [CausalLoopElementMapper.LinkType],
             [CausalLoopElementMapper.VariableType, CausalLoopElementMapper.LoopType])),
         new("databricks", new(
@@ -125,10 +125,10 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("functional-decomposition-graph", new(
             [FdgElementMapper.UiChildType, FdgElementMapper.OwnsActionType, FdgElementMapper.OwnsDataType, FdgElementMapper.OwnsFunctionType, FdgElementMapper.ShowsType],
             [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType])),
-        new("gartner-hypecycle-graph", new(
+        new("gartner-hype-cycle-graph", new(
             [GhgElementMapper.InfluenceType],
             [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType])),
-        new("helm-charts", new(
+        new("helm-chart", new(
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),
         new("mindmap", new(

@@ -329,7 +329,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **`modeOverrides`** replace parts of the definition while a mode is active, merged shallowly as the runtime's `definitionOverrides` are and beneath them. It is how a mode switches off what does not make sense in it: the hype cycle's compact mode redeclares its trend type with `sizing: "model"`, `draggable: false` and no draggable boundaries, sets `dragging: "disabled"`, and declares `chrome: { rulers: [] }`. `layout` itself cannot be overridden, and the validator checks each mode's merged definition as it checks the base.
 
-**A mode that places by the whole document needs the whole document.** A module whose backend culls to the viewport reports an unbounded view while such a mode is on, as the [hype cycle graph](../src/diagrams/gartner-hypecycle-graph/client/GhgCanvas.tsx) does on `layout-mode-changed`; otherwise the packing is computed over whatever is on screen and repacks as the reader pans.
+**A mode that places by the whole document needs the whole document.** A module whose backend culls to the viewport reports an unbounded view while such a mode is on, as the [hype cycle graph](../src/diagrams/gartner-hype-cycle-graph/client/GhgCanvas.tsx) does on `layout-mode-changed`; otherwise the packing is computed over whatever is on screen and repacks as the reader pans.
 
 **`snapToStep(value, step)` is the one rounding rule for a lattice**, halves away from zero and never negative zero - the rule a declared `snap` drags by, and the one the backend persists a row with. A module that needs a row index for an id divides it back out, `snapToStep(y, ROW_HEIGHT) / ROW_HEIGHT`, rather than rounding again; the dependency graph and the timeline each had their own copy until `client-centralization` task 9.
 
@@ -573,7 +573,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 **Its shape.** `useCanvasRefusal()` returns two functions: `attempted()` clears the line, as sending anything does, and `refuse(message)` shows the message. The return has no type name of its own, so a module reads its two members without naming one.
 
-Source: [`src/diagrams/causal-loop/client/CausalLoopCanvas.tsx`](../src/diagrams/causal-loop/client/CausalLoopCanvas.tsx)
+Source: [`src/diagrams/causal-loop-diagram/client/CausalLoopCanvas.tsx`](../src/diagrams/causal-loop-diagram/client/CausalLoopCanvas.tsx)
 
 ```tsx
   // The one refusal this canvas decides on the client, before anything is sent; every other refusal
