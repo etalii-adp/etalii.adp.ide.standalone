@@ -153,5 +153,5 @@ Because the third case shows the list is a moving target, the requirements below
 
 ### Usability
 
-- Ctrl+click and rubber-band selection are what users expect from a diagram editor; this feature adds no vocabulary a user has to learn.
+- Ctrl+click and rubber-band selection are what users expect from a diagram; this feature adds no vocabulary a user has to learn.
 - The grid never lies about a shared value: a differing value is shown as differing, never as one member's value standing in for all.
