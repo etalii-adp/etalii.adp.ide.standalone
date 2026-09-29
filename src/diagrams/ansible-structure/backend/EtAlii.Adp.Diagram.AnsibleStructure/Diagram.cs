@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `ansible/structure`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `ansible/structure`.</summary>
 /// <remarks>
 /// Two declarations here are unusual, and both are deliberate.
 /// <para>
@@ -26,7 +26,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition AnsibleStructure { get; } = new(
         new DiagramOrigin("ansible", "structure"),
-        "Ansible project structure (read-only)",
+        "Ansible project structure",
         "What runs what, and where a value comes from: playbooks, roles, inventories and the "
         + "include, import and dependency edges between them, drawn from the folder as it is.",
         Icon: "mdi-sitemap",

@@ -2,7 +2,7 @@ using EtAlii.Adp.Documents;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `gartner/hypecycle-graph`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `gartner/hypecycle-graph`.</summary>
 /// <remarks>
 /// <b>Without this class the module never reaches the diagram catalog</b>, and nothing says so:
 /// discovery simply finds no <c>Definitions</c> to read. So the module's own test names this origin

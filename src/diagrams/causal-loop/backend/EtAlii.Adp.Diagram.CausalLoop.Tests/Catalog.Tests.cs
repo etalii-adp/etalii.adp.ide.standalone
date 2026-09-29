@@ -4,7 +4,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Diagram.CausalLoop.Tests;
 
 /// <summary>
-/// This module's row in <c>docs/diagrams.md</c> (causal-loop-diagram Requirement 12).
+/// This module's row in <c>docs/tools.md</c> (causal-loop-diagram Requirement 12).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -27,13 +27,13 @@ public class CatalogTests
         get
         {
             var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !File.Exists(IoPath.Combine(directory.FullName, "docs", "diagrams.md")))
+            while (directory is not null && !File.Exists(IoPath.Combine(directory.FullName, "docs", "tools.md")))
             {
                 directory = directory.Parent;
             }
 
-            Assert.SkipWhen(directory is null, "The repository's docs/diagrams.md was not found from the test output.");
-            return IoPath.Combine(directory.FullName, "docs", "diagrams.md");
+            Assert.SkipWhen(directory is null, "The repository's docs/tools.md was not found from the test output.");
+            return IoPath.Combine(directory.FullName, "docs", "tools.md");
         }
     }
 

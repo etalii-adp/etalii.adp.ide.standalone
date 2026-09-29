@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.UmlClass;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `uml/class`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `uml/class`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `azure-devops/pipeline`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `azure-devops/pipeline`.</summary>
 public static class Diagram
 {
     /// <summary>

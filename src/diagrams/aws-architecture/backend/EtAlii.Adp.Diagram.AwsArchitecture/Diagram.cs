@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.AwsArchitecture;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `aws/architecture`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `aws/architecture`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

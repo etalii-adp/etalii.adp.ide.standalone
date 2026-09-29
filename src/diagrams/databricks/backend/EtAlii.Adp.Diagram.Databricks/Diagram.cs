@@ -2,7 +2,7 @@ using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
-/// The Databricks family's three diagram types, cataloged in docs/diagrams.md as
+/// The Databricks family's three diagram types, cataloged in docs/tools.md as
 /// <c>databricks/bundle</c>, <c>databricks/job</c> and <c>databricks/pipeline</c>.
 /// </summary>
 /// <remarks>
@@ -17,7 +17,7 @@ public static class Diagram
     /// <summary>The bundle: what a databricks.yml deploys, where, and with what overrides.</summary>
     public static DiagramDefinition Bundle { get; } = new(
         ServiceCollectionAddDatabricksExtension.BundleOrigin,
-        "Databricks Bundle",
+        "Databricks bundle",
         "What an asset bundle deploys: its resources, its variables, and the targets each lands on.",
         Icon: "mdi-package-variant-closed",
         Extension: ".yml",
@@ -28,7 +28,7 @@ public static class Diagram
     /// <summary>The job: a task DAG with conditions, outcomes and cluster bindings.</summary>
     public static DiagramDefinition Job { get; } = new(
         ServiceCollectionAddDatabricksExtension.JobOrigin,
-        "Databricks Job",
+        "Databricks job",
         "A job's tasks and what each waits for - conditions, outcomes and the compute they run on.",
         Icon: "mdi-transit-connection-horizontal",
         Extension: ".yml",
@@ -37,7 +37,7 @@ public static class Diagram
     /// <summary>The declarative pipeline: sources through transformation to a catalog target.</summary>
     public static DiagramDefinition Pipeline { get; } = new(
         ServiceCollectionAddDatabricksExtension.PipelineOrigin,
-        "Databricks Pipeline",
+        "Databricks pipeline",
         "A declarative pipeline's flow: source libraries through the pipeline into its catalog target.",
         Icon: "mdi-pipe",
         Extension: ".json",

@@ -2,7 +2,7 @@ using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>
-/// The causal loop diagram, cataloged in docs/diagrams.md as <c>systems/causal-loop-diagram</c>.
+/// The causal loop diagram, cataloged in docs/tools.md as <c>systems/causal-loop-diagram</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -40,7 +40,7 @@ public static class Diagram
     /// <summary>The causal loop diagram: what feeds back on what, and which cycles that makes.</summary>
     public static DiagramDefinition CausalLoop { get; } = new(
         ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin,
-        "Causal Loop Diagram",
+        "Causal loop diagram",
         "How the parts of a system feed back on each other: variables joined by polarised causal links, with the loops they form identified as reinforcing or balancing.",
         Icon: "mdi-sync-circle",
         Extension: DocumentExtension,

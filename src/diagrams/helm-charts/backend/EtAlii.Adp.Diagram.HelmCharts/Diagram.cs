@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.HelmCharts;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `helm/chart`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `helm/chart`.</summary>
 /// <remarks>
 /// The second folder-subject type, and deliberately shaped like the first:
 /// <para>
@@ -26,7 +26,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition HelmCharts { get; } = new(
         new DiagramOrigin("helm", "chart"),
-        "Helm chart anatomy (read-only)",
+        "Helm chart",
         "What a chart is made of and how it hangs together: metadata, the values layering, "
         + "templates and the kinds they render, declared dependencies and whether charts/ "
         + "actually answers them - drawn from the folder as it is.",

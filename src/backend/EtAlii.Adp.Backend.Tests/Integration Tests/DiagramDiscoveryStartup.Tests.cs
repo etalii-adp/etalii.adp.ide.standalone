@@ -256,7 +256,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         var missing = catalog.All
             .Where(definition => definition.Build is null)
             .Where(definition => !cataloged.ContainsKey(definition.Origin.Key))
-            .Select(definition => $"{definition.Origin.Key}: not cataloged in docs/diagrams.md")
+            .Select(definition => $"{definition.Origin.Key}: not cataloged in docs/tools.md")
             .ToList();
 
         // Assert.
@@ -277,7 +277,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
             .Where(definition => cataloged.TryGetValue(definition.Origin.Key, out var expected)
                 && !string.Equals(definition.Title, expected, StringComparison.Ordinal))
             .Select(definition =>
-                $"{definition.Origin.Key}: definition title '{definition.Title}' does not match docs/diagrams.md's '{cataloged[definition.Origin.Key]}'")
+                $"{definition.Origin.Key}: definition title '{definition.Title}' does not match docs/tools.md's '{cataloged[definition.Origin.Key]}'")
             .ToList();
 
         // Assert.
@@ -288,7 +288,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
 
     /// <summary>
     /// The diagram catalog table, origin tag to Diagram-column title, read from the repository's
-    /// own docs/diagrams.md - the source of truth the module doc-comments already point at.
+    /// own docs/tools.md - the source of truth the module doc-comments already point at.
     /// </summary>
     private static IReadOnlyDictionary<string, string> CatalogedTitles()
     {
@@ -353,13 +353,13 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
         {
-            var candidate = IoPath.Combine(directory.FullName, "docs", "diagrams.md");
+            var candidate = IoPath.Combine(directory.FullName, "docs", "tools.md");
             if (File.Exists(candidate))
             {
                 return candidate;
             }
         }
 
-        throw new FileNotFoundException("docs/diagrams.md could not be found from " + AppContext.BaseDirectory);
+        throw new FileNotFoundException("docs/tools.md could not be found from " + AppContext.BaseDirectory);
     }
 }

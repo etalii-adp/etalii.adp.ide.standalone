@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `freeplane/mindmap`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `freeplane/mindmap`.</summary>
 public static class Diagram
 {
     /// <summary>The Freeplane file extension; the body of a mindmap lives in a `.mm` sibling of its `.adp` registration (Requirement 2.2).</summary>
@@ -14,7 +14,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition Mindmap { get; } = new(
         new DiagramOrigin("freeplane", "mindmap"),
-        "Mind map (radial/hierarchical, single central topic)",
+        "Mind map",
         "Ideas branching from one central topic, for thinking a subject through rather than specifying it.",
         Icon: "mdi-family-tree",
         Extension: DocumentExtension,

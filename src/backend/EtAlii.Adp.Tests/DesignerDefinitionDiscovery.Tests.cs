@@ -21,7 +21,7 @@ public class DesignerDefinitionDiscoveryTests
         // Act.
         var result = DesignerDefinitionDiscovery.Discover(application);
 
-        // Assert: no designer module exists yet (src/designers/README.md).
+        // Assert: no designer module exists yet (src/designers/readme.md).
         Assert.Empty(result);
     }
 

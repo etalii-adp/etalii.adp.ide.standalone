@@ -93,7 +93,7 @@ Full rules and reasoning, including the source that carried three conflicting li
 
 ## Diagram type catalog
 
-Move a diagram type's row in `docs/diagrams.md` as its state changes, with the state icon and the `<vendor>/<diagram-type>` origin tag.
+Move a diagram type's row in `docs/tools.md` as its state changes, with the state icon and the `<vendor>/<diagram-type>` origin tag.
 
 Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
 

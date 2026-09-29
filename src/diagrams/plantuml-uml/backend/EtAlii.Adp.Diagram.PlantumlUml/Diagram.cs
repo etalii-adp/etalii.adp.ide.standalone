@@ -1,14 +1,14 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.PlantumlUml;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `plantuml/uml`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `plantuml/uml`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =
     [
         new(
             new DiagramOrigin("plantuml", "uml"),
-            "Full UML set (see section 1)",
+            "UML diagram",
             "UML written as PlantUML text and rendered from it.",
             Icon: "mdi-drawing"),
     ];

@@ -59,7 +59,7 @@ namespace EtAlii.Adp.Repository.Tests;
 /// exclusion still excludes, so it cannot quietly become an exclusion of everything.
 /// </para>
 /// <para>
-/// <b><c>docs/diagrams.md</c> joined the list on 2026-09-10, and HTML links with it.</b> Until
+/// <b><c>docs/tools.md</c> joined the list on 2026-09-10, and HTML links with it.</b> Until
 /// then this guard read only markdown <c>[text](target)</c> links in five documents, and the
 /// catalog is an HTML table of <c>&lt;a href&gt;</c> links. When archived specifications were
 /// deleted from the tree, five documentation links went dead: this guard saw one, the markdown
@@ -89,8 +89,9 @@ public partial class DocumentationLinksTests
         "docs/dependencies.md",
         "docs/creating-a-diagram-module.md",
         "docs/creating-an-editor-module.md",
+        "docs/creating-a-designer-module.md",
         "docs/screenshots/readme.md",
-        "docs/diagrams.md",
+        "docs/tools.md",
         "docs/architecture.md",
         "docs/diagram-module-client-api.md",
         "docs/solution-structure.md",
@@ -352,7 +353,7 @@ public partial class DocumentationLinksTests
 
     /// <summary>
     /// An HTML link or image target written inside a markdown document: the quoted value of an
-    /// <c>href</c> or <c>src</c> attribute. Added because <c>docs/diagrams.md</c>'s catalog is an
+    /// <c>href</c> or <c>src</c> attribute. Added because <c>docs/tools.md</c>'s catalog is an
     /// HTML table, whose links the markdown pattern cannot see - see the remarks above.
     /// </summary>
     [GeneratedRegex(@"\b(?:href|src)\s*=\s*[""'](?<target>[^""']+)[""']", RegexOptions.IgnoreCase)]

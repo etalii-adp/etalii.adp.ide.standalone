@@ -4,7 +4,7 @@ using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>
-/// The RDF family's anchor type, cataloged in docs/diagrams.md as <c>w3c/rdf</c>. The sibling
+/// The RDF family's anchor type, cataloged in docs/tools.md as <c>w3c/rdf</c>. The sibling
 /// readings - ontology, scheme, shapes - join this array as their specifications land, sharing
 /// the store, the parser and the writer, and differing only in what each projects.
 /// </summary>
@@ -19,7 +19,7 @@ public static class Diagram
     /// <summary>The data graph: what an RDF file states, read straight from its own serialization.</summary>
     public static DiagramDefinition Rdf { get; } = new(
         ServiceCollectionAddRdfExtension.RdfOrigin,
-        "RDF Graph",
+        "RDF graph",
         "What an RDF file states: its resources, their relationships and their values, straight from Turtle or N-Triples.",
         Icon: "mdi-graph-outline",
         Extension: ".ttl",
@@ -34,7 +34,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition Owl { get; } = new(
         ServiceCollectionAddRdfExtension.OwlOrigin,
-        "OWL Ontology",
+        "OWL ontology",
         "An OWL 2 ontology's classes, hierarchy, properties and restrictions - what the file asserts, not what a reasoner would infer.",
         Icon: "mdi-shape-outline",
         Extension: ".ttl",
@@ -55,7 +55,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition Skos { get; } = new(
         ServiceCollectionAddSkosExtension.SkosOrigin,
-        "SKOS Concept Scheme",
+        "SKOS concept scheme",
         "A thesaurus or controlled vocabulary: concepts under their schemes, broader and narrower drawn as a hierarchy, related links across it.",
         Icon: "mdi-file-tree",
         Extension: ".ttl",
@@ -78,7 +78,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition Shacl { get; } = new(
         ServiceCollectionAddShaclExtension.ShaclOrigin,
-        "SHACL Shapes",
+        "SHACL shapes",
         "The constraints a shapes graph states: node shapes as cards, their property constraints as rows, and what each one targets - drawn, never executed.",
         Icon: "mdi-check-decagram-outline",
         Extension: ".ttl",

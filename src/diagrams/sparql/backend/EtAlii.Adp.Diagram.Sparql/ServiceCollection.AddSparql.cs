@@ -19,7 +19,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </remarks>
 public static class ServiceCollectionAddSparqlExtension
 {
-    /// <summary>The origin, as docs/diagrams.md writes it.</summary>
+    /// <summary>The origin, as docs/tools.md writes it.</summary>
     public static readonly DiagramOrigin SparqlOrigin = new("w3c", "sparql");
 
     public static IServiceCollection AddSparql(this IServiceCollection services)

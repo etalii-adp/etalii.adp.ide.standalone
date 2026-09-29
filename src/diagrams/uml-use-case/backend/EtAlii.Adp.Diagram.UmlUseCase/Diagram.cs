@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.UmlUseCase;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `uml/use-case`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `uml/use-case`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

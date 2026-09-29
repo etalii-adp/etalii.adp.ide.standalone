@@ -2,7 +2,7 @@
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
 /// <summary>
-/// This diagram type's identity, cataloged in docs/diagrams.md as `dotnet/dependency-graph`.
+/// This diagram type's identity, cataloged in docs/tools.md as `dotnet/dependency-graph`.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -43,7 +43,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition DependencyGraph { get; } = new(
         new DiagramOrigin("dotnet", "dependency-graph"),
-        ".NET dependency graph (read-only)",
+        ".NET dependency graph",
         "Which projects a solution builds, which NuGet packages they consume, and every "
         + "reference between them - read from the project files rather than drawn by hand.",
         Icon: "mdi-file-tree-outline",

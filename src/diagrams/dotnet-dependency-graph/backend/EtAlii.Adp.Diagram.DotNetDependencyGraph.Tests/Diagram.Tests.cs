@@ -16,7 +16,7 @@ public class DiagramTests
     public void TheDefinition_IsTheOriginTheCatalogNames()
     {
         // Arrange, act and assert.
-        // docs/diagrams.md carries this exact origin; the .adp's first line is its MIME form.
+        // docs/tools.md carries this exact origin; the .adp's first line is its MIME form.
         Assert.Equal("dotnet/dependency-graph", Diagram.DependencyGraph.Origin.Key);
         Assert.Equal("dotnet/dependency-graph", Diagram.DependencyGraph.Origin.MimeType);
     }

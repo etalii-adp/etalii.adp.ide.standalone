@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 /// </summary>
 public static class ServiceCollectionAddShaclExtension
 {
-    /// <summary>The shapes reading's origin, as docs/diagrams.md writes it.</summary>
+    /// <summary>The shapes reading's origin, as docs/tools.md writes it.</summary>
     public static readonly DiagramOrigin ShaclOrigin = new("w3c", "shacl");
 
     public static IServiceCollection AddShacl(this IServiceCollection services)

@@ -13,7 +13,7 @@ const MODULE = join(__dirname, "..");
 const REPOSITORY = join(MODULE, "..", "..", "..");
 
 function catalogRow(): string {
-  const rows = readFileSync(join(REPOSITORY, "docs", "diagrams.md"), "utf8")
+  const rows = readFileSync(join(REPOSITORY, "docs", "tools.md"), "utf8")
     .split(/\r?\n/)
     .filter((line) => line.includes("gartner/hypecycle-graph</code>"));
   expect(rows, "the catalog has exactly one row naming this type's origin").toHaveLength(1);

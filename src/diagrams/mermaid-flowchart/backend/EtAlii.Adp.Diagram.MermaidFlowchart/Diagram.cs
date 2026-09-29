@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.MermaidFlowchart;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `mermaid/flowchart`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `mermaid/flowchart`.</summary>
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

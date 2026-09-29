@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.CausalLoop;
 public static class ServiceCollectionAddCausalLoopExtension
 {
     /// <summary>
-    /// The origin, as docs/diagrams.md writes it: <c>causal</c>, and with the <c>-diagram</c>
+    /// The origin, as docs/tools.md writes it: <c>causal</c>, and with the <c>-diagram</c>
     /// suffix, both deliberate and both confirmed. See <see cref="Diagram"/>.
     /// </summary>
     public static readonly DiagramOrigin CausalLoopOrigin = new("systems", "causal-loop-diagram");

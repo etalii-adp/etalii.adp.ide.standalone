@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </remarks>
 public static class ServiceCollectionAddDatabricksExtension
 {
-    /// <summary>The family's three origins, as docs/diagrams.md writes them.</summary>
+    /// <summary>The family's three origins, as docs/tools.md writes them.</summary>
     public static readonly DiagramOrigin BundleOrigin = new("databricks", "bundle");
 
     /// <inheritdoc cref="BundleOrigin" />

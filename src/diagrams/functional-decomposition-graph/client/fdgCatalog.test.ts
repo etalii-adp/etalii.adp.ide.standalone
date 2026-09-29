@@ -9,7 +9,7 @@ import { registrations } from "./register";
  * registration name ONE origin - asserted from the three files, not read off the page by eye.
  *
  * An `.adp` names its origin on its first line, the shell opens a canvas by matching that line, and
- * `docs/diagrams.md` tells a reader which origin a type has. Any two of them can drift without the
+ * `docs/tools.md` tells a reader which origin a type has. Any two of them can drift without the
  * third noticing: a renamed mime would still register, and the example would stop opening.
  */
 
@@ -18,7 +18,7 @@ const REPOSITORY = join(MODULE, "..", "..", "..");
 
 /** The catalog's row for this type: the one line whose origin cell names it. */
 function catalogRow(): string {
-  const rows = readFileSync(join(REPOSITORY, "docs", "diagrams.md"), "utf8")
+  const rows = readFileSync(join(REPOSITORY, "docs", "tools.md"), "utf8")
     .split(/\r?\n/)
     .filter((line) => line.includes("functional-decomposition-graph</code>"));
   expect(rows, "the catalog has exactly one row naming this type's origin").toHaveLength(1);

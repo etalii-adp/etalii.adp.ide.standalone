@@ -11,7 +11,7 @@ namespace EtAlii.Adp;
 /// </summary>
 /// <remarks>
 /// The designer family's slot in module discovery, empty until the first designer module
-/// arrives (src/designers/README.md). It is here so that module needs no change to discovery,
+/// arrives (src/designers/readme.md). It is here so that module needs no change to discovery,
 /// only a <c>Designer</c> class of its own; what the family then needs beyond the scan -
 /// coherence rules, a catalog, sessions - comes with it, as it did for the editor family.
 /// </remarks>

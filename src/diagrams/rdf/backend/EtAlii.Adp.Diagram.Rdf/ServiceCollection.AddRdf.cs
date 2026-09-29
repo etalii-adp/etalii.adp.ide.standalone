@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </remarks>
 public static class ServiceCollectionAddRdfExtension
 {
-    /// <summary>The family's anchor origin, as docs/diagrams.md writes it.</summary>
+    /// <summary>The family's anchor origin, as docs/tools.md writes it.</summary>
     public static readonly DiagramOrigin RdfOrigin = new("w3c", "rdf");
 
     /// <summary>The ontology reading's origin - the first sibling over the same engine.</summary>

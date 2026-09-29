@@ -1,7 +1,7 @@
 using EtAlii.Adp.Documents;
 namespace EtAlii.Adp.Diagram.Timeline;
 
-/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `generic/timeline`.</summary>
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `generic/timeline`.</summary>
 public static class Diagram
 {
     /// <summary>
@@ -33,7 +33,7 @@ public static class Diagram
     /// </summary>
     public static DiagramDefinition Timeline { get; } = new(
         new DiagramOrigin("generic", "timeline"),
-        "Timeline",
+        "Timeline diagram",
         "When things happen and for how long - periods and moments on rows along a time axis, connected however the author means it.",
         Icon: "mdi-chart-timeline",
         Extension: DocumentExtension,

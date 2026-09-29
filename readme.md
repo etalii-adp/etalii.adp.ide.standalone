@@ -68,7 +68,7 @@ To run the repository's own gates — backend tests, style, client tests, typech
 
 - **[The architecture](docs/architecture.md)** — what ADP is and how its parts talk: one process serving the client and the gRPC endpoint, the two call legs that stand in for bidirectional streaming, where a diagram lives, and what the canvas actually is.
 - **[The solution structure](docs/solution-structure.md)** — where the code is: the folders under `src/`, how the solution's projects split, which project owns which concern, and the counting traps that make a plausible wrong answer about all of it.
-- **[The diagram type catalog](docs/diagrams.md)** — every diagram type ADP could support, from merely identified through specified to implemented, with the state of each tracked as the repository moves.
+- **[The diagram type catalog](docs/tools.md)** — every diagram type ADP could support, from merely identified through specified to implemented, with the state of each tracked as the repository moves.
 - **[Creating a diagram module](docs/creating-a-diagram-module.md)** — the developer walkthrough for adding a new diagram type, traced against a real shipped module.
 - **[Creating an editor module](docs/creating-an-editor-module.md)** — the same for the text-editor plugin family.
 - **[Dependencies](docs/dependencies.md)** — what ADP is built on: every direct dependency with its version, the reason it is there, and its license.
