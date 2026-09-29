@@ -44,8 +44,8 @@ export interface ToolPanelRegistration {
 /**
  * What a diagram, designer or editor module's `client/register.ts` exports.
  *
- * The shell finds these by scanning every `src/diagrams/<type>/client/register.ts`,
- * `src/designers/<type>/client/register.ts` and `src/editors/<id>/client/register.ts` - it holds
+ * The shell finds these by scanning every module's `client/register.ts` under `src/diagrams`,
+ * `src/designers` and `src/editors` - it holds
  * no list of tool types, exactly as the backend holds none and discovers `Diagram.Definitions`
  * and `Editor.Definitions` by scanning its own assemblies. Adding a tool type means adding a
  * module, not editing the shell.

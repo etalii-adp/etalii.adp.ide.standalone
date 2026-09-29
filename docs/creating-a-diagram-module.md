@@ -2,7 +2,7 @@
 
 How to give ADP a new diagram type. This is a walkthrough of a path that already exists — the repository ships dozens of diagram modules under [`src/diagrams/`](../src/diagrams/) — traced against one real, complete module: **timeline** (`src/diagrams/timeline/`, the `generic/timeline` type). Every section names timeline's actual files, so every abstract statement has a concrete neighbour you can open.
 
-Two companion documents: [creating an editor module](creating-an-editor-module.md) covers the second plugin family, which shares most of this mechanism; [the diagram catalog](tools.md) tracks every type ADP could support and where each one stands.
+Three companion documents: [creating an editor module](creating-an-editor-module.md) covers the second plugin family, which shares most of this mechanism; [creating a designer module](creating-a-designer-module.md) is the placeholder for the third, which has no module yet; [the tool type catalog](tools.md) tracks every tool type ADP could support and where each one stands.
 
 The rules this document leans on live where they already live — [CLAUDE.md](../CLAUDE.md) for the repository's working rules, [`tech.md`](../.spec-workflow/steering/tech.md) and [`structure.md`](../.spec-workflow/steering/structure.md) for the architecture — and are linked rather than restated, because two copies of one rule drift.
 
@@ -191,4 +191,4 @@ The scale of what that convention holds up is worth knowing before deciding it i
 
 ## The catalog, and staying true
 
-`docs/tools.md` is how "which diagram types does ADP have?" is answered, and CLAUDE.md's [Diagram type catalog](../CLAUDE.md#diagram-type-catalog) rule requires its row to move with your module's state — add or update the row as the type is identified, specified, implemented. And this walkthrough carries the same duty in return: a change that moves a touch point named here updates this document in the same change.
+`docs/tools.md` is how "which tool types does ADP have?" is answered, and CLAUDE.md's [Tool type catalog](../CLAUDE.md#tool-type-catalog) rule requires its row to move with your module's state — add or update the row as the type is identified, specified, implemented. And this walkthrough carries the same duty in return: a change that moves a touch point named here updates this document in the same change.

@@ -1,5 +1,9 @@
 # EtAlii.Adp
 
+## Vocabulary
+
+**ADP's words are defined once, in [ADP terminology](https://github.com/etalii-adp/etalii.adp/blob/develop/docs/terminology.md), and used as defined in code, text and documentation alike.** Everything ADP offers is a **tool**, of exactly one of three kinds: a **diagram** (elements and the relations between them), a **designer** (a form-based layout with nothing connected) or an **editor** (typing text is the core interaction). A name for something that serves every kind says *tool* (`ToolPanel`, `ToolDefinitionScan`, `docs/tools.md`); a name for one kind says that kind (`DiagramService`, `EditorService`, `DesignerDefinition`). "Designer" means only the form-based kind, never a tool or all tools; the person who specifies a tool type is a **tool engineer**; a diagram type is specified in DISL and the diagrams users create are stored as DID. Platform APIs, third-party names, history and old identifiers still read for compatibility keep their names - the terminology lists them.
+
 ## Asking the user something
 
 **Every question to the user is a selection, never open prose.** Offer the concrete options with enough of each to choose on — what it means, what it costs — and end with an "other" so an answer nobody listed is still available. This holds for agents and for the scrum master alike, and it holds for the small ones: a question worth interrupting someone for is worth the minute it takes to enumerate the answers.
@@ -91,9 +95,9 @@ Test diagram modules against **real published example data**, not hand-written t
 
 Full rules and reasoning, including the source that carried three conflicting licence signals at once: [processes.md, *Vendored example data*](.spec-workflow/steering/processes.md#vendored-example-data).
 
-## Diagram type catalog
+## Tool type catalog
 
-Move a diagram type's row in `docs/tools.md` as its state changes, with the state icon and the `<vendor>/<diagram-type>` origin tag.
+Move a tool type's row in `docs/tools.md` as its state changes, with the state icon, its kind (Diagram, Designer or Editor), its display name and the `<vendor>/<type>` origin tag.
 
 Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
 
@@ -112,7 +116,7 @@ Two documents say what the system is and where its code lives, so a session does
 
 ## Documentation refresh
 
-A change that moves a touch point named in `docs/creating-a-diagram-module.md` or `docs/creating-an-editor-module.md` updates that document in the same change; a UI change that makes a `docs/screenshots/` image misleading means retaking it.
+A change that moves a touch point named in `docs/creating-a-diagram-module.md`, `docs/creating-a-designer-module.md` or `docs/creating-an-editor-module.md` updates that document in the same change; a UI change that makes a `docs/screenshots/` image misleading means retaking it.
 
 Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
 

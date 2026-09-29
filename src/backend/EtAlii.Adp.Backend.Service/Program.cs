@@ -84,7 +84,7 @@ var editorDefinitions = EditorDefinitionDiscovery.Discover();
 builder.AddEditorDefinitions(editorDefinitions);
 
 // The designer family's slot: the same walk, which finds no designer until the first designer
-// module arrives (src/designers/readme.md). Nothing registers them yet, so the result is only logged.
+// module arrives (see the readme in src/designers). Nothing registers them yet, so the result is only logged.
 _ = EtAlii.Adp.DesignerDefinitionDiscovery.Discover();
 
 var app = builder.Build();

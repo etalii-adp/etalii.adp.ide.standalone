@@ -1,6 +1,6 @@
 # Tool types
 
-A catalog of the tools EtAlii.Adp offers or could offer: diagrams, designers and editors. The diagram types are adapted from a broader reference overview of software/IT architecture diagram styles, grouped by the methodology/notation family they belong to (where one exists); the designers and the editors follow them. Each entry tracks how far along ADP's own support for it is, alongside the theory and a visual example for the notation itself.
+A catalog of the tools EtAlii.Adp offers or could offer: diagrams, designers and editors. The diagram types are adapted from a broader reference overview of software/IT architecture diagram styles, grouped by the methodology/notation family they belong to (where one exists); designers and editors follow them. Each entry tracks how far along ADP's own support for it is, alongside the theory and a visual example for the notation itself.
 
 **This document is a living catalog — see the note in [CLAUDE.md](../CLAUDE.md) about keeping it updated whenever a new tool type is identified or its state changes.**
 

@@ -55,4 +55,4 @@ For a new editor `foo`:
 3. The session, on `TextFileBuffer`, with tests pinning round-trip shape (copy plain's fixtures approach).
 4. `client/register.ts` matching `editor/foo`, and the panel it mounts.
 5. `examples/` with files the editor is for — seeded into `src/examples/editors/foo/` so the editor appears in the combined showcase project; the two copies are not held in sync afterwards.
-6. No core edits, no shell edits, no catalog row — the diagram catalog tracks diagram types; editors are listed by `src/editors/readme.md`'s own folder.
+6. No core edits, no shell edits; one catalog row — `docs/tools.md` lists every tool type, editors included, with the Kind `Editor` and the origin `editor/foo`.

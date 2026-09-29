@@ -4,7 +4,7 @@
 
 ## What ADP is
 
-ADP — *A Different Perspective* — is a family of specialized, task-tuned diagram, designer and editor experiences, hosted in several IDEs. This repository is the **standalone host**: it opens diagrams from a user's own workspace folder, draws them, and lets them be edited. The diagrams stay plain text files in that folder: diffable, version-controlled, owned by whatever tool already understood their format.
+ADP — *A Different Perspective* — is a family of specialized, task-tuned tools: diagrams, designers and editors, hosted in several IDEs. This repository is the **standalone host**: it opens diagrams from a user's own workspace folder, draws them, and lets them be edited. The diagrams stay plain text files in that folder: diffable, version-controlled, owned by whatever tool already understood their format.
 
 Its reason for existing, and what it is for, are in [`product.md`](../.spec-workflow/steering/product.md). This page does not repeat them.
 

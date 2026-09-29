@@ -11,13 +11,9 @@ import type { ToolPanelRegistration, ToolClientModule } from "./toolPanelRegistr
 const modules = import.meta.glob<ToolClientModule>(
   // Three families, one registry: an editor module's text panel registers exactly as a diagram
   // module's canvas does, keyed by the "editor/<id>" mime the backend resolves for it. The
-  // designer family has no module yet (src/designers/readme.md); its glob matches nothing until
-  // the first one arrives, and needs no edit here when it does.
-  [
-    "../../../../diagrams/*/client/register.ts",
-    "../../../../designers/*/client/register.ts",
-    "../../../../editors/*/client/register.ts",
-  ],
+  // designer family has no module yet (see the readme in src/designers); the pattern matches none
+  // of its modules until the first one arrives, and needs no edit here when it does.
+  "../../../../{diagrams,designers,editors}/*/client/register.ts",
   { eager: true },
 );
 

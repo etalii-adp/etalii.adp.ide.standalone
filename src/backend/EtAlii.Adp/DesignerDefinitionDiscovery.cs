@@ -4,14 +4,14 @@ using Serilog;
 namespace EtAlii.Adp;
 
 /// <summary>
-/// Finds every designer type the application carries, by the same scan the diagram and editor
+/// Finds the designer types the application carries, by the same scan the diagram and editor
 /// families run: in each of the application's own assemblies, a static class named
 /// <c>Designer</c> with a public static <c>Definitions</c> property holding
 /// <see cref="DesignerDefinition"/>s.
 /// </summary>
 /// <remarks>
 /// The designer family's slot in module discovery, empty until the first designer module
-/// arrives (src/designers/readme.md). It is here so that module needs no change to discovery,
+/// arrives (see the readme in src/designers). It is here so that module needs no change to discovery,
 /// only a <c>Designer</c> class of its own; what the family then needs beyond the scan -
 /// coherence rules, a catalog, sessions - comes with it, as it did for the editor family.
 /// </remarks>

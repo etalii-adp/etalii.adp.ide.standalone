@@ -54,9 +54,9 @@ Each diagram capture clicks **Fit to View** after opening (where the toolbar off
 
 ## Not captured, 2026-09-28
 
-Three designers the catalogue lists as Prototype or better have no image, because every example the repository holds renders in a way that would misrepresent the designer rather than show it. Each is a picture to add once its rendering is fixed.
+Three diagram types the catalogue lists as Prototype or better have no image, because every example the repository holds renders in a way that would misrepresent the diagram rather than show it. Each is a picture to add once its rendering is fixed.
 
-| Designer | What the capture showed |
+| Diagram type | What the capture showed |
 |---|---|
 | `c4/dynamic` | An empty canvas under its title, for both `bottling-mes.batch-release.adp` and `courier.parcel-scanned.adp`: no element arrives within 20 seconds. |
 | `c4/deployment` | Every deployment node, infrastructure node and container instance laid out in one flat row with nothing nested, for both `bottling-mes.plant-deployment.adp` and `courier.production.adp`. |

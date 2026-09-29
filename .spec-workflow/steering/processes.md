@@ -929,7 +929,7 @@ That is the same trap as *Provenance is never in the name*, one level up: the pa
 
 A change that makes a document untrue fixes it in the same change. Four artefacts carry that duty explicitly.
 
-- **`docs/tools.md`** catalogs every diagram type ADP could support, and its row moves with the type's state. **State** carries the matching icon: 💡 identified, 📝 specified, ⏸️ to-do, 🛠️ work-in-progress, ⚗️ prototype, ✅ implemented. **Origin** is a MIME-type-style `<architecture-or-vendor>/<diagram-type>` tag (`uml/class`, `c4/context`); for notations with no owning standards body, the tool or author most associated with it serves as the vendor (`freeplane/mindmap`).
+- **`docs/tools.md`** catalogs every tool type ADP could support - diagrams, designers and editors, with each row's kind - and its row moves with the type's state. **State** carries the matching icon: 💡 identified, 📝 specified, ⏸️ to-do, 🛠️ work-in-progress, ⚗️ prototype, ✅ implemented. **Origin** is a MIME-type-style `<architecture-or-vendor>/<diagram-type>` tag (`uml/class`, `c4/context`); for notations with no owning standards body, the tool or author most associated with it serves as the vendor (`freeplane/mindmap`).
 - **`docs/creating-a-diagram-module.md` and `docs/creating-an-editor-module.md`** — a change that moves a touch point either names (a renamed seam, a moved file, a changed registration shape) updates that document in the same change.
 - **`docs/screenshots/`** — a UI change that makes an image misleading means retaking it, following the procedure in that folder's readme.
 - **`.proto` files** are the primary API documentation for the public gRPC contracts and must stay self-explanatory: clear message and field naming, comments for non-obvious constraints.
