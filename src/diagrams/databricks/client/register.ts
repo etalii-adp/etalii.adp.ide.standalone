@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { BundleCanvas } from "./BundleCanvas";
 import { JobCanvas } from "./JobCanvas";
 import { PipelineCanvas } from "./PipelineCanvas";
@@ -12,17 +12,17 @@ import "./databricks.css";
  * diagram types, exactly as the backend holds none and discovers `Diagram.Definitions` by
  * scanning its own assemblies. Adding this family meant adding a module, not editing the shell.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "databricks/bundle",
-    Canvas: BundleCanvas,
+    Panel: BundleCanvas,
   },
   {
     matches: (mimeType) => mimeType === "databricks/job",
-    Canvas: JobCanvas,
+    Panel: JobCanvas,
   },
   {
     matches: (mimeType) => mimeType === "databricks/pipeline",
-    Canvas: PipelineCanvas,
+    Panel: PipelineCanvas,
   },
 ];

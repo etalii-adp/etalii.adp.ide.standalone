@@ -16,7 +16,7 @@ import { useContextConnection } from "@client/shell/context/ContextConnectionPro
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { DependencyElementKind } from "@client/generated/dotnet-dependency-graph_pb";
 import { useDotNetDependencyGraphStream } from "./useDotNetDependencyGraphStream";
 import {
@@ -162,7 +162,7 @@ const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefini
  * position in the registration's `layout:` block - a view arrangement, never a change to the
  * solution, and one undo away like everything else.
  */
-export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
+export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: ToolContentProps) {
   const { model, loading, failed, moveElementTo, reportView } = useDotNetDependencyGraphStream(projectId, path);
 
   // Registered here as well as by the library canvas, because the empty state returns before

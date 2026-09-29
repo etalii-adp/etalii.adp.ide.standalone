@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { HelmCanvas } from "./HelmCanvas";
 import "@client/canvas/canvas.css";
 import "./helm-charts.css";
@@ -8,9 +8,9 @@ import "./helm-charts.css";
  * `src/diagrams/<type>/client/register.ts`, so nothing in the shell names helm - adding a
  * diagram type means adding a module, not editing the shell.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "helm/chart",
-    Canvas: HelmCanvas,
+    Panel: HelmCanvas,
   },
 ];

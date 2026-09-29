@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <!-- EtAlii.Adp carries both halves of the shared discovery infrastructure - 
-         PluginDefinitionScan and the assembly walk (ApplicationAssemblies, moved here from
+         ToolDefinitionScan and the assembly walk (ApplicationAssemblies, moved here from
          Diagram in task 8) - which the diagram and editor discovery families both consume,
          so this project references core alone and needs no reference to Diagram. It also
          does not reference EtAlii.Adp.Backend, though the design's arrow list names it:

@@ -15,7 +15,7 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDependencyGraphStream } from "./useDependencyGraphStream";
 import type { DependencyGraphElement } from "./dependencyGraphModel";
@@ -179,7 +179,7 @@ function newPlacementId(x: number, row: number): string {
  * span-viewport culling is untouched: this canvas reports what it can see and draws what it
  * is sent, exactly as before.
  */
-export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
+export function DependencyGraphCanvas({ projectId, entryId, path }: ToolContentProps) {
   const { model, loading, failed, moveElementTo, reportView } = useDependencyGraphStream(projectId, path);
   const { executeAction } = useContextConnection();
   const toolboxItems = useToolboxItems(projectId, path);

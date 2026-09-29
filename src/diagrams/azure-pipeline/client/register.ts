@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { PipelineCanvas } from "./PipelineCanvas";
 import "@client/canvas/canvas.css";
 import "./azure-pipeline.css";
@@ -10,9 +10,9 @@ import "./azure-pipeline.css";
  * the shell names Azure Pipelines - exactly as nothing in the backend names it either. Adding a
  * diagram type is adding a module, not editing the shell (Requirement 14.3).
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "azure-devops/pipeline",
-    Canvas: PipelineCanvas,
+    Panel: PipelineCanvas,
   },
 ];

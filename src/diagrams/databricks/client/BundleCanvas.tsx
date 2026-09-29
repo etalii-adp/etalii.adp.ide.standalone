@@ -1,4 +1,4 @@
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { DatabricksCanvas } from "./DatabricksCanvas";
 
 /**
@@ -7,6 +7,6 @@ import { DatabricksCanvas } from "./DatabricksCanvas";
  * the file's structure, so there is no dependency gesture - overrides are written in the file,
  * not drawn.
  */
-export function BundleCanvas(props: DiagramCanvasProps) {
+export function BundleCanvas(props: ToolContentProps) {
   return <DatabricksCanvas {...props} ariaLabel="Databricks bundle" connectable={false} />;
 }

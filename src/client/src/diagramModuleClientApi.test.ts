@@ -346,7 +346,7 @@ describe("docs/diagram-module-client-api.md is held to the code", () => {
     // and is NOT library-internal, so it may carry a Declarations line without being in Set A or B.
     expect(surface.conformanceOnly.length,
       "no import.meta.glob type arguments were found, so the third category is unenumerated and " +
-      "DiagramClientModule would read as library-internal").toBeGreaterThanOrEqual(1);
+      "ToolClientModule would read as library-internal").toBeGreaterThanOrEqual(1);
     for (const name of surface.conformanceOnly) {
       expect(surface.exportsBySurfaceFile.has(name) ? declared.has(name) || internalList(text).includes(name) : true,
         `'${name}' is a conformance-only type in the surface and appears nowhere in the document`).toBe(true);

@@ -10,7 +10,7 @@ import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "
 import type { GhgAttachment } from "@client/generated/gartner-hypecycle-graph_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
 import { endPropertyPreview, settlePropertyPreview, showPropertyPreview } from "@client/shell/panels/propertyPreview";
 import { viewReportOf } from "@client/diagrams/viewReport";
@@ -290,7 +290,7 @@ function gestureEnd(elementId: string, attachment: EdgeAttachment | undefined): 
  * through the stream's `moveElementTo`, a resize or a boundary drag through `setProperty`, and
  * everything else through a context action on one target id.
  */
-export function GhgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
+export function GhgCanvas({ projectId, entryId, path }: ToolContentProps) {
   const { watchId, executeAction, setProperty } = useContextConnection();
   const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
   const toolboxItems = useToolboxItems(projectId, path);

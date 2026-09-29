@@ -390,7 +390,7 @@ const connection = fakeContextConnection({ watchId });
 
 vi.mock("@client/shell/panels/useToolboxItems", () => ({ useToolboxItems: () => [] }));
 
-const { canvasFor, diagramCanvases } = await import("@client/shell/panels/diagramCanvases");
+const { panelFor, toolPanels } = await import("@client/shell/panels/toolPanels");
 
 // ---- the inputs ----
 
@@ -462,7 +462,7 @@ const props = { projectId: new Uint8Array([1]), entryId: new Uint8Array([2]), pa
 
 /** Every class token in the document while the diagram's canvas shows it. */
 async function classesDrawnFor(diagram: ExportedDiagram): Promise<string[]> {
-  const Canvas = canvasFor(diagram.mimeType)?.Canvas;
+  const Canvas = panelFor(diagram.mimeType)?.Panel;
   if (Canvas === undefined) {
     throw new Error(`${diagram.file}: ${diagram.example} is ${diagram.mimeType}, which no canvas is registered for`);
   }
@@ -517,12 +517,12 @@ describe("no stylesheet rule without something that draws it, and nothing drawn 
   it("mounts every registered diagram canvas on at least one shipped example", () => {
     // The completeness canary: a registration the exports never reach would make both lists
     // below true of nothing. Editors have no shipped examples and are out of scope.
-    const diagramRegistrations = diagramCanvases.filter(
-      (registration) => registration.Canvas !== undefined && !registration.matches("editor/markdown") && !registration.matches("editor/plain"),
+    const diagramRegistrations = toolPanels.filter(
+      (registration) => registration.Panel !== undefined && !registration.matches("editor/markdown") && !registration.matches("editor/plain"),
     );
     expect(diagramRegistrations.length, "fewer diagram canvases are registered than when this was written").toBeGreaterThanOrEqual(19);
     expect(
-      diagramRegistrations.filter((registration) => !exported.some((diagram) => registration.matches(diagram.mimeType))).map((registration) => registration.Canvas!.name),
+      diagramRegistrations.filter((registration) => !exported.some((diagram) => registration.matches(diagram.mimeType))).map((registration) => registration.Panel!.name),
       "these canvases are mounted on no exported example",
     ).toEqual([]);
     expect(exported.length).toBeGreaterThanOrEqual(90);

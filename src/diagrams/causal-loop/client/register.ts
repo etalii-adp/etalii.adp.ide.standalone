@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { CausalLoopCanvas } from "./CausalLoopCanvas";
 import "@client/canvas/canvas.css";
 import "./causal-loop.css";
@@ -8,9 +8,9 @@ import "./causal-loop.css";
  * `src/diagrams/<type>/client/register.ts`, so nothing in the shell names causal-loop - adding a
  * diagram type means adding a module, not editing the shell.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "systems/causal-loop-diagram",
-    Canvas: CausalLoopCanvas,
+    Panel: CausalLoopCanvas,
   },
 ];

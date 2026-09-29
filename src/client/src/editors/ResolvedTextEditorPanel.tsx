@@ -1,5 +1,5 @@
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { canvasFor } from "@client/shell/panels/diagramCanvases";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
+import { panelFor } from "@client/shell/panels/toolPanels";
 import { TextEditorPanel } from "./TextEditorPanel";
 import { useEditorText } from "./useEditorText";
 
@@ -11,11 +11,11 @@ import { useEditorText } from "./useEditorText";
  * lowest-common-denominator view). The client keeps no file-type table of its own; the
  * backend's resolver stays the one authority.
  */
-export function ResolvedTextEditorPanel(props: DiagramCanvasProps) {
+export function ResolvedTextEditorPanel(props: ToolContentProps) {
   const { model, failed } = useEditorText(props.projectId, props.path, props.editorId ?? "*");
 
   if (!failed && model.loaded && model.contentMime !== "") {
-    const Canvas = canvasFor(model.contentMime)?.Canvas;
+    const Canvas = panelFor(model.contentMime)?.Panel;
     if (Canvas !== undefined && Canvas !== ResolvedTextEditorPanel) {
       // The module's canvas opens its own stream with the same forced resolution; this
       // probe's stream closes on unmount. Two short-lived streams beat teaching every module

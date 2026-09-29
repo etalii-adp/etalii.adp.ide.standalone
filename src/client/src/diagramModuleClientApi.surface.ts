@@ -39,10 +39,11 @@ const TEST_ONLY_PREFIX = "@client/canvas/library/testing/";
  * The four roots of Set B: what a module hands the canvas by value, each QUALIFIED BY THE FILE
  * that declares it.
  *
- * **A bare name is not enough, and one of these proves it.** `DiagramCanvasProps` is declared
- * twice - in `shell/panels/diagramCanvas.ts` as what a canvas COMPONENT receives, and in
- * `canvas/library/DiagramCanvas.tsx` as what the LIBRARY canvas takes. Both are module-facing and
- * neither is wrong. Walking by bare name picked whichever file sorted first, which happened to be
+ * **A bare name is not enough, and one of these proved it.** `DiagramCanvasProps` was declared
+ * twice - in the shell's registration file as what a canvas COMPONENT receives (since spec 002's
+ * naming alignment `ToolContentProps` in `shell/panels/toolPanelRegistration.ts`), and in
+ * `canvas/library/DiagramCanvas.tsx` as what the LIBRARY canvas takes. Both were module-facing and
+ * neither was wrong. Walking by bare name picked whichever file sorted first, which happened to be
  * the right one and would have silently become the wrong one after a folder rename.
  *
  * Set A never had this problem: one of its entries is a name paired with a SPECIFIER, so the two

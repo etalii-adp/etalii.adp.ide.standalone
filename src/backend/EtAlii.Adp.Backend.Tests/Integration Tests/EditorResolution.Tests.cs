@@ -2,6 +2,7 @@ using System.Text;
 using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Documents.Wire;
+using EtAlii.Adp.Editor.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
@@ -277,7 +278,8 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
 
         // Act 1: save through the text wire, renaming the person.
         var editedText = originalText.Replace("Postman", "Quartermaster");
-        var saved = await diagramClient.SaveTextAsync(
+        var editorClient = new EditorService.EditorServiceClient(channel);
+        var saved = await editorClient.SaveTextAsync(
             new SaveTextRequest { ProjectId = projectId, WatchId = watchId, Path = path, Content = editedText },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);

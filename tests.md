@@ -2617,7 +2617,7 @@ as a nested selection" has now been seen to fail with the forwarding severed.
 
 **Two - five modules styled only by accident**: azure-pipeline, c4, helm-charts, mindmap and
 wardley-map named `canvas-*` classes without importing `@client/canvas/canvas.css`; they
-rendered styled only because `diagramCanvases.ts` eagerly globs every register file, so some
+rendered styled only because `toolPanels.ts` eagerly globs every register file, so some
 other module always loaded the sheet. The five registers now import it, and
 `sharedStylesheetImports.test.ts` guards the convention (seen to fail naming all five).
 jsdom applies no CSS, so no automated check can see the appearance itself.

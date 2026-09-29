@@ -1,5 +1,8 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { createClient } from "@connectrpc/connect";
+import { useAuth } from "@client/auth/AuthContext";
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
+import { EditorService } from "@client/generated/editors_pb";
 import type { Delta } from "@client/generated/deltas_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 
@@ -52,7 +55,7 @@ export interface EditorTextResult {
   loading: boolean;
   failed: boolean;
   /**
-   * Saves the full text through `DiagramService.SaveText`, whose backend half dispatches a
+   * Saves the full text through `EditorService.SaveText`, whose backend half dispatches a
    * command on the project's history - one undo away, like every other change (R6.2).
    * Resolves to "" on success, or the sentence to show beside the dirty indicator.
    */
@@ -61,8 +64,12 @@ export interface EditorTextResult {
 
 /** The shared stream, folded to text - one hook for every editor module (task 5.1's base). */
 export function useEditorText(projectId: Uint8Array, path: readonly string[], editorId = ""): EditorTextResult {
-  const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyEditorText, applyEditorDelta, editorId);
+  const { model, loading, failed } = useDiagramStream(projectId, path, emptyEditorText, applyEditorDelta, editorId);
   const { watchId } = useContextConnection();
+  // The save is the editor family's own call, on its own service; the text itself rides the
+  // shared stream above like every other tool's content.
+  const { transport } = useAuth();
+  const client = useMemo(() => createClient(EditorService, transport), [transport]);
   const pathKey = path.join("/");
 
   const save = useCallback(

@@ -1,0 +1,37 @@
+﻿syntax = "proto3";
+
+package etalii.adp;
+
+import "shared.proto";      // ShortGuid
+import "connection.proto";  // Path
+
+option csharp_namespace = "EtAlii.Adp.Editor.Wire";
+
+// The editor family's own unary calls. An editor tab's text arrives on the shared stream
+// (DiagramService.Open, which serves an editor through its session adapter); what only an
+// editor does - saving the text a user typed - is asked here, so the diagram service carries
+// no editor call (spec 002, naming convention alignment: one kind, that kind's name).
+service EditorService {
+  // Saves a text-editor tab's content. The write goes through a command on the project's
+  // history, so a save is one undo away like every other change (modular-text-editors
+  // Requirement 6.2), and the shared buffer preserves the file's encoding and each line's own
+  // terminator (Requirement 6.1). A unary call, within the Non-Functional "no new stream"
+  // rule's own wording: editor content rides "the existing per-connection Watch push and
+  // unary calls". Every open view of the file - diagram and text alike - learns of the write
+  // through the watcher as an ordinary pushed change, which is Requirement 5.3's whole
+  // both-views-stay-true guarantee.
+  rpc SaveText(SaveTextRequest) returns (SaveTextResponse);
+}
+
+message SaveTextRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  Path path = 3;           // project-relative path of the open text file
+  string content = 4;      // the full text; the buffer re-applies the file's own terminators
+}
+
+message SaveTextResponse {
+  // Empty on success; otherwise the module's own sentence - a refusal, a vanished file, a
+  // failed write - shown beside the editor's dirty indicator rather than swallowed.
+  string error = 1;
+}

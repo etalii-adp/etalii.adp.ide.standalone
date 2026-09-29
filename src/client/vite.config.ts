@@ -12,7 +12,7 @@ export default defineConfig({
       // Diagram modules live outside this project, under `src/diagrams/<type>/client/`, so a
       // relative import back into the shell would be a stack of `../`s that changes whenever
       // a file moves. `@client` is the shell surface a module may reach into - see
-      // `src/shell/panels/diagramCanvas.ts` for what that surface is meant to cover.
+      // `src/shell/panels/toolPanelRegistration.ts` for what that surface is meant to cover.
       "@client": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },

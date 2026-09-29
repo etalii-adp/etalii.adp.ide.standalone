@@ -12,7 +12,7 @@ describe("the Wardley map module's client registrations", () => {
     const registration = claim("wardley/map");
 
     // Assert.
-    expect(registration?.Canvas).toBeDefined();
+    expect(registration?.Panel).toBeDefined();
     expect(registration?.unsupported).toBeUndefined();
   });
 

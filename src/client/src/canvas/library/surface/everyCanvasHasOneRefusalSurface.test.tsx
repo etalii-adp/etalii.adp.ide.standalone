@@ -82,11 +82,11 @@ const connection = fakeContextConnection({ watchId });
 
 vi.mock("@client/shell/panels/useToolboxItems", () => ({ useToolboxItems: () => [] }));
 
-const { diagramCanvases } = await import("@client/shell/panels/diagramCanvases");
+const { toolPanels } = await import("@client/shell/panels/toolPanels");
 
-const registered = diagramCanvases
-  .filter((registration) => registration.Canvas !== undefined)
-  .map((registration, index) => [`${index}: ${registration.Canvas!.name || "anonymous canvas"}`, registration.Canvas!] as const);
+const registered = toolPanels
+  .filter((registration) => registration.Panel !== undefined)
+  .map((registration, index) => [`${index}: ${registration.Panel!.name || "anonymous canvas"}`, registration.Panel!] as const);
 
 // ---- what counts as a surface ----
 

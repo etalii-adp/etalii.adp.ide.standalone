@@ -13,7 +13,7 @@ import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEve
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
 import { viewReportOf } from "@client/diagrams/viewReport";
 import { useViewReport } from "@client/diagrams/useViewReport";
@@ -161,7 +161,7 @@ function isElementType(value: string): value is FdgElementType {
  * it (the user's chat ruling of 2026-09-25): a move through the stream's `moveElementTo`, a resize
  * through `setProperty`, and everything else through a context action on one target id.
  */
-export function FdgCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
+export function FdgCanvas({ projectId, entryId, path }: ToolContentProps) {
   const { watchId, executeAction, setProperty } = useContextConnection();
   const { model, loading, failed, client, moveElementTo } = useDiagramStream(projectId, path, emptyModel, applyDelta);
   const toolboxItems = useToolboxItems(projectId, path);

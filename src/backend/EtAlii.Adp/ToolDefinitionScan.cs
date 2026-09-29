@@ -6,10 +6,11 @@ namespace EtAlii.Adp;
 /// <summary>
 /// The definition-agnostic half of module discovery: find, in a set of assemblies, every
 /// static class with a given name whose public static definitions property holds a sequence.
-/// Extracted from the diagram family's discovery so the editor
-/// family extends the same scan rather than duplicating it (modular-text-editors
-/// Requirement 1.3); each family keeps its own semantics - duplicate detection, coherence
-/// rules, ordering - on top of what this returns.
+/// Extracted from the diagram family's discovery so the editor family extends the same scan
+/// rather than duplicating it (modular-text-editors Requirement 1.3), and the designer family's
+/// slot uses it too; shared by every kind of tool, hence the name (spec 002, naming convention
+/// alignment). Each family keeps its own semantics - duplicate detection, coherence rules,
+/// ordering - on top of what this returns.
 /// </summary>
 /// <remarks>
 /// It never throws for a bad assembly or a bad candidate. A module that cannot be loaded or
@@ -17,9 +18,9 @@ namespace EtAlii.Adp;
 /// log - never the application's startup. Logging goes through the CALLER's logger, so the
 /// events keep the source context (and therefore the exact log output) each family always had.
 /// </remarks>
-internal static class PluginDefinitionScan
+internal static class ToolDefinitionScan
 {
-    internal static PluginDefinitionScanResult<T> Scan<T>(
+    internal static ToolDefinitionScanResult<T> Scan<T>(
         IEnumerable<Assembly> assemblies,
         string candidateTypeName,
         string definitionsPropertyName,
@@ -28,7 +29,7 @@ internal static class PluginDefinitionScan
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        var found = new List<PluginDefinitionHit<T>>();
+        var found = new List<ToolDefinitionHit<T>>();
         var scanned = 0;
 
         foreach (var assembly in assemblies)
@@ -45,12 +46,12 @@ internal static class PluginDefinitionScan
 
                 foreach (var definition in TryReadDefinitions<T>(type, assemblyName, definitionsPropertyName, noun, logger))
                 {
-                    found.Add(new PluginDefinitionHit<T>(definition, type, assemblyName));
+                    found.Add(new ToolDefinitionHit<T>(definition, type, assemblyName));
                 }
             }
         }
 
-        return new PluginDefinitionScanResult<T>(found, scanned);
+        return new ToolDefinitionScanResult<T>(found, scanned);
     }
 
     private static IEnumerable<Type> EnumerateTypes(Assembly assembly, string assemblyName, ILogger logger)

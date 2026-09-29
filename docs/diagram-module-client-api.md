@@ -91,21 +91,21 @@ sequenceDiagram
 
 ## Registration and discovery
 
-**Declarations:** `DiagramCanvasRegistration`, `DiagramClientModule`, `TextEditorPanel`
+**Declarations:** `ToolPanelRegistration`, `ToolContentProps`, `ToolClientModule`, `TextEditorPanel`
 
 **What it is for.** A module tells the client which diagram types it can draw, and with what. This is the only wiring between a module and the shell: there is no list of diagram types anywhere in the client, exactly as there is none in the backend.
 
-**Whether a module needs it.** Always, and it is the one file that cannot be omitted. The shell discovers modules by globbing `src/diagrams/*/client/register.ts` and `src/editors/*/client/register.ts` at build time. **A module without `register.ts` is not loaded and fails silently** — nothing reports a missing module, because nothing knew to expect it.
+**Whether a module needs it.** Always, and it is the one file that cannot be omitted. The shell discovers modules by globbing `src/diagrams/*/client/register.ts`, `src/designers/*/client/register.ts` and `src/editors/*/client/register.ts` at build time. **A module without `register.ts` is not loaded and fails silently** — nothing reports a missing module, because nothing knew to expect it.
 
-**Its shape.** `register.ts` exports `registrations`, an array of `DiagramCanvasRegistration`. Each entry answers two questions: which MIME types it speaks for (`matches`), and what to draw (`Canvas`). A module that knows a type this build cannot draw supplies `unsupported` instead — a `description` and the `futureSpec` that would add it — so the explanation comes from the module that understands the notation rather than from a fallback in the shell. `DiagramClientModule` is the shape of the module as a whole, which the shell reads; a module never imports it.
+**Its shape.** `register.ts` exports `registrations`, an array of `ToolPanelRegistration`. Each entry answers two questions: which MIME types it speaks for (`matches`), and what to show (`Panel`, which for a diagram module is its canvas). A module that knows a type this build cannot draw supplies `unsupported` instead — a `description` and the `futureSpec` that would add it — so the explanation comes from the module that understands the notation rather than from a fallback in the shell. `ToolClientModule` is the shape of the module as a whole, which the shell reads; a module never imports it. `ToolContentProps` is what the shell hands the registered component: `projectId`, `entryId` and `path` name the document, `editorId` forces the editor family on an "Open as text" tab, and `initialLine` is the line to scroll to on a go-to-line.
 
 Source: [`src/diagrams/dependency-graph/client/register.ts`](../src/diagrams/dependency-graph/client/register.ts)
 
 ```ts
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "generic/dependencies",
-    Canvas: DependencyGraphCanvas,
+    Panel: DependencyGraphCanvas,
   },
 ];
 ```
@@ -115,7 +115,7 @@ export const registrations: DiagramCanvasRegistration[] = [
 Source: [`src/diagrams/dependency-graph/client/register.ts`](../src/diagrams/dependency-graph/client/register.ts)
 
 ```ts
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { DependencyGraphCanvas } from "./DependencyGraphCanvas";
 import "@client/canvas/canvas.css";
 import "./dependency-graph.css";
@@ -438,7 +438,7 @@ Source: [`src/client/src/canvas/library/examples/chrome.example.ts`](../src/clie
 
 **Whether a module needs it.** Always. There is no second way to draw.
 
-**Its shape.** `DiagramCanvas` takes `definition`, `model`, `events`, `config`, `source`, `toolboxItems`, `className`, `scrollbarsClassName` and `ariaLabel`. **`DiagramCanvasProps` is declared twice in this tree** — the shell's, which is what a canvas COMPONENT receives (`projectId`, `entryId`, `path`, `editorId`, `initialLine`), and the library's, which is the props above. Both are module-facing and neither is wrong; a module uses the first to receive its arguments and the second to hand them on.
+**Its shape.** `DiagramCanvas` takes `definition`, `model`, `events`, `config`, `source`, `toolboxItems`, `className`, `scrollbarsClassName` and `ariaLabel`. **Two props types meet here** — the shell's `ToolContentProps`, which is what a canvas COMPONENT receives (`projectId`, `entryId`, `path`, `editorId`, `initialLine`), and the library's `DiagramCanvasProps`, which is the props above. Both are module-facing; a module uses the first to receive its arguments and the second to hand them on.
 
 **Inline rename is the library's, as selection is.** Given `source`, the canvas reads the shell's inline-edit prompt itself and opens the shared editor over the label the backend named, so a label marked `editable` in the definition needs nothing else. Until `client-centralization` task 7 nine modules each built an `editing` prop from the same three lines to pass in; the prop is gone from `DiagramCanvasProps`, so **typecheck refuses a module that still passes it**.
 
@@ -733,7 +733,7 @@ sequenceDiagram
 1. **Create the workspace package.** `client/package.json`, private, named `@adp/diagram-<type>-client`, declaring only what the module's own code uses. See [Registration and discovery](#registration-and-discovery).
 2. **Declare what the diagram IS.** A `DiagramDefinition` with at least `elementTypes` and `relationTypes`, wrapped in `assertValidDiagramDefinition` so a contradiction fails where it is written. See [The definition](#the-definition).
 3. **Wrap the stream.** A hook of your own that calls `useDiagramStream` with an empty model and a function folding one delta into it, returning whatever your canvas needs on top. See [The stream and the model](#the-stream-and-the-model). **Do not open the stream any other way** — a guard forbids it and will name your file.
-4. **Write the canvas component.** It receives the shell's `DiagramCanvasProps`, calls your hook, and renders `DiagramCanvas` with the definition, the model, your handlers and `source`. See [The canvas](#the-canvas).
+4. **Write the canvas component.** It receives the shell's `ToolContentProps`, calls your hook, and renders `DiagramCanvas` with the definition, the model, your handlers and `source`. See [The canvas](#the-canvas).
 5. **Answer the events you care about.** Each handler is optional; an unanswered one is a gesture you chose to ignore. See [Events, and how a module answers them](#events-and-how-a-module-answers-them).
 6. **Run actions through the context channel** rather than calling the backend directly, and remember it resolves rather than rejects. See [The context channel](#the-context-channel).
 7. **Report the view** if your diagrams can outgrow the viewport, converting to your own units. See [The view report](#the-view-report).

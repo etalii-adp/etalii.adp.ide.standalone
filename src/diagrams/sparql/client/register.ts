@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { SparqlCanvas } from "./SparqlCanvas";
 import "@client/canvas/canvas.css";
 import "./sparql.css";
@@ -10,9 +10,9 @@ import "./sparql.css";
  * diagram types, exactly as the backend holds none and discovers `Diagram.Definitions` by
  * scanning its own assemblies.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "w3c/sparql",
-    Canvas: SparqlCanvas,
+    Panel: SparqlCanvas,
   },
 ];

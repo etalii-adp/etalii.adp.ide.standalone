@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * Every diagram module that registers a canvas imports the shared stylesheet from its own
  * `register.ts` - the convention `docs/creating-a-diagram-module.md` states, checked rather
  * than remembered. Five modules named `canvas-*` classes while importing nothing: they
- * styled correctly only because `diagramCanvases.ts` globs every register file eagerly, so
+ * styled correctly only because `toolPanels.ts` globs every register file eagerly, so
  * the sheet was always loaded on some OTHER module's behalf - and deleting or lazy-loading
  * any importer would have silently unstyled them.
  *

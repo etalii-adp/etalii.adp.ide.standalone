@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { GhgCanvas } from "./GhgCanvas";
 import { GHG_MIME } from "./ghgIds";
 import "@client/canvas/canvas.css";
@@ -10,9 +10,9 @@ import "./ghg.css";
  * The shell finds this by scanning `src/diagrams/*​/client/register.ts` - it holds no list of
  * diagram types, so adding this one meant adding a module, not editing the shell.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === GHG_MIME,
-    Canvas: GhgCanvas,
+    Panel: GhgCanvas,
   },
 ];

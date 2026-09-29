@@ -1,6 +1,6 @@
 import { markdown } from "@codemirror/lang-markdown";
 import { marked } from "marked";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { TextEditorPanel } from "@client/editors/TextEditorPanel";
 
 /**
@@ -8,7 +8,7 @@ import { TextEditorPanel } from "@client/editors/TextEditorPanel";
  * (modular-text-editors R10.2) - a rendered preview beside the text, and heading-aware
  * navigation above it.
  */
-export function MarkdownEditorPanel(props: DiagramCanvasProps) {
+export function MarkdownEditorPanel(props: ToolContentProps) {
   return (
     <TextEditorPanel
       {...props}

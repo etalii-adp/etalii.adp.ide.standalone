@@ -10,6 +10,6 @@ describe("register", () => {
     expect(registrations).toHaveLength(1);
     expect(registration.matches("helm/chart")).toBe(true);
     expect(registration.matches("ansible/structure")).toBe(false);
-    expect(registration.Canvas).toBeDefined();
+    expect(registration.Panel).toBeDefined();
   });
 });

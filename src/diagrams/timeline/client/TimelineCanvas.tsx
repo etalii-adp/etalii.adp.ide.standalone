@@ -4,7 +4,7 @@ import { elementSourceOf } from "@client/canvas/selection";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps as ShellCanvasProps } from "@client/shell/panels/toolPanelRegistration";
 import { DiagramCanvas, snapToStep } from "@client/canvas/library/DiagramCanvas";
 import type { DiagramDefinition, LabelDeclaration } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";

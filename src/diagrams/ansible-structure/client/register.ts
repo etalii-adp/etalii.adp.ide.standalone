@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { AnsibleCanvas } from "./AnsibleCanvas";
 import "@client/canvas/canvas.css";
 import "./ansible-structure.css";
@@ -8,9 +8,9 @@ import "./ansible-structure.css";
  * `src/diagrams/<type>/client/register.ts`, so nothing in the shell names Ansible - adding a
  * diagram type means adding a module, not editing the shell.
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "ansible/structure",
-    Canvas: AnsibleCanvas,
+    Panel: AnsibleCanvas,
   },
 ];

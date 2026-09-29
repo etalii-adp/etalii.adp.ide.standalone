@@ -9,6 +9,6 @@ describe("the hype cycle graph registration", () => {
     // A near miss: the element types travel as `<mime>+<type>`, and a prefix match would claim them.
     expect(registration.matches("gartner/hypecycle-graph+trend")).toBe(false);
     expect(registration.matches("etalii/functional-decomposition-graph")).toBe(false);
-    expect(registration.Canvas).toBeDefined();
+    expect(registration.Panel).toBeDefined();
   });
 });

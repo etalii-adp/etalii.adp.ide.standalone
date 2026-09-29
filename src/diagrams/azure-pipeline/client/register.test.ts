@@ -12,7 +12,7 @@ describe("the Azure Pipelines module's client registrations", () => {
     const registration = claim("azure-devops/pipeline");
 
     // Assert.
-    expect(registration?.Canvas).toBeDefined();
+    expect(registration?.Panel).toBeDefined();
     expect(registration?.unsupported).toBeUndefined();
   });
 

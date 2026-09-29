@@ -8,7 +8,7 @@ it declares its own dependencies and is installed by the workspace root at `src/
 without that, nothing here could resolve `react`.
 
 - **`register.ts`** is the entry point as far as the shell is concerned. It exports the
-  registrations the shell's `diagramCanvases.ts` picks up by globbing every
+  registrations the shell's `toolPanels.ts` picks up by globbing every
   `src/diagrams/<type>/client/register.ts`, and it imports this module's stylesheet so the CSS
   arrives with the module rather than living in the shell's `index.css`.
 - **Imports back into the shell** go through the `@client` alias, defined in `vite.config.ts`,

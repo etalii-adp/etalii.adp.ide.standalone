@@ -1,4 +1,4 @@
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { DatabricksCanvas } from "./DatabricksCanvas";
 
 /**
@@ -6,6 +6,6 @@ import { DatabricksCanvas } from "./DatabricksCanvas";
  * target, satellites beneath (databricks-diagrams Requirement 5). The flow edges are the
  * file's structure, so there is no dependency gesture.
  */
-export function PipelineCanvas(props: DiagramCanvasProps) {
+export function PipelineCanvas(props: ToolContentProps) {
   return <DatabricksCanvas {...props} ariaLabel="Databricks pipeline" connectable={false} />;
 }

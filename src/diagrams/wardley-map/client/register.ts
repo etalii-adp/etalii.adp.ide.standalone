@@ -1,4 +1,4 @@
-import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
+import type { ToolPanelRegistration } from "@client/shell/panels/toolPanelRegistration";
 import { WardleyCanvas } from "./WardleyCanvas";
 import "@client/canvas/canvas.css";
 import "./wardley.css";
@@ -11,9 +11,9 @@ import "./wardley.css";
  * scanning its own assemblies. Adding this type meant adding a module, not editing the shell
  * (Requirement 8.7).
  */
-export const registrations: DiagramCanvasRegistration[] = [
+export const registrations: ToolPanelRegistration[] = [
   {
     matches: (mimeType) => mimeType === "wardley/map",
-    Canvas: WardleyCanvas,
+    Panel: WardleyCanvas,
   },
 ];

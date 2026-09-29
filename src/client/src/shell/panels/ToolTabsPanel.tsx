@@ -7,13 +7,13 @@ import type { ContextLevelDetail } from "../../generated/context-contract_pb";
 import type { ContextSelection } from "../../generated/context_pb";
 import { innermostAction, useContextSelection } from "../context/ContextConnectionProvider";
 import { TabbedPane, type TabDef } from "../panes/TabbedPane";
-import { DiagramPanel, type OpenDiagram } from "./DiagramPanel";
+import { ToolPanel, type OpenTool } from "./ToolPanel";
 import { PanelEmptyState } from "./PanelEmptyState";
 
-interface DiagramTab {
+interface ToolTab {
   /** Entry AND location: re-activating a renamed file opens a fresh tab while the stale one stays closable. */
   key: string;
-  diagram: OpenDiagram;
+  tool: OpenTool;
 }
 
 /** The innermost level of a selection chain - where the activated thing itself is named. */
@@ -31,24 +31,24 @@ function labelFor(path: readonly string[]): string {
   return name.toLowerCase().endsWith(".adp") ? name.slice(0, -".adp".length) : name;
 }
 
-export interface DiagramTabsPanelProps {
+export interface ToolTabsPanelProps {
   projectId: Uint8Array;
 }
 
 /**
- * The centre pane: which diagrams are open, and which has focus. A pure subscriber of the
+ * The centre pane: which tools are open - diagrams, and editors opened as text - and which has focus. A pure subscriber of the
  * pushed selection - a new non-transient push whose innermost level is a diagram entry
  * carrying the ACTIVATE gesture opens a tab or focuses the one it already has; a plain
  * selection or a preview never does (diagram-workspace-tabs Requirement 2). Nothing here
- * names a diagram type: which canvas renders a tab is {@link DiagramPanel}'s decision, from
+ * names a diagram type: which module's panel renders a tab is {@link ToolPanel}'s decision, from
  * the MIME type the backend resolved.
  *
  * Open tabs are per-connection, in-memory state only - they die with the page, like every
  * other per-connection state in the system (Requirement 4.5).
  */
-export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
+export function ToolTabsPanel({ projectId }: ToolTabsPanelProps) {
   const { selection, levels } = useContextSelection();
-  const [tabs, setTabs] = useState<DiagramTab[]>([]);
+  const [tabs, setTabs] = useState<ToolTab[]>([]);
   const [activeKey, setActiveKey] = useState<string | undefined>(undefined);
   // The push, not the render, is the trigger: transient previews and unrelated re-renders
   // re-observe the same selection object, and must not re-run the rule (Requirement 2.3).
@@ -81,7 +81,7 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
     setTabs((current) =>
       current.some((tab) => tab.key === key)
         ? current
-        : [...current, { key, diagram: { projectId, entryId: id.value.value, path: [...path], mimeType: entry.diagramMimeType } }],
+        : [...current, { key, tool: { projectId, entryId: id.value.value, path: [...path], mimeType: entry.diagramMimeType } }],
     );
     setActiveKey(key);
   }, [selection, levels, projectId]);
@@ -98,13 +98,13 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
         setTabs((current) =>
           current.some((tab) => tab.key === key)
             ? current.map((tab) =>
-                tab.key === key ? { key, diagram: { ...tab.diagram, initialLine: request.line } } : tab,
+                tab.key === key ? { key, tool: { ...tab.tool, initialLine: request.line } } : tab,
               )
             : [
                 ...current,
                 {
                   key,
-                  diagram: {
+                  tool: {
                     projectId,
                     // No entry id: the request names the file by path, and text canvases
                     // never read the id. An empty id keeps the tab model honest about that.
@@ -127,7 +127,7 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
     // never register as dirty, so nothing changes for them. The dirty registry is keyed by
     // the file's path - the one identity the editor panel and this strip share.
     const closing = tabs.find((tab) => tab.key === key);
-    const dirtyKey = closing?.diagram.path.join("/") ?? key;
+    const dirtyKey = closing?.tool.path.join("/") ?? key;
     if (isTabDirty(dirtyKey) && !window.confirm("This tab has unsaved changes. Close it anyway?")) {
       return;
     }
@@ -144,9 +144,9 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
 
   const tabDefs: TabDef[] = tabs.map((tab) => ({
     id: tab.key,
-    label: labelFor(tab.diagram.path),
-    icon: tab.diagram.mimeType.startsWith("editor/") ? "mdi-file-document-outline" : "mdi-graph-outline",
-    tooltip: tab.diagram.path.join("/"),
+    label: labelFor(tab.tool.path),
+    icon: tab.tool.mimeType.startsWith("editor/") ? "mdi-file-document-outline" : "mdi-graph-outline",
+    tooltip: tab.tool.path.join("/"),
     // Keyed per tab, and it is not optional: the pane renders one tab's content at a time,
     // so two files of the same type land the same component at the same position, and
     // without the key React reuses the instance across a tab switch - which is how opening
@@ -165,8 +165,8 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
     // found through, because it needs no second tab. Over TLS the browser negotiates HTTP/2 and
     // multiplexes onto one connection, which removes the cap; until the deployment actually
     // serves TLS, this unmounting is the only thing holding the line.
-    // DiagramTabsPanel.test.tsx asserts the live stream count stays 1 for every N open tabs.
-    content: <DiagramPanel key={tab.key} diagram={tab.diagram} />,
+    // ToolTabsPanel.test.tsx asserts the live stream count stays 1 for every N open tabs.
+    content: <ToolPanel key={tab.key} tool={tab.tool} />,
   }));
 
   return (

@@ -20,7 +20,7 @@ describe("the C4 module's client registrations", () => {
     const registration = claim(mimeType);
 
     // Assert.
-    expect(registration?.Canvas).toBeDefined();
+    expect(registration?.Panel).toBeDefined();
     expect(registration?.unsupported).toBeUndefined();
   });
 
@@ -31,7 +31,7 @@ describe("the C4 module's client registrations", () => {
     const registration = claim("c4/code");
 
     // Assert.
-    expect(registration?.Canvas).toBeUndefined();
+    expect(registration?.Panel).toBeUndefined();
     expect(registration?.unsupported?.description).toMatch(/UML class or entity-relationship notation/);
     expect(registration?.unsupported?.futureSpec).toBe("c4-diagrams");
   });

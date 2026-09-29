@@ -8,7 +8,7 @@ import { type ContextLevelDetail } from "../../generated/context-contract_pb";
 import { ContextSelectionAction, type ContextSelection } from "../../generated/context_pb";
 import { EntryKind } from "../../generated/shared_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
-import { DiagramTabsPanel } from "./DiagramTabsPanel";
+import { ToolTabsPanel } from "./ToolTabsPanel";
 
 // Streams the canvases have opened and not yet closed. `vi.hoisted` because `vi.mock` is
 // hoisted above ordinary module scope, so a plain `const` here would not exist yet when the
@@ -23,7 +23,7 @@ const streams = vi.hoisted(() => ({ live: 0, opened: 0, peakLive: 0 }));
 // The canvas would open a stream; the tab model is what is under test. Mocked at the registry
 // rather than at any one canvas, because this panel routes through the registry and knows no
 // diagram type by name - the path shown is what proves the right diagram reached the panel.
-vi.mock("./diagramCanvases", async () => {
+vi.mock("./toolPanels", async () => {
   const { useEffect, useState } = await import("react");
   // ONE stable component, exactly like the real registry's registered canvases: a fresh
   // function per call would be a new component type to React and force a remount on every
@@ -48,11 +48,11 @@ vi.mock("./diagramCanvases", async () => {
       </div>
     );
   };
-  const registration = { matches: () => true, Canvas };
+  const registration = { matches: () => true, Panel: Canvas };
   return {
     // One claimed family and everything else unclaimed, so both halves of the panel stay
     // exercised: the tab that renders, and the tab that says what it cannot render.
-    canvasFor: (mimeType: string) =>
+    panelFor: (mimeType: string) =>
       mimeType === "freeplane/mindmap" || mimeType.startsWith("editor/") ? registration : undefined,
   };
 });
@@ -99,10 +99,10 @@ function push(entryId: Uint8Array, path: string[], mimeType: string, options: { 
 }
 
 function renderPanel() {
-  return render(<DiagramTabsPanel projectId={projectId} />);
+  return render(<ToolTabsPanel projectId={projectId} />);
 }
 
-describe("DiagramTabsPanel", () => {
+describe("ToolTabsPanel", () => {
   beforeEach(() => {
     contextState.selection = null;
     contextState.levels = [];
@@ -124,7 +124,7 @@ describe("DiagramTabsPanel", () => {
     // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["docs", "architecture.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Act and assert, step by step.
     const tab = screen.getByRole("tab", { name: /architecture/ });
@@ -137,7 +137,7 @@ describe("DiagramTabsPanel", () => {
     // Arrange and act.
     const { rerender } = renderPanel();
     push(entryA, ["docs", "architecture.adp"], "freeplane/mindmap", { plain: true });
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
     expect(screen.queryByRole("tab")).toBeNull();
@@ -147,7 +147,7 @@ describe("DiagramTabsPanel", () => {
     // Arrange and act.
     const { rerender } = renderPanel();
     push(entryA, ["readme.txt"], "");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
     expect(screen.queryByRole("tab")).toBeNull();
@@ -157,14 +157,14 @@ describe("DiagramTabsPanel", () => {
     // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["a.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
     push(entryB, ["b.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
     expect(screen.getByRole("tab", { name: /^b$/ }).getAttribute("aria-selected")).toBe("true");
 
     // Act.
     push(entryA, ["a.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
     expect(screen.getAllByRole("tab")).toHaveLength(2);
@@ -175,9 +175,9 @@ describe("DiagramTabsPanel", () => {
     // Arrange: two markdown files, one after the other - the double-click flow.
     const { rerender } = renderPanel();
     push(entryA, ["notes.md"], "editor/markdown");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
     push(entryB, ["todo.md"], "editor/markdown");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
     // Both tabs render the same component type at the same position; without a per-tab key
@@ -193,11 +193,11 @@ describe("DiagramTabsPanel", () => {
     // closable, and the fresh one opens (Requirement 5.2).
     const { rerender } = renderPanel();
     push(entryA, ["old.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Act.
     push(entryA, ["new.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
     expect(screen.getAllByRole("tab")).toHaveLength(2);
@@ -208,14 +208,14 @@ describe("DiagramTabsPanel", () => {
     // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["a.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
     fireEvent.click(screen.getByRole("button", { name: /Close a/ }));
     expect(screen.queryByRole("tab")).toBeNull();
 
     // Act.
     // The same selection object re-observed (an unrelated re-render): the closed tab must
     // not spring back - only a new push may open one.
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
     expect(screen.queryByRole("tab")).toBeNull();
@@ -225,9 +225,9 @@ describe("DiagramTabsPanel", () => {
     // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["a.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
     push(entryB, ["b.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Act and assert, step by step.
     fireEvent.click(screen.getByRole("button", { name: /Close b/ }));
@@ -242,11 +242,11 @@ describe("DiagramTabsPanel", () => {
     // Arrange and act.
     const { rerender } = renderPanel();
     push(entryA, ["future.adp"], "vendor/unheard-of");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Assert.
     expect(screen.getByRole("tab", { name: /future/ })).toBeTruthy();
-    expect(await screen.findByText("No canvas can render vendor/unheard-of diagrams yet.")).toBeTruthy();
+    expect(await screen.findByText("No module can show vendor/unheard-of yet.")).toBeTruthy();
   });
 
   it("opens a focused text tab on a request - the Open as text gesture (R5.2)", async () => {
@@ -267,7 +267,7 @@ describe("DiagramTabsPanel", () => {
     const { rerender } = renderPanel();
     act(() => requestTextTab({ path: ["notes.md"], editorId: "*" }));
     push(entryA, ["a.adp"], "freeplane/mindmap");
-    rerender(<DiagramTabsPanel projectId={projectId} />);
+    rerender(<ToolTabsPanel projectId={projectId} />);
 
     // Act.
     act(() => requestTextTab({ path: ["notes.md"], editorId: "*", line: 12 }));
@@ -312,7 +312,7 @@ describe("DiagramTabsPanel", () => {
     // Act, asserting as we go: the count must not grow at any N, not merely at the end.
     for (const [id, name] of files) {
       push(id, [name], "freeplane/mindmap");
-      rerender(<DiagramTabsPanel projectId={projectId} />);
+      rerender(<ToolTabsPanel projectId={projectId} />);
       expect(streams.live).toBe(1);
     }
 

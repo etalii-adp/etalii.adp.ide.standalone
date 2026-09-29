@@ -1,14 +1,14 @@
 import { PanelPlaceholder } from "./PanelPlaceholder";
-import { canvasFor } from "./diagramCanvases";
+import { panelFor } from "./toolPanels";
 import { ResolvedTextEditorPanel } from "@client/editors/ResolvedTextEditorPanel";
 import { CanvasFrame } from "@client/canvas/library/surface/CanvasFrame";
 
-/** Which diagram a panel shows: its project, the `.adp` entry's id, its project-relative path, and its type. */
-export interface OpenDiagram {
+/** Which document a tool panel shows: its project, the `.adp` entry's id, its project-relative path, and its type. */
+export interface OpenTool {
   projectId: Uint8Array;
   entryId: Uint8Array;
   path: string[];
-  /** The MIME type from the `.adp` file's first line; decides which canvas renders it. */
+  /** The MIME type from the `.adp` file's first line; decides which module's panel renders it. */
   mimeType: string;
   /** Forces the editor family on the tab's stream - set only for "Open as text" tabs (R5.2). */
   editorId?: string;
@@ -16,28 +16,28 @@ export interface OpenDiagram {
   initialLine?: number;
 }
 
-export interface DiagramPanelProps {
-  /** The diagram to show, or undefined for the empty tab the mockup still opens. */
-  diagram?: OpenDiagram;
+export interface ToolPanelProps {
+  /** The document to show, or undefined for the empty tab the mockup still opens. */
+  tool?: OpenTool;
 }
 
 /**
- * Hosts a diagram's canvas, whichever module claims its type.
+ * Hosts a tool - a diagram's canvas or an editor's text panel - whichever module claims its type.
  *
- * This panel names no diagram type. It asks the registry which module claims the MIME type and
- * renders what that module supplies - a canvas, or its own explanation of why there is none
+ * This panel names no tool type. It asks the registry which module claims the MIME type and
+ * renders what that module supplies - a panel, or its own explanation of why there is none
  * (diagram-workspace-tabs Requirement 4.4). A type no module claims falls through to the
  * generic placeholder, which is the only case the shell still speaks for.
  *
- * The tab system (`DiagramTabsPanel`) always hands this panel a diagram; the no-diagram
+ * The tab system (`ToolTabsPanel`) always hands this panel a document; the no-document
  * fallback stays only as a safety net.
  */
-export function DiagramPanel({ diagram }: DiagramPanelProps) {
-  if (diagram === undefined || diagram.mimeType === "") {
+export function ToolPanel({ tool }: ToolPanelProps) {
+  if (tool === undefined || tool.mimeType === "") {
     return (
       <PanelPlaceholder
-        title="Diagram"
-        description="The diagram canvas for viewing and editing."
+        title="Tool"
+        description="The tool panel, where a diagram, designer or editor opens for viewing and editing."
         futureSpec="adp-diagram-ide"
       />
     );
@@ -46,35 +46,35 @@ export function DiagramPanel({ diagram }: DiagramPanelProps) {
   // An "Open as text" tab whose editor the backend has yet to name: the stream itself will,
   // and this panel mounts the right module's canvas when it does. Handled here, before the
   // registry, because it is the shell's own gesture rather than any module's claim.
-  if (diagram.mimeType === "editor/*") {
+  if (tool.mimeType === "editor/*") {
     return (
       <CanvasFrame>
         <ResolvedTextEditorPanel
-          projectId={diagram.projectId}
-          entryId={diagram.entryId}
-          path={diagram.path}
-          editorId={diagram.editorId}
-          initialLine={diagram.initialLine}
+          projectId={tool.projectId}
+          entryId={tool.entryId}
+          path={tool.path}
+          editorId={tool.editorId}
+          initialLine={tool.initialLine}
         />
       </CanvasFrame>
     );
   }
 
-  const registration = canvasFor(diagram.mimeType);
+  const registration = panelFor(tool.mimeType);
 
   // Every module canvas sits inside the library's frame, which is the one place a refusal is shown
   // and the one appearance of opening, reconnecting and unavailable (client-centralization
   // Requirement 2). The shell places it, so no module declares or wires one.
-  if (registration?.Canvas !== undefined) {
-    const Canvas = registration.Canvas;
+  if (registration?.Panel !== undefined) {
+    const Panel = registration.Panel;
     return (
       <CanvasFrame>
-        <Canvas
-          projectId={diagram.projectId}
-          entryId={diagram.entryId}
-          path={diagram.path}
-          editorId={diagram.editorId}
-          initialLine={diagram.initialLine}
+        <Panel
+          projectId={tool.projectId}
+          entryId={tool.entryId}
+          path={tool.path}
+          editorId={tool.editorId}
+          initialLine={tool.initialLine}
         />
       </CanvasFrame>
     );
@@ -82,10 +82,10 @@ export function DiagramPanel({ diagram }: DiagramPanelProps) {
 
   return (
     <PanelPlaceholder
-      title={diagram.path[diagram.path.length - 1] ?? "Diagram"}
+      title={tool.path[tool.path.length - 1] ?? "Tool"}
       description={
         registration?.unsupported?.description ??
-        `No canvas can render ${diagram.mimeType} diagrams yet.`
+        `No module can show ${tool.mimeType} yet.`
       }
       futureSpec={registration?.unsupported?.futureSpec ?? "adp-diagram-ide"}
     />
