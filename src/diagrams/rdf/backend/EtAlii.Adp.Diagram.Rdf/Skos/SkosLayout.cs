@@ -10,6 +10,15 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// overlay merges authored positions on top, element by element.
 /// </summary>
 /// <remarks>
+/// A layer wider than its band's column budget wraps onto further rows, and every row is centred
+/// on the band. A real thesaurus is a few layers deep and hundreds of concepts wide: with one row
+/// per layer the STW geographic names came out 166 concepts wide and seven rows tall, which fitted
+/// to a window reads as one horizontal line. The budget grows with the square root of the band's
+/// size, so a band stays roughly as wide as it is tall however large it gets. Within a layer,
+/// concepts sit in the order of their broader concepts, so siblings stay together when a layer
+/// wraps and the hierarchy edges run down rather than across the whole band.
+/// </remarks>
+/// <remarks>
 /// Cycles are one detection here and nowhere else: layering runs on an acyclic subset obtained
 /// by repeatedly excluding, per remaining knot, the edge whose (broader IRI, narrower IRI) pair
 /// sorts lowest - excluded from layering only, still drawn - and the validator consumes
@@ -22,6 +31,8 @@ public static class SkosLayout
     private const double RowHeight = 110;
     private const double RegionGap = 90;
     private const double RegionHeader = 60;
+    private const double LayerGap = 50;
+    private const int MinimumColumns = 8;
 
     /// <summary>Positions for every drawn element, and the cycles found on the way.</summary>
     public static SkosLayoutResult Layout(SkosProjectionResult projection)
@@ -60,11 +71,12 @@ public static class SkosLayout
             y = PlaceBand(unfiled, y) + RegionGap;
         }
 
-        var column = 0;
-        foreach (var collection in projection.Collections.OrderBy(c => c.Iri, StringComparer.Ordinal))
+        var collections = projection.Collections.OrderBy(c => c.Iri, StringComparer.Ordinal).ToList();
+        var collectionColumns = ColumnsFor(collections.Count);
+        for (var index = 0; index < collections.Count; index++)
         {
-            positions[collection.Id] = new RegistrationPosition(column * ColumnWidth, y);
-            column++;
+            positions[collections[index].Id] = new RegistrationPosition(
+                index % collectionColumns * ColumnWidth, y + (index / collectionColumns * RowHeight));
         }
 
         return new SkosLayoutResult(positions, cycles);
@@ -100,36 +112,74 @@ public static class SkosLayout
                 }
             }
 
-            var maxDepth = -1;
-            foreach (var group in depth.GroupBy(pair => pair.Value).OrderBy(group => group.Key))
-            {
-                var x = 0;
-                foreach (var id in group.Select(pair => pair.Key).Order(StringComparer.Ordinal))
-                {
-                    positions[id] = new RegistrationPosition(x * ColumnWidth, top + group.Key * RowHeight);
-                    placed.Add(id);
-                    x++;
-                }
-
-                maxDepth = Math.Max(maxDepth, group.Key);
-            }
-
+            var layers = depth
+                .GroupBy(pair => pair.Value)
+                .OrderBy(group => group.Key)
+                .Select(group => group.Select(pair => pair.Key).ToList())
+                .ToList();
             var leftover = members.Where(id => !depth.ContainsKey(id)).Order(StringComparer.Ordinal).ToList();
             if (leftover.Count > 0)
             {
-                maxDepth++;
-                var x = 0;
-                foreach (var id in leftover)
-                {
-                    positions[id] = new RegistrationPosition(x * ColumnWidth, top + maxDepth * RowHeight);
-                    placed.Add(id);
-                    x++;
-                }
+                layers.Add(leftover);
             }
 
-            return top + (maxDepth + 1) * RowHeight;
+            // Each layer in the order of its broader concepts already placed, so siblings sit
+            // together; a concept with no placed broader (layer 0, the leftovers) keeps id order.
+            var sequence = new Dictionary<string, int>(StringComparer.Ordinal);
+            var ordered = new List<List<string>>();
+            foreach (var level in layers)
+            {
+                var sorted = level
+                    .OrderBy(id => BroaderPosition(id, sequence))
+                    .ThenBy(id => id, StringComparer.Ordinal)
+                    .ToList();
+                foreach (var id in sorted)
+                {
+                    sequence[id] = sequence.Count;
+                }
+
+                ordered.Add(sorted);
+            }
+
+            var columns = ColumnsFor(members.Count);
+            var bandColumns = ordered.Count == 0 ? 0 : Math.Min(columns, ordered.Max(level => level.Count));
+            var rowTop = top;
+            foreach (var level in ordered)
+            {
+                for (var start = 0; start < level.Count; start += columns)
+                {
+                    var row = level.Skip(start).Take(columns).ToList();
+                    var indent = (bandColumns - row.Count) / 2d;
+                    for (var x = 0; x < row.Count; x++)
+                    {
+                        positions[row[x]] = new RegistrationPosition((indent + x) * ColumnWidth, rowTop);
+                        placed.Add(row[x]);
+                    }
+
+                    rowTop += RowHeight;
+                }
+
+                rowTop += LayerGap;
+            }
+
+            return ordered.Count == 0 ? top : rowTop - LayerGap;
+        }
+
+        // The mean place of a concept's already-placed broader concepts, or MaxValue when it has none.
+        double BroaderPosition(string id, Dictionary<string, int> sequence)
+        {
+            var places = broadersOf.TryGetValue(id, out var broaders)
+                ? broaders.Where(sequence.ContainsKey).Select(broader => (double)sequence[broader]).ToList()
+                : [];
+            return places.Count == 0 ? double.MaxValue : places.Average();
         }
     }
+
+    /// <summary>
+    /// The widest a row may be, in columns: about the square root of twice the elements to place,
+    /// which keeps a band near two columns (about four row heights) of width per row of height.
+    /// </summary>
+    private static int ColumnsFor(int count) => Math.Max(MinimumColumns, (int)Math.Ceiling(Math.Sqrt(2d * count)));
 
     /// <summary>
     /// The acyclic layering subset and the cycles found. Per remaining knot (a strongly
