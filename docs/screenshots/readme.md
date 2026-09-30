@@ -56,6 +56,8 @@ Each diagram capture clicks **Fit to View** after opening (where the toolbar off
 
 Three diagram types the catalogue lists as Prototype or better have no image, because every example the repository holds renders in a way that would misrepresent the diagram rather than show it. Each is a picture to add once its rendering is fixed.
 
+The two C4 rows were fixed on 2026-09-30: a dynamic view now draws the participants of its interactions, numbered, and a deployment view nests each node around what it hosts, names its instances and draws the relationships between them. Their images are still to be captured.
+
 | Diagram type | What the capture showed |
 |---|---|
 | `c4/dynamic` | An empty canvas under its title, for both `bottling-mes.batch-release.adp` and `courier.parcel-scanned.adp`: no element arrives within 20 seconds. |

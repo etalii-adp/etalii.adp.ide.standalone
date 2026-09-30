@@ -52,7 +52,7 @@ public sealed class C4ElementMapper
 
         // One hop: whatever an on-screen element's line reaches.
         var delivered = inView.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var (relationship, _, _) in relationships)
+        foreach (var (relationship, _, _, _) in relationships)
         {
             if (delivered.Contains(relationship.SourceId) || delivered.Contains(relationship.DestinationId))
             {
@@ -64,14 +64,14 @@ public sealed class C4ElementMapper
         var elements = new List<DiagramElement>();
         foreach (var element in shown.Where(element => delivered.Contains(element.Id)))
         {
-            elements.Add(ToElement(element, layout.Boxes[element.Id], workspace.Styles));
+            elements.Add(ToElement(C4LayoutEngine.Displayed(workspace, element), layout.Boxes[element.Id], workspace.Styles));
         }
 
-        foreach (var (relationship, source, destination) in relationships)
+        foreach (var (relationship, source, destination, order) in relationships)
         {
             if (delivered.Contains(relationship.SourceId) && delivered.Contains(relationship.DestinationId))
             {
-                elements.Add(ToElement(relationship, source, destination));
+                elements.Add(ToElement(relationship, source, destination, order));
             }
         }
 
@@ -208,7 +208,7 @@ public sealed class C4ElementMapper
             payload.ToByteArray());
     }
 
-    private static DiagramElement ToElement(C4Relationship relationship, C4Box source, C4Box destination)
+    private static DiagramElement ToElement(C4Relationship relationship, C4Box source, C4Box destination, string order)
     {
         var payload = new C4RelationshipPayload
         {
@@ -216,6 +216,7 @@ public sealed class C4ElementMapper
             DestinationId = relationship.DestinationId,
             Description = relationship.Description,
             Technology = relationship.Technology,
+            InteractionOrder = order,
             SourceX = source.CenterX,
             SourceY = source.CenterY,
             SourceWidth = source.Width,
@@ -254,8 +255,11 @@ public sealed class C4ElementMapper
             payload.ToByteArray());
     }
 
-    /// <summary>The relationships this view draws, paired with the boxes at their two ends.</summary>
-    private static IEnumerable<(C4Relationship Relationship, C4Box Source, C4Box Destination)> RelationshipsOf(
+    /// <summary>
+    /// The relationships this view draws, paired with the boxes at their two ends and, on a
+    /// dynamic view, the interaction's number - empty everywhere else.
+    /// </summary>
+    private static IEnumerable<(C4Relationship Relationship, C4Box Source, C4Box Destination, string Order)> RelationshipsOf(
         C4Workspace workspace,
         C4View view,
         C4Layout layout)
@@ -272,7 +276,25 @@ public sealed class C4ElementMapper
                     yield return (
                         new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", [], interaction.Line),
                         from,
-                        to);
+                        to,
+                        interaction.Order);
+                }
+            }
+
+            yield break;
+        }
+
+        if (view.Kind == C4ViewKind.Deployment)
+        {
+            // A deployment view draws what its instances imply: the relationships are declared
+            // between containers, which the view never shows, so each is drawn between their
+            // instances instead - plus whatever the deployment elements declare themselves.
+            foreach (var relationship in C4LayoutEngine.DeploymentRelationshipsOf(workspace, C4RuleSet.MembersOf(workspace, view)))
+            {
+                if (layout.Boxes.TryGetValue(relationship.SourceId, out var from) &&
+                    layout.Boxes.TryGetValue(relationship.DestinationId, out var to))
+                {
+                    yield return (relationship, from, to, "");
                 }
             }
 
@@ -307,7 +329,7 @@ public sealed class C4ElementMapper
                 ? relationship
                 : relationship with { SourceId = sourceId, DestinationId = destinationId };
 
-            yield return (elevated, layout.Boxes[sourceId], layout.Boxes[destinationId]);
+            yield return (elevated, layout.Boxes[sourceId], layout.Boxes[destinationId], "");
         }
     }
 
