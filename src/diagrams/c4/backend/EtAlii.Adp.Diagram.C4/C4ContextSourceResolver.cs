@@ -162,10 +162,33 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         var to = elementId[(arrow + 2)..at];
         var elevated = workspace.Relationships.FirstOrDefault(candidate =>
             candidate.Line == line &&
-            IsSelfOrAncestor(workspace, from, candidate.SourceId) &&
-            IsSelfOrAncestor(workspace, to, candidate.DestinationId));
-        return elevated is null ? null : elevated with { SourceId = from, DestinationId = to };
+            (IsSelfOrAncestor(workspace, from, candidate.SourceId) || IsInstanceOf(workspace, from, candidate.SourceId)) &&
+            (IsSelfOrAncestor(workspace, to, candidate.DestinationId) || IsInstanceOf(workspace, to, candidate.DestinationId)));
+        if (elevated is not null)
+        {
+            return elevated with { SourceId = from, DestinationId = to };
+        }
+
+        // A dynamic view draws its own interactions, which are declared in the view rather than
+        // the model, at the interaction's line.
+        var interaction = workspace.Views
+            .SelectMany(view => view.Interactions)
+            .FirstOrDefault(candidate =>
+                candidate.Line == line &&
+                string.Equals(candidate.SourceId, from, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(candidate.DestinationId, to, StringComparison.OrdinalIgnoreCase));
+        return interaction is null
+            ? null
+            : new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", [], interaction.Line);
     }
+
+    /// <summary>
+    /// Whether <paramref name="candidate"/> is an instance of <paramref name="id"/>: a deployment
+    /// view draws a relationship between two containers between their instances.
+    /// </summary>
+    private static bool IsInstanceOf(C4Workspace workspace, string candidate, string id) =>
+        workspace.Find(candidate) is { ReferencedId: { } referencedId }
+        && string.Equals(referencedId, id, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Whether <paramref name="candidate"/> is <paramref name="id"/> or one of the elements it sits inside.</summary>
     private static bool IsSelfOrAncestor(C4Workspace workspace, string candidate, string id)
@@ -180,10 +203,14 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         return false;
     }
 
+    /// <summary>An end's name as drawn: an instance goes by the element it instantiates.</summary>
+    private static string NameOf(C4Workspace workspace, string id) =>
+        workspace.Find(id) is { } element ? C4LayoutEngine.Displayed(workspace, element).Name : id;
+
     private static ContextLevelDetail RelationshipDetail(C4Workspace workspace, C4Relationship relationship)
     {
-        var source = workspace.Find(relationship.SourceId)?.Name ?? relationship.SourceId;
-        var destination = workspace.Find(relationship.DestinationId)?.Name ?? relationship.DestinationId;
+        var source = NameOf(workspace, relationship.SourceId);
+        var destination = NameOf(workspace, relationship.DestinationId);
         return new ContextLevelDetail
         {
             Element = new ElementDetail
