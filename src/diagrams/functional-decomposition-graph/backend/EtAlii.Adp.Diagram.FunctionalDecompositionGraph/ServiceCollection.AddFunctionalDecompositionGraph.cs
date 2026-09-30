@@ -11,7 +11,7 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
     /// <summary>
     /// Registers what a functional decomposition graph needs to open, to follow its file and to be
     /// edited: the store, the mapper, the session factory, the reload seam, the selection resolver,
-    /// the toolbox, action and property providers, and one handler per command.
+    /// the toolbox, action and property providers, one handler per command, and the validator.
     /// </summary>
     public static IServiceCollection AddFunctionalDecompositionGraph(this IServiceCollection services)
     {
@@ -53,6 +53,10 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
         services.AddSingleton<ICommandHandler<SetFdgDescriptionCommand>, SetFdgDescriptionCommandHandler>();
         services.AddSingleton<ICommandHandler<RenameFdgConnectionCommand>, RenameFdgConnectionCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IFdgDocumentStore>>, RestoreDocumentCommandHandler<IFdgDocumentStore>>();
+
+        // The rules' join to the Errors and Warnings panel (Requirement 5.5): a document edited
+        // outside ADP into a broken state still opens, and its breaches are listed there.
+        services.AddSingleton<IDiagramValidator, FdgValidator>();
 
         return services;
     }
