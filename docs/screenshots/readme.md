@@ -62,6 +62,8 @@ Three diagram types the catalogue lists as Prototype or better have no image, be
 | `c4/deployment` | Every deployment node, infrastructure node and container instance laid out in one flat row with nothing nested, for both `bottling-mes.plant-deployment.adp` and `courier.production.adp`. |
 | `w3c/skos` | `geographic-names.adp` draws every concept on one horizontal line, which reads as a rule across the canvas at any zoom; `business-economics.adp` draws nothing within 20 seconds. |
 
+The `w3c/skos` line was the layout's doing: it put each hierarchy layer on one row however wide, and the STW extracts are a few layers deep and hundreds of concepts wide. Since 2026-09-30 a wide layer wraps onto centred rows (`SkosLayout.cs`), so `geographic-names.adp` lays out about three times as wide as it is tall (held by `SkosExamples.Tests.cs`). Neither image has been retaken yet, and the `business-economics.adp` symptom was not re-examined with that change.
+
 ## `dependency-graph.png` was judged and NOT retaken, 2026-09-24 (canvas-single-scrollbar task 5)
 
 **The question**: `canvas-single-scrollbar` made the library's drawing surface a block box, removing about

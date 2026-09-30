@@ -52,4 +52,24 @@ public class SkosExamplesTests
         // concepts it does not carry is the extract's own boundary drawn wrong, not the data's.
         Assert.Empty(problems);
     }
+
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public async Task EveryStwExtract_LaysOutAsAHierarchy_NotAsALine(string name)
+    {
+        // Arrange: the whole extract, laid out as the session lays it out - unbudgeted.
+        var path = IoPath.Combine(StwFolder(), name + ".ttl");
+        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        var projection = SkosProjection.Project(RdfParser.Parse(LineDocument.Parse(text)), int.MaxValue);
+
+        // Act.
+        var positions = SkosLayout.Layout(projection).Positions.Values.ToList();
+
+        // Assert: fitted to a window, the drawing must keep a readable shape. With one row per
+        // layer, geographic-names was 166 concepts wide and seven rows tall - about fifty to one -
+        // and read as a single horizontal rule at any zoom (docs/screenshots/readme.md).
+        var width = positions.Max(p => p.X) - positions.Min(p => p.X) + 240;
+        var height = positions.Max(p => p.Y) - positions.Min(p => p.Y) + 110;
+        Assert.InRange(width / height, 0.5, 4);
+    }
 }

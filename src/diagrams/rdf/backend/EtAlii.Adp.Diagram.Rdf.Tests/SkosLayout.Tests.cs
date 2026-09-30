@@ -113,4 +113,46 @@ public class SkosLayoutTests
         Assert.True(first.Positions["res:http://example.org/unfiled"].Y > first.Positions["res:http://example.org/a"].Y);
         Assert.True(first.Positions["res:http://example.org/group"].Y > first.Positions["res:http://example.org/unfiled"].Y);
     }
+
+    [Fact]
+    public void AWideLayer_WrapsOntoCentredRows_WithSiblingsTogether()
+    {
+        // Arrange: two top concepts under one scheme, each with twenty narrower concepts whose ids
+        // interleave (a01 under b, a02 under a, ...), so id order would scatter the siblings. The
+        // forty narrower concepts are far wider than the band's column budget.
+        var turtle = new System.Text.StringBuilder("""
+            ex:scheme a skos:ConceptScheme ; skos:hasTopConcept ex:a , ex:b .
+            ex:a a skos:Concept ; skos:topConceptOf ex:scheme .
+            ex:b a skos:Concept ; skos:topConceptOf ex:scheme .
+
+            """);
+        for (var index = 1; index <= 40; index++)
+        {
+            turtle.Append($"ex:c{index:00} a skos:Concept ; skos:inScheme ex:scheme ; skos:broader ex:{(index % 2 == 0 ? "a" : "b")} .\n");
+        }
+
+        // Act.
+        var result = Layout(turtle.ToString());
+
+        // Assert: the layer wraps, so the band is no longer one row of forty.
+        var children = Enumerable.Range(1, 40).Select(index => $"res:http://example.org/c{index:00}").ToList();
+        var rows = children.Select(id => result.Positions[id].Y).Distinct().Count();
+        Assert.True(rows > 1, $"The forty narrower concepts sit on {rows} row(s).");
+        var width = children.Max(id => result.Positions[id].X) - children.Min(id => result.Positions[id].X);
+        Assert.True(width < 40 * 240 / 2, $"The narrower layer is {width} wide.");
+
+        // Assert: in reading order, every narrower concept of a comes before every one of b.
+        var reading = children
+            .OrderBy(id => result.Positions[id].Y)
+            .ThenBy(id => result.Positions[id].X)
+            .Select(id => int.Parse(id[^2..], System.Globalization.CultureInfo.InvariantCulture) % 2 == 0 ? "a" : "b")
+            .ToList();
+        Assert.Equal(Enumerable.Repeat("a", 20).Concat(Enumerable.Repeat("b", 20)), reading);
+
+        // Assert: the two top concepts' row is centred over the wider rows below it.
+        var tops = new[] { "res:http://example.org/a", "res:http://example.org/b" }.Select(id => result.Positions[id].X).ToList();
+        var left = children.Min(id => result.Positions[id].X);
+        var right = children.Max(id => result.Positions[id].X);
+        Assert.Equal((left + right) / 2, (tops.Min() + tops.Max()) / 2);
+    }
 }
