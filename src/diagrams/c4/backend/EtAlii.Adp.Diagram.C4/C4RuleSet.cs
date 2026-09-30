@@ -391,7 +391,9 @@ public static class C4RuleSet
         // is that Structurizr's inspector has no such rule at all, which is a fact about the
         // notation rather than about one file.
 
-        if (members.Count == 0 && view.Interactions.Count == 0)
+        // A dynamic view's members include its interactions' participants, so interactions that
+        // name nothing the model declares leave it as empty as a view with none at all.
+        if (members.Count == 0)
         {
             yield return new DiagramProblem(
                 DiagramProblemSeverity.Warning,
@@ -421,6 +423,18 @@ public static class C4RuleSet
         if (view.IncludesEverything)
         {
             named.AddRange(workspace.Elements.Where(element => permitted.Contains(element.Kind)));
+        }
+
+        // A dynamic view's body is its interactions, and whatever takes part in one is on the
+        // view without being included - as in Structurizr, where a dynamic view usually has no
+        // include at all. Without this a dynamic view drew an empty canvas.
+        if (view.Kind == C4ViewKind.Dynamic)
+        {
+            named.AddRange(view.Interactions
+                .SelectMany(interaction => new[] { interaction.SourceId, interaction.DestinationId })
+                .Select(workspace.Find)
+                .Where(element => element is not null)
+                .Select(element => element!));
         }
 
         return named
