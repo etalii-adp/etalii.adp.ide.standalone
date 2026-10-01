@@ -95,6 +95,26 @@ public class ConformanceFixturesTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(Fixtures))]
+    public void EveryByteOfTheInputBelongsToTheReading(string name)
+    {
+        // Arrange.
+        var folder = Path.Combine(Repository.Conformance, "fixtures", name);
+        var fixturePath = Path.Combine(folder, "fixture.json");
+        using var fixture = JsonDocument.Parse(File.ReadAllBytes(fixturePath));
+        var inputName = fixture.RootElement.GetProperty("input").GetString()!;
+        if (inputName.EndsWith(".adp", StringComparison.OrdinalIgnoreCase)) return;
+        var binding = FblDocumentLoader.ResolveReference(fixture.RootElement.GetProperty("binding").GetString()!, fixturePath, out _);
+
+        // Act.
+        var reading = Rules.BodyReading.Read(File.ReadAllBytes(Path.Combine(folder, inputName)), binding, new FblOptions { FileName = inputName });
+
+        // Assert: the byte-coverage invariant of FBL §4.1.
+        Assert.Null(reading.Unreadable);
+        Assert.Empty(reading.Family.Unaccounted());
+    }
+
     private static void AssertRead(Subject subject, JsonElement read, string name)
     {
         var model = subject.Model!;
