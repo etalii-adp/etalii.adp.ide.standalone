@@ -13,7 +13,7 @@ Every name in this document that does not exist yet is a proposal, marked as new
 ### Technical Standards (tech.md)
 
 - **Decision 7, commands for every state change, and Requirement 6**: the library's history is the FBL history (inverse splices, snapshots, drift refusal), not `ICommand`. A host that wires it in later wraps an FBL edit in one of its commands; the library must not depend on the host's command types to stay portable to the other three hosts' implementations (Requirement 1.3).
-- **Decision 11, concurrent saves take turns in `AdpFileWriter.Save`**: the library cannot use `AdpFileWriter` (it references no project of the solution), so its atomic save is the plain form FBL §6.6 asks for: a temporary file in the same folder, then a move over the destination. **It has no per-destination turn, and says so beside the code.** When a module adopts the library, its store should save the library's bytes through `AdpFileWriter.Save` rather than the library's own save, which exists for the library's tests and for callers outside this host.
+- **Decision 11, concurrent saves take turns in `AdpFileWriter.Save`**: the library cannot use `AdpFileWriter` (it references no project of the solution), and, as built, it writes no file at all: `OpenBody.Save` and `PluginBody.Save` refuse an unreadable or read-only body and otherwise hand the bytes to a writer the host passes, which here is `AdpFileWriter.Save`; a new body from a template is created by the host with `AdpFileWriter.Create`, which never overwrites. **The first build had its own temp-then-move save and a `CreateNew` template writer, and `ShapeOfFileAccessTests` refused both** as reimplementations of the central writer; the library's FBL documents are read at the same `FileShare.ReadWrite | FileShare.Delete` the central reader uses. Requirements 5.9 and 8.4 still say the library writes; how they should read is put to the user.
 - **Testing & quality**: four gates, exit codes captured, and every guard seen to fail (Requirement 11, *Reliability*).
 - **Diagram storage**: unchanged. Nothing here changes where any existing diagram keeps anything.
 
@@ -76,7 +76,7 @@ flowchart LR
 | `Yaml`, `Json`, `Xml`, `Lines` | One lossless reader and writer per family; `Lines` serves both `lines` and `blocks` | `YamlFamily`, `YamlParser`, `YamlScalars`, `JsonFamily`, `XmlFamily`, `LinesFamily` |
 | `Rules` | The tree every tree family produces, selectors, rule matching, slots, ids, containment, references, views and resources | `FamilyReader`, `TreeFamily`, `TreeEntry`, `TreeValue`, `Selector`, `BodyReading` |
 | `Planning` | Model changes to splices; new-text rules shared by the families | `ModelChange`, `EditPlanner`, `Splice`, `SpliceOperation`, `Edit`, `Refusal`, `NewText` |
-| `History` | Undo, redo, snapshots, digests, drift, the atomic save | `SplicedFile`, `OpenBody`, `EditHistory`, `UndoResult`, `AtomicFile` |
+| `History` | Undo, redo, snapshots, digests, drift, and the save handed to the host's writer | `SplicedFile`, `OpenBody`, `EditHistory`, `UndoResult` |
 | `Registration` | The `.adp` line form, layout, identities, legacy sidecars, finding the body | `RegistrationDocument`, `OpenRegistration`, `LegacySidecar`, `BodyLocator` |
 | `Routing` | Markers, candidates, readings, templates, folder recognition and globs | `Router`, `MarkerEvaluator`, `TemplateWriter`, `FolderSubject`, `Glob` |
 | `Plugins` | The FBL §11.2 contract as an interface and its data, and a body read through it | `IPersistencePlugin`, `PluginReadResult`, `PluginPlanResult`, `PluginBody` |

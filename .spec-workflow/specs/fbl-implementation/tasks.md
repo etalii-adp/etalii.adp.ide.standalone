@@ -128,6 +128,7 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - Apply, undo, redo, snapshots, SHA-256 digests, the drift refusal sentence, and the atomic save (temporary file, move, permissions kept, unreadable and read-only bodies never saved), with the comment that it has no per-destination turn (tech.md decision 11).
   - _Requirements: 5.9, 6.1, 6.2, 6.3, 6.4_
   - _Prompt: Role: .NET developer | Task: Implement OpenBody and EditHistory per requirements 5.9 and 6.1 to 6.4 and FBL sections 6.6, 7.1 and 7.2 | Restrictions: an undo on drift writes nothing | Success: unit tests pass including a snapshot undo equal to an inverse-splice undo_
+  - _As built: the save hands the bytes to the host's writer (`Save(Action<byte[]>)`) instead of writing a temporary and moving it, because the repository's `ShapeOfFileAccessTests` refuses a second atomic writer; see the design's *Decision 11*._
 
 - [x] 13. The registration
   - Files: `Registration/` in the library and its tests
@@ -142,6 +143,7 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - No plugin is implemented; the tests use a hand-written fake plugin to prove the host side.
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 9.1, 9.2, 9.3, 9.4_
   - _Prompt: Role: .NET developer | Task: Implement routing, templates, folder subjects and the plugin contract per requirements 8 and 9 and FBL sections 10 to 13 | Restrictions: never choose silently between candidates; never overwrite a file | Success: every vendored template reads back cleanly and routing tests pass_
+  - _As built: `TemplateWriter` produces the bytes and the host creates the file with `AdpFileWriter.Create`, for the same reason._
 
 - [x] 15. The conformance runner
   - Files: `Conformance/ConformanceFixtures.Tests.cs` in the test project
