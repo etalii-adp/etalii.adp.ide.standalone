@@ -19,7 +19,7 @@ Every name in this document that does not exist yet is a proposal, marked as new
 
 ### Project Structure (structure.md)
 
-- Two core projects under `src/backend/`, named for their purpose. `Specification` is a new middle segment: it says the project implements one of ADP's specifications (as `etalii.adp` defines them), and leaves room for `EtAlii.Adp.Specification.Disl` and the others without a rename. The name is the user's.
+- Two core projects under `src/backend/`, named for their purpose. `Specification` is a new middle segment: it says the project implements one of ADP's specifications (as `etalii.adp` defines them), and leaves room for one such project per specification (DISL and the others) without a rename. The name is the user's.
 - Namespaces follow the project and its folders: `EtAlii.Adp.Specification.Fbl.Yaml`, `.Planning`, and so on. No folder is skipped as a namespace provider, so the project's `.csproj.DotSettings` stays empty of `NamespaceFoldersToSkip` entries.
 - `docs/solution-structure.md` gains the two projects in the core lists and its counts move (111 to 113 projects, core 29 to 31, production 79 to 80, test 32 to 33), in the same change that adds them, because `ArchitecturePages.Tests` recomputes them from the solution.
 
