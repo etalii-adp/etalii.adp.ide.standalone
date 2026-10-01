@@ -235,7 +235,10 @@ internal sealed class BodyReading
         if (program is null) return null;
         try
         {
-            return program.Evaluate(Variables(candidate));
+            var value = program.Evaluate(Variables(candidate));
+            if (value is not CelError failed) return value;
+            problem = failed.Message;
+            return null;
         }
         catch (CelException e)
         {
