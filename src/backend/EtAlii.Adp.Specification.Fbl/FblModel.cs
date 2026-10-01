@@ -28,7 +28,23 @@ public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<
     public IEnumerable<FblElement> Relations => Elements.Where(e => e.IsRelation);
 
     public FblElement? Find(string id) => Elements.FirstOrDefault(e => e.Id == id);
+
+    /// <summary>The views a blocks body defines (FBL §4.7), in document order.</summary>
+    public IReadOnlyList<FblView> Views { get; init; } = [];
+
+    /// <summary>The resources a body holds (FBL §8.2): the values of the binding's resource capture, in document order.</summary>
+    public IReadOnlyList<string> Resources { get; init; } = [];
+
+    /// <summary>
+    /// The view a registration's <c>view</c> header selects (FBL §9.3): the one of that name, ignoring
+    /// case; without the header, the first in document order; null when there is none.
+    /// </summary>
+    public FblView? SelectView(string? header) =>
+        header is null ? Views.FirstOrDefault() : Views.FirstOrDefault(v => string.Equals(v.Name, header, StringComparison.OrdinalIgnoreCase));
 }
+
+/// <summary>A view a block of the body defines (FBL §4.7): its name, the block rule that matched it, and where it is.</summary>
+public sealed record FblView(string Name, string Block, Span Span, int Line);
 
 /// <summary>What a DISL id strategy is asked when a rule stores no id (FBL §5.3, DISL §11.5).</summary>
 public sealed record IdRequest(

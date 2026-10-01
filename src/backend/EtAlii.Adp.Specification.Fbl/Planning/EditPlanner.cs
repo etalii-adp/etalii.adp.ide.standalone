@@ -30,8 +30,8 @@ internal static class EditPlanner
                 case ModelChange.Remove remove:
                     PlanRemove(plan, remove);
                     break;
-                case ModelChange.Place:
-                    throw new ArgumentException("A placement is an edit of the registration, not of the body.", nameof(change));
+                case ModelChange.Place or ModelChange.Identify:
+                    throw new ArgumentException("Placements and stored ids are edits of the registration, not of the body.", nameof(change));
                 default:
                     throw new ArgumentOutOfRangeException(nameof(change));
             }

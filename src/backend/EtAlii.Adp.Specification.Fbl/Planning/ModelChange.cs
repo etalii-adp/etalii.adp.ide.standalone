@@ -17,6 +17,9 @@ public abstract record ModelChange
     /// <summary>Places an element on the canvas: an edit of the registration, not of the body (FBL §8.3).</summary>
     public sealed record Place(string Id, double X, double Y) : ModelChange;
 
+    /// <summary>Stores the id of the element with a natural key in the registration's <c>identities</c> (FBL §8.6).</summary>
+    public sealed record Identify(string Key, string Id) : ModelChange;
+
     /// <summary>Saves without a change: no splice (FBL §15.3).</summary>
     public sealed record Save : ModelChange;
 }

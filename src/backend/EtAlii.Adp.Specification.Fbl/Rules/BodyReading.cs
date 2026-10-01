@@ -43,6 +43,12 @@ internal sealed class BodyReading
 
     public IReadOnlyList<Finding> Findings => _findings;
 
+    /// <summary>The views the body's view blocks define (FBL §4.7), in document order.</summary>
+    public List<FblView> Views { get; } = [];
+
+    /// <summary>The values of the binding's resource capture (FBL §8.2) in document order: the resources the body holds.</summary>
+    public List<string> Resources { get; } = [];
+
     public (int Offset, string Message)? Unreadable { get; private set; }
 
     public string? ClaimedBy(Entry entry) => _claims.GetValueOrDefault(entry);
@@ -161,6 +167,10 @@ internal sealed class BodyReading
                 else
                 {
                     _claims[entry] = candidate.Block!.Name;
+                    if (candidate.Block.View is { } group && candidate.Captures.TryGetValue(group, out var view))
+                    {
+                        Views.Add(new FblView(view, candidate.Block.Name, entry.Own, Text.Position(entry.Own.Start).Line));
+                    }
                 }
                 error = null;
                 break;
@@ -192,6 +202,7 @@ internal sealed class BodyReading
     {
         if (Binding.Registration.ResourceCapture is not { } capture) return true;
         if (!candidate.Captures.TryGetValue(capture, out var value)) return true;
+        if (!Resources.Contains(value)) Resources.Add(value);
         _resource ??= Options.Resource ?? value;
         return value == _resource;
     }
@@ -501,7 +512,11 @@ internal sealed class BodyReading
             e.Entry.Own,
             e.Line)).ToList(),
         _findings.ToList(),
-        Unreadable is not null);
+        Unreadable is not null)
+    {
+        Views = Views.ToList(),
+        Resources = Resources.ToList(),
+    };
 }
 
 /// <summary>A value read from an attribute's <c>override</c> slot, which writing removes (FBL §5.2).</summary>
