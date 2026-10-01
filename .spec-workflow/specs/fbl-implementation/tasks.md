@@ -33,7 +33,7 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
 
 ## The tasks
 
-- [ ] 1. Scaffold the two projects and keep the architecture pages true
+- [x] 1. Scaffold the two projects and keep the architecture pages true
   - Files: `src/backend/EtAlii.Adp.Specification.Fbl/EtAlii.Adp.Specification.Fbl.csproj` (+ `.csproj.DotSettings`), `src/backend/EtAlii.Adp.Specification.Fbl.Tests/EtAlii.Adp.Specification.Fbl.Tests.csproj` (+ `.csproj.DotSettings`), `src/backend/EtAlii.Adp.slnx`, `docs/solution-structure.md`
   - The library: `Microsoft.NET.Sdk`, no framework reference, `PackageReference` to YamlDotNet only, `InternalsVisibleTo` its tests. The tests: the xUnit v3 executable shape of `EtAlii.Adp.Problems.Tests.csproj`, referencing the library and `EtAlii.Adp.TestSupport`.
   - Add both to the slnx; move the page's counts (113, core 31, production 80, test 33) and add both names to the core lists, then run `ArchitecturePages.Tests` and see it green.
@@ -41,8 +41,9 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - _Leverage: `src/backend/EtAlii.Adp.Problems.Tests/EtAlii.Adp.Problems.Tests.csproj`, `docs/solution-structure.md`_
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Role: .NET developer | Task: Create the two projects and register them, updating docs/solution-structure.md in the same change so ArchitecturePages.Tests stays green, per requirements 1.1 to 1.3 | Restrictions: change no existing file except the slnx and the page; no new package version | Success: dotnet test passes with both projects included and the page's counts recomputed by its guard_
+  - _As built: no smoke test was kept; the conformance fixtures replaced it as soon as they ran._
 
-- [ ] 2. Vendor the FBL examples, fixtures and registrations
+- [x] 2. Vendor the FBL examples, fixtures and registrations
   - Files: `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/` (the eight `.fbl`, `fixtures/`, `registrations/`, `LICENSE.md`, `readme.md`), `.gitattributes`
   - Copy from `etalii-adp/etalii.adp` `specifications/fbl/` byte for byte at the current `develop` commit, and name that commit in the readme with the date and the rule that these files are never edited here.
   - Copy that repository's `LICENSE` verbatim as `LICENSE.md` beside them (CLAUDE.md, *Vendored example data*), even though it is the same owner's Apache-2.0 licence, because the rule does not depend on who owns the source.
@@ -52,15 +53,16 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - _Requirements: 10.1, 10.2, 10.3_
   - _Prompt: Role: .NET developer | Task: Vendor the FBL examples unchanged with their source commit and licence, and exempt the byte-compared inputs from line-ending conversion, per requirements 10.1 to 10.3 | Restrictions: never edit a vendored file; scope the .gitattributes lines to the vendored folder | Success: every vendored file's hash equals the source's in a fresh checkout_
 
-- [ ] 3. Bytes, lines, spans and findings
+- [x] 3. Bytes, lines, spans and findings
   - Files: `Text/` and `Rules/Finding.cs`, `Rules/SourceLocation.cs` in the library; `Text/` tests
   - `BodyText`: strict UTF-8 validity, BOM length, line table with CRLF, LF and lone CR, dominant ending with CRLF winning a tie, byte offset to line and code-point column.
   - `Finding` with code, severity, message and location (file, line, column, length of the own span).
   - Tests include a line with a four-byte character before the column being measured, a body with only a lone CR, and an invalid UTF-8 sequence.
   - _Requirements: 3.1, 3.2, 4.8_
   - _Prompt: Role: .NET developer | Task: Implement BodyText and the finding types per requirements 3.1, 3.2 and 4.8 and FBL sections 2.6 and 7.4 | Restrictions: offsets are UTF-8 bytes, columns are code points, never string indexes | Success: unit tests pass including the four-byte-character column case_
+  - _As built: `Finding` and `SourceLocation` are in `Finding.cs` at the library's root, because every folder uses them; the tests are in `Bytes/` in the test project, a `Text` folder there would shadow the library's `Text` namespace._
 
-- [ ] 4. The regex subset and the CEL subset
+- [x] 4. The regex subset and the CEL subset
   - Files: `Expressions/` in the library and its tests
   - `RegexSubset` rejects exactly what FBL §2.5 excludes, naming the construct; `BoundedRegex` runs with a timeout from `FblOptions`.
   - `CelCompiler` and `CelProgram` for the subset in the design, with an evaluation step budget and "construct not supported" problems for anything else; compilation checks variables against the context of FBL §2.4.
@@ -68,7 +70,7 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - _Requirements: 2.3, 2.4_
   - _Prompt: Role: .NET developer with parser experience | Task: Implement the regex subset check and the CEL subset evaluator per requirements 2.3 and 2.4 and the design's CEL section | Restrictions: no new package; reject rather than approximate an unsupported construct | Success: every vendored binding's expressions compile and evaluate to their expected values; one rejected case per excluded construct_
 
-- [ ] 5. The FBL document loader
+- [x] 5. The FBL document loader
   - Files: `Documents/` in the library and its tests
   - Duplicate-key detection with JSON Pointers, version check, typed records for every `$defs` construct, name resolution, the §14.1 step 6 checks that need no DISL, binding references, and all problems collected.
   - Each of the eight vendored documents loads without an error; one hand-written broken document per check fails with the right pointer.
@@ -76,75 +78,80 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - _Requirements: 2.1, 2.2, 2.5, 2.6, 2.7, 2.8_
   - _Prompt: Role: .NET developer | Task: Implement FblDocumentLoader per requirements 2.1, 2.2 and 2.5 to 2.8 | Restrictions: report every problem, never stop at the first; no JSON Schema package | Success: the eight vendored documents load cleanly and each negative case reports the expected pointer and severity_
 
-- [ ] 6. The lossless tree, and the lines and blocks readers
+- [x] 6. The lossless tree, and the lines and blocks readers
   - Files: `Lossless/`, `Lines/`, `Blocks/` in the library and their tests
   - The tree types and the byte-coverage invariant as a reusable test helper, then the shared lines reader (comments, statements, words, quoted words) and the blocks reader (brace scan, strings, nesting, `within`, `^`, `view`).
   - Run the invariant on the vendored `.cld` and `.dsl` inputs and on every real `.cld` and `.dsl` under `src/` (enumerated as task 16 will, with a minimum count).
   - _Requirements: 3.3, 3.7, 3.8, 3.9_
   - _Prompt: Role: .NET developer | Task: Implement the lossless tree and the lines and blocks readers per requirements 3.3, 3.7 to 3.9 and FBL sections 4.1, 4.6 and 4.7 | Restrictions: every byte owned exactly once | Success: the byte-coverage invariant holds on every vendored and real .cld and .dsl file_
+  - _As built: there is no `Lossless` folder: the tree every tree family shares is `TreeFamily`, `TreeEntry` and `TreeValue` in `Rules/`, `FamilyReader` is the base of all five, and `Lines/LinesFamily` reads both `lines` and `blocks`. The invariant is `FamilyReader.Unaccounted()`, run on every fixture and every real file._
 
-- [ ] 7. The json reader
+- [x] 7. The json reader
   - Files: `Json/` in the library and its tests
   - Members, items, separators, string spans with quotes, comments making the body unreadable, duplicate keys as findings.
   - Invariant on the vendored `sales.json` and the real Databricks `pipeline.json` and `findings-pipeline.json`, and on the C4 `*.layout.json` sidecars.
   - _Requirements: 3.5_
   - _Prompt: Role: .NET developer | Task: Implement the json lossless reader on Utf8JsonReader per requirement 3.5 and FBL section 4.4 | Restrictions: byte offsets from the reader, never from a decoded string | Success: the invariant holds on every vendored and real json file named in the task_
 
-- [ ] 8. The yaml reader
+- [x] 8. The yaml reader
   - Files: `Yaml/` in the library and its tests
   - Structure from YamlDotNet's events, spans corrected as the design says, first document only, anchors and merges read-only, syntax errors unreadable.
   - **The mark-to-byte check first**, on every real `.tml` and Databricks YAML file: each scalar's span decodes to the scalar as written. Then the invariant on the same files and the vendored `.tml` and `.yml` inputs.
   - _Leverage: YamlDotNet's `Parser` and its `Mark`_
   - _Requirements: 3.4_
   - _Prompt: Role: .NET developer familiar with YAML | Task: Implement the yaml lossless reader per requirement 3.4 and FBL section 4.3 | Restrictions: do not trust YamlDotNet's character marks as byte offsets | Success: the mark-to-byte check and the invariant hold on every vendored and real yaml file, including the BOM and no-trailing-newline fixtures_
+  - _As built: the reader is the library's own `YamlParser`, with YamlDotNet judging well-formedness only (see the design's *The yaml reader*), so there is no mark-to-byte mapping to test; the byte-coverage invariant and the fixtures guard the spans instead._
 
-- [ ] 9. The xml reader
+- [x] 9. The xml reader
   - Files: `Xml/` in the library and its tests
   - The lossless tokenizer, well-formedness as far as FBL needs it, CR kept, references, attribute order, `html-paragraphs`.
   - Invariant on the vendored `plan.mm` and every real `.mm` under `src/`.
   - _Requirements: 3.6_
   - _Prompt: Role: .NET developer | Task: Implement the xml lossless tokenizer per requirement 3.6 and FBL section 4.5 | Restrictions: no XmlReader for spans; never normalise CR | Success: the invariant holds on every vendored and real .mm file_
 
-- [ ] 10. The rule engine and the model
+- [x] 10. The rule engine and the model
   - Files: `Rules/` in the library and its tests
   - Selectors with captures, rule matching and precedence, every slot kind and the reading options, ids (`from`, `sidecar`, place-based), containment, relations, dangling references, the header check, tolerant reading, unbound statements, and the unreadable body.
   - Every vendored fixture's `read` block passes here, before any writing exists.
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
   - _Prompt: Role: .NET developer | Task: Implement the rule engine producing FblModel per requirements 4.1 to 4.7 and FBL section 5 | Restrictions: reading never throws on content | Success: every vendored fixture's read expectations pass_
 
-- [ ] 11. The planner and the new-text rules
+- [x] 11. The planner and the new-text rules
   - Files: `Planning/` and each family's writer in the library, and their tests
   - The eleven operations, insert and remove planning, attribute writing options, references and rename, refusals, saves without change, determinism (plan twice, compare).
   - `NewText` tests are written from the sentences of FBL §6.3, each quoting the sentence it tests; the plain-safe table covers every condition in that paragraph.
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8_
   - _Prompt: Role: .NET developer | Task: Implement EditPlanner and the new-text rules per requirements 5.1 to 5.8 and FBL section 6 | Restrictions: only the eleven operations; a refusal rejects the whole edit | Success: unit tests pass and every vendored fixture's edit steps produce their splices (asserted fully in task 15)_
 
-- [ ] 12. `OpenBody`, history, drift and saving
+- [x] 12. `OpenBody`, history, drift and saving
   - Files: `History/` and the atomic save in the library, and their tests
   - Apply, undo, redo, snapshots, SHA-256 digests, the drift refusal sentence, and the atomic save (temporary file, move, permissions kept, unreadable and read-only bodies never saved), with the comment that it has no per-destination turn (tech.md decision 11).
   - _Requirements: 5.9, 6.1, 6.2, 6.3, 6.4_
   - _Prompt: Role: .NET developer | Task: Implement OpenBody and EditHistory per requirements 5.9 and 6.1 to 6.4 and FBL sections 6.6, 7.1 and 7.2 | Restrictions: an undo on drift writes nothing | Success: unit tests pass including a snapshot undo equal to an inverse-splice undo_
+  - _As built: the save hands the bytes to the host's writer (`Save(Action<byte[]>)`) instead of writing a temporary and moving it, because the repository's `ShapeOfFileAccessTests` refuses a second atomic writer; see the design's *Decision 11*._
 
-- [ ] 13. The registration
+- [x] 13. The registration
   - Files: `Registration/` in the library and its tests
   - Line form, unknown headers, body location with the workspace-root and reparse-point checks, `view` and `resource`, layout writing, stale entries, identities, legacy sidecars.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8_
   - _Prompt: Role: .NET developer | Task: Implement the registration reader, planner and body locator per requirements 7.1 to 7.8 and FBL section 8 | Restrictions: never create a legacy sidecar; never resolve outside the workspace root | Success: the vendored registrations and the registration-layout fixture pass_
+  - _As built: `ModelChange.Identify` was added for storing an id, and views and resources became part of the reading (`FblModel.Views`, `SelectView`, `Resources`)._
 
-- [ ] 14. Routing, templates, folder subjects and the plugin contract
+- [x] 14. Routing, templates, folder subjects and the plugin contract
   - Files: `Routing/`, `Plugins/` in the library and their tests
   - Markers, candidates, readings in FBL §9.4 order, templates with the four placeholders and `CreateNew`, every vendored template read back through its binding with no warning, folder recognition and globs without following links, the plugin interface, and a missing plugin opening read-only with `std.pluginMissing`.
   - No plugin is implemented; the tests use a hand-written fake plugin to prove the host side.
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 9.1, 9.2, 9.3, 9.4_
   - _Prompt: Role: .NET developer | Task: Implement routing, templates, folder subjects and the plugin contract per requirements 8 and 9 and FBL sections 10 to 13 | Restrictions: never choose silently between candidates; never overwrite a file | Success: every vendored template reads back cleanly and routing tests pass_
+  - _As built: `TemplateWriter` produces the bytes and the host creates the file with `AdpFileWriter.Create`, for the same reason._
 
-- [ ] 15. The conformance runner
+- [x] 15. The conformance runner
   - Files: `Conformance/ConformanceFixtures.Tests.cs` in the test project
   - One theory over every vendored `fixture.json` (minimum eight), asserting `read`, every step's splices and bytes, refusals, and every vendored registration parsing and writing back unchanged.
   - _Requirements: 10.4, 10.5_
   - _Prompt: Role: .NET test developer | Task: Run every vendored FBL fixture and registration through the library per requirements 10.4 and 10.5 | Restrictions: compare bytes, not strings; never edit a fixture | Success: all eight fixtures and all registrations pass_
 
-- [ ] 16. The real-file suite and the divergence file
+- [x] 16. The real-file suite and the divergence file
   - Files: `RealFiles/` in the test project (`RealFileCorpus`, one test class per property, the module type-mapping table, `divergences.json`), and `ProjectReference`s to the timeline, causal loop, C4 and mind map module projects
   - Every property of Requirement 11 as a theory over `(binding, file)` pairs, with the minimum counts of Requirement 11.1 asserted by each enumeration.
   - The module cross-check uses only public API; the Databricks parsers, being `internal`, are not used.
@@ -152,8 +159,9 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - _Leverage: `TimelineParser`, `CausalLoopParser`, `C4Parser`, `MindmapDocument`; `EtAlii.Adp.TestSupport`_
   - _Requirements: 1.5, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.1, 12.2_
   - _Prompt: Role: .NET test developer | Task: Test the vendored bindings on every real file under src per requirements 11, 12.1, 12.2 and 1.5 | Restrictions: no change to any module; no hard-coded file list; no divergence hidden | Success: the suite runs green with every divergence listed and justified_
+  - _As built: the suite holds 42 divergences, listed in the pull request as follow-ups for `etalii-adp/etalii.adp`._
 
-- [ ] 17. See the guards fail, re-run the coverage diff, and deliver
+- [x] 17. See the guards fail, re-run the coverage diff, and deliver
   - Files: the implementation log
   - Sabotage each property once as the design's *Seeing the guards fail* lists (an extra byte from the planner, an undo without its drift check, a reader that drops a node, a rule engine that skips the first element), record each failure message, and revert.
   - Re-run the coverage diff traced to tests and strings; read two traces back to their artefacts.
@@ -161,3 +169,21 @@ One Developer owns this specification and works it in one worktree (`.claude/wor
   - Run the four gates with captured exit codes; open the pull request into `develop`, its description listing every divergence as a candidate follow-up for `etalii-adp/etalii.adp`.
   - _Requirements: 1.4, 1.6, 12.3_
   - _Prompt: Role: .NET developer | Task: Prove the guards, check the diff scope, run the gates and deliver per requirements 1.4, 1.6 and 12.3 | Restrictions: revert every sabotage; do not push with a red gate | Success: four gates exit zero, the diff scope is exactly as allowed, and the pull request lists the divergences_
+
+---
+
+## Implementation record
+
+**Guards seen to fail.** Each sabotage was run against the whole test project (then 1162 tests, now more) and reverted:
+
+| Sabotage | Failed | Among them |
+| --- | --- | --- |
+| The planner writes one extra byte after the last splice | 102 | every edit fixture, history, plugin and real-file edit test |
+| Undo skips its drift check | 45 | `AnUndoAfterTheFileChangedIsRefused` on every real file, `RedoRepeatsTheEditAndIsRefusedOnDrift` |
+| The lines reader drops comment nodes | 11 | the byte-coverage invariant on the lines and blocks files |
+| The rule engine skips the first entry | 12 | the structurizr module cross-check and the fixtures (the first entry of most families is not an element, so fewer fail than the count of files) |
+| A `when` that fails is not reported | 1 | `ReadingTests.AnEntryARuleMatchesButCannotReadIsReportedAndKept`, with `Collection: []` |
+
+**The coverage diff, re-run against tests rather than tasks**, found that the loader's problems (2.1, 2.2, 2.5, 2.6, 2.7), rule precedence and ids (4.2, 4.4), header and reading findings (4.6, 4.7, 4.8), determinism (5.8), unknown headers (7.2), stale layout (7.6), duplicate ids (7.7) and task 3's byte tests had no test of their own. `Loading/`, `Reading/` and `Bytes/` in the test project now hold them, and writing them found one bug: CEL returns a failed evaluation as a value, so a `when` that failed was silently unclaimed rather than reported as `std.unreadableEntry`. Two traces were read back to their artefacts: 11.5 to `DeclaredBodiesTests.AnUndoAfterTheFileChangedIsRefused`, which asserts FBL §7.2's refusal sentence on every real file, and 11.6 to `ModuleCrossCheckTests.TheBindingReadsTheIdsTheModuleReads`, which compares ids per type with the module's parser. Both are that criterion's evidence.
+
+**Diff scope.** `git diff --name-only origin/develop...HEAD` lists, outside the two new project folders, only `.gitattributes`, `docs/solution-structure.md`, `src/backend/EtAlii.Adp.slnx` and this specification's `design.md` and `tasks.md`.
