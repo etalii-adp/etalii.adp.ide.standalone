@@ -27,7 +27,7 @@ Every name in this document that does not exist yet is a proposal, marked as new
 
 ### Existing Components to Leverage
 
-- **YamlDotNet** (already pinned at 18.1.0): its parser's event stream gives the structure of a YAML body with start and end marks. The yaml reader takes structure from it and computes FBL's spans itself (see *The yaml reader*).
+- **YamlDotNet** (already pinned at 18.1.0): it judges whether a YAML body is well-formed, and its representation model reads a `rootKey` marker. The structure and spans come from the library's own parser (see *The yaml reader*).
 - **`System.Text.Json.Utf8JsonReader`** (in the framework): it reports `TokenStartIndex` as a UTF-8 byte offset and rejects comments when told to, which is the json family exactly.
 - **`System.Text.RegularExpressions.Regex`** with a match timeout, after the library's own check that an expression is inside FBL's common subset.
 - **The module parsers, from the tests only**: `TimelineParser.Parse`, `CausalLoopParser.Parse`, `C4Parser.Parse` and `MindmapDocument.Parse` are public and are the cross-check of Requirement 11.6.
@@ -73,14 +73,15 @@ flowchart LR
 | `Documents` | Loading `.fbl` JSON into a typed binding; problems with JSON Pointers; binding references | `FblDocumentLoader`, `FblDocument`, `FblBinding`, `LoadProblem` |
 | `Text` | Bytes, BOM, lines and endings, dominant ending, byte/line/column conversion, spans | `BodyText`, `Span`, `LineEnding` |
 | `Expressions` | The regex subset check, the regex runner with timeout, the CEL subset | `RegexSubset`, `BoundedRegex`, `CelCompiler`, `CelProgram`, `CelValue` |
-| `Lossless` | The tree every family produces: nodes, own and line spans, trivia, values | `LosslessTree`, `EntryNode`, `ValueNode` |
-| `Yaml`, `Json`, `Xml`, `Lines`, `Blocks` | One lossless reader per family, and the family's new-text writer | `YamlReader`, `YamlWriter`, ... |
-| `Rules` | Selectors, rule matching, slots, ids, containment, references, findings | `Selector`, `RuleEngine`, `SlotReader`, `FblModel`, `FblElement`, `Finding` |
+| `Yaml`, `Json`, `Xml`, `Lines` | One lossless reader and writer per family; `Lines` serves both `lines` and `blocks` | `YamlFamily`, `YamlParser`, `YamlScalars`, `JsonFamily`, `XmlFamily`, `LinesFamily` |
+| `Rules` | The tree every tree family produces, selectors, rule matching, slots, ids, containment, references, views and resources | `FamilyReader`, `TreeFamily`, `TreeEntry`, `TreeValue`, `Selector`, `BodyReading` |
 | `Planning` | Model changes to splices; new-text rules shared by the families | `ModelChange`, `EditPlanner`, `Splice`, `SpliceOperation`, `Edit`, `Refusal`, `NewText` |
-| `History` | Undo, redo, snapshots, digests, drift | `OpenBody`, `EditHistory` |
-| `Registration` | The `.adp` line form, layout, identities, legacy sidecars, finding the body | `RegistrationReader`, `Registration`, `RegistrationPlanner`, `BodyLocator` |
+| `History` | Undo, redo, snapshots, digests, drift, the atomic save | `SplicedFile`, `OpenBody`, `EditHistory`, `UndoResult`, `AtomicFile` |
+| `Registration` | The `.adp` line form, layout, identities, legacy sidecars, finding the body | `RegistrationDocument`, `OpenRegistration`, `LegacySidecar`, `BodyLocator` |
 | `Routing` | Markers, candidates, readings, templates, folder recognition and globs | `Router`, `MarkerEvaluator`, `TemplateWriter`, `FolderSubject`, `Glob` |
-| `Plugins` | The FBL §11.2 contract as an interface and its data | `IPersistencePlugin`, `PluginReadResult`, `PluginPlanResult` |
+| `Plugins` | The FBL §11.2 contract as an interface and its data, and a body read through it | `IPersistencePlugin`, `PluginReadResult`, `PluginPlanResult`, `PluginBody` |
+
+`FblModel`, `FblElement`, `FblView`, `Finding`, `Span` and `Splice` sit at the root of the namespace, because every folder uses them.
 
 ### Public surface
 
@@ -90,11 +91,11 @@ The surface is deliberately small, so that a later module adopting the library m
 var problems = FblDocumentLoader.Load(path, out FblDocument document);      // Requirement 2
 FblBinding binding = document.Bindings["timeline"];
 
-var body = OpenBody.Open(bytes, "roadmap.tml", binding, registration: null, // Requirement 3, 4
-                         options: new FblOptions { WorkspaceRoot = root });
+var body = OpenBody.Open(bytes, binding, new FblOptions { FileName = "roadmap.tml" }); // Requirement 3, 4
 FblModel model = body.Model;                                                 // elements, relations, findings
 
-PlanResult plan = body.Plan(new ModelChange.Set("launch", "label", "General availability: v1")); // Requirement 5
+var change = new ModelChange.Set("launch", new Dictionary<string, object?> { ["label"] = "General availability: v1" });
+PlanResult plan = body.Plan(change);                                         // Requirement 5
 if (plan is PlanResult.Planned planned) body.Apply(planned.Edit);
 body.Undo();                                                                 // Requirement 6, refused on drift
 ```
@@ -117,9 +118,9 @@ One node type for entries and one for values, each with `OwnSpan`, an optional `
 
 ### The yaml reader
 
-YamlDotNet's `Parser` gives the events (`MappingStart`, `Scalar`, `SequenceStart`, and so on) with `Start` and `End` marks whose `Index` counts characters. The reader converts them to byte offsets through `BodyText`, then corrects the spans FBL defines differently from YamlDotNet's marks: a plain scalar's end is pulled back over trailing spaces and a comment; a block scalar's span runs from its indicator to the end of its last content line; an entry's own span ends at its value's last byte; leading comments are found by scanning upwards in the line table. **The mark-to-byte mapping is the part most likely to be wrong**, so it is tested on its own against every real `.tml` and Databricks file before any rule reads them: for every scalar, the bytes under its span must decode to the scalar as written.
+**As built, the reader is the library's own parser, not YamlDotNet's events.** The first attempt corrected YamlDotNet's character marks into FBL's byte spans, and the corrections grew into a second parser hidden inside the first. `YamlParser` now reads block mappings and sequences, plain, quoted and block scalars, flow collections (as one value, through `FlowReader`), anchors and aliases straight from the bytes, so every span is a byte span from the start. YamlDotNet still decides well-formedness before it runs: a `YamlException` makes the body unreadable with its mark as the location, so the two parsers can never disagree about whether a body is YAML.
 
-Only the first document is read. Anchors, aliases and merge keys come from the events; a slot reached through one is flagged read-only. A `YamlException` from the parser makes the body unreadable with its mark as the location.
+Only the first document is read. A slot reached through an anchor, alias or merge key is read-only. A key repeated in one mapping is reported as `fbl.duplicate-key` and only its first occurrence is read. The guard against a lost or doubled byte is the byte-coverage invariant, run on every conformance fixture and every real file of the family.
 
 ### The json reader
 
@@ -162,7 +163,9 @@ One method per change kind, each producing splices against the current bytes, th
 
 ### The registration
 
-`RegistrationReader` is a line parser of FBL §8.1 that produces a `Registration` (origin, headers in order, the `layout` and `identities` entries with their spans, and the trailing unbound region). `RegistrationPlanner` writes layout and identities changes as splices with the same `Edit` type, so a registration has an `OpenBody` and a history of its own. `BodyLocator` finds the body and refuses paths outside the workspace root or through a reparse point. Legacy sidecars are read and written through the json reader and planner.
+`RegistrationDocument` is a line parser of FBL §8.1 (origin, headers in order, the `layout` and `identities` blocks with their spans, and the trailing unbound region); it reports `fbl.unknown-header` and `fbl.stale-view-data`. `OpenRegistration` writes layout and identities changes as splices with the same `Edit` type and the same `SplicedFile` history as a body: `ModelChange.Place` for a position, and `ModelChange.Identify` (added for this) for a stored id, which creates `identities:` after the layout block. `BodyLocator` finds the body and refuses paths outside the workspace root or through a reparse point. `LegacySidecar` reads and writes the old `*.layout.json` and identity files through the json family, with a binding made for the purpose.
+
+A `blocks` body's views and resources are part of the reading: `FblModel.Views` lists every block whose rule has a `view` group, `SelectView` picks one by the `view` header ignoring case (the first when there is none), and `FblModel.Resources` lists the values of `registration.resource.capture` in document order.
 
 ### Routing and templates
 
@@ -250,7 +253,7 @@ One theory over every `fixtures/*/fixture.json` in the vendored folder: load the
 
 ### Divergences
 
-`RealFiles/divergences.json` (new) lists each known disagreement as `{ binding, file, check, observed, reason }`. A check consults it before failing; a listed divergence that does not occur fails the run (Requirement 12.2). It starts empty, and every entry added during implementation is a finding for the delivery report.
+`RealFiles/divergences.json` (new) lists each known disagreement as `{ property, binding, file, observed, reason }`. A check consults it before failing; a listed divergence that no longer occurs, or occurs with a different `observed`, fails the run (Requirement 12.2), and so does an entry naming a file the suite does not read. It started empty and holds 42 entries as built, each a finding for the delivery report.
 
 ### Seeing the guards fail
 
