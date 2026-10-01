@@ -26,5 +26,5 @@ internal static class NaturalIds
     private static string Attribute(IdRequest request, string name) =>
         request.Attributes.TryGetValue(name, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";
 
-    private static string? Unprefixed(string? id) => id is null ? null : id[(id.IndexOf(':') + 1)..];
+    private static string? Unprefixed(string? id) => id?[(id.IndexOf(':') + 1)..];
 }

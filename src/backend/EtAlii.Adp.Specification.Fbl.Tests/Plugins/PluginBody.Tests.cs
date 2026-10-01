@@ -30,6 +30,7 @@ public class PluginBodyTests
         Assert.Equal(FindingCodes.PluginMissing, finding.Code);
         Assert.Contains(TurtleId, finding.Message, StringComparison.Ordinal);
         Assert.IsType<PlanResult.Refused>(body.Change(new ModelChange.Remove("x")));
+        Assert.Throws<InvalidOperationException>(() => body.Save(_ => Assert.Fail("A read-only body is never written.")));
     }
 
     [Fact]

@@ -277,28 +277,14 @@ internal sealed class YamlParser(BodyText text)
                 return block;
             }
         }
-        TreeValue value;
-        switch (_bytes[q])
+        var value = _bytes[q] switch
         {
-            case (byte)'*':
-                value = ParseAlias(line, q);
-                break;
-            case (byte)'"':
-            case (byte)'\'':
-                value = ParseQuoted(line, q);
-                break;
-            case (byte)'|':
-            case (byte)'>':
-                value = ParseBlockScalar(line, q, parentIndent);
-                break;
-            case (byte)'[':
-            case (byte)'{':
-                value = ParseFlow(line, q);
-                break;
-            default:
-                value = ParsePlain(line, q, parentIndent);
-                break;
-        }
+            (byte)'*' => ParseAlias(line, q),
+            (byte)'"' or (byte)'\'' => ParseQuoted(line, q),
+            (byte)'|' or (byte)'>' => ParseBlockScalar(line, q, parentIndent),
+            (byte)'[' or (byte)'{' => ParseFlow(line, q),
+            _ => ParsePlain(line, q, parentIndent),
+        };
         if (anchor is not null) _anchors[anchor] = value;
         return value;
     }

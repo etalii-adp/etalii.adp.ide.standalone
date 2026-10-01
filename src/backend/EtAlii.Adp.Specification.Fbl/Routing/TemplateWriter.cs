@@ -67,15 +67,4 @@ public static partial class TemplateWriter
         if (key.Length == 0) return "untitled";
         return char.IsAsciiDigit(key[0]) ? "_" + key : key;
     }
-
-    /// <summary>Writes a new body; an existing file is never overwritten (<see cref="FileMode.CreateNew"/> throws <see cref="IOException"/>).</summary>
-    public static async Task CreateAsync(string path, byte[] bytes, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(bytes);
-        var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        await using (stream.ConfigureAwait(false))
-        {
-            await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
-        }
-    }
 }

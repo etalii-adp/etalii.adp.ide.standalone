@@ -3,7 +3,6 @@ using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
 using EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
-using EtAlii.Adp.Specification.Fbl.Tests.Routing;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.History;
@@ -71,38 +70,33 @@ public class HistoryTests
     }
 
     [Fact]
-    public async Task ASaveIsAtomicAndKeepsThePermissions()
+    public void ASaveHandsTheHostsWriterTheEditedBytes()
     {
         // Arrange.
-        using var folder = new TemporaryFolder();
-        var path = folder.Write("plan.tml", Timeline);
-        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead);
         var body = Open(Timeline);
         body.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["label"] = "Beta" }));
+        var written = new List<byte[]>();
 
         // Act.
-        await body.SaveAsync(path, TestContext.Current.CancellationToken);
+        body.Save(written.Add);
 
-        // Assert.
-        Assert.Equal(body.Bytes, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
-        Assert.Single(Directory.GetFiles(folder.Path));
-        if (!OperatingSystem.IsWindows()) Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead, File.GetUnixFileMode(path));
+        // Assert: the atomic write itself is the host's (AdpFileWriter.Save here), not the library's.
+        Assert.Equal(body.Bytes, Assert.Single(written));
     }
 
     [Fact]
-    public async Task AnUnreadableBodyIsNeverSaved()
+    public void AnUnreadableBodyIsNeverSaved()
     {
         // Arrange.
-        using var folder = new TemporaryFolder();
-        var path = folder.Write("plan.tml", "kept");
         var body = Open("elements: [unclosed\n");
+        var written = new List<byte[]>();
 
         // Act.
-        var refused = await Record.ExceptionAsync(() => body.SaveAsync(path, TestContext.Current.CancellationToken));
+        var refused = Record.Exception(() => body.Save(written.Add));
 
         // Assert.
         Assert.IsType<InvalidOperationException>(refused);
         Assert.True(body.IsReadOnly);
-        Assert.Equal("kept", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        Assert.Empty(written);
     }
 }

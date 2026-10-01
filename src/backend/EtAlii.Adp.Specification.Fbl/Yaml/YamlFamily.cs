@@ -126,18 +126,14 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 
     private string Scalar(object? value, TreeValue? old, AttributeBinding? binding, int keyIndent)
     {
-        switch (value)
+        return value switch
         {
-            case null:
-                return "null";
-            case bool b:
-                return b ? "true" : "false";
-            case string s:
-                return String(s, old, binding, keyIndent);
-            case IEnumerable<object?> list:
-                return "[" + string.Join(", ", list.Select(v => Scalar(v, null, binding, keyIndent))) + "]";
-        }
-        return NewText.TryNumber(value, out var number) ? NewText.Number(number, binding?.Decimals) : String(NewText.Plain(value, binding), old, binding, keyIndent);
+            null => "null",
+            bool b => b ? "true" : "false",
+            string s => String(s, old, binding, keyIndent),
+            IEnumerable<object?> list => "[" + string.Join(", ", list.Select(v => Scalar(v, null, binding, keyIndent))) + "]",
+            _ => NewText.TryNumber(value, out var number) ? NewText.Number(number, binding?.Decimals) : String(NewText.Plain(value, binding), old, binding, keyIndent),
+        };
     }
 
     private string String(string value, TreeValue? old, AttributeBinding? binding, int keyIndent)

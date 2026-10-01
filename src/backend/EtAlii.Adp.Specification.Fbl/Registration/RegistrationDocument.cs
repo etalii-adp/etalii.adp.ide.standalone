@@ -98,10 +98,9 @@ public sealed class RegistrationDocument
         var text = new BodyText(bytes);
         var document = new RegistrationDocument(text);
         var lines = text.Lines;
-        var index = 0;
         document.Origin = text.Text(text.BomLength, lines[0].ContentEnd).Trim();
         document.AfterHeaders = lines[0].End;
-        index = 1;
+        var index = 1;
         var headers = new List<RegistrationHeader>();
         for (; index < lines.Count; index++)
         {

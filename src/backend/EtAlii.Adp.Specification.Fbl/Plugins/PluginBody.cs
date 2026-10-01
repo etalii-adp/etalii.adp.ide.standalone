@@ -68,11 +68,12 @@ public sealed class PluginBody : SplicedFile
         return result;
     }
 
-    /// <summary>Writes the body atomically, as <see cref="OpenBody.SaveAsync"/> does; never a read-only body.</summary>
-    public async Task SaveAsync(string path, CancellationToken cancellationToken)
+    /// <summary>Hands the body's bytes to the host's atomic writer, as <see cref="OpenBody.Save"/> does; never a read-only body.</summary>
+    public void Save(Action<byte[]> write)
     {
+        ArgumentNullException.ThrowIfNull(write);
         if (IsReadOnly) throw new InvalidOperationException("A read-only body is never written.");
-        await AtomicFile.WriteAsync(path, Bytes, cancellationToken).ConfigureAwait(false);
+        write(Bytes);
     }
 
     private string MissingReason => $"The plugin '{Binding.Plugin!.Plugin}' that reads this file is not installed, so it is opened read-only.";

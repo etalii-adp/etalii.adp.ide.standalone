@@ -38,8 +38,8 @@ public sealed class LegacySidecar : SplicedFile
     public static string PathFor(string pattern, string bodyPath)
     {
         ArgumentNullException.ThrowIfNull(pattern);
-        var folder = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(bodyPath))!;
-        return System.IO.Path.Combine(folder, pattern.Replace("{base}", System.IO.Path.GetFileNameWithoutExtension(bodyPath), StringComparison.Ordinal));
+        var folder = Path.GetDirectoryName(Path.GetFullPath(bodyPath))!;
+        return Path.Combine(folder, pattern.Replace("{base}", Path.GetFileNameWithoutExtension(bodyPath), StringComparison.Ordinal));
     }
 
     /// <summary>The positions of one view, its key matched ignoring case (FBL §8.7); without a view, the first.</summary>

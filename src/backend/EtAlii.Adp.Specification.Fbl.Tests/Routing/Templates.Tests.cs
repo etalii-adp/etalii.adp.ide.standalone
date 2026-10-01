@@ -1,5 +1,4 @@
 using EtAlii.Adp.Specification.Fbl.History;
-using EtAlii.Adp.Specification.Fbl.Plugins;
 using EtAlii.Adp.Specification.Fbl.Routing;
 using EtAlii.Adp.Specification.Fbl.Tests.Plugins;
 using EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
@@ -76,21 +75,6 @@ public class TemplatesTests
 
         // Assert.
         Assert.Equal("a b.mm a b a_b N-node {id} {newid} { base }", text);
-    }
-
-    [Fact]
-    public async Task AnExistingFileIsNeverOverwritten()
-    {
-        // Arrange.
-        using var folder = new TemporaryFolder();
-        var path = folder.Write("plan.tml", "kept");
-
-        // Act.
-        var refused = await Record.ExceptionAsync(() => TemplateWriter.CreateAsync(path, "new"u8.ToArray(), TestContext.Current.CancellationToken));
-
-        // Assert.
-        Assert.IsType<IOException>(refused);
-        Assert.Equal("kept", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

@@ -1,6 +1,5 @@
 namespace EtAlii.Adp.Specification.Fbl.Documents;
 
-using System.Text;
 using System.Text.Json;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 
@@ -28,7 +27,16 @@ public static class FblDocumentLoader
     public const int SupportedMajor = 0;
 
     public static IReadOnlyList<LoadProblem> Load(string path, out FblDocument? document) =>
-        Load(File.ReadAllBytes(path), path, out document);
+        Load(ReadShared(path), path, out document);
+
+    /// <summary>Reads at the sharing the repository's own reader uses, so a concurrent save is never refused.</summary>
+    private static byte[] ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return buffer.ToArray();
+    }
 
     public static IReadOnlyList<LoadProblem> Load(byte[] json, string? path, out FblDocument? document)
     {
@@ -112,7 +120,7 @@ public static class FblDocumentLoader
         if (hash < 0) throw new ArgumentException($"'{reference}' is not a binding reference.", nameof(reference));
         var file = reference[..hash];
         var name = reference[(hash + 1)..];
-        var path = file.Length == 0 ? referrer : System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(referrer) ?? ".", file));
+        var path = file.Length == 0 ? referrer : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(referrer) ?? ".", file));
         problems = Load(path, out var document);
         if (document is null) throw new InvalidOperationException($"The FBL document '{path}' does not load: {string.Join("; ", problems)}");
         return document.Bindings.TryGetValue(name, out var binding)

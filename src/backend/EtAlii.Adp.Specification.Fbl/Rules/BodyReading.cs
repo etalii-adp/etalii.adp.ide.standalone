@@ -76,7 +76,7 @@ internal sealed class BodyReading
         };
     }
 
-    private static Documents.Family? FamilyOfExtension(string extension) => extension switch
+    private static Family? FamilyOfExtension(string extension) => extension switch
     {
         ".yml" or ".yaml" => Documents.Family.Yaml,
         ".json" => Documents.Family.Json,
