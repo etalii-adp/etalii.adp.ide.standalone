@@ -100,7 +100,7 @@ Standalone is one host among four and no longer the reference (2026-09-26). That
 6. IF any change in an edit cannot be planned (no `insert`, no `remove`, a read-only binding, rule or slot, `empty: "refuse"`, an `absent` refusal, a duplicate on rename, `insert.when` false) THEN the whole edit SHALL be refused with that reason and nothing written (FBL §6.4, §3.4).
 7. A save without an edit SHALL produce no splice and the bytes that were read (FBL §1.4 principle 2).
 8. Planning SHALL be deterministic: the same body, binding and change SHALL give the same splices and bytes on every run and platform (FBL §6.5).
-9. The library SHALL save a body atomically, through a temporary file in the same folder moved into place, keeping the file's permissions, and SHALL NOT save an unreadable or read-only body (FBL §6.6).
+9. The library SHALL save a body by handing its bytes to the host's atomic writer (in this repository `AdpFileWriter.Save`, which writes a temporary file in the same folder and moves it into place), and SHALL NOT hand over an unreadable or read-only body (FBL §6.6).
 
 ### Requirement 6: History and drift
 
@@ -137,7 +137,7 @@ Standalone is one host among four and no longer the reference (2026-09-26). That
 1. The library SHALL evaluate markers on a body's bytes without reading it through a binding: `{rootKey, value?}`, `{firstLine}` after a byte-order mark, and `{pattern, lines?}` over the first `lines` lines, default 20 (FBL §12.2).
 2. Given a file name, its bytes and a set of bindings, the library SHALL return the routing candidates of FBL §12.3: bindings whose `names` or `extensions` (ignoring case) match, excluding `registrationOnly` bindings and including a `shared` binding only when its marker matches; and it SHALL never choose between several candidates on the caller's behalf.
 3. The library SHALL report, for a body, the readings a binding offers in the order of FBL §9.4 (those whose `suggest` matches the first 64 KiB first) and which one a bare file opens as.
-4. The library SHALL produce a new body from a binding's template as FBL §13 says: `template.byOrigin[<origin>]` before `template.text`, the placeholders `{name}`, `{base}`, `{key}` (with its exact sanitising rule) and `{newid:<rule>}` replaced and nothing else, and SHALL NOT overwrite an existing file.
+4. The library SHALL produce a new body from a binding's template as FBL §13 says: `template.byOrigin[<origin>]` before `template.text`, the placeholders `{name}`, `{base}`, `{key}` (with its exact sanitising rule) and `{newid:<rule>}` replaced and nothing else, and SHALL leave creating the file to the host's writer (in this repository `AdpFileWriter.Create`), which never overwrites an existing file.
 5. WHEN each vendored binding's template is produced and read back through its own binding THEN it SHALL read with no finding of severity warning or above (FBL §13).
 
 ### Requirement 9: Plugin readers and folder subjects
