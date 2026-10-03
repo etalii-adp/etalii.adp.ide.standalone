@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/fbl-implementation/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-03T23:15:30.061Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791069329394_p13ah0wpn",
+      "approvalTitle": "fbl-implementation: tasks for EtAlii.Adp.Specification.Fbl"
+    }
+  ]
+}
