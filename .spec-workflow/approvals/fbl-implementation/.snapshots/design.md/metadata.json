@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/fbl-implementation/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-03T23:05:45.411Z",
       "trigger": "initial",
+      "approvalId": "approval_1791068744719_0or07yows",
+      "approvalTitle": "fbl-implementation: design for EtAlii.Adp.Specification.Fbl"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-03T23:15:12.745Z",
+      "trigger": "approved",
       "approvalId": "approval_1791068744719_0or07yows",
       "approvalTitle": "fbl-implementation: design for EtAlii.Adp.Specification.Fbl"
     }
