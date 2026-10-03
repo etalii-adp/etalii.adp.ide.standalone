@@ -1,0 +1,128 @@
+# Design Document
+
+## Overview
+
+**The backend splits into functional projects standing on one shared project beneath them, and each `.proto` is generated into the project it belongs to.** The user's direction settled the shape:
+
+> *"Put each .proto contract file in the corresponding project, and adopt `EtAlii.Adp.[PROJECT NAME].Wire` for the namespace the proto types generate into. Add a `EtAlii.Adp.Common` project for things shared by other projects that cannot be put in `EtAlii.Adp.Backend` due to dependencies. Try to not make a dependency from `EtAlii.Adp.Backend` onto the functional projects (Hierarchy, Diagrams etc.)."*
+
+Three prior decisions are settled with it: **scope** — contracts and cycle-breaking first, then merge Diagrams, then extract areas one per landing; **naming** — top-level `EtAlii.Adp.Common` and `EtAlii.Adp.<Area>`, siblings of `EtAlii.Adp.Diagram`, never `EtAlii.Adp.Backend.<Area>`; **the bottom seam** — answered by evidence below, not by choice.
+
+**This design supersedes approved Requirement 4, and says so rather than absorbing it quietly.** R4 says generation is *single-owned at the bottom by exactly one project below all others*. The user's later direction says *each proto goes in its corresponding project*. Those are incompatible, and the later instruction from the requirement's own author wins: generation is **distributed per project** into `.Wire` namespaces, with only the universally-shared protos sinking to `EtAlii.Adp.Common`. Approving this design ratifies that change to R4; it does not need its own card, because the contradiction is between an approved requirement and a direction from the same person, and this document is where that person sees and approves the resolution.
+
+**Deviation recorded during implementation (2026-09-06): Requirement 6.3's `jb inspectcode` is substituted by a structural namespace-provider check until the tool supports SDK 10.** R6.3 (an approved acceptance criterion in `requirements.md`) mandates `jb inspectcode` clean per landing — and its own text notes the tool "is not installed by default," so the clause was aspirational when written rather than broken later. `JetBrains.ReSharper.GlobalTools` 2026.2.1 cannot evaluate SDK 10.0.203: its bundled MSBuild predates the SDK's workload machinery (`MSB4236` workload-locator on a plain run; `MSB4018` releases-`FileNotFound` under `MSBuildEnableWorkloadResolver=false`; `MSB4236` again under `--no-build`), and no older SDK can build net10, so a `global.json` pin is a dead end. **Substitute**: a committed structural check that parses the declared namespaces under the affected projects and asserts they match project-plus-unskipped-folders, reading the skip entries from the `.DotSettings` *with their escaping* — so a mis-escaped key (which "parses fine and matches nothing") fails the check rather than passing silently. It must be **seen to fail** (perturb a skip key, watch it name the folder) before it is trusted. **Revert trigger**: real `jb inspectcode` returns the moment a JetBrains release evaluates SDK 10. The guarantee R6.3 exists for — namespace-provider drift is *caught*, not accumulated — is preserved; the substitution changes the tool, not the promise. Whether R6.3's text is formally amended is the user's call; this note is the durable record so the substitution is undone deliberately rather than forgotten.
+
+## The measurements this rests on, corrected and verified
+
+**All verified at the current tree for this design; Developer 3's committed `findings.md` (`7955135c`) is the single authoritative dependency map and is cited rather than re-derived.**
+
+- **The Introduction of the approved requirements overstates History's consumers, and the design carries the correction.** It says Problems and Sessions reference History's types; **comment-stripped, they reference it zero times** — both were `/// <see cref="…AddCommands"/>` doc comments (`AddProblems.cs:18`, `AddSessions.cs:17`). The real in-code consumers are **Context (6 sites) and Hierarchy (23 sites)** and nothing else. **Why the wrong figure arose matters here specifically**: a decomposition is planned from exactly this kind of survey, and *a grep cannot tell a call from a `<see cref>`* — the type name reads identically in both, so a name-occurrence detector answers "the name appears" when the question is "the code depends." A phantom edge buys a project boundary that never needed to exist. Developer 3's comment-stripped pass is the instrument that answers it, and it caught what two grep-shaped passes (mine and its own first) missed.
+- **`shared.proto` declares `csharp_namespace = "EtAlii.Adp.Contracts"`; every other `src/api/*.proto` declares `EtAlii.Adp`.** So `ShortGuid.Cast.cs`'s `EtAlii.Adp.Contracts` namespace was never an incidental stray — it is the generated namespace of `shared.proto`, and that file extends those generated cast operators. A consequence, not a seam someone left. Under the `.Wire` scheme it becomes `EtAlii.Adp.Common.Wire`.
+- **The proto import graph** (verified): `shared` and `connection` import nothing and are imported by nearly everything; `hierarchy → shared`; `elements → connection`; `deltas → elements`; `projects → connection, shared`; `diagrams → shared, connection, deltas`; `context → shared, connection, hierarchy, elements`. So per-project protos inherit their own dependency graph, and `context.proto → hierarchy.proto` is a **wire-level edge between two functional projects**, independent of any code edge.
+- **Generation today is single-owned already**: `EtAlii.Adp.Backend.csproj` compiles `..\..\api\*.proto` with `GrpcServices="Both"` — one project generates every contract. That is the R4 shape the user is now distributing.
+- **An orphan proto**: `src/backend/EtAlii.Adp.Backend/Hierarchy/hierarchy.proto` exists, **differs** from `src/api/hierarchy.proto`, and is **in no build** (the csproj globs `..\..\api`, not this path). "Put each proto in its project" starts from the single canonical set in `src/api/`; this orphan is reconciled against the canonical one and removed, not carried along.
+- **`.Wire` is already partially adopted**: 3 of 14 module protos (`ansible-structure`, `causal-loop`, `helm-charts`) use `.Wire`; 11 do not. The user's scheme regularises an inconsistent existing convention rather than inventing one.
+- **The code cycles** (from `findings.md`, anchor independently confirmed): the folders form one strongly-connected lump — `Authentication↔Sessions`, `Projects↔Hierarchy`, and loops through Context and Problems. **Context↔Hierarchy is 28 types one way and one — `Line` — the other**; I confirmed Context references exactly one Hierarchy type in code. Only `Client` (3 files, zero cross-folder edges) separates as-is.
+
+## Steering Document Alignment
+
+- **The backend owns meaning; the contract is the boundary — now literally per project.** Each functional project owns its slice of the contract (`<Area>.Wire`) and its behaviour, and shares only what is genuinely common. This is the same move `Diagram.Definitions` and the client `registrations` already made: a capability is a project discovered by reference, not a folder in a monolith.
+- **CRLF, EditorConfig, the four gates, worktree-and-identity discipline** all apply unchanged; §Verification records the two checks a decomposition needs beyond the four gates.
+
+## Architecture
+
+### Two layers move, and they are independent
+
+A **wire layer** (generated proto types) and a **code layer** (hand-written types) each have their own dependency graph, and the decomposition moves both. Keeping them distinct is what stops the design conflating a proto import with a code dependency.
+
+### The wire layer — a `.Wire` namespace inside each functional project, not a separate assembly
+
+**Corrected per the user's review: the `.proto` files are not moved and no `.Wire` project is created.** The `src/api/*.proto` files stay at the repository root and are **linked** into the functional projects — `<Protobuf Include="..\..\api\X.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="…" />` — generating exactly as the current single-project build already does. Only two things change from today: *which project* compiles each proto, and the `csharp_namespace` it targets. **`EtAlii.Adp.<Area>.Wire` is a namespace inside `EtAlii.Adp.<Area>`, beside that project's hand-written code — never a separate `EtAlii.Adp.<Area>.Wire.csproj`.**
+
+**Each proto is owned — linked and generated — by exactly one project**, so no type is generated into two assemblies. A proto that several others import is owned once, and the projects needing its types take an ordinary **project reference** to the owner:
+
+| proto | linked & generated in | csharp_namespace | project references |
+| --- | --- | --- | --- |
+| `shared.proto` | `EtAlii.Adp.Common` | `EtAlii.Adp.Common.Wire` | — |
+| `connection.proto` | `EtAlii.Adp.Common` | `EtAlii.Adp.Common.Wire` | — |
+| `elements.proto` | `EtAlii.Adp.Common` | `EtAlii.Adp.Common.Wire` | Common (connection) |
+| `authentication.proto` | `EtAlii.Adp.Authentication` | `EtAlii.Adp.Authentication.Wire` | — |
+| `hierarchy.proto` | `EtAlii.Adp.Hierarchy` | `EtAlii.Adp.Hierarchy.Wire` | Common |
+| `projects.proto` | `EtAlii.Adp.Projects` | `EtAlii.Adp.Projects.Wire` | Common |
+| `deltas.proto` | `EtAlii.Adp.Diagram` | `EtAlii.Adp.Diagram.Wire` | Common (elements) |
+| `diagrams.proto` | `EtAlii.Adp.Diagram` | `EtAlii.Adp.Diagram.Wire` | Common |
+| `context.proto` | `EtAlii.Adp.Context` | `EtAlii.Adp.Context.Wire` | Common, Hierarchy |
+
+**The cross-import question is answered by ownership, not by separate wire assemblies.** `shared`, `connection` and `elements` carry the foundational identity types (`ShortGuid`, `Path`, `ElementId`) imported across unrelated areas, so `EtAlii.Adp.Common` owns them and everyone references Common. Where one functional proto imports another — `context.proto` imports `hierarchy.proto` — the owning project takes a **project reference** to the other (`EtAlii.Adp.Context` → `EtAlii.Adp.Hierarchy`), and protoc resolves the imported types because `hierarchy.proto`'s `csharp_namespace` is `EtAlii.Adp.Hierarchy.Wire`. **That is a functional-to-functional project reference and does not touch the user's `EtAlii.Adp.Backend`→functional constraint.** Sinking everything imported-across-areas into Common was the alternative and is rejected: it would drag `hierarchy.proto`'s domain types (`EntryKind`) into Common merely because `context.proto` imports them — **Common holds what is *shared*, not what is *reachable*.**
+
+**Setting the namespace, as per the previous implementation** (Requirement: generate the same code as today): each proto's `option csharp_namespace` in the single canonical `src/api/` copy is changed to its owner's `.Wire` namespace — today all but `shared.proto` declare `EtAlii.Adp`, and `shared.proto` declares `EtAlii.Adp.Contracts`. Because each proto is generated by exactly one project, editing the namespace in the one canonical copy is unambiguous: there is no second generator to disagree, which is also why the orphan `hierarchy.proto` (below) must be removed before this step.
+
+### The code layer — `EtAlii.Adp.Common` at the bottom
+
+`EtAlii.Adp.Common` depends on nothing (its own generated `Common.Wire` types are compiled inside it, not a separate assembly) and holds what the cycle-breaking pulls down. Measured members:
+
+- **The command/history contract** — `ICommand`, `ICommandHandler`, `ICommandDispatcher`, `IHistoryStack`, `IHistoryStackStore`, `IContextNoticeSink`, and the `_Model` records (`CommandResult`, `HistoryEntry`, `HistoryAvailability`, `HistoryChangedEventArgs`). These sit in the root `EtAlii.Adp.Backend` namespace today and are consumed with no `using`, invisibly, by Context (6 sites) and Hierarchy (23 sites). **This is Requirement 1 and it moves first**, because nothing can be extracted while the contract everyone shares sits in a peer folder. The concrete `HistoryStack`/`CommandDispatcher` implementations and the sixteen command/handler *registrations* are composition-root wiring and go to the DI root (`Program.cs`), not to Common.
+- **The `Line` document family** — `Line`, `LineDocument`, `LineRange`, `LineSegment`, `LineSplice`, with `AdpFileWriter` and `SharedDocumentReader`. Shared text-document primitives consumed by modules, Problems, Projects and Context. **The single `Line` type carries the entire Context→Hierarchy back-edge**, so moving the family down turns the fattest cycle (28→1) into a one-directional edge (28→0) and simultaneously shrinks the modules' widest Hierarchy dependency.
+- **Context's provider contract** — consumed uniformly by Hierarchy/History/Problems/modules; a bottom-project citizen whole. (`HistoryActionsBroadcaster` is declared in Context but consumed by History and Service — resolved to its real home when Context is carved, a misplacement not a cycle.)
+- **`SessionContext`** — consumed by four folders; the type whose descent breaks `Authentication↔Sessions`.
+
+### Cycle-breaking, per edge
+
+Each cycle breaks by pulling the shared type down, never by leaving a back-edge:
+
+- **Context↔Hierarchy**: move the `Line` family to Common. The 28 Hierarchy→Context references remain (one-directional, legal); the 1 Context→Hierarchy reference is gone.
+- **History↔Hierarchy**: the interfaces and `_Model` to Common; the concrete dispatcher/stack and the command/handler registrations to the composition root. Hierarchy then depends on Common's interfaces, not on History.
+- **Authentication↔Sessions**: `SessionContext` and the ~5 shared types to Common; the residual edge resolves to one direction.
+- **Projects↔Hierarchy**: broken by the `Line`-family descent (the shared text primitives are what Projects reaches Hierarchy for).
+
+**39 of Hierarchy's 73 types and 18 of Context's 49 are consumed only within their own folder** — free movers with no edge to break, so the extraction is far less work than the raw folder sizes (65, 49) suggest.
+
+### The 22 back-edges — now a requirement, honoured with a stated exception budget
+
+Backend uses `EtAlii.Adp.Diagram` from **22 files** (verified). The user's *"try not to make a dependency from `EtAlii.Adp.Backend` onto the functional projects"* makes eliminating these an aim in its own right, and phase one breaks them **before** the Diagrams merge — which is exactly why contracts-and-cycles-first is coherent rather than arbitrary. Each back-edge resolves by depending on a contract in Common, not on Diagram. **The user said "try to," so this is an aim with an exception budget**: where a back-edge cannot be broken without disproportionate change, the design records the edge, why it resists, and what keeping it costs — rather than forcing an inversion that harms the code or silently leaving the dependency. The per-edge resolution is task-level work built on `findings.md`'s type map.
+
+### Phases
+
+1. **Common project + `Common.Wire`, contract and `Line` family down, cycles broken, 22 back-edges eliminated.** Nothing merges yet; the tree becomes acyclic.
+2. **Merge `EtAlii.Adp.Backend.Diagrams` into `EtAlii.Adp.Diagram`** — now possible because the back-edges are gone. `Diagram.Wire` owns `diagrams.proto`/`deltas.proto`.
+3. **Extract each functional area to `EtAlii.Adp.<Area>`**, one per landing, `Client` first (zero dependencies), each carrying its own `.Wire`.
+
+## Sequencing sized for a moving `develop`
+
+**This is a first-class design input, not a process footnote.** `develop` takes a commit roughly every two minutes; a backend gate cycle runs 15–45 minutes; and this specification's steps touch namespaces imported by ~360 use-sites across 60 module projects. A step that big **cannot win a fast-forward race by being careful** — a four-line docs change lost two full cycles to that today and landed only inside a coordinated hold. So steps are sized against the merge window, and the design states the blast radius of each so tasks can be sequenced against a moving target rather than discovering it.
+
+**Two classes of step:**
+
+- **Small, normal-cadence steps** — creating the `Common` project shell, moving a folder's internal-only types, extracting `Client`. These touch few or no module imports and land in the ordinary cadence.
+- **Wide, hold-requiring steps** — the ones that rename a namespace imported across the module tree. The `Line`-family descent touches **all 12 module backends and 9 test projects** (as a namespace re-import, since they already reference Backend); the `.Wire` migration and each area's namespace change touch tens to ~150 use-sites. These are identified in the design as **needing a coordinated merge hold**, because they are structurally unable to win a fast-forward at develop's cadence, and the tasks flag them so the Scrum master schedules a window rather than an implementer losing cycles discovering it.
+
+**Expected shape: roughly 10–14 landings** — the `Common` shell and `Common.Wire`; the contract descent; the `Line`-family descent (wide); each of the four cycle cuts; the back-edge elimination; the Diagrams merge; and one per extracted area (wide for the namespace rename). The tasks document sizes these exactly against `findings.md`; the estimate here is so the merge cadence is planned, not discovered.
+
+## Data Models
+
+No persisted change, no wire-shape change. The same generated messages, relocated to per-project `.Wire` namespaces; the same hand-written types, relocated across project boundaries. Every gRPC contract keeps its shape and its `GrpcServices="Both"` generation — the `csharp_namespace` option and the project each `.proto` compiles in are what move.
+
+## Error Handling / Risks
+
+- **A project-reference cycle induced by the proto imports** would be as fatal as a code cycle: because a proto is owned by one project and importers reference the owner, `context.proto` importing `hierarchy.proto` makes `EtAlii.Adp.Context` reference `EtAlii.Adp.Hierarchy`. The proto import graph is acyclic (verified), so these ownership references stay acyclic — the design pins that no proto is assigned to an owner whose project would then have to reference back into a project that references it.
+- **The orphan `hierarchy.proto`** is reconciled against `src/api/hierarchy.proto` and removed in phase one; leaving two divergent copies while distributing protos would generate one area's types from the wrong source.
+- **A generated-code break is invisible to the four gates** because they read `obj/`. Every step that relocates generation or a namespace is accepted only on a **fresh-tree build** (§Verification).
+- **The "try to" back-edges**: an edge that cannot be broken cheaply is recorded with its cost, not forced. Forcing a dependency inversion that contorts the code is a worse outcome than a documented, bounded exception the user flagged as acceptable.
+
+## Verification
+
+- **The four gates green on the merged tree**, exit codes captured before any pipe, `Zero tests ran` read as a broken build.
+- **A fresh-tree build on every step that moves generation, a namespace, or a project reference** — the only check that reads a different input than the `obj/` cache the other gates trust.
+- **`jb inspectcode` shown clean for the affected projects** — it sees the namespace-provider warnings `dotnet format` cannot, and a decomposition is the change most likely to produce them at scale. Where a folder should stop contributing to a namespace, that is fixed in `.DotSettings` `NamespaceFoldersToSkip` (escaping `_005C`/`_005F`, verified by `inspectcode`, never by eye — a mis-escaped key parses fine and matches nothing).
+- **No behaviour change**: a test whose meaning changes is a signal the move changed behaviour and is a defect, not an expected edit.
+
+## Sequencing summary
+
+1. `EtAlii.Adp.Common` + `Common.Wire` (`shared`, `connection`, `elements` protos); reconcile and remove the orphan `hierarchy.proto`.
+2. Command/history contract and `_Model` down to Common; registrations to the composition root.
+3. `Line` family down to Common — **wide step, coordinated hold** — breaking Context↔Hierarchy and Projects↔Hierarchy.
+4. `SessionContext` and shared auth/session types down — breaking Authentication↔Sessions.
+5. Eliminate the 22 `Backend→Diagram` back-edges, recording any that resist with their cost.
+6. Merge `EtAlii.Adp.Backend.Diagrams` into `EtAlii.Adp.Diagram`; `Diagram.Wire` owns `diagrams`/`deltas`.
+7. Extract `Client` (clean), then each functional area to `EtAlii.Adp.<Area>` with its `.Wire` — **each a wide step, coordinated hold for the namespace rename**.
+8. Per step: four gates, fresh-tree build, `inspectcode` clean.
