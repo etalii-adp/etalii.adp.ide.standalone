@@ -260,7 +260,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
                     }
                     else
                     {
-                        if (owner is not null) owner.Unreadable ??= $"It refers to the entity '&{name};', which is not one of XML's five predefined entities.";
+                        if (owner is { Unreadable: null }) owner.Unreadable = $"It refers to the entity '&{name};', which is not one of XML's five predefined entities.";
                         builder.Append('&').Append(name).Append(';');
                     }
                     break;
