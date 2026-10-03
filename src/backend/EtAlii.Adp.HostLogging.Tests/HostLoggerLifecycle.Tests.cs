@@ -67,8 +67,8 @@ public class HostLoggerLifecycleTests : IDisposable
     [Fact]
     public void StoppingTheOlderHost_LeavesTheNewerOneLogging()
     {
-        var (a, _) = Start();
-        var (_, sinkB) = Start();
+        (WebApplicationFactory<Program> a, _) = Start();
+        (_, RecordingSink sinkB) = Start();
         AssertArrives(sinkB, "control");
 
         a.Dispose();
@@ -80,8 +80,8 @@ public class HostLoggerLifecycleTests : IDisposable
     public void StoppingTheNewerHost_HandsTheGlobalToTheOlderOne()
     {
         // The order only a list of live hosts gets right: the global belonged to B, and B is gone.
-        var (_, sinkA) = Start();
-        var (b, sinkB) = Start();
+        (_, RecordingSink sinkA) = Start();
+        (WebApplicationFactory<Program> b, RecordingSink sinkB) = Start();
         AssertArrives(sinkB, "control");
 
         b.Dispose();
@@ -93,9 +93,9 @@ public class HostLoggerLifecycleTests : IDisposable
     public async Task TwoHostsStoppingAtOnce_LeaveTheThirdLogging()
     {
         // Released together by a barrier rather than by timing, so the two releases really overlap.
-        var (a, _) = Start();
-        var (b, _) = Start();
-        var (_, sinkC) = Start();
+        (WebApplicationFactory<Program> a, _) = Start();
+        (WebApplicationFactory<Program> b, _) = Start();
+        (_, RecordingSink sinkC) = Start();
         AssertArrives(sinkC, "control");
         using var together = new Barrier(2);
 
@@ -125,7 +125,7 @@ public class HostLoggerLifecycleTests : IDisposable
         // where the line ARRIVES rather than by which logger instance is global: the old code set
         // the raw pipeline, the fix sets its DI wrapper, and an identity check would fail on that
         // difference alone, bootstrap or not.
-        var (_, sinkB) = Start();
+        (_, RecordingSink sinkB) = Start();
         AssertArrives(sinkB, "control");
 
         Start(onBuild: () => Log.ForContext("SourceContext", "HostLoggerGuard").Warning("during-build"));
