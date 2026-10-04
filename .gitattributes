@@ -161,6 +161,17 @@ src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/**/
 src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/**/*.yaml -text
 src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/**/*.json -text
 
+# The FBL conformance corpus, vendored unchanged from etalii-adp/etalii.adp `specifications/fbl/`
+# (fbl-implementation Requirement 10.3). Its fixture inputs and registrations are compared byte for
+# byte - offsets in every fixture.json are UTF-8 byte offsets into them, and several are CRLF on
+# purpose while others are LF - so git must not rewrite their endings. `.tml`, `.mm` and `.dsl` are
+# already exempt by the extension rules above; these lines name the other byte-compared extensions,
+# scoped to the vendored folder in the Databricks shape, so the readme beside them stays ordinary text.
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.yml -text
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.json -text
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.cld -text
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.adp -text
+
 # `.owm` and the ansible-structure fixture tree are covered by `.gitattributes` files inside those
 # modules rather than from here. Both are scoped more narrowly than an extension rule would be -
 # `.owm` is byte-exact under the wardley-map tests and under `examples/example 2`, but not under
