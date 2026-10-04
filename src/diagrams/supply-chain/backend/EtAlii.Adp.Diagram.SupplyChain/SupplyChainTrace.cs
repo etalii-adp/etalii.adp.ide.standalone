@@ -69,7 +69,7 @@ public sealed class SupplyChainTrace
             upFrom = [selectedId];
             downFrom = [selectedId];
         }
-        else if (layout.Flows.FirstOrDefault(flow => flow.Id == selectedId) is { } flow)
+        else if (layout.Flows.FirstOrDefault(f => f.Id == selectedId) is { } flow)
         {
             upFrom = [flow.From];
             downFrom = [flow.To];
