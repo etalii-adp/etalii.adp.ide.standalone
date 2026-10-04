@@ -1,9 +1,8 @@
-namespace EtAlii.Adp.Specification.Fbl.Planning;
-
 using System.Globalization;
 using System.Text;
-using EtAlii.Adp;
 using EtAlii.Adp.Specification.Fbl.Documents;
+
+namespace EtAlii.Adp.Specification.Fbl.Planning;
 
 /// <summary>
 /// The rules of FBL §6.3 that are the same for every family: numbers, times, maps and the

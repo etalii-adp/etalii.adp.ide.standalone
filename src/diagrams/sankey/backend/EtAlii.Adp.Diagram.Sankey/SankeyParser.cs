@@ -141,7 +141,7 @@ public static class SankeyParser
             int? column = null;
             if (Number(mapping, "column", document, problems) is { } stated)
             {
-                if (stated >= 1 && stated == Math.Floor(stated))
+                if (stated >= 1 && Math.Abs(stated - Math.Floor(stated)) < double.Tolerance)
                 {
                     column = (int)Math.Min(stated, 1000);
                 }

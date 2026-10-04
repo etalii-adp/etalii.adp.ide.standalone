@@ -1,5 +1,3 @@
-namespace EtAlii.Adp.Specification.Fbl.Rules;
-
 using System.Text.Json;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
@@ -9,6 +7,8 @@ using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Text;
 using EtAlii.Adp.Specification.Fbl.Xml;
 using EtAlii.Adp.Specification.Fbl.Yaml;
+
+namespace EtAlii.Adp.Specification.Fbl.Rules;
 
 /// <summary>
 /// A body read through a binding (FBL §5): the family's lossless reading, which rule claimed which

@@ -1,7 +1,7 @@
-namespace EtAlii.Adp.Specification.Fbl.Planning;
-
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Rules;
+
+namespace EtAlii.Adp.Specification.Fbl.Planning;
 
 /// <summary>
 /// Plans a model change as one edit (FBL §6.4): the splices of every attribute set, element added

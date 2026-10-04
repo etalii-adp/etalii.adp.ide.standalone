@@ -1,6 +1,6 @@
-namespace EtAlii.Adp.Specification.Fbl.Planning;
-
 using EtAlii.Adp.Specification.Fbl.Rules;
+
+namespace EtAlii.Adp.Specification.Fbl.Planning;
 
 /// <summary>The splices of one edit while it is being planned, against the body before the edit.</summary>
 internal sealed class Plan(BodyReading reading)
