@@ -269,7 +269,11 @@ public static class AbmWriter
 
     /// <summary>A label as one line: newlines become spaces, and the ends are trimmed.</summary>
     public static string OneLine(string label) =>
-        string.Join(' ', (label ?? "").Replace("\r", "", StringComparison.Ordinal).Split('\n').Select(part => part.Trim()).Where(part => part.Length > 0));
+        string.Join(' ', label
+            .Replace("\r", "", StringComparison.Ordinal)
+            .Split('\n')
+            .Select(part => part.Trim())
+            .Where(part => part.Length > 0));
 
     /// <summary>The first root of a file that has none: under its Behavior heading, or in a new Behavior section at the end.</summary>
     private static void AddFirstRoot(LineDocument document, AbmModel model, string item)
