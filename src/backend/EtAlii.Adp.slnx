@@ -114,6 +114,8 @@
     <Project Path="../diagrams/plantuml-c4/backend/EtAlii.Adp.Diagram.PlantumlC4/EtAlii.Adp.Diagram.PlantumlC4.csproj" />
     <Project Path="../diagrams/plantuml-uml/backend/EtAlii.Adp.Diagram.PlantumlUml/EtAlii.Adp.Diagram.PlantumlUml.csproj" />
     <Project Path="../diagrams/structurizr-c4/backend/EtAlii.Adp.Diagram.StructurizrC4/EtAlii.Adp.Diagram.StructurizrC4.csproj" />
+    <Project Path="../diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain/EtAlii.Adp.Diagram.SupplyChain.csproj" />
+    <Project Path="../diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/EtAlii.Adp.Diagram.SupplyChain.Tests.csproj" />
     <Project Path="../diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/EtAlii.Adp.Diagram.Timeline.csproj" />
     <Project Path="../diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/EtAlii.Adp.Diagram.Timeline.Tests.csproj" />
     <Project Path="../diagrams/togaf-adm/backend/EtAlii.Adp.Diagram.TogafAdm/EtAlii.Adp.Diagram.TogafAdm.csproj" />

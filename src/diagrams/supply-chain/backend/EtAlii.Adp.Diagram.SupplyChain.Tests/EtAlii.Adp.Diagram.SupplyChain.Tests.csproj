@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.SupplyChain\EtAlii.Adp.Diagram.SupplyChain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The round-trip corpus and the examples, beside the test binary so a test reads them from disk as the backend will. -->
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\examples\**\*.supply" LinkBase="Examples" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
