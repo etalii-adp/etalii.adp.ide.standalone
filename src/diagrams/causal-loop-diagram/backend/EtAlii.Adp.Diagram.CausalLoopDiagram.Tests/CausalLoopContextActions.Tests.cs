@@ -238,13 +238,16 @@ public class CausalLoopContextActionsTests : IDisposable
 
         // Assert.
         Assert.NotEmpty(actions);
-        Assert.All(actions, action =>
+        Assert.All(actions, AssertAction);
+        return;
+
+        void AssertAction(ContextActionDefinition action)
         {
             ArgumentNullException.ThrowIfNull(action);
 
             Assert.False(action.Available);
             Assert.Equal(CausalLoopWriter.NoSuchVariable, action.UnavailableReason);
-        });
+        }
     }
 
     [Fact]
@@ -554,7 +557,11 @@ public class CausalLoopContextActionsTests : IDisposable
             CausalLoopContextActionProvider.AddLinkActionId,
             CausalLoopContextActionProvider.AddLoopActionId,
         };
-        Assert.All(toolbox.Items, item =>
+
+        Assert.All(toolbox.Items, AssertItem);
+        return;
+
+        void AssertItem(ToolboxItemDefinition item)
         {
             ArgumentNullException.ThrowIfNull(item);
 
@@ -562,7 +569,7 @@ public class CausalLoopContextActionsTests : IDisposable
             Assert.NotEqual("", item.Label);
             // The description says where the entry goes, so a user finds out before trying.
             Assert.Contains("Drop on", item.Description, StringComparison.Ordinal);
-        });
+        }
     }
 
     [Fact]

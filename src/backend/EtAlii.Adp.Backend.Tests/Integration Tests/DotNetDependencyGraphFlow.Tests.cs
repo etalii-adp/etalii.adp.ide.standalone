@@ -1,5 +1,6 @@
 using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram.Wire;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
@@ -127,7 +128,7 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(30));
 
-        var delivered = new List<Documents.Wire.Element>();
+        var delivered = new List<Element>();
         using var stream = diagrams.Open(
             new OpenDiagramRequest
             {
@@ -184,7 +185,7 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         cts.CancelAfter(TimeSpan.FromSeconds(30));
 
         // Act.
-        var delivered = new List<Documents.Wire.Element>();
+        var delivered = new List<Element>();
         using var stream = diagrams.Open(
             new OpenDiagramRequest
             {
@@ -229,14 +230,15 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
 
         // Ids the client can read both ends of an edge from - the module builds an edge id as
         // `depends:<from>-><to>` and the canvas splits it rather than carrying the ends twice.
-        Assert.All(
-            delivered.Where(element => element.Type == "dotnet/dependency-graph+edge"),
-            element =>
-            {
-                ArgumentNullException.ThrowIfNull(element);
+        Assert.All(delivered.Where(element => element.Type == "dotnet/dependency-graph+edge"), AssertElement);
+        return;
 
-                Assert.StartsWith("depends:", element.Id.Value, StringComparison.Ordinal);
-                Assert.Contains("->", element.Id.Value, StringComparison.Ordinal);
-            });
+        void AssertElement(Element element)
+        {
+            ArgumentNullException.ThrowIfNull(element);
+
+            Assert.StartsWith("depends:", element.Id.Value, StringComparison.Ordinal);
+            Assert.Contains("->", element.Id.Value, StringComparison.Ordinal);
+        }
     }
 }

@@ -284,14 +284,18 @@ public class PipelineGraphBuilderTests
         // deployments and runs whatever either of them did.
         var edges = graph.Edges.Where(candidate => candidate.ToId == "Notify").ToList();
         Assert.Equal(2, edges.Count);
-        Assert.All(edges, edge =>
+
+        Assert.All(edges, AssertEdge);
+        return;
+
+        void AssertEdge(PipelineEdge edge)
         {
             ArgumentNullException.ThrowIfNull(edge);
 
             Assert.True(edge.IsConditional);
             Assert.Equal("always()", edge.ConditionText);
             Assert.Equal(PipelineEdgeCondition.Always, edge.Condition);
-        });
+        }
     }
 
     [Fact]

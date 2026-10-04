@@ -345,13 +345,16 @@ public class PipelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.NotEmpty(properties);
-        Assert.All(properties, property =>
+        Assert.All(properties, AssertProperty);
+        return;
+
+        void AssertProperty(ContextPropertyDefinition property)
         {
             ArgumentNullException.ThrowIfNull(property);
 
             Assert.False(property.IsEditable);
             Assert.Contains("templates/jobs.yml", property.ReadOnlyReason);
-        });
+        }
     }
 
     [Fact]

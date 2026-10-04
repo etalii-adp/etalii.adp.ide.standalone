@@ -57,13 +57,16 @@ public class SparqlProvidersTests : IDisposable
 
         // Assert.
         Assert.NotEmpty(everyRow);
-        Assert.All(everyRow, row =>
+        Assert.All(everyRow, AssertAction);
+        return;
+
+        void AssertAction(ContextPropertyDefinition row)
         {
             ArgumentNullException.ThrowIfNull(row);
 
             Assert.Equal(SparqlContextPropertyProvider.ReadOnlyReason, row.ReadOnlyReason);
             Assert.Contains("text editor", row.ReadOnlyReason);
-        });
+        }
     }
 
     [Fact]

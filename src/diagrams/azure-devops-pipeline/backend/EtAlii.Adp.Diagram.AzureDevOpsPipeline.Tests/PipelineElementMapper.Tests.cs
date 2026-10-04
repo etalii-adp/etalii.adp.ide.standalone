@@ -522,6 +522,7 @@ public class PipelineElementMapperTests
             $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it maps.");
 
         var inspected = 0;
+
         foreach (var path in fixtures)
         {
             var model = PipelineParser.Parse(LineDocument.Parse(File.ReadAllText(path)));
@@ -530,14 +531,7 @@ public class PipelineElementMapperTests
             var elements = Map(model, model.Stages.Select(stage => stage.Id).ToArray());
 
             // Assert.
-            Assert.All(elements, element =>
-            {
-                ArgumentNullException.ThrowIfNull(element);
-
-                Assert.NotEmpty(element.Id);
-                Assert.NotEmpty(element.Type);
-                Assert.False(element.Payload.IsEmpty, $"{element.Id} carries no payload");
-            });
+            Assert.All(elements, AssertElement);
             inspected += elements.Count;
         }
 
@@ -548,5 +542,15 @@ public class PipelineElementMapperTests
         Assert.True(
             inspected >= 40,
             $"Only {inspected} elements were mapped across the whole corpus; this guard has stopped finding the elements it inspects.");
+        return;
+
+        void AssertElement(DiagramElement element)
+        {
+            ArgumentNullException.ThrowIfNull(element);
+
+            Assert.NotEmpty(element.Id);
+            Assert.NotEmpty(element.Type);
+            Assert.False(element.Payload.IsEmpty, $"{element.Id} carries no payload");
+        }
     }
 }

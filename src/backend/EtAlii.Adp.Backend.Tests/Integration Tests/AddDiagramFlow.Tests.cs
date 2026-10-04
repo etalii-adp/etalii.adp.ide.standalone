@@ -187,13 +187,15 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.All(
             actions.Where(action => action.Id is not AddDiagramContextActionProvider.AddActionId
                 and not Problems.ValidateContextActionProvider.ValidateActionId
-                and not HierarchyContextActionProvider.AddFolderActionId),
-            action =>
-            {
-                ArgumentNullException.ThrowIfNull(action);
-                Assert.False(action.Available);
-                Assert.NotEqual("", action.UnavailableReason);
-            });
+                and not HierarchyContextActionProvider.AddFolderActionId), AssertAction);
+        return;
+
+        void AssertAction(ContextAction action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            Assert.False(action.Available);
+            Assert.NotEqual("", action.UnavailableReason);
+        }
     }
 
     [Fact]
