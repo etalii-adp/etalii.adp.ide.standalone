@@ -348,7 +348,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         Assert.All(properties, AssertProperty);
         return;
 
-        void AssertProperty(ContextPropertyDefinition property)
+        static void AssertProperty(ContextPropertyDefinition property)
         {
             ArgumentNullException.ThrowIfNull(property);
 

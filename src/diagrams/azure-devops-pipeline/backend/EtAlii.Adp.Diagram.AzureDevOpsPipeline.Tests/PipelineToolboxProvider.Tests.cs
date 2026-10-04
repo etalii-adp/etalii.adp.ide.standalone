@@ -90,7 +90,7 @@ public class PipelineToolboxProviderTests : IDisposable
         Assert.All(_toolbox.Items, AssertItem);
         return;
 
-        void AssertItem(ToolboxItemDefinition item)
+        static void AssertItem(ToolboxItemDefinition item)
         {
             ArgumentNullException.ThrowIfNull(item);
 

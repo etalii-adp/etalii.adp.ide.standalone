@@ -55,7 +55,7 @@ public class TimelineToolboxProviderTests : IDisposable
         Assert.All(_toolbox.Items, AssertAction);
         return;
 
-        void AssertAction(ToolboxItemDefinition item)
+        static void AssertAction(ToolboxItemDefinition item)
         {
             ArgumentNullException.ThrowIfNull(item);
             Assert.NotEmpty(item.Id);

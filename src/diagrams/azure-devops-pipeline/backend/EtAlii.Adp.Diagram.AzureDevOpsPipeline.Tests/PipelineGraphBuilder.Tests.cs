@@ -288,7 +288,7 @@ public class PipelineGraphBuilderTests
         Assert.All(edges, AssertEdge);
         return;
 
-        void AssertEdge(PipelineEdge edge)
+        static void AssertEdge(PipelineEdge edge)
         {
             ArgumentNullException.ThrowIfNull(edge);
 

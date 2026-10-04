@@ -46,7 +46,7 @@ public class DotNetContextPropertyProviderTests
         Assert.All(projectRows.Concat(packageRows), AssertRow);
         return;
 
-        void AssertRow(ContextPropertyDefinition row)
+        static void AssertRow(ContextPropertyDefinition row)
         {
             ArgumentNullException.ThrowIfNull(row);
 

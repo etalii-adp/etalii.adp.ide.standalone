@@ -233,7 +233,7 @@ public class DotNetDependencyGraphFlowTests : IClassFixture<WebApplicationFactor
         Assert.All(delivered.Where(element => element.Type == "dotnet/dependency-graph+edge"), AssertElement);
         return;
 
-        void AssertElement(Element element)
+        static void AssertElement(Element element)
         {
             ArgumentNullException.ThrowIfNull(element);
 

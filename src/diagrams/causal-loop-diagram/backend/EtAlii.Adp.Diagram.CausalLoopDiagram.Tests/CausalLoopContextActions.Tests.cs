@@ -241,7 +241,7 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.All(actions, AssertAction);
         return;
 
-        void AssertAction(ContextActionDefinition action)
+        static void AssertAction(ContextActionDefinition action)
         {
             ArgumentNullException.ThrowIfNull(action);
 

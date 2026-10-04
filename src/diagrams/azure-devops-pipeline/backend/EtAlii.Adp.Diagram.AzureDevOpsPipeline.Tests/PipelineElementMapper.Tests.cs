@@ -544,7 +544,7 @@ public class PipelineElementMapperTests
             $"Only {inspected} elements were mapped across the whole corpus; this guard has stopped finding the elements it inspects.");
         return;
 
-        void AssertElement(DiagramElement element)
+        static void AssertElement(DiagramElement element)
         {
             ArgumentNullException.ThrowIfNull(element);
 

@@ -190,7 +190,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
                 and not HierarchyContextActionProvider.AddFolderActionId), AssertAction);
         return;
 
-        void AssertAction(ContextAction action)
+        static void AssertAction(ContextAction action)
         {
             ArgumentNullException.ThrowIfNull(action);
             Assert.False(action.Available);

@@ -60,7 +60,7 @@ public class SparqlProvidersTests : IDisposable
         Assert.All(everyRow, AssertAction);
         return;
 
-        void AssertAction(ContextPropertyDefinition row)
+        static void AssertAction(ContextPropertyDefinition row)
         {
             ArgumentNullException.ThrowIfNull(row);
 
