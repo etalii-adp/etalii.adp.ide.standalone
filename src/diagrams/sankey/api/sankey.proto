@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package etalii.adp.sankey;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Sankey";
+
+// One node: a bar whose height is the larger of what flows into it and what flows out of it.
+//
+// The size is here because the core element carries a position, a type and this payload and
+// nothing more; the bar's height IS its value, so the client never scales anything itself.
+message SankeyNodePayload {
+  string name = 1;
+  // The node's value: the larger of its inflow and its outflow.
+  double value = 2;
+  // The value as the document's format writes it - "€3.3M", "1,302k", "54 TWh".
+  string display_value = 3;
+  // A line under the value, verbatim: "+6% Y/Y", "32% margin". Empty when the document states none.
+  string note = 4;
+  // A palette word the stylesheet paints in both themes, or empty when the colour is custom.
+  string color = 5;
+  // A colour the document states outright, "#rrggbb", painted as written in both themes.
+  string custom_color = 6;
+  double width = 7;
+  double height = 8;
+  // The zero-based column the node is drawn in.
+  int32 column = 9;
+  // Where its labels sit: "left" for the first column, "right" for every other.
+  string side = 10;
+}
+
+// One flow from a node to a node. Its width at both ends is its value on the diagram's scale.
+message SankeyFlowPayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+  double value = 3;
+  string display_value = 4;
+  // The band's height in canvas units.
+  double thickness = 5;
+  // Where the band's centre leaves its source and reaches its target, as a fraction 0..1 of the
+  // node's height from its top - so a drag carries the band with the node.
+  double source_at = 6;
+  double target_at = 7;
+  string color = 8;
+  string custom_color = 9;
+  // Whether the flow runs back to a column at or left of its source's, closing a cycle.
+  bool backward = 10;
+}

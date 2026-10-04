@@ -3991,13 +3991,35 @@ function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition
   return { x: element.x - width / 2, y: element.y - height / 2, width, height };
 }
 
-/** The box that fits every element with a margin - what the canvas opens with and Fit returns to. */
+/**
+ * The boxes an element's declared labels take up, at rest. A label is usually drawn inside its
+ * element and adds nothing; one drawn beside it - a Sankey bar's name, a `before` label - would
+ * otherwise be cut off at the edge of the fitted view.
+ */
+function labelBoxesOf(element: DiagramModelElement, type: ElementTypeDefinition | undefined, bounds: ConnectorBox): ConnectorBox[] {
+  if (type?.labels === undefined) {
+    return [];
+  }
+  const shape = isCustomShape(type.shape) ? "box" : shapeOf(type.shape, sourceOf(element));
+  return layoutLabels(type.labels, sourceOf(element), bounds, 1, shape).map((line) => {
+    const fontSize = line.typography?.fontSize ?? LABEL_FONT_SIZE;
+    const width = widthOf(line.text, fontSize);
+    const left = line.anchor === "start" ? line.x : line.anchor === "end" ? line.x - width : line.x - width / 2;
+    return { x: left, y: line.y - fontSize, width, height: fontSize * 1.3 };
+  });
+}
+
+/** The box that fits every element and its labels with a margin - what the canvas opens with and Fit returns to. */
 function fitBoxOf(elements: readonly DiagramModelElement[], elementTypes: Map<string, ElementTypeDefinition>): ViewBox {
   if (elements.length === 0) {
     return { x: -200, y: -150, w: 400, h: 300 };
   }
 
-  const boxes = elements.map((element) => elementBounds(element, elementTypes.get(element.type)));
+  const boxes = elements.flatMap((element) => {
+    const type = elementTypes.get(element.type);
+    const bounds = elementBounds(element, type);
+    return [bounds, ...labelBoxesOf(element, type, bounds)];
+  });
   const minX = Math.min(...boxes.map((box) => box.x)) - FIT_PADDING;
   const minY = Math.min(...boxes.map((box) => box.y)) - FIT_PADDING;
   const maxX = Math.max(...boxes.map((box) => box.x + box.width)) + FIT_PADDING;

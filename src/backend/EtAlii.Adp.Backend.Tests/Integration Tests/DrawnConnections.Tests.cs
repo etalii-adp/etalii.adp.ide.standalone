@@ -13,6 +13,7 @@ using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Diagram.Sankey;
 using EtAlii.Adp.Diagram.Sparql;
 using EtAlii.Adp.Diagram.SupplyChain;
 using EtAlii.Adp.Diagram.Timeline;
@@ -146,6 +147,9 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("rdf", new(
             [RdfElementMapper.EdgeType],
             [RdfElementMapper.ResourceType, RdfElementMapper.TruncationType])),
+        new("sankey", new(
+            [SankeyElementMapper.FlowType],
+            [SankeyElementMapper.NodeType])),
         new("shacl", new(
             [ShaclElementMapper.EdgeType],
             [ShaclElementMapper.ShapeType])),

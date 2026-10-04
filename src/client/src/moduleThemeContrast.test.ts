@@ -231,6 +231,68 @@ describe("module colours honour the theme", () => {
   });
 
   /**
+   * sankey's twelve palette words: each is the bar, the band and the LABEL of what it colours, so
+   * every one must read as text on the surface, and two words must never read as one colour - an
+   * author picks "slate" and "grey" to tell two things apart. The words are the backend's
+   * `SankeyColors.Palette` and the client's `SANKEY_COLORS`, which the module's own test holds equal.
+   */
+  describe("sankey's palette is twelve distinct, readable theme colours", () => {
+    const ids = moduleFile("sankey", "sankeyIds.ts");
+    const words = JSON.parse(/SANKEY_COLORS[^=]*=\s*(\[[^\]]*\])/.exec(ids)![1].replace(/,\s*\]/, "]")) as string[];
+    const DISTINCT = 20;
+
+    function lab(colour: string): [number, number, number] {
+      const hex = colour.trim().replace(/^#/, "");
+      const [r, g, b] = [0, 2, 4].map((at) => {
+        const c = Number.parseInt(hex.slice(at, at + 2), 16) / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      const xyz = [
+        (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047,
+        0.2126 * r + 0.7152 * g + 0.0722 * b,
+        (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883,
+      ].map((t) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116));
+      return [116 * xyz[1] - 16, 500 * (xyz[0] - xyz[1]), 200 * (xyz[1] - xyz[2])];
+    }
+
+    function deltaE(one: string, other: string): number {
+      const [a, b] = [lab(one), lab(other)];
+      return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    }
+
+    it("names twelve words", () => {
+      expect(words).toHaveLength(12);
+    });
+
+    for (const theme of ["light", "dark"] as const) {
+      it(`reads every word as text on the surface in the ${theme} theme`, () => {
+        const surface = resolvedIn(theme, "--color-surface");
+        for (const word of words) {
+          const colour = resolvedIn(theme, `--color-diagram-sankey-${word}`);
+          const ratio = contrastRatio(colour, surface);
+          expect(ratio, `${word} (${colour}) on the surface (${surface}) in the ${theme} theme is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(READABLE);
+        }
+      });
+
+      it(`keeps the words apart, and away from the selection, in the ${theme} theme`, () => {
+        const colours = words.map((word) => ({ word, colour: resolvedIn(theme, `--color-diagram-sankey-${word}`) }));
+        const selected = resolvedIn(theme, "--color-selected");
+        const close: string[] = [];
+        colours.forEach((one, at) => {
+          for (const other of colours.slice(at + 1)) {
+            const distance = deltaE(one.colour, other.colour);
+            if (distance < DISTINCT) close.push(`${one.word} and ${other.word} are ${distance.toFixed(1)} apart`);
+          }
+          const distance = deltaE(one.colour, selected);
+          if (distance < DISTINCT) close.push(`${one.word} is ${distance.toFixed(1)} from the selection`);
+        });
+
+        expect(close).toEqual([]);
+      });
+    }
+  });
+
+  /**
    * The cause behind both looks, stated directly rather than through a ratio: a private
    * namespace the theme never defines.
    *

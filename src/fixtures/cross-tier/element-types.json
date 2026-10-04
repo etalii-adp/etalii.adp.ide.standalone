@@ -164,6 +164,14 @@
         "w3c/skos+edge"
       ]
     },
+    "sankey": {
+      "elements": [
+        "etalii/sankey+node"
+      ],
+      "relations": [
+        "etalii/sankey+flow"
+      ]
+    },
     "sparql": {
       "elements": [
         "w3c/sparql+annotation",

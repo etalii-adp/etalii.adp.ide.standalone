@@ -46,6 +46,22 @@
   --color-diagram-supply-chain-retailer: #15803d;
   --color-diagram-supply-chain-consumer: #be185d;
   --color-diagram-supply-chain-on-stage: #ffffff;
+  /* The Sankey diagram's twelve palette words, which a node or a flow names in its document. Each is
+     the bar, the band and the label of what it colours, so each must read as text on the surface
+     (4.5:1) and stay apart from the others and from the selection violet; moduleThemeContrast.test.ts
+     holds all three. A document may also state a #rrggbb of its own, which no theme can vouch for. */
+  --color-diagram-sankey-grey: #666666;
+  --color-diagram-sankey-slate: #2f5b8a;
+  --color-diagram-sankey-purple: #86198f;
+  --color-diagram-sankey-blue: #1d4ed8;
+  --color-diagram-sankey-teal: #0f766e;
+  --color-diagram-sankey-green: #15803d;
+  --color-diagram-sankey-lime: #4d7c0f;
+  --color-diagram-sankey-yellow: #a16207;
+  --color-diagram-sankey-orange: #c2410c;
+  --color-diagram-sankey-red: #a3151a;
+  --color-diagram-sankey-pink: #be185d;
+  --color-diagram-sankey-brown: #7c4a1e;
   --color-diagram-hype-peak: #f7e7a1;
   --color-diagram-hype-trough: #dfe3e8;
   --color-diagram-hype-slope: #f6c99a;
@@ -144,6 +160,18 @@
     --color-diagram-helm-template: #e8b05a;
     --color-diagram-helm-dependency: #b88ce4;
     --color-diagram-helm-subchart: #6ecdd4;
+    --color-diagram-sankey-grey: #a8a8a8; /* the same twelve words, lifted so they still read on the dark surface */
+    --color-diagram-sankey-slate: #8fb0d4;
+    --color-diagram-sankey-purple: #e879f9;
+    --color-diagram-sankey-blue: #60a5fa;
+    --color-diagram-sankey-teal: #2dd4bf;
+    --color-diagram-sankey-green: #4ade80;
+    --color-diagram-sankey-lime: #a3e635;
+    --color-diagram-sankey-yellow: #facc15;
+    --color-diagram-sankey-orange: #fb923c;
+    --color-diagram-sankey-red: #f87171;
+    --color-diagram-sankey-pink: #f472b6;
+    --color-diagram-sankey-brown: #d6a26f;
     --color-selected: #a78bfa; /* the same violet, lifted so it still reads on the dark surface */
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
   }
