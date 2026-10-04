@@ -40,7 +40,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             return;
         }
         _leaves = parser.Leaves;
-        foreach (var (name, span) in parser.Duplicates)
+        foreach ((string name, Span span) in parser.Duplicates)
         {
             Report(FindingCodes.DuplicateKey, FindingSeverity.Warning, $"The key '{name}' appears again in this mapping; only the first is read.", span);
         }
@@ -236,7 +236,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         Add(rule.Id?.From);
         Add(rule.Source);
         Add(rule.Target);
-        foreach (var (_, binding) in rule.Attributes) Add(binding);
+        foreach ((_, AttributeBinding binding) in rule.Attributes) Add(binding);
         return order;
     }
 
@@ -418,7 +418,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         if (rule.Id?.From?.Key == key && request.Id is { } id) return Scalar(id, null, null, 0);
         if (rule.Source?.Key == key && request.Source is { } source) return Scalar(source.Key, null, null, 0);
         if (rule.Target?.Key == key && request.Target is { } target) return Scalar(target.Key, null, null, 0);
-        foreach (var (name, binding) in rule.Attributes)
+        foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
             if (binding.Key != key || binding.Child is not null || binding.IsComputed) continue;
             if (!request.Values.TryGetValue(name, out var value) || NewText.IsEmpty(value)) continue;

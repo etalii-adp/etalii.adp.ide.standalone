@@ -165,7 +165,7 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => Items;
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             var list = new List<object?>(Items.Count);
             foreach (var item in Items) list.Add(item.Evaluate(scope, ref steps));
@@ -177,10 +177,10 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => Entries.SelectMany(e => new[] { e.Key, e.Value });
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             var map = new CelMap();
-            foreach (var (k, v) in Entries) map[CelValues.AsString(k.Evaluate(scope, ref steps))] = v.Evaluate(scope, ref steps);
+            foreach ((CelNode k, CelNode v) in Entries) map[CelValues.AsString(k.Evaluate(scope, ref steps))] = v.Evaluate(scope, ref steps);
             return map;
         }
     }
@@ -230,7 +230,7 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => [Target];
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             CelProgram.Step(ref steps);
             var target = Target.Evaluate(scope, ref steps);
@@ -386,7 +386,7 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => Receiver is null ? Arguments : Arguments.Prepend(Receiver);
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             CelProgram.Step(ref steps);
             var receiver = Receiver?.Evaluate(scope, ref steps);
@@ -401,8 +401,8 @@ internal abstract record CelNode
             {
                 "size" => receiver switch
                 {
-                    string s => (long)new StringInfo(s).LengthInTextElements,
-                    List<object?> l => (long)l.Count,
+                    string s => new StringInfo(s).LengthInTextElements,
+                    List<object?> l => l.Count,
                     Dictionary<string, object?> m => (long)m.Count,
                     _ => throw new CelException("size() needs a string, a list or a map."),
                 },
@@ -444,8 +444,8 @@ internal static class CelValues
     public static bool Equal(object? a, object? b) => (a, b) switch
     {
         (null, null) => true,
-        (long x, double y) => x == y,
-        (double x, long y) => x == y,
+        (long x, double y) => Math.Abs(x - y) < double.Tolerance,
+        (double x, long y) => Math.Abs(x - y) < double.Tolerance,
         (List<object?> x, List<object?> y) => x.Count == y.Count && x.Zip(y).All(p => Equal(p.First, p.Second)),
         _ => Equals(a, b),
     };
@@ -618,7 +618,7 @@ internal sealed class CelParser(string source)
     private CelNode ParsePrimary()
     {
         if (_position >= _tokens.Count) throw new CelException($"'{source}' ends too early.");
-        var (kind, text) = _tokens[_position++];
+        (string kind, string text) = _tokens[_position++];
         switch (kind)
         {
             case "int": return new CelNode.Literal(long.Parse(text, CultureInfo.InvariantCulture));

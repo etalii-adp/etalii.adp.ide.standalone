@@ -67,13 +67,13 @@ public static class DiagramFilePair
             return null;
         }
 
-        var (body, view) = ReadBodyAndViewHeaders(adpPath);
+        (string? body, string? view) = ReadBodyAndViewHeaders(adpPath);
         if (body is null)
         {
             // No header: the body is the sibling of this file's own name, exactly as every
             // type has always behaved. A view key without a body still applies - one
             // registration beside its own document may still name a view within it.
-            var (path, ambiguousWith, subjectIsShared) = ResolveSibling(adpPath, definition.Extension);
+            (string path, string? ambiguousWith, bool subjectIsShared) = ResolveSibling(adpPath, definition.Extension);
 
             // A folder-scoped registration has no derived body at all, rather than one whose path
             // is the bare extension (Requirement 4.4).

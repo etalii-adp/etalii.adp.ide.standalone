@@ -267,7 +267,7 @@ public sealed class DatabricksElementMapper
         var reached = new HashSet<string>(inView, StringComparer.Ordinal);
         foreach (var edge in elements.Where(element => IsEdge(element.Type)))
         {
-            var (from, to) = EndsOf(edge);
+            (string from, string to) = EndsOf(edge);
             if (inView.Contains(from))
             {
                 reached.Add(to);

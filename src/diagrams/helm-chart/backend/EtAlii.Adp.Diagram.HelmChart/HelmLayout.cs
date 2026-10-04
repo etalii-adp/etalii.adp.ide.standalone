@@ -65,7 +65,7 @@ public static class HelmLayout
         double widest = 0;
         foreach (var node in nodes)
         {
-            var (width, height) = SizeOf(node.Kind);
+            (double width, double height) = SizeOf(node.Kind);
             boxes[node.Id] = new HelmBox(x, y, width, height);
             y += height + RowGap;
             widest = Math.Max(widest, width);

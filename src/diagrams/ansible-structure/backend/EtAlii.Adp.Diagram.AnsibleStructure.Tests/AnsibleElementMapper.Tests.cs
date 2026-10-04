@@ -21,7 +21,7 @@ public class AnsibleElementMapperTests
 
     private static IReadOnlyList<DiagramElement> Everything(string fixture)
     {
-        var (project, graph) = Read(fixture);
+        (AnsibleProject project, AnsibleGraph graph) = Read(fixture);
         return Mapper.Visible(project, graph, DiagramViewport.Unbounded);
     }
 
@@ -34,7 +34,7 @@ public class AnsibleElementMapperTests
     public void EveryNodeAndEdge_BecomesAnElement()
     {
         // Act.
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
 
         // Assert.
@@ -209,7 +209,7 @@ public class AnsibleElementMapperTests
     public void AViewport_CullsWhatItDoesNotTouch()
     {
         // Act.
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var everything = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
         var narrow = Mapper.Visible(project, graph, new DiagramViewport(-10, -10, 10, 10));
 
@@ -222,7 +222,7 @@ public class AnsibleElementMapperTests
     public void ACulledEdgeKeepsBothItsEnds()
     {
         // Act.
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var delivered = Mapper.Visible(project, graph, new DiagramViewport(-10, -10, 10, 10));
 
         // Assert.
@@ -246,7 +246,7 @@ public class AnsibleElementMapperTests
     public void NoGroupOrUngroupDeltaIsEverProduced()
     {
         // Act.
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
         var deltas = DiagramDiff.Between([], elements);
 
@@ -347,7 +347,7 @@ public class AnsibleElementMapperTests
     public void AnAuthoredPosition_OverridesTheComputedOne()
     {
         // Arrange: one node moved somewhere the layout engine would never place it.
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var moved = graph.Nodes[0].Id;
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
@@ -367,7 +367,7 @@ public class AnsibleElementMapperTests
     public void UnauthoredElements_KeepTheirComputedPositions()
     {
         // Arrange.
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var moved = graph.Nodes[0].Id;
         var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
@@ -389,7 +389,7 @@ public class AnsibleElementMapperTests
             .ToHashSet(StringComparer.Ordinal);
 
         Assert.Equal(computed.Count, arranged.Count);
-        foreach (var (before, after) in computed.Zip(arranged).Where(pair => !follows.Contains(pair.First.Id)))
+        foreach ((DiagramElement before, DiagramElement after) in computed.Zip(arranged).Where(pair => !follows.Contains(pair.First.Id)))
         {
             Assert.Equal(before.Id, after.Id);
             Assert.Equal(before.X, after.X);
@@ -401,7 +401,7 @@ public class AnsibleElementMapperTests
     public void AStoredIdTheGraphNoLongerProduces_ChangesNothing()
     {
         // Arrange: the stale-key case - a play removed, a file renamed (Requirement 3.1).
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
@@ -414,7 +414,7 @@ public class AnsibleElementMapperTests
         // Assert: no phantom element, and nothing displaced. Pairwise, as above.
         Assert.Equal(computed.Count, arranged.Count);
         Assert.DoesNotContain(arranged, element => element.Id == "playbook:deleted-yesterday.yml");
-        foreach (var (before, after) in computed.Zip(arranged))
+        foreach ((DiagramElement before, DiagramElement after) in computed.Zip(arranged))
         {
             Assert.Equal(before.Id, after.Id);
             Assert.Equal(before.X, after.X);
@@ -426,7 +426,7 @@ public class AnsibleElementMapperTests
     public void AnEdge_FollowsAMovedEndpoint()
     {
         // Arrange: an edge anchors on its source, so moving that source moves the edge with it.
-        var (project, graph) = Read("infrastructure");
+        (AnsibleProject project, AnsibleGraph graph) = Read("infrastructure");
         var edge = graph.Edges.First(candidate => candidate.TargetId.Length > 0);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {

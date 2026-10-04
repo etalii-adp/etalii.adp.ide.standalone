@@ -80,7 +80,7 @@ internal static class RealFileCorpus
             if (_bindings.TryGetValue(key, out var binding)) return binding;
             var problems = FblDocumentLoader.Load(Path.Combine(Repository.Conformance, document), out var loaded);
             Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
-            foreach (var (bindingName, value) in loaded!.Bindings) _bindings[document + "#" + bindingName] = value;
+            foreach ((string bindingName, FblBinding value) in loaded!.Bindings) _bindings[document + "#" + bindingName] = value;
             return _bindings[key];
         }
     }

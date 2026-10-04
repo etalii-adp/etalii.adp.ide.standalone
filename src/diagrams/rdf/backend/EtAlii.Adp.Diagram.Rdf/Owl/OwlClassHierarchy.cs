@@ -43,7 +43,7 @@ internal static class OwlClassHierarchy
             componentSupers.Add([]);
         }
 
-        foreach (var (child, parents) in supers)
+        foreach ((string child, List<string> parents) in supers)
         {
             foreach (var parent in parents)
             {
@@ -58,7 +58,7 @@ internal static class OwlClassHierarchy
         var componentDepth = new int[components.Count];
         Array.Fill(componentDepth, -1);
         var depths = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var (member, component) in componentOf)
+        foreach ((string member, int component) in componentOf)
         {
             depths[member] = DepthOf(component);
         }

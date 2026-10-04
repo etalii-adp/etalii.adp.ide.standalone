@@ -50,7 +50,7 @@ internal static class JobWriter
             return $"There is no '{taskType}' task type to add.";
         }
 
-        var (itemIndent, keyIndent, insertAt) = TaskInsertion(document, job);
+        (string itemIndent, string keyIndent, int insertAt) = TaskInsertion(document, job);
         if (insertAt < 0)
         {
             return "The job has no tasks section to add into.";

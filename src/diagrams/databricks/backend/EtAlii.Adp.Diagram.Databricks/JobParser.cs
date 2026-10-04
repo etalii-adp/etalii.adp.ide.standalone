@@ -43,7 +43,7 @@ internal static class JobParser
             return jobs;
         }
 
-        foreach (var (keyNode, body) in keyed.Children)
+        foreach ((YamlNode keyNode, YamlNode body) in keyed.Children)
         {
             if (keyNode is not YamlScalarNode { Value: { } key } || body is not YamlMappingNode job)
             {
@@ -74,7 +74,7 @@ internal static class JobParser
                 continue;
             }
 
-            var (type, source) = Kind(task);
+            (string type, string source) = Kind(task);
             tasks.Add(new JobTask(
                 DatabricksYaml.Scalar(task, "task_key") ?? "",
                 type,
@@ -94,7 +94,7 @@ internal static class JobParser
     /// </summary>
     private static (string Type, string Source) Kind(YamlMappingNode task)
     {
-        foreach (var (key, type, sourceField) in _taskKinds)
+        foreach ((string key, string type, string sourceField) in _taskKinds)
         {
             if (DatabricksYaml.Mapping(task, key) is not { } declaration)
             {

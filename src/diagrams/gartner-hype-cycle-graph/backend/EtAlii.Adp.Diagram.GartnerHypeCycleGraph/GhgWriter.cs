@@ -256,7 +256,7 @@ public static class GhgWriter
             return GhgEdit.Refused($"The document has no `{TrendsSection}` section to add to.");
         }
 
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, ranges);
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
         List<string> lines =
         [
             $"{itemIndent}-{dashGap}id: {LineSplice.Quote(trend.Id)}",
@@ -297,7 +297,7 @@ public static class GhgWriter
         }
 
         // With no influence yet to copy, the trends' indentation is the document's style.
-        var (itemIndent, dashGap, keyIndent) = ranges.Count > 0
+        (string itemIndent, string dashGap, string keyIndent) = ranges.Count > 0
             ? LineSplice.IndentOf(document, ranges)
             : LineSplice.IndentOf(document, model.Trends.Select(trend => trend.Range).Where(range => range.End < document.Lines.Count));
         List<string> lines =
@@ -504,7 +504,7 @@ public static class GhgWriter
         }
 
         var ranges = model.Triggers.Select(existing => existing.Range).ToList();
-        var (at, itemIndent, dashGap, keyIndent) = EntryPoint(document, model, ranges, TriggersSection);
+        (int at, string itemIndent, string dashGap, string keyIndent) = EntryPoint(document, model, ranges, TriggersSection);
         List<string> lines =
         [
             $"{itemIndent}-{dashGap}id: {LineSplice.Quote(trigger.Id)}",
@@ -535,7 +535,7 @@ public static class GhgWriter
         }
 
         var ranges = model.Notes.Select(existing => existing.Range).ToList();
-        var (at, itemIndent, dashGap, keyIndent) = EntryPoint(document, model, ranges, NotesSection);
+        (int at, string itemIndent, string dashGap, string keyIndent) = EntryPoint(document, model, ranges, NotesSection);
         List<string> lines = [$"{itemIndent}-{dashGap}id: {LineSplice.Quote(note.Id)}"];
         lines.AddRange(TextLines(keyIndent, keyIndent, note.Text));
         lines.AddRange(
@@ -562,7 +562,7 @@ public static class GhgWriter
         List<LineRange> ranges,
         string section)
     {
-        var (itemIndent, dashGap, keyIndent) = ranges.Count > 0
+        (string itemIndent, string dashGap, string keyIndent) = ranges.Count > 0
             ? LineSplice.IndentOf(document, ranges)
             : LineSplice.IndentOf(document, model.Trends.Select(trend => trend.Range).Where(range => range.End < document.Lines.Count));
 

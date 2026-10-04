@@ -157,10 +157,10 @@ public static class SparqlParser
                 Advance();
             }
 
-            var (projectsAll, projection) = ParseProjection();
+            (bool projectsAll, List<SparqlProjectionItem> projection) = ParseProjection();
             var datasets = ParseDatasetClauses();
             var where = ParseWhere();
-            var (modifiers, values) = ParseSolutionModifiers();
+            (List<string> modifiers, SparqlConstraint? values) = ParseSolutionModifiers();
             if (values is not null)
             {
                 where.Constraints.Add(values);
@@ -198,7 +198,7 @@ public static class SparqlParser
                 template.Patterns.AddRange(where.Patterns);
             }
 
-            var (modifiers, values) = ParseSolutionModifiers();
+            (List<string> modifiers, SparqlConstraint? values) = ParseSolutionModifiers();
             if (values is not null)
             {
                 where.Constraints.Add(values);
@@ -219,7 +219,7 @@ public static class SparqlParser
             Advance(); // ASK
             var datasets = ParseDatasetClauses();
             var where = ParseWhere();
-            var (modifiers, values) = ParseSolutionModifiers();
+            (List<string> modifiers, SparqlConstraint? values) = ParseSolutionModifiers();
             if (values is not null)
             {
                 where.Constraints.Add(values);
@@ -283,7 +283,7 @@ public static class SparqlParser
                 where = ParseWhere();
             }
 
-            var (modifiers, values) = ParseSolutionModifiers();
+            (List<string> modifiers, SparqlConstraint? values) = ParseSolutionModifiers();
             if (values is not null)
             {
                 where.Constraints.Add(values);

@@ -98,7 +98,7 @@ public static class SupplyChainWriter
 
         foreach (var node in targets)
         {
-            var (x, y) = places[node.Id];
+            (double x, double y) = places[node.Id];
             // y first: inserting a missing key lands it after the entry's first line, so writing y
             // and then x reads `x` before `y` in a newly placed entry, as a person writes them.
             var grows = LineSplice.FindKey(document, node.Range, "y") < 0 ? 1 : 0;
@@ -140,7 +140,7 @@ public static class SupplyChainWriter
             (group.Range.Start, () => document.Remove(group.Range)),
         ];
 
-        foreach (var (_, edit) in edits.OrderByDescending(edit => edit.Start))
+        foreach ((var _, Action edit) in edits.OrderByDescending(edit => edit.Start))
         {
             edit();
         }
@@ -251,7 +251,7 @@ public static class SupplyChainWriter
             at = document.Lines.Count;
         }
 
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, ranges);
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
         List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}"];
         lines.AddRange(keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}"));
 

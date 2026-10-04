@@ -142,7 +142,7 @@ public class C4LayoutCrowdingTests
             outside.Length > 0,
             "No box has an 'outside' key, so this guard checked no element against the boundary it was pushed out of.");
 
-        foreach (var (id, box) in outside)
+        foreach ((string id, C4Box box) in outside)
         {
             Assert.False(box.Overlaps(boundary), $"'{id}' is drawn on top of the boundary it was pushed out of.");
         }

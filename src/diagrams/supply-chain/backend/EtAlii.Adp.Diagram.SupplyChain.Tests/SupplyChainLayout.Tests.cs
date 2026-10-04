@@ -107,7 +107,7 @@ public sealed class SupplyChainLayoutTests
         {
             for (var j = i + 1; j < boxes.Count; j++)
             {
-                var (a, b) = (boxes[i], boxes[j]);
+                (SupplyChainBox a, SupplyChainBox b) = (boxes[i], boxes[j]);
                 Assert.False(a.X < b.Right && b.X < a.Right && a.Y < b.Bottom && b.Y < a.Bottom, $"{a} overlaps {b}");
             }
         }
@@ -124,7 +124,7 @@ public sealed class SupplyChainLayoutTests
         Assert.NotEmpty(layout.Groups);
         foreach (var node in layout.Nodes.Where(node => node.Group.Length > 0))
         {
-            var (frame, box) = (layout.GroupBoxes[node.Group], layout.NodeBoxes[node.Id]);
+            (SupplyChainBox frame, SupplyChainBox box) = (layout.GroupBoxes[node.Group], layout.NodeBoxes[node.Id]);
             Assert.True(frame.X < box.X && frame.Y < box.Y && frame.Right > box.Right && frame.Bottom > box.Bottom, $"{node.Id} is outside {node.Group}");
         }
     }

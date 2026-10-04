@@ -43,7 +43,7 @@ public sealed class DependencyElementMapper
 
         foreach (var project in graph.Projects)
         {
-            var (x, y) = PositionOf(project.Id, computed, stored);
+            (double x, double y) = PositionOf(project.Id, computed, stored);
             elements.Add(new DiagramElement(
                 project.Id,
                 x,
@@ -61,7 +61,7 @@ public sealed class DependencyElementMapper
 
         foreach (var package in graph.Packages)
         {
-            var (x, y) = PositionOf(package.Id, computed, stored);
+            (double x, double y) = PositionOf(package.Id, computed, stored);
             elements.Add(new DiagramElement(
                 package.Id,
                 x,

@@ -24,7 +24,7 @@ public class MindmapMetricsTests
         Assert.NotEmpty(cases);
 
         var failures = new List<string>();
-        foreach (var (text, textWidth) in cases)
+        foreach ((string text, double textWidth) in cases)
         {
             var expected = Math.Round(Math.Max(metrics.MinimumWidth, textWidth + (2 * metrics.HorizontalPadding)), 2);
             var actual = metrics.Measure(text).Width;

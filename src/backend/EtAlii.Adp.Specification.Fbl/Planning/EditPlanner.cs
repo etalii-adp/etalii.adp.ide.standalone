@@ -60,7 +60,7 @@ internal static class EditPlanner
         RefuseReadOnly(element.Rule, "changed");
         var changes = new List<SlotChange>();
         string? newKey = null;
-        foreach (var (attribute, requested) in set.Attributes)
+        foreach ((string attribute, object? requested) in set.Attributes)
         {
             var value = requested;
             Rule rule;
@@ -156,7 +156,7 @@ internal static class EditPlanner
                 if (other.SourceElement == renamed) Rewrite(plan, other.SourceRead, oldKey, newKey);
                 if (other.TargetElement == renamed) Rewrite(plan, other.TargetRead, oldKey, newKey);
             }
-            foreach (var (name, binding) in other.Rule.Attributes)
+            foreach ((string name, AttributeBinding binding) in other.Rule.Attributes)
             {
                 if (binding.Reference is not { } reference || !reference.To.Contains(renamed.Rule.Name)) continue;
                 if (other == renamed && name == renamed.KeyAttribute) continue;
@@ -196,7 +196,7 @@ internal static class EditPlanner
         }
         RefuseReadOnly(rule, "added");
         var values = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var (name, value) in add.Attributes)
+        foreach ((string name, object? value) in add.Attributes)
         {
             if (rule.IsRelation && name is "source" or "target") continue;
             values[name] = value;
@@ -269,7 +269,7 @@ internal static class EditPlanner
     private static bool References(ReadElement other, ReadElement element)
     {
         if (other.IsRelation && (other.SourceElement == element || other.TargetElement == element)) return true;
-        foreach (var (name, binding) in other.Rule.Attributes)
+        foreach ((string name, AttributeBinding binding) in other.Rule.Attributes)
         {
             if (binding.Reference is not { } reference || !reference.To.Contains(element.Rule.Name) || other == element) continue;
             var value = other.Attributes.GetValueOrDefault(name);

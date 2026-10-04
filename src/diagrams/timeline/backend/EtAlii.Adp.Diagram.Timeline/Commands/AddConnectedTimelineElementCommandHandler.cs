@@ -53,7 +53,7 @@ public sealed class AddConnectedTimelineElementCommandHandler : ICommandHandler<
 
         // A begin-anchor gesture runs the relation the other way: out of the new element's end
         // and into the existing one's start.
-        var (source, target) = command.NewElementIsSource
+        (string source, string target) = command.NewElementIsSource
             ? (command.NewElementId, command.FromElementId)
             : (command.FromElementId, command.NewElementId);
         TimelineWriter.InsertConnection(

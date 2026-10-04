@@ -52,7 +52,7 @@ public class ProblemMaintenanceTests : IDisposable
         await File.AppendAllTextAsync(IoPath.Combine(_root, "a.mm"), " and more", TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
-        var (_, payload) = await WaitForMutation("ReplaceFor");
+        (_, object payload) = await WaitForMutation("ReplaceFor");
         // One file changed, one validation - project-wide traversal would have made two.
         Assert.Equal(1, _validator.Calls);
         var covered = Assert.IsType<IReadOnlyList<string>>(payload, exactMatch: false);
@@ -70,7 +70,7 @@ public class ProblemMaintenanceTests : IDisposable
         File.Delete(IoPath.Combine(_root, "gone.adp"));
 
         // Act and assert, step by step.
-        var (_, payload) = await WaitForMutation("Remove");
+        (_, object payload) = await WaitForMutation("Remove");
         Assert.Equal("gone.adp", payload);
     }
 
@@ -84,7 +84,7 @@ public class ProblemMaintenanceTests : IDisposable
         File.Move(IoPath.Combine(_root, "old.adp"), IoPath.Combine(_root, "new.adp"));
 
         // Act and assert, step by step.
-        var (_, payload) = await WaitForMutation("Move");
+        (_, object payload) = await WaitForMutation("Move");
         Assert.Equal(("old.adp", "new.adp"), payload);
         // Moved, never dropped: the problems were not re-reported as unchecked.
         Assert.DoesNotContain(_store.Mutations, mutation => mutation.Kind == "Remove");
@@ -120,7 +120,7 @@ public class ProblemMaintenanceTests : IDisposable
         // Act and assert, step by step.
         // The real pair's change proves events flow; the .txt must not have caused anything.
         await File.AppendAllTextAsync(IoPath.Combine(_root, "real.mm"), " and more", TestContext.Current.CancellationToken);
-        var (_, payload) = await WaitForMutation("ReplaceFor");
+        (_, object payload) = await WaitForMutation("ReplaceFor");
         var covered = Assert.IsType<IReadOnlyList<string>>(payload, exactMatch: false);
         Assert.DoesNotContain("notes.txt", covered);
         Assert.All(_store.Mutations, mutation => Assert.Equal("ReplaceFor", mutation.Kind));
@@ -145,7 +145,7 @@ public class ProblemMaintenanceTests : IDisposable
         await File.AppendAllTextAsync(IoPath.Combine(meta, "main.yml"), "# edited\n", TestContext.Current.CancellationToken);
 
         // Assert.
-        var (_, payload) = await WaitForMutation("ReplaceFor");
+        (_, object payload) = await WaitForMutation("ReplaceFor");
         Assert.Equal(1, _folderValidator.Calls);
         // The validator was handed the folder, not just one MIME line of registration text.
         Assert.Equal(folder, _folderValidator.LastSubjectFolder);

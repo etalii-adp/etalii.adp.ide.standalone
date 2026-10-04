@@ -259,9 +259,9 @@ public sealed class AnsibleProjectReader
     /// </summary>
     private static IEnumerable<AnsibleDirective> TaskDirectives(YamlMappingNode task, string relative)
     {
-        foreach (var (suffix, kind) in DirectiveNames)
+        foreach ((string suffix, AnsibleDirectiveKind kind) in DirectiveNames)
         {
-            foreach (var (key, value) in task.Children)
+            foreach ((YamlNode key, YamlNode value) in task.Children)
             {
                 if (key is not YamlScalarNode { Value: { } name } || !Matches(name, suffix))
                 {
@@ -363,7 +363,7 @@ public sealed class AnsibleProjectReader
 
         var groups = new List<AnsibleInventoryGroup>();
         // The YAML inventory shape: all -> children -> <group> -> hosts -> <host>.
-        foreach (var (topKey, topValue) in mapping.Children)
+        foreach ((YamlNode topKey, YamlNode topValue) in mapping.Children)
         {
             if (topValue is not YamlMappingNode top)
             {
@@ -373,7 +373,7 @@ public sealed class AnsibleProjectReader
             if (top.Children.TryGetValue(new YamlScalarNode("children"), out var children) &&
                 children is YamlMappingNode nested)
             {
-                foreach (var (groupKey, groupValue) in nested.Children)
+                foreach ((YamlNode groupKey, YamlNode groupValue) in nested.Children)
                 {
                     if (groupKey is YamlScalarNode { Value: { } group })
                     {
@@ -545,7 +545,7 @@ public sealed class AnsibleProjectReader
         // A :children group holds what its members hold. One level of gathering is resolved
         // here; a child that is itself a :children group contributes its own direct hosts only,
         // which keeps this a summary rather than a graph traversal.
-        foreach (var (group, children) in childrenOf)
+        foreach ((string group, List<string> children) in childrenOf)
         {
             hostCounts[group] += children.Sum(child => hostCounts.GetValueOrDefault(child));
         }

@@ -40,7 +40,7 @@ public static class SkosLayout
         ArgumentNullException.ThrowIfNull(projection);
 
         var hierarchy = projection.Edges.Where(edge => edge.Kind == SkosEdgeKind.Hierarchy).ToList();
-        var (acyclic, cycles) = BreakCycles(hierarchy);
+        (IReadOnlyList<SkosEdge> acyclic, IReadOnlyList<SkosCycle> cycles) = BreakCycles(hierarchy);
 
         var childrenOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var broadersOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
@@ -242,7 +242,7 @@ public static class SkosLayout
             work.Push((start, 0));
             while (work.Count > 0)
             {
-                var (node, child) = work.Pop();
+                (string node, int child) = work.Pop();
                 if (child == 0)
                 {
                     index[node] = low[node] = counter++;

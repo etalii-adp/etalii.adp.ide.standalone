@@ -130,15 +130,18 @@ public class ShaclTargetChipsTests
         Assert.Contains(card.Targets, chip => chip is { Kind: ShaclTargetKind.SubjectsOf, TermIri: "http://example.org/knows" });
 
         // Every explicit chip is fully addressable for removal.
-        Assert.All(card.Targets, chip =>
+        Assert.All(card.Targets, AssertChip);
+
+        AssertElementUniverseIsShapesOnly(body);
+        return;
+
+        void AssertChip(ShaclTargetChip chip)
         {
             ArgumentNullException.ThrowIfNull(chip);
 
             Assert.Equal("http://example.org/S", chip.ShapeIri);
             Assert.NotEqual("", chip.PredicateIri);
-        });
-
-        AssertElementUniverseIsShapesOnly(body);
+        }
     }
 
     [Fact]

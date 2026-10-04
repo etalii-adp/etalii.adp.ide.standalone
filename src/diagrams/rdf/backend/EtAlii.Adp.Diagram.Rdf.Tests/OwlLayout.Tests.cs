@@ -164,7 +164,7 @@ public class OwlLayoutTests
         var boxes = graph.Nodes
             .Select(node =>
             {
-                var (width, height) = OwlLayout.SizeOf(node);
+                (double width, double height) = OwlLayout.SizeOf(node);
                 var position = positions[node.Id];
                 return (node.Id, Left: position.X, Top: position.Y, Right: position.X + width, Bottom: position.Y + height);
             })
@@ -175,8 +175,8 @@ public class OwlLayoutTests
         {
             for (var j = i + 1; j < boxes.Count; j++)
             {
-                var (aId, aLeft, aTop, aRight, aBottom) = boxes[i];
-                var (bId, bLeft, bTop, bRight, bBottom) = boxes[j];
+                (string aId, double aLeft, double aTop, double aRight, double aBottom) = boxes[i];
+                (string bId, double bLeft, double bTop, double bRight, double bBottom) = boxes[j];
                 if (aLeft < bRight && bLeft < aRight && aTop < bBottom && bTop < aBottom)
                 {
                     collisions.Add($"{aId} overlaps {bId}");

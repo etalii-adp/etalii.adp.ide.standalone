@@ -69,7 +69,7 @@ public sealed class FdgElementMapper
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        var (elements, connections) = Drawable(model);
+        (IReadOnlyList<FdgElement> elements, IReadOnlyList<FdgConnection> connections) = Drawable(model);
         var byId = elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
 
         var shownIds = elements

@@ -233,7 +233,7 @@ public class DependencyGraphElementMapperTests
         // Act.
         // The timeline had to carry a duration across, re-derive an end and preserve a precision
         // here. A node's x is its x.
-        var (x, row) = DependencyGraphElementMapper.Placement(917.5d, DependencyGraphRows.ToY(5));
+        (double x, int row) = DependencyGraphElementMapper.Placement(917.5d, DependencyGraphRows.ToY(5));
 
         // Assert.
         Assert.Equal(917.5d, x);
@@ -246,7 +246,7 @@ public class DependencyGraphElementMapperTests
         // Act.
         // The horizontal is free and the vertical snaps: that asymmetry is the type's placement
         // model, and rounding x would quietly make the canvas a grid.
-        var (x, row) = DependencyGraphElementMapper.Placement(
+        (double x, int row) = DependencyGraphElementMapper.Placement(
             -180.25d, DependencyGraphRows.ToY(2) + DependencyGraphRows.Height * 0.2);
 
         // Assert.

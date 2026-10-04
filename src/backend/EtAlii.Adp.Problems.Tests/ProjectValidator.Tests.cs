@@ -384,7 +384,7 @@ public class ProjectValidatorTests : IDisposable
         // Act and assert, step by step.
         var after = Snapshot();
         Assert.Equal(before.Keys.Order(), after.Keys.Order());
-        foreach (var (path, bytes) in before)
+        foreach ((string path, byte[] bytes) in before)
         {
             Assert.Equal(bytes, after[path]);
         }

@@ -111,7 +111,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
             AdpFileWriter.Save(bodyPath, $"body {i}");
         }
 
-        var (_, reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);
+        (_, string reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);
         Assert.Equal(bodyPath, reloadedBody);
         Assert.True(await reloader.NoDeletionAsync(TestContext.Current.CancellationToken), "A save that replaced the body was reported as its deletion.");
     }
@@ -130,7 +130,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         await File.WriteAllTextAsync(bodyPath, "after", TestContext.Current.CancellationToken);
 
         // Assert.
-        var (reloadedRoot, reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);
+        (string reloadedRoot, string reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);
         Assert.Equal(_root, reloadedRoot);
         Assert.Equal(bodyPath, reloadedBody);
     }
@@ -151,7 +151,7 @@ public class DiagramDocumentReloadBridgeTests : IDisposable
         await File.WriteAllTextAsync(registrationPath, "test/sample\nview: other", TestContext.Current.CancellationToken);
 
         // Assert: the body is what the sessions show, so that is what gets re-read.
-        var (_, reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);
+        (_, string reloadedBody) = await reloader.NextAsync(TestContext.Current.CancellationToken);
         Assert.Equal(bodyPath, reloadedBody);
     }
 

@@ -88,7 +88,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // On a file the action means something else: not "create a diagram inside this", which
         // is impossible, but "this file is a diagram of a type I am about to name", which writes
         // the .adp beside it (add-diagram-action Requirement 4.3, revised).
-        var (available, label, reason) = target.IsContainer
+        (bool available, string label, string reason) = target.IsContainer
             ? (_definitions.Count > 0, "Add…", NoDiagramTypes)
             : (RegistrableTypesFor(target).Count > 0, "Add as diagram…", NotRegistrable);
 

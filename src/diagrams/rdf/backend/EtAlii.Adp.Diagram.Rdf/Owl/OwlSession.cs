@@ -144,7 +144,7 @@ public sealed class OwlSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
-        var (graph, positions) = LaidOut();
+        (OwlGraphResult graph, IReadOnlyDictionary<string, RegistrationPosition> positions) = LaidOut();
         return _mapper.Elements(InView(graph, positions), positions);
     }
 
@@ -195,7 +195,7 @@ public sealed class OwlSession : IDiagramSession
         var visible = graph.Nodes
             .Where(node =>
             {
-                var (width, height) = OwlLayout.SizeOf(node);
+                (double width, double height) = OwlLayout.SizeOf(node);
                 return RdfViewport.Admits(_viewport, positions, node.Id, width, height);
             })
             .ToList();

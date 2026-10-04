@@ -203,8 +203,8 @@ public static class GhgPhases
         // for it rather than the other way round.
         if (pinned >= 0 && pinned < inner && slots[pinned] is { } moved)
         {
-            var (lowIndex, low) = PreviousAnchor(slots, pinned, start);
-            var (highIndex, high) = NextAnchor(slots, pinned, inner, stop);
+            (int lowIndex, int low) = PreviousAnchor(slots, pinned, start);
+            (int highIndex, int high) = NextAnchor(slots, pinned, inner, stop);
             var lowest = low + (pinned - lowIndex);
             slots[pinned] = Math.Clamp(moved, lowest, Math.Max(lowest, high - (highIndex - pinned)));
         }

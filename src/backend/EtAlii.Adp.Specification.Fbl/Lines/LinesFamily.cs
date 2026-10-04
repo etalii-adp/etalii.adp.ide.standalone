@@ -113,7 +113,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             _leaves.Add(new Span(first, line.ContentEnd));
             if (blocks)
             {
-                var (net, endsWithOpen) = Braces(content);
+                (int net, bool endsWithOpen) = Braces(content);
                 if (endsWithOpen && net == 1)
                 {
                     statement.Opens = true;
@@ -278,10 +278,10 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         return Match(expression, insensitive, (Statement)candidate.Entry) ?? new Dictionary<string, Group>();
     }
 
-    public override object? CelValue(Candidate candidate)
+    public override object CelValue(Candidate candidate)
     {
         var map = new CelMap();
-        foreach (var (name, value) in candidate.Captures) map[name] = value;
+        foreach ((string name, string value) in candidate.Captures) map[name] = value;
         return map;
     }
 
@@ -358,7 +358,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
 
     public override SlotRead ReadRaw(Entry entry, string name)
     {
-        foreach (var ((_, statement), groups) in _matches)
+        foreach (((_, Statement statement), IReadOnlyDictionary<string, Group>? groups) in _matches)
         {
             if (statement == entry && groups is not null && groups.TryGetValue(name, out var group))
             {
@@ -436,7 +436,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         }
         if (!reEmit)
         {
-            foreach (var (operation, span, text) in pending) plan.Add(operation, span, text);
+            foreach ((SpliceOperation operation, Span span, string text) in pending) plan.Add(operation, span, text);
             return;
         }
         if (element.Rule.Insert?.Emit is not { } emit)

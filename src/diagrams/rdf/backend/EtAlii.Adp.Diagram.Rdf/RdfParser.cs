@@ -214,7 +214,7 @@ public sealed class RdfParser
         while (true)
         {
             var objectStart = _current.Start;
-            var (term, end) = ParseObject(pending);
+            (RdfTerm term, int end) = ParseObject(pending);
             pending.Add(new RdfPendingTriple(subject, verb, term, first ? pairStart : objectStart, end, objectStart));
 
             if (_current.Kind != RdfTokenKind.Comma)
@@ -376,7 +376,7 @@ public sealed class RdfParser
             head ??= node;
 
             var elementStart = _current.Start;
-            var (element, elementEnd) = ParseObject(pending);
+            (RdfTerm element, int elementEnd) = ParseObject(pending);
 
             if (previous is not null)
             {

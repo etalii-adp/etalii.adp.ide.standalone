@@ -87,7 +87,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
     public override IEnumerable<Candidate> Candidates(Rule rule)
     {
         if (rule.At is null || Root is null) yield break;
-        foreach (var (entry, captures) in Selector.Match(Root, rule.At))
+        foreach ((Entry entry, IReadOnlyDictionary<string, string> captures) in Selector.Match(Root, rule.At))
         {
             yield return new Candidate(rule, null, entry, captures);
         }
@@ -107,7 +107,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
     public override (string Name, object? Value) CelExtra(Candidate candidate)
     {
         var path = new CelMap();
-        foreach (var (name, value) in candidate.Captures) path[name] = value;
+        foreach ((string name, string value) in candidate.Captures) path[name] = value;
         return ("path", path);
     }
 
@@ -119,7 +119,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
                 var map = new CelMap();
                 foreach (var merged in value.Merged)
                 {
-                    if (Cel(merged) is CelMap inherited) foreach (var (k, v) in inherited) map[k] = v;
+                    if (Cel(merged) is CelMap inherited) foreach ((string k, object? v) in inherited) map[k] = v;
                 }
                 foreach (var member in value.Entries)
                 {

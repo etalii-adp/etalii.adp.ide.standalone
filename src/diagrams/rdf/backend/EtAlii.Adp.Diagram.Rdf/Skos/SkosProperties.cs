@@ -48,7 +48,7 @@ public static class SkosProperties
                 ReadOnlyReason: "Notations are codes other systems key off; edit them as triples.", Group: IdentityGroup));
         }
 
-        foreach (var (source, name) in new[]
+        foreach ((string source, string name) in new[]
         {
             (SkosVocabulary.PrefLabel, "Preferred"),
             (SkosVocabulary.AltLabel, "Alternate"),

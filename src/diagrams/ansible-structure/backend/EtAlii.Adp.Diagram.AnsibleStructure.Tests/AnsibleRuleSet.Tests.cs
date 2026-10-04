@@ -279,7 +279,7 @@ public class AnsibleRuleSetTests
     private static string Tree(params (string Path, string Content)[] files)
     {
         var root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
-        foreach (var (path, content) in files)
+        foreach ((string path, string content) in files)
         {
             var full = IoPath.Combine(root, path);
             Directory.CreateDirectory(IoPath.GetDirectoryName(full)!);

@@ -52,7 +52,7 @@ public sealed class C4ElementMapper
 
         // One hop: whatever an on-screen element's line reaches.
         var delivered = inView.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var (relationship, _, _, _) in relationships)
+        foreach ((C4Relationship relationship, var _, var _, var _) in relationships)
         {
             if (delivered.Contains(relationship.SourceId) || delivered.Contains(relationship.DestinationId))
             {
@@ -67,7 +67,7 @@ public sealed class C4ElementMapper
             elements.Add(ToElement(C4LayoutEngine.Displayed(workspace, element), layout.Boxes[element.Id], workspace.Styles));
         }
 
-        foreach (var (relationship, source, destination, order) in relationships)
+        foreach ((C4Relationship relationship, C4Box source, C4Box destination, string order) in relationships)
         {
             if (delivered.Contains(relationship.SourceId) && delivered.Contains(relationship.DestinationId))
             {

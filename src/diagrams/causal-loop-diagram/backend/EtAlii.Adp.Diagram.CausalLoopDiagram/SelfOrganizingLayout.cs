@@ -294,7 +294,7 @@ public static class SelfOrganizingLayout
 
         // The rectangle stimuli are drawn from, sized from the spiral the variables start on so
         // that the sequence covers where they actually are.
-        var (extentMinimumX, extentMinimumY, extentMaximumX, extentMaximumY) = Extent(positions);
+        (double extentMinimumX, double extentMinimumY, double extentMaximumX, double extentMaximumY) = Extent(positions);
         var padding = ((widths.Max() + height) / 2) + separation;
         var minimumX = extentMinimumX - padding;
         var minimumY = extentMinimumY - padding;
@@ -474,7 +474,7 @@ public static class SelfOrganizingLayout
         var maximumX = double.MinValue;
         var maximumY = double.MinValue;
 
-        foreach (var (x, y) in positions)
+        foreach ((double x, double y) in positions)
         {
             minimumX = Math.Min(minimumX, x);
             minimumY = Math.Min(minimumY, y);

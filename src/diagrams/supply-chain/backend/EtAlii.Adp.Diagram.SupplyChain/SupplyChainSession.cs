@@ -101,7 +101,7 @@ public sealed class SupplyChainSession : IDiagramSession
         }
         else if (layout.GroupBoxes.TryGetValue(elementId, out var frame))
         {
-            var (dx, dy) = (x - frame.X, y - frame.Y);
+            (double dx, double dy) = (x - frame.X, y - frame.Y);
             foreach (var member in layout.Nodes.Where(node => node.Group == elementId))
             {
                 var box = layout.NodeBoxes[member.Id];

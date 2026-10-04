@@ -120,7 +120,7 @@ public class C4LayoutSidecarTests : IDisposable
     [Fact]
     public void AnAuthoredPosition_WinsOverTheComputedOne()
     {
-        var (workspace, view) = Load();
+        (C4Workspace workspace, C4View view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
         var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
 
@@ -138,7 +138,7 @@ public class C4LayoutSidecarTests : IDisposable
     [Fact]
     public void AnElementWithNoAuthoredPosition_KeepsTheComputedOne()
     {
-        var (workspace, view) = Load();
+        (C4Workspace workspace, C4View view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
         var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
 
@@ -156,7 +156,7 @@ public class C4LayoutSidecarTests : IDisposable
         // Requirement 8.4: the document asked for a computed layout explicitly, so it wins -
         // but the user is told rather than watching their arrangement vanish.
         var dsl = Model.Replace("include *", "include *\n            autoLayout lr", StringComparison.Ordinal);
-        var (workspace, view) = Load(dsl);
+        (C4Workspace workspace, C4View view) = Load(dsl);
         var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
 
         // Arrange, continued.
@@ -172,7 +172,7 @@ public class C4LayoutSidecarTests : IDisposable
     public void WithNoArrangementAtAll_NothingIsReportedAsIgnored()
     {
         var dsl = Model.Replace("include *", "include *\n            autoLayout lr", StringComparison.Ordinal);
-        var (workspace, view) = Load(dsl);
+        (C4Workspace workspace, C4View view) = Load(dsl);
 
         // Arrange, continued.
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
@@ -185,7 +185,7 @@ public class C4LayoutSidecarTests : IDisposable
     [Fact]
     public void AnAuthoredPositionForSomethingNotOnTheView_IsIgnoredQuietly()
     {
-        var (workspace, view) = Load();
+        (C4Workspace workspace, C4View view) = Load();
         var authored = new Dictionary<string, C4SidecarPosition> { ["ghost"] = new(500, 600) };
 
         // Act.

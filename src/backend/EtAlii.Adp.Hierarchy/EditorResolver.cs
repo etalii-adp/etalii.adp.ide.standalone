@@ -145,7 +145,7 @@ public sealed class EditorResolver
         }
 
         var resolved = new Dictionary<string, EditorRouting>(StringComparer.Ordinal);
-        foreach (var (key, claimants) in groups)
+        foreach ((string key, List<EditorDefinition> claimants) in groups)
         {
             if (claimants.Count == 1)
             {

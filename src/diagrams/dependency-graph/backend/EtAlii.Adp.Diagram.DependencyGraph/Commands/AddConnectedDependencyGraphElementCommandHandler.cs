@@ -60,7 +60,7 @@ public sealed class AddConnectedDependencyGraphElementCommandHandler
         // Which way the dependency runs is the type's whole meaning, so the gesture decides it
         // rather than the writer: dragged out of a node, that node depends on what was made;
         // dragged into one, what was made depends on it.
-        var (source, target) = command.NewElementIsSource
+        (string source, string target) = command.NewElementIsSource
             ? (command.NewElementId, command.FromElementId)
             : (command.FromElementId, command.NewElementId);
         DependencyGraphWriter.InsertRelation(

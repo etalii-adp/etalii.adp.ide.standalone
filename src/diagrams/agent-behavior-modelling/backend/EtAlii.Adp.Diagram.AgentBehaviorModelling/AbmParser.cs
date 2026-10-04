@@ -178,7 +178,7 @@ public static partial class AbmParser
             var raw = raws[index];
             var indent = ColumnOf(raw.Match.Value);
             var contentIndent = indent + 1 + ColumnWidth(raw.Match.Groups["space"].Value, indent + 1);
-            var (kind, retryCount, label, keywordText, hasKeyword) = ReadText(raw.Match.Groups["text"].Value.TrimEnd());
+            (string kind, int retryCount, string label, string keywordText, bool hasKeyword) = ReadText(raw.Match.Groups["text"].Value.TrimEnd());
             if (!hasKeyword)
             {
                 problems.Add(new AbmProblem(

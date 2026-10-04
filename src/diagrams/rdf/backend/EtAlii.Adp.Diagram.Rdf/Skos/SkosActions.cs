@@ -143,7 +143,7 @@ public static class SkosActions
             return ContextValidationResult.Rejected("A concept needs a preferred label.");
         }
 
-        var (iri, error) = MintIri(entry, value);
+        (string? iri, string error) = MintIri(entry, value);
         if (iri is null)
         {
             return ContextValidationResult.Rejected(error);
@@ -163,7 +163,7 @@ public static class SkosActions
         {
             case AddConceptActionId:
             {
-                var (iri, _) = MintIri(entry, value);
+                (string? iri, _) = MintIri(entry, value);
                 // The label's tag is the default display language: the context channel does not
                 // carry which registration - and so which language: header - a selection came
                 // through, so the one deterministic choice is the chain's own default.

@@ -13,4 +13,8 @@
     <InternalsVisibleTo Include="EtAlii.Adp.Specification.Fbl.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+  </ItemGroup>
+
 </Project>

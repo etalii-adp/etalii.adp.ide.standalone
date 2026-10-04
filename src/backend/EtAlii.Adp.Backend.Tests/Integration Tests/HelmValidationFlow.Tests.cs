@@ -142,7 +142,7 @@ public class HelmValidationFlowTests : IDisposable
         await validator.ValidateAsync(new ProjectValidationScope(_projectFolder), TestContext.Current.CancellationToken);
 
         // Assert.
-        foreach (var (path, bytes) in before)
+        foreach ((string path, byte[] bytes) in before)
         {
             var bytesToCheck = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
             Assert.True(bytes.SequenceEqual(bytesToCheck), $"{path} changed during validation.");

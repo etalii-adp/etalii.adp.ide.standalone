@@ -550,7 +550,7 @@ public class PipelineContextActionProviderTests : IDisposable
             (PipelineContextActionProvider.RenameActionId, "Build"),
         };
 
-        foreach (var (actionId, elementId) in writing)
+        foreach ((string actionId, string elementId) in writing)
         {
             // Act.
             var path = Write();

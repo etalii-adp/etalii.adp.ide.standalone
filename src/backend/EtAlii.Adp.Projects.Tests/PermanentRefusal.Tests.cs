@@ -93,7 +93,7 @@ public partial class PermanentRefusalTests
         var literal = new List<string>();
         var excused = new HashSet<string>(StringComparer.Ordinal);
         var named = 0;
-        foreach (var (path, relative) in sources)
+        foreach ((string path, string relative) in sources)
         {
             var text = File.ReadAllText(path);
             named += NamedStatus().Count(text);

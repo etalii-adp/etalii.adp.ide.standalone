@@ -106,7 +106,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         {
             SkipWhitespace();
             if (Current != (byte)'"') throw new SyntaxError(_position, "A member name in quotes was expected here.");
-            var (name, keySpan) = ParseString();
+            (string name, Span keySpan) = ParseString();
             SkipWhitespace();
             Expect((byte)':');
             SkipWhitespace();
@@ -166,7 +166,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
 
     private TreeValue ParseStringValue()
     {
-        var (text, span) = ParseString();
+        (string text, Span span) = ParseString();
         return new TreeValue { Kind = ValueKind.Scalar, Style = ValueStyle.JsonString, Span = span, Text = text, Typed = text };
     }
 
@@ -322,7 +322,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
                 Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
                 return;
             }
-            var (offset, text) = NewMember(mapping, $"{Quote(key)}: {Format(read, change.Binding, change.Value)}");
+            (int offset, string text) = NewMember(mapping, $"{Quote(key)}: {Format(read, change.Binding, change.Value)}");
             plan.Add(SpliceOperation.InsertKey, offset, offset, text);
         }
     }
@@ -375,7 +375,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
             plan.Add(SpliceOperation.InsertEntry, first.Own.Start, first.Own.Start, text + (newline ? "," + NewlineAt(first.Own.Start) + Indentation(first.Indent) : ", "));
             return;
         }
-        var (offset, inserted) = NewMember(container.Value, text);
+        (int offset, string inserted) = NewMember(container.Value, text);
         plan.Add(SpliceOperation.InsertEntry, offset, offset, inserted);
     }
 
@@ -384,7 +384,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         if (request.Rule.Id?.From?.Key == key && request.Id is { } id) return Quote(id);
         if (request.Rule.Source?.Key == key && request.Source is { } source) return Quote(source.Key);
         if (request.Rule.Target?.Key == key && request.Target is { } target) return Quote(target.Key);
-        foreach (var (name, binding) in request.Rule.Attributes)
+        foreach ((string name, AttributeBinding binding) in request.Rule.Attributes)
         {
             if (binding.Key == key && binding.Child is null && request.Values.TryGetValue(name, out var value) && value is not null) return Write(value, binding);
         }

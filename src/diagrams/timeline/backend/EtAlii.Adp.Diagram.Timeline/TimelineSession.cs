@@ -132,7 +132,7 @@ public sealed class TimelineSession : IDiagramSession
             return "That element is not something this timeline can move.";
         }
 
-        var (begin, end, row) = TimelineElementMapper.Placement(element, x, y);
+        (string begin, string? end, int row) = TimelineElementMapper.Placement(element, x, y);
         var result = await _history.ExecuteAsync(
             new SetTimelinePlacementCommand(_bodyPath, elementId, begin, end, row, "Moved"),
             cancellationToken);

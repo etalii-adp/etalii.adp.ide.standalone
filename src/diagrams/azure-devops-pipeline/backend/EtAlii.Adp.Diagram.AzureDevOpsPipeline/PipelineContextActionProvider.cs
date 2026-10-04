@@ -95,7 +95,7 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
             return Empty();
         }
 
-        var (model, location) = found;
+        (PipelineModel model, PipelineElementLocation location) = found;
         if (!location.Target.IsEditable)
         {
             // Its text is somewhere else, so there is nothing here to do to it.
@@ -176,7 +176,7 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
             return Result(new ContextExecutionFailed(Gone));
         }
 
-        var (_, location) = found;
+        (_, PipelineElementLocation location) = found;
 
         if (actionId == ToggleStageActionId || actionId == ToggleJobActionId)
         {
@@ -235,7 +235,7 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed(Gone);
         }
 
-        var (_, location) = found;
+        (_, PipelineElementLocation location) = found;
         var command = CommandFor(target, actionId, value, location);
         if (command is null)
         {

@@ -215,7 +215,7 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
     private static void AssertUnchanged(Dictionary<string, byte[]> before)
     {
-        foreach (var (path, bytes) in before)
+        foreach ((string path, byte[] bytes) in before)
         {
             Assert.True(bytes.SequenceEqual(File.ReadAllBytes(path)), $"{path} changed.");
         }

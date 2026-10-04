@@ -32,7 +32,7 @@ public class TestFolderTests
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange. A held file makes the recursive delete fail for real, every attempt, rather
         // than by a simulated clock - which is why this guard is deterministic and not a race.
-        var (root, folder, report) = Scratch();
+        (string root, string folder, string report) = Scratch();
         Directory.CreateDirectory(folder);
         var held = IoPath.Combine(folder, "held.txt");
         File.WriteAllText(held, "in use");
@@ -85,7 +85,7 @@ public class TestFolderTests
         // rather than by a green run - and a flaky guard teaches people that red means noise. So
         // the existence check is handed in instead: the same loop, the same report, put into the
         // state that happens 14 times in 870 without waiting for luck.
-        var (root, folder, report) = Scratch();
+        (string root, string folder, string report) = Scratch();
         Directory.CreateDirectory(folder);
         var deletes = 0;
 
@@ -129,7 +129,7 @@ public class TestFolderTests
     public void AFolderThatDeletesCleanly_ReportsNothing()
     {
         // The must-not-catch half: a report on every deletion would drown the one that matters.
-        var (root, folder, report) = Scratch();
+        (string root, string folder, string report) = Scratch();
         Directory.CreateDirectory(IoPath.Combine(folder, "nested"));
         File.WriteAllText(IoPath.Combine(folder, "nested", "a.txt"), "content");
 
@@ -150,7 +150,7 @@ public class TestFolderTests
     [Fact]
     public void AFolderThatWasNeverThere_ReportsNothing()
     {
-        var (root, folder, report) = Scratch();
+        (string root, string folder, string report) = Scratch();
 
         try
         {

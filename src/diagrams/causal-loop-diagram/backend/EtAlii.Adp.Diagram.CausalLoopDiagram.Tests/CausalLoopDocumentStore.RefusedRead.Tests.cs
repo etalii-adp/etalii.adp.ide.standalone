@@ -49,7 +49,7 @@ public class CausalLoopDocumentStoreRefusedReadTests : IDisposable
     public void AReloadWhoseReadIsRefusedOnce_StillDeliversTheChange()
     {
         // Arrange: a diagram loaded, then changed on disk, and the reload's first read refused.
-        var (store, path) = Opened();
+        (CausalLoopDocumentStore store, string path) = Opened();
         var changes = 0;
         store.Changed += (_, _) => changes++;
         File.WriteAllText(path, ChangedText);
@@ -79,7 +79,7 @@ public class CausalLoopDocumentStoreRefusedReadTests : IDisposable
     {
         // A publish renaming the body away for an instant: on a reload that is a publish in flight,
         // not a diagram that has gone, so it is retried as a refusal is.
-        var (store, path) = Opened();
+        (CausalLoopDocumentStore store, string path) = Opened();
         File.WriteAllText(path, ChangedText);
         _reader.Refuse(new FileNotFoundException("Gone for an instant.", path));
 
@@ -95,7 +95,7 @@ public class CausalLoopDocumentStoreRefusedReadTests : IDisposable
     {
         // Keeping the last good diagram is still the answer to a refusal that outlasts the retries -
         // but only after every attempt was made, which is what the read count says.
-        var (store, path) = Opened();
+        (CausalLoopDocumentStore store, string path) = Opened();
         var changes = 0;
         store.Changed += (_, _) => changes++;
         File.WriteAllText(path, ChangedText);

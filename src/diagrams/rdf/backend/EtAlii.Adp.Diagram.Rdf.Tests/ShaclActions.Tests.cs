@@ -124,12 +124,7 @@ public class ShaclActionsTests : IDisposable
 
         // Discovery marks it unavailable with the reason rather than hiding it.
         var actions = Assert.Single(ShaclActions.Discover(entry, target)).Actions;
-        Assert.All(actions, action =>
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            Assert.False(action.Available);
-            Assert.Equal(ShaclRefusals.BlankRooted, action.UnavailableReason);
-        });
+        Assert.All(actions, AssertAction);
 
         // And executing anyway answers with the same sentence, decided without the writer.
         var result = await ShaclActions.ExecuteAsync(
@@ -138,6 +133,14 @@ public class ShaclActionsTests : IDisposable
 
         var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Equal(ShaclRefusals.BlankRooted, failed.Message);
+        return;
+
+        void AssertAction(ContextActionDefinition action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            Assert.False(action.Available);
+            Assert.Equal(ShaclRefusals.BlankRooted, action.UnavailableReason);
+        }
     }
 
     [Fact]

@@ -343,7 +343,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             }
         }
 
-        foreach (var (_, to) in moves.Skip(1))
+        foreach ((var _, string to) in moves.Skip(1))
         {
             if (!isCaseOnlyRename && (File.Exists(to) || Directory.Exists(to)))
             {
@@ -357,20 +357,20 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         var completed = new List<(string From, string To)>();
         try
         {
-            foreach (var (from, to) in moves)
+            foreach ((string from, string to) in moves)
             {
                 File.Move(from, to);
                 completed.Add((from, to));
             }
 
-            foreach (var (path, _, newContent) in rewrites)
+            foreach ((string path, var _, string newContent) in rewrites)
             {
                 AdpFileWriter.Save(finalPathOf.GetValueOrDefault(path, path), newContent);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            foreach (var (from, to) in completed.AsEnumerable().Reverse())
+            foreach ((string from, string to) in completed.AsEnumerable().Reverse())
             {
                 try
                 {

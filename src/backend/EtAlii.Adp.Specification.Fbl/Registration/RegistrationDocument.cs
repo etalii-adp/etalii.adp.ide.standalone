@@ -65,7 +65,7 @@ public sealed class RegistrationDocument
         foreach (var header in Headers)
         {
             if (FblHeaders.Contains(header.Key) || declared.Contains(header.Key)) continue;
-            var (line, column) = Text.Position(header.Line.Start);
+            (int line, int column) = Text.Position(header.Line.Start);
             findings.Add(new Finding(FindingCodes.UnknownHeader, FindingSeverity.Info,
                 $"The header '{header.Key}' is neither FBL's nor the binding's; it is kept as it is.",
                 new SourceLocation(fileName, line, column, Text.CodePoints(header.Line.Start, header.Line.End))));
@@ -83,7 +83,7 @@ public sealed class RegistrationDocument
         foreach (var entry in Layout?.Entries ?? [])
         {
             if (ids.Contains(entry.Key)) continue;
-            var (line, column) = Text.Position(entry.KeySpan.Start);
+            (int line, int column) = Text.Position(entry.KeySpan.Start);
             findings.Add(new Finding(FindingCodes.StaleViewData, FindingSeverity.Info,
                 $"The layout keeps a position for '{entry.Key}', which the file no longer has; it is removed at the next save of the registration.",
                 new SourceLocation(fileName, line, column, Text.CodePoints(entry.KeySpan.Start, entry.KeySpan.End))));

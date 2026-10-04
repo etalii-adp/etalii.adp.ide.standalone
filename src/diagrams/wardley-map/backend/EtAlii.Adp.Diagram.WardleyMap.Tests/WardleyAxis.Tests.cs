@@ -13,7 +13,7 @@ public class WardleyAxisTests
         var coordinate = new WardleyCoordinate(Visibility: 0.9d, Maturity: 0.1d);
 
         // Act.
-        var (x, y) = WardleyAxis.ToPoint(coordinate);
+        (double x, double y) = WardleyAxis.ToPoint(coordinate);
 
         // Assert. Genesis is left, the user need is top.
         Assert.Equal(0.1d, x);
@@ -24,7 +24,7 @@ public class WardleyAxisTests
     public void ToPoint_PutsAnInvisibleCommodityComponentAtBottomRight()
     {
         // Act.
-        var (x, y) = WardleyAxis.ToPoint(new WardleyCoordinate(Visibility: 0.05d, Maturity: 0.95d));
+        (double x, double y) = WardleyAxis.ToPoint(new WardleyCoordinate(Visibility: 0.05d, Maturity: 0.95d));
 
         // Assert.
         Assert.Equal(0.95d, x);
@@ -35,7 +35,7 @@ public class WardleyAxisTests
     public void ToPoint_PutsTheAnchorAtTheTop()
     {
         // Act. An anchor is the user need, so visibility 1 - and the top of the canvas is y=0.
-        var (_, y) = WardleyAxis.ToPoint(new WardleyCoordinate(Visibility: 1d, Maturity: 0.5d));
+        (_, double y) = WardleyAxis.ToPoint(new WardleyCoordinate(Visibility: 1d, Maturity: 0.5d));
 
         // Assert.
         Assert.Equal(0d, y);
@@ -53,7 +53,7 @@ public class WardleyAxisTests
         var original = new WardleyCoordinate(visibility, maturity);
 
         // Act.
-        var (x, y) = WardleyAxis.ToPoint(original);
+        (double x, double y) = WardleyAxis.ToPoint(original);
         var round = WardleyAxis.ToCoordinate(x, y);
 
         // Assert. A drag reads a point back into the document, so a lossy pair would move
@@ -95,7 +95,7 @@ public class WardleyAxisTests
         var onTheBoundary = new WardleyCoordinate(Visibility: 0.5d, Maturity: WardleyEvolution.CustomBuilt);
 
         // Act.
-        var (x, _) = WardleyAxis.ToPoint(onTheBoundary);
+        (double x, _) = WardleyAxis.ToPoint(onTheBoundary);
 
         // Assert.
         Assert.Equal(WardleyEvolution.CustomBuilt, x);

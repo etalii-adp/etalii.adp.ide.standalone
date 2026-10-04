@@ -48,7 +48,7 @@ public class SkosRegistrationLanguageTests : IDisposable
         var path = Write("w3c/skos\nlanguage: nl\nbody: scheme.ttl\n");
 
         // Act.
-        var (language, misplacedLine) = SkosRegistrationLanguage.Read(path);
+        (string? language, int misplacedLine) = SkosRegistrationLanguage.Read(path);
 
         // Assert: ignored (the default order applies), and named for the validator - never guessed at.
         Assert.Null(language);

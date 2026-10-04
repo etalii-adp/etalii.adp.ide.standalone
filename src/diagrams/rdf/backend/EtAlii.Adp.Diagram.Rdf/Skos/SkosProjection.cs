@@ -44,7 +44,7 @@ public static class SkosProjection
         var mappingEdges = new List<SkosEdge>();
         var outOfFileMappings = new List<RdfTriple>();
         var membersByCollection = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        var (firsts, rests) = ConsCells(model);
+        (Dictionary<BlankTerm, RdfTerm> firsts, Dictionary<BlankTerm, RdfTerm> rests) = ConsCells(model);
 
         foreach (var triple in model.Triples)
         {
@@ -146,7 +146,7 @@ public static class SkosProjection
 
         // The budget order (Requirement 8.2), walked over the drawable element set.
         var childrenOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        foreach (var (broaderId, narrowerId) in hierarchyPairs.Keys)
+        foreach ((string broaderId, string narrowerId) in hierarchyPairs.Keys)
         {
             Add(childrenOf, broaderId, narrowerId);
         }
@@ -224,7 +224,7 @@ public static class SkosProjection
             .ToList();
 
         var edges = new List<SkosEdge>();
-        foreach (var ((broaderId, narrowerId), (triples, both)) in hierarchyPairs)
+        foreach (((string broaderId, string narrowerId), (List<RdfTriple> triples, bool both)) in hierarchyPairs)
         {
             if (kept.Contains(broaderId) && kept.Contains(narrowerId))
             {
@@ -236,7 +236,7 @@ public static class SkosProjection
             }
         }
 
-        foreach (var ((a, b), (triples, both)) in relatedPairs)
+        foreach (((string a, string b), (List<RdfTriple> triples, bool both)) in relatedPairs)
         {
             if (kept.Contains(a) && kept.Contains(b))
             {

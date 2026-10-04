@@ -40,7 +40,7 @@ public class WardleyWriterTests
     {
         // Arrange. A comment-heavy map is where a regenerating writer does its damage.
         var before = ReadFixture("comments-everywhere.owm");
-        var (document, map) = Open(before);
+        (WardleyDocument document, WardleyMap map) = Open(before);
         var component = map.Components.Single(candidate => candidate.Name == "Cup of Tea");
 
         // Act.
@@ -55,7 +55,7 @@ public class WardleyWriterTests
     public void SetPosition_KeepsTheTrailingCommentOnTheLineItEdits()
     {
         // Arrange.
-        var (document, map) = Open("component Cup of Tea [0.79, 0.61] // why it sits here\n");
+        (WardleyDocument document, WardleyMap map) = Open("component Cup of Tea [0.79, 0.61] // why it sits here\n");
         var component = map.Components.Single();
 
         // Act.
@@ -70,7 +70,7 @@ public class WardleyWriterTests
     {
         // Arrange. None of these survive a line rebuilt from the model, which is why the writer
         // splices a span instead.
-        var (document, map) = Open("component Payment [0.70, 0.72] (buy) inertia label [-27, 20]\n");
+        (WardleyDocument document, WardleyMap map) = Open("component Payment [0.70, 0.72] (buy) inertia label [-27, 20]\n");
 
         // Act.
         WardleyWriter.SetPosition(document, map.Components.Single(), new WardleyCoordinate(0.5d, 0.5d));
@@ -83,7 +83,7 @@ public class WardleyWriterTests
     public void SetPosition_KeepsTheAuthorsSpacingBetweenTheTwoNumbers()
     {
         // Arrange. The separator is the author's choice; only the numbers are ours.
-        var (document, map) = Open("component Alpha [0.80,0.40]\n");
+        (WardleyDocument document, WardleyMap map) = Open("component Alpha [0.80,0.40]\n");
 
         // Act.
         WardleyWriter.SetPosition(document, map.Components.Single(), new WardleyCoordinate(0.1d, 0.2d));
@@ -97,7 +97,7 @@ public class WardleyWriterTests
     {
         // Arrange.
         var before = ReadFixture("crlf-line-endings.owm");
-        var (document, map) = Open(before);
+        (WardleyDocument document, WardleyMap map) = Open(before);
 
         // Act.
         WardleyWriter.SetPosition(
@@ -115,7 +115,7 @@ public class WardleyWriterTests
     public void SetPosition_WritesNumbersWithoutATrailingZero()
     {
         // Arrange.
-        var (document, map) = Open("component Alpha [0.80, 0.40]\n");
+        (WardleyDocument document, WardleyMap map) = Open("component Alpha [0.80, 0.40]\n");
 
         // Act.
         WardleyWriter.SetPosition(document, map.Components.Single(), new WardleyCoordinate(1d, 0d));
@@ -129,7 +129,7 @@ public class WardleyWriterTests
     {
         // Arrange.
         var before = ReadFixture("pipelines-both-forms.owm");
-        var (document, map) = Open(before);
+        (WardleyDocument document, WardleyMap map) = Open(before);
         var child = map.Pipelines
             .SelectMany(pipeline => pipeline.Children)
             .Single(candidate => candidate.Name == "Electric Kettle");
@@ -147,7 +147,7 @@ public class WardleyWriterTests
     public void SetPipelineExtent_RewritesTheLegacyFormsOwnCoordinates()
     {
         // Arrange.
-        var (document, map) = Open("pipeline Power [0.30, 0.85]\n");
+        (WardleyDocument document, WardleyMap map) = Open("pipeline Power [0.30, 0.85]\n");
         var pipeline = map.Pipelines.Single();
 
         // Act.
@@ -162,7 +162,7 @@ public class WardleyWriterTests
     public void SetPipelineExtent_RefusesTheNestedForm_WhichHasNoCoordinatesOfItsOwn()
     {
         // Arrange.
-        var (document, map) = Open("component Kettle [0.4, 0.4]\npipeline Kettle\n{\n}\n");
+        (WardleyDocument document, WardleyMap map) = Open("component Kettle [0.4, 0.4]\npipeline Kettle\n{\n}\n");
         var before = document.ToText();
 
         // Act.
@@ -191,7 +191,7 @@ public class WardleyWriterTests
               component Electric Kettle [0.63]
             }
             """;
-        var (document, map) = Open(text);
+        (WardleyDocument document, WardleyMap map) = Open(text);
 
         // Act.
         var changed = WardleyWriter.Rename(document, map, "Kettle", "Boiler");
@@ -216,7 +216,7 @@ public class WardleyWriterTests
             component Cup of Tea [0.79, 0.61]
             Cup of Tea->Tea
             """;
-        var (document, map) = Open(text);
+        (WardleyDocument document, WardleyMap map) = Open(text);
 
         // Act.
         WardleyWriter.Rename(document, map, "Tea", "Leaves");
@@ -232,7 +232,7 @@ public class WardleyWriterTests
     public void Rename_KeepsALinksContextText()
     {
         // Arrange.
-        var (document, map) = Open("Order Portal->Partner Plugins; via the plugin SDK\n");
+        (WardleyDocument document, WardleyMap map) = Open("Order Portal->Partner Plugins; via the plugin SDK\n");
 
         // Act.
         WardleyWriter.Rename(document, map, "Partner Plugins", "Marketplace");
@@ -245,7 +245,7 @@ public class WardleyWriterTests
     public void Rename_HandlesBothEndsOfALinkToItself()
     {
         // Arrange. Legal, and the case where replacing one end could shift the other's span.
-        var (document, map) = Open("Alpha->Alpha\n");
+        (WardleyDocument document, WardleyMap map) = Open("Alpha->Alpha\n");
 
         // Act.
         WardleyWriter.Rename(document, map, "Alpha", "Beta");
@@ -259,7 +259,7 @@ public class WardleyWriterTests
     {
         // Arrange.
         var before = ReadFixture("tea-shop.owm");
-        var (document, map) = Open(before);
+        (WardleyDocument document, WardleyMap map) = Open(before);
 
         // Act.
         var changed = WardleyWriter.Rename(document, map, "Kettle", "Kettle");
@@ -274,7 +274,7 @@ public class WardleyWriterTests
     {
         // Arrange.
         var before = ReadFixture("tea-shop.owm");
-        var (document, map) = Open(before);
+        (WardleyDocument document, WardleyMap map) = Open(before);
 
         // Act.
         WardleyWriter.Rename(document, map, "Kettle", "Boiler");
@@ -289,7 +289,7 @@ public class WardleyWriterTests
     {
         // Arrange. `evolve Name->NewName x` - renaming the component must not disturb the name
         // it takes on arrival.
-        var (document, map) = Open("evolve Datacentre->Cloud Hosting 0.83\n");
+        (WardleyDocument document, WardleyMap map) = Open("evolve Datacentre->Cloud Hosting 0.83\n");
 
         // Act.
         WardleyWriter.Rename(document, map, "Datacentre", "Server Room");
@@ -314,7 +314,7 @@ public class WardleyWriterTests
         foreach (var path in fixtures)
         {
             var text = File.ReadAllText(path);
-            var (document, _) = Open(text);
+            (WardleyDocument document, _) = Open(text);
             Assert.Equal(text, document.ToText());
         }
     }

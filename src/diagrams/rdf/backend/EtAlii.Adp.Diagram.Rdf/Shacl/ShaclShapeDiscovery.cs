@@ -47,7 +47,7 @@ public static class ShaclShapeDiscovery
 
             if (ShaclVocabulary.ShapeListPredicates.Contains(predicate))
             {
-                foreach (var (member, memberIndex) in ListMembers(model, triple.Object))
+                foreach ((RdfTerm member, int memberIndex) in ListMembers(model, triple.Object))
                 {
                     Mark(found, member, memberIndex);
                 }

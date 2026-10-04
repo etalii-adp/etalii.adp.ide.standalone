@@ -68,12 +68,15 @@ public class C4ToolboxProviderTests
     public void EveryItem_IsBackedByAnAction_SoADropDoesWhatTheMenuDoes()
     {
         // Arrange, act and assert.
-        Assert.All(Items(C4ViewKind.Container), item =>
+        Assert.All(Items(C4ViewKind.Container), AssertItem);
+        return;
+
+        void AssertItem(ToolboxItemDefinition item)
         {
             ArgumentNullException.ThrowIfNull(item);
             Assert.NotEmpty(item.DropActionId);
             Assert.StartsWith("c4.", item.Id, StringComparison.Ordinal);
-        });
+        }
     }
 
     [Fact]

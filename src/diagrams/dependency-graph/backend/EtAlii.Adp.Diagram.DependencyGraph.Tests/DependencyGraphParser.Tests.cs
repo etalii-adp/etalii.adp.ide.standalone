@@ -73,7 +73,7 @@ public class DependencyGraphParserTests
             .ToList();
 
         // Assert.
-        foreach (var (id, range, alsoCovers) in ranges)
+        foreach ((string id, LineRange range, string alsoCovers) in ranges)
         {
             Assert.True(range.Start >= 0, $"{id} starts before the document");
             Assert.True(range.End < document.Lines.Count, $"{id} ends past the document");
@@ -89,9 +89,9 @@ public class DependencyGraphParserTests
         }
 
         // No two declarations claim the same line.
-        foreach (var (leftId, left, _) in ranges)
+        foreach ((string leftId, LineRange left, var _) in ranges)
         {
-            foreach (var (rightId, right, _) in ranges)
+            foreach ((string rightId, LineRange right, var _) in ranges)
             {
                 if (ReferenceEquals(leftId, rightId) && left.Equals(right))
                 {

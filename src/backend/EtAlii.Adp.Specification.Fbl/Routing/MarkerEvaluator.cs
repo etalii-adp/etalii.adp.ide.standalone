@@ -47,7 +47,7 @@ public static class MarkerEvaluator
             var stream = new YamlStream();
             stream.Load(new StringReader(Encoding.UTF8.GetString(text.Bytes, text.BomLength, text.Length - text.BomLength)));
             if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlMappingNode root) return false;
-            foreach (var (name, node) in root.Children)
+            foreach ((YamlNode name, YamlNode node) in root.Children)
             {
                 if (name is not YamlScalarNode { Value: { } found } || found != key) continue;
                 return value is null || (node is YamlScalarNode scalar && scalar.Value == value);

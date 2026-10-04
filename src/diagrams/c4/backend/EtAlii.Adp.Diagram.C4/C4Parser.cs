@@ -287,7 +287,7 @@ public static class C4Parser
         }
 
         var isInstance = kind is C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance;
-        var (technology, tags) = ReadTechnologyAndTags(kind, arguments);
+        (string technology, IReadOnlyList<string> tags) = ReadTechnologyAndTags(kind, arguments);
         var element = new C4Element(
             Id: identifier ?? state.GenerateId(kind, arguments.Length > 0 ? arguments[0] : keyword),
             Kind: kind,

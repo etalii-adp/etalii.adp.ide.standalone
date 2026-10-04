@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Routing;
 using EtAlii.Adp.Specification.Fbl.Tests.Plugins;
@@ -12,7 +13,7 @@ public class TemplatesTests
     public static TheoryData<string, string> DeclaredTemplates()
     {
         var data = new TheoryData<string, string>();
-        foreach (var (document, binding) in RealFileCorpus.AllBindings())
+        foreach ((string document, FblBinding binding) in RealFileCorpus.AllBindings())
         {
             if (binding.Template is null || binding.Plugin is not null) continue;
             foreach (var origin in binding.Claims.Origins) data.Add(document, binding.Name + "|" + origin);
@@ -25,7 +26,7 @@ public class TemplatesTests
     public void EveryDeclaredTemplateReadsBackWithoutAWarning(string document, string bindingAndOrigin)
     {
         // Arrange.
-        var (name, origin) = (bindingAndOrigin.Split('|')[0], bindingAndOrigin.Split('|')[1]);
+        (string name, string origin) = (bindingAndOrigin.Split('|')[0], bindingAndOrigin.Split('|')[1]);
         var binding = RealFileCorpus.Binding(document, name);
         var extension = binding.Claims.Extensions.FirstOrDefault() ?? ".txt";
 

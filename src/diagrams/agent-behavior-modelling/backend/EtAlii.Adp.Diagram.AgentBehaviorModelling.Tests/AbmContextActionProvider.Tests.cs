@@ -21,10 +21,10 @@ public class AbmContextActionProviderTests
     public void ADropUnderAParent_GoesBeneathIt_AmongItsChildrenByPosition()
     {
         // Arrange: just below C, right of D.
-        var (x, y) = Centre("1.2.1");
+        (double x, double y) = Centre("1.2.1");
 
         // Act.
-        var (parent, index, refusal) = AbmContextActionProvider.PlaceDrop(Model, NoneStored, x + 150, y + 20);
+        (AbmNode? parent, int index, string refusal) = AbmContextActionProvider.PlaceDrop(Model, NoneStored, x + 150, y + 20);
 
         // Assert.
         Assert.Equal("", refusal);
@@ -36,11 +36,11 @@ public class AbmContextActionProviderTests
     public void ADropBetweenTheRootsChildren_LandsBetweenThem()
     {
         // Arrange: on the children's row, between B and C.
-        var (bx, by) = Centre("1.1");
-        var (cx, _) = Centre("1.2");
+        (double bx, double by) = Centre("1.1");
+        (double cx, _) = Centre("1.2");
 
         // Act.
-        var (parent, index, _) = AbmContextActionProvider.PlaceDrop(Model, NoneStored, (bx + cx) / 2, by);
+        (AbmNode? parent, int index, _) = AbmContextActionProvider.PlaceDrop(Model, NoneStored, (bx + cx) / 2, by);
 
         // Assert.
         Assert.Equal("1", parent!.Id);

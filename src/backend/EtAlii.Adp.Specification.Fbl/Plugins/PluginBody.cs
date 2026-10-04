@@ -49,14 +49,14 @@ public sealed class PluginBody : SplicedFile
         if (_plugin is null) return new PlanResult.Refused(MissingReason);
         if (_last.Unreadable) return new PlanResult.Refused("The file could not be read, so it is never written.");
         if (Binding.ReadOnly is { } reason) return new PlanResult.Refused(reason.Length > 0 ? reason : "This file is read-only.");
-        if (change is ModelChange.Save) return new PlanResult.Planned(new Edit([], false));
+        if (change is ModelChange.Save) return new PlanResult.Planned(new Edit([]));
         var result = _plugin.Plan(new PluginPlanRequest([new PluginFile("", Bytes)], _last, change, Binding.Plugin!.Args));
         return result switch
         {
             PluginPlanResult.Refused refused => new PlanResult.Refused(refused.Reason),
             PluginPlanResult.Planned planned when planned.Splices.Any(s => s.File.Length > 0) =>
                 new PlanResult.Refused("The plugin planned a change to another file than the body."),
-            PluginPlanResult.Planned planned => new PlanResult.Planned(new Edit(Order(planned.Splices.Select(s => s.Splice)), false)),
+            PluginPlanResult.Planned planned => new PlanResult.Planned(new Edit(Order(planned.Splices.Select(s => s.Splice)))),
             _ => throw new InvalidOperationException("The plugin returned no plan."),
         };
     }

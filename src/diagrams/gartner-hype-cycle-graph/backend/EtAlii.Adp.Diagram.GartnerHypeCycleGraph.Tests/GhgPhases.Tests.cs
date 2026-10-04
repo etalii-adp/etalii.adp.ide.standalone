@@ -134,8 +134,8 @@ public class GhgPhasesTests
 
             // Through the mapper: a trend starting here has its left edge at x, and one stopping here
             // has its right edge at x.
-            var (startingX, _, startingWidth) = Drawn(mapper, Trend(index, index + 12, 4));
-            var (stoppingX, _, stoppingWidth) = Drawn(mapper, Trend(index - 12, index, 4));
+            (double startingX, _, double startingWidth) = Drawn(mapper, Trend(index, index + 12, 4));
+            (double stoppingX, _, double stoppingWidth) = Drawn(mapper, Trend(index - 12, index, 4));
             Assert.Equal(x, startingX - (startingWidth / 2));
             Assert.Equal(x, stoppingX + (stoppingWidth / 2));
         }

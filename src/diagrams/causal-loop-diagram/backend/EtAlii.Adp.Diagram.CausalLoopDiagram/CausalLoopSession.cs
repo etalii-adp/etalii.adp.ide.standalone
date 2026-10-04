@@ -227,7 +227,7 @@ internal sealed class CausalLoopSession : IDiagramSession
         if (stored.Count > 0)
         {
             var overlaid = new Dictionary<string, CausalLoopBox>(boxes.Count, StringComparer.Ordinal);
-            foreach (var (id, box) in boxes)
+            foreach ((string id, CausalLoopBox box) in boxes)
             {
                 // Positions are stored under the element id, which is what a drag reports.
                 overlaid[id] = stored.TryGetValue($"variable:{id}", out var position)

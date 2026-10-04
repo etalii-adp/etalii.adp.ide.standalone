@@ -49,7 +49,7 @@ public class TimelineWriterTests
     public void RenamingAnElement_ChangesExactlyOneLine()
     {
         // Arrange.
-        var (document, model) = Load("simple.tml");
+        (LineDocument document, TimelineModel model) = Load("simple.tml");
         var before = document.Text;
 
         // Act.
@@ -66,7 +66,7 @@ public class TimelineWriterTests
         // Arrange.
         // The corpus file with a comment in every position. A splice that widened by one line
         // would eat one of them, and nothing else in the suite would notice.
-        var (document, model) = Load("comments.tml");
+        (LineDocument document, TimelineModel model) = Load("comments.tml");
         var before = document.Text;
 
         // Act.
@@ -83,7 +83,7 @@ public class TimelineWriterTests
     public void EditingAnElement_LeavesUnmodelledKeysAlone()
     {
         // Arrange.
-        var (document, model) = Load("unmodelled-keys.tml");
+        (LineDocument document, TimelineModel model) = Load("unmodelled-keys.tml");
         var before = document.Text;
 
         // Act.
@@ -101,7 +101,7 @@ public class TimelineWriterTests
     public void EditingADocumentWithUnusualIndentation_DoesNotTidyIt()
     {
         // Arrange.
-        var (document, model) = Load("indentation.tml");
+        (LineDocument document, TimelineModel model) = Load("indentation.tml");
 
         // Act.
         TimelineWriter.SetLabel(document, model.Elements[0], "Still deeply indented");
@@ -117,7 +117,7 @@ public class TimelineWriterTests
     public void EditingAFileWithNoTrailingNewline_DoesNotGiveItOne()
     {
         // Arrange.
-        var (document, model) = Load("no-trailing-newline.tml");
+        (LineDocument document, TimelineModel model) = Load("no-trailing-newline.tml");
 
         // Act.
         TimelineWriter.SetLabel(document, model.Elements[0], "Edited");
@@ -130,7 +130,7 @@ public class TimelineWriterTests
     public void EditingAnLfDocument_KeepsItLf()
     {
         // Arrange.
-        var (document, model) = Load("lf-line-endings.tml");
+        (LineDocument document, TimelineModel model) = Load("lf-line-endings.tml");
 
         // Act.
         TimelineWriter.SetRow(document, model.Elements[0], 4);
@@ -143,7 +143,7 @@ public class TimelineWriterTests
     public void GivingAMomentAnEnd_AddsTheKeyWhereItBelongs()
     {
         // Arrange.
-        var (document, model) = From("timeline: 1\r\nelements:\r\n  - id: a\r\n    label: Moment\r\n    begin: 2026-01-01\r\n    row: 0\r\n");
+        (LineDocument document, TimelineModel model) = From("timeline: 1\r\nelements:\r\n  - id: a\r\n    label: Moment\r\n    begin: 2026-01-01\r\n    row: 0\r\n");
 
         // Act.
         TimelineWriter.SetEnd(document, model.Elements[0], "2026-01-05");
@@ -159,7 +159,7 @@ public class TimelineWriterTests
     public void RemovingAPeriodsEnd_MakesItAMoment()
     {
         // Arrange.
-        var (document, model) = Load("simple.tml");
+        (LineDocument document, TimelineModel model) = Load("simple.tml");
 
         // Act.
         TimelineWriter.SetEnd(document, model.Elements[0], null);
@@ -173,7 +173,7 @@ public class TimelineWriterTests
     public void RemovingAnElement_TakesItsConnectionsWithIt()
     {
         // Arrange.
-        var (document, model) = Load("connections.tml");
+        (LineDocument document, TimelineModel model) = Load("connections.tml");
         var doomed = model.Elements.Single(element => element.Id == "src00001");
 
         // Act.
@@ -197,7 +197,7 @@ public class TimelineWriterTests
         // The ordering guard. Removing top-down would shift every later range, and the second
         // removal would then cut the wrong lines - which shows up as a mangled document rather
         // than as an exception, so it needs a test that reads the result.
-        var (document, model) = Load("connections.tml");
+        (LineDocument document, TimelineModel model) = Load("connections.tml");
         var doomed = model.Elements.Single(element => element.Id == "dst00001");
 
         // Act.
@@ -215,7 +215,7 @@ public class TimelineWriterTests
     public void AddingAnElement_CopiesTheDocumentsOwnIndentation()
     {
         // Arrange.
-        var (document, model) = Load("indentation.tml");
+        (LineDocument document, TimelineModel model) = Load("indentation.tml");
 
         // Act.
         TimelineWriter.InsertElement(document, model, "newone01", "Added", "2026-12-01", "2026-12-31", 5);
@@ -232,7 +232,7 @@ public class TimelineWriterTests
     public void AddingAMoment_WritesNoEndKey()
     {
         // Arrange.
-        var (document, model) = Load("simple.tml");
+        (LineDocument document, TimelineModel model) = Load("simple.tml");
 
         // Act.
         TimelineWriter.InsertElement(document, model, "moment99", "Just a moment", "2026-04-01", null, 2);
@@ -247,7 +247,7 @@ public class TimelineWriterTests
     public void AddingAConnection_WhenThereIsNoConnectionsSectionYet_CreatesOne()
     {
         // Arrange.
-        var (document, model) = From("timeline: 1\r\nelements:\r\n  - id: a\r\n    begin: 2026-01-01\r\n  - id: b\r\n    begin: 2026-02-01\r\n");
+        (LineDocument document, TimelineModel model) = From("timeline: 1\r\nelements:\r\n  - id: a\r\n    begin: 2026-01-01\r\n  - id: b\r\n    begin: 2026-02-01\r\n");
 
         // Act.
         TimelineWriter.InsertConnection(document, model, "conn0001", "a", "b", "leads to");
@@ -264,7 +264,7 @@ public class TimelineWriterTests
     public void AddingASecondConnectionBetweenTheSamePair_IsFine()
     {
         // Arrange.
-        var (document, model) = Load("connections.tml");
+        (LineDocument document, TimelineModel model) = Load("connections.tml");
 
         // Act.
         TimelineWriter.InsertConnection(document, model, "conn0004", "src00001", "dst00001", "and again");
@@ -278,7 +278,7 @@ public class TimelineWriterTests
     public void RelabellingAConnection_ChangesOneLine()
     {
         // Arrange.
-        var (document, model) = Load("connections.tml");
+        (LineDocument document, TimelineModel model) = Load("connections.tml");
         var before = document.Text;
 
         // Act.
@@ -293,7 +293,7 @@ public class TimelineWriterTests
     public void ClearingAConnectionsLabel_RemovesTheKeyRatherThanLeavingItEmpty()
     {
         // Arrange.
-        var (document, model) = Load("connections.tml");
+        (LineDocument document, TimelineModel model) = Load("connections.tml");
 
         // Act.
         TimelineWriter.SetConnectionLabel(document, model.Connections[0], "");
@@ -308,7 +308,7 @@ public class TimelineWriterTests
     public void ALabelNeedingQuotes_GetsThem_AndAnOrdinaryOneDoesNot()
     {
         // Arrange.
-        var (document, model) = Load("simple.tml");
+        (LineDocument document, TimelineModel model) = Load("simple.tml");
 
         // Act.
         TimelineWriter.SetLabel(document, model.Elements[0], "Plain");
@@ -330,7 +330,7 @@ public class TimelineWriterTests
     {
         // Arrange.
         // The property that makes undo trustworthy: an edit and its opposite cancel exactly.
-        var (document, model) = Load("simple.tml");
+        (LineDocument document, TimelineModel model) = Load("simple.tml");
         var original = document.Text;
         var originalLabel = model.Elements[0].Label;
 
@@ -347,7 +347,7 @@ public class TimelineWriterTests
     public void AddingThenRemovingAnElement_ComesBackByteForByte()
     {
         // Arrange.
-        var (document, model) = Load("simple.tml");
+        (LineDocument document, TimelineModel model) = Load("simple.tml");
         var original = document.Text;
 
         // Act.
@@ -365,7 +365,7 @@ public class TimelineWriterTests
     {
         // Arrange.
         // The two hardest cases together: an append at an unterminated end of file, undone.
-        var (document, model) = Load("no-trailing-newline.tml");
+        (LineDocument document, TimelineModel model) = Load("no-trailing-newline.tml");
         var original = document.Text;
 
         // Act.

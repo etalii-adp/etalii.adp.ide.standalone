@@ -225,7 +225,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
     public SourceLocation Locate(Span span)
     {
-        var (line, column) = Text.Position(span.Start);
+        (int line, int column) = Text.Position(span.Start);
         return new SourceLocation(Options.FileName, line, column, Text.CodePoints(span.Start, span.End));
     }
 

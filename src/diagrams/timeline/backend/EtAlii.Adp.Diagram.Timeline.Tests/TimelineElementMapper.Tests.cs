@@ -178,7 +178,7 @@ public class TimelineElementMapperTests
         var newBegin = new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero);
 
         // Act.
-        var (begin, end, row) = TimelineElementMapper.Placement(
+        (string begin, string? end, int row) = TimelineElementMapper.Placement(
             period, TimelineScale.ToSeconds(newBegin), TimelineRows.ToY(5));
 
         // Assert.
@@ -197,7 +197,7 @@ public class TimelineElementMapperTests
         var partWayThroughADay = TimelineScale.ToSeconds(new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero)) + 7.3 * 3600;
 
         // Act.
-        var (begin, _, _) = TimelineElementMapper.Placement(period, partWayThroughADay, 0);
+        (string begin, _, _) = TimelineElementMapper.Placement(period, partWayThroughADay, 0);
 
         // Assert.
         Assert.Equal("2026-03-01", begin);
@@ -211,7 +211,7 @@ public class TimelineElementMapperTests
         var moment = model.Elements.Single(element => element.Id == "bbb");
 
         // Act.
-        var (begin, end, _) = TimelineElementMapper.Placement(
+        (string begin, string? end, _) = TimelineElementMapper.Placement(
             moment, TimelineScale.ToSeconds(new DateTimeOffset(2026, 5, 1, 9, 30, 0, TimeSpan.Zero)), 0);
 
         // Assert.
@@ -228,7 +228,7 @@ public class TimelineElementMapperTests
         var model = Parse("timeline: 1\nelements:\n  - id: a\n    begin: 2026-01-01\n    end: not-a-date\n    row: 0\n");
 
         // Act.
-        var (begin, end, _) = TimelineElementMapper.Placement(
+        (string begin, string? end, _) = TimelineElementMapper.Placement(
             model.Elements[0], TimelineScale.ToSeconds(new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero)), 0);
 
         // Assert.

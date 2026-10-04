@@ -189,7 +189,7 @@ public sealed class SparqlElementMapper
 
         // An edge travels when both of its ends do; one with no target travels with its source.
         var edgesById = projection.Edges.ToDictionary(edge => edge.Id, StringComparer.Ordinal);
-        foreach (var (id, edge) in edgesById)
+        foreach ((string id, SparqlEdge edge) in edgesById)
         {
             if (delivered.Contains(edge.FromId) && (edge.ToId.Length == 0 || delivered.Contains(edge.ToId)))
             {

@@ -276,7 +276,7 @@ public class LineSpliceTests
         string text, string key, string value, string secondLabel, string firstId)
     {
         // Act.
-        var (itemIndent, dashGap, keyIndent) =
+        (string itemIndent, string dashGap, string keyIndent) =
             LineSplice.IndentOf(LineDocument.Parse(text), [FirstElement]);
 
         // Assert.
@@ -295,7 +295,7 @@ public class LineSpliceTests
         var document = LineDocument.Parse("elements:\r\n  -   id: wide\r\n      label: Wide\r\n");
 
         // Act.
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, [new LineRange(1, 2)]);
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, [new LineRange(1, 2)]);
 
         // Assert.
         Assert.Equal("  ", itemIndent);
@@ -307,7 +307,7 @@ public class LineSpliceTests
     public void IndentOf_WithNoExistingEntry_FallsBackToTheDefaults()
     {
         // Act.
-        var (itemIndent, dashGap, keyIndent) =
+        (string itemIndent, string dashGap, string keyIndent) =
             LineSplice.IndentOf(LineDocument.Parse("elements:\r\n"), []);
 
         // Assert.

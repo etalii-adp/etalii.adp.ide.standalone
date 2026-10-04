@@ -43,13 +43,16 @@ public class DotNetContextPropertyProviderTests
         // Assert.
         Assert.NotEmpty(projectRows);
         Assert.NotEmpty(packageRows);
-        Assert.All(projectRows.Concat(packageRows), row =>
+        Assert.All(projectRows.Concat(packageRows), AssertRow);
+        return;
+
+        void AssertRow(ContextPropertyDefinition row)
         {
             ArgumentNullException.ThrowIfNull(row);
 
             Assert.NotEqual("", row.ReadOnlyReason);
             Assert.False(row.IsEditable);
-        });
+        }
     }
 
     [Fact]

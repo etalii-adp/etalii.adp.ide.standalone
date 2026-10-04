@@ -1,3 +1,4 @@
+using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Rules;
@@ -35,7 +36,7 @@ public class DeclaredBodiesTests
     public void TheFileReads(string key, string file)
     {
         // Arrange.
-        var (binding, bytes) = Load(key, file);
+        (FblBinding binding, byte[] bytes) = Load(key, file);
 
         // Act.
         var reading = BodyReading.Read(bytes, binding, RealFileCorpus.Options(binding, file));
@@ -52,7 +53,7 @@ public class DeclaredBodiesTests
     public void ASaveWithoutAnEditWritesTheBytesThatWereRead(string key, string file)
     {
         // Arrange.
-        var (binding, bytes) = Load(key, file);
+        (FblBinding binding, byte[] bytes) = Load(key, file);
         var body = OpenBody.Open(bytes, binding, RealFileCorpus.Options(binding, file));
 
         // Act.
@@ -75,7 +76,7 @@ public class DeclaredBodiesTests
     public void AnEditChangesOnlyItsSplicesAndItsUndoRestoresTheFile(string key, string file)
     {
         // Arrange.
-        var (binding, bytes) = Load(key, file);
+        (FblBinding binding, byte[] bytes) = Load(key, file);
         var body = OpenBody.Open(bytes, binding, RealFileCorpus.Options(binding, file));
         if (body.IsReadOnly || FirstWritable(body.Reading) is not { } target) return;
 
@@ -95,7 +96,7 @@ public class DeclaredBodiesTests
     public void ARemovalChangesOnlyItsSplicesAndItsUndoRestoresTheFile(string key, string file)
     {
         // Arrange.
-        var (binding, bytes) = Load(key, file);
+        (FblBinding binding, byte[] bytes) = Load(key, file);
         var body = OpenBody.Open(bytes, binding, RealFileCorpus.Options(binding, file));
         if (body.IsReadOnly) return;
         var element = body.Reading.Elements.FirstOrDefault(e => e.Rule.Remove is not null && e.Rule.ReadOnly is null);
@@ -119,7 +120,7 @@ public class DeclaredBodiesTests
     public void AnUndoAfterTheFileChangedIsRefused(string key, string file)
     {
         // Arrange.
-        var (binding, bytes) = Load(key, file);
+        (FblBinding binding, byte[] bytes) = Load(key, file);
         var body = OpenBody.Open(bytes, binding, RealFileCorpus.Options(binding, file));
         if (body.IsReadOnly || FirstWritable(body.Reading) is not { } target) return;
         if (body.Change(new ModelChange.Set(target.Element.Id, new Dictionary<string, object?> { [target.Attribute] = target.Value + " edited" })) is not PlanResult.Planned) return;
@@ -150,7 +151,7 @@ public class DeclaredBodiesTests
         }
     }
 
-    private static (Documents.FblBinding Binding, byte[] Bytes) Load(string key, string file) =>
+    private static (FblBinding Binding, byte[] Bytes) Load(string key, string file) =>
         (RealFileCorpus.Binding(RealFileCorpus.Find(key)), File.ReadAllBytes(RealFileCorpus.FullPath(file)));
 
     /// <summary>
@@ -162,7 +163,7 @@ public class DeclaredBodiesTests
     {
         foreach (var element in reading.Elements.Where(e => !e.IsRelation && e.Rule.ReadOnly is null))
         {
-            foreach (var (name, binding) in element.Rule.Attributes)
+            foreach ((string name, AttributeBinding binding) in element.Rule.Attributes)
             {
                 if (binding.IsComputed || binding.Parent is not null || binding.Reference is not null || binding.Map is not null || binding.Flag) continue;
                 if (name == element.KeyAttribute) continue;

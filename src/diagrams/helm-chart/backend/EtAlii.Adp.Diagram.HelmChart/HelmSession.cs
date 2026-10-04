@@ -168,7 +168,7 @@ internal sealed class HelmSession : IDiagramSession
         }
 
         var overlaid = new Dictionary<string, HelmBox>(boxes.Count, StringComparer.Ordinal);
-        foreach (var (id, box) in boxes)
+        foreach ((string id, HelmBox box) in boxes)
         {
             overlaid[id] = stored.TryGetValue(id, out var position)
                 ? box with { X = position.X, Y = position.Y }

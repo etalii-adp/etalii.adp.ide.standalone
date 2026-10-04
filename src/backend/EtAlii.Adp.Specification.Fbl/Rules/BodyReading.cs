@@ -123,7 +123,7 @@ internal sealed class BodyReading
         _byEntry.Clear();
         Elements.Clear();
         _findings.Clear();
-        var (line, column) = Text.Position(Math.Min(offset, Text.Length));
+        (int line, int column) = Text.Position(Math.Min(offset, Text.Length));
         _findings.Add(new Finding(FindingCodes.Unparseable, FindingSeverity.Error, message, new SourceLocation(Options.FileName, line, column, 0)));
         return this;
     }
@@ -252,7 +252,7 @@ internal sealed class BodyReading
         var program = Program(expression, CelContext.Insert, out _);
         if (program is null) return false;
         var map = new CelMap();
-        foreach (var (name, value) in attributes) map[name] = value is int i ? (long)i : value;
+        foreach ((string name, object? value) in attributes) map[name] = value is int i ? (long)i : value;
         try
         {
             return program.IsTrue(new Dictionary<string, object?> { ["attributes"] = map });
@@ -271,9 +271,9 @@ internal sealed class BodyReading
             ["line"] = (long)Text.Position(candidate.Entry.Own.Start).Line,
         };
         var registration = new CelMap();
-        foreach (var (key, value) in Options.RegistrationHeaders) registration[key] = value;
+        foreach ((string key, string value) in Options.RegistrationHeaders) registration[key] = value;
         variables["registration"] = registration;
-        var (name, extra) = Family.CelExtra(candidate);
+        (string name, object? extra) = Family.CelExtra(candidate);
         variables[name] = extra;
         object? parent = null;
         foreach (var enclosing in Family.Enclosing(candidate.Entry))
@@ -295,7 +295,7 @@ internal sealed class BodyReading
     private void ReadSlots(ReadElement element)
     {
         var rule = element.Rule;
-        foreach (var (name, binding) in rule.Attributes)
+        foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
             var read = ReadSlot(element.Candidate, binding, element);
             element.Slots[name] = read;
@@ -450,7 +450,7 @@ internal sealed class BodyReading
     /// </summary>
     private static string KeyOf(ReadElement element)
     {
-        foreach (var (name, binding) in element.Rule.Attributes)
+        foreach ((string name, AttributeBinding binding) in element.Rule.Attributes)
         {
             if (binding.Reference is { } reference && reference.To.Contains(element.Rule.Name) && reference.By == name)
             {
@@ -480,7 +480,7 @@ internal sealed class BodyReading
 
     private void CheckReferences(ReadElement element)
     {
-        foreach (var (name, binding) in element.Rule.Attributes)
+        foreach ((string name, AttributeBinding binding) in element.Rule.Attributes)
         {
             if (binding.Reference is not { } reference || reference.To.Contains(element.Rule.Name)) continue;
             if (!element.Slots.TryGetValue(name, out var read) || !read.Present) continue;

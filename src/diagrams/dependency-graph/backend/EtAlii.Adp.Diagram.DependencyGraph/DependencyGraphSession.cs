@@ -130,7 +130,7 @@ public sealed class DependencyGraphSession : IDiagramSession
             return "That element is not something this graph can move.";
         }
 
-        var (movedX, row) = DependencyGraphElementMapper.Placement(x, y);
+        (double movedX, int row) = DependencyGraphElementMapper.Placement(x, y);
         var result = await _history.ExecuteAsync(
             new SetDependencyGraphPlacementCommand(_bodyPath, elementId, movedX, row, "Moved"),
             cancellationToken);

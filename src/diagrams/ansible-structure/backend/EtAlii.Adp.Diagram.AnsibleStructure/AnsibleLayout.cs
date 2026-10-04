@@ -50,7 +50,7 @@ public static class AnsibleLayout
             var width = members.Max(entry => scale.Measure(entry.Node.Name));
 
             var y = 0.0;
-            foreach (var (node, _) in members)
+            foreach ((AnsibleNode node, var _) in members)
             {
                 boxes[node.Id] = new AnsibleBox(x, y, width, scale.NodeHeight);
                 y += scale.NodeHeight + scale.RowGap;

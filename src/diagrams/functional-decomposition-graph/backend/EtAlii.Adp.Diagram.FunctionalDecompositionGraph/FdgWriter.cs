@@ -114,8 +114,11 @@ public static class FdgWriter
         }
 
         var indent = LineSplice.KeyIndentWithin(document, element.Range);
-        List<string> lines = [$"{indent}text: |-"];
-        lines.AddRange((text ?? "").Split('\n').Select(line => $"{indent}  {line.TrimEnd('\r')}"));
+        List<string> lines =
+        [
+            $"{indent}text: |-",
+            .. (text ?? "").Split('\n').Select(line => $"{indent}  {line.TrimEnd('\r')}")
+        ];
 
         ReplaceKeyBlock(document, element.Range, "text", lines);
         return FdgEdit.Applied;
@@ -221,7 +224,7 @@ public static class FdgWriter
             return FdgEdit.Refused($"The document has no `{ElementsSection}` section to add to.");
         }
 
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, ranges);
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
         List<string> lines =
         [
             $"{itemIndent}-{dashGap}id: {LineSplice.Quote(element.Id)}",
@@ -264,7 +267,7 @@ public static class FdgWriter
             return FdgEdit.Refused($"The document has no `{ConnectionsSection}` section to add to.");
         }
 
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, ranges);
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
         List<string> lines =
         [
             $"{itemIndent}-{dashGap}id: {LineSplice.Quote(connection.Id)}",

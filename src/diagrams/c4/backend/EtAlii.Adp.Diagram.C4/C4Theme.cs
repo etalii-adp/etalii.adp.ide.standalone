@@ -39,7 +39,7 @@ public static class C4Theme
             return new C4Style { Background = ExternalBackground, Color = LightText, Shape = ShapeOf(element) };
         }
 
-        var (background, color) = element.Kind switch
+        (string background, string color) = element.Kind switch
         {
             C4ElementKind.Person => (PersonBackground, LightText),
             C4ElementKind.SoftwareSystem or C4ElementKind.SoftwareSystemInstance => (SoftwareSystemBackground, LightText),

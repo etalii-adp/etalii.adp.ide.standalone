@@ -36,12 +36,12 @@ public class ShaclRemoveShapeTests
     {
         // The form the world writes: the property shape lives inside the shape's own statement,
         // so nothing separate has to be found or removed.
-        var (document, model) = Open("""
-            ex:S a sh:NodeShape ;
-              sh:property [ sh:path ex:name ; sh:minCount 1 ] .
-            ex:Keep a sh:NodeShape ;
-              sh:property [ sh:path ex:other ] .
-            """ + "\n");
+        (LineDocument document, RdfModel model) = Open("""
+                                                       ex:S a sh:NodeShape ;
+                                                         sh:property [ sh:path ex:name ; sh:minCount 1 ] .
+                                                       ex:Keep a sh:NodeShape ;
+                                                         sh:property [ sh:path ex:other ] .
+                                                       """ + "\n");
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -62,15 +62,15 @@ public class ShaclRemoveShapeTests
         // would splice the second one at a position that has moved - silently, no exception and
         // no refusal, just wrong bytes. Four blocks and a following statement that must survive
         // byte-identical is what proves the loop re-derives from a fresh parse each time.
-        var (document, model) = Open("""
-            ex:S a sh:NodeShape ;
-              sh:property [ sh:path ex:one ; sh:minCount 1 ] ;
-              sh:property [ sh:path ex:two ; sh:datatype xsd:string ] ;
-              sh:property [ sh:path ex:three ] ;
-              sh:property [ sh:path ex:four ; sh:maxCount 2 ] .
-            ex:Keep a sh:NodeShape ;
-              sh:property [ sh:path ex:kept ; sh:minCount 1 ] .
-            """ + "\n");
+        (LineDocument document, RdfModel model) = Open("""
+                                                       ex:S a sh:NodeShape ;
+                                                         sh:property [ sh:path ex:one ; sh:minCount 1 ] ;
+                                                         sh:property [ sh:path ex:two ; sh:datatype xsd:string ] ;
+                                                         sh:property [ sh:path ex:three ] ;
+                                                         sh:property [ sh:path ex:four ; sh:maxCount 2 ] .
+                                                       ex:Keep a sh:NodeShape ;
+                                                         sh:property [ sh:path ex:kept ; sh:minCount 1 ] .
+                                                       """ + "\n");
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -88,16 +88,16 @@ public class ShaclRemoveShapeTests
     {
         // The same hazard on the other pass: four subtree statements removed in sequence, each
         // splice moving what follows it.
-        var (document, model) = Open("""
-            ex:S a sh:NodeShape ;
-              sh:property _:a ;
-              sh:property _:b ;
-              sh:property _:c .
-            _:a sh:path ex:one ; sh:minCount 1 .
-            _:b sh:path ex:two ; sh:datatype xsd:string .
-            _:c sh:path ex:three .
-            ex:Keep a sh:NodeShape .
-            """ + "\n");
+        (LineDocument document, RdfModel model) = Open("""
+                                                       ex:S a sh:NodeShape ;
+                                                         sh:property _:a ;
+                                                         sh:property _:b ;
+                                                         sh:property _:c .
+                                                       _:a sh:path ex:one ; sh:minCount 1 .
+                                                       _:b sh:path ex:two ; sh:datatype xsd:string .
+                                                       _:c sh:path ex:three .
+                                                       ex:Keep a sh:NodeShape .
+                                                       """ + "\n");
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -108,13 +108,13 @@ public class ShaclRemoveShapeTests
     [Fact]
     public void AnExclusiveSeparatelyStatedSubtree_Goes()
     {
-        var (document, model) = Open("""
-            ex:S a sh:NodeShape ;
-              sh:property _:row .
-            _:row sh:path ex:name ;
-              sh:minCount 1 .
-            ex:Keep a sh:NodeShape .
-            """ + "\n");
+        (LineDocument document, RdfModel model) = Open("""
+                                                       ex:S a sh:NodeShape ;
+                                                         sh:property _:row .
+                                                       _:row sh:path ex:name ;
+                                                         sh:minCount 1 .
+                                                       ex:Keep a sh:NodeShape .
+                                                       """ + "\n");
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -135,7 +135,7 @@ public class ShaclRemoveShapeTests
             _:shared sh:path ex:name ;
               sh:minCount 1 .
             """ + "\n";
-        var (document, model) = Open(body);
+        (LineDocument document, RdfModel model) = Open(body);
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -153,13 +153,13 @@ public class ShaclRemoveShapeTests
     [Fact]
     public void ADiamond_TwoPathsFromTheRemovedShapeAndNoOtherReferrer_GoesExactlyOnce()
     {
-        var (document, model) = Open("""
-            ex:S a sh:NodeShape ;
-              sh:property _:twice ;
-              sh:node _:twice .
-            _:twice sh:path ex:name .
-            ex:Keep a sh:NodeShape .
-            """ + "\n");
+        (LineDocument document, RdfModel model) = Open("""
+                                                       ex:S a sh:NodeShape ;
+                                                         sh:property _:twice ;
+                                                         sh:node _:twice .
+                                                       _:twice sh:path ex:name .
+                                                       ex:Keep a sh:NodeShape .
+                                                       """ + "\n");
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -178,7 +178,7 @@ public class ShaclRemoveShapeTests
             _:b sh:path ex:name .
             ex:someData ex:mentions _:b .
             """ + "\n";
-        var (document, model) = Open(body);
+        (LineDocument document, RdfModel model) = Open(body);
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -194,14 +194,14 @@ public class ShaclRemoveShapeTests
     [Fact]
     public void ThreeDeepNesting_IsRemovedBottomUp()
     {
-        var (document, model) = Open("""
-            ex:S a sh:NodeShape ;
-              sh:node _:one .
-            _:one sh:node _:two .
-            _:two sh:node _:three .
-            _:three sh:path ex:deep .
-            ex:Keep a sh:NodeShape .
-            """ + "\n");
+        (LineDocument document, RdfModel model) = Open("""
+                                                       ex:S a sh:NodeShape ;
+                                                         sh:node _:one .
+                                                       _:one sh:node _:two .
+                                                       _:two sh:node _:three .
+                                                       _:three sh:path ex:deep .
+                                                       ex:Keep a sh:NodeShape .
+                                                       """ + "\n");
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -223,7 +223,7 @@ public class ShaclRemoveShapeTests
             ex:Keep a sh:NodeShape ;
               sh:node _:two .
             """ + "\n";
-        var (document, model) = Open(body);
+        (LineDocument document, RdfModel model) = Open(body);
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -248,7 +248,7 @@ public class ShaclRemoveShapeTests
               sh:minCount 1 .
             ex:Keep a sh:NodeShape .
             """ + "\n";
-        var (document, model) = Open(body);
+        (LineDocument document, RdfModel model) = Open(body);
 
         var announced = ShaclWriter.CountShapeRemoval(model, Ex + "S");
         var before = model.Triples.Count;
@@ -263,14 +263,14 @@ public class ShaclRemoveShapeTests
     [Fact]
     public void TheCount_ExcludesASharedSubtree()
     {
-        var (_, model) = Open("""
-            ex:S a sh:NodeShape ;
-              sh:property _:shared .
-            ex:Keep a sh:NodeShape ;
-              sh:property _:shared .
-            _:shared sh:path ex:name ;
-              sh:minCount 1 .
-            """ + "\n");
+        (_, RdfModel model) = Open("""
+                                   ex:S a sh:NodeShape ;
+                                     sh:property _:shared .
+                                   ex:Keep a sh:NodeShape ;
+                                     sh:property _:shared .
+                                   _:shared sh:path ex:name ;
+                                     sh:minCount 1 .
+                                   """ + "\n");
 
         // Only the shape's own two triples; the shared subtree's two are not ours to take.
         Assert.Equal(2, ShaclWriter.CountShapeRemoval(model, Ex + "S"));
@@ -279,7 +279,7 @@ public class ShaclRemoveShapeTests
     [Fact]
     public void RemovingRefusesBlankRootedAndUnknownShapes_LeavingTheFileUntouched()
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        (LineDocument document, RdfModel model) = Open("ex:S a sh:NodeShape .\n");
         var before = document.Text;
 
         Assert.Equal(ShaclRefusals.BlankRooted, ShaclWriter.RemoveShapeWithSubtrees(document, model, ""));
@@ -299,7 +299,7 @@ public class ShaclRemoveShapeTests
             ex:S a sh:NodeShape ;
               sh:property _:shared .
             """ + "\n";
-        var (document, model) = Open(body);
+        (LineDocument document, RdfModel model) = Open(body);
 
         Assert.Equal("", ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S"));
 

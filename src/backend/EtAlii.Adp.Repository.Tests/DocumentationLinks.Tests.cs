@@ -210,7 +210,7 @@ public partial class DocumentationLinksTests
             var targets = LinkExpression().Matches(text).Select(match => (Html: false, Match: match))
                 .Concat(HtmlLinkExpression().Matches(text).Select(match => (Html: true, Match: match)));
 
-            foreach (var (isHtml, match) in targets)
+            foreach ((bool isHtml, Match match) in targets)
             {
                 var target = match.Groups["target"].Value.Trim();
 

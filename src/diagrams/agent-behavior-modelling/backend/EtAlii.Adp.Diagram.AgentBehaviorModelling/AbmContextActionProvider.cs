@@ -150,7 +150,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
                 return new ContextExecutionFailed("A node is added under another node, or by dropping it where it belongs.");
             }
 
-            var (parent, index, refusal) = PlaceDrop(model, Stored(body), x, y);
+            (AbmNode? parent, int index, string refusal) = PlaceDrop(model, Stored(body), x, y);
             if (refusal.Length > 0)
             {
                 return new ContextExecutionFailed(refusal);
@@ -283,7 +283,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
             .Where(node => node.TakesAnotherChild && Centre(positions[node.Id]).Y < y)
             .OrderBy(node =>
             {
-                var (cx, cy) = Centre(positions[node.Id]);
+                (double cx, double cy) = Centre(positions[node.Id]);
                 return Math.Abs(x - cx) + (2 * (y - cy));
             })
             .FirstOrDefault();

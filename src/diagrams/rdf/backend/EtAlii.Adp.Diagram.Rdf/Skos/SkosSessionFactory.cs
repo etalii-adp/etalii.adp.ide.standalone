@@ -39,7 +39,7 @@ public sealed class SkosSessionFactory : IDiagramSessionFactory
 
         // A misplaced header yields null here and a validation finding there; the session never
         // guesses (Requirement 3.2).
-        var (language, _) = SkosRegistrationLanguage.Read(registrationPath);
+        (string? language, _) = SkosRegistrationLanguage.Read(registrationPath);
 
         return new SkosSession(
             bodyPath,

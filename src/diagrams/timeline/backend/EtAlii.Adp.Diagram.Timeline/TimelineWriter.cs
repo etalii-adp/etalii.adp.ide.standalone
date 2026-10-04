@@ -77,7 +77,7 @@ public static class TimelineWriter
         string? end,
         int row)
     {
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, model.Elements.Select(element => element.Range));
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, model.Elements.Select(element => element.Range));
         var lines = new List<string>
         {
             $"{itemIndent}-{dashGap}id: {id}",
@@ -104,7 +104,7 @@ public static class TimelineWriter
         string to,
         string label)
     {
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, model.Connections.Select(connection => connection.Range));
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, model.Connections.Select(connection => connection.Range));
         var lines = new List<string>
         {
             $"{itemIndent}-{dashGap}id: {id}",

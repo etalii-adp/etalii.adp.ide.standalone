@@ -91,7 +91,7 @@ public class GateScriptTests
             : [script.Replace('\\', '/'), "--quick"];
 
         // Act.
-        var (exitCode, output) = await Run(bash, arguments, root, cancellation);
+        (int exitCode, string output) = await Run(bash, arguments, root, cancellation);
 
         // Assert. The two verdicts contain neither the other, so this cannot be satisfied by the
         // wrong one - including by an older script that ignores --quick and runs everything.
@@ -153,7 +153,7 @@ public class GateScriptTests
         // develop...HEAD is the branch's own changes since it diverged, which is what a gate merges.
         // In the gate's scratch tree HEAD is the merge commit and develop is the base, so the same
         // expression answers the same question there.
-        var (exitCode, output) = await Run(
+        (int exitCode, string output) = await Run(
             "git",
             ["diff", "--name-only", "develop...HEAD", "--", ".github/tools/gate/"],
             root,
@@ -183,7 +183,7 @@ public class GateScriptTests
         }
 
         // git --exec-path answers <git>\mingw64\libexec\git-core; git's bash is <git>\bin\bash.exe.
-        var (exitCode, output) = await Run("git", ["--exec-path"], AppContext.BaseDirectory, cancellation);
+        (int exitCode, string output) = await Run("git", ["--exec-path"], AppContext.BaseDirectory, cancellation);
         Assert.True(exitCode == 0, $"git --exec-path failed (exit {exitCode}), so git's bash cannot be located:{Environment.NewLine}{output}");
         var bash = IoPath.GetFullPath(IoPath.Combine(output.Trim(), "..", "..", "..", "bin", "bash.exe"));
         Assert.True(File.Exists(bash), $"git for Windows' bash was not found at {bash}");

@@ -141,7 +141,7 @@ internal static class OwlLayout
         var rowOf = new Dictionary<string, double>(StringComparer.Ordinal);
         var classTop = headerHeight;
         var maxY = classTop;
-        foreach (var (depth, members) in columns)
+        foreach ((int depth, List<string> members) in columns)
         {
             var arranged = depth == 0
                 ? members.OrderBy(id => order[id]).ToList()

@@ -125,7 +125,7 @@ public static class ShaclProjection
         var name = "";
         var description = "";
 
-        foreach (var (triple, _) in context.TriplesOf(shape.Key))
+        foreach ((RdfTriple triple, var _) in context.TriplesOf(shape.Key))
         {
             var predicate = triple.Predicate.Iri;
             switch (predicate)
@@ -214,7 +214,7 @@ public static class ShaclProjection
             _ => ShaclTargetKind.ObjectsOf,
         };
 
-        var (termDisplay, termIri) = target switch
+        (string termDisplay, string termIri) = target switch
         {
             IriTerm iri => (RdfProjection.Display(model, iri), iri.Iri),
             LiteralTerm literal => (literal.Lexical, ""),
@@ -392,7 +392,7 @@ public static class ShaclProjection
         }
 
         var parts = new List<string>();
-        foreach (var (triple, _) in context.TriplesOf(key))
+        foreach ((RdfTriple triple, var _) in context.TriplesOf(key))
         {
             var predicate = triple.Predicate.Iri;
             if (predicate == RdfVocabulary.Type)
@@ -520,7 +520,7 @@ public static class ShaclProjection
             // Combinator list members are operands too, reached through the cons plumbing.
             foreach (var shape in shapes)
             {
-                foreach (var (triple, _) in context.TriplesOf(shape.Key))
+                foreach ((RdfTriple triple, var _) in context.TriplesOf(shape.Key))
                 {
                     if (!ShaclVocabulary.ShapeListPredicates.Contains(triple.Predicate.Iri))
                     {
@@ -548,7 +548,7 @@ public static class ShaclProjection
 
         public RdfTerm? FirstObject(string subjectKey, string predicateIri)
         {
-            foreach (var (triple, _) in TriplesOf(subjectKey))
+            foreach ((RdfTriple triple, var _) in TriplesOf(subjectKey))
             {
                 if (triple.Predicate.Iri == predicateIri)
                 {
@@ -595,7 +595,7 @@ public static class ShaclProjection
 
         public IEnumerable<string> TargetedClasses(ShaclShape shape)
         {
-            foreach (var (triple, _) in TriplesOf(shape.Key))
+            foreach ((RdfTriple triple, var _) in TriplesOf(shape.Key))
             {
                 if (triple.Predicate.Iri == ShaclVocabulary.TargetClass && triple.Object is IriTerm classTerm)
                 {

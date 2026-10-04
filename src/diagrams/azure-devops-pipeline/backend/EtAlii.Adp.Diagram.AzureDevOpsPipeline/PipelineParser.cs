@@ -244,7 +244,7 @@ public sealed class PipelineParser
 
             var name = Scalar(mapping, "stage");
             var id = name.Length > 0 ? name : $"stage-{into.Count}";
-            var (dependsOn, declared) = ReadDependsOn(mapping);
+            (IReadOnlyList<string> dependsOn, bool declared) = ReadDependsOn(mapping);
             // A stage's own pool, or the pipeline's where it declares none - and the pool carries
             // which of those it was, so a reader knows which element to edit to change it.
             var pool = Inherit(ReadPool(mapping, PipelinePoolOrigin.Stage), _pipelinePool);
@@ -319,7 +319,7 @@ public sealed class PipelineParser
             var name = isDeployment ? deployment : Scalar(mapping, "job");
             var id = $"{stageId}/{(name.Length > 0 ? name : $"job-{into.Count}")}";
             var strategy = ReadStrategy(mapping);
-            var (dependsOn, declared) = ReadDependsOn(mapping);
+            (IReadOnlyList<string> dependsOn, bool declared) = ReadDependsOn(mapping);
             into.Add(new PipelineJob(
                 id,
                 name,
@@ -360,7 +360,7 @@ public sealed class PipelineParser
         }
 
         var steps = new List<PipelineStep>();
-        foreach (var (key, value) in Entries(hooks))
+        foreach ((string key, YamlNode value) in Entries(hooks))
         {
             if (value is YamlMappingNode hook && Entry(hook, "steps") is YamlSequenceNode hookSteps)
             {
@@ -384,7 +384,7 @@ public sealed class PipelineParser
                 continue;
             }
 
-            var (kind, identifier) = ReadStepKind(mapping);
+            (PipelineStepKind kind, string identifier) = ReadStepKind(mapping);
             steps.Add(new PipelineStep(
                 $"{jobId}/step-{offset + steps.Count}",
                 kind,
@@ -440,7 +440,7 @@ public sealed class PipelineParser
     /// </summary>
     private static (PipelineStepKind Kind, string Identifier) ReadStepKind(YamlMappingNode step)
     {
-        foreach (var (key, value) in Entries(step))
+        foreach ((string key, YamlNode value) in Entries(step))
         {
             if (_stepKinds.TryGetValue(key, out var kind))
             {
@@ -462,14 +462,14 @@ public sealed class PipelineParser
             return PipelineStrategy.None;
         }
 
-        foreach (var (key, value) in Entries(strategy))
+        foreach ((string key, YamlNode value) in Entries(strategy))
         {
             if (!_strategyKinds.TryGetValue(key, out var kind))
             {
                 continue;
             }
 
-            var (multiplicity, expression) = ReadMultiplicity(kind, value);
+            (int multiplicity, string expression) = ReadMultiplicity(kind, value);
             return new PipelineStrategy(kind, multiplicity, expression, Range(strategy));
         }
 
@@ -600,7 +600,7 @@ public sealed class PipelineParser
             return null;
         }
 
-        var (path, reason) = _resolver.Locate(reference, _documentPath);
+        (string path, PipelineTemplateUnresolvedReason reason) = _resolver.Locate(reference, _documentPath);
         if (reason != PipelineTemplateUnresolvedReason.None)
         {
             _unresolved.Add(new PipelineTemplateUnresolved(reference, reason));
@@ -696,7 +696,7 @@ public sealed class PipelineParser
     private static IEnumerable<KeyValuePair<string, YamlNode>> Entries(YamlMappingNode mapping)
     {
         List<KeyValuePair<string, YamlNode>>? merged = null;
-        foreach (var (key, value) in mapping.Children)
+        foreach ((YamlNode key, YamlNode value) in mapping.Children)
         {
             if (key is not YamlScalarNode { Value: { } name })
             {

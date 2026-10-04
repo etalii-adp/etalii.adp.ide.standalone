@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -52,13 +53,16 @@ public class DiagramTests
     public void EveryTypeIsVendoredToC4_WithNoSubtype()
     {
         // Act and assert.
-        Assert.All(Diagram.Definitions, definition =>
+        Assert.All(Diagram.Definitions, AssertDefinition);
+        return;
+
+        void AssertDefinition(DiagramDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
 
             Assert.Equal("c4", definition.Origin.Vendor);
             Assert.Equal("", definition.Origin.Subtype);
-        });
+        }
     }
 
     [Fact]
@@ -79,11 +83,14 @@ public class DiagramTests
         // Act and assert.
         // The seven descriptions came from the seven modules this one replaced; a lossy
         // consolidation would show up here rather than in the Add dialog.
-        Assert.All(Diagram.Definitions, definition =>
+        Assert.All(Diagram.Definitions, AssertDefinition);
+        return;
+
+        void AssertDefinition(DiagramDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
             Assert.NotEmpty(definition.Description);
             Assert.NotEqual(definition.Title, definition.Description);
-        });
+        }
     }
 }

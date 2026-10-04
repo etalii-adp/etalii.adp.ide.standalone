@@ -374,12 +374,10 @@ public static class AdpFileWriter
             var destination = DestinationState.Describe(path, temporary);
             var identity = DestinationIdentity.Describe(before, path);
             var holders = FileHolders.Describe(path);
-            Logger.Warning(
-                "Could not publish {Path}: {ExceptionType} {HResult} {Message}; this process is pid {ProcessId}, holders: {Holders}, destination: {Destination}, identity: {Identity}",
+            Logger.Warning(exception, "Could not publish {Path}: {ExceptionType} {HResult} ; this process is pid {ProcessId}, holders: {Holders}, destination: {Destination}, identity: {Identity}",
                 path,
                 exception.GetType().Name,
                 $"0x{exception.HResult:X8}",
-                exception.Message,
                 Environment.ProcessId,
                 holders,
                 destination,

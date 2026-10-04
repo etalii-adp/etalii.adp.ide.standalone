@@ -128,7 +128,7 @@ public static class DrawnConnections
                 return [.. problems, $"{name}: opened no diagram under {source}, so nothing was checked."];
             }
 
-            foreach (var (example, routed, factory) in diagrams)
+            foreach ((string example, DiagramRouted routed, IDiagramSessionFactory factory) in diagrams)
             {
                 var bodyPath = routed.BodyPath ?? routed.RegistrationPath!;
                 var watchId = ShortGuid.NewShortGuid();

@@ -22,7 +22,7 @@ public class C4LayoutTests
 
     private static C4Layout Compute(string dsl, string? viewKey = null)
     {
-        var (workspace, view) = Load(dsl, viewKey);
+        (C4Workspace workspace, C4View view) = Load(dsl, viewKey);
         return C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
     }
 
@@ -102,7 +102,7 @@ public class C4LayoutTests
     public void NoTwoElements_OverlapOnAnyFixture(string name)
     {
         // Arrange.
-        var (workspace, view) = LoadFixture(name);
+        (C4Workspace workspace, C4View view) = LoadFixture(name);
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
         var boxes = layout.Boxes.Values.ToArray();
 

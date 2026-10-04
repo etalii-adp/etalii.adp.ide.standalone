@@ -28,7 +28,7 @@ public static class DependencyGraphRuleSet
     private static void JudgeIdentity(DependencyGraphModel model, List<DiagramProblem> problems)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var (id, name, range) in Declarations(model))
+        foreach ((string id, string name, LineRange range) in Declarations(model))
         {
             if (id.Length == 0)
             {

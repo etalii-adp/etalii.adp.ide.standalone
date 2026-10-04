@@ -158,7 +158,7 @@ public sealed class AnsibleContextPropertyProvider : IContextPropertyProvider
 
         if (role is not null)
         {
-            foreach (var (label, count, id) in Contents(role.Contents))
+            foreach ((string label, int count, string id) in Contents(role.Contents))
             {
                 // A subfolder that is not there is not contributed at all, so the grid shows
                 // what a role has rather than a checklist of what it lacks.

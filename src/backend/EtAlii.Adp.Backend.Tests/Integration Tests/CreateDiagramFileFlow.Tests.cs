@@ -217,7 +217,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
 
         // Act and assert, step by step.
-        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt prompt, Documents.Wire.ShortGuid interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         Assert.Equal(ContextPrompt.PromptOneofCase.ChoiceDialog, prompt.PromptCase);
 
         // The dialog can be answered without typing: it carries a name field and every
@@ -270,7 +270,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt prompt, Documents.Wire.ShortGuid interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
@@ -302,7 +302,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token, folderId);
+        (ContextPrompt prompt, Documents.Wire.ShortGuid interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token, folderId);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
@@ -326,7 +326,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt prompt, Documents.Wire.ShortGuid interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
@@ -354,7 +354,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt prompt, Documents.Wire.ShortGuid interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
@@ -377,7 +377,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt prompt, Documents.Wire.ShortGuid interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
@@ -402,7 +402,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
 
         // Arrange, continued.
-        var (first, firstInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt first, Documents.Wire.ShortGuid firstInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(first.ChoiceDialog.Options);
         Assert.NotNull(leaf);
         var firstName = leaf.SuggestedValue;
@@ -412,7 +412,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         // Arrange, continued.
         // The second dialog is built after the first file exists, so its suggestion moves on.
-        var (second, secondInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt second, Documents.Wire.ShortGuid secondInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var secondLeaf = FirstLeaf(second.ChoiceDialog.Options);
         Assert.NotNull(secondLeaf);
         Assert.Equal($"{firstName}-2", secondLeaf.SuggestedValue);
@@ -462,7 +462,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+        (ContextPrompt prompt, Documents.Wire.ShortGuid interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
 
         // Arrange, continued: the option that registers the folder itself arrives carrying a
         // sentence and no suggestion. Both halves matter - a suggestion surviving here would be

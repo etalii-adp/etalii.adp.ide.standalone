@@ -47,7 +47,7 @@ public static class HierarchyNesting
             StringComparer.OrdinalIgnoreCase);
 
         var results = new List<NestedEntry>();
-        foreach (var (name, isFolder) in siblings)
+        foreach ((string name, bool isFolder) in siblings)
         {
             if (isFolder || DiagramRegistrationName.TryParse(name) is not { } registration)
             {
