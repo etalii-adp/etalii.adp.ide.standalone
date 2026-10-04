@@ -32,6 +32,20 @@
   --color-diagram-abm-check: #9edcfa;
   --color-diagram-abm-action: #ededed;
   --color-diagram-abm-other: #86e6d9;
+  /* THE SUPPLY CHAIN'S SEVEN STAGE HUES, one per stage, painted as each card's header behind white
+     text (the on-stage token) - so the measure is white on the hue, 5.0:1 or more for every one, and
+     the same values serve both modes. Seven hues far enough apart to tell at a glance, and none of
+     them near the selection violet: the module's first palette had two purples beside it, two
+     oranges, and a blue and an orange trace on top, so a selected assembler could not be seen
+     selected and a supplier could not be told from a mine. supplyChainPalette.test.ts holds both. */
+  --color-diagram-supply-chain-raw-material: #7c4a1e;
+  --color-diagram-supply-chain-supplier: #b91c1c;
+  --color-diagram-supply-chain-manufacturer: #1d4ed8;
+  --color-diagram-supply-chain-assembler: #0f766e;
+  --color-diagram-supply-chain-distributor: #475569;
+  --color-diagram-supply-chain-retailer: #15803d;
+  --color-diagram-supply-chain-consumer: #be185d;
+  --color-diagram-supply-chain-on-stage: #ffffff;
   --color-diagram-hype-peak: #f7e7a1;
   --color-diagram-hype-trough: #dfe3e8;
   --color-diagram-hype-slope: #f6c99a;

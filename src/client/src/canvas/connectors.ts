@@ -177,29 +177,48 @@ export function polylinePath(from: Point, to: Point, waypoints: readonly Point[]
 }
 
 /**
- * An axis-aligned route: out horizontally to the midpoint, vertically across, then in
- * horizontally - the orthogonal family flow diagrams draw. A corner radius rounds the two
- * elbows with quarter-turn arcs; zero (the default) keeps them sharp.
+ * An axis-aligned route with two elbows - the orthogonal family flow diagrams and trees draw.
+ *
+ * `axis` is the way the route leaves `from` and arrives at `to`: `"horizontal"` (the default) runs
+ * out sideways to the horizontal midpoint, across, and in sideways, which is what ends on the
+ * left and right sides need; `"vertical"` runs down or up to the vertical midpoint, across, and
+ * in vertically, which is what ends on the top and bottom sides need - a tree drawn top-down.
+ * Leaving a top or bottom edge sideways would run the line along the border and lay the
+ * arrowhead flat against it. A corner radius rounds the two elbows with quarter-turn arcs; zero
+ * (the default) keeps them sharp.
  */
-export function orthogonalPath(from: Point, to: Point, cornerRadius = 0): string {
+export function orthogonalPath(from: Point, to: Point, cornerRadius = 0, axis: "horizontal" | "vertical" = "horizontal"): string {
+  if (axis === "vertical") {
+    // The horizontal route with x and y exchanged. Exchanging the axes is a reflection, which
+    // turns every arc the other way, so each sweep flag flips with it.
+    const swap = (point: Point): Point => ({ x: point.y, y: point.x });
+    return horizontalOrthogonal(swap(from), swap(to), cornerRadius, true);
+  }
+
+  return horizontalOrthogonal(from, to, cornerRadius, false);
+}
+
+function horizontalOrthogonal(from: Point, to: Point, cornerRadius: number, transposed: boolean): string {
+  const at = (x: number, y: number) => (transposed ? `${y} ${x}` : `${x} ${y}`);
   const midX = (from.x + to.x) / 2;
   if (cornerRadius <= 0 || from.y === to.y) {
-    return `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
+    return `M ${at(from.x, from.y)} L ${at(midX, from.y)} L ${at(midX, to.y)} L ${at(to.x, to.y)}`;
   }
 
   // The radius never exceeds what the segments can host, or the arcs would overlap.
   const r = Math.min(cornerRadius, Math.abs(midX - from.x), Math.abs(to.y - from.y) / 2, Math.abs(to.x - midX));
   const xDir = Math.sign(midX - from.x) || 1;
   const yDir = Math.sign(to.y - from.y) || 1;
-  const sweep1 = xDir * yDir > 0 ? 1 : 0;
-  const sweep2 = xDir * yDir > 0 ? 0 : 1;
+  const turnsClockwise = xDir * yDir > 0;
+  const sweep1 = turnsClockwise !== transposed ? 1 : 0;
+  const sweep2 = turnsClockwise !== transposed ? 0 : 1;
   return [
-    `M ${from.x} ${from.y}`,
-    `L ${midX - xDir * r} ${from.y}`,
-    `A ${r} ${r} 0 0 ${sweep1} ${midX} ${from.y + yDir * r}`,
-    `L ${midX} ${to.y - yDir * r}`,
-    `A ${r} ${r} 0 0 ${sweep2} ${midX + xDir * r} ${to.y}`,
-    `L ${to.x} ${to.y}`,
+    `M ${at(from.x, from.y)}`,
+    `L ${at(midX - xDir * r, from.y)}`,
+    `A ${r} ${r} 0 0 ${sweep1} ${at(midX, from.y + yDir * r)}`,
+    `L ${at(midX, to.y - yDir * r)}`,
+    `A ${r} ${r} 0 0 ${sweep2} ${at(midX + xDir * r, to.y)}`,
+    `L ${at(to.x, to.y)}`,
   ].join(" ");
 }
 

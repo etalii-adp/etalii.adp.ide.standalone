@@ -5,6 +5,7 @@ import {
   edgePointOf,
   horizontalBezierPath,
   midpointOf,
+  orthogonalPath,
   quadraticBezierPath,
   sideAnchorOf,
   straightPath,
@@ -224,5 +225,25 @@ describe("quadraticBezierPath", () => {
     const { control: c2 } = pointsOf(quadraticBezierPath({ x: 200, y: 0 }, { x: 0, y: 0 }));
     expect(Math.sign(there)).toBe(Math.sign(back)); // same side OF TRAVEL...
     expect(Math.sign(c1.y)).toBe(-Math.sign(c2.y)); // ...which is opposite sides on the page
+  });
+});
+
+describe("orthogonalPath", () => {
+  it("runs out, across and in sideways by default, for ends on the left and right sides", () => {
+    // Act and assert.
+    expect(orthogonalPath({ x: 0, y: 0 }, { x: 100, y: 60 })).toBe("M 0 0 L 50 0 L 50 60 L 100 60");
+  });
+
+  it("runs down, across and down when asked for vertical, for ends on a top and a bottom edge", () => {
+    // Act and assert: a parent's bottom to a child's top, the line square to both edges.
+    expect(orthogonalPath({ x: 0, y: 0 }, { x: 100, y: 60 }, 0, "vertical")).toBe("M 0 0 L 0 30 L 100 30 L 100 60");
+  });
+
+  it("rounds a vertical route's elbows turning the way the route turns", () => {
+    // Act.
+    const d = orthogonalPath({ x: 0, y: 0 }, { x: 100, y: 60 }, 10, "vertical");
+
+    // Assert: heading down then right is a left turn on screen (sweep 0), then right then down a right turn (sweep 1).
+    expect(d).toBe("M 0 0 L 0 20 A 10 10 0 0 0 10 30 L 90 30 A 10 10 0 0 1 100 40 L 100 60");
   });
 });

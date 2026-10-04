@@ -156,6 +156,81 @@ describe("module colours honour the theme", () => {
   });
 
   /**
+   * supply-chain's seven stage hues: the header each card wears, and the band its flows run in.
+   *
+   * The module shipped its own palette and nobody looked at it in a browser. Manufacturer and
+   * assembler were two violets 13 apart (CIE76), the assembler violet sat beside the selection
+   * colour a selected card is outlined in, and supplier and raw material were two browns. A stage
+   * is told apart by its hue alone, so the hues must be far apart - from each other and from the
+   * selection - and the white stage title must read on every one. They are theme tokens, as every
+   * diagram's per-kind hues are, so they sit in index.css beside the colours they must not be.
+   */
+  describe("supply-chain's stages are seven distinct, readable theme hues", () => {
+    const css = moduleFile("supply-chain", "supply-chain.css");
+    const stages = [...css.matchAll(/\.supply-chain-stage-([a-z-]+)\s*\{\s*--supply-chain-stage:\s*var\(\s*(--[A-Za-z0-9_.-]+)/g)]
+      .map((match) => ({ stage: match[1], token: match[2] }));
+
+    /** Far enough apart that two stages never read as one, by eye, at a glance (CIE76). */
+    const DISTINCT = 20;
+
+    function lab(colour: string): [number, number, number] {
+      const hex = colour.trim().replace(/^#/, "");
+      const linear = [0, 2, 4].map((at) => {
+        const c = Number.parseInt(hex.slice(at, at + 2), 16) / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      const [r, g, b] = linear;
+      const xyz = [
+        (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047,
+        0.2126 * r + 0.7152 * g + 0.0722 * b,
+        (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883,
+      ].map((t) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116));
+
+      return [116 * xyz[1] - 16, 500 * (xyz[0] - xyz[1]), 200 * (xyz[1] - xyz[2])];
+    }
+
+    function deltaE(one: string, other: string): number {
+      const [a, b] = [lab(one), lab(other)];
+      return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    }
+
+    it("maps every stage to a theme token", () => {
+      expect(stages.map((found) => found.stage)).toEqual([
+        "raw-material", "supplier", "manufacturer", "assembler", "distributor", "retailer", "consumer",
+      ]);
+      for (const { stage, token } of stages) {
+        expect(token.startsWith("--color-diagram-supply-chain-"), `${stage} is painted from the theme`).toBe(true);
+      }
+    });
+
+    for (const theme of ["light", "dark"] as const) {
+      it(`keeps the stages apart, and away from the selection, in the ${theme} theme`, () => {
+        const hues = stages.map(({ stage, token }) => ({ stage, colour: resolvedIn(theme, token) }));
+        const selected = resolvedIn(theme, "--color-selected");
+        const close: string[] = [];
+        hues.forEach((one, at) => {
+          for (const other of hues.slice(at + 1)) {
+            const distance = deltaE(one.colour, other.colour);
+            if (distance < DISTINCT) close.push(`${one.stage} and ${other.stage} are ${distance.toFixed(1)} apart`);
+          }
+          const distance = deltaE(one.colour, selected);
+          if (distance < DISTINCT) close.push(`${one.stage} is ${distance.toFixed(1)} from the selection`);
+        });
+
+        expect(close).toEqual([]);
+      });
+
+      it(`reads the stage title on every stage in the ${theme} theme`, () => {
+        const title = resolvedIn(theme, paintedBy([css], ".supply-chain-stage-title", "fill"));
+        for (const { stage, token } of stages) {
+          const ratio = contrastRatio(title, resolvedIn(theme, token));
+          expect(ratio, `the title (${title}) on ${stage} in the ${theme} theme is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(READABLE);
+        }
+      });
+    }
+  });
+
+  /**
    * The cause behind both looks, stated directly rather than through a ratio: a private
    * namespace the theme never defines.
    *

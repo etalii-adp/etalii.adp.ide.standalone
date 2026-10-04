@@ -26,6 +26,77 @@ public sealed class SupplyChainLayoutTests
 
     [Theory]
     [MemberData(nameof(Examples))]
+    public void EachNode_StandsNoEarlierThanItsStage_AndASourceExactlyAtIt(string example)
+    {
+        // Act.
+        var layout = SupplyChainLayout.Of(Read(example));
+
+        // Assert: a column is a stage. A node nothing supplies stands in its own stage's column - a
+        // tier-1 supplier does not stand among the mines - and no node stands left of its stage.
+        var supplied = layout.Flows.Select(flow => flow.To).ToHashSet(StringComparer.Ordinal);
+        foreach (var node in layout.Nodes)
+        {
+            var column = layout.NodeBoxes[node.Id].X / SupplyChainLayout.LayerPitch;
+            var stage = SupplyChainNodeTypes.RankOf(node.Type);
+            Assert.True(column >= stage, $"{node.Id} ({node.Type}) stands in column {column}");
+            if (!supplied.Contains(node.Id))
+            {
+                Assert.Equal(stage, column);
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Examples))]
+    public void NoFlow_CrossesACard(string example)
+    {
+        // Act.
+        var layout = SupplyChainLayout.Of(Read(example));
+
+        // Assert: the band, drawn as the canvas draws it - a horizontal S from the supplier's right side
+        // through the middle of every lane slot to the consumer's left side - touches no card but its own two.
+        foreach (var flow in layout.Flows)
+        {
+            var (from, to) = (layout.NodeBoxes[flow.From], layout.NodeBoxes[flow.To]);
+            var stops = new List<(double X, double Y)> { (from.Right, from.CentreY) };
+            foreach (var (laneX, laneY) in layout.Lanes.GetValueOrDefault(flow.Id) ?? [])
+            {
+                stops.Add((laneX - (SupplyChainGeometry.NodeWidth / 2), laneY));
+                stops.Add((laneX + (SupplyChainGeometry.NodeWidth / 2), laneY));
+            }
+
+            stops.Add((to.X, to.CentreY));
+            foreach (var (id, box) in layout.NodeBoxes.Where(pair => pair.Key != flow.From && pair.Key != flow.To))
+            {
+                foreach (var (x, y) in Sampled(stops))
+                {
+                    Assert.False(x > box.X && x < box.Right && y > box.Y && y < box.Bottom, $"{flow.Id} crosses {id} at ({x:0}, {y:0})");
+                }
+            }
+        }
+    }
+
+    /// <summary>Points along horizontal S curves from each stop to the next, as the canvas's flow path bends them.</summary>
+    private static IEnumerable<(double X, double Y)> Sampled(List<(double X, double Y)> stops)
+    {
+        for (var i = 1; i < stops.Count; i++)
+        {
+            var (start, end) = (stops[i - 1], stops[i]);
+            var direction = end.X >= start.X ? 1 : -1;
+            var pull = Math.Max(48, Math.Abs(end.X - start.X) / 2);
+            var (c1X, c1Y, c2X, c2Y) = (start.X + (direction * pull), start.Y, end.X - (direction * pull), end.Y);
+            for (var t = 0.0; t <= 1; t += 0.02)
+            {
+                var u = 1 - t;
+                yield return (
+                    (u * u * u * start.X) + (3 * u * u * t * c1X) + (3 * u * t * t * c2X) + (t * t * t * end.X),
+                    (u * u * u * start.Y) + (3 * u * u * t * c1Y) + (3 * u * t * t * c2Y) + (t * t * t * end.Y));
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Examples))]
     public void NoTwoArrangedNodes_Overlap(string example)
     {
         // Act.

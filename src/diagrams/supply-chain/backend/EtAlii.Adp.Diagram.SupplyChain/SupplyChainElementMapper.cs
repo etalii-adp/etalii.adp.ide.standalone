@@ -97,7 +97,7 @@ public sealed class SupplyChainElementMapper
                 .Where(group => Overlaps(layout.GroupBoxes[group.Id], viewport))
                 .Select(group => Group(layout, group, trace)),
             .. layout.Nodes.Where(node => kept.Contains(node.Id)).Select(node => Node(layout, node, largest, trace)),
-            .. layout.Flows.Where(flow => kept.Contains(flow.From) && kept.Contains(flow.To)).Select(flow => Flow(flow, heaviest[flow.Unit], trace)),
+            .. layout.Flows.Where(flow => kept.Contains(flow.From) && kept.Contains(flow.To)).Select(flow => Flow(flow, heaviest[flow.Unit], layout.Lanes.GetValueOrDefault(flow.Id), trace)),
         ];
     }
 
@@ -140,7 +140,7 @@ public sealed class SupplyChainElementMapper
         return Pack(node.Id, box.CentreX, box.CentreY, NodeTypeOf(node.Type), payload);
     }
 
-    private static DiagramElement Flow(SupplyChainFlow flow, double heaviest, SupplyChainTrace trace)
+    private static DiagramElement Flow(SupplyChainFlow flow, double heaviest, IReadOnlyList<(double X, double Y)>? lanes, SupplyChainTrace trace)
     {
         var payload = new SupplyChainFlowPayload
         {
@@ -153,6 +153,7 @@ public sealed class SupplyChainElementMapper
             Weight = heaviest > 0 && flow.Volume is { } volume ? Math.Clamp(volume / heaviest, 0, 1) : 0,
             Trace = trace.Of(flow.Id),
         };
+        payload.Lanes.AddRange((lanes ?? []).Select(lane => new SupplyChainLanePoint { X = lane.X, Y = lane.Y }));
 
         // A flow has no position of its own; it follows its ends.
         return Pack(flow.Id, 0d, 0d, FlowType, payload);

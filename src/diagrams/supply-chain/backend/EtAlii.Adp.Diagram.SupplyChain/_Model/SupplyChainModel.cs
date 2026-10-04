@@ -104,6 +104,9 @@ public static class SupplyChainNodeTypes
     /// <summary>The seven, in the order goods pass through them.</summary>
     public static readonly IReadOnlyList<string> All = [RawMaterial, Supplier, Manufacturer, Assembler, Distributor, Retailer, Consumer];
 
+    /// <summary>Where a stage comes in the chain: 0 for a raw material, 6 for a consumer.</summary>
+    public static int RankOf(string type) => Math.Max(0, All.ToList().IndexOf(type));
+
     /// <summary>Whether the text names one of the seven.</summary>
     public static bool IsKnown(string type) => All.Contains(type, StringComparer.Ordinal);
 
