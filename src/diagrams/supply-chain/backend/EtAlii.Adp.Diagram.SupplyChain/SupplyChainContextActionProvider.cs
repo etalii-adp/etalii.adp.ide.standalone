@@ -43,6 +43,9 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
     /// <summary>Draw a flow for a finished connect gesture.</summary>
     public const string ConnectActionId = "supply-chain.connect";
 
+    /// <summary>Add an empty group where it was dropped.</summary>
+    public const string AddGroupActionId = "supply-chain.add-group";
+
     private const string AddPrefix = "supply-chain.add.";
 
     private readonly IHistoryStackStore _historyStacks;
@@ -136,7 +139,8 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
             return Result(
             [
                 new ContextActionGroupDefinition(
-                    [.. SupplyChainNodeTypes.All.Select(stage => new ContextActionDefinition(AddActionId(stage), $"Add {SupplyChainNodeTypes.Display(stage).ToLowerInvariant()} here", "mdi-plus"))]),
+                    [.. SupplyChainNodeTypes.All.Select(stage => new ContextActionDefinition(AddActionId(stage), $"Add {SupplyChainNodeTypes.Display(stage).ToLowerInvariant()} here", SupplyChainStageIcons.Of(stage)))]),
+                new ContextActionGroupDefinition([new ContextActionDefinition(AddGroupActionId, "Add group here", SupplyChainStageIcons.Group)]),
                 new ContextActionGroupDefinition([arrange]),
             ]);
         }
@@ -172,6 +176,11 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
 
         switch (actionId)
         {
+            case AddGroupActionId:
+                return GestureIds.TryParsePlacement(id, out var groupX, out var groupY)
+                    ? await DispatchAsync(target, new AddSupplyChainGroupCommand(body, groupX, groupY), cancellationToken)
+                    : new ContextExecutionFailed("A group is added by dropping it where it belongs.");
+
             case ConnectActionId:
                 return GestureIds.TryParseRelation(id, out var from, out var to)
                     ? await DispatchAsync(target, new ConnectSupplyChainNodesCommand(body, from, to), cancellationToken)

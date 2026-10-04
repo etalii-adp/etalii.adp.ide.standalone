@@ -161,7 +161,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
             [SparqlElementMapper.VariableType, SparqlElementMapper.TermType, SparqlElementMapper.RegionType, SparqlElementMapper.AnnotationType, SparqlElementMapper.HeaderType])),
         new("supply-chain", new(
             [SupplyChainElementMapper.FlowType],
-            [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.RawMaterialType, SupplyChainElementMapper.SupplierType, SupplyChainElementMapper.ManufacturerType, SupplyChainElementMapper.AssemblerType, SupplyChainElementMapper.DistributorType, SupplyChainElementMapper.RetailerType, SupplyChainElementMapper.ConsumerType])),
+            [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.SourceType, SupplyChainElementMapper.ProcessorType, SupplyChainElementMapper.ProducerType, SupplyChainElementMapper.IntegratorType, SupplyChainElementMapper.HubType, SupplyChainElementMapper.OutletType, SupplyChainElementMapper.ConsumerType])),
         new("timeline", new(
             [TimelineElementMapper.ConnectionType],
             [TimelineElementMapper.PeriodType, TimelineElementMapper.MomentType])),

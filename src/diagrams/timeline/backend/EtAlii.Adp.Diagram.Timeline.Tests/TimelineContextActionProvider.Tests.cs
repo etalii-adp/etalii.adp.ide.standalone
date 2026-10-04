@@ -82,8 +82,8 @@ public class TimelineContextActionProviderTests : IDisposable
         var ids = await ActionIdsFor(path, "aaa");
 
         // Assert.
-        // Two groups: what changes this element, then what adds the next one - the mindmap's
-        // Insert/Enter pattern on this type's two axes.
+        // Three groups: what changes this element, then what adds the next one - the mindmap's
+        // Insert/Enter pattern on this type's two axes - then arranging the whole diagram.
         Assert.Equal(
             [
                 TimelineContextActionProvider.RenameActionId,
@@ -91,6 +91,7 @@ public class TimelineContextActionProviderTests : IDisposable
                 TimelineContextActionProvider.RemoveActionId,
                 TimelineContextActionProvider.AddAfterActionId,
                 TimelineContextActionProvider.AddBelowActionId,
+                TimelineContextActionProvider.ArrangeActionId,
             ],
             ids);
     }
@@ -116,7 +117,7 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.Equal(
-            [TimelineContextActionProvider.RelabelActionId, TimelineContextActionProvider.DisconnectActionId],
+            [TimelineContextActionProvider.RelabelActionId, TimelineContextActionProvider.DisconnectActionId, TimelineContextActionProvider.ArrangeActionId],
             ids);
     }
 
@@ -382,6 +383,25 @@ public class TimelineActionRealityTests : IDisposable
         // Assert.
         Assert.Contains(TimelineContextActionProvider.AddElementActionId, ids);
         Assert.Contains(TimelineContextActionProvider.AddMomentActionId, ids);
+        Assert.Contains(TimelineContextActionProvider.ArrangeActionId, ids);
+    }
+
+    [Fact]
+    public async Task ArrangeFromTheBackgroundMenu_DispatchesHere_AndMovesRows()
+    {
+        // Arrange: the lone element on row 3, where nothing needs it to be.
+        var path = Write();
+        await File.WriteAllTextAsync(path, (await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).Replace("row: 0", "row: 3", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        _store.Forget(path);
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineNewPlacement.IdFor(0, 0)), TimelineContextActionProvider.ArrangeActionId, CancellationToken.None);
+        var rows = _store.GetOrLoad(path).Model.Elements.Select(element => element.Row).ToList();
+
+        // Assert: arranged onto the first row.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        Assert.Equal([0], rows);
     }
 
     [Fact]

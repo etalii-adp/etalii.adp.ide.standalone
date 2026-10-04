@@ -15,7 +15,7 @@ This is a workspace package (`@adp/diagram-supply-chain-client`). It lives outsi
 ## What the canvas draws
 
 - **A card per node**, a rounded rectangle whose header carries the stage's colour and title, with the name (editable in place), the quantity and its unit, and a bar for the node's share of what it ships.
-- **A frame per group**, drawn beneath the flows so a band crosses it rather than hiding behind it.
+- **A frame per group**, drawn beneath the flows so a band crosses it rather than hiding behind it. A group with no members yet, such as one just dropped from the toolbox, is drawn one card's frame in size where the document places it.
 - **A band per flow**, routed as a horizontal S between the facing sides of its two cards. Its width follows the flow's weight - the backend's volume relative to the heaviest flow in the same unit - and dashes move along it in the direction the goods go, unless the user prefers reduced motion. A pill in the middle shows the volume.
 
 ## The trace and the steppers
@@ -28,8 +28,8 @@ This is a workspace package (`@adp/diagram-supply-chain-client`). It lives outsi
 
 | Library event | Route | Id |
 | --- | --- | --- |
-| `element-moved` | the stream's `moveElementTo`, as the top-left; a group moves its members | — |
-| `element-dropped` | context action on `new:x,y` | `supply-chain.add.<stage>` |
+| `element-moved` | the stream's `moveElementTo`, as the top-left; a group moves its members, and a node dropped inside another group's frame joins it | — |
+| `element-dropped` | context action on `new:x,y` | `supply-chain.add.<stage>`, or `supply-chain.add-group` for the toolbox's Group |
 | `connection-drawn` (right-button drag) | context action on `rel:from->to` | `supply-chain.connect` |
 | press on + or -, or `+` / `-` | declared action on the owner | `supply-chain.increase`, `supply-chain.decrease` |
 | F2, or a double-click | declared action, answered with an inline prompt | `supply-chain.rename` |

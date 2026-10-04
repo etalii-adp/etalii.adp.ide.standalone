@@ -34,6 +34,10 @@ internal sealed class TimelineTestDispatcher(ITimelineDocumentStore documents) :
             new AddConnectedTimelineElementCommandHandler(documents).ExecuteAsync(addConnected, cancellationToken),
         SetTimelineEndCommand end =>
             new SetTimelineEndCommandHandler(documents).ExecuteAsync(end, cancellationToken),
+        ArrangeTimelineCommand arrange =>
+            new ArrangeTimelineCommandHandler(documents).ExecuteAsync(arrange, cancellationToken),
+        SetTimelineRowsCommand rows =>
+            new SetTimelineRowsCommandHandler(documents).ExecuteAsync(rows, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
 }

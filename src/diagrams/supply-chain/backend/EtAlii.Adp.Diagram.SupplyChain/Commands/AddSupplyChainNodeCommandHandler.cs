@@ -29,7 +29,7 @@ public sealed class AddSupplyChainNodeCommandHandler(ISupplyChainDocumentStore d
             // The drop is the centre; the document holds the top-left.
             var node = new SupplyChainNode(
                 minted.NodeId,
-                minted.NodeType,
+                SupplyChainNodeTypes.Normalize(minted.NodeType),
                 SupplyChainEdits.Unique(model.Nodes.Select(existing => existing.Name), $"New {SupplyChainNodeTypes.Display(minted.NodeType).ToLowerInvariant()}"),
                 Description: "",
                 Group: "",

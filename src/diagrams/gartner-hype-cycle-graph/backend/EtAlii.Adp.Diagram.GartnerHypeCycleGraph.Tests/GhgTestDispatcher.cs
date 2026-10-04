@@ -16,6 +16,7 @@ internal sealed class GhgTestDispatcher(IGhgDocumentStore documents) : ICommandD
         SetGhgSpanCommand c => new SetGhgSpanCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgBoundaryCommand c => new SetGhgBoundaryCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         ClearGhgBoundariesCommand c => new ClearGhgBoundariesCommandHandler(documents).ExecuteAsync(c, cancellationToken),
+        ArrangeGhgCommand c => new ArrangeGhgCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgPhasesCommand c => new SetGhgPhasesCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         RenameGhgElementCommand c => new RenameGhgElementCommandHandler(documents).ExecuteAsync(c, cancellationToken),
         SetGhgTagsCommand c => new SetGhgTagsCommandHandler(documents).ExecuteAsync(c, cancellationToken),

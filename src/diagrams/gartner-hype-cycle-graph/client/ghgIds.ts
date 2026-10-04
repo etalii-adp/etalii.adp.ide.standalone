@@ -44,6 +44,8 @@ export const GhgActions = {
   remove: "ghg.remove",
   evenPhases: "ghg.even-phases",
   disconnect: "ghg.disconnect",
+  /** Puts every trend, trigger and note on the row that keeps the graph least cluttered; their dates stay. */
+  arrange: "ghg.arrange",
 } as const;
 
 export const GHG_ACTION_IDS: readonly string[] = Object.values(GhgActions);

@@ -38,12 +38,12 @@
      them near the selection violet: the module's first palette had two purples beside it, two
      oranges, and a blue and an orange trace on top, so a selected assembler could not be seen
      selected and a supplier could not be told from a mine. supplyChainPalette.test.ts holds both. */
-  --color-diagram-supply-chain-raw-material: #7c4a1e;
-  --color-diagram-supply-chain-supplier: #b91c1c;
-  --color-diagram-supply-chain-manufacturer: #1d4ed8;
-  --color-diagram-supply-chain-assembler: #0f766e;
-  --color-diagram-supply-chain-distributor: #475569;
-  --color-diagram-supply-chain-retailer: #15803d;
+  --color-diagram-supply-chain-source: #7c4a1e;
+  --color-diagram-supply-chain-processor: #b91c1c;
+  --color-diagram-supply-chain-producer: #1d4ed8;
+  --color-diagram-supply-chain-integrator: #0f766e;
+  --color-diagram-supply-chain-hub: #475569;
+  --color-diagram-supply-chain-outlet: #15803d;
   --color-diagram-supply-chain-consumer: #be185d;
   --color-diagram-supply-chain-on-stage: #ffffff;
   /* The Sankey diagram's twelve palette words, which a node or a flow names in its document. Each is

@@ -1,6 +1,6 @@
 // Captures the readme screenshots from a running ADP instance, reproducibly.
 // Usage: node capture.mjs <appUrl> <outDir> [projectName] [only]
-// Viewport 1600x900 CSS px, DPR 1, headless Chrome, default (dark) theme.
+// Viewport 1600x900 CSS px, DPR 1, headless Chrome, dark theme unless a shot asks for light.
 // `projectName` is the name the examples folder was added under (default `Examples`); `only`
 // is a comma-separated list of image names to retake, so one image can be redone alone.
 import puppeteer from "puppeteer-core";
@@ -10,7 +10,8 @@ const appUrl = process.argv[2] ?? "http://localhost:5480";
 const outDir = process.argv[3] ?? ".";
 const projectName = process.argv[4] ?? "Examples";
 const only = process.argv[5] ? new Set(process.argv[5].split(",")) : null;
-const chrome = "C:/Program Files/Google/Chrome/Application/chrome.exe";
+// The standard Windows path; set CHROME to use another browser binary (on Linux, for example).
+const chrome = process.env.CHROME ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -18,6 +19,8 @@ const browser = await puppeteer.launch({
   executablePath: chrome,
   headless: "new",
   defaultViewport: { width: 1600, height: 900, deviceScaleFactor: 1 },
+  // A container running as root needs the sandbox off; on a desktop the flag is left out.
+  args: process.env.CHROME_NO_SANDBOX ? ["--no-sandbox"] : [],
 });
 const page = await browser.newPage();
 
@@ -133,7 +136,10 @@ async function shoot(name) {
  * cold backend and was captured as an empty canvas with only its title - a picture that looks
  * like a broken product and would have been committed as one, since nothing about it fails.
  */
-async function openDocument(segments, { fit = true, expectDrawing = true, zoomIn = 0 } = {}) {
+async function openDocument(segments, { fit = true, expectDrawing = true, zoomIn = 0, theme = "dark" } = {}) {
+  // The app follows prefers-color-scheme, so the theme is the emulated one rather than whatever
+  // the machine running the script happens to prefer.
+  await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: theme }]);
   if (!(await openPath(segments))) return false;
   if (expectDrawing) {
     const drawn = await page.waitForFunction(() => document.querySelectorAll("[data-element-id]").length > 0, { timeout: 20000 })
@@ -204,6 +210,17 @@ const shots = [
   // No w3c/skos image: see the readme's "Not captured" section.
   { name: "shacl.png", path: ["diagrams", "shacl", "fair-data-point", "navigation-shapes.ttl", "navigation-shapes.adp"], collapse: ["diagrams", "shacl"] },
   { name: "sparql.png", path: ["diagrams", "sparql", "w3c-sparql", "optional.rq", "optional.adp"], collapse: ["diagrams", "sparql"] },
+
+  // Several images per tool from here on, one per example and one in the light theme.
+  { name: "supply-chain-automotive.png", path: ["diagrams", "supply-chain", "automotive", "automotive.supply", "automotive.adp"] },
+  { name: "supply-chain-gpu-memory.png", path: ["diagrams", "supply-chain", "gpu-memory", "gpu-memory.supply", "gpu-memory.adp"] },
+  { name: "supply-chain-automotive-light.png", path: ["diagrams", "supply-chain", "automotive", "automotive.supply", "automotive.adp"], theme: "light", collapse: ["diagrams", "supply-chain"] },
+  { name: "sankey-brightwater-coffee.png", path: ["diagrams", "sankey", "brightwater-coffee", "brightwater-coffee.skv", "brightwater-coffee.adp"] },
+  { name: "sankey-uk-energy.png", path: ["diagrams", "sankey", "uk-energy", "uk-energy.skv", "uk-energy.adp"] },
+  { name: "sankey-recent-graduates-light.png", path: ["diagrams", "sankey", "recent-graduates", "recent-graduates.skv", "recent-graduates.adp"], theme: "light", collapse: ["diagrams", "sankey"] },
+  { name: "agent-behavior-modelling-pull-request-reviewer.png", path: ["diagrams", "agent-behavior-modelling", "pull-request-reviewer", "pull-request-reviewer.md", "pull-request-reviewer.adp"] },
+  { name: "agent-behavior-modelling-research-assistant.png", path: ["diagrams", "agent-behavior-modelling", "research-assistant", "research-assistant.md", "research-assistant.adp"] },
+  { name: "agent-behavior-modelling-bug-fixer-light.png", path: ["diagrams", "agent-behavior-modelling", "bug-fixer", "bug-fixer.md", "bug-fixer.adp"], theme: "light", collapse: ["diagrams", "agent-behavior-modelling"] },
 
   // The text editors: no canvas, so nothing to wait for or fit.
   { name: "markdown-editor.png", path: ["editors", "markdown", "guide.md"], fit: false, expectDrawing: false },

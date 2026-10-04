@@ -39,7 +39,7 @@ public sealed class SetSupplyChainPropertyCommandHandler(ISupplyChainDocumentSto
                     SupplyChainKeys.Description or SupplyChainKeys.Unit => SupplyChainWriter.SetText(document, node.Range, command.Key, value, removeWhenEmpty: true),
                     SupplyChainKeys.Quantity or SupplyChainKeys.Step => SupplyChainWriter.SetNumber(document, node.Range, command.Key, number),
                     SupplyChainKeys.Type => SupplyChainNodeTypes.IsKnown(value)
-                        ? SupplyChainWriter.SetText(document, node.Range, command.Key, value, removeWhenEmpty: false)
+                        ? SupplyChainWriter.SetText(document, node.Range, command.Key, SupplyChainNodeTypes.Normalize(value), removeWhenEmpty: false)
                         : SupplyChainEdit.Refused($"`{value}` is not a stage: {string.Join(", ", SupplyChainNodeTypes.All)}."),
                     SupplyChainKeys.Group => value.Length == 0 || SupplyChainEdits.GroupOf(model, value) is not null
                         ? SupplyChainWriter.SetText(document, node.Range, command.Key, value, removeWhenEmpty: true)

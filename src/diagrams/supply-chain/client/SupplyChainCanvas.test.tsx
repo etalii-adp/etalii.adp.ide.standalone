@@ -79,9 +79,9 @@ function modelWith(trace: Partial<Record<"mine" | "plant" | "shop" | "ore" | "go
   return {
     groups: new Map([["north", { id: "north", x: 116, y: 270, payload: create(SupplyChainGroupPayloadSchema, { name: "North", width: 232, height: 300, members: 2, trace: trace.north ?? "" }) }]]),
     nodes: new Map([
-      ["mine", { id: "mine", stage: "raw-material" as const, x: 116, y: 188, payload: node("Mine", "Raw material", 10, "t", "north", trace.mine) }],
-      ["plant", { id: "plant", stage: "manufacturer" as const, x: 116, y: 352, payload: node("Plant", "Manufacturer", plantQuantity, "t", "north", trace.plant) }],
-      ["shop", { id: "shop", stage: "retailer" as const, x: 600, y: 352, payload: node("Shop", "Retailer", 2, "boxes", "", trace.shop) }],
+      ["mine", { id: "mine", stage: "source" as const, x: 116, y: 188, payload: node("Mine", "Source", 10, "t", "north", trace.mine) }],
+      ["plant", { id: "plant", stage: "producer" as const, x: 116, y: 352, payload: node("Plant", "Producer", plantQuantity, "t", "north", trace.plant) }],
+      ["shop", { id: "shop", stage: "outlet" as const, x: 600, y: 352, payload: node("Shop", "Outlet", 2, "boxes", "", trace.shop) }],
     ]),
     flows: new Map([
       ["ore", { id: "ore", payload: flow("mine", "plant", "Ore", 6, 1, trace.ore) }],
@@ -117,9 +117,9 @@ describe("the supply chain canvas, mounted", () => {
 
     // Assert.
     const mine = elementOn(container, "mine")!;
-    expect(mine.classList.contains("supply-chain-stage-raw-material")).toBe(true);
+    expect(mine.classList.contains("supply-chain-stage-source")).toBe(true);
     expect(mine.querySelector(".supply-chain-card")).not.toBeNull();
-    expect(mine.textContent).toContain("RAW MATERIAL");
+    expect(mine.textContent).toContain("SOURCE");
     expect(mine.textContent).toContain("Mine");
     expect(mine.querySelector(".supply-chain-amount")?.textContent).toBe("10");
     expect(mine.querySelector(".supply-chain-unit")?.textContent).toBe("t");
@@ -215,6 +215,23 @@ describe("the supply chain canvas, mounted", () => {
     // Assert.
     expect(moves).toHaveLength(1);
     expect(moves[0].elementId).toBe("north");
+  });
+
+  it("adds a group where the toolbox's group entry is dropped", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const data = new Map<string, string>([["application/x-adp-toolbox-item", SupplyChainActions.addGroup]]);
+    const dataTransfer = { getData: (type: string) => data.get(type) ?? "", dropEffect: "", types: [...data.keys()] };
+
+    // Act.
+    fireEvent.dragOver(surface, { dataTransfer });
+    fireEvent.drop(surface, { dataTransfer, clientX: 0, clientY: 0 });
+
+    // Assert: the add-group action, against the drop's placement.
+    expect(executed).toHaveLength(1);
+    expect(executed[0].actionId).toBe(SupplyChainActions.addGroup);
+    expect(executed[0].targetId).toMatch(/^new:/);
   });
 
   it("selects through the library, exactly as every other canvas does", () => {

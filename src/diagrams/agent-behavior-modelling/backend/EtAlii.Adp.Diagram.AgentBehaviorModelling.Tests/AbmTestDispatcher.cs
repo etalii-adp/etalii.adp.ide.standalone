@@ -18,6 +18,8 @@ internal sealed class AbmTestDispatcher(IAbmDocumentStore documents) : ICommandD
         RestoreAbmArrangementCommand restore => new RestoreAbmArrangementCommandHandler(documents).ExecuteAsync(restore, cancellationToken),
         SetRegistrationLayoutCommand layout => new SetRegistrationLayoutCommandHandler().ExecuteAsync(layout, cancellationToken),
         RemoveRegistrationLayoutCommand layout => new RemoveRegistrationLayoutCommandHandler().ExecuteAsync(layout, cancellationToken),
+        ArrangeAbmCommand arrange => new ArrangeAbmCommandHandler().ExecuteAsync(arrange, cancellationToken),
+        RestoreAbmRegistrationCommand restore => new RestoreAbmRegistrationCommandHandler().ExecuteAsync(restore, cancellationToken),
         RestoreDocumentCommand<IAbmDocumentStore> restore => new RestoreDocumentCommandHandler<IAbmDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };
