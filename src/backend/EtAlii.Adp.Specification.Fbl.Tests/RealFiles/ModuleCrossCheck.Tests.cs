@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 /// module's kinds to the binding's types by <see cref="ModuleIds"/>. Every difference is a listed
 /// divergence. Only public API of the modules is used, and nothing in them is changed.
 /// </summary>
-public partial class ModuleCrossCheckTests
+public class ModuleCrossCheckTests
 {
     /// <summary>How many ids of a difference the observation names before it counts the rest.</summary>
     private const int Named = 5;

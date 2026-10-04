@@ -111,7 +111,7 @@ public sealed class SankeyLayoutTests
             "  - from: a\n    to: c\n    value: 9\n  - from: b\n    to: d\n    value: 1\n"));
 
         // Assert: both bands are flat.
-        foreach (var (from, to) in new[] { ("a", "c"), ("b", "d") })
+        foreach ((string from, string to) in new[] { ("a", "c"), ("b", "d") })
         {
             var band = layout.Bands[$"{from}->{to}"];
             var leaves = layout.Boxes[from].Y + (band.SourceAt * layout.Boxes[from].Height);

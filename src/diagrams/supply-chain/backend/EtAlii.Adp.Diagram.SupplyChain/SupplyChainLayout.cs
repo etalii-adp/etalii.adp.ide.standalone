@@ -142,7 +142,7 @@ public sealed class SupplyChainLayout
 
         // A lane was reserved beside the arranged positions; once an end is drawn anywhere else the
         // slots no longer line up with it, so that flow runs straight to its ends instead.
-        bool AtArranged(string id) => nodeBoxes[id].X == arranged[id].X && nodeBoxes[id].Y == arranged[id].Y;
+        bool AtArranged(string id) => Math.Abs(nodeBoxes[id].X - arranged[id].X) < double.Tolerance && Math.Abs(nodeBoxes[id].Y - arranged[id].Y) < double.Tolerance;
         var lanes = flows
             .Where(flow => arrangedLanes.ContainsKey(flow.Id) && AtArranged(flow.From) && AtArranged(flow.To))
             .ToDictionary(flow => flow.Id, flow => arrangedLanes[flow.Id], StringComparer.Ordinal);
@@ -223,7 +223,7 @@ public sealed class SupplyChainLayout
         var laneTarget = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var flow in flows)
         {
-            var (from, to) = (layer[flow.From], layer[flow.To]);
+            (int from, int to) = (layer[flow.From], layer[flow.To]);
             if (to - from <= 1 || !forward[flow.From].Contains(flow.To))
             {
                 Join(flow.From, flow.To);
@@ -349,7 +349,7 @@ public sealed class SupplyChainLayout
         }
 
         // A lane is drawn through its slot's middle, where a card in that slot would have its centre.
-        foreach (var (flowId, slots) in laneSlots)
+        foreach ((string flowId, List<string> slots) in laneSlots)
         {
             lanes[flowId] = [.. slots.Select(slot => (placed[slot].X + (SupplyChainGeometry.NodeWidth / 2), placed[slot].Y + (SupplyChainGeometry.NodeHeight / 2)))];
         }
