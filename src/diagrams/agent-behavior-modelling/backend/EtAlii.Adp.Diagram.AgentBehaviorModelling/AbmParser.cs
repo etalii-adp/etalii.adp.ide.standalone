@@ -191,6 +191,7 @@ public static partial class AbmParser
                 ? ""
                 : string.Join('\n', Enumerable.Range(raw.NoteLines[0], raw.NoteLines[^1] - raw.NoteLines[0] + 1).Select(line => DedentText(lines[line], contentIndent)).ToArray()).Trim('\n');
 
+            var idx = index;
             nodes.Add(new AbmNode(
                 ids[index],
                 kind,
@@ -206,7 +207,7 @@ public static partial class AbmParser
                 raw.Match.Groups["marker"].Value[0],
                 keywordText,
                 parents[index] >= 0 ? ids[parents[index]] : null,
-                [.. Enumerable.Range(0, raws.Count).Where(child => parents[child] == index).Select(child => ids[child])]));
+                [.. Enumerable.Range(0, raws.Count).Where(child => parents[child] == idx).Select(child => ids[child])]));
         }
 
         return new AbmModel(nodes, sectionLine, sectionEnd, baseIndent, problems);
