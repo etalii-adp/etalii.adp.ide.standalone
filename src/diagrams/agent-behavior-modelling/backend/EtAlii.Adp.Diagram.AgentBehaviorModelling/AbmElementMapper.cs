@@ -85,7 +85,7 @@ public sealed class AbmElementMapper
         ArgumentNullException.ThrowIfNull(stored);
 
         // The whole tree is laid out first and culled afterwards, so a pan never re-packs it.
-        var positions = RegistrationLayout.Apply(AbmLayout.Compute(model), stored);
+        var positions = AbmLayout.Arrange(model, stored);
 
         var shown = model.Nodes
             .Where(node => Overlaps(positions[node.Id], viewport))

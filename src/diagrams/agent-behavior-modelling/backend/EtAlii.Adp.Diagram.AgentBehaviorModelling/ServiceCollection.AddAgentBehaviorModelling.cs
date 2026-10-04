@@ -14,8 +14,8 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
     /// toolbox, action and property providers, one handler per command, and the validator.
     /// </summary>
     /// <remarks>
-    /// A drag is not among the commands: it is core's <c>SetRegistrationLayoutCommand</c>, which
-    /// writes the registration's <c>layout:</c> block and is registered by the hierarchy.
+    /// A drag is among them: <see cref="ArrangeAbmNodeCommand"/> writes the registration's
+    /// <c>layout:</c> block, and the Markdown too when the drop changed the order.
     /// </remarks>
     public static IServiceCollection AddAgentBehaviorModelling(this IServiceCollection services)
     {
@@ -45,6 +45,8 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
         services.AddSingleton<ICommandHandler<SetAbmNodeKindCommand>, SetAbmNodeKindCommandHandler>();
         services.AddSingleton<ICommandHandler<SetAbmNotesCommand>, SetAbmNotesCommandHandler>();
         services.AddSingleton<ICommandHandler<MoveAbmNodeCommand>, MoveAbmNodeCommandHandler>();
+        services.AddSingleton<ICommandHandler<ArrangeAbmNodeCommand>, ArrangeAbmNodeCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreAbmArrangementCommand>, RestoreAbmArrangementCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IAbmDocumentStore>>, RestoreDocumentCommandHandler<IAbmDocumentStore>>();
 
         services.AddSingleton<IDiagramValidator, AbmValidator>();

@@ -275,7 +275,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
             return (null, 0, "");
         }
 
-        var positions = RegistrationLayout.Apply(AbmLayout.Compute(model), stored);
+        var positions = AbmLayout.Arrange(model, stored);
         static (double X, double Y) Centre(RegistrationPosition topLeft) =>
             (topLeft.X + (AbmLayout.NodeWidth / 2), topLeft.Y + (AbmLayout.NodeHeight / 2));
 

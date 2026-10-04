@@ -34,7 +34,7 @@ public class AbmElementMapperTests
     }
 
     [Fact]
-    public void AStoredPosition_MovesThatNodeOnly()
+    public void AStoredPosition_MovesItsRowDown_ButNotAcross()
     {
         // Arrange.
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal) { ["1.1"] = new(1000, 2000) };
@@ -44,10 +44,11 @@ public class AbmElementMapperTests
         var moved = mapper.Visible(Model, stored, DiagramViewport.Unbounded).ToDictionary(element => element.Id);
         var computed = mapper.Visible(Model, NoneStored, DiagramViewport.Unbounded).ToDictionary(element => element.Id);
 
-        // Assert: the centre is the stored top-left plus half the node.
-        Assert.Equal(1000 + (AbmLayout.NodeWidth / 2), moved["1.1"].X);
+        // Assert: the centre is the stored top plus half the node, for the whole row; across, the order holds.
+        Assert.Equal(computed["1.1"].X, moved["1.1"].X);
         Assert.Equal(2000 + (AbmLayout.NodeHeight / 2), moved["1.1"].Y);
-        Assert.Equal(computed["1.2"].X, moved["1.2"].X);
+        Assert.Equal(2000 + (AbmLayout.NodeHeight / 2), moved["1.2"].Y);
+        Assert.Equal(moved["1.2"].Y + AbmLayout.NodeHeight + AbmLayout.VerticalGap, moved["1.2.1"].Y);
     }
 
     [Fact]
