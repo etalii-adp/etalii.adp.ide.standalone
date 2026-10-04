@@ -12,6 +12,7 @@ using EtAlii.Adp.Diagram.HelmChart;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Diagram.Sankey;
 using EtAlii.Adp.Diagram.Sparql;
 using EtAlii.Adp.Diagram.SupplyChain;
 using EtAlii.Adp.Diagram.Timeline;
@@ -94,6 +95,9 @@ internal static class ElementTypeCatalog
                 ShaclElementMapper.ShapeType, ShaclElementMapper.TruncationType,
             ],
             [RdfElementMapper.EdgeType, OwlElementMapper.EdgeType, SkosElementMapper.EdgeType, ShaclElementMapper.EdgeType]),
+        new("sankey",
+            [SankeyElementMapper.NodeType],
+            [SankeyElementMapper.FlowType]),
         new("sparql",
             [SparqlElementMapper.VariableType, SparqlElementMapper.TermType, SparqlElementMapper.RegionType, SparqlElementMapper.AnnotationType, SparqlElementMapper.HeaderType, SparqlElementMapper.TruncationType],
             [SparqlElementMapper.EdgeType]),

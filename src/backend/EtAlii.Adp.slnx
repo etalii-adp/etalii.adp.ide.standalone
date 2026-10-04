@@ -121,6 +121,9 @@
     <Project Path="../diagrams/structurizr-c4/backend/EtAlii.Adp.Diagram.StructurizrC4/EtAlii.Adp.Diagram.StructurizrC4.csproj" />
     <Project Path="../diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain/EtAlii.Adp.Diagram.SupplyChain.csproj" />
     <Project Path="../diagrams/supply-chain/backend/EtAlii.Adp.Diagram.SupplyChain.Tests/EtAlii.Adp.Diagram.SupplyChain.Tests.csproj" />
+    <!-- The Sankey diagram: quantities flowing between nodes, each band as thick as its value. -->
+    <Project Path="../diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey/EtAlii.Adp.Diagram.Sankey.csproj" />
+    <Project Path="../diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey.Tests/EtAlii.Adp.Diagram.Sankey.Tests.csproj" />
     <Project Path="../diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/EtAlii.Adp.Diagram.Timeline.csproj" />
     <Project Path="../diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/EtAlii.Adp.Diagram.Timeline.Tests.csproj" />
     <Project Path="../diagrams/togaf-adm/backend/EtAlii.Adp.Diagram.TogafAdm/EtAlii.Adp.Diagram.TogafAdm.csproj" />

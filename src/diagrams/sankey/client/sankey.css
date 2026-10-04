@@ -1,0 +1,43 @@
+/*
+ * What is the Sankey diagram's own appearance: the bars, the bands between them, and the labels
+ * beside each bar.
+ *
+ * The chrome, the element and connection basics and the selection outline come from
+ * `@client/canvas/canvas.css` (loaded from register.ts). The colours are not here at all: each bar
+ * and band names a palette word, which is a theme token in index.css
+ * (`--color-diagram-sankey-*`), or a #rrggbb of the document's own, and the canvas paints it
+ * inline - so a palette word reads in both themes and a custom colour is exactly what was written.
+ */
+
+/* ---- bands ------------------------------------------------------------------------------ */
+
+/* The library's line is the band's centre: kept for hit-testing and the connect preview, never
+   seen - the band below is the flow. Opacity rather than display, so it still takes a press. */
+.sankey-flow-line {
+  opacity: 0;
+}
+
+/* Translucent, so a band crossing another shows both, and the bars at its ends stay the strongest mark. */
+.sankey-band {
+  fill-opacity: 0.42;
+  transition: fill-opacity 120ms ease;
+}
+
+.sankey-flow:hover .sankey-band {
+  fill-opacity: 0.62;
+}
+
+/* ---- labels ----------------------------------------------------------------------------- */
+
+/* A halo in the surface colour, so a label stays legible where a band runs behind it. */
+.sankey-label {
+  paint-order: stroke;
+  stroke: var(--color-surface, #ffffff);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* Dragging a node shows its neighbours making room; the motion says where it will land. */
+.sankey-node {
+  transition: opacity 120ms ease;
+}
