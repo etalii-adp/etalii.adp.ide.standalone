@@ -3,6 +3,16 @@ using Serilog;
 
 namespace EtAlii.Adp.Documents;
 
+public class DocumentLifecycle
+{
+    // Five tries, 50 ms apart: a refusal is believed after about a fifth of a second. Chosen for a
+    // sharing violation just after a save, which may be held longer than the microsecond-wide missing
+    // file PlainEditorSession retries for (3 x 20 ms) - so it is wider than that, and it is a choice,
+    // not a measurement.
+    protected const int DefaultReadAttempts = 5;
+    protected static readonly TimeSpan DefaultBetweenReadAttempts = TimeSpan.FromMilliseconds(50);
+}
+
 /// <summary>
 /// One loaded document per body path: opening it, handing it out, forgetting it, and re-reading it
 /// when the file changes (backend-centralization R2). A module supplies how its text parses and,
@@ -47,7 +57,7 @@ namespace EtAlii.Adp.Documents;
 /// What the store caches: an entry record for most modules, the document itself for mindmap and
 /// wardley-map.
 /// </typeparam>
-public sealed class DocumentLifecycle<TDocument>
+public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     where TDocument : class
 {
     private static readonly ILogger _logger = Log.ForContext<DocumentLifecycle<TDocument>>();
@@ -58,13 +68,6 @@ public sealed class DocumentLifecycle<TDocument>
     private readonly Func<string, string> _read;
     private readonly int _readAttempts;
     private readonly TimeSpan _betweenReadAttempts;
-
-    // Five tries, 50 ms apart: a refusal is believed after about a fifth of a second. Chosen for a
-    // sharing violation just after a save, which may be held longer than the microsecond-wide missing
-    // file PlainEditorSession retries for (3 x 20 ms) - so it is wider than that, and it is a choice,
-    // not a measurement.
-    private const int DefaultReadAttempts = 5;
-    private static readonly TimeSpan DefaultBetweenReadAttempts = TimeSpan.FromMilliseconds(50);
 
     /// <param name="parse">
     /// Turns a body path and its text into the cached document. Given <c>""</c> for a body that is

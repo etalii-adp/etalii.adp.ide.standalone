@@ -225,3 +225,6 @@ flows:
   - from: employed
     to: unclassified-job
     value: 965.5
+  - from: communications-and-journalism
+    to: unclassified-job
+    value: 1000

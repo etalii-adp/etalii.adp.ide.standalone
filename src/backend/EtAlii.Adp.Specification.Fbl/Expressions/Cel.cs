@@ -249,12 +249,7 @@ internal abstract record CelNode
             return Operator switch
             {
                 "!" => value is bool b ? !b : throw new CelException("'!' needs a bool."),
-                "-" => value switch
-                {
-                    long l => -l,
-                    double d => -d,
-                    _ => throw new CelException("'-' needs a number."),
-                },
+                "-" => value is long l ? -l : value is double d ? -d : throw new CelException("'-' needs a number."),
                 _ => throw new CelException($"Unknown operator '{Operator}'."),
             };
         }

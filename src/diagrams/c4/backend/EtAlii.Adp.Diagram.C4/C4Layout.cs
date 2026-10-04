@@ -222,9 +222,9 @@ public static class C4LayoutEngine
             var parentId = element.ParentId;
             while (parentId is not null)
             {
-                if (byId.ContainsKey(parentId))
+                if (byId.TryGetValue(parentId, out C4Element? elementForParentId))
                 {
-                    return byId[parentId].Id;
+                    return elementForParentId.Id;
                 }
 
                 parentId = workspace.Find(parentId)?.ParentId;
@@ -442,7 +442,7 @@ public static class C4LayoutEngine
                 var size = sizes[element.Id];
                 var acrossSize = horizontal ? size.Width : size.Height;
                 var alongSize = horizontal ? size.Height : size.Width;
-                // Centre each element within its rank's thickness, so a short box in a tall
+                // Center each element within its rank's thickness, so a short box in a tall
                 // rank sits on the rank's line rather than at its edge.
                 var across = rankOffset + (thickness - acrossSize) / 2;
 
@@ -472,8 +472,8 @@ public static class C4LayoutEngine
     }
 
     /// <summary>
-    /// Moves anything that is *not* inside a boundary out of it, and re-sizes the boundary
-    /// afterwards. A boundary means "these are the parts of that system", so an external system
+    /// Moves anything *not* inside a boundary out of it, and re-sizes the boundary
+    /// afterward. A boundary means "these are the parts of that system", so an external system
     /// drawn inside one says the opposite of what the diagram means - and the layered layout,
     /// which ranks by relationship distance, has no reason on its own to keep them apart
     /// (found by the manual pass).
