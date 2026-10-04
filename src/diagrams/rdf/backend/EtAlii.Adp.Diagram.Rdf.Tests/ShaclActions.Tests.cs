@@ -135,7 +135,7 @@ public class ShaclActionsTests : IDisposable
         Assert.Equal(ShaclRefusals.BlankRooted, failed.Message);
         return;
 
-        void AssertAction(ContextActionDefinition action)
+        static void AssertAction(ContextActionDefinition action)
         {
             ArgumentNullException.ThrowIfNull(action);
             Assert.False(action.Available);

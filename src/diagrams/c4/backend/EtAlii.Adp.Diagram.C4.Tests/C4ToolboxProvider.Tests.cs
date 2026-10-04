@@ -71,7 +71,7 @@ public class C4ToolboxProviderTests
         Assert.All(Items(C4ViewKind.Container), AssertItem);
         return;
 
-        void AssertItem(ToolboxItemDefinition item)
+        static void AssertItem(ToolboxItemDefinition item)
         {
             ArgumentNullException.ThrowIfNull(item);
             Assert.NotEmpty(item.DropActionId);

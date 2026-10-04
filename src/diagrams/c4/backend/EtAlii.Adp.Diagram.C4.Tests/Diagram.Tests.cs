@@ -56,7 +56,7 @@ public class DiagramTests
         Assert.All(Diagram.Definitions, AssertDefinition);
         return;
 
-        void AssertDefinition(DiagramDefinition definition)
+        static void AssertDefinition(DiagramDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
 
@@ -86,7 +86,7 @@ public class DiagramTests
         Assert.All(Diagram.Definitions, AssertDefinition);
         return;
 
-        void AssertDefinition(DiagramDefinition definition)
+        static void AssertDefinition(DiagramDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
             Assert.NotEmpty(definition.Description);

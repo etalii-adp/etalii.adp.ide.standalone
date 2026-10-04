@@ -135,7 +135,7 @@ public class ShaclTargetChipsTests
         AssertElementUniverseIsShapesOnly(body);
         return;
 
-        void AssertChip(ShaclTargetChip chip)
+        static void AssertChip(ShaclTargetChip chip)
         {
             ArgumentNullException.ThrowIfNull(chip);
 
