@@ -444,8 +444,8 @@ internal static class CelValues
     public static bool Equal(object? a, object? b) => (a, b) switch
     {
         (null, null) => true,
-        (long x, double y) => x == y,
-        (double x, long y) => x == y,
+        (long x, double y) => Math.Abs(x - y) < double.Tolerance,
+        (double x, long y) => Math.Abs(x - y) < double.Tolerance,
         (List<object?> x, List<object?> y) => x.Count == y.Count && x.Zip(y).All(p => Equal(p.First, p.Second)),
         _ => Equals(a, b),
     };
