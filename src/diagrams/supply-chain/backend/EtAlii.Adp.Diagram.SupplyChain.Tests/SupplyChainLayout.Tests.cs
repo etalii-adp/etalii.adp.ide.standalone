@@ -57,18 +57,18 @@ public sealed class SupplyChainLayoutTests
         // through the middle of every lane slot to the consumer's left side - touches no card but its own two.
         foreach (var flow in layout.Flows)
         {
-            var (from, to) = (layout.NodeBoxes[flow.From], layout.NodeBoxes[flow.To]);
+            (SupplyChainBox from, SupplyChainBox to) = (layout.NodeBoxes[flow.From], layout.NodeBoxes[flow.To]);
             var stops = new List<(double X, double Y)> { (from.Right, from.CentreY) };
-            foreach (var (laneX, laneY) in layout.Lanes.GetValueOrDefault(flow.Id) ?? [])
+            foreach ((double laneX, double laneY) in layout.Lanes.GetValueOrDefault(flow.Id) ?? [])
             {
                 stops.Add((laneX - (SupplyChainGeometry.NodeWidth / 2), laneY));
                 stops.Add((laneX + (SupplyChainGeometry.NodeWidth / 2), laneY));
             }
 
             stops.Add((to.X, to.CentreY));
-            foreach (var (id, box) in layout.NodeBoxes.Where(pair => pair.Key != flow.From && pair.Key != flow.To))
+            foreach ((string id, SupplyChainBox box) in layout.NodeBoxes.Where(pair => pair.Key != flow.From && pair.Key != flow.To))
             {
-                foreach (var (x, y) in Sampled(stops))
+                foreach ((double x, double y) in Sampled(stops))
                 {
                     Assert.False(x > box.X && x < box.Right && y > box.Y && y < box.Bottom, $"{flow.Id} crosses {id} at ({x:0}, {y:0})");
                 }
@@ -81,10 +81,10 @@ public sealed class SupplyChainLayoutTests
     {
         for (var i = 1; i < stops.Count; i++)
         {
-            var (start, end) = (stops[i - 1], stops[i]);
+            ((double X, double Y) start, (double X, double Y) end) = (stops[i - 1], stops[i]);
             var direction = end.X >= start.X ? 1 : -1;
             var pull = Math.Max(48, Math.Abs(end.X - start.X) / 2);
-            var (c1X, c1Y, c2X, c2Y) = (start.X + (direction * pull), start.Y, end.X - (direction * pull), end.Y);
+            (double c1X, double c1Y, double c2X, double c2Y) = (start.X + (direction * pull), start.Y, end.X - (direction * pull), end.Y);
             for (var t = 0.0; t <= 1; t += 0.02)
             {
                 var u = 1 - t;

@@ -2,13 +2,14 @@
 # drawn the way quarterly results are: revenue by segment on the left, what is left of it after
 # each kind of cost to the right. Millions of euros. Every figure is invented.
 sankey: 1
+thickness: 1
 format: "€{value}M"
 flow-color: target
 nodes:
   - id: cafes
+    note: +9% Y/Y
     name: Cafés
     color: blue
-    note: "+9% Y/Y"
   - id: packaged
     name: Packaged coffee
     color: blue

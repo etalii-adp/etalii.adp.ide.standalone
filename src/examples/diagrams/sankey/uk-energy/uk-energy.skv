@@ -5,37 +5,25 @@ sankey: 1
 format: "{value} TWh"
 flow-color: source
 nodes:
-  - id: agricultural-waste
-    name: "Agricultural 'waste'"
-    color: green
+  - id: ngas
+    name: Ngas
+    color: orange
   - id: bio-conversion
     name: Bio-conversion
     color: green
+  - id: gas
+    name: Gas
+    color: orange
+  - id: solid
+    name: Solid
+    color: brown
   - id: liquid
     name: Liquid
     color: slate
   - id: losses
     name: Losses
-  - id: solid
-    name: Solid
-    color: brown
-  - id: gas
-    name: Gas
-    color: orange
-  - id: biofuel-imports
-    name: Biofuel imports
-    color: green
-  - id: biomass-imports
-    name: Biomass imports
-    color: green
-  - id: coal-imports
-    name: Coal imports
-    color: brown
   - id: coal
     name: Coal
-    color: brown
-  - id: coal-reserves
-    name: Coal reserves
     color: brown
   - id: district-heating
     name: District heating
@@ -64,27 +52,12 @@ nodes:
     name: "Lighting & appliances - commercial"
   - id: lighting-and-appliances-homes
     name: "Lighting & appliances - homes"
-  - id: gas-imports
-    name: Gas imports
-    color: orange
-  - id: ngas
-    name: Ngas
-    color: orange
-  - id: gas-reserves
-    name: Gas reserves
-    color: orange
   - id: thermal-generation
     name: Thermal generation
     color: purple
-  - id: geothermal
-    name: Geothermal
-    color: teal
   - id: h2
     name: H2
     color: lime
-  - id: hydro
-    name: Hydro
-    color: teal
   - id: international-shipping
     name: International shipping
   - id: domestic-aviation
@@ -93,48 +66,75 @@ nodes:
     name: International aviation
   - id: national-navigation
     name: National navigation
-  - id: marine-algae
-    name: Marine algae
-    color: green
   - id: nuclear
     name: Nuclear
     color: red
-  - id: oil-imports
-    name: Oil imports
-    color: slate
-  - id: oil
-    name: Oil
-    color: slate
-  - id: oil-reserves
-    name: Oil reserves
-    color: slate
+  - id: gas-imports
+    name: Gas imports
+    color: orange
+  - id: gas-reserves
+    name: Gas reserves
+    color: orange
+  - id: biomass-imports
+    name: Biomass imports
+    color: green
   - id: other-waste
     name: Other waste
     color: green
-  - id: pumped-heat
-    name: Pumped heat
-    color: pink
-  - id: solar-pv
-    name: Solar PV
-    color: yellow
+  - id: agricultural-waste
+    name: "Agricultural 'waste'"
+    color: green
+  - id: marine-algae
+    name: Marine algae
+    color: green
   - id: solar-thermal
     name: Solar Thermal
     color: yellow
-  - id: solar
-    name: Solar
+  - id: solar-pv
+    name: Solar PV
     color: yellow
-  - id: tidal
-    name: Tidal
-    color: teal
+  - id: oil
+    name: Oil
+    color: slate
   - id: uk-land-based-bioenergy
     name: UK land based bioenergy
     color: green
-  - id: wave
-    name: Wave
+  - id: coal-imports
+    name: Coal imports
+    color: brown
+  - id: coal-reserves
+    name: Coal reserves
+    color: brown
+  - id: geothermal
+    name: Geothermal
+    color: teal
+  - id: hydro
+    name: Hydro
     color: teal
   - id: wind
     name: Wind
     color: teal
+  - id: tidal
+    name: Tidal
+    color: teal
+  - id: wave
+    name: Wave
+    color: teal
+  - id: solar
+    name: Solar
+    color: yellow
+  - id: pumped-heat
+    name: Pumped heat
+    color: pink
+  - id: biofuel-imports
+    name: Biofuel imports
+    color: green
+  - id: oil-imports
+    name: Oil imports
+    color: slate
+  - id: oil-reserves
+    name: Oil reserves
+    color: slate
 flows:
   - from: agricultural-waste
     to: bio-conversion
