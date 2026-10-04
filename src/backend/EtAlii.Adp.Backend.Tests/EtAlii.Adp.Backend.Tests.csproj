@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\diagrams\agent-behavior-modelling\backend\EtAlii.Adp.Diagram.AgentBehaviorModelling\EtAlii.Adp.Diagram.AgentBehaviorModelling.csproj" />
     <ProjectReference Include="..\..\diagrams\gartner-hype-cycle-graph\backend\EtAlii.Adp.Diagram.GartnerHypeCycleGraph\EtAlii.Adp.Diagram.GartnerHypeCycleGraph.csproj" />
+    <ProjectReference Include="..\..\diagrams\supply-chain\backend\EtAlii.Adp.Diagram.SupplyChain\EtAlii.Adp.Diagram.SupplyChain.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />
