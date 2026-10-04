@@ -13,6 +13,7 @@ using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Diagram.Sparql;
+using EtAlii.Adp.Diagram.SupplyChain;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.WardleyMap;
 using EtAlii.Adp.Hierarchy;
@@ -150,6 +151,9 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("sparql", new(
             [SparqlElementMapper.EdgeType],
             [SparqlElementMapper.VariableType, SparqlElementMapper.TermType, SparqlElementMapper.RegionType, SparqlElementMapper.AnnotationType, SparqlElementMapper.HeaderType])),
+        new("supply-chain", new(
+            [SupplyChainElementMapper.FlowType],
+            [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.RawMaterialType, SupplyChainElementMapper.SupplierType, SupplyChainElementMapper.ManufacturerType, SupplyChainElementMapper.AssemblerType, SupplyChainElementMapper.DistributorType, SupplyChainElementMapper.RetailerType, SupplyChainElementMapper.ConsumerType])),
         new("timeline", new(
             [TimelineElementMapper.ConnectionType],
             [TimelineElementMapper.PeriodType, TimelineElementMapper.MomentType])),

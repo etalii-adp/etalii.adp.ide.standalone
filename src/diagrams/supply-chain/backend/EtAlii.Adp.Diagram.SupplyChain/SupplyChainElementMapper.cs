@@ -85,12 +85,18 @@ public sealed class SupplyChainElementMapper
             .GroupBy(flow => flow.Unit, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.Max(flow => flow.Volume ?? 0), StringComparer.Ordinal);
 
+        // A card's bar compares like with like too, and over the whole document rather than the view.
+        var largest = layout.Nodes
+            .Where(node => node.Quantity is not null)
+            .GroupBy(node => node.Unit, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Max(node => node.Quantity ?? 0), StringComparer.Ordinal);
+
         return
         [
             .. layout.Groups
                 .Where(group => Overlaps(layout.GroupBoxes[group.Id], viewport))
                 .Select(group => Group(layout, group, trace)),
-            .. layout.Nodes.Where(node => kept.Contains(node.Id)).Select(node => Node(layout, node, trace)),
+            .. layout.Nodes.Where(node => kept.Contains(node.Id)).Select(node => Node(layout, node, largest, trace)),
             .. layout.Flows.Where(flow => kept.Contains(flow.From) && kept.Contains(flow.To)).Select(flow => Flow(flow, heaviest[flow.Unit], trace)),
         ];
     }
@@ -113,7 +119,7 @@ public sealed class SupplyChainElementMapper
         return Pack(group.Id, box.CentreX, box.CentreY, GroupType, payload);
     }
 
-    private static DiagramElement Node(SupplyChainLayout layout, SupplyChainNode node, SupplyChainTrace trace)
+    private static DiagramElement Node(SupplyChainLayout layout, SupplyChainNode node, Dictionary<string, double> largest, SupplyChainTrace trace)
     {
         // The document holds the top-left; the library draws from the centre.
         var box = layout.NodeBoxes[node.Id];
@@ -128,6 +134,7 @@ public sealed class SupplyChainElementMapper
             Height = box.Height,
             Trace = trace.Of(node.Id),
             Stage = SupplyChainNodeTypes.Display(node.Type),
+            Share = node.Quantity is { } quantity && largest.TryGetValue(node.Unit, out var most) && most > 0 ? Math.Clamp(quantity / most, 0, 1) : 0,
         };
 
         return Pack(node.Id, box.CentreX, box.CentreY, NodeTypeOf(node.Type), payload);

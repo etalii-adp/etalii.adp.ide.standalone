@@ -159,6 +159,21 @@
         "w3c/sparql+edge"
       ]
     },
+    "supply-chain": {
+      "elements": [
+        "etalii/supply-chain+assembler",
+        "etalii/supply-chain+consumer",
+        "etalii/supply-chain+distributor",
+        "etalii/supply-chain+group",
+        "etalii/supply-chain+manufacturer",
+        "etalii/supply-chain+raw-material",
+        "etalii/supply-chain+retailer",
+        "etalii/supply-chain+supplier"
+      ],
+      "relations": [
+        "etalii/supply-chain+flow"
+      ]
+    },
     "timeline": {
       "elements": [
         "generic/timeline+moment",

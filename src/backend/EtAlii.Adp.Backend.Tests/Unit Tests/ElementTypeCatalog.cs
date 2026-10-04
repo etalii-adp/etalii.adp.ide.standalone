@@ -12,6 +12,7 @@ using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.Rdf;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Diagram.Sparql;
+using EtAlii.Adp.Diagram.SupplyChain;
 using EtAlii.Adp.Diagram.Timeline;
 using EtAlii.Adp.Diagram.WardleyMap;
 
@@ -92,6 +93,9 @@ internal static class ElementTypeCatalog
         new("sparql",
             [SparqlElementMapper.VariableType, SparqlElementMapper.TermType, SparqlElementMapper.RegionType, SparqlElementMapper.AnnotationType, SparqlElementMapper.HeaderType, SparqlElementMapper.TruncationType],
             [SparqlElementMapper.EdgeType]),
+        new("supply-chain",
+            [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.RawMaterialType, SupplyChainElementMapper.SupplierType, SupplyChainElementMapper.ManufacturerType, SupplyChainElementMapper.AssemblerType, SupplyChainElementMapper.DistributorType, SupplyChainElementMapper.RetailerType, SupplyChainElementMapper.ConsumerType],
+            [SupplyChainElementMapper.FlowType]),
         new("timeline",
             [TimelineElementMapper.PeriodType, TimelineElementMapper.MomentType],
             [TimelineElementMapper.ConnectionType]),

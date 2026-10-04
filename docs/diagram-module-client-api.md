@@ -361,7 +361,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ### Actions, shortcuts and enablement
 
-**Declarations:** `ActionDeclaration`, `ActionInvocation`, `ActionTarget`, `DeclaredFlag`
+**Declarations:** `ActionDeclaration`, `ActionInvocation`, `ActionTarget`, `DeclaredFlag`, `ElementGesture`
 
 **What it is for.** What a user may do to an element, a connection or the diagram, and how each is invoked.
 
@@ -384,6 +384,8 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 ```
 
 **`{ kind: "menu" }` is an invocation a module must read carefully.** `centralized-selection` gave an existing name a new meaning: an action invoked from the shared menu reaches the module as `action-invoked`, and **reaches the backend only if its declaration names a `backendKey`**. Without one, the module's own handler is the whole of what happens. The declaration is unchanged and the member names are unchanged, so no check keyed on declarations or members can demand an entry for it — which is exactly why it is written out here.
+
+**`{ kind: "gesture", gesture: "press" }` makes an element a button.** An unmoved click on an element whose declarations match a `press` gesture dispatches that action as `action-invoked` instead of selecting the element, and the selection stays as it was. It exists for small controls drawn as elements of their own - the supply chain's + and - steppers beside a node's quantity - so they need neither a custom shape nor a handler of the module's own. Declare it on a type that is also `selectable: false` and `draggable: false`; a press that matches no action is then a press on the background, as before. `ElementGesture` names the three gestures made on one element: `activate`, `context-menu` and `press`.
 
 ### The toolbox declaration
 
@@ -660,13 +662,13 @@ sequenceDiagram
 
 ## Text width and fit
 
-**Declarations:** `capacityOf`, `fitToCapacity`, `LABEL_FONT_SIZE`
+**Declarations:** `capacityOf`, `fitToCapacity`, `widthOf`, `LABEL_FONT_SIZE`
 
 **What it is for.** Estimating how much text fits a width, and cutting it with an ellipsis when it does not, by the one metric the whole client uses.
 
-**Whether a module needs it.** Only a module that draws text of its own outside a declared label - c4's type line and description, the OWL canvas's rows. A declared label is fitted by the library already.
+**Whether a module needs it.** Only a module that draws text of its own outside a declared label - c4's type line and description, the OWL canvas's rows, the supply chain's volume pill. A declared label is fitted by the library already.
 
-**Its shape.** `capacityOf(width, fontSize)` is how many characters fit, by the backend's shared metric: characters × font size × 0.55. `fitToCapacity(text, capacity)` cuts to that many with the ellipsis inside it. `LABEL_FONT_SIZE` is the size the library draws a label at when none is declared. A module's padding stays its own: it takes it off the width before asking.
+**Its shape.** `capacityOf(width, fontSize)` is how many characters fit, by the backend's shared metric: characters × font size × 0.55. `fitToCapacity(text, capacity)` cuts to that many with the ellipsis inside it. `widthOf(text, fontSize)` is the same metric the other way round, for a module that sizes a shape to its text, as the supply chain's volume pill does. `LABEL_FONT_SIZE` is the size the library draws a label at when none is declared. A module's padding stays its own: it takes it off the width before asking.
 
 **The guard.** `textMetrics.test.ts` fails on a width from a character count, a per-character advance or an ellipsis cut by slice anywhere outside `textMetrics.ts`, and holds that a text sized by the metric is never then trimmed by the fit.
 

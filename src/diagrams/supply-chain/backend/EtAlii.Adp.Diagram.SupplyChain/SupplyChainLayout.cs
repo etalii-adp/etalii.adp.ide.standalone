@@ -190,9 +190,9 @@ public sealed class SupplyChainLayout
         }
 
         // The bands, in document order of their first member.
-        const string Ungrouped = "\u0000ungrouped";
+        const string ungrouped = "\u0000ungrouped";
         var bands = nodes
-            .GroupBy(node => groupOf(node) ?? Ungrouped, StringComparer.Ordinal)
+            .GroupBy(node => groupOf(node) ?? ungrouped, StringComparer.Ordinal)
             .Select(group => group.Select(node => node.Id).ToList())
             .ToList();
         var bandOf = new Dictionary<string, int>(StringComparer.Ordinal);

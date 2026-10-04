@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
-    "generate": "buf generate ../api && buf generate ../diagrams/mindmap/api && buf generate ../diagrams/causal-loop-diagram/api && buf generate ../diagrams/c4/api && buf generate ../diagrams/ansible-structure/api && buf generate ../diagrams/azure-devops-pipeline/api && buf generate ../diagrams/wardley-map/api && buf generate ../diagrams/timeline/api && buf generate ../diagrams/dependency-graph/api && buf generate ../diagrams/databricks/api && buf generate ../diagrams/rdf/api && buf generate ../diagrams/helm-chart/api && buf generate ../diagrams/sparql/api && buf generate ../diagrams/dotnet-dependency-graph/api && buf generate ../diagrams/functional-decomposition-graph/api && buf generate ../diagrams/gartner-hype-cycle-graph/api",
+    "generate": "buf generate ../api && buf generate ../diagrams/mindmap/api && buf generate ../diagrams/causal-loop-diagram/api && buf generate ../diagrams/c4/api && buf generate ../diagrams/ansible-structure/api && buf generate ../diagrams/azure-devops-pipeline/api && buf generate ../diagrams/wardley-map/api && buf generate ../diagrams/timeline/api && buf generate ../diagrams/dependency-graph/api && buf generate ../diagrams/databricks/api && buf generate ../diagrams/rdf/api && buf generate ../diagrams/helm-chart/api && buf generate ../diagrams/sparql/api && buf generate ../diagrams/dotnet-dependency-graph/api && buf generate ../diagrams/functional-decomposition-graph/api && buf generate ../diagrams/gartner-hype-cycle-graph/api && buf generate ../diagrams/supply-chain/api",
     "preview": "vite preview",
     "pretest": "npm run generate",
     "test": "vitest run"

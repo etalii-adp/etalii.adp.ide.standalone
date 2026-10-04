@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>

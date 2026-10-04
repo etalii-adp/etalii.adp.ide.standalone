@@ -24,6 +24,10 @@ message SupplyChainNodePayload {
   string trace = 8;
   // The stage's own display word, so the client draws the document's vocabulary and not its own.
   string stage = 9;
+  // The quantity as a share of the largest quantity in the same unit across the whole document,
+  // 0..1, for the bar along the card's foot. Computed here, before the viewport culls, so the bar
+  // does not change as the view pans.
+  double share = 10;
 }
 
 // One group: a region, a company, a tier. Its rectangle is computed from its members, so it moves

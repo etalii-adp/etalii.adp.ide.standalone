@@ -107,7 +107,7 @@ public sealed class SupplyChainSessionTests : IDisposable
     public async Task DraggingAGroup_MovesEveryMemberByTheSameDistance()
     {
         // Arrange.
-        using var history = new EtAlii.Adp.History.HistoryStack(new SupplyChainTestDispatcher(_store));
+        using var history = new History.HistoryStack(new SupplyChainTestDispatcher(_store));
         await using var session = new SupplyChainSession(_watchId, _folder.Body, _store, new SupplyChainElementMapper(), _selections, history);
         var before = SupplyChainLayout.Of(_store.GetOrLoad(_folder.Body).Model);
         var frame = before.GroupBoxes["central-africa"];
