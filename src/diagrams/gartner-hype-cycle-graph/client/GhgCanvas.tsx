@@ -218,10 +218,14 @@ function definitionFor(unit: GhgTimeUnit): DiagramDefinition {
           elementTypes: [compactTrendType, { ...TRIGGER_TYPE, draggable: false }, { ...NOTE_TYPE, sizing: "model", draggable: false }],
           dragging: "disabled",
           chrome: { rulers: [] },
+          // A compact x is no date, so empty canvas offers nothing there.
+          backgroundMenu: false,
         },
       },
     },
     dragging: "enabled",
+    // Arrange diagram and "Add … here" on empty canvas, from the backend's own list.
+    backgroundMenu: true,
   });
 }
 

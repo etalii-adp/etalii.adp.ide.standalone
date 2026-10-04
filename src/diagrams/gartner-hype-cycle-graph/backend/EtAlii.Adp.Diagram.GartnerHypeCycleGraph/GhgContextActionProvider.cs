@@ -53,6 +53,9 @@ public sealed class GhgContextActionProvider : IContextActionProvider
     /// <summary>Remove an influence.</summary>
     public const string DisconnectActionId = "ghg.disconnect";
 
+    /// <summary>Put every trend, trigger and note on the row that keeps the graph least cluttered (<see cref="GhgArrangement"/>).</summary>
+    public const string ArrangeActionId = "ghg.arrange";
+
     private readonly IHistoryStackStore _historyStacks;
     private readonly IGhgDocumentStore _documents;
 
@@ -85,6 +88,18 @@ public sealed class GhgContextActionProvider : IContextActionProvider
         }
 
         var model = entry.Model;
+
+        // Arrange is about the whole graph, so it is offered wherever the reader is: on empty
+        // canvas and on every element alike, which keeps it in the ribbon too.
+        var arrange = new ContextActionGroupDefinition(
+        [
+            new ContextActionDefinition(
+                ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
+                model.Trends.Count + model.Triggers.Count + model.Notes.Count > 0,
+                "There is nothing to arrange until this graph has a trend."),
+        ]);
+        ValueTask<IReadOnlyList<ContextActionGroupDefinition>> WithArrange(IReadOnlyList<ContextActionGroupDefinition> groups) =>
+            Result([.. groups, arrange]);
         if (GhgEdits.TrendOf(model, target.ElementId) is { } trend)
         {
             List<ContextActionDefinition> actions =
@@ -97,12 +112,12 @@ public sealed class GhgContextActionProvider : IContextActionProvider
             }
 
             actions.Add(new(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
-            return Result([new ContextActionGroupDefinition(actions)]);
+            return WithArrange([new ContextActionGroupDefinition(actions)]);
         }
 
         if (GhgEdits.TriggerOf(model, target.ElementId) is not null)
         {
-            return Result(
+            return WithArrange(
             [
                 new ContextActionGroupDefinition(
                 [
@@ -114,7 +129,7 @@ public sealed class GhgContextActionProvider : IContextActionProvider
 
         if (GhgEdits.NoteOf(model, target.ElementId) is not null)
         {
-            return Result(
+            return WithArrange(
             [
                 new ContextActionGroupDefinition(
                 [
@@ -126,7 +141,7 @@ public sealed class GhgContextActionProvider : IContextActionProvider
 
         if (GhgEdits.InfluenceOf(model, target.ElementId) is not null)
         {
-            return Result(
+            return WithArrange(
             [
                 new ContextActionGroupDefinition(
                 [
@@ -139,7 +154,7 @@ public sealed class GhgContextActionProvider : IContextActionProvider
         // gesture each discover what may be executed against them.
         if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
         {
-            return Result(
+            return WithArrange(
             [
                 new ContextActionGroupDefinition(
                 [
@@ -237,6 +252,9 @@ public sealed class GhgContextActionProvider : IContextActionProvider
 
             case DisconnectActionId when GhgEdits.InfluenceOf(model, target.ElementId) is not null:
                 return await DispatchAsync(target, new RemoveGhgInfluenceCommand(body, target.ElementId), cancellationToken);
+
+            case ArrangeActionId:
+                return await DispatchAsync(target, new ArrangeGhgCommand(body), cancellationToken);
 
             case RenameActionId or RemoveActionId or EvenPhasesActionId or DisconnectActionId:
                 return new ContextExecutionFailed("That is no longer in this graph.");

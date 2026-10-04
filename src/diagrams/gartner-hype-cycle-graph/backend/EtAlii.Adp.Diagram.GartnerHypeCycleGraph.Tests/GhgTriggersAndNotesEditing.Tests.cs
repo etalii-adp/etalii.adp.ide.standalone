@@ -262,10 +262,10 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
         async Task<IReadOnlyList<string>> IdsOf(string id) =>
             [.. (await actions.DiscoverAsync(Target(id), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).Select(action => action.Id)];
 
-        Assert.Equal([GhgContextActionProvider.RenameActionId, GhgContextActionProvider.RemoveActionId], await IdsOf("transistor-invented"));
-        Assert.Equal([GhgContextActionProvider.RenameActionId, GhgContextActionProvider.RemoveActionId], await IdsOf("note-1"));
+        Assert.Equal([GhgContextActionProvider.RenameActionId, GhgContextActionProvider.RemoveActionId, GhgContextActionProvider.ArrangeActionId], await IdsOf("transistor-invented"));
+        Assert.Equal([GhgContextActionProvider.RenameActionId, GhgContextActionProvider.RemoveActionId, GhgContextActionProvider.ArrangeActionId], await IdsOf("note-1"));
         Assert.Equal(
-            [GhgContextActionProvider.AddTrendActionId, GhgContextActionProvider.AddTriggerActionId, GhgContextActionProvider.AddNoteActionId],
+            [GhgContextActionProvider.AddTrendActionId, GhgContextActionProvider.AddTriggerActionId, GhgContextActionProvider.AddNoteActionId, GhgContextActionProvider.ArrangeActionId],
             await IdsOf(GestureIds.Placement(10, 10)));
 
         var editNote = await actions.ExecuteAsync(Target("note-1"), GhgContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);

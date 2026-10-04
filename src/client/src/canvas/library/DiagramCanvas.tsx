@@ -1800,7 +1800,8 @@ export function DiagramCanvasCore({
 
     const onAnItem = (event.target as Element).closest("[data-element-id],[data-connection-id]") !== null;
     if (definition.backgroundMenu === true && context !== undefined && !onAnItem) {
-      const at = toCanvasPoint(event.clientX, event.clientY);
+      const point = toCanvasPoint(event.clientX, event.clientY);
+      const at = definition.backgroundPlacement?.(point) ?? point;
       openMenuAt(event, placementId(at.x, at.y));
     }
   };

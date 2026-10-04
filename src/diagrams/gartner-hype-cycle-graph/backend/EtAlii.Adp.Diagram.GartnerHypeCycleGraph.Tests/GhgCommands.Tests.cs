@@ -54,6 +54,7 @@ public sealed class GhgCommandsTests : IDisposable
         "add a trend", "remove a trend", "move", "resize from the left", "resize from the right",
         "drag a boundary", "even the phases", "lower the phases", "rename", "set tags",
         "describe a trend", "describe an influence", "influence", "move an attachment", "remove an influence",
+        "arrange",
     ];
 
     private ICommand EditNamed(string name) => name switch
@@ -74,6 +75,7 @@ public sealed class GhgCommandsTests : IDisposable
         "influence" => new AddGhgInfluenceCommand(Body, "railways", null, "steam-engine", null),
         "move an attachment" => new SetGhgAttachmentCommand(Body, "steam-engine--railways", "to", new GhgEnd("trough", "bottom", 0.4)),
         "remove an influence" => new RemoveGhgInfluenceCommand(Body, "steam-engine--railways"),
+        "arrange" => new ArrangeGhgCommand(Body),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such edit."),
     };
 

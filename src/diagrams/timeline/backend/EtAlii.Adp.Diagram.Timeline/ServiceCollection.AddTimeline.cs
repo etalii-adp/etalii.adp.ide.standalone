@@ -47,6 +47,8 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<ICommandHandler<RelabelTimelineConnectionCommand>, RelabelTimelineConnectionCommandHandler>();
         services.AddSingleton<ICommandHandler<SetTimelineEndCommand>, SetTimelineEndCommandHandler>();
         services.AddSingleton<ICommandHandler<AddConnectedTimelineElementCommand>, AddConnectedTimelineElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<ArrangeTimelineCommand>, ArrangeTimelineCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetTimelineRowsCommand>, SetTimelineRowsCommandHandler>();
 
 
         // The context seams: selection, actions, properties and the palette.

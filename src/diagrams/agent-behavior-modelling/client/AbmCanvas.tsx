@@ -137,6 +137,8 @@ export const ABM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   // Edge anchors draw no handle, so a parent line is drawn by dragging with the right button from
   // the parent's body to the child's - the gesture every edge-anchored module offers.
   connectOnRightDrag: true,
+  // Arrange diagram and "Add … here" on empty canvas, from the backend's own list.
+  backgroundMenu: true,
 });
 
 /** The declared actions this module forwards; anything else the library raises is not ours. */
