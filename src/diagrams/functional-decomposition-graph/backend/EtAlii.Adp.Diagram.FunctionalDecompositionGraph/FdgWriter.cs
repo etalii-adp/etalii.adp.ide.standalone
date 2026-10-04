@@ -114,8 +114,11 @@ public static class FdgWriter
         }
 
         var indent = LineSplice.KeyIndentWithin(document, element.Range);
-        List<string> lines = [$"{indent}text: |-"];
-        lines.AddRange((text ?? "").Split('\n').Select(line => $"{indent}  {line.TrimEnd('\r')}"));
+        List<string> lines =
+        [
+            $"{indent}text: |-",
+            .. (text ?? "").Split('\n').Select(line => $"{indent}  {line.TrimEnd('\r')}")
+        ];
 
         ReplaceKeyBlock(document, element.Range, "text", lines);
         return FdgEdit.Applied;
