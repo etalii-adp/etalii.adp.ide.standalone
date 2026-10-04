@@ -283,6 +283,9 @@ const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   },
   layout: { modes: ["manual"] },
   dragging: "enabled",
+  // Arrange diagram and "Add … here" on empty canvas, from the backend's own list; the canvas
+  // supplies where the click lands in seconds and rows, because the scale is frozen per canvas.
+  backgroundMenu: true,
 });
 
 /**
@@ -354,6 +357,14 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     return { elements, connections };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the scale is frozen; only the model varies.
   }, [model, scale]);
+
+  // A background right-click names its placement in the backend's terms - seconds and a row - as
+  // a drop does, so "Add element here" lands where the reader clicked.
+  const config = useMemo(
+    () => ({ definitionOverrides: { backgroundPlacement: (point: { x: number; y: number }) => ({ x: toSeconds(point.x), y: nearestRow(toModuleY(point.y)) }) } }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the scale is frozen; it is all the conversion reads.
+    [scale],
+  );
 
   const runAction = (actionId: string, sourceId?: string) => {
     // A refusal needs nothing here: the call reports it to the library's refusal line.
@@ -438,6 +449,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     <div ref={hostRef} className="timeline-canvas canvas-host" role="application" aria-label="Timeline" onContextMenu={onContextMenu}>
       <DiagramCanvas
         definition={TIMELINE_DEFINITION}
+        config={config}
         model={diagramModel}
         events={events}
         source={{ entryId, path }}

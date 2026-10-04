@@ -1285,6 +1285,13 @@ export interface DiagramDefinition {
    */
   backgroundMenu?: boolean;
   /**
+   * Where a background right-click lands, in the module's own coordinates - for a canvas whose
+   * placements are not canvas units, as a timeline's are seconds and a row. **Omitted, the
+   * placement is the point in canvas units**, the convention drops use. Given, the menu's
+   * `new:x,y` carries what this returns, so "Add … here" lands where the reader clicked.
+   */
+  backgroundPlacement?: (point: ShapePoint) => ShapePoint;
+  /**
    * Draw a relation by dragging with the RIGHT button from an element's body to another - the
    * gesture a causal loop diagram links with, where the arrows are the whole point and reaching
    * for a small anchor handle would be in the way. Left-button anchor drags still connect where a

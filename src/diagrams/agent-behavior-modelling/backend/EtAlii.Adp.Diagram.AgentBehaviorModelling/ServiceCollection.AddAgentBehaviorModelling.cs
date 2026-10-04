@@ -47,6 +47,10 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
         services.AddSingleton<ICommandHandler<MoveAbmNodeCommand>, MoveAbmNodeCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IAbmDocumentStore>>, RestoreDocumentCommandHandler<IAbmDocumentStore>>();
 
+        // The arrangement writes the registration, never the Markdown: it forgets the dragged positions.
+        services.AddSingleton<ICommandHandler<ArrangeAbmCommand>, ArrangeAbmCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreAbmRegistrationCommand>, RestoreAbmRegistrationCommandHandler>();
+
         services.AddSingleton<IDiagramValidator, AbmValidator>();
 
         return services;
