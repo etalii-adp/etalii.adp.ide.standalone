@@ -35,8 +35,8 @@ describe("the agent behavior model's definition", () => {
   });
 
   it("names each action and property once, for the backend to answer", () => {
-    // Assert: eleven adds, connect, rename, remove, two moves and notes.
-    expect(ABM_ACTION_IDS).toHaveLength(17);
+    // Assert: eleven adds, connect, rename, remove, two moves, notes and arrange.
+    expect(ABM_ACTION_IDS).toHaveLength(18);
     expect(new Set(ABM_ACTION_IDS).size).toBe(ABM_ACTION_IDS.length);
     expect(new Set(ABM_PROPERTY_IDS).size).toBe(ABM_PROPERTY_IDS.length);
     for (const action of ABM_DEFINITION.actions ?? []) {
