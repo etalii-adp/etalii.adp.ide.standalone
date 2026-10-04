@@ -132,10 +132,10 @@ public static class RowPacking
         // Which row each original row is drawn at now.
         var at = Enumerable.Range(0, rowCount).ToArray();
         var links = items
-            .SelectMany(item => neighbours[item.Id].Where(other => string.CompareOrdinal(item.Id, other) < 0).Select(other => (item.Id, other)))
+            .SelectMany(item => neighbours[item.Id].Where(other => string.CompareOrdinal(item.Id, other) < 0).Select(other => (From: item.Id, To: other)))
             .ToList();
 
-        double Cost() => links.Sum(link => Math.Abs(at[rows[link.Item1]] - at[rows[link.Item2]]));
+        double Cost() => links.Sum(link => Math.Abs(at[rows[link.From]] - at[rows[link.To]]));
 
         var cost = Cost();
         for (var pass = 0; pass < SwapPasses; pass++)

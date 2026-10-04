@@ -53,9 +53,9 @@ public sealed class ArrangeGhgCommandHandler(IGhgDocumentStore documents) : ICom
                 return GhgEdit.Refused("This graph is already arranged.");
             }
 
-            foreach (var change in changes.OrderByDescending(change => change.Start))
+            foreach ((_, var write) in changes.OrderByDescending(change => change.Start))
             {
-                change.Write();
+                write();
             }
 
             return GhgEdit.Applied;
