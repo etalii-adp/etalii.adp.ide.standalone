@@ -17,4 +17,8 @@
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Files\" />
+  </ItemGroup>
+
 </Project>

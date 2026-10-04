@@ -9,49 +9,6 @@ using EtAlii.Adp.Specification.Fbl.Text;
 
 namespace EtAlii.Adp.Specification.Fbl.Xml;
 
-/// <summary>An attribute as written (FBL §4.5): its own span from name to closing quote, and its value span between the quotes.</summary>
-internal sealed record XmlAttribute(string Name, Span Own, Span Value, string Text);
-
-/// <summary>Character data of an element, with its span and its text with references decoded.</summary>
-internal sealed record XmlTextRun(Span Span, string Text);
-
-/// <summary>The text of an element as a slot reads it: where it is written, and whether it is html paragraphs.</summary>
-internal sealed record XmlTextNode(XmlElement Element, Span? Span, bool Html);
-
-/// <summary>An element (FBL §4.5): an entry whose own span runs from its start tag's <c>&lt;</c> to its end tag's <c>&gt;</c>.</summary>
-internal sealed class XmlElement : Entry
-{
-    public bool IsRoot { get; init; }
-
-    public Span StartTag { get; set; }
-
-    /// <summary>The end of the element's name in its start tag, where a first attribute is added.</summary>
-    public int NameEnd { get; init; }
-
-    /// <summary>The <c>&gt;</c> that ends the start tag, or the <c>/&gt;</c> of a self-closed tag.</summary>
-    public Span Close { get; set; }
-
-    public bool SelfClosed { get; set; }
-
-    public Span? EndTag { get; set; }
-
-    public int ContentStart => StartTag.End;
-
-    public int ContentEnd => EndTag?.Start ?? StartTag.End;
-
-    public List<XmlAttribute> Attributes { get; } = [];
-
-    /// <summary>Text runs and child elements in document order.</summary>
-    public List<object> Content { get; } = [];
-
-    /// <summary>A reference to an entity other than the five predefined ones: the element is an unreadable entry.</summary>
-    public string? Unreadable { get; set; }
-
-    public IEnumerable<XmlElement> Elements => Content.OfType<XmlElement>();
-
-    public XmlAttribute? Attribute(string name) => Attributes.FirstOrDefault(a => a.Name == name);
-}
-
 /// <summary>
 /// The xml family (FBL §4.5): a lossless reading of an XML 1.0 document over its bytes. The prolog,
 /// comments, processing instructions and a document type declaration are unbound content; carriage
