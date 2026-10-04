@@ -112,4 +112,14 @@ describe("the agent behavior modelling canvas, mounted", () => {
       connection: "child:1.1",
     });
   });
+  it("draws each parent line from the middle of the parent's bottom, down and across, into the middle of the child's top", () => {
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the parent is centred at (214, 30) and the child at (100, 146), both 200 by 60, so
+    // the line leaves (214, 60), turns half way down at y 88, and arrives at (100, 116) - vertical
+    // at both ends, so the arrowhead points into the child rather than lying along its border.
+    const line = container.querySelector('[data-connection-id="child:1.1"] .canvas-connection-line');
+    expect(line?.getAttribute("d")).toBe("M 214 60 L 214 88 L 100 88 L 100 116");
+  });
 });

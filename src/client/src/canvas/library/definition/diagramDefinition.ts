@@ -836,6 +836,9 @@ export interface ElementTypeDefinition {
  * the interactive family is `cubic-bezier` with `adjustable: true` on its relation type, and
  * `arc` covers causal-loop's chord-bowed links. A chordless path - causal-loop's self-loop -
  * is a {@link CustomRouteRef}, admitted first-class rather than forced into a built-in.
+ * `orthogonal` leaves and arrives sideways between ends on the left and right sides, and
+ * vertically between ends on a top and a bottom edge - a tree drawn top-down, its element
+ * types declaring `edgeSides: "vertical"`.
  */
 export type BuiltInRoute =
   | "straight"

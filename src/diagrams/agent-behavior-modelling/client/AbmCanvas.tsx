@@ -88,7 +88,11 @@ function nodeType(kind: AbmNodeKind): ElementTypeDefinition {
         className: "canvas-node-label abm-label",
       },
     ],
-    anchors: { kind: "edge" },
+    // A parent line leaves the middle of the parent's bottom and arrives at the middle of the
+    // child's top, as a tree drawn top-down reads; the orthogonal route then runs vertically out
+    // and in. A true edge intersection would put both ends wherever the slant between the two
+    // centres crossed the outline, and the route would lie along the borders.
+    anchors: { kind: "edge", edgeSides: "vertical" },
     sizing: "model",
   };
 }

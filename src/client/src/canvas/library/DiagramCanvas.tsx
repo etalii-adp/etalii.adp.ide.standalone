@@ -3490,7 +3490,7 @@ export function routePath(
     case "polyline":
       return polylinePath(from, to, waypoints);
     case "orthogonal":
-      return orthogonalPath(from, to, cornerRadius ?? 0);
+      return orthogonalPath(from, to, cornerRadius ?? 0, orthogonalAxisOf(from, to, ends));
     case "arc":
       return arcPath(from, to);
     case "quadratic-bezier":
@@ -3502,6 +3502,28 @@ export function routePath(
     case "spline":
       return splinePath(from, to, waypoints);
   }
+}
+
+/**
+ * The way an orthogonal route leaves and arrives: vertically when both ends sit on a top or bottom
+ * edge of their boxes - a tree drawn top-down, its ends on `edgeSides: "vertical"` - and
+ * horizontally otherwise, which is what ends on the sides need and what a route without its
+ * boxes (the connect preview) has always drawn.
+ */
+function orthogonalAxisOf(from: Point, to: Point, ends: import("./definition/diagramDefinition").RouteEnds | undefined): "horizontal" | "vertical" {
+  if (ends === undefined) {
+    return "horizontal";
+  }
+
+  return onTopOrBottom(from, ends.source) && onTopOrBottom(to, ends.target) ? "vertical" : "horizontal";
+}
+
+/** Whether a point lies on a box's top or bottom edge and not on a corner shared with a side. */
+function onTopOrBottom(point: Point, box: import("./definition/diagramDefinition").ShapeBounds): boolean {
+  const near = (a: number, b: number) => Math.abs(a - b) < 0.5;
+  const onHorizontalEdge = near(point.y, box.y) || near(point.y, box.y + box.height);
+  const onSide = near(point.x, box.x) || near(point.x, box.x + box.width);
+  return onHorizontalEdge && !onSide;
 }
 
 /**
