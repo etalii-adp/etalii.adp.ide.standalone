@@ -90,8 +90,8 @@ public sealed class SupplyChainValidator : IDiagramValidator
             .Select(node => new SupplyChainBreach(SupplyChainRuleIds.UnknownGroup, $"The node `{node.Id}` is in `{node.Group}`, which is not a group here; it is drawn outside every group.", node.Range.Start, true)));
 
         breaches.AddRange(model.Groups
-            .Where(group => group.Id.Length > 0 && !model.Nodes.Any(node => node.Group == group.Id))
-            .Select(group => new SupplyChainBreach(SupplyChainRuleIds.EmptyGroup, $"The group `{group.Id}` has no nodes, so it is not drawn.", group.Range.Start, true)));
+            .Where(group => group.Id.Length > 0 && !group.IsPlaced && !model.Nodes.Any(node => node.Group == group.Id))
+            .Select(group => new SupplyChainBreach(SupplyChainRuleIds.EmptyGroup, $"The group `{group.Id}` has no nodes and no `x` and `y`, so it is not drawn.", group.Range.Start, true)));
 
         return [.. breaches.OrderBy(breach => breach.Line)];
     }

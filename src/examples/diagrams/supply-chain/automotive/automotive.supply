@@ -26,7 +26,7 @@ groups:
 
 nodes:
   - id: atacama-lithium
-    type: raw-material
+    type: source
     name: Atacama lithium brine
     group: south-america
     quantity: 50
@@ -34,98 +34,98 @@ nodes:
     step: 5
     description: Lithium carbonate equivalent, evaporated from brine.
   - id: andes-copper
-    type: raw-material
+    type: source
     name: Andean copper mines
     group: south-america
     quantity: 5500
     unit: kt Cu
     step: 100
   - id: kolwezi-cobalt
-    type: raw-material
+    type: source
     name: Kolwezi cobalt mines
     group: central-africa
     quantity: 170
     unit: kt Co
     step: 5
   - id: pilbara-spodumene
-    type: raw-material
+    type: source
     name: Pilbara spodumene
     group: australia
     quantity: 90
     unit: kt LCE
     step: 5
   - id: pilbara-iron
-    type: raw-material
+    type: source
     name: Pilbara iron ore
     group: australia
     quantity: 900
     unit: Mt
     step: 10
   - id: sulawesi-nickel
-    type: raw-material
+    type: source
     name: Sulawesi nickel
     group: southeast-asia
     quantity: 1800
     unit: kt Ni
     step: 50
   - id: thai-rubber
-    type: raw-material
+    type: source
     name: Natural rubber plantations
     group: southeast-asia
     quantity: 4800
     unit: kt
     step: 100
   - id: lithium-refinery
-    type: supplier
+    type: processor
     name: Lithium hydroxide refinery
     group: china
     quantity: 120
     unit: kt LCE
     step: 5
   - id: cathode-plant
-    type: manufacturer
+    type: producer
     name: NMC cathode plant
     group: china
     quantity: 900
     unit: kt
     step: 25
   - id: cell-gigafactory
-    type: manufacturer
+    type: producer
     name: Battery cell gigafactory
     group: china
     quantity: 400
     unit: GWh
     step: 10
   - id: steel-mill
-    type: manufacturer
+    type: producer
     name: Flat steel mill
     group: europe
     quantity: 30
     unit: Mt
     step: 1
   - id: chip-foundry
-    type: manufacturer
+    type: producer
     name: Automotive microcontroller fab
     group: east-asia
     quantity: 12
     unit: bn chips
     step: 1
   - id: pouch-cells
-    type: manufacturer
+    type: producer
     name: Pouch cell plant
     group: east-asia
     quantity: 150
     unit: GWh
     step: 10
   - id: tyre-plant
-    type: manufacturer
+    type: producer
     name: Tyre plant
     group: europe
     quantity: 60
     unit: M tyres
     step: 5
   - id: ecu-supplier
-    type: supplier
+    type: processor
     name: Tier-1 electronics
     group: europe
     quantity: 40
@@ -133,49 +133,49 @@ nodes:
     step: 1
     description: Engine, body and battery-management control units.
   - id: seat-supplier
-    type: supplier
+    type: processor
     name: Tier-1 seating
     group: europe
     quantity: 15
     unit: M seats
     step: 1
   - id: pack-assembly
-    type: assembler
+    type: integrator
     name: Battery pack assembly
     group: europe
     quantity: 2.5
     unit: M packs
     step: 0.1
   - id: body-shop
-    type: assembler
+    type: integrator
     name: Press and body shop
     group: europe
     quantity: 3
     unit: M bodies
     step: 0.1
   - id: vehicle-plant
-    type: assembler
+    type: integrator
     name: Vehicle assembly plant
     group: europe
     quantity: 2.8
     unit: M vehicles
     step: 0.1
   - id: port-logistics
-    type: distributor
+    type: hub
     name: Port and rail logistics
     group: europe
     quantity: 2.6
     unit: M vehicles
     step: 0.1
   - id: dealer-network
-    type: retailer
+    type: outlet
     name: Dealer network
     group: europe
     quantity: 1.9
     unit: M vehicles
     step: 0.1
   - id: fleet-leasing
-    type: retailer
+    type: outlet
     name: Fleet leasing
     group: europe
     quantity: 0.7

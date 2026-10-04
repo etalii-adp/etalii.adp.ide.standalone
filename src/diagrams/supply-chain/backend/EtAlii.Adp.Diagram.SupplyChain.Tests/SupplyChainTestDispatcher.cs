@@ -8,6 +8,8 @@ internal sealed class SupplyChainTestDispatcher(ISupplyChainDocumentStore docume
     public Task<CommandResult> DispatchAsync(ICommand command, CancellationToken cancellationToken = default) => command switch
     {
         AddSupplyChainNodeCommand add => new AddSupplyChainNodeCommandHandler(documents).ExecuteAsync(add, cancellationToken),
+        AddSupplyChainGroupCommand addGroup => new AddSupplyChainGroupCommandHandler(documents).ExecuteAsync(addGroup, cancellationToken),
+        MoveSupplyChainEntryCommand move => new MoveSupplyChainEntryCommandHandler(documents).ExecuteAsync(move, cancellationToken),
         ConnectSupplyChainNodesCommand connect => new ConnectSupplyChainNodesCommandHandler(documents).ExecuteAsync(connect, cancellationToken),
         RemoveSupplyChainEntryCommand remove => new RemoveSupplyChainEntryCommandHandler(documents).ExecuteAsync(remove, cancellationToken),
         PlaceSupplyChainNodesCommand place => new PlaceSupplyChainNodesCommandHandler(documents).ExecuteAsync(place, cancellationToken),

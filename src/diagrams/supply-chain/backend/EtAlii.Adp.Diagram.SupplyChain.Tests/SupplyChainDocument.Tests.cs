@@ -45,7 +45,7 @@ public sealed class SupplyChainDocumentTests
         Assert.Equal(["ore", "goods"], model.Flows.Select(flow => flow.Id));
 
         var mine = model.Nodes[0];
-        Assert.Equal(SupplyChainNodeTypes.RawMaterial, mine.Type);
+        Assert.Equal(SupplyChainNodeTypes.Source, mine.Type);
         Assert.Equal("Mine", mine.Name);
         Assert.Equal("north", mine.Group);
         Assert.Equal(10, mine.Quantity);
@@ -145,7 +145,7 @@ public sealed class SupplyChainDocumentTests
         var model = SupplyChainParser.Parse(document);
 
         // Act.
-        var node = new SupplyChainNode("n1", SupplyChainNodeTypes.Supplier, "Acme", "", "", 3, "", null, 10, 20, default);
+        var node = new SupplyChainNode("n1", SupplyChainNodeTypes.Processor, "Acme", "", "", 3, "", null, 10, 20, default);
         Assert.True(SupplyChainWriter.AddNode(document, model, node).WasApplied);
 
         // Assert.

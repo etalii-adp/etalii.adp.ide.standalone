@@ -12,14 +12,18 @@ export const SUPPLY_CHAIN_MIME = "etalii/supply-chain";
 /** What the backend prefixes an element or connection type with on the wire. */
 export const SUPPLY_CHAIN_TYPE_PREFIX = `${SUPPLY_CHAIN_MIME}+`;
 
-/** The seven stages a node may be, in the order goods move through them. */
+/**
+ * The seven stages a node may be, in the order goods move through them. They name roles, not
+ * industries; the backend reads a document's older words (`raw-material`, `supplier`, …) as these,
+ * so only these ever reach the client.
+ */
 export const SupplyChainStages = {
-  rawMaterial: "raw-material",
-  supplier: "supplier",
-  manufacturer: "manufacturer",
-  assembler: "assembler",
-  distributor: "distributor",
-  retailer: "retailer",
+  source: "source",
+  processor: "processor",
+  producer: "producer",
+  integrator: "integrator",
+  hub: "hub",
+  outlet: "outlet",
   consumer: "consumer",
 } as const;
 
@@ -48,6 +52,8 @@ export const SUPPLY_CHAIN_ADD_ACTION_PREFIX = "supply-chain.add.";
 export const SupplyChainActions = {
   /** Adds a node of this stage centred on the `new:x,y` target. */
   add: (stage: SupplyChainStage) => `${SUPPLY_CHAIN_ADD_ACTION_PREFIX}${stage}`,
+  /** Adds an empty group whose frame is centred on the `new:x,y` target. */
+  addGroup: "supply-chain.add-group",
   /** Draws a flow for the `rel:from->to` target. */
   connect: "supply-chain.connect",
   /** Adds one step to a node's quantity or a flow's volume. */
@@ -67,6 +73,7 @@ export const SupplyChainActions = {
 /** Every action id the backend must answer. */
 export const SUPPLY_CHAIN_ACTION_IDS: readonly string[] = [
   ...SUPPLY_CHAIN_STAGES.map((stage) => SupplyChainActions.add(stage)),
+  SupplyChainActions.addGroup,
   SupplyChainActions.connect,
   SupplyChainActions.increase,
   SupplyChainActions.decrease,

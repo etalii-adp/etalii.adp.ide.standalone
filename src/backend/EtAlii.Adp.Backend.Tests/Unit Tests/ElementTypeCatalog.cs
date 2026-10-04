@@ -102,7 +102,7 @@ internal static class ElementTypeCatalog
             [SparqlElementMapper.VariableType, SparqlElementMapper.TermType, SparqlElementMapper.RegionType, SparqlElementMapper.AnnotationType, SparqlElementMapper.HeaderType, SparqlElementMapper.TruncationType],
             [SparqlElementMapper.EdgeType]),
         new("supply-chain",
-            [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.RawMaterialType, SupplyChainElementMapper.SupplierType, SupplyChainElementMapper.ManufacturerType, SupplyChainElementMapper.AssemblerType, SupplyChainElementMapper.DistributorType, SupplyChainElementMapper.RetailerType, SupplyChainElementMapper.ConsumerType],
+            [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.SourceType, SupplyChainElementMapper.ProcessorType, SupplyChainElementMapper.ProducerType, SupplyChainElementMapper.IntegratorType, SupplyChainElementMapper.HubType, SupplyChainElementMapper.OutletType, SupplyChainElementMapper.ConsumerType],
             [SupplyChainElementMapper.FlowType]),
         new("timeline",
             [TimelineElementMapper.PeriodType, TimelineElementMapper.MomentType],
