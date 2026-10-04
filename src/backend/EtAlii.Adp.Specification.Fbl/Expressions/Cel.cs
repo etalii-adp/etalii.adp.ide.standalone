@@ -177,7 +177,7 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => Entries.SelectMany(e => new[] { e.Key, e.Value });
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             var map = new CelMap();
             foreach ((CelNode k, CelNode v) in Entries) map[CelValues.AsString(k.Evaluate(scope, ref steps))] = v.Evaluate(scope, ref steps);
@@ -230,7 +230,7 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => [Target];
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             CelProgram.Step(ref steps);
             var target = Target.Evaluate(scope, ref steps);
@@ -386,7 +386,7 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => Receiver is null ? Arguments : Arguments.Prepend(Receiver);
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             CelProgram.Step(ref steps);
             var receiver = Receiver?.Evaluate(scope, ref steps);
