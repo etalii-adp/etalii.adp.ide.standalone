@@ -243,7 +243,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
                 continue;
             }
 
-            var (value, reason) = triple.Object switch
+            (string value, string reason) = triple.Object switch
             {
                 IriTerm named => (RdfProjection.Display(entry.Model, named), axiomsAreTriples),
                 // An expression axiom shows its full Manchester form; the boundary is the reason

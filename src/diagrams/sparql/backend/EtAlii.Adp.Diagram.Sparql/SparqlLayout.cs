@@ -157,7 +157,7 @@ public static class SparqlLayout
         SparqlProjectionResult projection)
     {
         var items = ItemsOf(scopePath, nodesByScope, regionsByParentPath, projection);
-        var (width, height) = GridExtent(items);
+        (double width, double height) = GridExtent(items);
         return new SparqlRect(
             0,
             0,

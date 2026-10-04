@@ -109,7 +109,7 @@ public sealed class SupplyChainLayout
             node => node.Id,
             node =>
             {
-                var (x, y) = node.IsPlaced ? (node.X!.Value, node.Y!.Value) : arranged[node.Id];
+                (double x, double y) = node.IsPlaced ? (node.X!.Value, node.Y!.Value) : arranged[node.Id];
                 return new SupplyChainBox(x, y, SupplyChainGeometry.NodeWidth, SupplyChainGeometry.NodeHeight);
             },
             StringComparer.Ordinal);
@@ -230,7 +230,7 @@ public sealed class SupplyChainLayout
             foreach (var band in bandOrder)
             {
                 var height = 0;
-                foreach (var ((rowBand, _), members) in rows)
+                foreach (((int rowBand, var _), List<string> members) in rows)
                 {
                     if (rowBand != band)
                     {
@@ -255,7 +255,7 @@ public sealed class SupplyChainLayout
         foreach (var band in bandOrder)
         {
             var spanned = bands[band].Select(id => layer[id]).ToList();
-            var (first, last) = (spanned.Min(), spanned.Max());
+            (int first, int last) = (spanned.Min(), spanned.Max());
             var grouped = groupOf(nodes[index[bands[band][0]]]) is not null;
             var header = grouped ? SupplyChainGeometry.GroupHeader : 0;
             var footer = grouped ? SupplyChainGeometry.GroupPadding : 0;
@@ -310,7 +310,7 @@ public sealed class SupplyChainLayout
             state[start.Id] = 1;
             while (stack.Count > 0)
             {
-                var (id, next) = stack.Pop();
+                (string id, int next) = stack.Pop();
                 var targets = outgoing[id];
                 if (next >= targets.Count)
                 {

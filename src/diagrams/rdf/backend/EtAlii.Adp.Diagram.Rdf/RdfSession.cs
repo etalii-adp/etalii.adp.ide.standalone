@@ -159,7 +159,7 @@ public sealed class RdfSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
-        var (projection, positions) = LaidOut();
+        (RdfProjectionResult projection, IReadOnlyDictionary<string, RegistrationPosition> positions) = LaidOut();
         return _mapper.Elements(InView(projection, positions), positions);
     }
 

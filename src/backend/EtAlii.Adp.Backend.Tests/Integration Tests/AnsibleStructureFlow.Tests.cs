@@ -173,7 +173,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
 
         // Assert.
         Assert.Equal(before.Keys.Order(StringComparer.Ordinal), Snapshot().Keys.Order(StringComparer.Ordinal));
-        foreach (var (path, bytes) in before)
+        foreach ((string path, byte[] bytes) in before)
         {
             var bytesToCheck = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
             Assert.True(bytes.SequenceEqual(bytesToCheck), $"{path} changed.");
@@ -233,7 +233,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
             new RegistrationPosition(321, 123),
             RegistrationLayout.Read(registration)["role:nginx"]);
 
-        foreach (var (file, bytes) in ansibleFilesBefore)
+        foreach ((string file, byte[] bytes) in ansibleFilesBefore)
         {
             var now = await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken);
             Assert.True(bytes.SequenceEqual(now), $"The reposition wrote {file}, which Ansible owns.");

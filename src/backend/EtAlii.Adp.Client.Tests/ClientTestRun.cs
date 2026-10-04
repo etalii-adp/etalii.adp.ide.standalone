@@ -157,7 +157,7 @@ public static class ClientTestRun
         var report = IoPath.Combine(IoPath.GetTempPath(), "adp-client-vitest-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
-            var (exitCode, output) = Execute(client, report, arguments);
+            (int exitCode, string output) = Execute(client, report, arguments);
             if (!File.Exists(report))
             {
                 return ClientRunResult.NotRun($"vitest wrote no report (exit code {exitCode}). Its output was:{Environment.NewLine}{output}");

@@ -194,7 +194,7 @@ public static class FdgParser
         List<FdgProblem> problems,
         string what)
     {
-        foreach (var (key, _) in mapping.Children)
+        foreach ((YamlNode key, var _) in mapping.Children)
         {
             if (key is YamlScalarNode { Value: { } name } scalar && !known.Contains(name, StringComparer.Ordinal))
             {

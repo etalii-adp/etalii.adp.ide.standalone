@@ -135,7 +135,7 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
                 XlLabelsRuleId));
         }
 
-        var (_, misplacedLine) = SkosRegistrationLanguage.Read(request.RegistrationPath);
+        (_, int misplacedLine) = SkosRegistrationLanguage.Read(request.RegistrationPath);
         if (misplacedLine > 0)
         {
             problems.Add(new DiagramProblem(

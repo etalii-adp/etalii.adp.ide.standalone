@@ -43,7 +43,7 @@ public class C4ElementMapperTests
 
     private static IReadOnlyList<DiagramElement> Visible(string key, string dsl = Sample)
     {
-        var (workspace, view) = Load(key, dsl);
+        (C4Workspace workspace, C4View view) = Load(key, dsl);
         return Mapper.Visible(workspace, view, DiagramViewport.Unbounded);
     }
 
@@ -397,7 +397,7 @@ public class C4ElementMapperTests
         // Arrange.
         // The rule the mindmap's missing connectors taught: an on-screen element brings whatever
         // its lines reach, or the line has nothing to anchor to.
-        var (workspace, view) = Load("containers");
+        (C4Workspace workspace, C4View view) = Load("containers");
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
         var web = layout.Boxes["web"];
         var tight = new DiagramViewport(web.X, web.Y, web.Right, web.Bottom);
@@ -414,7 +414,7 @@ public class C4ElementMapperTests
     public void AViewportFarOffTheDiagram_DeliversNoNodes()
     {
         // Arrange.
-        var (workspace, view) = Load("context");
+        (C4Workspace workspace, C4View view) = Load("context");
 
         // Act.
         var elements = Mapper.Visible(workspace, view, new DiagramViewport(100000, 100000, 200000, 200000));

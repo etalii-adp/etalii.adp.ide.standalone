@@ -82,7 +82,7 @@ public static class C4LayoutEngine
         var authoredIgnored = hasAuthored && view.AutoLayout is not null;
         if (hasAuthored && !authoredIgnored)
         {
-            foreach (var (id, position) in authored!)
+            foreach ((string id, C4SidecarPosition position) in authored!)
             {
                 if (sizes.TryGetValue(id, out var size))
                 {
@@ -261,7 +261,7 @@ public static class C4LayoutEngine
                     continue;
                 }
 
-                var (childBoxes, childBoundaries, width, height) = Arrange(children);
+                (Dictionary<string, C4Box> childBoxes, List<C4Boundary> childBoundaries, double width, double height) = Arrange(children);
                 inner[sibling.Id] = (childBoxes, childBoundaries);
                 var labelWidth = TextMetric.WidthOf(BoundaryLabelOf(sibling), metrics.FontSize) + 2 * metrics.HorizontalPadding;
                 sizes[sibling.Id] = new C4Box(0, 0, Math.Round(Math.Max(width + 2 * padding, labelWidth), 2), Math.Round(height + 2 * padding + labelHeight, 2));
@@ -308,7 +308,7 @@ public static class C4LayoutEngine
                 resultBoundaries.Add(new C4Boundary($"boundary:{sibling.Id}", sibling.Name, BoundaryKindOf(sibling), box));
                 var dx = box.X + padding;
                 var dy = box.Y + padding;
-                foreach (var (id, child) in contents.Boxes)
+                foreach ((string id, C4Box child) in contents.Boxes)
                 {
                     resultBoxes[id] = Offset(child, dx, dy);
                 }
@@ -321,8 +321,8 @@ public static class C4LayoutEngine
             return (resultBoxes, resultBoundaries, extentWidth, extentHeight);
         }
 
-        var (topBoxes, topBoundaries, _, _) = Arrange(members.Where(element => hosts[element.Id] is null).ToArray());
-        foreach (var (id, box) in topBoxes)
+        (Dictionary<string, C4Box> topBoxes, List<C4Boundary> topBoundaries, _, _) = Arrange(members.Where(element => hosts[element.Id] is null).ToArray());
+        foreach ((string id, C4Box box) in topBoxes)
         {
             boxes[id] = box;
         }
@@ -333,7 +333,7 @@ public static class C4LayoutEngine
         var authoredIgnored = hasAuthored && view.AutoLayout is not null;
         if (hasAuthored && !authoredIgnored)
         {
-            foreach (var (id, position) in authored!)
+            foreach ((string id, C4SidecarPosition position) in authored!)
             {
                 if (boxes.TryGetValue(id, out var box) && byId.TryGetValue(id, out var element) && hosts[element.Id] is null)
                 {
@@ -623,7 +623,7 @@ public static class C4LayoutEngine
         for (var pass = 0; pass < outsiders.Count; pass++)
         {
             var moved = false;
-            foreach (var (id, vertically) in pushedVertically)
+            foreach ((string id, bool vertically) in pushedVertically)
             {
                 foreach (var other in outsiders)
                 {

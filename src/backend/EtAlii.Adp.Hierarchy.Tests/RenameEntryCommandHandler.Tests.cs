@@ -342,7 +342,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     public async Task ThroughTheHistoryStack_ARenameCanBeUndoneAndRedone()
     {
         // Arrange.
-        var (stack, scope) = CreateHistory();
+        (HistoryStack stack, IDisposable scope) = CreateHistory();
         using var scopeGuard = scope;
         using var stackGuard = stack;
         var path = CreateFile("old.txt");
@@ -367,7 +367,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     public async Task ThroughTheHistoryStack_SeveralRenamesUnwindInReverseOrder()
     {
         // Arrange.
-        var (stack, scope) = CreateHistory();
+        (HistoryStack stack, IDisposable scope) = CreateHistory();
         using var scopeGuard = scope;
         using var stackGuard = stack;
         CreateFile("first.txt");
@@ -389,7 +389,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     public async Task ThroughTheHistoryStack_ARejectedRenameIsNotRecorded()
     {
         // Arrange.
-        var (stack, scope) = CreateHistory();
+        (HistoryStack stack, IDisposable scope) = CreateHistory();
         using var scopeGuard = scope;
         using var stackGuard = stack;
         var path = CreateFile("old.txt");
@@ -408,7 +408,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     {
         // Arrange.
         // The undo has to re-validate: by the time it runs, the world may have moved on.
-        var (stack, scope) = CreateHistory();
+        (HistoryStack stack, IDisposable scope) = CreateHistory();
         using var scopeGuard = scope;
         using var stackGuard = stack;
         var path = CreateFile("old.txt");

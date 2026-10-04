@@ -252,7 +252,7 @@ public static class CausalLoopWriter
             })));
         }
 
-        foreach (var (lines, text) in edits.OrderByDescending(edit => edit.Lines.Start))
+        foreach ((LineRange lines, string text) in edits.OrderByDescending(edit => edit.Lines.Start))
         {
             document.Replace(lines, [text]);
         }

@@ -17,7 +17,7 @@ public class HelmLayoutTests
     public void EveryNode_GetsABox()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var boxes = HelmLayout.Compute(chart, graph);
@@ -31,7 +31,7 @@ public class HelmLayoutTests
     public void TheBands_RunLeftToRight()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var boxes = HelmLayout.Compute(chart, graph);
@@ -49,7 +49,7 @@ public class HelmLayoutTests
     public void TheDefaultLayer_TopsTheValuesStack()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var boxes = HelmLayout.Compute(chart, graph);
@@ -62,7 +62,7 @@ public class HelmLayoutTests
     public void Manifests_ComeBeforePartialsNotesAndTests()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var boxes = HelmLayout.Compute(chart, graph);
@@ -77,7 +77,7 @@ public class HelmLayoutTests
     public void TheLayout_IsDeterministic()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var first = HelmLayout.Compute(chart, graph);
@@ -85,7 +85,7 @@ public class HelmLayoutTests
 
         // Assert.
         Assert.Equal(first.Count, second.Count);
-        foreach (var (id, box) in first)
+        foreach ((string id, HelmBox box) in first)
         {
             Assert.Equal(box, second[id]);
         }

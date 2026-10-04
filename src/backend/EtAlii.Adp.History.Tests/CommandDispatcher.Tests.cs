@@ -21,7 +21,7 @@ public class CommandDispatcherTests
     public async Task DispatchAsync_RoutesTheCommandToItsRegisteredHandler()
     {
         // Arrange.
-        var (dispatcher, greet) = CreateDispatcher();
+        (CommandDispatcher dispatcher, CommandDispatcherGreetHandler greet) = CreateDispatcher();
         var command = new CommandDispatcherGreetCommand("ada");
 
         // Act.
@@ -37,7 +37,7 @@ public class CommandDispatcherTests
     public async Task DispatchAsync_PicksTheHandlerByTheCommandsRuntimeType()
     {
         // Arrange.
-        var (dispatcher, greet) = CreateDispatcher();
+        (CommandDispatcher dispatcher, CommandDispatcherGreetHandler greet) = CreateDispatcher();
 
         // Act.
         // Declared as ICommand, so only the runtime type can pick the handler.
@@ -54,7 +54,7 @@ public class CommandDispatcherTests
     public async Task DispatchAsync_PassesTheCancellationTokenThrough()
     {
         // Arrange.
-        var (dispatcher, greet) = CreateDispatcher();
+        (CommandDispatcher dispatcher, CommandDispatcherGreetHandler greet) = CreateDispatcher();
         using var cts = new CancellationTokenSource();
 
         // Act.
@@ -68,7 +68,7 @@ public class CommandDispatcherTests
     public async Task DispatchAsync_WithNoRegisteredHandler_ThrowsNamingTheCommand()
     {
         // Arrange.
-        var (dispatcher, _) = CreateDispatcher();
+        (CommandDispatcher dispatcher, _) = CreateDispatcher();
 
         // Act.
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -82,7 +82,7 @@ public class CommandDispatcherTests
     public async Task DispatchAsync_WithANullCommand_Throws()
     {
         // Act.
-        var (dispatcher, _) = CreateDispatcher();
+        (CommandDispatcher dispatcher, _) = CreateDispatcher();
 
         // Assert.
         await Assert.ThrowsAsync<ArgumentNullException>(() => dispatcher.DispatchAsync(null!, TestContext.Current.CancellationToken));
@@ -94,7 +94,7 @@ public class CommandDispatcherTests
         // Arrange.
         // The invoker cache is static and keyed by command type; repeated dispatches must keep
         // hitting the right handler rather than a stale entry from another test or instance.
-        var (dispatcher, greet) = CreateDispatcher();
+        (CommandDispatcher dispatcher, CommandDispatcherGreetHandler greet) = CreateDispatcher();
 
         // Act.
         await dispatcher.DispatchAsync(new CommandDispatcherGreetCommand("one"), TestContext.Current.CancellationToken);
@@ -112,8 +112,8 @@ public class CommandDispatcherTests
         // Arrange.
         // Guards the shared static invoker cache: it must not capture the first dispatcher's
         // service provider, or a second one would silently run the first one's handlers.
-        var (first, firstGreet) = CreateDispatcher();
-        var (second, secondGreet) = CreateDispatcher();
+        (CommandDispatcher first, CommandDispatcherGreetHandler firstGreet) = CreateDispatcher();
+        (CommandDispatcher second, CommandDispatcherGreetHandler secondGreet) = CreateDispatcher();
 
         // Act.
         await first.DispatchAsync(new CommandDispatcherGreetCommand("first"), TestContext.Current.CancellationToken);

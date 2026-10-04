@@ -38,7 +38,7 @@ internal static class DatabricksJobLayout
 
         // A stub sits one column left of the first task that names it, in its own row beneath
         // the layer - visible, marked missing, and out of the healthy tasks' way.
-        foreach (var (stubKey, dependentLayer) in stubs)
+        foreach ((string stubKey, int dependentLayer) in stubs)
         {
             var layer = Math.Max(dependentLayer - 1, 0);
             rows.TryGetValue(layer, out var row);

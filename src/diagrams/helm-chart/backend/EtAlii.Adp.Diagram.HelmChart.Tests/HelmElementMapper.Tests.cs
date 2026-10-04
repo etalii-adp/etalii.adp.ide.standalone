@@ -34,7 +34,7 @@ public class HelmElementMapperTests
     public void EveryNodeAndEveryEdge_BecomesOneElement()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
@@ -48,7 +48,7 @@ public class HelmElementMapperTests
     public void NodesTakeTheirBoxes_AndTheirSizesTravel()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
         var boxes = BoxesFor(graph);
 
         // Act.
@@ -67,7 +67,7 @@ public class HelmElementMapperTests
     public void TypesFollowTheKind_AndPartialsGetTheirOwn()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
@@ -89,7 +89,7 @@ public class HelmElementMapperTests
     public void ADependencyPayload_CarriesResolutionConditionAndTheLockPin()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
@@ -128,7 +128,7 @@ public class HelmElementMapperTests
     public void AnEdgeElement_CarriesItsWireEdge()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
 
         // Act.
         var elements = new HelmElementMapper().Elements(chart, graph, BoxesFor(graph));
@@ -147,7 +147,7 @@ public class HelmElementMapperTests
     public void Diff_RemovesWhatVanished_AndResendsNothingThatStayed()
     {
         // Arrange.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
         var mapper = new HelmElementMapper();
         var before = mapper.Elements(chart, graph, BoxesFor(graph));
         // The folder lost its override layer: two elements vanish (the node and its edge).
@@ -180,7 +180,7 @@ public class HelmElementMapperTests
         // Arrange: computed boxes rather than the hand-built ones, because what makes the two
         // agree is a property of the layout - it places every node - and hand-built boxes would
         // assume the very thing worth checking.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
         var boxes = HelmLayout.Compute(chart, graph);
         var mapper = new HelmElementMapper();
 
@@ -205,7 +205,7 @@ public class HelmElementMapperTests
     public void TheTwoPartCompany_WhenTheLayoutPlacedNothing()
     {
         // Arrange: the same graph, with every box withheld.
-        var (chart, graph) = WellFormed();
+        (HelmChart chart, HelmGraph graph) = WellFormed();
         var none = new Dictionary<string, HelmBox>(StringComparer.Ordinal);
         var mapper = new HelmElementMapper();
 

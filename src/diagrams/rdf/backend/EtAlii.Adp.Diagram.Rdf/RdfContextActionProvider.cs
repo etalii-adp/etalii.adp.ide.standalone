@@ -329,7 +329,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             || _owlDeclarationTypes.ContainsKey(actionId))
         {
             var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-            var (resolved, error) = RdfTermInput.Resolve(entry.Model, value);
+            (string? resolved, string error) = RdfTermInput.Resolve(entry.Model, value);
             if (resolved is null)
             {
                 return ValueTask.FromResult(ContextValidationResult.Rejected(error));
@@ -399,7 +399,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         {
             // A new ontology term is one stated triple: itself, declared as what the palette
             // entry says it is (owl-diagram Requirement 6.2).
-            var (declared, _) = RdfTermInput.Resolve(entry.Model, value);
+            (string? declared, _) = RdfTermInput.Resolve(entry.Model, value);
             return declared is null ? null : new AddRdfTripleCommand(body, declared, RdfVocabulary.Type, declarationType);
         }
 
@@ -407,7 +407,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         {
             case RenameResourceActionId when iri is not null:
             {
-                var (resolved, _) = RdfTermInput.Resolve(entry.Model, value);
+                (string? resolved, _) = RdfTermInput.Resolve(entry.Model, value);
                 return resolved is null ? null : new RenameRdfTermCommand(body, iri, resolved);
             }
 
@@ -418,7 +418,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             {
                 var fromIri = RdfSelection.ResourceOf(entry, from);
                 var toIri = RdfSelection.ResourceOf(entry, to);
-                var (predicate, _) = RdfTermInput.Resolve(entry.Model, value);
+                (string? predicate, _) = RdfTermInput.Resolve(entry.Model, value);
                 return fromIri is null || toIri is null || predicate is null
                     ? null
                     : new AddRdfTripleCommand(body, fromIri, predicate, toIri);
@@ -426,7 +426,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
             case AddResourceActionId:
             {
-                var (resolved, _) = RdfTermInput.Resolve(entry.Model, value);
+                (string? resolved, _) = RdfTermInput.Resolve(entry.Model, value);
                 // A new resource is one stated triple: itself, typed as the most general thing
                 // there is. The authored drop position is the client's follow-up layout write.
                 return resolved is null

@@ -179,7 +179,7 @@ public static class GhgRuleSet
     {
         foreach (var influence in model.Influences)
         {
-            foreach (var (side, id, end) in new[] { ("from", influence.From, influence.FromEnd), ("to", influence.To, influence.ToEnd) })
+            foreach ((string side, string id, GhgEnd end) in new[] { ("from", influence.From, influence.FromEnd), ("to", influence.To, influence.ToEnd) })
             {
                 if (!triggerIds.Contains(id) && !end.IsReadable)
                 {

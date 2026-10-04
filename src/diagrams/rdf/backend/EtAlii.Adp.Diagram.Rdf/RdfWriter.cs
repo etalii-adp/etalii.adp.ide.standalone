@@ -164,13 +164,13 @@ public static class RdfWriter
         if (triple.IsListContinuation || continuations.Count > 0)
         {
             // An object-list member: the object goes, the predicate stays for the rest.
-            var (start, end) = ExtendOverSeparator(document.Text, triple.ObjectStart, triple.ObjectEnd, ',');
+            (int start, int end) = ExtendOverSeparator(document.Text, triple.ObjectStart, triple.ObjectEnd, ',');
             RemoveRegion(document, start, end);
         }
         else
         {
             // A sole pair among others: predicate and object go, with one ';'.
-            var (start, end) = ExtendOverSeparator(document.Text, triple.SpanStart, triple.SpanEnd, ';');
+            (int start, int end) = ExtendOverSeparator(document.Text, triple.SpanStart, triple.SpanEnd, ';');
             RemoveRegion(document, start, end);
         }
 
@@ -254,7 +254,7 @@ public static class RdfWriter
         // subject's token is statement-level and a datatype's sits inside a literal - the tokens
         // see every spelling. Replacements land right to left so earlier offsets stay valid.
         var written = Compress(model, newIri);
-        foreach (var (start, end) in TermOccurrences(document.Text, oldIri).OrderByDescending(o => o.Start))
+        foreach ((int start, int end) in TermOccurrences(document.Text, oldIri).OrderByDescending(o => o.Start))
         {
             ReplaceRegion(document, start, end, written);
         }

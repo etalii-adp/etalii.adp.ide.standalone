@@ -53,7 +53,7 @@ internal static class BundleParser
             return variables;
         }
 
-        foreach (var (key, value) in mapping.Children)
+        foreach ((YamlNode key, YamlNode value) in mapping.Children)
         {
             if (key is not YamlScalarNode { Value: { } variableName })
             {
@@ -84,7 +84,7 @@ internal static class BundleParser
             return resources;
         }
 
-        foreach (var (kindNode, entries) in mapping.Children)
+        foreach ((YamlNode kindNode, YamlNode entries) in mapping.Children)
         {
             if (kindNode is not YamlScalarNode { Value: { } kind })
             {
@@ -105,7 +105,7 @@ internal static class BundleParser
                 continue;
             }
 
-            foreach (var (keyNode, body) in keyed.Children)
+            foreach ((YamlNode keyNode, YamlNode body) in keyed.Children)
             {
                 if (keyNode is YamlScalarNode { Value: { } key })
                 {
@@ -126,7 +126,7 @@ internal static class BundleParser
             return targets;
         }
 
-        foreach (var (nameNode, body) in mapping.Children)
+        foreach ((YamlNode nameNode, YamlNode body) in mapping.Children)
         {
             if (nameNode is not YamlScalarNode { Value: { } targetName } || body is not YamlMappingNode target)
             {
@@ -157,14 +157,14 @@ internal static class BundleParser
             return overrides;
         }
 
-        foreach (var (kindNode, entries) in mapping.Children)
+        foreach ((YamlNode kindNode, YamlNode entries) in mapping.Children)
         {
             if (kindNode is not YamlScalarNode { Value: { } kind } || entries is not YamlMappingNode keyed)
             {
                 continue;
             }
 
-            foreach (var (keyNode, body) in keyed.Children)
+            foreach ((YamlNode keyNode, YamlNode body) in keyed.Children)
             {
                 if (keyNode is YamlScalarNode { Value: { } key })
                 {
@@ -178,7 +178,7 @@ internal static class BundleParser
 
     private static IEnumerable<UnknownNode> ReadUnknownRootKeys(YamlMappingNode root, LineDocument document)
     {
-        foreach (var (keyNode, value) in root.Children)
+        foreach ((YamlNode keyNode, YamlNode value) in root.Children)
         {
             if (keyNode is YamlScalarNode { Value: { } key }
                 && !_modelledRootKeys.Contains(key, StringComparer.Ordinal))

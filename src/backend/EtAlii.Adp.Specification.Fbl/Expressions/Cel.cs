@@ -165,7 +165,7 @@ internal abstract record CelNode
     {
         public override IEnumerable<CelNode> Children => Items;
 
-        public override object? Evaluate(CelScope scope, ref int steps)
+        public override object Evaluate(CelScope scope, ref int steps)
         {
             var list = new List<object?>(Items.Count);
             foreach (var item in Items) list.Add(item.Evaluate(scope, ref steps));
@@ -180,7 +180,7 @@ internal abstract record CelNode
         public override object? Evaluate(CelScope scope, ref int steps)
         {
             var map = new CelMap();
-            foreach (var (k, v) in Entries) map[CelValues.AsString(k.Evaluate(scope, ref steps))] = v.Evaluate(scope, ref steps);
+            foreach ((CelNode k, CelNode v) in Entries) map[CelValues.AsString(k.Evaluate(scope, ref steps))] = v.Evaluate(scope, ref steps);
             return map;
         }
     }
@@ -618,7 +618,7 @@ internal sealed class CelParser(string source)
     private CelNode ParsePrimary()
     {
         if (_position >= _tokens.Count) throw new CelException($"'{source}' ends too early.");
-        var (kind, text) = _tokens[_position++];
+        (string kind, string text) = _tokens[_position++];
         switch (kind)
         {
             case "int": return new CelNode.Literal(long.Parse(text, CultureInfo.InvariantCulture));

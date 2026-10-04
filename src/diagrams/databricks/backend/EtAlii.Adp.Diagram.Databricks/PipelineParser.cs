@@ -34,7 +34,7 @@ internal static class PipelineParser
         if (DatabricksYaml.Mapping(root, "resources") is { } resources
             && DatabricksYaml.Mapping(resources, "pipelines") is { } keyed)
         {
-            foreach (var (keyNode, body) in keyed.Children)
+            foreach ((YamlNode keyNode, YamlNode body) in keyed.Children)
             {
                 if (keyNode is YamlScalarNode { Value: { } key } && body is YamlMappingNode pipeline)
                 {
@@ -84,8 +84,8 @@ internal static class PipelineParser
 
             // A library entry is a single-key mapping naming its kind; the path field inside
             // depends on the kind (`path` for notebook and file, `include` for glob).
-            var (kind, path) = entry.Children.Count == 1
-                && entry.Children.First() is { Key: YamlScalarNode { Value: { } kindName }, Value: YamlMappingNode inner }
+            (string kind, string path) = entry.Children.Count == 1
+                                         && entry.Children.First() is { Key: YamlScalarNode { Value: { } kindName }, Value: YamlMappingNode inner }
                     ? (kindName, DatabricksYaml.Scalar(inner, "path") ?? DatabricksYaml.Scalar(inner, "include") ?? "")
                     : ("other", "");
 
@@ -125,7 +125,7 @@ internal static class PipelineParser
     private static List<UnknownNode> ReadUnknownKeys(YamlMappingNode pipeline, LineDocument document)
     {
         var unknown = new List<UnknownNode>();
-        foreach (var (keyNode, value) in pipeline.Children)
+        foreach ((YamlNode keyNode, YamlNode value) in pipeline.Children)
         {
             if (keyNode is YamlScalarNode { Value: { } key }
                 && !_modelledKeys.Contains(key, StringComparer.Ordinal))

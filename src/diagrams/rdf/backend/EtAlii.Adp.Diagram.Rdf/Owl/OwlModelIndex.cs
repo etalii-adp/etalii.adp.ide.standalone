@@ -128,7 +128,7 @@ internal sealed class OwlModelIndex
 
         // Second pass: what classification of others implies - individuals typed by this
         // file's classes, datatype ranges, and the AllDisjointClasses groups.
-        foreach (var (subject, types) in index._types)
+        foreach ((string subject, List<string> types) in index._types)
         {
             if (types.Any(type => !OwlVocabulary.IsBuiltIn(type) && index.Classes.Contains(type)))
             {
@@ -136,7 +136,7 @@ internal sealed class OwlModelIndex
             }
         }
 
-        foreach (var (_, triples) in index._byBlankSubject)
+        foreach ((var _, List<RdfTriple> triples) in index._byBlankSubject)
         {
             var isGroup = triples.Any(t =>
                 t.Predicate.Iri == RdfVocabulary.Type && t.Object is IriTerm { Iri: OwlVocabulary.AllDisjointClasses });

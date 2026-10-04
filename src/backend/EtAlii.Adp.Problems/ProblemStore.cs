@@ -247,7 +247,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
             return true;
         }
 
-        var (lastWriteTimeUtc, length) = ProblemStamp.Of(fullPath);
+        (DateTime lastWriteTimeUtc, long length) = ProblemStamp.Of(fullPath);
         if (lastWriteTimeUtc != problem.LastWriteTimeUtc || length != problem.Length)
         {
             return true;

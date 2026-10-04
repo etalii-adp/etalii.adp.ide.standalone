@@ -78,7 +78,7 @@ public sealed class AuthenticationService : Wire.AuthenticationService.Authentic
             });
         }
 
-        var (userId, token) = IssueSessionFor(request.Username);
+        (ShortGuid userId, string token) = IssueSessionFor(request.Username);
         // The user id, never the token: the token is a bearer credential for the whole session.
         _logger.Information("Login accepted for {Username}, issued a session for {UserId}", request.Username, userId);
         return Task.FromResult(new LoginResponse
@@ -163,7 +163,7 @@ public sealed class AuthenticationService : Wire.AuthenticationService.Authentic
             return Task.FromResult(new DeveloperSessionResponse());
         }
 
-        var (userId, token) = IssueSessionFor(username);
+        (ShortGuid userId, string token) = IssueSessionFor(username);
         _logger.Information(
             "Issued a developer session for {Username} as {UserId} without a credential; the sign-in form will not be shown",
             username, userId);

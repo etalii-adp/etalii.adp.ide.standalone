@@ -32,7 +32,7 @@ public class RdfWriterTests
     public void RemovingACommaListContinuation_TakesTheObjectAndItsPrecedingComma_AndNothingElse()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = Find(model, "http://example.org/knows", "http://example.org/carol");
 
         // Act.
@@ -54,7 +54,7 @@ public class RdfWriterTests
     public void RemovingACommaListHead_TakesTheObjectAndItsFollowingComma_LeavingThePredicateForTheRest()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = Find(model, "http://example.org/knows", "http://example.org/bob");
 
         // Act.
@@ -76,7 +76,7 @@ public class RdfWriterTests
     public void RemovingASemicolonPair_TakesExactlyOneSeparator_AndTheTerminatorSurvives()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = model.Triples.Single(t =>
             t.Subject is IriTerm { Iri: "http://example.org/alice" } && t.Object is LiteralTerm { Lexical: "Alice" });
 
@@ -98,7 +98,7 @@ public class RdfWriterTests
     public void RemovingAStatementsOnlyTriple_TakesTheWholeBlockAndItsDot()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = model.Triples.Single(t =>
             t.Subject is IriTerm { Iri: "http://example.org/bob" } && t.Object is LiteralTerm { Lexical: "Bob" });
 
@@ -120,7 +120,7 @@ public class RdfWriterTests
     public void RemovingAResource_TakesEveryTripleItTouches_BottomUp()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
 
         // Act.
         var refusal = RdfWriter.RemoveResource(document, model, "http://example.org/bob");
@@ -140,7 +140,7 @@ public class RdfWriterTests
     public void RenamingATerm_RewritesEveryOccurrence_StrandingNoReference()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
 
         // Act.
         var refusal = RdfWriter.RenameTerm(document, model, "http://example.org/bob", "http://example.org/robert");
@@ -161,7 +161,7 @@ public class RdfWriterTests
     public void RenamingOntoAnExistingTerm_IsRefusedBeforeAnySplice()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
 
         // Act.
         var refusal = RdfWriter.RenameTerm(document, model, "http://example.org/bob", "http://example.org/alice");
@@ -175,7 +175,7 @@ public class RdfWriterTests
     public void ReplacingALiteralObject_TouchesNoNeighbouringByte()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = model.Triples.Single(t =>
             t.Subject is IriTerm { Iri: "http://example.org/alice" } && t.Object is LiteralTerm);
 
@@ -198,7 +198,7 @@ public class RdfWriterTests
     public void ReplacingANonLiteralObject_IsRefused()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = Find(model, "http://example.org/knows", "http://example.org/bob");
 
         // Act.
@@ -213,7 +213,7 @@ public class RdfWriterTests
     public void AddingATripleToAnExistingSubject_ContinuesItsBlockWithItsIndentation()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
 
         // Act.
         var refusal = RdfWriter.AddTriple(
@@ -237,7 +237,7 @@ public class RdfWriterTests
     public void AddingATripleForANewSubject_AppendsAStatement_WithDeclaredPrefixesNeverInvented()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
 
         // Act.
         // The predicate's namespace is not declared, so it must be written in full, not invented.
@@ -258,7 +258,7 @@ public class RdfWriterTests
     public void AddingAPrefix_LandsBesideTheDeclarationRun_AndRedeclarationIsRefused()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
 
         // Act.
         var added = RdfWriter.AddPrefix(document, model, "foaf", "http://xmlns.com/foaf/0.1/");
@@ -277,7 +277,7 @@ public class RdfWriterTests
     public void BlankNodeRootedEdits_AreRefusedWithTheIdentityBoundarySentence()
     {
         // Arrange.
-        var (document, model) = Load(
+        (LineDocument document, RdfModel model) = Load(
             "@prefix ex: <http://example.org/> .\r\n"
             + "_:someone ex:name \"Nobody\" .\r\n");
         var triple = Assert.Single(model.Triples);
@@ -296,7 +296,7 @@ public class RdfWriterTests
     public void NTriples_FlowThroughTheSameOperationsDegenerately()
     {
         // Arrange.
-        var (document, model) = Load(
+        (LineDocument document, RdfModel model) = Load(
             "<http://example.org/a> <http://example.org/p> <http://example.org/b> .\n"
             + "<http://example.org/a> <http://example.org/q> \"x\" .\n"
             + "<http://example.org/c> <http://example.org/p> <http://example.org/a> .\n");
@@ -319,7 +319,7 @@ public class RdfWriterTests
     public void EveryRefusal_LeavesTheDocumentByteIdentical()
     {
         // Arrange.
-        var (document, model) = Load(Corpus);
+        (LineDocument document, RdfModel model) = Load(Corpus);
 
         // Act.
         var missing = RdfWriter.RemoveResource(document, model, "http://example.org/nobody");

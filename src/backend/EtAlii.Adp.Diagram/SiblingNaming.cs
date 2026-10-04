@@ -82,7 +82,7 @@ public static partial class SiblingNaming
             .ThenByDescending(group => group.Max(entry => entry.Number))
             .First();
 
-        var (stem, number) = winner.OrderByDescending(entry => entry.Number).First();
+        (string stem, long number) = winner.OrderByDescending(entry => entry.Number).First();
         return $"{stem} {number + 1}";
     }
 

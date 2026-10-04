@@ -92,7 +92,7 @@ public class DependencyInventoryTests
     {
         var problems = new List<string>();
 
-        foreach (var (name, entry) in manifest.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
+        foreach ((string name, DependencyManifestEntry entry) in manifest.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
         {
             if (!table.TryGetValue(name, out var recorded))
             {

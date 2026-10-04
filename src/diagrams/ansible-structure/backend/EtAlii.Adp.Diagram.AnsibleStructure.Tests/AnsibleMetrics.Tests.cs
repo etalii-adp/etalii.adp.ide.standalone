@@ -24,7 +24,7 @@ public class AnsibleMetricsTests
         Assert.NotEmpty(cases);
 
         var failures = new List<string>();
-        foreach (var (text, textWidth) in cases)
+        foreach ((string text, double textWidth) in cases)
         {
             var expected = Math.Max(metrics.MinimumWidth, textWidth + (2 * metrics.HorizontalPadding));
             var actual = metrics.Measure(text);

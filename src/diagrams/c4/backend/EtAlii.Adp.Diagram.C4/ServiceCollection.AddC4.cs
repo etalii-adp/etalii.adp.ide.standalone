@@ -62,7 +62,7 @@ public static class ServiceCollectionAddC4Extension
         services.TryAddSingleton<C4LayoutSidecar>();
         services.TryAddSingleton(provider => new C4ElementMapper(provider.GetRequiredService<C4Metrics>(), provider.GetRequiredService<C4LayoutSidecar>()));
 
-        foreach (var (type, viewKind) in Types)
+        foreach ((string type, C4ViewKind viewKind) in Types)
         {
             var origin = new DiagramOrigin("c4", type);
             services.AddSingleton<IDiagramDocumentFactory>(_ => new C4DocumentFactory(origin, viewKind));

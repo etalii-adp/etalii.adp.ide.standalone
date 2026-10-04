@@ -71,8 +71,8 @@ public sealed class HelmChartReader
 
         var legacy = string.Equals(metadata?.ApiVersion, "v1", StringComparison.OrdinalIgnoreCase);
 
-        var (values, defaultValuesRoot) = ReadValues(rootPath);
-        var (dependencies, dependenciesFailure) = ReadDependencies(rootPath, chartRoot, legacy, defaultValuesRoot);
+        (IReadOnlyList<ValuesFile> values, YamlMappingNode? defaultValuesRoot) = ReadValues(rootPath);
+        (IReadOnlyList<DependencyDeclaration> dependencies, HelmYamlFailure? dependenciesFailure) = ReadDependencies(rootPath, chartRoot, legacy, defaultValuesRoot);
 
         return new HelmChart(
             IsChart: true,

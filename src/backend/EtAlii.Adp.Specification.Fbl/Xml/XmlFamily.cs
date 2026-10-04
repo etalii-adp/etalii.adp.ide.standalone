@@ -406,7 +406,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     public override IEnumerable<Candidate> Candidates(Rule rule)
     {
         if (rule.At is null || _root is null) yield break;
-        foreach (var (entry, captures) in Selector.Match(_root, rule.At, AttributeEquals))
+        foreach ((Entry entry, IReadOnlyDictionary<string, string> captures) in Selector.Match(_root, rule.At, AttributeEquals))
         {
             var element = (XmlElement)entry;
             if (element.Unreadable is { } reason)
@@ -445,7 +445,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     public override (string Name, object? Value) CelExtra(Candidate candidate)
     {
         var path = new CelMap();
-        foreach (var (name, value) in candidate.Captures) path[name] = value;
+        foreach ((string name, string value) in candidate.Captures) path[name] = value;
         return ("path", path);
     }
 
@@ -767,7 +767,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         var name = bracket > 0 ? last[..bracket] : last;
         var written = new List<(string Name, string Value)>();
         if (rule.Id?.From?.XmlAttribute is { } idAttribute && request.Id is { } id) written.Add((idAttribute, id));
-        foreach (var (attribute, binding) in rule.Attributes)
+        foreach ((string attribute, AttributeBinding binding) in rule.Attributes)
         {
             if (binding.XmlAttribute is { } xml && binding.Child is null && request.Values.TryGetValue(attribute, out var value) && value is not null)
             {

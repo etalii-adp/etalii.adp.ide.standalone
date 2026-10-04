@@ -97,7 +97,7 @@ public sealed class AbmContextSourceResolver : IContextSourceResolver
             return Rejected("That node is no longer in this behavior model.");
         }
 
-        var (path, text) = described.Value;
+        (IReadOnlyList<string> path, string text) = described.Value;
 
         // The client's path is checked, never trusted: it is what the client believes it selected,
         // and the id is what it actually selected.

@@ -159,7 +159,7 @@ public class HostLoggerLifecycleTests : IDisposable
         // every test that ran after a host had stopped.
         var before = new LoggerConfiguration().CreateLogger();
         Log.Logger = before;
-        var (a, sinkA) = Start();
+        (WebApplicationFactory<Program> a, RecordingSink sinkA) = Start();
         AssertArrives(sinkA, "control");
 
         a.Dispose();

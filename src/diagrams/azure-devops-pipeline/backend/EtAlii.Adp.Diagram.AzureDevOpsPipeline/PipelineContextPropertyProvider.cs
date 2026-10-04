@@ -79,7 +79,7 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
             return None();
         }
 
-        var (model, location) = found;
+        (PipelineModel model, PipelineElementLocation location) = found;
         var properties = location.Kind switch
         {
             PipelineElementLocationKind.Stage => StageProperties(model, location),
@@ -108,7 +108,7 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
             return ContextPropertyResult.Failure("That element is no longer in this pipeline.");
         }
 
-        var (_, location) = found;
+        (_, PipelineElementLocation location) = found;
         var command = CommandFor(target, propertyId, value, location);
         if (command is null)
         {

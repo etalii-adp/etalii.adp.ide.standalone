@@ -33,7 +33,7 @@ internal sealed class ProblemCollector(string root)
         // folder - ansible.empty-role blames a role folder because it has no file worth
         // blaming - and FileInfo.Exists is false for one, which stamped such a problem as
         // default and made it read stale from the moment it was found.
-        var (lastWriteTimeUtc, length) = ProblemStamp.Of(statsPath);
+        (DateTime lastWriteTimeUtc, long length) = ProblemStamp.Of(statsPath);
         _problems.Add(new StoredProblem(problem, IoPath.GetRelativePath(Root, attributionPath), lastWriteTimeUtc, length, rulesVersion));
     }
 

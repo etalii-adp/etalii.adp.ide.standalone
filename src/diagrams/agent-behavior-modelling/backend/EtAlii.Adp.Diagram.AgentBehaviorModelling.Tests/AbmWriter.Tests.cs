@@ -37,7 +37,7 @@ public class AbmWriterTests
     public void ADocumentNothingEdited_ComesBackByteForByte(string text)
     {
         // Act.
-        var (document, _) = Load(text);
+        (LineDocument document, _) = Load(text);
 
         // Assert.
         Assert.Equal(text, document.Text);
@@ -47,7 +47,7 @@ public class AbmWriterTests
     public void SetLabel_RewritesOneLine()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
         var edit = AbmWriter.SetLabel(document, model.NodeOf("1.2.1")!, "Try the cache\nfirst");
@@ -61,7 +61,7 @@ public class AbmWriterTests
     public void SetKind_WritesTheKeyword_AndARetrysCount()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
         AbmWriter.SetKind(document, model.NodeOf("1.2")!, AbmNodeKinds.Parallel, 0);
@@ -77,7 +77,7 @@ public class AbmWriterTests
     public void SetKind_RefusesAKindThatCannotHoldTheChildren()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
         var toLeaf = AbmWriter.SetKind(document, model.NodeOf("1.2")!, AbmNodeKinds.Action, 0);
@@ -93,7 +93,7 @@ public class AbmWriterTests
     public void SetNotes_AddsReplacesAndRemoves()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act: add.
         AbmWriter.SetNotes(document, model.NodeOf("1.3")!, "Say you are done.\n\nThen stop.");
@@ -114,10 +114,10 @@ public class AbmWriterTests
     public void Add_PutsAChildWhereItsSiblingsAre()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
-        var (edit, id) = AbmWriter.Add(document, model, model.NodeOf("1.2")!, 1, AbmNodeKinds.Check, "Cached");
+        (AbmEdit edit, string id) = AbmWriter.Add(document, model, model.NodeOf("1.2")!, 1, AbmNodeKinds.Check, "Cached");
 
         // Assert.
         Assert.True(edit.WasApplied);
@@ -132,12 +132,12 @@ public class AbmWriterTests
     public void Add_TheFirstChild_StartsAtTheParentsTextColumn()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
         AbmWriter.Add(document, model, model.NodeOf("1")!, -1, AbmNodeKinds.Action, "Last");
         var reread = AbmParser.Parse(document);
-        var (edit, _) = AbmWriter.Add(document, reread, reread.NodeOf("1.3")!, -1, AbmNodeKinds.Action, "Under a leaf");
+        (AbmEdit edit, _) = AbmWriter.Add(document, reread, reread.NodeOf("1.3")!, -1, AbmNodeKinds.Action, "Under a leaf");
 
         // Assert: appended after the whole subtree, and a leaf takes no child.
         Assert.Equal("Last", AbmParser.Parse(document).NodeOf("1.4")!.Label);
@@ -148,10 +148,10 @@ public class AbmWriterTests
     public void Add_TheFirstRoot_StartsABehaviorSectionWhenThereIsNone()
     {
         // Arrange.
-        var (document, model) = Load("# Agent\r\n\r\nNo tree yet.\r\n");
+        (LineDocument document, AbmModel model) = Load("# Agent\r\n\r\nNo tree yet.\r\n");
 
         // Act.
-        var (edit, id) = AbmWriter.Add(document, model, null, -1, AbmNodeKinds.Sequence, "Handle the request");
+        (AbmEdit edit, string id) = AbmWriter.Add(document, model, null, -1, AbmNodeKinds.Sequence, "Handle the request");
 
         // Assert.
         Assert.True(edit.WasApplied);
@@ -163,7 +163,7 @@ public class AbmWriterTests
     public void Add_TheFirstRoot_GoesUnderAnExistingHeading()
     {
         // Arrange.
-        var (document, model) = Load("## Behavior\n\nNothing yet.\n");
+        (LineDocument document, AbmModel model) = Load("## Behavior\n\nNothing yet.\n");
 
         // Act.
         AbmWriter.Add(document, model, null, -1, AbmNodeKinds.Action, "Start");
@@ -176,7 +176,7 @@ public class AbmWriterTests
     public void Remove_TakesTheSubtreeAndItsNotes()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
         AbmWriter.Remove(document, model.NodeOf("1.2")!);
@@ -191,7 +191,7 @@ public class AbmWriterTests
     public void Move_EarlierAmongSiblings_SwapsTheSubtrees()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act: Options (index 1) one earlier.
         var edit = AbmWriter.Move(document, model, model.NodeOf("1.2")!, model.NodeOf("1")!, 0);
@@ -207,7 +207,7 @@ public class AbmWriterTests
     public void Move_UnderAnotherParent_ReIndentsTheSubtree()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act: Finish under Options, last.
         AbmWriter.Move(document, model, model.NodeOf("1.3")!, model.NodeOf("1.2")!, -1);
@@ -228,7 +228,7 @@ public class AbmWriterTests
     public void Move_BeneathItself_IsRefused()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
         var edit = AbmWriter.Move(document, model, model.NodeOf("1")!, model.NodeOf("1.2")!, -1);
@@ -242,7 +242,7 @@ public class AbmWriterTests
     public void Move_ToWhereItAlreadyIs_IsRefused()
     {
         // Arrange.
-        var (document, model) = Load();
+        (LineDocument document, AbmModel model) = Load();
 
         // Act.
         var edit = AbmWriter.Move(document, model, model.NodeOf("1.2")!, model.NodeOf("1")!, 2);

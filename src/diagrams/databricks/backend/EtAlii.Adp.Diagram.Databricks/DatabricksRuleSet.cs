@@ -162,7 +162,7 @@ internal static class DatabricksRuleSet
         while (removed)
         {
             removed = false;
-            foreach (var (key, task) in remaining.ToList())
+            foreach ((string key, JobTask task) in remaining.ToList())
             {
                 if (task.DependsOn.All(dependency => !remaining.ContainsKey(dependency.TaskKey)))
                 {

@@ -24,7 +24,7 @@ public class C4MetricsTests
         Assert.NotEmpty(cases);
 
         var failures = new List<string>();
-        foreach (var (text, textWidth) in cases)
+        foreach ((string text, double textWidth) in cases)
         {
             var expected = Math.Round(Math.Clamp(textWidth + (2 * metrics.HorizontalPadding), metrics.MinimumWidth, metrics.MaximumWidth), 2);
             var actual = metrics.Measure(text, "", "").Width;

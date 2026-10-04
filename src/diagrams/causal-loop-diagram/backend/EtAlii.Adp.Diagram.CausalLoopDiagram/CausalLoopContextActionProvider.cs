@@ -290,7 +290,7 @@ public sealed class CausalLoopContextActionProvider(
     private async ValueTask<ContextExecutionResult> AddVariableAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         var entry = documents.GetOrLoad(target.ResolvedFullPath);
-        var (id, label) = CausalLoopWriter.NextVariableName(entry.Model);
+        (string id, string label) = CausalLoopWriter.NextVariableName(entry.Model);
 
         if (CausalLoopSelection.PlacementPoint(target.ElementId) is { } point &&
             sessions.Find(target.WatchId, target.ResolvedFullPath) is CausalLoopSession session)

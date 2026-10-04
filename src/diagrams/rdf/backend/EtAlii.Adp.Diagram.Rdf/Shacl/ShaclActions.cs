@@ -221,7 +221,7 @@ public static class ShaclActions
             return null;
         }
 
-        var (iri, error) = RdfTermInput.Resolve(entry.Model, value);
+        (string? iri, string error) = RdfTermInput.Resolve(entry.Model, value);
         return iri is null ? ContextValidationResult.Rejected(error) : ContextValidationResult.Accepted;
     }
 
@@ -236,7 +236,7 @@ public static class ShaclActions
             return null;
         }
 
-        var (iri, _) = RdfTermInput.Resolve(entry.Model, value);
+        (string? iri, _) = RdfTermInput.Resolve(entry.Model, value);
         if (iri is null)
         {
             return null;

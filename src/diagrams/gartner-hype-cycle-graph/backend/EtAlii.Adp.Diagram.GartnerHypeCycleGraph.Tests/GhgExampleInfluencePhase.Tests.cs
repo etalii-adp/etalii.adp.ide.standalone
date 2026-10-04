@@ -38,8 +38,8 @@ public class GhgExampleInfluencePhaseTests
                 continue; // hidden, and asserted as such where an example claims one
             }
 
-            var (fromStart, fromStop) = PhaseSpan(from, influence.FromEnd.PhaseIndex);
-            var (toStart, toStop) = PhaseSpan(to, influence.ToEnd.PhaseIndex);
+            (int fromStart, int fromStop) = PhaseSpan(from, influence.FromEnd.PhaseIndex);
+            (int toStart, int toStop) = PhaseSpan(to, influence.ToEnd.PhaseIndex);
             var meet = Math.Max(fromStart, toStart) < Math.Min(fromStop, toStop);
             var legacy = from.Stop <= to.Start && influence.FromEnd.PhaseIndex == from.VisiblePhases - 1 && influence.ToEnd.PhaseIndex == 0;
             if (!meet && !legacy)
@@ -118,7 +118,7 @@ public class GhgExampleInfluencePhaseTests
         {
             foreach (var influence in model.Influences.Where(influence => influence.From == trigger.Id))
             {
-                var (_, stop) = PhaseSpan(trends[influence.To], influence.ToEnd.PhaseIndex);
+                (_, int stop) = PhaseSpan(trends[influence.To], influence.ToEnd.PhaseIndex);
                 if (stop <= trigger.Date!.Value)
                 {
                     wrong.Add($"{influence.Id} ({trigger.Id} at {GhgScale.FormatMonth(trigger.Date.Value)}, {influence.ToEnd.Phase} over by {GhgScale.FormatMonth(stop)})");
@@ -182,7 +182,7 @@ public class GhgExampleInfluencePhaseTests
     /// <summary>The date under an end: its fraction along its phase's span.</summary>
     private static double DateOf(GhgTrend trend, GhgEnd end)
     {
-        var (start, stop) = PhaseSpan(trend, end.PhaseIndex);
+        (int start, int stop) = PhaseSpan(trend, end.PhaseIndex);
         return start + (end.At!.Value * (stop - start));
     }
 

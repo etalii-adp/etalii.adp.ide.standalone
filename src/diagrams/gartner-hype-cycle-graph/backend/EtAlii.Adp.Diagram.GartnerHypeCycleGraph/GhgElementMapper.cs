@@ -53,7 +53,7 @@ public sealed class GhgElementMapper
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        var (trends, triggers, notes, influences) = Drawable(model);
+        (IReadOnlyList<GhgTrend> trends, IReadOnlyList<GhgTrigger> triggers, IReadOnlyList<GhgNote> notes, IReadOnlyList<GhgInfluence> influences) = Drawable(model);
         var unit = model.TimeUnit;
         var bounds = new Dictionary<string, Box>(StringComparer.Ordinal);
         foreach (var trend in trends)
@@ -131,7 +131,7 @@ public sealed class GhgElementMapper
 
     private static Box Bounds(GhgTrigger trigger, GhgTimeUnit unit)
     {
-        var (x, y) = CentreOf(trigger, unit);
+        (double x, double y) = CentreOf(trigger, unit);
         var half = GhgScale.TriggerSize / 2;
         return new Box(x - half, y - half, x + half, y + half);
     }
@@ -189,7 +189,7 @@ public sealed class GhgElementMapper
         };
         payload.Tags.AddRange(trigger.Tags);
 
-        var (x, y) = CentreOf(trigger, unit);
+        (double x, double y) = CentreOf(trigger, unit);
         return Pack(trigger.Id, x, y, TriggerType, payload);
     }
 

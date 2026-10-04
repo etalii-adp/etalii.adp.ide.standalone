@@ -68,7 +68,7 @@ public class C4DocumentStoreRefusedReadTests : IDisposable
     public void AReloadWhoseReadIsRefusedOnce_StillDeliversTheChange()
     {
         // Arrange: a model loaded, then changed on disk, and the reload's first read refused.
-        var (store, body) = Opened();
+        (C4DocumentStore store, string body) = Opened();
         C4Workspace? told = null;
         store.Changed += (_, args) => told = args.Workspace;
         File.WriteAllText(body, ChangedModel);
@@ -97,7 +97,7 @@ public class C4DocumentStoreRefusedReadTests : IDisposable
     {
         // A publish renaming the body away for an instant: on a reload that is a publish in flight,
         // not a model that has gone, so it is retried as a refusal is.
-        var (store, body) = Opened();
+        (C4DocumentStore store, string body) = Opened();
         File.WriteAllText(body, ChangedModel);
         _reader.Refuse(new FileNotFoundException("Gone for an instant.", body));
 
@@ -113,7 +113,7 @@ public class C4DocumentStoreRefusedReadTests : IDisposable
     {
         // Keeping the last good model is still the answer to a refusal that outlasts the retries -
         // but only after every attempt was made, which is what the read count says.
-        var (store, body) = Opened();
+        (C4DocumentStore store, string body) = Opened();
         var changes = 0;
         store.Changed += (_, _) => changes++;
         File.WriteAllText(body, ChangedModel);

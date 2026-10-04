@@ -85,7 +85,7 @@ internal sealed class SetPipelineDependenciesCommandHandler(IPipelineDocumentSto
                 "A pipeline must contain at least one stage with no dependencies, or it has nothing to start with."));
         }
 
-        var (previous, wasDeclared) = Current(location);
+        (IReadOnlyList<string> previous, bool wasDeclared) = Current(location);
         var writer = new PipelineWriter(entry.Document);
         var changed = command.Declared
             ? writer.SetDependsOn(location.Target, command.DependsOn)

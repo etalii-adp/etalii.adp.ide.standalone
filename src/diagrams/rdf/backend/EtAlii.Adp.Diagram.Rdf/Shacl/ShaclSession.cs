@@ -160,7 +160,7 @@ public sealed class ShaclSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
-        var (projection, positions) = LaidOut();
+        (ShaclProjectionResult projection, IReadOnlyDictionary<string, RegistrationPosition> positions) = LaidOut();
         return _mapper.Elements(InView(projection, positions), positions);
     }
 

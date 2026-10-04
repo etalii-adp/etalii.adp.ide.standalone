@@ -33,7 +33,7 @@ public class HistoryStackTests
     public void ANewStack_HasNothingToUndoOrRedo()
     {
         // Arrange and act.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
 
         // Assert.
@@ -49,7 +49,7 @@ public class HistoryStackTests
     public async Task ExecuteAsync_RunsTheCommandAndRecordsIt()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
 
         // Act.
@@ -66,7 +66,7 @@ public class HistoryStackTests
     public async Task ExecuteAsync_WhenTheHandlerReportsNoInverse_RunsButRecordsNothing()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
 
         // Act.
@@ -83,7 +83,7 @@ public class HistoryStackTests
     public async Task ExecuteAsync_WhenTheCommandFails_RecordsNothing()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
 
         // Act.
@@ -99,7 +99,7 @@ public class HistoryStackTests
     public async Task ExecuteAsync_WithANullCommand_Throws()
     {
         // Arrange and act.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
 
         // Assert.
@@ -112,7 +112,7 @@ public class HistoryStackTests
     public async Task UndoAsync_OnAnEmptyStack_FailsAndSaysSo()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
 
         // Act.
@@ -128,7 +128,7 @@ public class HistoryStackTests
     public async Task UndoAsync_DispatchesTheInverseAndMovesTheEntryToRedo()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
@@ -147,7 +147,7 @@ public class HistoryStackTests
     public async Task UndoAsync_UnwindsChangesNewestFirst()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
@@ -170,7 +170,7 @@ public class HistoryStackTests
     public async Task UndoAsync_WhenTheInverseFails_KeepsTheEntrySoUndoCanBeRetried()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
@@ -196,7 +196,7 @@ public class HistoryStackTests
     public async Task RedoAsync_WithNothingUndone_FailsAndSaysSo()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
@@ -212,7 +212,7 @@ public class HistoryStackTests
     public async Task RedoAsync_ReappliesTheUndoneChange()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
@@ -231,7 +231,7 @@ public class HistoryStackTests
     public async Task UndoThenRedo_CanBeWalkedBackAndForwardRepeatedly()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
@@ -256,7 +256,7 @@ public class HistoryStackTests
     public async Task RedoAsync_WhenTheReplayFails_KeepsTheEntrySoRedoCanBeRetried()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
@@ -275,7 +275,7 @@ public class HistoryStackTests
     public async Task ExecuteAsync_AfterAnUndo_DiscardsTheStaleRedoEntries()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
@@ -295,7 +295,7 @@ public class HistoryStackTests
     {
         // Arrange.
         // A rejected attempt changed nothing, so it must not cost the user their redo.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
@@ -314,7 +314,7 @@ public class HistoryStackTests
     public async Task ExecuteAsync_PastCapacity_DropsTheOldestEntry()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack(capacity: 2);
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack(capacity: 2);
         using var guard = stack;
 
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
@@ -336,7 +336,7 @@ public class HistoryStackTests
     public async Task Capacity_IsNeverExceededAcrossManyCommands()
     {
         // Arrange.
-        var (stack, _) = CreateStack(capacity: 5);
+        (HistoryStack stack, _) = CreateStack(capacity: 5);
         using var guard = stack;
 
         // Act.
@@ -356,7 +356,7 @@ public class HistoryStackTests
     public async Task Clear_ForgetsBothSidesWithoutTouchingTheState()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
@@ -379,7 +379,7 @@ public class HistoryStackTests
         // Arrange.
         // Requirement: concurrent callers must not interleave, or the stack could be read or
         // moved half-updated. The dispatcher trips a flag for the duration of each dispatch.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
 
         // Arrange, continued.
@@ -410,7 +410,7 @@ public class HistoryStackTests
     public async Task UndoAndExecute_RacingEachOther_LeaveConsistentCounts()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
         for (var i = 0; i < 10; i++)
         {
@@ -440,7 +440,7 @@ public class HistoryStackTests
     public async Task Operations_AfterDispose_Throw()
     {
         // Arrange and act.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         stack.Dispose();
 
         // Assert.
@@ -454,7 +454,7 @@ public class HistoryStackTests
     public void Dispose_CalledTwice_IsHarmless()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
 
         // Act.
         stack.Dispose();
@@ -469,7 +469,7 @@ public class HistoryStackTests
     public async Task Availability_AgreesWithTheFourProperties_ThroughExecuteUndoAndRedo()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
 
         // Act and assert, step by step.
@@ -504,7 +504,7 @@ public class HistoryStackTests
     public async Task Changed_FiresOnceEach_OnARecordedExecuteASuccessfulUndoAndASuccessfulRedo()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
         var changed = 0;
         stack.Changed += (_, _) => changed++;
@@ -524,7 +524,7 @@ public class HistoryStackTests
     public async Task Changed_DoesNotFire_WhenACommandIsRejected()
     {
         // Arrange.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
         var changed = 0;
         stack.Changed += (_, _) => changed++;
@@ -541,7 +541,7 @@ public class HistoryStackTests
     {
         // Arrange.
         // Nothing landed on the undo stack, so nothing about what can be undone changed.
-        var (stack, _) = CreateStack();
+        (HistoryStack stack, _) = CreateStack();
         using var guard = stack;
         var changed = 0;
         stack.Changed += (_, _) => changed++;
@@ -557,7 +557,7 @@ public class HistoryStackTests
     public async Task Changed_DoesNotFire_WhenAnUndoFailsToApply()
     {
         // Arrange.
-        var (stack, dispatcher) = CreateStack();
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
         using var guard = stack;
         await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 

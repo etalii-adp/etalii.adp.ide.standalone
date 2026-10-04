@@ -43,7 +43,7 @@ public class HistoryStackNoticesTests
 
         // Assert: the edit still succeeded - that is the whole point - and the loss was reported.
         Assert.True(executed.IsSuccess);
-        var (rootPath, message) = Assert.Single(sink.Notified);
+        (string rootPath, string message) = Assert.Single(sink.Notified);
         Assert.Equal(@"C:\project", rootPath);
         Assert.Equal("The new position could not be saved.", message);
     }

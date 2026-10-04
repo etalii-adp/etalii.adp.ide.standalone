@@ -80,7 +80,7 @@ public static class RegistrationLayout
         ArgumentNullException.ThrowIfNull(stored);
 
         var merged = new Dictionary<string, RegistrationPosition>(computed, StringComparer.Ordinal);
-        foreach (var (id, position) in stored)
+        foreach ((string id, RegistrationPosition position) in stored)
         {
             if (merged.ContainsKey(id))
             {
@@ -147,7 +147,7 @@ public static class RegistrationLayout
     {
         var lines = ReadLines(adpPath) ?? throw new FileNotFoundException("The registration file is not there.", adpPath);
 
-        var (blockStart, blockEnd) = FindBlock(lines);
+        (int? blockStart, int blockEnd) = FindBlock(lines);
         var insertAt = blockStart ?? EndOfHeaderRegion(lines);
 
         var rebuilt = new StringBuilder();
@@ -191,7 +191,7 @@ public static class RegistrationLayout
         // that already exist keep their own terminator (RawLine, below); only new content is
         // governed here.
         builder.Append(BlockHeader).Append(AdpFileWriter.NewLine);
-        foreach (var (id, position) in positions.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+        foreach ((string id, RegistrationPosition position) in positions.OrderBy(entry => entry.Key, StringComparer.Ordinal))
         {
             builder
                 .Append("  ").Append(id).Append(": ")

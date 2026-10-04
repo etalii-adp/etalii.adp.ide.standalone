@@ -80,7 +80,7 @@ public static class DependencyGraphWriter
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
 
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, model.Elements.Select(element => element.Range));
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, model.Elements.Select(element => element.Range));
         var lines = new List<string>
         {
             $"{itemIndent}-{dashGap}id: {id}",
@@ -108,7 +108,7 @@ public static class DependencyGraphWriter
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
 
-        var (itemIndent, dashGap, keyIndent) = LineSplice.IndentOf(document, model.Relations.Select(relation => relation.Range));
+        (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, model.Relations.Select(relation => relation.Range));
         var lines = new List<string>
         {
             $"{itemIndent}-{dashGap}id: {id}",

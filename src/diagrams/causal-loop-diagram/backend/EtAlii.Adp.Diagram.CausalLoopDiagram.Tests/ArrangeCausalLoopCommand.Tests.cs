@@ -101,7 +101,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         // Assert.
         var stored = RegistrationLayout.Read(_adpPath);
         Assert.NotEmpty(expected);
-        foreach (var (id, box) in expected)
+        foreach ((string id, CausalLoopBox box) in expected)
         {
             var position = stored[$"variable:{id}"];
             Assert.Equal(box.CenterX, position.X, 3);

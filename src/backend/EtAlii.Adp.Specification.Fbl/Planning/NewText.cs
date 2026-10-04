@@ -80,7 +80,7 @@ internal static class NewText
         if (binding.Map is not { } map) return null;
         var model = Plain(value, binding);
         if (replaced is not null && map.Any(m => m.Key == replaced && m.Value == model)) return replaced;
-        foreach (var (wire, mapped) in map)
+        foreach ((string wire, string mapped) in map)
         {
             if (mapped == model) return wire;
         }

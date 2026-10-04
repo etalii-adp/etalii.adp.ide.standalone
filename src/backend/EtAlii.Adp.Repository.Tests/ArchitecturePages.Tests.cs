@@ -296,7 +296,7 @@ public partial class ArchitecturePagesTests
         var expected = ExpectedCounts();
         var wrong = new List<string>();
 
-        foreach (var (label, value) in expected)
+        foreach ((string label, int value) in expected)
         {
             // The page states each count as **n** somewhere; this asserts the VALUE is present in
             // that form rather than trying to bind a label to a position in prose, which would make

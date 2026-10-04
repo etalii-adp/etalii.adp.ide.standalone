@@ -64,7 +64,7 @@ public class PipelineParserTests
         // A range must be inside the document, must not be inverted, and must not start on a line
         // that carries nothing - a blank or a comment as a first line means the range drifted off
         // the declaration onto the whitespace above the next one.
-        foreach (var (kind, id, lines) in elements)
+        foreach ((string kind, string id, LineRange lines) in elements)
         {
             Assert.InRange(lines.Start, 0, document.Lines.Count - 1);
             Assert.InRange(lines.End, lines.Start, document.Lines.Count - 1);

@@ -340,7 +340,7 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
             return [];
         }
 
-        var (pipeline, child) = found.Value;
+        (WardleyPipeline pipeline, WardleyPipelineChild child) = found.Value;
         var parent = map.Components.FirstOrDefault(candidate => candidate.Name == pipeline.Parent);
         var stage = WardleyEvolution.StageOf(child.Maturity);
 

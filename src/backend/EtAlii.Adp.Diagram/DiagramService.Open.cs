@@ -113,7 +113,7 @@ public sealed partial class DiagramService
     /// </summary>
     public async Task PumpAsync(OpenedDiagram opened, Func<Delta, CancellationToken, Task> write, CancellationToken cancellationToken)
     {
-        var (openedSession, bodyPath, watchId) = opened;
+        (IDiagramSession openedSession, string bodyPath, ShortGuid watchId) = opened;
         await using var session = openedSession;
         var channel = Channel.CreateUnbounded<Delta>();
 

@@ -152,7 +152,7 @@ public sealed class SkosSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
-        var (projection, positions) = LaidOut();
+        (SkosProjectionResult projection, IReadOnlyDictionary<string, RegistrationPosition> positions) = LaidOut();
         return _mapper.Elements(InView(projection, positions), positions, DisplayLanguage);
     }
 

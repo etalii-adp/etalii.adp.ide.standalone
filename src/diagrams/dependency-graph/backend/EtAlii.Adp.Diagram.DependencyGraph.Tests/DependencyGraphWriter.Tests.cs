@@ -49,7 +49,7 @@ public class DependencyGraphWriterTests
     public void RenamingAnElement_ChangesExactlyOneLine()
     {
         // Arrange.
-        var (document, model) = Load("simple.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("simple.dgr");
         var before = document.Text;
 
         // Act.
@@ -65,7 +65,7 @@ public class DependencyGraphWriterTests
     {
         // Arrange.
         // A drag is the commonest edit this type has, and the one with the most to damage.
-        var (document, model) = Load("simple.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("simple.dgr");
         var before = document.Text;
 
         // Act.
@@ -84,7 +84,7 @@ public class DependencyGraphWriterTests
         // Arrange.
         // 900 returning as 900.0 renders identically on a canvas, so nothing but the bytes
         // catches it - and it would turn every drag into a diff against the author's own form.
-        var (document, model) = Load("coordinates.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("coordinates.dgr");
 
         // Act.
         DependencyGraphWriter.SetX(document, model.Elements[0], 900d);
@@ -105,7 +105,7 @@ public class DependencyGraphWriterTests
         Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("nl-NL");
         try
         {
-            var (document, model) = Load("simple.dgr");
+            (LineDocument document, DependencyGraphModel model) = Load("simple.dgr");
 
             // Act.
             DependencyGraphWriter.SetX(document, model.Elements[0], 412.5d);
@@ -127,7 +127,7 @@ public class DependencyGraphWriterTests
         // Arrange.
         // The corpus file with a comment in every position. A splice that widened by one line
         // would eat one of them, and nothing else in the suite would notice.
-        var (document, model) = Load("comments.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("comments.dgr");
         var before = document.Text;
 
         // Act.
@@ -144,7 +144,7 @@ public class DependencyGraphWriterTests
     public void EditingAnElement_LeavesUnmodelledKeysAlone()
     {
         // Arrange.
-        var (document, model) = Load("unmodelled-keys.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("unmodelled-keys.dgr");
         var before = document.Text;
 
         // Act.
@@ -162,7 +162,7 @@ public class DependencyGraphWriterTests
     public void EditingADocumentWithUnusualIndentation_DoesNotTidyIt()
     {
         // Arrange.
-        var (document, model) = Load("indentation.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("indentation.dgr");
 
         // Act.
         DependencyGraphWriter.SetLabel(document, model.Elements[0], "Still deeply indented");
@@ -179,7 +179,7 @@ public class DependencyGraphWriterTests
     public void EditingAFileWithNoTrailingNewline_DoesNotGiveItOne()
     {
         // Arrange.
-        var (document, model) = Load("no-trailing-newline.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("no-trailing-newline.dgr");
 
         // Act.
         DependencyGraphWriter.SetLabel(document, model.Elements[0], "Edited");
@@ -192,7 +192,7 @@ public class DependencyGraphWriterTests
     public void EditingAnLfDocument_KeepsItLf()
     {
         // Arrange.
-        var (document, model) = Load("lf-line-endings.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("lf-line-endings.dgr");
 
         // Act.
         DependencyGraphWriter.SetRow(document, model.Elements[0], 4);
@@ -207,7 +207,7 @@ public class DependencyGraphWriterTests
         // Arrange.
         // A hand-written node need not carry every key this module models, and moving it must
         // add the one it lacks rather than silently doing nothing.
-        var (document, model) = From("dependencies: 1\r\nelements:\r\n  - id: a\r\n    label: No x yet\r\n    row: 0\r\n");
+        (LineDocument document, DependencyGraphModel model) = From("dependencies: 1\r\nelements:\r\n  - id: a\r\n    label: No x yet\r\n    row: 0\r\n");
 
         // Act.
         DependencyGraphWriter.SetX(document, model.Elements[0], 260);
@@ -222,7 +222,7 @@ public class DependencyGraphWriterTests
     public void RemovingAnElement_TakesItsRelationsWithIt()
     {
         // Arrange.
-        var (document, model) = Load("relations.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("relations.dgr");
         var doomed = model.Elements.Single(element => element.Id == "src00001");
 
         // Act.
@@ -245,7 +245,7 @@ public class DependencyGraphWriterTests
         // Arrange.
         // A dependency reaching a node counts as much as one leaving it: removing a node that
         // only ever appears as a `to` still orphans every edge that names it.
-        var (_, model) = Load("relations.dgr");
+        (_, DependencyGraphModel model) = Load("relations.dgr");
 
         // Act & assert.
         Assert.Equal(3, DependencyGraphWriter.RelationsTouching(model, "dst00001").Count);
@@ -259,7 +259,7 @@ public class DependencyGraphWriterTests
         // The ordering guard. Removing top-down would shift every later range, and the second
         // removal would then cut the wrong lines - which shows up as a mangled document rather
         // than as an exception, so it needs a test that reads the result.
-        var (document, model) = Load("relations.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("relations.dgr");
         var doomed = model.Elements.Single(element => element.Id == "dst00001");
 
         // Act.
@@ -277,7 +277,7 @@ public class DependencyGraphWriterTests
     public void AddingAnElement_CopiesTheDocumentsOwnIndentation()
     {
         // Arrange.
-        var (document, model) = Load("indentation.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("indentation.dgr");
 
         // Act.
         DependencyGraphWriter.InsertElement(document, model, "newone01", "Added", 740, 5);
@@ -295,7 +295,7 @@ public class DependencyGraphWriterTests
     public void AddingARelation_WhenThereIsNoRelationsSectionYet_CreatesOne()
     {
         // Arrange.
-        var (document, model) = From("dependencies: 1\r\nelements:\r\n  - id: a\r\n    x: 0\r\n  - id: b\r\n    x: 200\r\n");
+        (LineDocument document, DependencyGraphModel model) = From("dependencies: 1\r\nelements:\r\n  - id: a\r\n    x: 0\r\n  - id: b\r\n    x: 200\r\n");
 
         // Act.
         DependencyGraphWriter.InsertRelation(document, model, "conn0001", "a", "b", "depends on");
@@ -315,7 +315,7 @@ public class DependencyGraphWriterTests
         // Arrange.
         // The stray `relations:` header is the one line that would break undo's byte identity.
         const string original = "dependencies: 1\r\nelements:\r\n  - id: a\r\n    x: 0\r\n  - id: b\r\n    x: 200\r\n";
-        var (document, model) = From(original);
+        (LineDocument document, DependencyGraphModel model) = From(original);
         Assert.False(DependencyGraphWriter.HasRelationsSection(document));
 
         // Act.
@@ -333,7 +333,7 @@ public class DependencyGraphWriterTests
     public void AddingASecondRelationBetweenTheSamePair_IsFine()
     {
         // Arrange.
-        var (document, model) = Load("relations.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("relations.dgr");
 
         // Act.
         DependencyGraphWriter.InsertRelation(document, model, "conn0004", "src00001", "dst00001", "and again");
@@ -347,7 +347,7 @@ public class DependencyGraphWriterTests
     public void ARelationIsWrittenFromThenTo_SoTheDirectionIsReadableInTheDiff()
     {
         // Arrange.
-        var (document, model) = Load("simple.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("simple.dgr");
 
         // Act.
         DependencyGraphWriter.InsertRelation(document, model, "conn0009", "b3Rt9wYz", "k7Qv2mXa", "");
@@ -366,7 +366,7 @@ public class DependencyGraphWriterTests
     public void RelabellingARelation_ChangesOneLine()
     {
         // Arrange.
-        var (document, model) = Load("relations.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("relations.dgr");
         var before = document.Text;
 
         // Act.
@@ -381,7 +381,7 @@ public class DependencyGraphWriterTests
     public void ClearingARelationsLabel_RemovesTheKeyRatherThanLeavingItEmpty()
     {
         // Arrange.
-        var (document, model) = Load("relations.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("relations.dgr");
 
         // Act.
         DependencyGraphWriter.SetRelationLabel(document, model.Relations[0], "");
@@ -396,7 +396,7 @@ public class DependencyGraphWriterTests
     public void ALabelNeedingQuotes_GetsThem_AndAnOrdinaryOneDoesNot()
     {
         // Arrange.
-        var (document, model) = Load("simple.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("simple.dgr");
 
         // Act.
         DependencyGraphWriter.SetLabel(document, model.Elements[0], "Plain");
@@ -418,7 +418,7 @@ public class DependencyGraphWriterTests
     {
         // Arrange.
         // The property that makes undo trustworthy: an edit and its opposite cancel exactly.
-        var (document, model) = Load("simple.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("simple.dgr");
         var original = document.Text;
         var originalLabel = model.Elements[0].Label;
 
@@ -435,10 +435,10 @@ public class DependencyGraphWriterTests
     public void AMoveThenItsInverse_ComesBackByteForByte()
     {
         // Arrange.
-        var (document, model) = Load("coordinates.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("coordinates.dgr");
         var original = document.Text;
         var element = model.Elements[1];
-        var (wasX, wasRow) = (element.X, element.Row);
+        (double wasX, int wasRow) = (element.X, element.Row);
 
         // Act.
         DependencyGraphWriter.SetX(document, element, 1000);
@@ -455,7 +455,7 @@ public class DependencyGraphWriterTests
     public void AddingThenRemovingAnElement_ComesBackByteForByte()
     {
         // Arrange.
-        var (document, model) = Load("simple.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("simple.dgr");
         var original = document.Text;
 
         // Act.
@@ -473,7 +473,7 @@ public class DependencyGraphWriterTests
     {
         // Arrange.
         // The two hardest cases together: an append at an unterminated end of file, undone.
-        var (document, model) = Load("no-trailing-newline.dgr");
+        (LineDocument document, DependencyGraphModel model) = Load("no-trailing-newline.dgr");
         var original = document.Text;
 
         // Act.

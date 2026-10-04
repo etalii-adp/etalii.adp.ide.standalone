@@ -95,7 +95,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
         var stale = new List<string>();
 
         // Act.
-        foreach (var (file, module, folder) in sources)
+        foreach ((string file, string module, string folder) in sources)
         {
             var exported = await ExportAsync(services, folder, module, seen);
             var path = IoPath.Combine(target, file + ".json");
@@ -136,7 +136,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
             json.WriteStartArray("diagrams");
             for (var index = 0; index < first.Count; index++)
             {
-                var (example, mimeType, deltas) = Stabilised(name, first[index], second[index]);
+                (string example, string mimeType, List<byte[]> deltas) = Stabilised(name, first[index], second[index]);
                 var encoded = deltas.Select(Convert.ToBase64String).ToList();
                 if (!seen.Add(mimeType + "\n" + string.Join("\n", encoded)))
                 {
@@ -177,7 +177,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
         var tokens = new List<(string First, string Second, string Token)>();
         for (var index = 0; index < first.Ids.Count; index++)
         {
-            var (one, other) = (first.Ids[index], second.Ids[index]);
+            (string one, string other) = (first.Ids[index], second.Ids[index]);
             if (one == other || tokens.Exists(token => token.First == one))
             {
                 continue;
@@ -198,7 +198,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
     private static byte[] Replaced(byte[] delta, IEnumerable<(string From, string To)> replacements)
     {
         var bytes = (byte[])delta.Clone();
-        foreach (var (from, to) in replacements)
+        foreach ((string from, string to) in replacements)
         {
             var pattern = Encoding.UTF8.GetBytes(from);
             var replacement = Encoding.UTF8.GetBytes(to);
@@ -224,7 +224,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
             var router = services.GetRequiredService<DiagramFileRouter>();
             var factories = services.GetServices<IDiagramSessionFactory>().ToList();
             var opened = new List<Opened>();
-            foreach (var (example, routed, factory) in DrawnConnections.DiagramsIn(workspace, router, factories))
+            foreach ((string example, DiagramRouted routed, IDiagramSessionFactory factory) in DrawnConnections.DiagramsIn(workspace, router, factories))
             {
                 var bodyPath = routed.BodyPath ?? routed.RegistrationPath!;
                 var watchId = ShortGuid.NewShortGuid();

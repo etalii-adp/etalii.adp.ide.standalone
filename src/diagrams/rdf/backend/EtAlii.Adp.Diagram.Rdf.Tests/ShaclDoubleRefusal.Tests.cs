@@ -30,7 +30,7 @@ public class ShaclDoubleRefusalTests
     [Fact]
     public void TheWriterAlone_RefusesEveryBlankRootedMutation_AndSplicesNothing()
     {
-        var (document, model) = Open("[] a sh:NodeShape ; sh:property [ sh:path ex:p ] .\n");
+        (LineDocument document, RdfModel model) = Open("[] a sh:NodeShape ; sh:property [ sh:path ex:p ] .\n");
         var before = document.Text;
 
         // No provider is involved: this is the writer's own guard, which is the point.
@@ -49,7 +49,7 @@ public class ShaclDoubleRefusalTests
     [Fact]
     public void TheGateAlone_RefusesAnAnonymousShape_WithoutTouchingTheWriterOrTheDocument()
     {
-        var (document, model) = Open("[] a sh:NodeShape ; sh:targetClass ex:Person .\n");
+        (LineDocument document, RdfModel model) = Open("[] a sh:NodeShape ; sh:targetClass ex:Person .\n");
         var before = document.Text;
 
         // The blank card's id, as the projection mints it.
@@ -69,7 +69,7 @@ public class ShaclDoubleRefusalTests
     [Fact]
     public void TheGateAlone_AllowsAnIriNamedShape()
     {
-        var (_, model) = Open("ex:S a sh:NodeShape .\n");
+        (_, RdfModel model) = Open("ex:S a sh:NodeShape .\n");
 
         var decision = ShaclEditGate.For(model, "res:http://example.org/S", truncated: false);
 
@@ -84,7 +84,7 @@ public class ShaclDoubleRefusalTests
     [Fact]
     public void BothLayers_SayTheIdenticalSentence()
     {
-        var (document, model) = Open("[] a sh:NodeShape ; sh:property [ sh:path ex:p ] .\n");
+        (LineDocument document, RdfModel model) = Open("[] a sh:NodeShape ; sh:property [ sh:path ex:p ] .\n");
         var blankId = ShaclProjection.Project(model).Cards.Single(card => card.Blank).Id;
 
         var fromTheGate = ShaclEditGate.For(model, blankId, truncated: false).Reason;
@@ -105,7 +105,7 @@ public class ShaclDoubleRefusalTests
         // in splitting a guard from its mechanics is that a later change moves the guard again
         // and nothing notices, because every other test exercises the anchored path. This is the
         // test that notices - it pins the PUBLIC entry point's behaviour, not the new one's.
-        var (document, model) = Open("ex:S a sh:NodeShape ; sh:property [ sh:path ex:p ] .\n");
+        (LineDocument document, RdfModel model) = Open("ex:S a sh:NodeShape ; sh:property [ sh:path ex:p ] .\n");
         var before = document.Text;
 
         var blankInvolving = model.Triples.First(triple => triple.Subject is BlankTerm || triple.Object is BlankTerm);
@@ -121,10 +121,10 @@ public class ShaclDoubleRefusalTests
     [Fact]
     public void TheGate_SaysNothingAboutATermThisFileDoesNotStateToBeAShape()
     {
-        var (_, model) = Open("""
-            ex:S a sh:NodeShape ; sh:targetClass ex:Person .
-            ex:alice a ex:Person ; ex:name "Alice" .
-            """ + "\n");
+        (_, RdfModel model) = Open("""
+                                   ex:S a sh:NodeShape ; sh:targetClass ex:Person .
+                                   ex:alice a ex:Person ; ex:name "Alice" .
+                                   """ + "\n");
 
         // ex:alice is data, and ex:Person is targeted but not described as a shape: neither is
         // this reading's to edit, so no shapes verb is offered on either.
@@ -136,7 +136,7 @@ public class ShaclDoubleRefusalTests
     [Fact]
     public void TheGate_WithholdsUnderTruncation_WithTheFamilySentence()
     {
-        var (_, model) = Open("ex:S a sh:NodeShape .\n");
+        (_, RdfModel model) = Open("ex:S a sh:NodeShape .\n");
 
         var decision = ShaclEditGate.For(model, "res:http://example.org/S", truncated: true);
 
@@ -148,7 +148,7 @@ public class ShaclDoubleRefusalTests
     [Fact]
     public void TheGate_IgnoresIdsThatAreNotThisFamilys()
     {
-        var (_, model) = Open("ex:S a sh:NodeShape .\n");
+        (_, RdfModel model) = Open("ex:S a sh:NodeShape .\n");
 
         Assert.False(ShaclEditGate.For(model, "", truncated: false).Applies);
         Assert.False(ShaclEditGate.For(model, null, truncated: false).Applies);

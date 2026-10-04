@@ -149,7 +149,7 @@ public sealed class TextFileBuffer
                 $"'{Path.GetFileName(path)}' is not UTF-8 or ASCII, the encodings text editing supports. Convert it to UTF-8 to edit it here.");
         }
 
-        var (terminators, dominant) = TerminatorsOf(content);
+        (string[] terminators, string dominant) = TerminatorsOf(content);
         return TextFileBufferOpenResult.Opened(new TextFileBuffer(path, hasBom, content, terminators, dominant));
     }
 

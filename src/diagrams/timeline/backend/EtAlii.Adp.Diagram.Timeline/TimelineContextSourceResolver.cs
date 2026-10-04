@@ -102,7 +102,7 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
             return Rejected("That element is no longer on this timeline.");
         }
 
-        var (path, text) = described.Value;
+        (IReadOnlyList<string> path, string text) = described.Value;
 
         // The client's path is checked, never trusted: it is what the client believes it
         // selected, and the id is what it actually selected.

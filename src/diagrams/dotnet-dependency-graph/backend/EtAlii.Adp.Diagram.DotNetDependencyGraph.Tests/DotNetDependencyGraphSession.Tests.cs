@@ -130,7 +130,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     public void Baseline_DrawsEveryProjectPackageAndEdge()
     {
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration);
 
         // Act.
@@ -150,7 +150,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // read-only, and the only file written is the .adp's layout: block.
 
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
         var projectBefore = await File.ReadAllTextAsync(Path.Combine(_root, "App", "App.csproj"), TestContext.Current.CancellationToken);
         var solutionBefore = await File.ReadAllTextAsync(solution, TestContext.Current.CancellationToken);
@@ -175,7 +175,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // every arrangement the user made rather than losing the lot because one id is new.
 
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
         var computed = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()))
             .Elements.ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
@@ -198,7 +198,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // cost the user the position they authored for an untouched one.
 
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
         session.Baseline();
         await session.MoveElementToAsync("project:App/App.csproj", 500, 400, CancellationToken.None);
@@ -236,7 +236,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // Requirement 7.3.
 
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration);
         session.Baseline();
 
@@ -260,7 +260,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     public async Task AnEdge_CannotBeRepositioned_BecauseItHasNoPositionOfItsOwn()
     {
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
 
         // Act.
@@ -275,7 +275,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     public async Task WithoutAHistory_TheDiagramIsReadOnly_AndSaysSo()
     {
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration);
 
         // Act.
@@ -328,7 +328,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     public async Task AMove_IsPushedToTheOpenSession_WithoutWaitingForAViewUpdate()
     {
         // Arrange.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var session = SessionFor(solution, registration, new DirectHistoryStack());
         session.Baseline();
         var pushed = new List<DiagramDelta>();
@@ -352,7 +352,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
         // The same gap had a second door: undo and redo rewrite the registration through the
         // project's history, never through this session, so they were invisible in exactly the
         // same way. The session listens to the history for that reason, and this is the proof.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var history = new DirectHistoryStack();
         var session = SessionFor(solution, registration, history);
         session.Baseline();
@@ -378,7 +378,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     {
         // The history is the PROJECT's and outlives any one diagram. A session that never let go
         // would keep a closed diagram alive, re-rendering on every command anybody runs.
-        var (solution, registration) = Seed();
+        (string solution, string registration) = Seed();
         var history = new DirectHistoryStack();
         var session = SessionFor(solution, registration, history);
         session.Baseline();

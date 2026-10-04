@@ -101,7 +101,7 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
             return Rejected("That is no longer in this diagram.");
         }
 
-        var (path, text) = described;
+        (IReadOnlyList<string> path, string text) = described;
 
         // The client's path is checked, never trusted.
         if (clientPath.Count > 0 && !clientPath.SequenceEqual(path, StringComparer.Ordinal))

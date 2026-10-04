@@ -596,7 +596,7 @@ internal static class BindingChecker
             {
                 problems.Add(new LoadProblem(at, ProblemSeverity.Error, "A relation rule has a source and a target."));
             }
-            foreach (var (name, attribute) in rule.Attributes)
+            foreach ((string name, AttributeBinding attribute) in rule.Attributes)
             {
                 var a = $"{at}/attributes/{FblDocumentLoader.Escape(name)}";
                 CheckSlot(attribute, context, a, problems);

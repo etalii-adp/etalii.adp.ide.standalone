@@ -34,7 +34,7 @@ public static class FolderSubject
         ArgumentNullException.ThrowIfNull(binding);
         var caseless = ignoreCase ?? Glob.PlatformIgnoresCase;
         var files = new List<FolderFile>();
-        foreach (var (relative, full) in Entries(folder, includeDirectories: false))
+        foreach ((string relative, string full) in Entries(folder, includeDirectories: false))
         {
             if (binding.Body.Ignore.Any(glob => Glob.IsMatch(glob, relative, caseless))) continue;
             var rule = binding.Body.Files.FirstOrDefault(r => Glob.IsMatch(r.Glob, relative, caseless));

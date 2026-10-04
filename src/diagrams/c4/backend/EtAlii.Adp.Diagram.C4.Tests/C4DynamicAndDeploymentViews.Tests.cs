@@ -29,7 +29,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void ADynamicView_ShowsWhatTakesPartInItsInteractions_WithoutAnInclude()
     {
         // Arrange.
-        var (workspace, view) = LoadFixture("dynamic-interactions.dsl");
+        (C4Workspace workspace, C4View view) = LoadFixture("dynamic-interactions.dsl");
         Assert.Empty(view.Includes);
         Assert.False(view.IncludesEverything);
 
@@ -44,7 +44,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void ADynamicView_DeliversItsInteractions_NumberedInOrder()
     {
         // Arrange.
-        var (workspace, view) = LoadFixture("dynamic-interactions.dsl");
+        (C4Workspace workspace, C4View view) = LoadFixture("dynamic-interactions.dsl");
 
         // Act.
         var relationships = Mapper.Visible(workspace, view, DiagramViewport.Unbounded)
@@ -86,7 +86,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void ADeploymentView_DrawsEachNodeAroundWhatItHosts_ToAnyDepth()
     {
         // Arrange.
-        var (workspace, view) = LoadFixture("deployment-nested.dsl");
+        (C4Workspace workspace, C4View view) = LoadFixture("deployment-nested.dsl");
         var web = InstanceOf(workspace, "web", "node");
         var primaryDb = InstanceOf(workspace, "db", "primary");
 
@@ -110,7 +110,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void ADeploymentView_LaysOutWithoutOverlaps()
     {
         // Arrange.
-        var (workspace, view) = LoadFixture("deployment-nested.dsl");
+        (C4Workspace workspace, C4View view) = LoadFixture("deployment-nested.dsl");
 
         // Act.
         var boxes = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default).Boxes.Values.ToArray();
@@ -129,7 +129,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void ADeploymentView_BoundariesComeOutermostFirst_SoTheInnerOnesDrawOnTop()
     {
         // Arrange.
-        var (workspace, view) = LoadFixture("deployment-nested.dsl");
+        (C4Workspace workspace, C4View view) = LoadFixture("deployment-nested.dsl");
 
         // Act.
         var ids = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default).Boundaries.Select(b => b.Id).ToList();
@@ -143,7 +143,7 @@ public class C4DynamicAndDeploymentViewsTests
     public void AContainerInstance_ShowsTheContainerItInstantiates()
     {
         // Arrange.
-        var (workspace, view) = LoadFixture("deployment-nested.dsl");
+        (C4Workspace workspace, C4View view) = LoadFixture("deployment-nested.dsl");
         var web = InstanceOf(workspace, "web", "node");
 
         // Act.

@@ -195,8 +195,8 @@ public sealed class WardleyElementMapper
 
     private static bool Overlaps(DiagramViewport viewport, WardleyAttitude attitude)
     {
-        var (x1, y1) = WardleyAxis.ToPoint(attitude.From);
-        var (x2, y2) = WardleyAxis.ToPoint(attitude.To);
+        (double x1, double y1) = WardleyAxis.ToPoint(attitude.From);
+        (double x2, double y2) = WardleyAxis.ToPoint(attitude.To);
         return Math.Max(x1, x2) >= viewport.MinX && Math.Min(x1, x2) <= viewport.MaxX
             && Math.Max(y1, y2) >= viewport.MinY && Math.Min(y1, y2) <= viewport.MaxY;
     }
@@ -287,7 +287,7 @@ public sealed class WardleyElementMapper
             };
         }
 
-        var (x, y) = WardleyAxis.ToPoint(component.Position);
+        (double x, double y) = WardleyAxis.ToPoint(component.Position);
         return Element(
             Id(ids, WardleyIdentityKind.Component, WardleyIdentityKeys.Of(component)),
             x,
@@ -320,7 +320,7 @@ public sealed class WardleyElementMapper
             PipelineParentId = parentId,
         };
 
-        var (x, y) = WardleyAxis.ToPoint(position);
+        (double x, double y) = WardleyAxis.ToPoint(position);
         return Element(
             Id(ids, WardleyIdentityKind.PipelineChild, WardleyIdentityKeys.Of(pipeline, child)),
             x,
@@ -349,7 +349,7 @@ public sealed class WardleyElementMapper
 
     private static DiagramElement NoteElement(WardleyNote note, Dictionary<(string Kind, string Key), string> ids)
     {
-        var (x, y) = WardleyAxis.ToPoint(note.Position);
+        (double x, double y) = WardleyAxis.ToPoint(note.Position);
         return Element(
             Id(ids, WardleyIdentityKind.Note, WardleyIdentityKeys.Of(note)),
             x,
@@ -365,13 +365,13 @@ public sealed class WardleyElementMapper
         var payload = new WardleyAnnotationPayload { Number = annotation.Number, Text = annotation.Text };
         foreach (var occurrence in annotation.Occurrences)
         {
-            var (ox, oy) = WardleyAxis.ToPoint(occurrence);
+            (double ox, double oy) = WardleyAxis.ToPoint(occurrence);
             payload.Occurrences.Add(new WardleyPointPayload { X = ox, Y = oy });
         }
 
         // The element sits at the first occurrence; the rest travel in the payload, because a
         // core Element has one position and Requirement 6.8 says none may be lost.
-        var (x, y) = WardleyAxis.ToPoint(annotation.Occurrences[0]);
+        (double x, double y) = WardleyAxis.ToPoint(annotation.Occurrences[0]);
         return Element(
             Id(ids, WardleyIdentityKind.Annotation, WardleyIdentityKeys.Of(annotation)),
             x,
@@ -384,7 +384,7 @@ public sealed class WardleyElementMapper
         WardleyAccelerator accelerator,
         Dictionary<(string Kind, string Key), string> ids)
     {
-        var (x, y) = WardleyAxis.ToPoint(accelerator.Position);
+        (double x, double y) = WardleyAxis.ToPoint(accelerator.Position);
         return Element(
             Id(ids, WardleyIdentityKind.Accelerator, WardleyIdentityKeys.Of(accelerator)),
             x,
@@ -401,8 +401,8 @@ public sealed class WardleyElementMapper
         WardleyAttitude attitude,
         Dictionary<(string Kind, string Key), string> ids)
     {
-        var (x, y) = WardleyAxis.ToPoint(attitude.From);
-        var (x2, y2) = WardleyAxis.ToPoint(attitude.To);
+        (double x, double y) = WardleyAxis.ToPoint(attitude.From);
+        (double x2, double y2) = WardleyAxis.ToPoint(attitude.To);
 
         return Element(
             Id(ids, WardleyIdentityKind.Attitude, WardleyIdentityKeys.Of(attitude)),

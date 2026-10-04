@@ -186,9 +186,9 @@ public class ZeroWritesTests : IDisposable
         Assert.True(appeared.Length == 0, $"The module created: {string.Join(", ", appeared)}");
         Assert.True(vanished.Length == 0, $"The module removed: {string.Join(", ", vanished)}");
 
-        foreach (var (path, expected) in before.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        foreach ((string path, (byte[] Bytes, DateTime Written) expected) in before.OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
-            var (actualBytes, actualWritten) = after[path];
+            (byte[] actualBytes, DateTime actualWritten) = after[path];
             Assert.True(expected.Bytes.SequenceEqual(actualBytes), $"The module rewrote the contents of {path}.");
             Assert.True(
                 expected.Written == actualWritten,
