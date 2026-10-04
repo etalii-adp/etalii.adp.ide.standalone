@@ -37,6 +37,8 @@ public static class ServiceCollectionAddSupplyChainExtension
         services.AddSingleton<IContextPropertyProvider, SupplyChainContextPropertyProvider>();
 
         services.AddSingleton<ICommandHandler<AddSupplyChainNodeCommand>, AddSupplyChainNodeCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddSupplyChainGroupCommand>, AddSupplyChainGroupCommandHandler>();
+        services.AddSingleton<ICommandHandler<MoveSupplyChainEntryCommand>, MoveSupplyChainEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<ConnectSupplyChainNodesCommand>, ConnectSupplyChainNodesCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveSupplyChainEntryCommand>, RemoveSupplyChainEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<PlaceSupplyChainNodesCommand>, PlaceSupplyChainNodesCommandHandler>();

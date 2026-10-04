@@ -109,6 +109,19 @@ public static class SupplyChainWriter
         return SupplyChainEdit.Applied;
     }
 
+    /// <summary>Places a group's own frame - what it is drawn at while it has no members.</summary>
+    public static SupplyChainEdit PlaceGroup(LineDocument document, SupplyChainGroup group, double x, double y)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(group);
+
+        // y first, for the same reason as Place: a newly placed entry reads `x` before `y`.
+        var grows = LineSplice.FindKey(document, group.Range, "y") < 0 ? 1 : 0;
+        LineSplice.SetKey(document, group.Range, "y", Number(Math.Round(y)));
+        LineSplice.SetKey(document, ExtendedBy(group.Range, grows), "x", Number(Math.Round(x)));
+        return SupplyChainEdit.Applied;
+    }
+
     /// <summary>Removes a node and every flow to or from it, bottom-up.</summary>
     public static SupplyChainEdit RemoveNode(LineDocument document, SupplyChainModel model, SupplyChainNode node)
     {
@@ -201,7 +214,14 @@ public static class SupplyChainWriter
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(group);
 
-        return Append(document, model.Groups.Select(existing => existing.Range), GroupsSection, group.Id, [("name", Text(group.Name))]);
+        List<(string Key, string Value)> keys = [("name", Text(group.Name))];
+        if (group.X is { } x && group.Y is { } y)
+        {
+            keys.Add(("x", Number(Math.Round(x))));
+            keys.Add(("y", Number(Math.Round(y))));
+        }
+
+        return Append(document, model.Groups.Select(existing => existing.Range), GroupsSection, group.Id, keys);
     }
 
     /// <summary>Appends a flow entry.</summary>

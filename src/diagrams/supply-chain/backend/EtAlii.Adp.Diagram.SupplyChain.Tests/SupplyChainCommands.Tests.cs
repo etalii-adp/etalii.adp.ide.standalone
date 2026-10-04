@@ -29,12 +29,12 @@ public sealed class SupplyChainCommandsTests : IDisposable
     [
         "add a node", "connect", "remove a node", "remove a flow", "remove a group", "place", "move a group", "arrange",
         "rename", "set a quantity", "clear a quantity", "set a stage", "ungroup", "describe a flow", "increase", "decrease",
-        "increase a flow", "put in a new group",
+        "increase a flow", "put in a new group", "add a group", "move a node", "move a node into a group", "move a group's frame",
     ];
 
     private ICommand EditNamed(string name) => name switch
     {
-        "add a node" => new AddSupplyChainNodeCommand(Body, SupplyChainNodeTypes.Distributor, 500, 500),
+        "add a node" => new AddSupplyChainNodeCommand(Body, SupplyChainNodeTypes.Hub, 500, 500),
         "connect" => new ConnectSupplyChainNodesCommand(Body, "mine", "shop"),
         "remove a node" => new RemoveSupplyChainEntryCommand(Body, "plant"),
         "remove a flow" => new RemoveSupplyChainEntryCommand(Body, "ore"),
@@ -45,13 +45,17 @@ public sealed class SupplyChainCommandsTests : IDisposable
         "rename" => new SetSupplyChainPropertyCommand(Body, "mine", SupplyChainKeys.Name, "Open-pit mine"),
         "set a quantity" => new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Quantity, "7.25"),
         "clear a quantity" => new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Quantity, ""),
-        "set a stage" => new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Type, SupplyChainNodeTypes.Assembler),
+        "set a stage" => new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Type, SupplyChainNodeTypes.Integrator),
         "ungroup" => new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Group, ""),
         "describe a flow" => new SetSupplyChainPropertyCommand(Body, "goods", SupplyChainKeys.Description, "Boxed."),
         "increase" => new StepSupplyChainValueCommand(Body, "mine", 1),
         "decrease" => new StepSupplyChainValueCommand(Body, "plant", -1),
         "increase a flow" => new StepSupplyChainValueCommand(Body, "goods", 1),
         "put in a new group" => new GroupSupplyChainNodeCommand(Body, "shop", "High street"),
+        "add a group" => new AddSupplyChainGroupCommand(Body, 2000, 2000),
+        "move a node" => new MoveSupplyChainEntryCommand(Body, "shop", 900, 60),
+        "move a node into a group" => new MoveSupplyChainEntryCommand(Body, "shop", 0, 40),
+        "move a group's frame" => new MoveSupplyChainEntryCommand(Body, "north", 300, 300),
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "No such edit."),
     };
 
@@ -166,12 +170,12 @@ public sealed class SupplyChainCommandsTests : IDisposable
     public async Task AnAddedNode_IsCentredOnTheDrop_WithAName()
     {
         // Act.
-        await Dispatch(new AddSupplyChainNodeCommand(Body, SupplyChainNodeTypes.Distributor, 500, 500));
+        await Dispatch(new AddSupplyChainNodeCommand(Body, SupplyChainNodeTypes.Hub, 500, 500));
 
         // Assert.
         var added = Parse().Nodes.Last();
-        Assert.Equal(SupplyChainNodeTypes.Distributor, added.Type);
-        Assert.Equal("New distributor", added.Name);
+        Assert.Equal(SupplyChainNodeTypes.Hub, added.Type);
+        Assert.Equal("New hub", added.Name);
         Assert.Equal(500 - (SupplyChainGeometry.NodeWidth / 2), added.X);
         Assert.Equal(500 - (SupplyChainGeometry.NodeHeight / 2), added.Y);
     }
@@ -186,6 +190,98 @@ public sealed class SupplyChainCommandsTests : IDisposable
         var model = Parse();
         var group = model.Groups.Single(candidate => candidate.Name == "High street");
         Assert.Equal(group.Id, model.Nodes.Single(node => node.Id == "shop").Group);
+    }
+
+    [Fact]
+    public async Task ALegacyStageWord_ReadsAsTheStageItBecame_AndAnEditWritesTheNewWord()
+    {
+        // Arrange: the fixture still writes the first words this module used.
+        Assert.Equal(SupplyChainNodeTypes.Producer, Parse().Nodes.Single(node => node.Id == "plant").Type);
+
+        // Act.
+        await Dispatch(new SetSupplyChainPropertyCommand(Body, "plant", SupplyChainKeys.Type, "assembler"));
+
+        // Assert.
+        Assert.Equal(SupplyChainNodeTypes.Integrator, Parse().Nodes.Single(node => node.Id == "plant").Type);
+        Assert.Contains("type: integrator", await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnAddedGroup_IsDrawnEmpty_CentredOnTheDrop()
+    {
+        // Act.
+        await Dispatch(new AddSupplyChainGroupCommand(Body, 2000, 2000));
+
+        // Assert.
+        var model = Parse();
+        var group = model.Groups.Last();
+        Assert.Equal("New group", group.Name);
+        var frame = SupplyChainLayout.Of(model).GroupBoxes[group.Id];
+        Assert.Equal(2000, frame.CentreX);
+        Assert.Equal(2000, frame.CentreY);
+        Assert.Empty(SupplyChainValidator.Validate(model));
+    }
+
+    [Fact]
+    public async Task DraggingANodeIntoAnotherGroupsFrame_MovesItIntoThatGroup()
+    {
+        // Arrange.
+        await Dispatch(new AddSupplyChainGroupCommand(Body, 2000, 2000));
+        var added = Parse().Groups.Last().Id;
+
+        // Act: the plant's centre lands in the middle of the new group's frame.
+        await Dispatch(new MoveSupplyChainEntryCommand(Body, "plant", 2000 - (SupplyChainGeometry.NodeWidth / 2), 2000 - (SupplyChainGeometry.NodeHeight / 2)));
+
+        // Assert.
+        var model = Parse();
+        Assert.Equal(added, model.Nodes.Single(node => node.Id == "plant").Group);
+        Assert.Equal("north", model.Nodes.Single(node => node.Id == "mine").Group);
+    }
+
+    [Fact]
+    public async Task DraggingANodeOutsideEveryOtherFrame_KeepsItInItsOwnGroup()
+    {
+        // Act: far from every frame.
+        await Dispatch(new MoveSupplyChainEntryCommand(Body, "plant", 5000, 5000));
+
+        // Assert: it stays, and its group's frame grows to follow it.
+        var model = Parse();
+        Assert.Equal("north", model.Nodes.Single(node => node.Id == "plant").Group);
+        Assert.True(SupplyChainLayout.Of(model).GroupBoxes["north"].Right >= 5000 + SupplyChainGeometry.NodeWidth);
+    }
+
+    [Fact]
+    public async Task AGroupItsLastMemberLeaves_StaysWhereItsFrameWas()
+    {
+        // Arrange: one of its two members has already moved into a new group.
+        await Dispatch(new AddSupplyChainGroupCommand(Body, 2000, 2000));
+        (double x, double y) = (2000 - (SupplyChainGeometry.NodeWidth / 2), 2000 - (SupplyChainGeometry.NodeHeight / 2));
+        await Dispatch(new MoveSupplyChainEntryCommand(Body, "mine", x, y));
+        var north = SupplyChainLayout.Of(Parse()).GroupBoxes["north"];
+
+        // Act: the last one follows.
+        await Dispatch(new MoveSupplyChainEntryCommand(Body, "plant", x, y));
+
+        // Assert.
+        var model = Parse();
+        Assert.DoesNotContain(model.Nodes, node => node.Group == "north");
+        var frame = SupplyChainLayout.Of(model).GroupBoxes["north"];
+        Assert.Equal((Math.Round(north.X), Math.Round(north.Y)), (frame.X, frame.Y));
+    }
+
+    [Fact]
+    public async Task DraggingAnEmptyGroup_PlacesItsFrame()
+    {
+        // Arrange.
+        await Dispatch(new AddSupplyChainGroupCommand(Body, 2000, 2000));
+        var added = Parse().Groups.Last().Id;
+
+        // Act.
+        await Dispatch(new MoveSupplyChainEntryCommand(Body, added, 100, 900));
+
+        // Assert.
+        var frame = SupplyChainLayout.Of(Parse()).GroupBoxes[added];
+        Assert.Equal((100d, 900d), (frame.X, frame.Y));
     }
 
     [Fact]

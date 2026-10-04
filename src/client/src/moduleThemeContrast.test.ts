@@ -196,7 +196,7 @@ describe("module colours honour the theme", () => {
 
     it("maps every stage to a theme token", () => {
       expect(stages.map((found) => found.stage)).toEqual([
-        "raw-material", "supplier", "manufacturer", "assembler", "distributor", "retailer", "consumer",
+        "source", "processor", "producer", "integrator", "hub", "outlet", "consumer",
       ]);
       for (const { stage, token } of stages) {
         expect(token.startsWith("--color-diagram-supply-chain-"), `${stage} is painted from the theme`).toBe(true);

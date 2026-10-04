@@ -34,21 +34,21 @@ describe("the supply chain fold", () => {
     // Act.
     const model = applyDelta(emptyModel, add(
       { id: "north", type: "etalii/supply-chain+group", bytes: group },
-      { id: "mine", type: "etalii/supply-chain+raw-material", bytes: node, x: 10, y: 20 },
+      { id: "mine", type: "etalii/supply-chain+source", bytes: node, x: 10, y: 20 },
       { id: "ore", type: "etalii/supply-chain+flow", bytes: flow },
       { id: "odd", type: "etalii/supply-chain+quarry", bytes: node },
     ));
 
     // Assert.
     expect([...model.groups.keys()]).toEqual(["north"]);
-    expect(model.nodes.get("mine")).toMatchObject({ stage: "raw-material", x: 10, y: 20 });
+    expect(model.nodes.get("mine")).toMatchObject({ stage: "source", x: 10, y: 20 });
     expect(model.flows.get("ore")?.payload.product).toBe("Ore");
     expect(model.nodes.has("odd")).toBe(false);
   });
 
   it("removes by id, whatever the id was", () => {
     // Arrange.
-    const model = applyDelta(emptyModel, add({ id: "mine", type: "etalii/supply-chain+raw-material", bytes: node }, { id: "ore", type: "etalii/supply-chain+flow", bytes: flow }));
+    const model = applyDelta(emptyModel, add({ id: "mine", type: "etalii/supply-chain+source", bytes: node }, { id: "ore", type: "etalii/supply-chain+flow", bytes: flow }));
 
     // Act.
     const removed = applyDelta(model, create(DeltaSchema, { action: { case: "remove", value: { elementIds: [{ value: "mine" }, { value: "ore" }] } } }));

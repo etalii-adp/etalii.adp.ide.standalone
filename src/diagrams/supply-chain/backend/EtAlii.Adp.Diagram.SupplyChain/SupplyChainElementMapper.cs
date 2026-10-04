@@ -29,23 +29,23 @@ public sealed class SupplyChainElementMapper
     /// <summary>The library type of a group's frame.</summary>
     public const string GroupType = Prefix + "group";
 
-    /// <summary>The library type of a raw material source.</summary>
-    public const string RawMaterialType = Prefix + SupplyChainNodeTypes.RawMaterial;
+    /// <summary>The library type of a source.</summary>
+    public const string SourceType = Prefix + SupplyChainNodeTypes.Source;
 
-    /// <summary>The library type of a supplier.</summary>
-    public const string SupplierType = Prefix + SupplyChainNodeTypes.Supplier;
+    /// <summary>The library type of a processor.</summary>
+    public const string ProcessorType = Prefix + SupplyChainNodeTypes.Processor;
 
-    /// <summary>The library type of a manufacturer.</summary>
-    public const string ManufacturerType = Prefix + SupplyChainNodeTypes.Manufacturer;
+    /// <summary>The library type of a producer.</summary>
+    public const string ProducerType = Prefix + SupplyChainNodeTypes.Producer;
 
-    /// <summary>The library type of an assembler.</summary>
-    public const string AssemblerType = Prefix + SupplyChainNodeTypes.Assembler;
+    /// <summary>The library type of an integrator.</summary>
+    public const string IntegratorType = Prefix + SupplyChainNodeTypes.Integrator;
 
-    /// <summary>The library type of a distributor.</summary>
-    public const string DistributorType = Prefix + SupplyChainNodeTypes.Distributor;
+    /// <summary>The library type of a hub.</summary>
+    public const string HubType = Prefix + SupplyChainNodeTypes.Hub;
 
-    /// <summary>The library type of a retailer.</summary>
-    public const string RetailerType = Prefix + SupplyChainNodeTypes.Retailer;
+    /// <summary>The library type of an outlet.</summary>
+    public const string OutletType = Prefix + SupplyChainNodeTypes.Outlet;
 
     /// <summary>The library type of a consumer.</summary>
     public const string ConsumerType = Prefix + SupplyChainNodeTypes.Consumer;

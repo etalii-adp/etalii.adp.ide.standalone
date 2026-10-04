@@ -187,14 +187,14 @@
     },
     "supply-chain": {
       "elements": [
-        "etalii/supply-chain+assembler",
         "etalii/supply-chain+consumer",
-        "etalii/supply-chain+distributor",
         "etalii/supply-chain+group",
-        "etalii/supply-chain+manufacturer",
-        "etalii/supply-chain+raw-material",
-        "etalii/supply-chain+retailer",
-        "etalii/supply-chain+supplier"
+        "etalii/supply-chain+hub",
+        "etalii/supply-chain+integrator",
+        "etalii/supply-chain+outlet",
+        "etalii/supply-chain+processor",
+        "etalii/supply-chain+producer",
+        "etalii/supply-chain+source"
       ],
       "relations": [
         "etalii/supply-chain+flow"

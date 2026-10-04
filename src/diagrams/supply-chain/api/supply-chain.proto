@@ -4,7 +4,7 @@ package etalii.adp.supplychain;
 
 option csharp_namespace = "EtAlii.Adp.Diagram.SupplyChain";
 
-// One stage of the chain: a mine, a supplier, a plant, a distributor, a consumer. Which stage it is
+// One stage of the chain: a source, a processor, a producer, a hub, a consumer. Which stage it is
 // travels in the core Element's type, not here.
 //
 // The size is here because the core element carries a position, a type and this payload and
@@ -31,7 +31,7 @@ message SupplyChainNodePayload {
 }
 
 // One group: a region, a company, a tier. Its rectangle is computed from its members, so it moves
-// when they do and never has a position of its own in the document.
+// when they do; only a group with no members is drawn where the document places it.
 message SupplyChainGroupPayload {
   string name = 1;
   double width = 2;
