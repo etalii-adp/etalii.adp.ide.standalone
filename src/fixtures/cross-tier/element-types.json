@@ -1,6 +1,24 @@
 {
   "reason": "Written by ElementTypesTests from each diagram module's own type constants, through ElementTypeCatalog: every element and relation type string a module puts on the wire, keyed by the module's folder under src/diagrams. The backend's constants are the source and this file is their copy; the client suite reads it against the type ids each client module declares (backend-centralization R12). An element is drawn as a box of its own, a relation between two elements. Each list is sorted ordinally, and the modules by folder name. Do not edit by hand: re-run the test and commit what it writes.",
   "modules": {
+    "agent-behavior-modelling": {
+      "elements": [
+        "etalii/agent-behavior-modelling+action",
+        "etalii/agent-behavior-modelling+approval",
+        "etalii/agent-behavior-modelling+ask",
+        "etalii/agent-behavior-modelling+check",
+        "etalii/agent-behavior-modelling+delegate",
+        "etalii/agent-behavior-modelling+fallback",
+        "etalii/agent-behavior-modelling+guard",
+        "etalii/agent-behavior-modelling+parallel",
+        "etalii/agent-behavior-modelling+repeat",
+        "etalii/agent-behavior-modelling+retry",
+        "etalii/agent-behavior-modelling+sequence"
+      ],
+      "relations": [
+        "etalii/agent-behavior-modelling+child"
+      ]
+    },
     "ansible-structure": {
       "elements": [
         "ansible/structure+inventory",

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.AgentBehaviorModelling;
 using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 using EtAlii.Adp.Diagram.C4;
@@ -48,6 +49,9 @@ internal static class ElementTypeCatalog
 
     internal static readonly IReadOnlyList<ModuleTypes> Modules =
     [
+        new("agent-behavior-modelling",
+            [AbmElementMapper.SequenceType, AbmElementMapper.FallbackType, AbmElementMapper.ParallelType, AbmElementMapper.RetryType, AbmElementMapper.RepeatType, AbmElementMapper.GuardType, AbmElementMapper.ApprovalType, AbmElementMapper.CheckType, AbmElementMapper.ActionType, AbmElementMapper.AskType, AbmElementMapper.DelegateType],
+            [AbmElementMapper.ChildType]),
         new("ansible-structure",
             [AnsibleElementMapper.PlaybookType, AnsibleElementMapper.PlayType, AnsibleElementMapper.RoleType, AnsibleElementMapper.TaskFileType, AnsibleElementMapper.InventoryType, AnsibleElementMapper.VariableFolderType],
             [AnsibleElementMapper.EdgeType]),

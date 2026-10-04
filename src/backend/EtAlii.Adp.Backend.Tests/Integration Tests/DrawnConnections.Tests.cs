@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram.AgentBehaviorModelling;
 using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 using EtAlii.Adp.Diagram.C4;
@@ -97,6 +98,9 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
     /// </summary>
     private static readonly DrawnModule[] Modules =
     [
+        new("agent-behavior-modelling", new(
+            [AbmElementMapper.ChildType],
+            [AbmElementMapper.SequenceType, AbmElementMapper.FallbackType, AbmElementMapper.ParallelType, AbmElementMapper.RetryType, AbmElementMapper.RepeatType, AbmElementMapper.GuardType, AbmElementMapper.ApprovalType, AbmElementMapper.CheckType, AbmElementMapper.ActionType, AbmElementMapper.AskType, AbmElementMapper.DelegateType])),
         new("ansible-structure", new(
             [AnsibleElementMapper.EdgeType],
             [AnsibleElementMapper.PlaybookType, AnsibleElementMapper.PlayType, AnsibleElementMapper.RoleType, AnsibleElementMapper.TaskFileType, AnsibleElementMapper.InventoryType, AnsibleElementMapper.VariableFolderType])),
