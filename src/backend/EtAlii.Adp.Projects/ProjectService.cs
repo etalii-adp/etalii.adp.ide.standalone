@@ -48,7 +48,7 @@ public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase
         {
             // The user pointed at a folder that is not there - their mistake to correct, not
             // a fault of ours, so a warning rather than an error.
-            _logger.Warning("Rejected the project {UserId} tried to add: {Reason}", userId, ex.Message);
+            _logger.Warning(ex, "Rejected the project {UserId} tried to add:", userId);
             return Task.FromResult(new AddProjectResponse
             {
                 Error = new AddProjectError { Message = ex.Message }
