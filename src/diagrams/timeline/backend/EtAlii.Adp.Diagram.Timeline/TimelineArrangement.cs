@@ -13,6 +13,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// a period from its begin to its end, a moment as its diamond with its label beside it.
 /// </para>
 /// <para>
+/// <b>A moment's label is beside it, where its lines leave.</b> A moment linked to something later
+/// would draw that link level through its own label if the two shared a row, so such pairs are
+/// kept <i>apart</i>: on neighbouring rows, the link a short diagonal clear of the text.
+/// </para>
+/// <para>
 /// <b>The canvas's own first scale</b>: the client fits the whole timeline into 1200 units with a
 /// tenth to spare either side (<c>timelineScaleOf</c>), and its labels are 12 units high, so the
 /// widths here are the ones a reader sees at the fit - which is where clutter is judged.
@@ -70,7 +75,14 @@ public static class TimelineArrangement
             return new RowItem(element.Id, left - MomentRadius, left + MomentRadius + LabelGap + TextMetric.WidthOf(label, LabelFontSize));
         }
 
+        var byId = elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
+        bool IsMoment(string id) => byId.TryGetValue(id, out var element) && element.End is not { IsReadable: true };
+        bool IsLaterThan(string id, string moment) => byId.TryGetValue(id, out var element) && Begin(element) > Begin(byId[moment]);
+
         var links = model.Connections.Select(connection => (connection.From, connection.To)).ToList();
-        return RowPacking.Pack([.. elements.Select(ItemOf)], links, Gap);
+        var apart = links
+            .Where(link => (IsMoment(link.From) && IsLaterThan(link.To, link.From)) || (IsMoment(link.To) && IsLaterThan(link.From, link.To)))
+            .ToList();
+        return RowPacking.Pack([.. elements.Select(ItemOf)], links, Gap, apart);
     }
 }

@@ -157,4 +157,23 @@ public class TimelineArrangementTests : IDisposable
         Assert.Equal(rows["b"], rows["c"]);
         Assert.NotEqual(rows["a"], rows["other"]);
     }
+
+    [Fact]
+    public void AMomentAndTheLaterElementItLeadsTo_AreNeverOnOneRow_SoTheLinkMissesItsLabel()
+    {
+        // Arrange: the roadmap starts with a moment, "Project kick-off", linked to the later Discovery.
+        var model = TimelineParser.Parse(LineDocument.Parse(Roadmap));
+        var byId = model.Elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
+        bool IsMoment(TimelineElement element) => element.End is not { IsReadable: true };
+
+        // Act.
+        var rows = TimelineArrangement.RowsOf(model);
+
+        // Assert: every link leaving a moment for something later runs to another row.
+        var leaving = model.Connections
+            .Where(connection => IsMoment(byId[connection.From]) && byId[connection.To].Begin.Value > byId[connection.From].Begin.Value)
+            .ToList();
+        Assert.NotEmpty(leaving);
+        Assert.All(leaving, connection => Assert.NotEqual(rows[connection.From], rows[connection.To]));
+    }
 }

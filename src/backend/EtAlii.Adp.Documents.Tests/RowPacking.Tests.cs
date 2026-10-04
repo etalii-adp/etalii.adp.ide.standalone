@@ -49,6 +49,20 @@ public class RowPackingTests
     }
 
     [Fact]
+    public void APairKeptApart_TakesTheNeighbouringRow_NotTheSameOne()
+    {
+        // Arrange: m then a, linked and following each other, so they would share a row - but the
+        // link would run through m's label, so they are kept apart. Two other items open two rows.
+        RowItem[] items = [new("m", 0, 10), new("x", 0, 10), new("y", 0, 10), new("a", 20, 30)];
+
+        // Act.
+        var rows = RowPacking.Pack(items, [("m", "a")], gap: 4, apart: [("m", "a")]);
+
+        // Assert.
+        Assert.Equal(1, Math.Abs(rows["m"] - rows["a"]));
+    }
+
+    [Fact]
     public void RowsSwap_SoLinkedItemsEndUpOnNeighbouringRows()
     {
         // Arrange: three stacked items at the start; a later item linked to the one packed lowest.

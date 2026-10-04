@@ -27,6 +27,13 @@ public readonly record struct RowItem(string Id, double Left, double Right, int 
 /// adding a row.
 /// </para>
 /// <para>
+/// <b>Some links want neighbouring rows, not one.</b> A link drawn level through a label - a
+/// timeline moment's, whose label sits to its right where its outgoing line runs - is clutter, so
+/// a pair named as <i>apart</i> keeps the attraction but never takes the same row - the nearest row
+/// is the one beside it, and when the shared row is the only free one, a row is opened instead:
+/// the one place clarity is bought with a row.
+/// </para>
+/// <para>
 /// <b>Deterministic</b>: ties fall to the lower row and the original order, so arranging an arranged
 /// diagram changes nothing.
 /// </para>
@@ -43,10 +50,12 @@ public static class RowPacking
     /// <param name="items">The items, in the document's order.</param>
     /// <param name="links">The links between them, by id; a link naming an unknown id is ignored.</param>
     /// <param name="gap">The least clear space between two items on one row.</param>
+    /// <param name="apart">Pairs, by id, that never share a row.</param>
     public static IReadOnlyDictionary<string, int> Pack(
         IReadOnlyList<RowItem> items,
         IReadOnlyList<(string From, string To)> links,
-        double gap)
+        double gap,
+        IReadOnlyList<(string First, string Second)>? apart = null)
     {
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(links);
@@ -69,6 +78,16 @@ public static class RowPacking
             }
         }
 
+        var avoided = order.ToDictionary(item => item.Id, _ => new List<string>(), StringComparer.Ordinal);
+        foreach ((string first, string second) in apart ?? [])
+        {
+            if (first != second && known.Contains(first) && known.Contains(second))
+            {
+                avoided[first].Add(second);
+                avoided[second].Add(first);
+            }
+        }
+
         // Where each row is next free, across.
         var freeFrom = new List<double>();
         var rows = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -78,11 +97,16 @@ public static class RowPacking
 
             var placed = neighbours[item.Id].Where(rows.ContainsKey).Select(id => rows[id]).ToList();
             var existing = Enumerable.Range(0, Math.Max(0, freeFrom.Count - item.Rows + 1)).Where(Fits).ToList();
+            var shunned = avoided[item.Id].Where(rows.ContainsKey).Select(id => rows[id]).ToHashSet();
+            bool Clear(int top) => Fits(top) && !Enumerable.Range(top, item.Rows).Any(shunned.Contains);
+            existing.RemoveAll(candidate => !Clear(candidate));
+
             int row;
             if (existing.Count == 0)
             {
-                // Every row is busy here: the lowest top from which the item fits, opening rows below.
-                row = Enumerable.Range(0, freeFrom.Count + 1).First(Fits);
+                // Every row is busy here, or free only beside a pair kept apart: the lowest top from
+                // which the item fits clear of both, opening rows below.
+                row = Enumerable.Range(0, freeFrom.Count + 1).First(Clear);
             }
             else if (placed.Count == 0)
             {
