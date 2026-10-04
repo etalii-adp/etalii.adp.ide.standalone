@@ -278,10 +278,10 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         return Match(expression, insensitive, (Statement)candidate.Entry) ?? new Dictionary<string, Group>();
     }
 
-    public override object? CelValue(Candidate candidate)
+    public override object CelValue(Candidate candidate)
     {
         var map = new CelMap();
-        foreach (var (name, value) in candidate.Captures) map[name] = value;
+        foreach ((string name, string value) in candidate.Captures) map[name] = value;
         return map;
     }
 

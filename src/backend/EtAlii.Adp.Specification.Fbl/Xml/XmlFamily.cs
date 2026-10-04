@@ -433,7 +433,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     private static string AllText(XmlElement element) =>
         string.Concat(element.Content.Select(c => c is XmlTextRun run ? run.Text : AllText((XmlElement)c)));
 
-    public override object? CelValue(Candidate candidate)
+    public override object CelValue(Candidate candidate)
     {
         var element = (XmlElement)candidate.Entry;
         var map = new CelMap();

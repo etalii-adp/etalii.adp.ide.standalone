@@ -401,8 +401,8 @@ internal abstract record CelNode
             {
                 "size" => receiver switch
                 {
-                    string s => (long)new StringInfo(s).LengthInTextElements,
-                    List<object?> l => (long)l.Count,
+                    string s => new StringInfo(s).LengthInTextElements,
+                    List<object?> l => l.Count,
                     Dictionary<string, object?> m => (long)m.Count,
                     _ => throw new CelException("size() needs a string, a list or a map."),
                 },

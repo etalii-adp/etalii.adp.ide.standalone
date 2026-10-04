@@ -2,6 +2,7 @@ namespace EtAlii.Adp.Specification.Fbl.Planning;
 
 using System.Globalization;
 using System.Text;
+using EtAlii.Adp;
 using EtAlii.Adp.Specification.Fbl.Documents;
 
 /// <summary>
@@ -26,7 +27,7 @@ internal static class NewText
         }
         if (double.IsNaN(value) || double.IsInfinity(value)) throw new ArgumentOutOfRangeException(nameof(value), "A number in a body is finite.");
         if (value == 0) return "0";
-        if (Math.Floor(value) == value && Math.Abs(value) < 1e21) return ((decimal)value).ToString(CultureInfo.InvariantCulture);
+        if (Math.Abs(Math.Floor(value) - value) < double.Tolerance && Math.Abs(value) < 1e21) return ((decimal)value).ToString(CultureInfo.InvariantCulture);
         var shortest = value.ToString("R", CultureInfo.InvariantCulture);
         var exponent = shortest.IndexOf('E');
         if (exponent < 0) return shortest;
