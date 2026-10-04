@@ -479,6 +479,32 @@ describe("the background menu, where a definition declares one", () => {
   });
 });
 
+describe("a declared press, which is the element's action rather than a selection", () => {
+  const step: ActionDeclaration = { id: "stepper.increase", invokedBy: [{ kind: "gesture", gesture: "press" }], appliesTo: [{ kind: "element", elementTypes: ["boundary"] }] };
+
+  it("dispatches the action for an unmoved click, and selects nothing", () => {
+    // The supply chain's + and - are elements of their own: a click on one steps a value, and
+    // must neither select the stepper nor clear the node the user was looking at.
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ boundarySelectable: false, actions: [step] }));
+
+    press(elementOn(container, "zone"), { clientX: 10, clientY: 10 });
+
+    expect(onActionInvoked).toHaveBeenCalledWith(expect.objectContaining({ actionId: "stepper.increase", targetKind: "element", targetId: "zone" }));
+    expect(channel.pushes).toEqual([]);
+  });
+
+  it("leaves a press on any other element a selection, as before", () => {
+    const onActionInvoked = vi.fn();
+    const { container } = mount({ onActionInvoked }, definitionOf({ boundarySelectable: false, actions: [step] }));
+
+    press(elementOn(container, "a"), { clientX: 10, clientY: 10 });
+
+    expect(onActionInvoked).not.toHaveBeenCalled();
+    expect(channel.pushes.map(asked)).toEqual([{ id: "a", menu: false }]);
+  });
+});
+
 describe("inline rename, which the library owns once it owns the canvas", () => {
   /** The prompt the backend sends when it opens an inline editor over an element's label. */
   const inlineEditFor = (elementId: string) => ({ prompt: { case: "inputDialog", value: { inlineLabelEdit: { elementId: { value: elementId } } } } });

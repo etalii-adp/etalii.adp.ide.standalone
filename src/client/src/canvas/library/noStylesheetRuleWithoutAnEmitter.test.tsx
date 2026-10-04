@@ -86,6 +86,20 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
     classes: ["owl-truncation-banner", "sparql-truncation-banner"],
   },
   {
+    reason: "a supply chain's trace marking and its +/- steppers, drawn only while a node or flow is selected, and an exported example has no selection",
+    classes: [
+      "supply-chain-trace-selected",
+      "supply-chain-trace-upstream",
+      "supply-chain-trace-downstream",
+      "supply-chain-trace-related",
+      "supply-chain-trace-dimmed",
+      "supply-chain-stepper",
+      "supply-chain-stepper-button",
+      "supply-chain-stepper-sign",
+      "supply-chain-stepper-disabled",
+    ],
+  },
+  {
     reason: "the simulated run's states and banner, drawn only after the user starts a simulation",
     classes: ["databricks-simulation-banner", "databricks-sim-pending", "databricks-sim-running", "databricks-sim-succeeded", "databricks-sim-failed", "databricks-sim-skipped"],
   },
@@ -165,6 +179,7 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "skos-canvas",
       "skos-scrollbars",
       "skos-surface",
+      "supply-chain-surface",
       "sparql-canvas",
       "sparql-scrollbars",
       "sparql-surface",

@@ -22,25 +22,25 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **115** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **117** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
 | core | **31** |
-| diagram | **80** |
+| diagram | **82** |
 | editor | **4** |
-| production | **81** |
-| test | **34** |
+| production | **82** |
+| test | **35** |
 
-Those are **two different splits of the same 115**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 117**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **131** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "131 projects" would be wrong in the confident direction.**
+There are **133** tracked `.csproj` files under `src/`, which is **16** more than the solution holds. Every one of the 16 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "133 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
 **The solution's project paths are relative to `src/backend/`.** A core project therefore appears as `EtAlii.Adp.Context/EtAlii.Adp.Context.csproj` with no `backend` segment, while a diagram project appears as `../diagrams/<type>/backend/...`.
 
-Classifying by path segment — "count the ones containing `backend`" — yields a plausible **82 / 31** split that is not the core/module split at all. When this page was first written that split was 78 / 27 and matched the production/test sizes exactly, which is how it survived a sanity check; the coincidence has since ended, and the trap has not. **Classify core projects by the absence of a leading `../`.**
+Classifying by path segment — "count the ones containing `backend`" — yields a plausible **86 / 31** split that is not the core/module split at all. When this page was first written that split was 78 / 27 and matched the production/test sizes exactly, which is how it survived a sanity check; the coincidence has since ended, and the trap has not. **Classify core projects by the absence of a leading `../`.**
 
 ## The core projects
 

@@ -40,7 +40,7 @@ import { asideLabelPlacement, beforeLabelPlacement, centredLabelPlacement, inset
 import { BEFORE_GAP, labelKey, layoutLabels, wrappedLabelRegion } from "./definition/labels";
 import { resolveDecorations, type ResolvedDecoration } from "./definition/decorations";
 import { resolveBackground } from "./definition/background";
-import { actionForGesture, actionForKey, flagOf } from "./definition/actions";
+import { actionForGesture, actionForKey, flagOf, type ElementGesture } from "./definition/actions";
 import { isCustomShape } from "./definition/diagramDefinition";
 import { outlineEdgePoint, outlineOf } from "./shapes/outline";
 import {
@@ -1034,6 +1034,10 @@ export function DiagramCanvasCore({
     onPress: (target) => {
       switch (target.kind) {
         case "element":
+          // A declared press - a stepper's + or - - is the element's action, not a selection.
+          if (dispatchElementGesture(target.element.id, "press")) {
+            break;
+          }
           select(selectableElement(target.element) ? { kind: "element", id: target.element.id } : null);
           break;
         case "connection":
@@ -1652,7 +1656,7 @@ export function DiagramCanvasCore({
   };
 
   /**
-   * A declared gesture on ONE element - a double-click, a right-click - dispatched by action id.
+   * A declared gesture on ONE element - a double-click, a right-click, a press - dispatched by action id.
    *
    * Three canvases hang `onDoubleClick` and `onContextMenu` on the element they render, which is
    * the other half of why they need a custom shape: not the drawing, the handlers attached to
@@ -1660,7 +1664,7 @@ export function DiagramCanvasCore({
    * none did - the addition changes nothing for a module that declares no such action.
    */
   const dispatchElementGesture = useCallback(
-    (elementId: string, gesture: "activate" | "context-menu"): boolean => {
+    (elementId: string, gesture: ElementGesture): boolean => {
       const element = elementsById.get(elementId);
       if (element === undefined) {
         return false;

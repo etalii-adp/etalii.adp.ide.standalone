@@ -128,6 +128,10 @@ src/client/src/generated/**   text eol=lf
 # byte-compared and collapse into one file under conversion, exactly the pair the comment above
 # exists to protect. And like `.ttl`, `.rq` means SPARQL everywhere in the tree.
 *.rq    -text
+# `.supply` is the supply-chain module's document, byte-compared for the same reason as `.fdg`:
+# every write is a splice, an unchanged document round-trips byte-identical, and its fixtures
+# include the `crlf-line-endings` / `lf-line-endings` pair. Added before its first fixture.
+*.supply -text
 
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,

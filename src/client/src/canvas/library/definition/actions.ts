@@ -50,7 +50,17 @@ export type ActionInvocation =
    * those three need a custom shape at all: not the drawing, the two handlers attached to it.
    * Declared, the library dispatches the module's own action id and the shape goes.
    */
-  | { kind: "gesture"; gesture: "delete" | "connect" | "drop" | "activate" | "context-menu" };
+  /**
+   * `press` was added by the supply-chain module: a single unmoved click on an element, dispatched
+   * INSTEAD of selecting it. It is what makes a small control drawn as its own element - a stepper's
+   * + and - - clickable without a custom shape or a handler of the module's own. Declared on a type
+   * that also declares `selectable: false`, so a press that matches no action still reads as a
+   * press on the background, exactly as before.
+   */
+  | { kind: "gesture"; gesture: ElementGesture | "delete" | "connect" | "drop" };
+
+/** The gestures made on ONE element, which the canvas dispatches by the element's own declarations. */
+export type ElementGesture = "activate" | "context-menu" | "press";
 
 /** What an action applies to. */
 export type ActionTarget =
@@ -231,7 +241,7 @@ export function actionForKey(
  */
 export function actionForGesture(
   lookup: ActionLookup,
-  gesture: "delete" | "connect" | "drop" | "activate" | "context-menu",
+  gesture: ElementGesture | "delete" | "connect" | "drop",
 ): DispatchedAction | null {
   for (const action of lookup.actions ?? []) {
     if (!holds(action.when, lookup.source) || !flagHolds(action.enabled, lookup.source)) {

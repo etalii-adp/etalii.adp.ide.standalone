@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package etalii.adp.supplychain;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.SupplyChain";
+
+// One stage of the chain: a mine, a supplier, a plant, a distributor, a consumer. Which stage it is
+// travels in the core Element's type, not here.
+//
+// The size is here because the core element carries a position, a type and this payload and
+// nothing more. The trace is here because it changes what is drawn: the shared diff compares the
+// payload's bytes, so a selection that re-colours the chain produces deltas through it.
+message SupplyChainNodePayload {
+  string name = 1;
+  // The group this node is drawn inside, or empty.
+  string group_id = 2;
+  // The node's own value - a capacity, a stock, a demand - and whether the document states one.
+  double quantity = 3;
+  bool has_quantity = 4;
+  string unit = 5;
+  double width = 6;
+  double height = 7;
+  // "" when nothing in this diagram is selected; otherwise selected, upstream, downstream or dimmed.
+  string trace = 8;
+  // The stage's own display word, so the client draws the document's vocabulary and not its own.
+  string stage = 9;
+  // The quantity as a share of the largest quantity in the same unit across the whole document,
+  // 0..1, for the bar along the card's foot. Computed here, before the viewport culls, so the bar
+  // does not change as the view pans.
+  double share = 10;
+}
+
+// One group: a region, a company, a tier. Its rectangle is computed from its members, so it moves
+// when they do and never has a position of its own in the document.
+message SupplyChainGroupPayload {
+  string name = 1;
+  double width = 2;
+  double height = 3;
+  int32 members = 4;
+  // "" when nothing is selected; related when a member is on the traced chain; dimmed otherwise.
+  string trace = 5;
+}
+
+// One flow of goods from a supplying node to a consuming one.
+message SupplyChainFlowPayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+  // What flows: wafers, HBM stacks, cathodes.
+  string product = 3;
+  double volume = 4;
+  bool has_volume = 5;
+  string unit = 6;
+  // The volume as a share of the largest volume in the document, 0..1, for the band's thickness.
+  double weight = 7;
+  string trace = 8;
+}
