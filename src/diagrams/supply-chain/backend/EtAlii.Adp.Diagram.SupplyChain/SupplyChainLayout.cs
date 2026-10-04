@@ -53,7 +53,8 @@ public sealed class SupplyChainLayout
         IReadOnlyList<SupplyChainFlow> flows,
         IReadOnlyDictionary<string, SupplyChainBox> nodeBoxes,
         IReadOnlyDictionary<string, SupplyChainBox> groupBoxes,
-        IReadOnlyDictionary<string, (double X, double Y)> arranged)
+        IReadOnlyDictionary<string, (double X, double Y)> arranged,
+        IReadOnlyDictionary<string, IReadOnlyList<(double X, double Y)>> lanes)
     {
         Groups = groups;
         Nodes = nodes;
@@ -61,6 +62,7 @@ public sealed class SupplyChainLayout
         NodeBoxes = nodeBoxes;
         GroupBoxes = groupBoxes;
         Arranged = arranged;
+        Lanes = lanes;
     }
 
     /// <summary>The groups that can be drawn: an id, unique across the document, and at least one member.</summary>
@@ -80,6 +82,14 @@ public sealed class SupplyChainLayout
 
     /// <summary>Every drawable node's top-left as the layered layout places it, ignoring what the document states.</summary>
     public IReadOnlyDictionary<string, (double X, double Y)> Arranged { get; }
+
+    /// <summary>
+    /// The lane a long flow runs through: for a flow that skips one or more layers, the centre of the
+    /// slot reserved for it in each layer it crosses, left to right. A flow drawn through its lanes
+    /// never crosses a card. Only a flow whose two ends are drawn where the layout put them has
+    /// lanes; one whose end was dragged elsewhere runs straight to it.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<(double X, double Y)>> Lanes { get; }
 
     /// <summary>The layout of <paramref name="model"/>, computed once per model instance.</summary>
     public static SupplyChainLayout Of(SupplyChainModel model)
@@ -103,7 +113,7 @@ public sealed class SupplyChainLayout
         var groupIds = declaredGroups.Select(group => group.Id).ToHashSet(StringComparer.Ordinal);
         string? GroupOf(SupplyChainNode node) => groupIds.Contains(node.Group) ? node.Group : null;
 
-        var arranged = Arrange(nodes, flows, GroupOf);
+        var arranged = Arrange(nodes, flows, GroupOf, out var arrangedLanes);
 
         var nodeBoxes = nodes.ToDictionary(
             node => node.Id,
@@ -130,13 +140,21 @@ public sealed class SupplyChainLayout
             groupBoxes[group.Id] = new SupplyChainBox(left, top, right - left, bottom - top);
         }
 
+        // A lane was reserved beside the arranged positions; once an end is drawn anywhere else the
+        // slots no longer line up with it, so that flow runs straight to its ends instead.
+        bool AtArranged(string id) => nodeBoxes[id].X == arranged[id].X && nodeBoxes[id].Y == arranged[id].Y;
+        var lanes = flows
+            .Where(flow => arrangedLanes.ContainsKey(flow.Id) && AtArranged(flow.From) && AtArranged(flow.To))
+            .ToDictionary(flow => flow.Id, flow => arrangedLanes[flow.Id], StringComparer.Ordinal);
+
         return new SupplyChainLayout(
             [.. declaredGroups.Where(group => groupBoxes.ContainsKey(group.Id))],
             nodes,
             flows,
             nodeBoxes,
             groupBoxes,
-            arranged);
+            arranged,
+            lanes);
     }
 
     /// <summary>
@@ -145,14 +163,22 @@ public sealed class SupplyChainLayout
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Layers</b> are the longest path from a node with no supplier, over the flows with every
-    /// cycle broken at the edge that closes it - so a recycling loop does not stretch the chain.
+    /// <b>Layers</b> follow the stages: a node's layer is never left of its stage's column (raw
+    /// material first, consumer last), and never left of one past every node that supplies it, over
+    /// the flows with every cycle broken at the edge that closes it - so a column reads as a stage,
+    /// a supplier that nothing supplies still sits with the suppliers, and a recycling loop does not
+    /// stretch the chain.
+    /// </para>
+    /// <para>
+    /// <b>Long flows get lanes.</b> A flow that skips layers is given a slot in every layer it
+    /// crosses, in the band of the node it delivers to, ordered like a node. The slot is drawn as
+    /// nothing; the flow runs through it, so it passes between cards instead of through them.
     /// </para>
     /// <para>
     /// <b>Bands</b> are the groups, plus one band for the ungrouped nodes. A band spans the layers
-    /// its members occupy and is as tall as its fullest layer, which is what keeps every group's
-    /// frame clear of every other group's nodes: frames are the boxes around members, and two bands
-    /// never share a stretch of a layer.
+    /// its members and lanes occupy and is as tall as its fullest layer, which is what keeps every
+    /// group's frame clear of every other group's nodes: frames are the boxes around members, and
+    /// two bands never share a stretch of a layer.
     /// </para>
     /// <para>
     /// <b>Order</b> is by barycentre: bands, and nodes within a band, are sorted a few times by the
@@ -164,15 +190,16 @@ public sealed class SupplyChainLayout
     internal static Dictionary<string, (double X, double Y)> Arrange(
         IReadOnlyList<SupplyChainNode> nodes,
         IReadOnlyList<SupplyChainFlow> flows,
-        Func<SupplyChainNode, string?> groupOf)
+        Func<SupplyChainNode, string?> groupOf,
+        out Dictionary<string, IReadOnlyList<(double X, double Y)>> lanes)
     {
         var result = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+        lanes = new Dictionary<string, IReadOnlyList<(double X, double Y)>>(StringComparer.Ordinal);
         if (nodes.Count == 0)
         {
             return result;
         }
 
-        var index = nodes.Select((node, position) => (node.Id, position)).ToDictionary(pair => pair.Id, pair => pair.position, StringComparer.Ordinal);
         var outgoing = nodes.ToDictionary(node => node.Id, _ => new List<string>(), StringComparer.Ordinal);
         foreach (var flow in flows)
         {
@@ -182,30 +209,57 @@ public sealed class SupplyChainLayout
         var forward = AcyclicEdges(nodes, outgoing);
         var layer = Layers(nodes, forward);
 
+        // Every slot a layer holds: the nodes, then one lane per layer a forward flow skips. A lane's
+        // id cannot be a document id - those never hold a control character.
+        var index = nodes.Select((node, position) => (node.Id, position)).ToDictionary(pair => pair.Id, pair => pair.position, StringComparer.Ordinal);
         var neighbours = nodes.ToDictionary(node => node.Id, _ => new List<string>(), StringComparer.Ordinal);
+        void Join(string a, string b)
+        {
+            neighbours[a].Add(b);
+            neighbours[b].Add(a);
+        }
+
+        var laneSlots = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var laneTarget = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var flow in flows)
         {
-            neighbours[flow.From].Add(flow.To);
-            neighbours[flow.To].Add(flow.From);
+            var (from, to) = (layer[flow.From], layer[flow.To]);
+            if (to - from <= 1 || !forward[flow.From].Contains(flow.To))
+            {
+                Join(flow.From, flow.To);
+                continue;
+            }
+
+            var previous = flow.From;
+            var slots = new List<string>();
+            for (var crossed = from + 1; crossed < to; crossed++)
+            {
+                var slot = $"\u0001{flow.Id}\u0001{crossed}";
+                index[slot] = index.Count;
+                layer[slot] = crossed;
+                neighbours[slot] = [];
+                laneTarget[slot] = flow.To;
+                Join(previous, slot);
+                slots.Add(slot);
+                previous = slot;
+            }
+
+            Join(previous, flow.To);
+            laneSlots[flow.Id] = slots;
         }
 
-        // The bands, in document order of their first member.
+        // The bands, in document order of their first member; a lane joins the band of the node its
+        // flow delivers to.
         const string ungrouped = "\u0000ungrouped";
-        var bands = nodes
-            .GroupBy(node => groupOf(node) ?? ungrouped, StringComparer.Ordinal)
-            .Select(group => group.Select(node => node.Id).ToList())
+        var byId = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
+        string BandKey(string id) => groupOf(byId[laneTarget.GetValueOrDefault(id, id)]) ?? ungrouped;
+        var bands = index.Keys
+            .GroupBy(BandKey, StringComparer.Ordinal)
+            .Select(group => group.ToList())
             .ToList();
-        var bandOf = new Dictionary<string, int>(StringComparer.Ordinal);
-        for (var band = 0; band < bands.Count; band++)
-        {
-            foreach (var id in bands[band])
-            {
-                bandOf[id] = band;
-            }
-        }
 
         // A position to sort by, refined each pass: start from document order.
-        var rank = nodes.ToDictionary(node => node.Id, node => (double)index[node.Id], StringComparer.Ordinal);
+        var rank = index.Keys.ToDictionary(id => id, id => (double)index[id], StringComparer.Ordinal);
         double Barycentre(string id) => neighbours[id].Count == 0 ? rank[id] : neighbours[id].Average(other => rank[other]);
 
         List<int> bandOrder = [.. Enumerable.Range(0, bands.Count)];
@@ -250,13 +304,14 @@ public sealed class SupplyChainLayout
         }
 
         // Drop the bands onto a per-layer skyline, in order.
+        var placed = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
         var layers = layer.Values.Max() + 1;
         var skyline = new double[layers];
         foreach (var band in bandOrder)
         {
             var spanned = bands[band].Select(id => layer[id]).ToList();
             var (first, last) = (spanned.Min(), spanned.Max());
-            var grouped = groupOf(nodes[index[bands[band][0]]]) is not null;
+            var grouped = BandKey(bands[band][0]) != ungrouped;
             var header = grouped ? SupplyChainGeometry.GroupHeader : 0;
             var footer = grouped ? SupplyChainGeometry.GroupPadding : 0;
 
@@ -277,7 +332,7 @@ public sealed class SupplyChainLayout
                 tallest = Math.Max(tallest, members.Count);
                 for (var row = 0; row < members.Count; row++)
                 {
-                    result[members[row]] = (l * LayerPitch, top + header + (row * RowPitch));
+                    placed[members[row]] = (l * LayerPitch, top + header + (row * RowPitch));
                 }
             }
 
@@ -286,6 +341,17 @@ public sealed class SupplyChainLayout
             {
                 skyline[l] = bottom;
             }
+        }
+
+        foreach (var node in nodes)
+        {
+            result[node.Id] = placed[node.Id];
+        }
+
+        // A lane is drawn through its slot's middle, where a card in that slot would have its centre.
+        foreach (var (flowId, slots) in laneSlots)
+        {
+            lanes[flowId] = [.. slots.Select(slot => (placed[slot].X + (SupplyChainGeometry.NodeWidth / 2), placed[slot].Y + (SupplyChainGeometry.NodeHeight / 2)))];
         }
 
         return result;
@@ -338,7 +404,10 @@ public sealed class SupplyChainLayout
         return forward;
     }
 
-    /// <summary>Each node's layer: the longest path to it from a node nothing supplies.</summary>
+    /// <summary>
+    /// Each node's layer: at least its stage's place in the chain, and at least one past every node
+    /// that supplies it.
+    /// </summary>
     private static Dictionary<string, int> Layers(IReadOnlyList<SupplyChainNode> nodes, Dictionary<string, List<string>> forward)
     {
         var incoming = nodes.ToDictionary(node => node.Id, _ => 0, StringComparer.Ordinal);
@@ -350,7 +419,7 @@ public sealed class SupplyChainLayout
             }
         }
 
-        var layer = nodes.ToDictionary(node => node.Id, _ => 0, StringComparer.Ordinal);
+        var layer = nodes.ToDictionary(node => node.Id, node => SupplyChainNodeTypes.RankOf(node.Type), StringComparer.Ordinal);
         var ready = new Queue<string>(nodes.Where(node => incoming[node.Id] == 0).Select(node => node.Id));
         while (ready.Count > 0)
         {

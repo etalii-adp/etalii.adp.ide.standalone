@@ -53,4 +53,13 @@ message SupplyChainFlowPayload {
   // The volume as a share of the largest volume in the document, 0..1, for the band's thickness.
   double weight = 7;
   string trace = 8;
+  // The centres of the slots the layout reserved for this flow in the layers it skips, left to
+  // right; empty for a flow between neighbouring layers, or one with an end moved off its slot.
+  repeated SupplyChainLanePoint lanes = 9;
+}
+
+// A point on the canvas.
+message SupplyChainLanePoint {
+  double x = 1;
+  double y = 2;
 }

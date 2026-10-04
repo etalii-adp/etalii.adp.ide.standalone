@@ -1,62 +1,42 @@
 /*
- * What is the supply chain diagram's own appearance: the stage palette, the cards, the group
- * frames, the flows as bands with goods moving along them, the steppers, and the trace - the
- * chain through whatever is selected lit up, everything else dimmed.
+ * What is the supply chain diagram's own appearance: the cards, the group frames, the flows as
+ * bands with goods moving along them, the steppers, and the trace - the chain through whatever is
+ * selected at full strength, everything else dimmed.
  *
  * The chrome, the element and connection basics and the selection outline come from
  * `@client/canvas/canvas.css` (loaded from register.ts). The selected item itself is painted by
  * the library inline; this file paints only what the backend's trace marks around it.
  *
- * The palette is the module's own and declared in both modes, as ansible-structure's is: the
- * theme names meanings, and seven stage hues are this notation's business.
+ * The seven stage hues are the theme's (`--color-diagram-supply-chain-*` in index.css), as every
+ * diagram's per-kind hues are: there they sit beside the selection violet they must never be, and
+ * beside each other's, so two stages cannot drift into one colour. The trace carries no hue of its
+ * own - a hue there would be an eighth and ninth colour competing with the stages - so the chain
+ * is told apart by strength and everything off it by dimming; the arrows say which way it runs.
  */
 
 .supply-chain-canvas {
-  --supply-chain-raw-material: #975a16;
-  --supply-chain-supplier: #c05621;
-  --supply-chain-manufacturer: #4c51bf;
-  --supply-chain-assembler: #6b46c1;
-  --supply-chain-distributor: #2c7a7b;
-  --supply-chain-retailer: #2f855a;
-  --supply-chain-consumer: #b83280;
-  --supply-chain-on-stage: #ffffff;
-  --supply-chain-upstream: #dd6b20;
-  --supply-chain-downstream: #2b6cb0;
-  --supply-chain-flow: #94a3b8;
-  --supply-chain-goods: #ffffff;
-  --supply-chain-group-fill: rgb(100 116 139 / 7%);
+  --supply-chain-flow: var(--color-text-muted, #64748b);
+  --supply-chain-goods: var(--color-surface, #ffffff);
+  --supply-chain-group-fill: var(--color-surface-raised);
   --supply-chain-shadow: rgb(15 23 42 / 14%);
 }
 
-/* The same hues, lifted a step so the bands and headers still read on the dark surface. */
+/* The shadow deepens on the dark surface, where a light one would not read. */
 @media (prefers-color-scheme: dark) {
   .supply-chain-canvas {
-    --supply-chain-raw-material: #a8661c;
-    --supply-chain-supplier: #c4602a;
-    --supply-chain-manufacturer: #5a63d6;
-    --supply-chain-assembler: #7c56cf;
-    --supply-chain-distributor: #2f8584;
-    --supply-chain-retailer: #2f8a5c;
-    --supply-chain-consumer: #c03d8b;
-    --supply-chain-on-stage: #ffffff;
-    --supply-chain-upstream: #f6ad55;
-    --supply-chain-downstream: #63b3ed;
-    --supply-chain-flow: #64748b;
-    --supply-chain-goods: #e2e8f0;
-    --supply-chain-group-fill: rgb(148 163 184 / 8%);
     --supply-chain-shadow: rgb(0 0 0 / 40%);
   }
 }
 
 /* ---- stages: each card carries its stage's colour, which everything on it reads ------------- */
 
-.supply-chain-stage-raw-material { --supply-chain-stage: var(--supply-chain-raw-material); }
-.supply-chain-stage-supplier { --supply-chain-stage: var(--supply-chain-supplier); }
-.supply-chain-stage-manufacturer { --supply-chain-stage: var(--supply-chain-manufacturer); }
-.supply-chain-stage-assembler { --supply-chain-stage: var(--supply-chain-assembler); }
-.supply-chain-stage-distributor { --supply-chain-stage: var(--supply-chain-distributor); }
-.supply-chain-stage-retailer { --supply-chain-stage: var(--supply-chain-retailer); }
-.supply-chain-stage-consumer { --supply-chain-stage: var(--supply-chain-consumer); }
+.supply-chain-stage-raw-material { --supply-chain-stage: var(--color-diagram-supply-chain-raw-material); }
+.supply-chain-stage-supplier { --supply-chain-stage: var(--color-diagram-supply-chain-supplier); }
+.supply-chain-stage-manufacturer { --supply-chain-stage: var(--color-diagram-supply-chain-manufacturer); }
+.supply-chain-stage-assembler { --supply-chain-stage: var(--color-diagram-supply-chain-assembler); }
+.supply-chain-stage-distributor { --supply-chain-stage: var(--color-diagram-supply-chain-distributor); }
+.supply-chain-stage-retailer { --supply-chain-stage: var(--color-diagram-supply-chain-retailer); }
+.supply-chain-stage-consumer { --supply-chain-stage: var(--color-diagram-supply-chain-consumer); }
 
 /* ---- cards ------------------------------------------------------------------------------- */
 
@@ -80,7 +60,7 @@
 }
 
 .supply-chain-stage-title {
-  fill: var(--supply-chain-on-stage);
+  fill: var(--color-diagram-supply-chain-on-stage);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -142,7 +122,7 @@
 .supply-chain-flow .canvas-connection-line {
   stroke: var(--supply-chain-flow);
   stroke-linecap: round;
-  stroke-opacity: 0.55;
+  stroke-opacity: 0.45;
   transition: stroke-opacity 180ms ease;
 }
 
@@ -194,13 +174,9 @@
 
 /* ---- the trace: what supplies the selection, what it supplies, and everything else ---------- */
 
-.supply-chain-node.supply-chain-trace-upstream .canvas-node.supply-chain-card {
-  stroke: var(--supply-chain-upstream);
-  stroke-width: 2.5;
-}
-
+.supply-chain-node.supply-chain-trace-upstream .canvas-node.supply-chain-card,
 .supply-chain-node.supply-chain-trace-downstream .canvas-node.supply-chain-card {
-  stroke: var(--supply-chain-downstream);
+  stroke: var(--color-border-strong);
   stroke-width: 2.5;
 }
 
@@ -210,24 +186,8 @@
 }
 
 .supply-chain-flow.supply-chain-trace-upstream .canvas-connection-line,
-.supply-chain-flow.supply-chain-trace-upstream .supply-chain-flow-head {
-  stroke: var(--supply-chain-upstream);
-  fill-opacity: 1;
-  stroke-opacity: 0.85;
-}
-
-.supply-chain-flow.supply-chain-trace-upstream .supply-chain-flow-head {
-  fill: var(--supply-chain-upstream);
-}
-
-.supply-chain-flow.supply-chain-trace-downstream .canvas-connection-line,
-.supply-chain-flow.supply-chain-trace-downstream .supply-chain-flow-head {
-  stroke: var(--supply-chain-downstream);
-  stroke-opacity: 0.85;
-}
-
-.supply-chain-flow.supply-chain-trace-downstream .supply-chain-flow-head {
-  fill: var(--supply-chain-downstream);
+.supply-chain-flow.supply-chain-trace-downstream .canvas-connection-line {
+  stroke-opacity: 0.9;
 }
 
 .supply-chain-trace-dimmed {

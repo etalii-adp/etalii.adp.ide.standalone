@@ -70,18 +70,39 @@ function flowEndsOf(ends: RouteEnds): { start: ShapePoint; end: ShapePoint } {
   };
 }
 
+/** Half a card's width: how far a lane runs straight either side of its slot's middle. */
+const LANE_HALF = 96;
+
+/**
+ * Where a flow goes: its two ends, and between them, for a flow the layout gave lanes, straight
+ * through the middle of each slot it reserved - in at the slot's left, out at its right.
+ */
+function flowStopsOf(from: ShapePoint, to: ShapePoint, ends: RouteEnds | undefined, lanes: readonly ShapePoint[]): ShapePoint[] {
+  const { start, end } = ends !== undefined ? flowEndsOf(ends) : { start: from, end: to };
+  const half = ends !== undefined ? ends.source.width / 2 : LANE_HALF;
+  return [start, ...lanes.flatMap((lane) => [{ x: lane.x - half, y: lane.y }, { x: lane.x + half, y: lane.y }]), end];
+}
+
 /**
  * The flow's curve: a horizontal S from one side's middle to the other's, so goods read left to
  * right the way the layout lays the chain out - and a flow that runs backwards still leaves and
- * arrives square to the side it uses.
+ * arrives square to the side it uses. A long flow bends the same way into and out of each lane the
+ * layout reserved for it, so it runs between the cards of the stages it skips instead of through them.
  */
-export function flowPath(from: ShapePoint, to: ShapePoint, ends?: RouteEnds): string {
-  const { start, end } = ends !== undefined ? flowEndsOf(ends) : { start: from, end: to };
-  const direction = end.x >= start.x ? 1 : -1;
-  const pull = Math.max(48, Math.abs(end.x - start.x) / 2);
-  const c1 = { x: start.x + direction * pull, y: start.y };
-  const c2 = { x: end.x - direction * pull, y: end.y };
-  return `M ${start.x} ${start.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${end.x} ${end.y}`;
+export function flowPath(from: ShapePoint, to: ShapePoint, ends?: RouteEnds, lanes: readonly ShapePoint[] = []): string {
+  const stops = flowStopsOf(from, to, ends, lanes);
+  const segments = stops.slice(1).map((end, i) => {
+    const start = stops[i];
+    const direction = end.x >= start.x ? 1 : -1;
+    const pull = Math.max(48, Math.abs(end.x - start.x) / 2);
+    return `C ${start.x + direction * pull} ${start.y} ${end.x - direction * pull} ${end.y} ${end.x} ${end.y}`;
+  });
+  return `M ${stops[0].x} ${stops[0].y} ${segments.join(" ")}`;
+}
+
+/** Where a flow's name and volume sit: the middle lane of a long flow, the middle of a short one. */
+function flowMiddleOf(start: ShapePoint, end: ShapePoint, lanes: readonly ShapePoint[]): ShapePoint {
+  return lanes.length > 0 ? lanes[Math.floor(lanes.length / 2)] : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 }
 
 /** What a flow connection carries beside the library's own fields, for the adornment to read. */
@@ -91,8 +112,14 @@ interface FlowConnection extends DiagramModelConnection {
 
 /** The band's width for a flow's weight: thin for a trickle, broad for the heaviest in its unit. */
 export function bandWidthOf(weight: number): number {
-  return 3 + Math.round(Math.max(0, Math.min(1, weight)) * 15);
+  return 3 + Math.round(Math.max(0, Math.min(1, weight)) * MAX_BAND_GROWTH);
 }
+
+/** How much broader than a trickle the heaviest band is. */
+const MAX_BAND_GROWTH = 15;
+
+/** How far above a band's centre the product's name is set: past half the broadest band, and a little air. */
+const PRODUCT_LABEL_OFFSET = -((3 + MAX_BAND_GROWTH) / 2 + 6);
 
 /** The volume pill's font size, as `supply-chain.css` sets it; the pill is measured at it. */
 const VOLUME_FONT_SIZE = 10;
@@ -102,16 +129,21 @@ const VOLUME_FONT_SIZE = 10;
  * the volume in a pill under the product's name. Drawn inside the connection's group, so it
  * dims, lights and selects with the line it describes.
  */
-function flowAdornment(route: { from: ShapePoint; to: ShapePoint; ends?: RouteEnds; highlighted?: boolean }, raw: unknown): ReactNode {
+function flowAdornment(route: { from: ShapePoint; to: ShapePoint; waypoints?: readonly ShapePoint[]; ends?: RouteEnds; highlighted?: boolean }, raw: unknown): ReactNode {
   const connection = raw as FlowConnection;
   const payload = connection.flow.payload;
-  const d = flowPath(route.from, route.to, route.ends);
-  const { start, end } = route.ends !== undefined ? flowEndsOf(route.ends) : { start: route.from, end: route.to };
-  const direction = end.x >= start.x ? 1 : -1;
+  const lanes = route.waypoints ?? [];
+  const d = flowPath(route.from, route.to, route.ends, lanes);
+  const stops = flowStopsOf(route.from, route.to, route.ends, lanes);
+  const [start, end] = [stops[0], stops[stops.length - 1]];
+  // The arrowhead points the way the last bend arrives, square to the consumer's side.
+  const direction = end.x >= stops[stops.length - 2].x ? 1 : -1;
   const head = 7 + bandWidthOf(payload.weight) / 3;
-  const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+  const mid = flowMiddleOf(start, end, lanes);
   const volume = payload.hasVolume ? `${formatAmount(payload.volume)}${payload.unit ? ` ${payload.unit}` : ""}` : "";
   const pillWidth = Math.max(36, widthOf(volume, VOLUME_FONT_SIZE) + 16);
+  // Beneath the band, clear of it however broad it is; the product's name sits as far above it.
+  const pillTop = mid.y + bandWidthOf(payload.weight) / 2 + 3;
 
   return (
     <>
@@ -122,8 +154,8 @@ function flowAdornment(route: { from: ShapePoint; to: ShapePoint; ends?: RouteEn
       />
       {volume !== "" && (
         <g className="supply-chain-flow-volume">
-          <rect className="supply-chain-flow-volume-pill" x={mid.x - pillWidth / 2} y={mid.y + 4} width={pillWidth} height={18} rx={9} />
-          <text className="supply-chain-flow-volume-text" x={mid.x} y={mid.y + 17} textAnchor="middle">
+          <rect className="supply-chain-flow-volume-pill" x={mid.x - pillWidth / 2} y={pillTop} width={pillWidth} height={18} rx={9} />
+          <text className="supply-chain-flow-volume-text" x={mid.x} y={pillTop + 13} textAnchor="middle">
             {volume}
           </text>
         </g>
@@ -240,9 +272,9 @@ export const SUPPLY_CHAIN_DEFINITION: DiagramDefinition = assertValidDiagramDefi
   relationTypes: [
     {
       id: FLOW_TYPE,
-      route: { customRoute: "supply-chain-flow", path: (from, to, _waypoints, ends) => flowPath(from, to, ends) },
+      route: { customRoute: "supply-chain-flow", path: (from, to, waypoints, ends) => flowPath(from, to, ends, waypoints) },
       style: { endMarker: "none" },
-      label: { placement: "midpoint", editable: true, offset: -8 },
+      label: { placement: "midpoint", editable: true, offset: PRODUCT_LABEL_OFFSET },
       className: "supply-chain-flow",
       adorn: flowAdornment,
       endpoints: {
@@ -376,12 +408,14 @@ export function diagramModelOf(model: SupplyChainModel): { diagram: DiagramModel
       return []; // an end is not held - off screen, or never declared; a line to nothing is worse than none
     }
 
+    const lanes = flow.payload.lanes.map((lane) => ({ x: lane.x, y: lane.y }));
     if (flow.payload.trace === SupplyChainTraces.selected) {
-      // Under the volume pill, at the curve's middle - which is the middle of its two ends.
+      // Under the volume pill, at the flow's middle - its middle lane, or the middle of its two ends.
       const forward = to.x >= from.x;
       const startX = from.x + (forward ? 1 : -1) * from.payload.width / 2;
       const endX = to.x - (forward ? 1 : -1) * to.payload.width / 2;
-      addSteppers(flow.id, { x: (startX + endX) / 2, y: (from.y + to.y) / 2 + 38 }, flow.payload.volume, "volume");
+      const mid = flowMiddleOf({ x: startX, y: from.y }, { x: endX, y: to.y }, lanes);
+      addSteppers(flow.id, { x: mid.x, y: mid.y + bandWidthOf(flow.payload.weight) / 2 + 36 }, flow.payload.volume, "volume");
     }
 
     return [{
@@ -389,6 +423,7 @@ export function diagramModelOf(model: SupplyChainModel): { diagram: DiagramModel
       type: FLOW_TYPE,
       sourceId: flow.payload.fromElementId,
       targetId: flow.payload.toElementId,
+      ...(lanes.length > 0 ? { waypoints: lanes } : {}),
       label: flow.payload.product || undefined,
       className: flow.payload.trace ? `supply-chain-trace-${flow.payload.trace}` : undefined,
       style: { strokeWidth: bandWidthOf(flow.payload.weight) },
