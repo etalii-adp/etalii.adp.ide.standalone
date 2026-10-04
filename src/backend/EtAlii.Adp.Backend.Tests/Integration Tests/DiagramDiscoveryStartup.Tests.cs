@@ -195,6 +195,20 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
+    public void AfterStartup_AgentBehaviorModellingIsCataloged()
+    {
+        // Arrange.
+        // The same guard as FDG's above: only a named origin catches a module that declares nothing.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+
+        // Assert.
+        Assert.Contains("etalii/agent-behavior-modelling", catalog.All.Select(definition => definition.Origin.Key));
+    }
+
+    [Fact]
     public void AfterStartup_EveryDeployedDefinitionCarriesADescription()
     {
         // Arrange.

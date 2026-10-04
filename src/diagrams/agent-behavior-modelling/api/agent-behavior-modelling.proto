@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package etalii.adp.agentbehaviormodelling;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.AgentBehaviorModelling";
+
+// One node of the tree. Which of the eleven kinds it is travels in the core Element's type; the
+// keyword is here as well because a Retry's carries its count ("Retry up to 2 times"), which the
+// type cannot.
+//
+// THE NOTES ARE NOT SENT. They are instructions for the agent, read in the property grid; the
+// canvas draws the keyword and the label, and a change to the notes alone sends nothing.
+message AbmNodePayload {
+  // The keyword as the canvas shows it: "Do in order", "Retry up to 2 times".
+  string keyword = 1;
+  // The text after the keyword.
+  string label = 2;
+  double width = 3;
+  double height = 4;
+  // Whether the node has notes, so the canvas can mark it without carrying them.
+  bool has_notes = 5;
+  // Whether the item carried no keyword and was read as a Do.
+  bool implicit = 6;
+  // Its place in the tree as the reader counts it: "1.2.3". The same as the element id today,
+  // carried separately so a later id scheme cannot change what is shown.
+  string place = 7;
+}
+
+// One parent-to-child line. The endpoints are here because the client cannot draw an edge without
+// them, as in every module; the index is the child's place among its siblings, first is 1.
+message AbmChildPayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+  int32 index = 3;
+}

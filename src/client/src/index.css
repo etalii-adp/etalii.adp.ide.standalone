@@ -23,6 +23,15 @@
   --color-diagram-fdg-action: #9edcfa;
   --color-diagram-fdg-function: #86e6d9;
   --color-diagram-fdg-comment: #fcf281;
+  /* AGENT BEHAVIOR MODELLING'S FIVE FILLS, one per family of node: composites, wrappers, checks,
+     actions, and the nodes that involve someone else (Ask the user, Delegate). Each is one of the
+     functional decomposition graph's measured fills, so its contrast against --color-text is the
+     figure recorded above for that colour. */
+  --color-diagram-abm-composite: #aaed92;
+  --color-diagram-abm-decorator: #fcf281;
+  --color-diagram-abm-check: #9edcfa;
+  --color-diagram-abm-action: #ededed;
+  --color-diagram-abm-other: #86e6d9;
   --color-diagram-hype-peak: #f7e7a1;
   --color-diagram-hype-trough: #dfe3e8;
   --color-diagram-hype-slope: #f6c99a;
@@ -98,6 +107,11 @@
     --color-diagram-fdg-action: #086fa1;
     --color-diagram-fdg-function: #187569;
     --color-diagram-fdg-comment: #736a03;
+    --color-diagram-abm-composite: #2e7814;
+    --color-diagram-abm-decorator: #736a03;
+    --color-diagram-abm-check: #086fa1;
+    --color-diagram-abm-action: #696969;
+    --color-diagram-abm-other: #187569;
     --color-diagram-hype-peak: #6b5a17;
     --color-diagram-hype-trough: #475569;
     --color-diagram-hype-slope: #7c4a1c;
