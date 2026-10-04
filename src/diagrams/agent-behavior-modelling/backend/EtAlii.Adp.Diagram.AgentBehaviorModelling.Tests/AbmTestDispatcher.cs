@@ -14,6 +14,8 @@ internal sealed class AbmTestDispatcher(IAbmDocumentStore documents) : ICommandD
         SetAbmNodeKindCommand kind => new SetAbmNodeKindCommandHandler(documents).ExecuteAsync(kind, cancellationToken),
         SetAbmNotesCommand notes => new SetAbmNotesCommandHandler(documents).ExecuteAsync(notes, cancellationToken),
         MoveAbmNodeCommand move => new MoveAbmNodeCommandHandler(documents).ExecuteAsync(move, cancellationToken),
+        ArrangeAbmNodeCommand arrange => new ArrangeAbmNodeCommandHandler(documents).ExecuteAsync(arrange, cancellationToken),
+        RestoreAbmArrangementCommand restore => new RestoreAbmArrangementCommandHandler(documents).ExecuteAsync(restore, cancellationToken),
         SetRegistrationLayoutCommand layout => new SetRegistrationLayoutCommandHandler().ExecuteAsync(layout, cancellationToken),
         RemoveRegistrationLayoutCommand layout => new RemoveRegistrationLayoutCommandHandler().ExecuteAsync(layout, cancellationToken),
         ArrangeAbmCommand arrange => new ArrangeAbmCommandHandler().ExecuteAsync(arrange, cancellationToken),

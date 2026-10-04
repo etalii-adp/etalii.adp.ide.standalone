@@ -99,3 +99,9 @@ export const AbmShortcuts = {
   moveEarlier: "Alt+Up",
   moveLater: "Alt+Down",
 } as const;
+
+/**
+ * The least space a dragged row keeps between its parent's bottom and its own top: the backend's
+ * `AbmLayout.MinimumGap`, so the canvas shows a drop where the backend will put it.
+ */
+export const ABM_MINIMUM_GAP = 16;

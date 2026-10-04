@@ -123,6 +123,27 @@ public class RegistrationLayoutTests : IDisposable
     }
 
     [Fact]
+    public void Replace_WritesEveryPosition_AndAnEmptySetRemovesTheBlock()
+    {
+        // Arrange.
+        var adp = WriteAdp("databricks/job\r\nbody: job.yml\r\n");
+        RegistrationLayout.SetPosition(adp, "gone", new RegistrationPosition(9, 9));
+
+        // Act.
+        RegistrationLayout.Replace(adp, new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal) { ["a"] = new(1, 2), ["b"] = new(3, 4) });
+
+        // Assert: exactly the new set, under the untouched headers.
+        Assert.Equal(["a", "b"], RegistrationLayout.Read(adp).Keys.Order(StringComparer.Ordinal));
+        Assert.StartsWith("databricks/job\r\nbody: job.yml\r\n", File.ReadAllText(adp), StringComparison.Ordinal);
+
+        // Act: the empty set.
+        RegistrationLayout.Replace(adp, new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal));
+
+        // Assert.
+        Assert.Equal("databricks/job\r\nbody: job.yml\r\n", File.ReadAllText(adp));
+    }
+
+    [Fact]
     public void Prune_DropsStaleEntries_OnTheNextWrite()
     {
         // Arrange.

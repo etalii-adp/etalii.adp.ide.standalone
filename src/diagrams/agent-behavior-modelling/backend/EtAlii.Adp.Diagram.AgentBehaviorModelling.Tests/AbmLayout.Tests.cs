@@ -26,6 +26,38 @@ public class AbmLayoutTests
     }
 
     [Fact]
+    public void ARowTakesItsStoredHeight_AndTheRowsBeneathItFollow()
+    {
+        // Arrange: the second child's row is stored 300 lower than computed; its x is ignored.
+        var model = AbmParser.Parse(LineDocument.Parse("## Behavior\n- **Do in order:** A\n  - **Do:** B\n  - **Do in order:** C\n    - **Do:** D\n"));
+        var computed = AbmLayout.Compute(model);
+        var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal) { ["1.2"] = new(-5000, computed["1.2"].Y + 300) };
+
+        // Act.
+        var positions = AbmLayout.Arrange(model, stored);
+
+        // Assert.
+        Assert.Equal(computed["1"], positions["1"]);
+        Assert.Equal(new RegistrationPosition(computed["1.1"].X, computed["1.1"].Y + 300), positions["1.1"]);
+        Assert.Equal(new RegistrationPosition(computed["1.2"].X, computed["1.2"].Y + 300), positions["1.2"]);
+        Assert.Equal(new RegistrationPosition(computed["1.2.1"].X, computed["1.2.1"].Y + 300), positions["1.2.1"]);
+    }
+
+    [Fact]
+    public void ARowIsNeverDrawnAboveItsParent()
+    {
+        // Arrange: a hand-edited height far above the parent.
+        var model = AbmParser.Parse(LineDocument.Parse("## Behavior\n- **Do in order:** A\n  - **Do:** B\n"));
+        var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal) { ["1.1"] = new(0, -1000) };
+
+        // Act.
+        var positions = AbmLayout.Arrange(model, stored);
+
+        // Assert.
+        Assert.Equal(positions["1"].Y + AbmLayout.NodeHeight + AbmLayout.MinimumGap, positions["1.1"].Y);
+    }
+
+    [Fact]
     public void NoTwoNodesOverlap_InAnyExample()
     {
         foreach (var name in AbmExamples.Names)
