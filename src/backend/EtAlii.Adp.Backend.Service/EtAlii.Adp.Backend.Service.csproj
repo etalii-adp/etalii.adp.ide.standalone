@@ -19,6 +19,39 @@
   </ItemGroup>
 
   <!--
+    Stale-restore guard.
+
+    The two globs above mean a new module arrives without this file changing - which is the
+    point of them, and also the trap. The deployment manifest (<project>.deps.json) is written
+    from obj\project.assets.json, and that file is written by RESTORE, not by build. A build
+    that does not restore first - an IDE build after a pull, `dotnet build -no-restore` -
+    therefore compiles the new module, copies its assembly beside the host, and leaves it out
+    of the manifest. ApplicationAssemblies seeds discovery from the manifest, because the host
+    uses no type from any module and so records no reference to one. The module is then built,
+    deployed and never discovered: every one of its diagrams reads
+    "'<vendor>/<type>' is not a known diagram type", on a build that reported success.
+
+    That is silent at build time and misattributed at run time - it reads as a module that was
+    never registered - so it is refused here, where the cause is still nameable: a referenced
+    project the restore has not seen fails the build and says what to run.
+
+    Not in a design-time build: an error there costs the IDE its project model, and the IDE
+    is exactly who needs to be able to load the project in order to restore it.
+  -->
+  <Target Name="RefuseStaleRestore" BeforeTargets="BeforeBuild" Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(ProjectAssetsFile)')">
+    <PropertyGroup>
+      <_RestoredAssets>$([System.IO.File]::ReadAllText('$(ProjectAssetsFile)'))</_RestoredAssets>
+    </PropertyGroup>
+    <ItemGroup>
+      <!-- A restored project reference is a library keyed "<project name>/<version>". -->
+      <_UnrestoredProjectReference Include="@(ProjectReference)" Condition="!$(_RestoredAssets.Contains('&quot;%(Filename)/'))" />
+    </ItemGroup>
+    <Error
+      Condition="'@(_UnrestoredProjectReference)' != ''"
+      Text="The restore of $(MSBuildProjectName) is stale: it does not know @(_UnrestoredProjectReference->'%(Filename)', ', '). Building now would deploy those modules without listing them in the deployment manifest, and the host would not discover them. Run `dotnet restore` on EtAlii.Adp.slnx (or restore in the IDE) and build again." />
+  </Target>
+
+  <!--
     Production hosting only (tech.md's Development tools section): the F5/local-dev loop talks
     to Vite directly via ClientAppHostingExtensions' dev-server proxy instead, so the client's
     dist/ never needs to exist for `dotnet build`/`dotnet run` - only for `dotnet publish`.

@@ -2706,6 +2706,35 @@ the defect reachable and what makes it invisible to the suite.
   seconds earlier; **Validate cleared it and the error count went 3 → 2**, which is the
   evidence that it was cached rather than live. The reported "no projects ADP could resolve"
   did not reproduce at all, on this build or in any harness.
+
+## A module the restore has not seen fails the build, rather than vanishing at run time
+
+The host references its modules through two globs, so a module that arrives in a pull changes
+no project file. The deployment manifest is written from `obj/project.assets.json`, which only
+a **restore** rewrites; a build that skips the restore compiles the new module, copies its
+assembly beside the host and leaves it out of the manifest, and discovery - seeded from the
+manifest - never sees it. On 2026-10-04 that is how `etalii/agent-behavior-modelling` and
+`etalii/supply-chain` came to read `is not a known diagram type` in the main checkout: 66
+module assemblies in `bin`, 63 modules in a manifest restored before the two were pulled, and
+a startup log saying `74 diagram types discovered across 78 assemblies` where a fresh tree
+says `76 ... across 80`. **This entry is live, not cached** - it wears no `stale` marker and
+Validate does not clear it - which is what tells it apart from the entry above.
+
+It is here rather than in a unit test because the defect is in the order two build steps ran
+in, and no test below a build can put a stale restore under one.
+
+- **Steps**: in a built worktree, from `src/backend`, rename one module inside the restore
+  output so it reads as a restore that predates it - replace every
+  `EtAlii.Adp.Diagram.SupplyChain` in `EtAlii.Adp.Backend.Service/obj/project.assets.json`
+  with `EtAlii.Adp.Diagram.SupplyChainX`, keeping a copy - then run
+  `dotnet build EtAlii.Adp.Backend.Service/EtAlii.Adp.Backend.Service.csproj --no-restore`.
+  Put the copy back and run the same command again.
+- **Expected**: the first build **fails** with `The restore of EtAlii.Adp.Backend.Service is
+  stale: it does not know EtAlii.Adp.Diagram.SupplyChain`, naming the remedy; the second exits
+  zero. A first build that succeeds is the defect: it has just produced a host that will not
+  discover that module.
+- **Result 2026-10-04**: **run** on develop `30e92264` plus the guard. Current restore exit 0,
+  stale restore exit 1 with the message above, restored exit 0.
 ## Every shape family still draws itself, in a browser (declarative-diagram-modules, task 17)
 
 Thirteen module canvases stopped drawing themselves and started declaring what they draw. jsdom
