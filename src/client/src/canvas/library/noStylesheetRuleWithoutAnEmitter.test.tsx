@@ -111,7 +111,7 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
     ],
   },
   {
-    reason: "set by a payload flag no shipped example raises: an unresolved or unreadable target, a hollow node, a broken or implicit edge, a blank or deactivated shape, a SPARQL-constrained row, a malformed axiom, an alternate or fallback label, a language chip, an ordered collection, a mapping",
+    reason: "set by a payload flag no shipped example raises: an unresolved or unreadable target, a hollow node, a broken or implicit edge, a blank or deactivated shape, a SPARQL-constrained row, a malformed axiom, an alternate or fallback label, a language chip, an ordered collection, a mapping, a behavior step written without a keyword",
     classes: [
       "ansible-edge-unresolved",
       "ansible-edge-label",
@@ -131,6 +131,7 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
       "skos-language-chip",
       "skos-region-kind",
       "skos-edge-mapping",
+      "abm-implicit",
     ],
   },
 ];
@@ -171,11 +172,16 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "timeline-surface",
       "ghg-canvas",
       "ghg-surface",
+      "abm-canvas",
+      "abm-surface",
     ],
   },
   {
     reason: "names what kind of element or connection this is; its paint comes from the ruled classes beside it (canvas-connection, canvas-node, the module's box and line classes) or from the definition's inline style, and the kind name is what tests, data hooks and the selection guards read",
     classes: [
+      "abm-child",
+      "abm-label",
+      "abm-node",
       "ansible-edge",
       "ansible-edge-imports-playbook",
       "ansible-edge-includes-tasks",

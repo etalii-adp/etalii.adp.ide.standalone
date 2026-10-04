@@ -1,0 +1,40 @@
+/*
+ * What this notation needs that the shared appearance has no opinion about: the fill of each family
+ * of node, and the small keyword line above the label. Everything else comes from canvas.css. The
+ * fills are theme tokens from index.css, with their dark values beside them there.
+ */
+
+.canvas-node.abm-composite {
+  fill: var(--color-diagram-abm-composite);
+}
+
+.canvas-node.abm-decorator {
+  fill: var(--color-diagram-abm-decorator);
+}
+
+.canvas-node.abm-check {
+  fill: var(--color-diagram-abm-check);
+}
+
+.canvas-node.abm-action {
+  fill: var(--color-diagram-abm-action);
+}
+
+.canvas-node.abm-other {
+  fill: var(--color-diagram-abm-other);
+}
+
+/* The keyword is the node's kind: smaller and lighter than the label it introduces. */
+.abm-keyword {
+  fill: var(--color-text, #1c2333);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* An item the Markdown gave no keyword: read as a Do, and drawn dashed so the author sees it. */
+.abm-implicit .canvas-node {
+  stroke-dasharray: 4 3;
+}
