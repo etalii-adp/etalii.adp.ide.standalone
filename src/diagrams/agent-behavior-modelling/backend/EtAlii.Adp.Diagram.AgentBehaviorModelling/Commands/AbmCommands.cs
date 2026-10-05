@@ -1,4 +1,5 @@
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 
@@ -57,7 +58,8 @@ public sealed class AddAbmNodeCommandHandler(IAbmDocumentStore documents) : ICom
             }
 
             var label = command.Label.Length > 0 ? command.Label : StartingLabel(command.Kind);
-            return AbmWriter.Add(document, model, parent, command.Index, command.Kind, label).Edit;
+            var attributes = new Dictionary<string, object?>(StringComparer.Ordinal) { ["label"] = label };
+            return document.Change(new ModelChange.Add(AbmEdits.TypeOf(command.Kind), null, attributes, parent?.Id, command.Index));
         });
     }
 }
@@ -72,7 +74,7 @@ public sealed class RemoveAbmNodeCommandHandler(IAbmDocumentStore documents) : I
         cancellationToken.ThrowIfCancellationRequested();
 
         return AbmEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            model.NodeOf(command.NodeId) is { } node ? AbmWriter.Remove(document, node) : AbmEdits.Gone());
+            model.NodeOf(command.NodeId) is { } node ? document.Change(new ModelChange.Remove(node.Id)) : AbmEdits.Gone());
     }
 }
 
@@ -86,7 +88,7 @@ public sealed class RenameAbmNodeCommandHandler(IAbmDocumentStore documents) : I
         cancellationToken.ThrowIfCancellationRequested();
 
         return AbmEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            model.NodeOf(command.NodeId) is { } node ? AbmWriter.SetLabel(document, node, command.Label) : AbmEdits.Gone());
+            model.NodeOf(command.NodeId) is { } node ? document.Change(AbmEdits.Set(node, "label", command.Label)) : AbmEdits.Gone());
     }
 }
 
@@ -101,7 +103,10 @@ public sealed class SetAbmNodeKindCommandHandler(IAbmDocumentStore documents) : 
 
         return AbmEdits.Run(documents, command.BodyPath, command, (document, model) =>
             model.NodeOf(command.NodeId) is { } node
-                ? AbmWriter.SetKind(document, node, command.Kind, command.Kind == AbmNodeKinds.Retry && command.RetryCount < 1 ? Math.Max(node.RetryCount, AbmNodeKinds.DefaultRetryCount) : command.RetryCount)
+                ? document.Change(new ModelChange.Retype(node.Id, AbmEdits.TypeOf(command.Kind), new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["attempts"] = command.Kind == AbmNodeKinds.Retry && command.RetryCount < 1 ? Math.Max(node.RetryCount, AbmNodeKinds.DefaultRetryCount) : command.RetryCount,
+                }))
                 : AbmEdits.Gone());
     }
 }
@@ -116,7 +121,7 @@ public sealed class SetAbmNotesCommandHandler(IAbmDocumentStore documents) : ICo
         cancellationToken.ThrowIfCancellationRequested();
 
         return AbmEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            model.NodeOf(command.NodeId) is { } node ? AbmWriter.SetNotes(document, node, command.Notes) : AbmEdits.Gone());
+            model.NodeOf(command.NodeId) is { } node ? document.Change(AbmEdits.Set(node, "notes", command.Notes)) : AbmEdits.Gone());
     }
 }
 
@@ -142,7 +147,7 @@ public sealed class MoveAbmNodeCommandHandler(IAbmDocumentStore documents) : ICo
                 return AbmEdit.Refused("The node it was moved under is no longer in this behavior model.");
             }
 
-            return AbmWriter.Move(document, model, node, parent, command.Index);
+            return document.Change(new ModelChange.Move(node.Id, parent?.Id, command.Index));
         });
     }
 }

@@ -424,7 +424,7 @@ internal static class AbmTranscript
 
         public AbmDocumentEntry GetOrLoad(string path) => inner.GetOrLoad(path) with { Unreadable = "parity: read-only" };
 
-        public DocumentSaveResult Save(string path, LineDocument document) => inner.Save(path, document);
+        public DocumentSaveResult Save(string path, AbmBody document) => inner.Save(path, document);
 
         public void Forget(string path) => inner.Forget(path);
 

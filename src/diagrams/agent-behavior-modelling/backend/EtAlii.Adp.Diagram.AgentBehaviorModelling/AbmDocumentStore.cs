@@ -47,7 +47,7 @@ public sealed class AbmDocumentStore : IAbmDocumentStore
     public AbmDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
-    public DocumentSaveResult Save(string path, LineDocument document)
+    public DocumentSaveResult Save(string path, AbmBody document)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(document);
@@ -59,7 +59,7 @@ public sealed class AbmDocumentStore : IAbmDocumentStore
                 $"{Path.GetFileName(path)} could not be read, so it was not written: {current.Unreadable}");
         }
 
-        var result = _lifecycle.Save(path, new AbmDocumentEntry(document, AbmParser.Parse(document)));
+        var result = _lifecycle.Save(path, new AbmDocumentEntry(document, document.Model));
         Changed?.Invoke(this, new AbmDocumentChangedEventArgs(path));
         return result;
     }
