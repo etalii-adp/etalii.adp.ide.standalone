@@ -44,7 +44,7 @@ public sealed class SupplyChainSessionTests : IDisposable
 
         // Assert.
         var plant = delivered.Single(element => element.Id == "vehicle-plant");
-        Assert.Equal(SupplyChainElementMapper.AssemblerType, plant.Type);
+        Assert.Equal(SupplyChainElementMapper.IntegratorType, plant.Type);
         var payload = SupplyChainNodePayload.Parser.ParseFrom(plant.Payload.ToArray());
         Assert.Equal(("Vehicle assembly plant", 2.8, "M vehicles", "europe"), (payload.Name, payload.Quantity, payload.Unit, payload.GroupId));
 

@@ -66,6 +66,8 @@ export const AbmActions = {
   moveEarlier: "abm.move-earlier",
   moveLater: "abm.move-later",
   editNotes: "abm.edit-notes",
+  /** Forgets every dragged position, so the whole tree is drawn tidy again. */
+  arrange: "abm.arrange",
 } as const;
 
 /** Every action id the backend must answer. */
@@ -77,6 +79,7 @@ export const ABM_ACTION_IDS: readonly string[] = [
   AbmActions.moveEarlier,
   AbmActions.moveLater,
   AbmActions.editNotes,
+  AbmActions.arrange,
 ];
 
 /** The properties of a selected node, set through the property grid. */
@@ -96,3 +99,9 @@ export const AbmShortcuts = {
   moveEarlier: "Alt+Up",
   moveLater: "Alt+Down",
 } as const;
+
+/**
+ * The least space a dragged row keeps between its parent's bottom and its own top: the backend's
+ * `AbmLayout.MinimumGap`, so the canvas shows a drop where the backend will put it.
+ */
+export const ABM_MINIMUM_GAP = 16;

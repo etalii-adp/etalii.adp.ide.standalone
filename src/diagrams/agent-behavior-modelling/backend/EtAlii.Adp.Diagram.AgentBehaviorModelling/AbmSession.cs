@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// <b>Two files feed what is drawn, and both are followed.</b> The Markdown holds the tree; the
 /// registration's <c>layout:</c> block holds the positions an author dragged nodes to. A change to
 /// the Markdown reaches this session through the store; a drag reaches it through the project's
-/// history, because a position write goes through core's <see cref="SetRegistrationLayoutCommand"/>
+/// history, because a position write goes through <see cref="ArrangeAbmNodeCommand"/>
 /// and nothing watches the registration for it - the gap dotnet-dependency-graph found and closed
 /// the same way.
 /// </para>
@@ -18,9 +18,10 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// renders, diffs and records under one lock for the baseline, the viewport and both kinds of change.
 /// </para>
 /// <para>
-/// <b>A drag never changes the tree.</b> The order of a node's children is the order they run in,
-/// and it is changed by the Move earlier and Move later actions or by drawing a new parent line -
-/// never by where a box was dropped. So a drop stores a position and nothing else.
+/// <b>A drag moves a row, and may reorder it.</b> The order of a node's children is the order they
+/// run in, so where a box lands across decides its place among its siblings, and the Markdown is
+/// rewritten to that order (<see cref="ArrangeAbmNodeCommand"/>). Where it lands down moves its
+/// whole row, with everything beneath it; that height is kept in the registration.
 /// </para>
 /// </remarks>
 public sealed class AbmSession : IDiagramSession
@@ -81,8 +82,11 @@ public sealed class AbmSession : IDiagramSession
         return result.IsSuccess ? "" : result.Error;
     }
 
-    /// <summary>Stores where a node was dropped, in the registration - never in the Markdown.</summary>
-    /// <remarks>The canvas sends the top-left, which is what the registration holds.</remarks>
+    /// <summary>
+    /// A node dropped with its top-left at (<paramref name="x"/>, <paramref name="y"/>): its row moves
+    /// to that height, and it takes its place among its siblings by where it landed across.
+    /// </summary>
+    /// <remarks>A drop that changes neither is answered with nothing to refuse and nothing written.</remarks>
     public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
@@ -98,12 +102,18 @@ public sealed class AbmSession : IDiagramSession
             return "This behavior model was opened without a registration, so there is nowhere to keep a position.";
         }
 
-        if (_documents.GetOrLoad(_bodyPath).Model.NodeOf(elementId) is null)
+        var model = _documents.GetOrLoad(_bodyPath).Model;
+        if (model.NodeOf(elementId) is not { } node)
         {
             return "That is not something this behavior model can move.";
         }
 
-        var result = await _history.ExecuteAsync(new SetRegistrationLayoutCommand(_registrationPath, elementId, x, y), cancellationToken);
+        if (AbmArrangement.Of(model, Stored(), node, x, y).IsNothing)
+        {
+            return "";
+        }
+
+        var result = await _history.ExecuteAsync(new ArrangeAbmNodeCommand(_bodyPath, _registrationPath, elementId, x, y), cancellationToken);
         return result.IsSuccess ? "" : result.Error;
     }
 

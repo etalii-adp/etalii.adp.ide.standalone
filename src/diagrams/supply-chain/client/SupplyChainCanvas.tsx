@@ -35,12 +35,12 @@ import { applyDelta, emptyModel, formatAmount, type SupplyChainFlow, type Supply
 
 /** The word each stage's header shows. */
 const STAGE_TITLES: Readonly<Record<SupplyChainStage, string>> = {
-  "raw-material": "Raw material",
-  supplier: "Supplier",
-  manufacturer: "Manufacturer",
-  assembler: "Assembler",
-  distributor: "Distributor",
-  retailer: "Retailer",
+  source: "Source",
+  processor: "Processor",
+  producer: "Producer",
+  integrator: "Integrator",
+  hub: "Hub",
+  outlet: "Outlet",
   consumer: "Consumer",
 };
 
@@ -437,8 +437,8 @@ export function diagramModelOf(model: SupplyChainModel): { diagram: DiagramModel
 }
 
 /**
- * A supply chain: raw materials, suppliers, plants, assemblers, distributors, retailers and
- * consumers in the regions they belong to, joined by flows as broad as the goods they carry.
+ * A supply chain: sources, processors, producers, integrators, hubs, outlets and consumers in
+ * the regions they belong to, joined by flows as broad as the goods they carry.
  * Selecting anything lights the whole chain through it - what feeds it, and what it feeds - and
  * dims the rest; the backend works that out, so it arrives as ordinary deltas.
  */
@@ -463,7 +463,8 @@ export function SupplyChainCanvas({ projectId, entryId, path }: ToolContentProps
       }
     },
     // The library reports the CENTRE it drew the element at; the document holds the top-left. A
-    // group's frame moves every member with it - the backend does that, given the frame's top-left.
+    // group's frame moves every member with it, and a node dropped inside another group's frame
+    // joins that group - the backend does both, given the top-left.
     onElementMoved: ({ elementId, position }) => {
       const node = model.nodes.get(elementId);
       const group = model.groups.get(elementId);
@@ -477,6 +478,10 @@ export function SupplyChainCanvas({ projectId, entryId, path }: ToolContentProps
     },
     // The backend's toolbox drops its add action; a toolbox derived from the definition drops the bare stage.
     onElementDropped: ({ elementType, position }) => {
+      if (elementType === SupplyChainActions.addGroup || elementType === GROUP_TYPE) {
+        runAction(SupplyChainActions.addGroup, placementId(position.x, position.y));
+        return;
+      }
       const stage = elementType.startsWith(SUPPLY_CHAIN_ADD_ACTION_PREFIX) ? elementType.slice(SUPPLY_CHAIN_ADD_ACTION_PREFIX.length) : elementType;
       if (isStage(stage)) {
         runAction(SupplyChainActions.add(stage), placementId(position.x, position.y));

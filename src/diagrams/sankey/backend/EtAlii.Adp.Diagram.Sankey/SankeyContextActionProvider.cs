@@ -46,6 +46,9 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
     /// <summary>Draw every band and bar thinner.</summary>
     public const string ThinnerActionId = "sankey.thinner";
 
+    /// <summary>Reorder every column's nodes so the bands cross least (<see cref="SankeyArrangement"/>).</summary>
+    public const string ArrangeActionId = "sankey.arrange";
+
     private readonly IHistoryStackStore _historyStacks;
     private readonly ISankeyDocumentStore _documents;
 
@@ -148,6 +151,9 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
                     ? await DispatchAsync(target, new ConnectSankeyNodesCommand(body, from, to), cancellationToken)
                     : new ContextExecutionFailed("A flow is drawn from one node to another.");
 
+            case ArrangeActionId:
+                return await DispatchAsync(target, new ArrangeSankeyCommand(body), cancellationToken);
+
             case ThickerActionId or ThinnerActionId:
                 return await DispatchAsync(target, new ScaleSankeyThicknessCommand(body, actionId == ThickerActionId ? 1 : -1), cancellationToken);
 
@@ -225,9 +231,15 @@ public sealed class SankeyContextActionProvider : IContextActionProvider
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
-    /// <summary>Thicker and thinner, each disabled at its end of the range.</summary>
+    /// <summary>
+    /// What applies to the whole diagram, offered wherever the reader is so it stays in the ribbon:
+    /// arranging it, and thicker and thinner, each disabled at its end of the range.
+    /// </summary>
     private static ContextActionGroupDefinition Thickness(SankeyModel model) => new(
     [
+        new ContextActionDefinition(
+            ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
+            model.Nodes.Count > 0, "There is nothing to arrange until this diagram has a node."),
         new ContextActionDefinition(
             ThickerActionId, "Thicker bands", "mdi-arrow-expand-vertical", null,
             model.Settings.Thickness < SankeyGeometry.MaximumScale, "The bands are already as thick as they go."),

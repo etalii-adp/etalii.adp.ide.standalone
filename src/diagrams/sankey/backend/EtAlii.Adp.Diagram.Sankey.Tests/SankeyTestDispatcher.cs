@@ -14,6 +14,7 @@ internal sealed class SankeyTestDispatcher(ISankeyDocumentStore documents) : ICo
         SetSankeyPropertyCommand set => new SetSankeyPropertyCommandHandler(documents).ExecuteAsync(set, cancellationToken),
         StepSankeyValueCommand step => new StepSankeyValueCommandHandler(documents).ExecuteAsync(step, cancellationToken),
         ScaleSankeyThicknessCommand scale => new ScaleSankeyThicknessCommandHandler(documents).ExecuteAsync(scale, cancellationToken),
+        ArrangeSankeyCommand arrange => new ArrangeSankeyCommandHandler(documents).ExecuteAsync(arrange, cancellationToken),
         RestoreDocumentCommand<ISankeyDocumentStore> restore => new RestoreDocumentCommandHandler<ISankeyDocumentStore>(documents).ExecuteAsync(restore, cancellationToken),
         _ => throw new InvalidOperationException($"No handler is registered for {command.GetType().Name}."),
     };

@@ -371,6 +371,39 @@ public static class GhgWriter
         return GhgEdit.Applied;
     }
 
+    /// <summary>Rewrites a trend's row alone - an arrangement, which never touches a date.</summary>
+    public static GhgEdit SetRow(LineDocument document, GhgTrend trend, int row)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(trend);
+
+        var range = trend.Range;
+        Set(document, ref range, TrendKeyOrder, "row", row.ToString(CultureInfo.InvariantCulture));
+        return GhgEdit.Applied;
+    }
+
+    /// <summary>Rewrites a trigger's row alone.</summary>
+    public static GhgEdit SetRow(LineDocument document, GhgTrigger trigger, int row)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(trigger);
+
+        var range = trigger.Range;
+        Set(document, ref range, TriggerKeyOrder, "row", row.ToString(CultureInfo.InvariantCulture));
+        return GhgEdit.Applied;
+    }
+
+    /// <summary>Rewrites a note's row alone.</summary>
+    public static GhgEdit SetRow(LineDocument document, GhgNote note, int row)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(note);
+
+        var range = note.Range;
+        Set(document, ref range, NoteKeyOrder, "row", row.ToString(CultureInfo.InvariantCulture));
+        return GhgEdit.Applied;
+    }
+
     /// <summary>Rewrites a trigger's date and row: a move, or a date typed in the grid.</summary>
     public static GhgEdit SetPlacement(LineDocument document, GhgTrigger trigger, int date, int row)
     {

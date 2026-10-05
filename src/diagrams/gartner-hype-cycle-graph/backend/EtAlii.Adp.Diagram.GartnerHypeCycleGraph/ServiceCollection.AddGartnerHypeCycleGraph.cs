@@ -54,6 +54,7 @@ public static class ServiceCollectionAddGartnerHypeCycleGraphExtension
         services.AddSingleton<ICommandHandler<SetGhgSpanCommand>, SetGhgSpanCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgBoundaryCommand>, SetGhgBoundaryCommandHandler>();
         services.AddSingleton<ICommandHandler<ClearGhgBoundariesCommand>, ClearGhgBoundariesCommandHandler>();
+        services.AddSingleton<ICommandHandler<ArrangeGhgCommand>, ArrangeGhgCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgPhasesCommand>, SetGhgPhasesCommandHandler>();
         services.AddSingleton<ICommandHandler<RenameGhgElementCommand>, RenameGhgElementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetGhgTagsCommand>, SetGhgTagsCommandHandler>();

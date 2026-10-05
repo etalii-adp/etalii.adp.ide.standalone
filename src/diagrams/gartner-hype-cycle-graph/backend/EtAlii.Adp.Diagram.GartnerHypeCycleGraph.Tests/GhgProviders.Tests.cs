@@ -281,7 +281,7 @@ public sealed class GhgProvidersTests : IDisposable
         var adds = await _actions.DiscoverAsync(Target(GestureIds.Placement(1, 2)), TestContext.Current.CancellationToken);
         var connects = await _actions.DiscoverAsync(Target(GestureIds.Relation("a", "b")), TestContext.Current.CancellationToken);
 
-        Assert.Equal(["ghg.add.trend", "ghg.add.trigger", "ghg.add.note"], adds.SelectMany(group => group.Actions).Select(action => action.Id));
+        Assert.Equal(["ghg.add.trend", "ghg.add.trigger", "ghg.add.note", "ghg.arrange"], adds.SelectMany(group => group.Actions).Select(action => action.Id));
         Assert.Equal(["ghg.connect.influence"], connects.SelectMany(group => group.Actions).Select(action => action.Id));
     }
 

@@ -29,7 +29,7 @@ groups:
 
 nodes:
   - id: bayan-obo
-    type: raw-material
+    type: source
     name: Bayan Obo rare earth ore
     group: china-mining
     quantity: 210
@@ -37,84 +37,84 @@ nodes:
     step: 10
     description: Rare earth oxide equivalent.
   - id: ree-separation
-    type: supplier
+    type: processor
     name: Rare earth separation
     group: china-mining
     quantity: 180
     unit: kt REO
     step: 10
   - id: magnet-plant
-    type: manufacturer
+    type: producer
     name: NdFeB magnet plant
     group: china-mining
     quantity: 300
     unit: kt
     step: 10
   - id: gallium-refinery
-    type: supplier
+    type: processor
     name: Gallium and germanium refinery
     group: china-mining
     quantity: 750
     unit: t Ga
     step: 25
   - id: graphite-mine
-    type: raw-material
+    type: source
     name: Graphite mines
     group: china-mining
     quantity: 1200
     unit: kt
     step: 50
   - id: spruce-pine-quartz
-    type: raw-material
+    type: source
     name: Spruce Pine high-purity quartz
     group: americas
     quantity: 50
     unit: kt
     step: 5
   - id: chile-copper
-    type: raw-material
+    type: source
     name: Chilean copper
     group: americas
     quantity: 5500
     unit: kt Cu
     step: 100
   - id: neon-purification
-    type: supplier
+    type: processor
     name: Neon gas purification
     group: europe
     quantity: 450
     unit: kL
     step: 25
   - id: euv-tools
-    type: supplier
+    type: processor
     name: EUV lithography tools
     group: europe
     quantity: 50
     unit: tools
     step: 1
   - id: wafer-maker
-    type: supplier
+    type: processor
     name: 300 mm silicon wafers
     group: japan
     quantity: 8
     unit: M wafers/month
     step: 0.5
   - id: photoresist
-    type: supplier
+    type: processor
     name: Photoresists
     group: japan
     quantity: 30
     unit: kt
     step: 1
   - id: hf-chemicals
-    type: supplier
+    type: processor
     name: Ultra-pure hydrofluoric acid
     group: japan
     quantity: 120
     unit: kt
     step: 5
   - id: logic-fab
-    type: manufacturer
+    type: producer
     name: Leading-edge logic fab
     group: taiwan
     quantity: 160
@@ -122,70 +122,70 @@ nodes:
     step: 5
     description: 4 nm and 3 nm wafers for GPUs, phone SoCs and laptop processors.
   - id: cowos-packaging
-    type: assembler
+    type: integrator
     name: CoWoS advanced packaging
     group: taiwan
     quantity: 35
     unit: k wafers/month
     step: 1
   - id: server-assembly
-    type: assembler
+    type: integrator
     name: GPU server assembly
     group: taiwan
     quantity: 60
     unit: k racks
     step: 1
   - id: dram-fab
-    type: manufacturer
+    type: producer
     name: DRAM fab
     group: korea
     quantity: 1100
     unit: k wafers/month
     step: 25
   - id: hbm-stacking
-    type: assembler
+    type: integrator
     name: HBM stacking
     group: korea
     quantity: 160
     unit: k wafers/month
     step: 5
   - id: nand-fab
-    type: manufacturer
+    type: producer
     name: NAND flash fab
     group: korea
     quantity: 600
     unit: k wafers/month
     step: 25
   - id: phone-assembly
-    type: assembler
+    type: integrator
     name: Smartphone assembly
     group: assembly
     quantity: 1200
     unit: M phones
     step: 10
   - id: laptop-assembly
-    type: assembler
+    type: integrator
     name: Laptop and PC assembly
     group: assembly
     quantity: 250
     unit: M units
     step: 5
   - id: graphics-cards
-    type: assembler
+    type: integrator
     name: Graphics card assembly
     group: assembly
     quantity: 40
     unit: M cards
     step: 1
   - id: distributor
-    type: distributor
+    type: hub
     name: Electronics distribution
     group: markets
     quantity: 1400
     unit: M units
     step: 10
   - id: retail
-    type: retailer
+    type: outlet
     name: Electronics retail
     group: markets
     quantity: 1300

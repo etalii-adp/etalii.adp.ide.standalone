@@ -38,6 +38,7 @@ public static class ServiceCollectionAddSankeyExtension
         services.AddSingleton<ICommandHandler<SetSankeyPropertyCommand>, SetSankeyPropertyCommandHandler>();
         services.AddSingleton<ICommandHandler<StepSankeyValueCommand>, StepSankeyValueCommandHandler>();
         services.AddSingleton<ICommandHandler<ScaleSankeyThicknessCommand>, ScaleSankeyThicknessCommandHandler>();
+        services.AddSingleton<ICommandHandler<ArrangeSankeyCommand>, ArrangeSankeyCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<ISankeyDocumentStore>>, RestoreDocumentCommandHandler<ISankeyDocumentStore>>();
 
         services.AddSingleton<IDiagramValidator, SankeyValidator>();

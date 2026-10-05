@@ -64,6 +64,9 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     /// <summary>Add an element below the selected one, at the same times on the next row. Enter.</summary>
     public const string AddBelowActionId = "timeline.add-below";
 
+    /// <summary>Put every element on the row that keeps the diagram least cluttered (<see cref="TimelineArrangement"/>).</summary>
+    public const string ArrangeActionId = "timeline.arrange";
+
     /// <summary>How much later "after" is, and how long a freshly added element runs.</summary>
     private const int GapDays = 6;
     private const int NewElementDays = 14;
@@ -103,23 +106,32 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
         var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
 
+        // Arrange is about the whole diagram, so it is offered wherever the reader is: on empty
+        // canvas, on an element and on a relation alike, which keeps it in the ribbon too.
+        var arrange = new ContextActionGroupDefinition(
+        [
+            new ContextActionDefinition(
+                ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
+                model.Elements.Count > 0, "There is nothing to arrange until this timeline has an element."),
+        ]);
+
         var element = TimelineEdits.ElementOf(model, target.ElementId);
         if (element is not null)
         {
-            return Result(ForElement(element));
+            return Result([.. ForElement(element), arrange]);
         }
 
         var relation = TimelineEdits.ConnectionOf(model, target.ElementId);
         if (relation is not null)
         {
-            return Result(ForRelation());
+            return Result([.. ForRelation(), arrange]);
         }
 
         if (TimelineNewPlacement.TryParse(target.ElementId, out _, out _))
         {
             // A placement discovers what can happen at empty canvas, because executing an action
             // by id only finds actions its target discovers - a drop resolves through this list.
-            return Result(ForPlacement());
+            return Result([.. ForPlacement(), arrange]);
         }
 
         if (TimelineRelationGesture.TryParse(target.ElementId, out _, out _))
@@ -284,6 +296,9 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                     "Remove",
                     Danger: true));
             }
+
+            case ArrangeActionId:
+                return await DispatchAsync(target, new ArrangeTimelineCommand(target.ResolvedFullPath), cancellationToken);
 
             case RemoveEndActionId when element is not null:
                 return await DispatchAsync(target,

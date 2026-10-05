@@ -120,6 +120,18 @@ public static class RegistrationLayout
     }
 
     /// <summary>
+    /// Replaces every stored position at once, for a module whose one gesture moves many
+    /// elements - and whose undo must put all of them back, not only the one that was dragged.
+    /// An empty set removes the block.
+    /// </summary>
+    public static void Replace(string adpPath, IReadOnlyDictionary<string, RegistrationPosition> positions)
+    {
+        ArgumentNullException.ThrowIfNull(positions);
+
+        WriteBlock(adpPath, positions);
+    }
+
+    /// <summary>
     /// Drops every stored id that is not in <paramref name="liveElementIds"/> - the "dropped
     /// on the next write" half of Requirement 7.5, for a module that knows which elements
     /// its document still holds.

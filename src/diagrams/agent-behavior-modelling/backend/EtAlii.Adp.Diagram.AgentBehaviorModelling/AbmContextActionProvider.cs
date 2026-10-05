@@ -50,6 +50,9 @@ public sealed class AbmContextActionProvider : IContextActionProvider
     /// <summary>Draw a parent line: move the child under the parent.</summary>
     public const string ConnectChildActionId = "abm.connect.child";
 
+    /// <summary>Forget every dragged position, so the whole tree is drawn tidy again (<see cref="ArrangeAbmCommand"/>).</summary>
+    public const string ArrangeActionId = "abm.arrange";
+
     private const string AddPrefix = "abm.add.";
 
     private readonly IHistoryStackStore _historyStacks;
@@ -83,6 +86,15 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
         var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
 
+        // Arrange is about the whole tree, so it is offered on empty canvas and on every node alike,
+        // which keeps it in the ribbon too.
+        ContextActionGroupDefinition arrange = new(
+        [
+            new ContextActionDefinition(
+                ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
+                model.Nodes.Count > 0, "There is nothing to arrange until this behavior model has a node."),
+        ]);
+
         if (model.NodeOf(target.ElementId) is { } node)
         {
             var siblings = Siblings(model, node);
@@ -104,6 +116,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
                 groups.Add(new([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AddActionId(kind.Id), $"Add child: {Menu(kind)}", "mdi-plus"))]));
             }
 
+            groups.Add(arrange);
             return Result(groups);
         }
 
@@ -111,7 +124,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
         // finished gesture each discover what may be executed against them.
         if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
         {
-            return Result([new([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AddActionId(kind.Id), $"Add {Menu(kind)} here", "mdi-plus"))])]);
+            return Result([new([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AddActionId(kind.Id), $"Add {Menu(kind)} here", "mdi-plus"))]), arrange]);
         }
 
         if (GestureIds.TryParseRelation(target.ElementId, out _, out _))
@@ -158,6 +171,11 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
             var newId = parent is null ? $"{index + 1}" : $"{parent.Id}.{index + 1}";
             return await AddThenEditAsync(target, new AddAbmNodeCommand(body, kind, parent?.Id ?? "", index), newId, kind, cancellationToken);
+        }
+
+        if (actionId == ArrangeActionId)
+        {
+            return await DispatchAsync(target, new ArrangeAbmCommand(RegistrationOf(body)), cancellationToken);
         }
 
         if (actionId == ConnectChildActionId)
@@ -275,7 +293,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
             return (null, 0, "");
         }
 
-        var positions = RegistrationLayout.Apply(AbmLayout.Compute(model), stored);
+        var positions = AbmLayout.Arrange(model, stored);
         static (double X, double Y) Centre(RegistrationPosition topLeft) =>
             (topLeft.X + (AbmLayout.NodeWidth / 2), topLeft.Y + (AbmLayout.NodeHeight / 2));
 
@@ -317,11 +335,12 @@ public sealed class AbmContextActionProvider : IContextActionProvider
     }
 
     /// <summary>The positions an author dragged nodes to, from the registration beside the Markdown.</summary>
-    private static IReadOnlyDictionary<string, RegistrationPosition> Stored(string bodyPath)
-    {
-        var registration = System.IO.Path.ChangeExtension(bodyPath, DiagramFileName.Extension);
-        return RegistrationLayout.Read(registration);
-    }
+    private static IReadOnlyDictionary<string, RegistrationPosition> Stored(string bodyPath) =>
+        RegistrationLayout.Read(RegistrationOf(bodyPath));
+
+    /// <summary>The registration beside the Markdown, where dragged positions are kept.</summary>
+    private static string RegistrationOf(string bodyPath) =>
+        System.IO.Path.ChangeExtension(bodyPath, DiagramFileName.Extension);
 
     private static IReadOnlyList<AbmNode> Siblings(AbmModel model, AbmNode node) =>
         node.ParentId is { } parentId ? model.ChildrenOf(model.NodeOf(parentId)!) : model.Roots;

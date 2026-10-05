@@ -15,6 +15,13 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// node by node (core's <see cref="RegistrationLayout.Apply"/>).
 /// </para>
 /// <para>
+/// <b>An author's drag moves a row, never a single box.</b> Across, a node's place is its order
+/// among its siblings, so the computed x always holds; a drag sideways changes the order instead
+/// (<see cref="AbmArrangement"/>). Down, every child of one parent sits at the same height, and the
+/// <c>.adp</c> keeps the height a row was dragged to (<see cref="Arrange"/>); everything beneath a
+/// row follows it, because each row below one that has no stored height hangs from its parent.
+/// </para>
+/// <para>
 /// <b>Top-left corners</b>, as the registration stores them and the canvas sends them back.
 /// </para>
 /// </remarks>
@@ -32,28 +39,142 @@ public static class AbmLayout
     /// <summary>The space between a parent's bottom and its children's top.</summary>
     public const double VerticalGap = 56;
 
-    /// <summary>The top-left of every node, by id.</summary>
+    /// <summary>The least space a dragged row keeps between its parent's bottom and its own top.</summary>
+    public const double MinimumGap = 16;
+
+    /// <summary>
+    /// Where each node is drawn, the author's drags included: the computed x, and the height of
+    /// its row - the first height stored for any node of the row, or the computed distance below
+    /// its parent when none is.
+    /// </summary>
+    /// <remarks>
+    /// A stored x is not used: the order is. And a row is never drawn closer to its parent than
+    /// <see cref="MinimumGap"/>, so a hand-edited height cannot put a child above the node it runs under.
+    /// </remarks>
+    public static IReadOnlyDictionary<string, RegistrationPosition> Arrange(
+        AbmModel model,
+        IReadOnlyDictionary<string, RegistrationPosition> stored)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(stored);
+
+        var computed = Compute(model);
+        var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
+        PlaceRow(model, model.Roots, 0, double.NegativeInfinity, computed, stored, positions);
+        return positions;
+    }
+
+    private static void PlaceRow(
+        AbmModel model,
+        IReadOnlyList<AbmNode> row,
+        double hangingY,
+        double floor,
+        IReadOnlyDictionary<string, RegistrationPosition> computed,
+        IReadOnlyDictionary<string, RegistrationPosition> stored,
+        Dictionary<string, RegistrationPosition> positions)
+    {
+        var dragged = row.Select(node => stored.TryGetValue(node.Id, out var position) ? position.Y : (double?)null).FirstOrDefault(y => y is not null);
+        var y = Math.Max(dragged ?? hangingY, floor);
+        foreach (var node in row)
+        {
+            positions[node.Id] = new RegistrationPosition(computed[node.Id].X, y);
+            PlaceRow(model, model.ChildrenOf(node), y + NodeHeight + VerticalGap, y + NodeHeight + MinimumGap, computed, stored, positions);
+        }
+    }
+
+    /// <summary>The top-left of every node, by id, as the tree alone places it.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Tidy, not boxed.</b> Each subtree is placed as close to its left sibling as their
+    /// <i>outlines</i> allow - the Reingold-Tilford rule - rather than as close as their bounding
+    /// boxes allow: a shallow subtree tucks in under a deep neighbour's empty corner instead of
+    /// pushing everything right of it out by the neighbour's full width. That is what keeps a wide
+    /// behavior tree as narrow, and its parent lines as short, as the order permits.
+    /// </para>
+    /// <para>
+    /// <b>The order is never traded for room</b>: children stay left to right in document order, a
+    /// parent stays centred over its first and last child, and every depth is one row.
+    /// </para>
+    /// </remarks>
     public static IReadOnlyDictionary<string, RegistrationPosition> Compute(AbmModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        var widths = new Dictionary<string, double>(StringComparer.Ordinal);
+        // Each node's left edge relative to its parent's, and each subtree's outline per depth
+        // relative to its own root's left edge. Document order is depth-first, so walking it
+        // backwards meets every child before its parent.
+        var offsets = new Dictionary<string, double>(StringComparer.Ordinal);
+        var outlines = new Dictionary<string, List<(double Left, double Right)>>(StringComparer.Ordinal);
         foreach (var node in Enumerable.Reverse(model.Nodes))
         {
-            // Document order is depth-first, so walking it backwards meets every child before its parent.
-            var children = node.ChildIds.Sum(id => widths[id]) + (HorizontalGap * Math.Max(0, node.ChildIds.Count - 1));
-            widths[node.Id] = Math.Max(NodeWidth, children);
+            (var placed, var outline) = Pack(node.ChildIds.Select(id => outlines[id]).ToList(), HorizontalGap);
+            if (placed.Count == 0)
+            {
+                outlines[node.Id] = [(0, NodeWidth)];
+                continue;
+            }
+
+            // Centred over the first and last child, whose roots sit at their packed offsets.
+            var left = (placed[0] + placed[^1]) / 2;
+            for (var index = 0; index < placed.Count; index++)
+            {
+                offsets[node.ChildIds[index]] = placed[index] - left;
+            }
+
+            outlines[node.Id] = [(0, NodeWidth), .. outline.Select(level => (level.Left - left, level.Right - left))];
         }
 
+        // The roots side by side, packed the same way with a wider gap between whole trees.
+        var roots = model.Roots;
+        (var rootLefts, _) = Pack(roots.Select(root => outlines[root.Id]).ToList(), HorizontalGap * 2);
         var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
-        var left = 0d;
-        foreach (var root in model.Roots)
+        for (var index = 0; index < roots.Count; index++)
         {
-            Place(model, root, left, 0, widths, positions);
-            left += widths[root.Id] + (HorizontalGap * 2);
+            Place(model, roots[index], rootLefts[index], 0, offsets, positions);
         }
 
-        return positions;
+        // From the leftmost node at zero, so the drawing starts where it always has.
+        var shift = positions.Count == 0 ? 0 : positions.Values.Min(position => position.X);
+        return positions.ToDictionary(entry => entry.Key, entry => entry.Value with { X = entry.Value.X - shift }, StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// Places outlines left to right, each as far left as keeps <paramref name="gap"/> clear of
+    /// everything before it at every depth they share; answers each one's offset and the combined outline.
+    /// </summary>
+    private static (List<double> Offsets, List<(double Left, double Right)> Outline) Pack(
+        IReadOnlyList<List<(double Left, double Right)>> outlines, double gap)
+    {
+        var offsets = new List<double>();
+        var combined = new List<(double Left, double Right)>();
+        foreach (var outline in outlines)
+        {
+            var offset = 0d;
+            if (combined.Count > 0)
+            {
+                offset = double.NegativeInfinity;
+                for (var depth = 0; depth < Math.Min(combined.Count, outline.Count); depth++)
+                {
+                    offset = Math.Max(offset, combined[depth].Right + gap - outline[depth].Left);
+                }
+            }
+
+            offsets.Add(offset);
+            for (var depth = 0; depth < outline.Count; depth++)
+            {
+                (double left, double right) = (outline[depth].Left + offset, outline[depth].Right + offset);
+                if (depth < combined.Count)
+                {
+                    combined[depth] = (Math.Min(combined[depth].Left, left), Math.Max(combined[depth].Right, right));
+                }
+                else
+                {
+                    combined.Add((left, right));
+                }
+            }
+        }
+
+        return (offsets, combined);
     }
 
     private static void Place(
@@ -61,19 +182,13 @@ public static class AbmLayout
         AbmNode node,
         double left,
         int depth,
-        Dictionary<string, double> widths,
+        Dictionary<string, double> offsets,
         Dictionary<string, RegistrationPosition> positions)
     {
-        var span = widths[node.Id];
-        positions[node.Id] = new RegistrationPosition(left + ((span - NodeWidth) / 2), depth * (NodeHeight + VerticalGap));
-
-        var children = model.ChildrenOf(node);
-        var childrenWidth = children.Sum(child => widths[child.Id]) + (HorizontalGap * Math.Max(0, children.Count - 1));
-        var childLeft = left + ((span - childrenWidth) / 2);
-        foreach (var child in children)
+        positions[node.Id] = new RegistrationPosition(left, depth * (NodeHeight + VerticalGap));
+        foreach (var child in model.ChildrenOf(node))
         {
-            Place(model, child, childLeft, depth + 1, widths, positions);
-            childLeft += widths[child.Id] + HorizontalGap;
+            Place(model, child, left + offsets[child.Id], depth + 1, offsets, positions);
         }
     }
 }

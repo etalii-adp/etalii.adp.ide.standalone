@@ -13,7 +13,7 @@ A European car maker building both electric and combustion vehicles, traced from
 | Part | In this example |
 |---|---|
 | Groups | Seven regions, from South America to Europe |
-| Stages | All seven: raw materials, suppliers, manufacturers, assemblers, a distributor, retailers and consumers |
+| Stages | All seven: sources, processors, producers, integrators, a hub, outlets and consumers |
 | Flows | 25, from ore to cars, each with a product, a volume, a unit and a step |
 | Converging chains | The battery chain and the body, electronics, seating and tyre chains all meet at the vehicle plant |
 | Steps | Each node and flow states its own step, from 0.1 million vehicles to 100 kt of copper |

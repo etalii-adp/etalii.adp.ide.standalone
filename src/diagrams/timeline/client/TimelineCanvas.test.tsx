@@ -400,10 +400,11 @@ describe("the timeline canvas, on the library", () => {
     expect(source.source.value.value).toMatch(/^new:/);
   });
 
-  it("pans with a left drag on empty space, and empty space consumes the browser menu", () => {
+  it("pans with a left drag on empty space, and a right-click there opens the background menu", () => {
     // The library's arbiter pans on the primary button; the right button stays the menu's.
     // The one behaviour shift of the migration - right-drag panning - is recorded in the
-    // tasks document; the browser menu on empty space stays consumed as before.
+    // tasks document; the browser menu on empty space stays consumed as before, and the
+    // right-click selects a placement so the shared menu (and "Arrange diagram") opens.
     const { container } = renderCanvas();
     const surface = surfaceOf(container);
     const before = surface.getAttribute("viewBox");
@@ -415,7 +416,10 @@ describe("the timeline canvas, on the library", () => {
     expect(menuPrevented).toBe(true);
     // A moved pan neither selects nor deselects - the press's verdict came at release, and
     // it was a pan. (The old canvas cleared the selection at press time; the library defers.)
-    expect(selections).toEqual([]);
+    // The one selection is the right-click's placement, in seconds and a row rather than in
+    // canvas units, so the backend reads it as it reads a drop.
+    expect(selections).toHaveLength(1);
+    expect(JSON.stringify(selections[0])).toMatch(/"new:\d{9,},-?\d+"/);
   });
 
   it("forwards Tab against the selection as a shortcut, letting the backend own the table", () => {

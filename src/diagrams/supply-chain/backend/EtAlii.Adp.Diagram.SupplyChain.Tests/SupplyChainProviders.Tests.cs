@@ -142,7 +142,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
 
         // Assert.
         Assert.Equal(
-            [.. SupplyChainNodeTypes.All.Select(SupplyChainContextActionProvider.AddActionId), SupplyChainContextActionProvider.ArrangeActionId],
+            [.. SupplyChainNodeTypes.All.Select(SupplyChainContextActionProvider.AddActionId), SupplyChainContextActionProvider.AddGroupActionId, SupplyChainContextActionProvider.ArrangeActionId],
             adds);
         Assert.IsType<ContextExecutionCompleted>(added);
         Assert.IsType<ContextExecutionCompleted>(connected);
@@ -164,13 +164,30 @@ public sealed class SupplyChainProvidersTests : IDisposable
     }
 
     [Fact]
-    public void ThePalette_OffersEveryStage_AddedByItsOwnAction()
+    public void ThePalette_OffersEveryStageAndAGroup_AddedByItsOwnAction()
     {
         // Act.
         var items = new SupplyChainToolboxProvider().Items;
 
         // Assert.
-        Assert.Equal(SupplyChainNodeTypes.All.Count, items.Count);
+        Assert.Equal(
+            [.. SupplyChainNodeTypes.All.Select(SupplyChainContextActionProvider.AddActionId), SupplyChainContextActionProvider.AddGroupActionId],
+            items.Select(item => item.DropActionId));
+    }
+
+    [Fact]
+    public async Task EveryAddOnEmptyCanvas_CarriesTheIconItsPaletteEntryHas()
+    {
+        // Act.
+        var adds = (await _actions.DiscoverAsync(Target(GestureIds.Placement(300, 700)), TestContext.Current.CancellationToken))
+            .SelectMany(group => group.Actions)
+            .Where(action => action.Id != SupplyChainContextActionProvider.ArrangeActionId)
+            .ToDictionary(action => action.Id, action => action.Icon);
+
+        // Assert: one icon per entry, each its palette entry's, and no two alike.
+        var palette = new SupplyChainToolboxProvider().Items;
+        Assert.Equal(palette.ToDictionary(item => item.DropActionId, item => item.Icon), adds);
+        Assert.Equal(palette.Count, palette.Select(item => item.Icon).Distinct(StringComparer.Ordinal).Count());
     }
 
     private ContextTarget Target(string elementId) =>

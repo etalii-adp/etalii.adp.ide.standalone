@@ -26,8 +26,10 @@ public readonly record struct SupplyChainBox(double X, double Y, double Width, d
 /// Arrange diagram writes the computed positions into the document for every node.
 /// </para>
 /// <para>
-/// <b>A group's frame is never authored.</b> It is the box around its members, so it follows them;
-/// an empty group draws nothing and the validator says so.
+/// <b>A group's frame is the box around its members</b>, so it follows them. A group with no
+/// members is drawn where its own <c>x</c> and <c>y</c> place it, one node's frame in size - which
+/// is how a group dropped from the toolbox is drawn before anything is moved into it. An empty
+/// group without them draws nothing, and the validator says so.
 /// </para>
 /// <para>
 /// <b>One instance per model, cached.</b> A model is immutable and replaced on every change, so
@@ -65,7 +67,7 @@ public sealed class SupplyChainLayout
         Lanes = lanes;
     }
 
-    /// <summary>The groups that can be drawn: an id, unique across the document, and at least one member.</summary>
+    /// <summary>The groups that can be drawn: an id, unique across the document, and at least one member or a place of its own.</summary>
     public IReadOnlyList<SupplyChainGroup> Groups { get; }
 
     /// <summary>The nodes that can be drawn: an id unique across the document, and a known stage.</summary>
@@ -130,6 +132,11 @@ public sealed class SupplyChainLayout
             var members = nodes.Where(node => GroupOf(node) == group.Id).Select(node => nodeBoxes[node.Id]).ToList();
             if (members.Count == 0)
             {
+                if (group.IsPlaced)
+                {
+                    groupBoxes[group.Id] = new SupplyChainBox(group.X!.Value, group.Y!.Value, SupplyChainGeometry.EmptyGroupWidth, SupplyChainGeometry.EmptyGroupHeight);
+                }
+
                 continue;
             }
 

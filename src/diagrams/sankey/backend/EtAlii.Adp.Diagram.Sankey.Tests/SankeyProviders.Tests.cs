@@ -161,7 +161,7 @@ public sealed class SankeyProvidersTests : IDisposable
         var connected = await _actions.ExecuteAsync(Target(GestureIds.Relation("a", "x")), SankeyContextActionProvider.ConnectActionId, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal([SankeyContextActionProvider.AddActionId, SankeyContextActionProvider.ThickerActionId, SankeyContextActionProvider.ThinnerActionId], offered);
+        Assert.Equal([SankeyContextActionProvider.AddActionId, SankeyContextActionProvider.ArrangeActionId, SankeyContextActionProvider.ThickerActionId, SankeyContextActionProvider.ThinnerActionId], offered);
         Assert.IsType<ContextExecutionCompleted>(added);
         Assert.IsType<ContextExecutionCompleted>(connected);
         var model = Parse();

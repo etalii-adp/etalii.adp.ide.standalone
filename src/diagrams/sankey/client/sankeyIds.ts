@@ -52,6 +52,8 @@ export const SankeyActions = {
   thicker: "sankey.thicker",
   /** Draws every bar and band thinner. */
   thinner: "sankey.thinner",
+  /** Reorders every column's nodes so the bands cross least. */
+  arrange: "sankey.arrange",
 } as const;
 
 /** Every action id the backend must answer. */

@@ -30,12 +30,12 @@
 
 /* ---- stages: each card carries its stage's colour, which everything on it reads ------------- */
 
-.supply-chain-stage-raw-material { --supply-chain-stage: var(--color-diagram-supply-chain-raw-material); }
-.supply-chain-stage-supplier { --supply-chain-stage: var(--color-diagram-supply-chain-supplier); }
-.supply-chain-stage-manufacturer { --supply-chain-stage: var(--color-diagram-supply-chain-manufacturer); }
-.supply-chain-stage-assembler { --supply-chain-stage: var(--color-diagram-supply-chain-assembler); }
-.supply-chain-stage-distributor { --supply-chain-stage: var(--color-diagram-supply-chain-distributor); }
-.supply-chain-stage-retailer { --supply-chain-stage: var(--color-diagram-supply-chain-retailer); }
+.supply-chain-stage-source { --supply-chain-stage: var(--color-diagram-supply-chain-source); }
+.supply-chain-stage-processor { --supply-chain-stage: var(--color-diagram-supply-chain-processor); }
+.supply-chain-stage-producer { --supply-chain-stage: var(--color-diagram-supply-chain-producer); }
+.supply-chain-stage-integrator { --supply-chain-stage: var(--color-diagram-supply-chain-integrator); }
+.supply-chain-stage-hub { --supply-chain-stage: var(--color-diagram-supply-chain-hub); }
+.supply-chain-stage-outlet { --supply-chain-stage: var(--color-diagram-supply-chain-outlet); }
 .supply-chain-stage-consumer { --supply-chain-stage: var(--color-diagram-supply-chain-consumer); }
 
 /* ---- cards ------------------------------------------------------------------------------- */

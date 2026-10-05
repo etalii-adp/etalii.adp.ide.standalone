@@ -28,7 +28,7 @@ public static class SupplyChainParser
     internal const string NodesKey = "nodes";
     internal const string FlowsKey = "flows";
 
-    private static readonly string[] GroupKeys = ["id", "name", "description"];
+    private static readonly string[] GroupKeys = ["id", "name", "description", "x", "y"];
 
     private static readonly string[] NodeKeys =
         ["id", "type", "name", "description", "group", "quantity", "unit", "step", "x", "y"];
@@ -99,7 +99,9 @@ public static class SupplyChainParser
                 Scalar(mapping, "id") ?? "",
                 Scalar(mapping, "name") ?? "",
                 Scalar(mapping, "description") ?? "",
-                Range(mapping, document)));
+                Range(mapping, document),
+                Number(mapping, "x", document, problems),
+                Number(mapping, "y", document, problems)));
         }
 
         return groups;
@@ -112,7 +114,8 @@ public static class SupplyChainParser
         {
             ReportUnknownKeys(mapping, NodeKeys, document, problems, "node");
 
-            var type = Scalar(mapping, "type") ?? "";
+            // A legacy stage word reads as the stage it became; the line keeps its word until edited.
+            var type = SupplyChainNodeTypes.Normalize(Scalar(mapping, "type") ?? "");
             if (!SupplyChainNodeTypes.IsKnown(type))
             {
                 problems.Add(new SupplyChainProblem(LineOf(mapping, document), $"`{type}` is not a stage this module knows."));
