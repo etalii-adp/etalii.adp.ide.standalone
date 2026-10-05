@@ -1,9 +1,9 @@
-namespace EtAlii.Adp.Specification.Fbl.Rules;
-
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Text;
+
+namespace EtAlii.Adp.Specification.Fbl.Rules;
 
 /// <summary>
 /// A node a rule can match (FBL §4.1.1): its own span, its line span when it starts and ends its

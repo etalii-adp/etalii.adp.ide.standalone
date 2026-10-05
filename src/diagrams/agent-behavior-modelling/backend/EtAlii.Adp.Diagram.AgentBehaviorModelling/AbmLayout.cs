@@ -15,6 +15,13 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// node by node (core's <see cref="RegistrationLayout.Apply"/>).
 /// </para>
 /// <para>
+/// <b>An author's drag moves a row, never a single box.</b> Across, a node's place is its order
+/// among its siblings, so the computed x always holds; a drag sideways changes the order instead
+/// (<see cref="AbmArrangement"/>). Down, every child of one parent sits at the same height, and the
+/// <c>.adp</c> keeps the height a row was dragged to (<see cref="Arrange"/>); everything beneath a
+/// row follows it, because each row below one that has no stored height hangs from its parent.
+/// </para>
+/// <para>
 /// <b>Top-left corners</b>, as the registration stores them and the canvas sends them back.
 /// </para>
 /// </remarks>
@@ -32,7 +39,50 @@ public static class AbmLayout
     /// <summary>The space between a parent's bottom and its children's top.</summary>
     public const double VerticalGap = 56;
 
-    /// <summary>The top-left of every node, by id.</summary>
+    /// <summary>The least space a dragged row keeps between its parent's bottom and its own top.</summary>
+    public const double MinimumGap = 16;
+
+    /// <summary>
+    /// Where each node is drawn, the author's drags included: the computed x, and the height of
+    /// its row - the first height stored for any node of the row, or the computed distance below
+    /// its parent when none is.
+    /// </summary>
+    /// <remarks>
+    /// A stored x is not used: the order is. And a row is never drawn closer to its parent than
+    /// <see cref="MinimumGap"/>, so a hand-edited height cannot put a child above the node it runs under.
+    /// </remarks>
+    public static IReadOnlyDictionary<string, RegistrationPosition> Arrange(
+        AbmModel model,
+        IReadOnlyDictionary<string, RegistrationPosition> stored)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(stored);
+
+        var computed = Compute(model);
+        var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
+        PlaceRow(model, model.Roots, 0, double.NegativeInfinity, computed, stored, positions);
+        return positions;
+    }
+
+    private static void PlaceRow(
+        AbmModel model,
+        IReadOnlyList<AbmNode> row,
+        double hangingY,
+        double floor,
+        IReadOnlyDictionary<string, RegistrationPosition> computed,
+        IReadOnlyDictionary<string, RegistrationPosition> stored,
+        Dictionary<string, RegistrationPosition> positions)
+    {
+        var dragged = row.Select(node => stored.TryGetValue(node.Id, out var position) ? position.Y : (double?)null).FirstOrDefault(y => y is not null);
+        var y = Math.Max(dragged ?? hangingY, floor);
+        foreach (var node in row)
+        {
+            positions[node.Id] = new RegistrationPosition(computed[node.Id].X, y);
+            PlaceRow(model, model.ChildrenOf(node), y + NodeHeight + VerticalGap, y + NodeHeight + MinimumGap, computed, stored, positions);
+        }
+    }
+
+    /// <summary>The top-left of every node, by id, as the tree alone places it.</summary>
     /// <remarks>
     /// <para>
     /// <b>Tidy, not boxed.</b> Each subtree is placed as close to its left sibling as their

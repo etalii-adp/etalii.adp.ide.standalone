@@ -1,7 +1,7 @@
-namespace EtAlii.Adp.Specification.Fbl.Documents;
-
 using System.Text.Json;
 using EtAlii.Adp.Specification.Fbl.Expressions;
+
+namespace EtAlii.Adp.Specification.Fbl.Documents;
 
 public enum ProblemSeverity
 {

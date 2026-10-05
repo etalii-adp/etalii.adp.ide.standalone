@@ -23,11 +23,3 @@ public abstract record ModelChange
     /// <summary>Saves without a change: no splice (FBL §15.3).</summary>
     public sealed record Save : ModelChange;
 }
-
-/// <summary>What planning a change gives: an edit to apply, or the reason it cannot be made (FBL §6.4).</summary>
-public abstract record PlanResult
-{
-    public sealed record Planned(Edit Edit) : PlanResult;
-
-    public sealed record Refused(string Reason) : PlanResult;
-}

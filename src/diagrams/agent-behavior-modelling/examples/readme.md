@@ -13,7 +13,7 @@ Four chat agents written as behavior trees: each `.md` is the instruction file t
 | `pull-request-reviewer` | A Try in order whose first branch skips the work; a Do together gathering context; a Retry; notes under nodes; an Ask approval before guarding the only outward-facing step |
 | `customer-support` | Nested Try in order as routing; Ask the user to fill a missing fact; Delegate as the hand-over to a person; an approval around a refund |
 | `bug-fixer` | The agentic loop - a Repeat until inside an Only while that keeps the change in scope; a Delegate that links another behavior file |
-| `research-assistant` | A Do together of three Delegates as sub-agents; a Repeat until as an evaluator loop; and a `layout:` block in its `.adp`, which moves one node off its computed place |
+| `research-assistant` | A Do together of three Delegates as sub-agents; a Repeat until as an evaluator loop; and a `layout:` block in its `.adp`, which lowers the root's children, and everything beneath them, below their computed height |
 
 **Every one of the eleven kinds appears at least once**, and every example opens with the section that tells the agent how to read the tree - the one a new diagram starts with.
 

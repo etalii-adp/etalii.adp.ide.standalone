@@ -1,6 +1,3 @@
-using System.Text.Json;
-using EtAlii.Adp.Specification.Fbl.Planning;
-
 namespace EtAlii.Adp.Specification.Fbl.Plugins;
 
 /// <summary>
@@ -25,26 +22,3 @@ public interface IPersistencePlugin
     /// <summary><c>watch</c>: the paths a folder subject's reading depends on beyond its file rules.</summary>
     IReadOnlyList<string> Watch(PluginReadResult last);
 }
-
-/// <summary>One file a plugin reads: the body itself (<see cref="RelativePath"/> empty) or a file of a folder subject.</summary>
-public sealed record PluginFile(string RelativePath, byte[] Bytes);
-
-public sealed record PluginReadRequest(IReadOnlyList<PluginFile> Files, JsonElement? Args);
-
-/// <summary>What <c>read</c> delivers: the elements and relations with their source spans, the findings, and whether the body is unreadable.</summary>
-public sealed record PluginReadResult(IReadOnlyList<FblElement> Elements, IReadOnlyList<Finding> Findings, bool Unreadable);
-
-public sealed record PluginPlanRequest(IReadOnlyList<PluginFile> Files, PluginReadResult Last, ModelChange Change, JsonElement? Args);
-
-/// <summary>One splice of a plugin's plan, in the file it names (empty for a file body).</summary>
-public sealed record PluginSplice(string File, Splice Splice);
-
-/// <summary>What <c>plan</c> delivers: splices, or the sentence the host shows when the change is refused.</summary>
-public abstract record PluginPlanResult
-{
-    public sealed record Planned(IReadOnlyList<PluginSplice> Splices) : PluginPlanResult;
-
-    public sealed record Refused(string Reason) : PluginPlanResult;
-}
-
-public sealed record PluginTemplateRequest(string Name, IReadOnlyDictionary<string, string> Placeholders);

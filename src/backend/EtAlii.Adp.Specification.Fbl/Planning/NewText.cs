@@ -1,9 +1,8 @@
-namespace EtAlii.Adp.Specification.Fbl.Planning;
-
 using System.Globalization;
 using System.Text;
-using EtAlii.Adp;
 using EtAlii.Adp.Specification.Fbl.Documents;
+
+namespace EtAlii.Adp.Specification.Fbl.Planning;
 
 /// <summary>
 /// The rules of FBL §6.3 that are the same for every family: numbers, times, maps and the
@@ -255,6 +254,3 @@ internal static class NewText
         }
     }
 }
-
-/// <summary>One part of an emit template: a placeholder or a literal, and the optional segment it is in (-1 for none).</summary>
-internal sealed record EmitPart(string? Placeholder, string? Literal, int Segment);
