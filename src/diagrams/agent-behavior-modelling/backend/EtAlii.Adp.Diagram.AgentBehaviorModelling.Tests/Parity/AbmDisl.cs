@@ -22,7 +22,7 @@ internal static class AbmDisl
 
     /// <summary>The four examples and the inline documents, by name.</summary>
     public static IEnumerable<(string Name, string Text)> Corpus() =>
-        AbmExamples.Names.Select(name => ($"examples/{name}", AbmExamples.BodyOf(name))).Concat(AbmCorpus.Inline);
+        AbmExamples.Names.Select(name => ($"examples/{name}", File.ReadAllText(AbmExamples.BodyOf(name)))).Concat(AbmCorpus.Inline);
 
     public static AbmModel Parse(string text) => AbmParser.Parse(LineDocument.Parse(text));
 
