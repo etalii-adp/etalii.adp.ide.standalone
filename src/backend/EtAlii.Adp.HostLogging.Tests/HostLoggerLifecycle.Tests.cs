@@ -195,7 +195,7 @@ public class HostLoggerLifecycleTests : IDisposable
     private static void AssertArrives(RecordingSink sink, string text)
     {
         // CALL-SITE, resolved now: the shape that read a silent global after another host stopped.
-        Log.ForContext("SourceContext", "HostLoggerGuard").Warning("Message is {Text}", text);
+        Log.ForContext("SourceContext", "HostLoggerGuard").Warning("{Text:l}", text);
         Assert.Contains(text, sink.Guarded);
     }
 
