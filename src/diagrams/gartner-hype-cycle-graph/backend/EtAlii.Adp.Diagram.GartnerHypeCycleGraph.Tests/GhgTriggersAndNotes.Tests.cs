@@ -183,6 +183,37 @@ public class GhgTriggersAndNotesTests
         Assert.Contains(GhgValidator.Validate(model), breach => breach.RuleId == GhgRuleIds.NotePosition);
     }
 
+    /// <summary>
+    /// A month outside 01 to 12 is no date on any path a document is read through: a trend's start and
+    /// stop, a trigger's date and a note's position are each left unread, reported, and not drawn.
+    /// </summary>
+    [Theory]
+    [InlineData("13")]
+    [InlineData("00")]
+    public void AMonthOutsideOneToTwelve_IsNoDate_WhereverItIsWritten(string month)
+    {
+        var text = "gartner-hypecycle-graph: 1\n"
+            + "trends:\n"
+            + $"  - id: a\n    name: A\n    start: 1900-{month}\n    stop: 1910-01\n    row: 0\n    phases: 4\n"
+            + $"  - id: b\n    name: B\n    start: 1900-01\n    stop: 1910-{month}\n    row: 1\n    phases: 4\n"
+            + $"triggers:\n  - id: t\n    name: T\n    date: 1900-{month}\n    row: 2\n"
+            + $"notes:\n  - id: n\n    text: x\n    at: 1900-{month}\n    row: 3\n    width: 10\n    height: 10\n"
+            + "influences: []\n";
+
+        var model = GhgParser.Parse(GhgBody.Parse(text));
+
+        Assert.Null(model.Trends[0].Start);
+        Assert.Null(model.Trends[1].Stop);
+        Assert.Null(Assert.Single(model.Triggers).Date);
+        Assert.Null(Assert.Single(model.Notes).At);
+        Assert.Contains(model.Problems, problem => problem.Message == $"`start: 1900-{month}` is not a date written as YYYY-MM.");
+        Assert.Contains(model.Problems, problem => problem.Message == $"`stop: 1910-{month}` is not a date written as YYYY-MM.");
+        var breaches = GhgValidator.Validate(model);
+        Assert.Contains(breaches, breach => breach.RuleId == GhgRuleIds.TriggerDate);
+        Assert.Contains(breaches, breach => breach.RuleId == GhgRuleIds.NotePosition);
+        Assert.Empty(new GhgElementMapper().Visible(model, DiagramViewport.Unbounded));
+    }
+
     [Fact]
     public void AnIdSharedByATriggerAndATrend_IsReported()
     {
