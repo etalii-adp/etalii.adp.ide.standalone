@@ -154,11 +154,12 @@ public class AbmParserTests
     public void EveryExample_ReadsWithoutAProblem(string name)
     {
         // Act.
-        var model = AbmParser.Parse(LineDocument.Parse(File.ReadAllText(AbmExamples.BodyOf(name))));
+        var text = File.ReadAllText(AbmExamples.BodyOf(name));
+        var model = AbmParser.Parse(LineDocument.Parse(text));
 
         // Assert.
         Assert.True(model.Nodes.Count > 5, $"{name} read only {model.Nodes.Count} nodes");
-        Assert.Empty(AbmRuleSet.Breaches(model));
+        Assert.Empty(AbmValidator.Validate(AbmBody.Parse(text)));
     }
 
     [Fact]

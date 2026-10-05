@@ -1,11 +1,10 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 
-public class AbmRuleSetTests
+public class AbmValidatorTests
 {
-    private static IReadOnlyList<AbmBreach> Breaches(string text) => AbmRuleSet.Breaches(AbmParser.Parse(LineDocument.Parse(text)));
+    private static IReadOnlyList<AbmBreach> Breaches(string text) => AbmValidator.Validate(AbmBody.Parse(text));
 
     [Theory]
     [InlineData("## Behavior\n- **Do:** A\n  - **Do:** B\n", AbmRuleIds.LeafWithChildren, true)]

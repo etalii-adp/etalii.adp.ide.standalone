@@ -21,7 +21,7 @@ public class AbmDocumentFactoryTests
             Assert.Contains($"- **{kind.Keyword}** {kind.Meaning}.", text, StringComparison.Ordinal);
         }
 
-        Assert.DoesNotContain(AbmRuleSet.Breaches(model), breach => breach.IsError);
+        Assert.DoesNotContain(AbmValidator.Validate(AbmBody.Parse(text)), breach => breach.IsError);
         Assert.True(Diagram.SuggestsBody(text));
     }
 

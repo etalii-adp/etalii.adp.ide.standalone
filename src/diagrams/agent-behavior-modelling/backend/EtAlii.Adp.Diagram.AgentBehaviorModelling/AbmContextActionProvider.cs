@@ -3,6 +3,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 
@@ -140,7 +141,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
                 return new ContextExecutionFailed("A parent line is drawn from the parent to the node that belongs under it.");
             }
 
-            return await DispatchAsync(target, new MoveAbmNodeCommand(body, to, from, -1), cancellationToken);
+            return await DispatchAsync(target, new ConnectAbmChildCommand(body, from, to), cancellationToken);
         }
 
         if (node is null)
@@ -171,20 +172,20 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
             case RemoveActionId:
             {
-                var below = model.Nodes.Count(candidate => AbmModel.IsWithin(candidate.Id, node.Id)) - 1;
-                if (below == 0)
+                // The definition's deletion confirmation: how many nodes go with it, asked before it
+                // runs; a node with nothing beneath it goes without asking.
+                if (AbmDefinition.ElementOf(_documents.GetOrLoad(body).Document.Disl.Diagram, node.Id) is not { } element
+                    || DeletionPolicy.Confirmation(AbmDefinition.Specification, element, env: AbmDefinition.Env) is not { } confirmation)
                 {
                     return await DispatchAsync(target, new RemoveAbmNodeCommand(body, node.Id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
+                    confirmation.Title,
                     "mdi-delete-outline",
-                    below == 1
-                        ? "Removing this node also removes the 1 node beneath it."
-                        : $"Removing this node also removes the {below} nodes beneath it.",
-                    "Remove",
-                    Danger: true));
+                    confirmation.Message,
+                    confirmation.ConfirmLabel,
+                    Danger: confirmation.Danger));
             }
 
             default:

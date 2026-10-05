@@ -85,7 +85,7 @@ The `.dis` names the layout plugin `net.etalii.adp.etalii.abmTreeLayout` (fallin
 
 ## Rules
 
-The rule ids, in `backend/…/AbmRuleSet.cs`, reach the Errors and Warnings panel through `AbmValidator`, each located by its line. Each is a declared rule in the `.dis` with its `code`, except `abm.no-behavior`, which the reader plugin reports (FBL §11.4), because no element of the model exists to carry it. DISL's built-ins `std.containment`, `std.multiplicity` and `std.facets` are switched off, so every breach is reported once, in today's words.
+The rule ids, in `backend/…/AbmBreach.cs`, reach the Errors and Warnings panel through `AbmValidator`, which evaluates these constraints, each finding located by its line. Each is a declared rule in the `.dis` with its `code`, except `abm.no-behavior`, which the reader plugin reports (FBL §11.4), because no element of the model exists to carry it. DISL's built-ins `std.containment`, `std.multiplicity` and `std.facets` are switched off, so every breach is reported once, in today's words.
 
 | Code | Severity | When | Located on |
 | --- | --- | --- | --- |
@@ -107,7 +107,7 @@ The rule ids, in `backend/…/AbmRuleSet.cs`, reach the Errors and Warnings pane
 
 ## What DISL 0.2 and FBL 0.1 cannot state yet
 
-Six behaviours have no construct yet. The `.dis` states each through an `x-` key shaped as the construct proposed for the specification, so that once a proposal is accepted the key is renamed and nothing else changes:
+Seven behaviours have no construct yet. The `.dis` states each through an `x-` key shaped as the construct proposed for the specification, so that once a proposal is accepted the key is renamed and nothing else changes:
 
 1. **Drop placement under the nearest node above** — `behavior.x-abm-placements.underNearestAbove`, referred to by `x-abm-place` on each drop tool and on `addHere`'s create. Proposed for DISL as `behavior.placements` with a `place` key.
 2. **A Kind field filtered by children** — `x-abm-retype` on the Kind item of the `node` form. Proposed for DISL as a form item of kind `type`.
@@ -115,12 +115,12 @@ Six behaviours have no construct yet. The `.dis` states each through an `x-` key
 4. **The tidy-tree layout with stored rows** — `x-abm-tidyTree` on the `tree` algorithm. Proposed for DISL as a built-in algorithm `tidyTree`.
 5. **Move, retype and an insert position for a persistence plugin** — `x-abm-plan` on the `abmMarkdown` plugin. Proposed for FBL §11.2.
 6. **Menu groups** — `x-menu.group` on each context-menu entry: consecutive entries with one name form one group, so a node's edits, its eleven Add child entries and Arrange diagram are three groups, and the canvas's adds and Arrange two (`AbmContextActionProvider.cs:75-136`). Proposed for DISL as a `group` property of a context tool.
+7. **Findings order** — `constraints.x-order`: the item without a keyword first, then more than one root, then every other finding by its node's line, a node's structure finding before its Retry finding, as the module's hand-written rules listed them. Proposed for DISL as an `order` of the findings, as the hype cycle graph also uses it.
 
 Until then three plugins carry the behaviour: `abmMarkdown` (persistence, required), `abmTreeLayout` (layout) and `abmArrange` (Arrange diagram). The 0.1 definition's `abmReorder` plugin is gone: DISL 0.2's `moveUp` and `moveDown` state the reorder exactly.
 
 ## Where the `.dis` and the code may still differ
 
-- **Findings order.** Today the findings come in node order, a node's structure finding before its Retry finding; DISL reports declared rules rule by rule. The set of findings is the same; their order in the panel may not be.
 - **Edge cases of text.** `shorten` counts characters as CEL does (code points); the code counts UTF-16 units, so a label with characters outside the Basic Multilingual Plane may be cut at a different place.
 - **Refusing a line from a leaf.** Today the client does not offer a line starting at a leaf; the `.dis` offers `moveUnder` and refuses it with the writer's sentence.
 - **The label's editing box** (27 below the top, 22 high) and the removal dialog's icon are not stated.

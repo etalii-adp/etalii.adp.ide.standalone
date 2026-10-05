@@ -8,8 +8,9 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <c>yearMonth</c> as <c>±YYYY-MM</c>, an enum value as its stored form, an element as its id.
 /// </summary>
 /// <remarks>
-/// A <see cref="DislChange.Reparent"/> is written as a <see cref="ModelChange.Move"/>, which only a
-/// persistence plugin writes: a declared binding refuses it with a sentence.
+/// A <see cref="DislChange.Reparent"/> is written as a <see cref="ModelChange.Move"/> and a
+/// <see cref="DislChange.Retype"/> as a <see cref="ModelChange.Retype"/>, which only a persistence
+/// plugin writes: a declared binding refuses them with a sentence.
 /// </remarks>
 public static class DislWrite
 {
@@ -25,6 +26,7 @@ public static class DislWrite
             DislChange.Set set => new ModelChange.Set(set.ElementId, Written(specification, map, set.Type, set.Attributes)),
             DislChange.Remove remove => new ModelChange.Remove(remove.ElementId),
             DislChange.Reparent reparent => new ModelChange.Move(reparent.ElementId, reparent.ParentId, reparent.Index),
+            DislChange.Retype retype => new ModelChange.Retype(retype.ElementId, map.BindingTypeOf(retype.Type), Written(specification, map, retype.Type, retype.Attributes)),
             _ => throw new ArgumentException($"{change.GetType().Name} is no change this runtime writes.", nameof(change)),
         };
     }

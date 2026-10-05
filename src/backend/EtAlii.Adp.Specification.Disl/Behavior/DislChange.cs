@@ -22,6 +22,12 @@ public abstract record DislChange
     /// included; negative for last.
     /// </param>
     public sealed record Reparent(string ElementId, string? ParentId, string? Slot, string? After, string? Before, int Index = -1) : DislChange;
+
+    /// <summary>
+    /// A node's type changed to <paramref name="Type"/> (<c>behavior.retype</c>, §9.5), with the values its
+    /// <c>attributeMapping</c> gives; the attributes both types declare are kept by whoever writes it.
+    /// </summary>
+    public sealed record Retype(string ElementId, string Type, IReadOnlyDictionary<string, object?> Attributes) : DislChange;
 }
 
 /// <summary>

@@ -18,6 +18,12 @@ public sealed record DislConfirmation(string Title, string Message, string Confi
 /// <c>delete-referencing</c> are refused as not supported yet; neither bundled definition uses them.
 /// </para>
 /// <para>
+/// <b>A derived relation is not removed</b> (§4.11.5): it follows from its sources, so it goes when they
+/// go. <b>Children written inside their parent</b>, as an outline's items are, go with the parent's own
+/// removal: with <c>nested</c>, the nodes beneath it get no removal of their own, and the one removal
+/// takes them all.
+/// </para>
+/// <para>
 /// <b><see cref="Confirmation"/> is null when nothing is to be asked</b>: no <c>confirm</c>, a
 /// <c>when</c> that does not hold, or a <c>count</c> below its <c>threshold</c>.
 /// </para>
@@ -67,7 +73,10 @@ public static class DeletionPolicy
     }
 
     /// <summary>The removals deleting <paramref name="self"/> makes, in the order they are made.</summary>
-    public static DislTransaction Changes(DislSpecification specification, DislElement self)
+    /// <param name="specification">The definition.</param>
+    /// <param name="self">The element deleted.</param>
+    /// <param name="nested">Whether the persistence writes a node's children inside it, so that its removal takes them with it.</param>
+    public static DislTransaction Changes(DislSpecification specification, DislElement self, bool nested = false)
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(self);
@@ -81,7 +90,7 @@ public static class DeletionPolicy
         if (subtree.Count > 0 && children != "delete") return DislTransaction.Refused(children == "forbid" ? "This cannot be deleted while it has children." : $"Deleting with children: \"{children}\" is not supported yet.");
 
         List<DislElement> gone = [.. subtree, self];
-        var attached = self.Diagram.Relations.Where(relation => !gone.Contains(relation) && (gone.Contains(relation.Source!) || gone.Contains(relation.Target!))).ToList();
+        var attached = self.Diagram.Relations.Where(relation => !relation.IsDerived && !gone.Contains(relation) && (gone.Contains(relation.Source!) || gone.Contains(relation.Target!))).ToList();
         if (attached.Count > 0 && relations != "delete") return DislTransaction.Refused(relations == "forbid" ? "This cannot be deleted while relations end at it." : $"Deleting with relations: \"{relations}\" is not supported yet.");
 
         List<DislChange> changes = [.. attached.Select(relation => new DislChange.Remove(relation.Id))];
@@ -97,7 +106,7 @@ public static class DeletionPolicy
             changes.Add(new DislChange.Set(element.Id, element.Type.Name, unset));
         }
 
-        changes.AddRange(subtree.AsEnumerable().Reverse().Select(node => new DislChange.Remove(node.Id)));
+        if (!nested) changes.AddRange(subtree.AsEnumerable().Reverse().Select(node => new DislChange.Remove(node.Id)));
         changes.Add(new DislChange.Remove(self.Id));
         return new DislTransaction(changes, [], null);
     }

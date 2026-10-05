@@ -2287,6 +2287,10 @@
   "constraints": {
     "doc": "A Markdown file edited by hand that breaks a rule still opens and draws; each finding is reported on its node's line. Three built-ins are switched off because a declared rule reports the same breach once, in today's words: `std.containment` (a leaf with children), `std.multiplicity` (a wrapper without exactly one child, a composite without children) and `std.facets` (a Retry with no attempt). The reader adds `abm.no-behavior` (information) when the file has no Behavior heading or the section holds no list.",
     "blockSaveOn": "never",
+    "x-order": [
+      "abm.no-keyword",
+      "abm.several-roots"
+    ],
     "builtIn": {
       "std.containment": {
         "enabled": false,

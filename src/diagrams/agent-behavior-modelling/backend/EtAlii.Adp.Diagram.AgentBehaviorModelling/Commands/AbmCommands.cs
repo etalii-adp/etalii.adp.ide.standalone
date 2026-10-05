@@ -1,4 +1,5 @@
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
@@ -26,7 +27,15 @@ public sealed record SetAbmNotesCommand(string BodyPath, string NodeId, string N
 /// <summary>Moves a node and its subtree under <paramref name="NewParentId"/> (empty for the roots), before the child now at <paramref name="Index"/>.</summary>
 public sealed record MoveAbmNodeCommand(string BodyPath, string NodeId, string NewParentId, int Index) : ICommand;
 
+/// <summary>A parent line drawn from <paramref name="ParentId"/> to <paramref name="ChildId"/>: the child moves, with its subtree, to be the parent's last child.</summary>
+public sealed record ConnectAbmChildCommand(string BodyPath, string ParentId, string ChildId) : ICommand;
+
 /// <summary>Adds a node.</summary>
+/// <remarks>
+/// The definition's <c>addChild</c> adds a node as a parent's last child; any other add is its
+/// <c>addHere</c>, placed where the command says - under the nearest node above a drop, the host's
+/// <c>x-abm-place</c> - and given the command's label when it has one.
+/// </remarks>
 public sealed class AddAbmNodeCommandHandler(IAbmDocumentStore documents) : ICommandHandler<AddAbmNodeCommand>
 {
     /// <summary>The label a new node of <paramref name="kind"/> starts with, before the author types their own.</summary>
@@ -57,14 +66,30 @@ public sealed class AddAbmNodeCommandHandler(IAbmDocumentStore documents) : ICom
                 return AbmEdits.Gone();
             }
 
-            var label = command.Label.Length > 0 ? command.Label : StartingLabel(command.Kind);
-            var attributes = new Dictionary<string, object?>(StringComparer.Ordinal) { ["label"] = label };
-            return document.Change(new ModelChange.Add(AbmEdits.TypeOf(command.Kind), null, attributes, parent?.Id, command.Index));
+            var diagram = document.Disl.Diagram;
+            var invocation = new DislInvocation(Parameters: new Dictionary<string, object?>(StringComparer.Ordinal) { ["kind"] = AbmEdits.TypeOf(command.Kind) });
+            if (parent is not null && command.Index < 0 && command.Label.Length == 0)
+            {
+                return AbmDefinition.Apply(document, OperationInterpreter.Run(
+                    AbmDefinition.Specification, "addChild", diagram, AbmDefinition.ElementOf(diagram, parent.Id), AbmDefinition.NewIds, invocation, AbmDefinition.Env));
+            }
+
+            return AbmDefinition.Apply(
+                document,
+                OperationInterpreter.Run(AbmDefinition.Specification, "addHere", diagram, null, AbmDefinition.NewIds, invocation, AbmDefinition.Env),
+                change => change is ModelChange.Add add
+                    ? add with
+                    {
+                        ParentId = parent?.Id,
+                        Index = command.Index,
+                        Attributes = command.Label.Length > 0 ? new Dictionary<string, object?>(add.Attributes, StringComparer.Ordinal) { ["label"] = command.Label } : add.Attributes,
+                    }
+                    : change);
         });
     }
 }
 
-/// <summary>Removes a node and its subtree.</summary>
+/// <summary>Removes a node and its subtree: the definition's deletion, the subtree going with the node's own lines.</summary>
 public sealed class RemoveAbmNodeCommandHandler(IAbmDocumentStore documents) : ICommandHandler<RemoveAbmNodeCommand>
 {
     /// <inheritdoc />
@@ -74,7 +99,9 @@ public sealed class RemoveAbmNodeCommandHandler(IAbmDocumentStore documents) : I
         cancellationToken.ThrowIfCancellationRequested();
 
         return AbmEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            model.NodeOf(command.NodeId) is { } node ? document.Change(new ModelChange.Remove(node.Id)) : AbmEdits.Gone());
+            model.NodeOf(command.NodeId) is { } node
+                ? AbmDefinition.Apply(document, DeletionPolicy.Changes(AbmDefinition.Specification, AbmDefinition.ElementOf(document.Disl.Diagram, node.Id)!, nested: true))
+                : AbmEdits.Gone());
     }
 }
 
@@ -93,6 +120,11 @@ public sealed class RenameAbmNodeCommandHandler(IAbmDocumentStore documents) : I
 }
 
 /// <summary>Changes a node's kind.</summary>
+/// <remarks>
+/// A change to another kind is the definition's <c>behavior.retype</c>, a Retry's attempts taken from its
+/// <c>attributeMapping</c>. Setting a Retry's attempts, and a kind to itself, rewrite the keyword in place
+/// as they always have.
+/// </remarks>
 public sealed class SetAbmNodeKindCommandHandler(IAbmDocumentStore documents) : ICommandHandler<SetAbmNodeKindCommand>
 {
     /// <inheritdoc />
@@ -102,16 +134,19 @@ public sealed class SetAbmNodeKindCommandHandler(IAbmDocumentStore documents) : 
         cancellationToken.ThrowIfCancellationRequested();
 
         return AbmEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            model.NodeOf(command.NodeId) is { } node
-                ? document.Change(new ModelChange.Retype(node.Id, AbmEdits.TypeOf(command.Kind), new Dictionary<string, object?>(StringComparer.Ordinal)
+            model.NodeOf(command.NodeId) is not { } node
+                ? AbmEdits.Gone()
+                : node.Kind != command.Kind && command.RetryCount < 1 && AbmNodeKinds.IsKnown(command.Kind)
+                ? AbmDefinition.Apply(document, RetypePolicy.Change(
+                    AbmDefinition.Specification, AbmDefinition.ElementOf(document.Disl.Diagram, node.Id)!, AbmEdits.TypeOf(command.Kind), AbmDefinition.Env))
+                : document.Change(new ModelChange.Retype(node.Id, AbmEdits.TypeOf(command.Kind), new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
                     ["attempts"] = command.Kind == AbmNodeKinds.Retry && command.RetryCount < 1 ? Math.Max(node.RetryCount, AbmNodeKinds.DefaultRetryCount) : command.RetryCount,
-                }))
-                : AbmEdits.Gone());
+                })));
     }
 }
 
-/// <summary>Replaces a node's notes.</summary>
+/// <summary>Replaces a node's notes: the definition's <c>editNotes</c>.</summary>
 public sealed class SetAbmNotesCommandHandler(IAbmDocumentStore documents) : ICommandHandler<SetAbmNotesCommand>
 {
     /// <inheritdoc />
@@ -121,7 +156,16 @@ public sealed class SetAbmNotesCommandHandler(IAbmDocumentStore documents) : ICo
         cancellationToken.ThrowIfCancellationRequested();
 
         return AbmEdits.Run(documents, command.BodyPath, command, (document, model) =>
-            model.NodeOf(command.NodeId) is { } node ? document.Change(AbmEdits.Set(node, "notes", command.Notes)) : AbmEdits.Gone());
+            model.NodeOf(command.NodeId) is { } node
+                ? AbmDefinition.Apply(document, OperationInterpreter.Run(
+                    AbmDefinition.Specification,
+                    "editNotes",
+                    document.Disl.Diagram,
+                    AbmDefinition.ElementOf(document.Disl.Diagram, node.Id),
+                    AbmDefinition.NewIds,
+                    new DislInvocation(Parameters: new Dictionary<string, object?>(StringComparer.Ordinal) { ["notes"] = command.Notes }),
+                    AbmDefinition.Env))
+                : AbmEdits.Gone());
     }
 }
 
@@ -148,6 +192,36 @@ public sealed class MoveAbmNodeCommandHandler(IAbmDocumentStore documents) : ICo
             }
 
             return document.Change(new ModelChange.Move(node.Id, parent?.Id, command.Index));
+        });
+    }
+}
+
+/// <summary>
+/// Runs a drawn parent line: the derived <c>Child</c> relation's <c>connect</c> edit, the definition's
+/// <c>moveUnder</c>, whose aborts refuse a line that cannot move the child in the writer's words.
+/// </summary>
+public sealed class ConnectAbmChildCommandHandler(IAbmDocumentStore documents) : ICommandHandler<ConnectAbmChildCommand>
+{
+    /// <inheritdoc />
+    public Task<CommandResult> ExecuteAsync(ConnectAbmChildCommand command, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return AbmEdits.Run(documents, command.BodyPath, command, (document, _) =>
+        {
+            var diagram = document.Disl.Diagram;
+            if (AbmDefinition.ElementOf(diagram, command.ChildId) is not { } child)
+            {
+                return AbmEdits.Gone();
+            }
+
+            if (AbmDefinition.ElementOf(diagram, command.ParentId) is not { } parent)
+            {
+                return AbmEdit.Refused("The node it was moved under is no longer in this behavior model.");
+            }
+
+            return AbmDefinition.Apply(document, OperationInterpreter.Connect(AbmDefinition.Specification, "Child", diagram, parent, child, AbmDefinition.NewIds, AbmDefinition.Env));
         });
     }
 }

@@ -3,6 +3,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 
@@ -95,6 +96,35 @@ internal static class AbmDefinition
         return ElementOf(entry.Document.Disl.Diagram, elementId) is { } element
             ? [.. FormDerivation.Derive(Specification, element, Env, Ids).Select(Row)]
             : [];
+    }
+
+    /// <summary>
+    /// The id a node an operation creates has in the transaction's working model. A node's id is its place,
+    /// which the definition derives once the document is read again; nothing is written to name it.
+    /// </summary>
+    public static IIdSource NewIds => DislIds.Fixed("new");
+
+    /// <summary>Writes <paramref name="transaction"/>'s changes to <paramref name="document"/> in order, or gives its refusal.</summary>
+    public static AbmEdit Apply(AbmBody document, DislTransaction transaction) =>
+        Apply(document, transaction, change => change);
+
+    /// <summary>
+    /// Writes <paramref name="transaction"/>'s changes to <paramref name="document"/> in order, each as
+    /// <paramref name="written"/> makes it from the FBL change the definition writes, or gives its refusal.
+    /// </summary>
+    public static AbmEdit Apply(AbmBody document, DislTransaction transaction, Func<ModelChange, ModelChange> written)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentNullException.ThrowIfNull(written);
+        if (!transaction.WasApplied) return AbmEdit.Refused(transaction.Refusal!);
+
+        foreach (var change in transaction.Changes)
+        {
+            var edit = document.Change(written(DislWrite.ToFbl(Specification, change)));
+            if (!edit.WasApplied) return edit;
+        }
+        return AbmEdit.Applied;
     }
 
     /// <summary>The node <paramref name="id"/> names - its place - or null.</summary>

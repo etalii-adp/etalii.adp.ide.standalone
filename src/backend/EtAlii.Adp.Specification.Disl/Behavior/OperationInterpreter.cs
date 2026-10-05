@@ -53,8 +53,63 @@ public static class OperationInterpreter
         variables["position"] = Map(invocation?.Position);
         variables["p"] = Map(invocation?.Parameters);
 
-        if (Unavailable(specification, operation, pointer, diagram, self, variables, operationId) is { } reason) return DislTransaction.Refused(reason);
+        if (Unavailable(specification, operation, pointer, diagram, self is null ? null : self.IsA, variables, operationId) is { } reason) return DislTransaction.Refused(reason);
 
+        return Actions(specification, operation, pointer, diagram, ids, variables);
+    }
+
+    /// <summary>
+    /// Runs the operation a derived relation type's <c>edits.connect</c> names for a new line of
+    /// <paramref name="relationType"/> from <paramref name="source"/> to <paramref name="target"/> (§4.11.4), as one
+    /// transaction. The relation does not exist yet, so <c>self</c> is its two ends and its type - a map
+    /// with <c>source</c>, <c>target</c> and <c>type</c>, as the context menu reads it - and the operation
+    /// applies when its <c>for</c> names the relation type or one it inherits from.
+    /// </summary>
+    public static DislTransaction Connect(
+        DislSpecification specification,
+        string relationType,
+        DislDiagram diagram,
+        DislElement source,
+        DislElement target,
+        IIdSource ids,
+        DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(relationType);
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(ids);
+
+        if (specification.Metamodel.TypeOf(relationType) is not { IsRelation: true } relation) return DislTransaction.Refused($"There is no relation type '{relationType}'.");
+        if (relation.Derived is not { ValueKind: JsonValueKind.Object } derived || !derived.TryGetProperty("edits", out var edits)
+            || DislJson.String(edits, "connect") is not { } operationId)
+        {
+            return DislTransaction.Refused(relation.Derived is { ValueKind: JsonValueKind.Object } withReason && DislJson.String(withReason, "reason") is { } reason
+                ? reason
+                : $"A {relationType} cannot be drawn.");
+        }
+        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
+            || !operations.TryGetProperty(operationId, out var operation))
+        {
+            return DislTransaction.Refused($"There is no operation '{operationId}'.");
+        }
+
+        var pointer = DislJson.Pointer("/behavior/operations", operationId);
+        var variables = Variables(DislContexts.Operation, diagram, env);
+        variables["self"] = new Cel.CelMap { ["source"] = source, ["target"] = target, ["type"] = relationType };
+        variables["selection"] = new List<object?>();
+        variables["position"] = Map(null);
+        variables["p"] = Map(null);
+
+        if (Unavailable(specification, operation, pointer, diagram, relation.Linearisation.Contains, variables, operationId) is { } refusal) return DislTransaction.Refused(refusal);
+
+        return Actions(specification, operation, pointer, diagram, ids, variables);
+    }
+
+    /// <summary>The operation's <c>plugin</c> handed back whole, or its actions run.</summary>
+    private static DislTransaction Actions(DislSpecification specification, JsonElement operation, string pointer, DislDiagram diagram, IIdSource ids, Dictionary<string, object?> variables)
+    {
         if (operation.TryGetProperty("plugin", out var plugin))
         {
             var name = plugin.ValueKind == JsonValueKind.String ? plugin.GetString()! : DislJson.String(plugin, "name") ?? "";
@@ -127,7 +182,7 @@ public static class OperationInterpreter
         var variables = Variables(DislContexts.Operation, diagram, env);
         variables["self"] = self;
         variables["selection"] = self is null ? new List<object?>() : [self];
-        return Unavailable(specification, operation, DislJson.Pointer("/behavior/operations", operationId), diagram, self, variables, operationId);
+        return Unavailable(specification, operation, DislJson.Pointer("/behavior/operations", operationId), diagram, self is null ? null : self.IsA, variables, operationId);
     }
 
     internal static Dictionary<string, object?> Variables(string context, DislDiagram diagram, DislEnv? env)
@@ -138,10 +193,11 @@ public static class OperationInterpreter
         return variables;
     }
 
-    private static string? Unavailable(DislSpecification specification, JsonElement operation, string pointer, DislDiagram diagram, DislElement? self, Dictionary<string, object?> variables, string operationId)
+    /// <param name="isA">Whether the operation's target is of a type, or null when it runs on the diagram.</param>
+    private static string? Unavailable(DislSpecification specification, JsonElement operation, string pointer, DislDiagram diagram, Func<string, bool>? isA, Dictionary<string, object?> variables, string operationId)
     {
         var applies = DislJson.Strings(operation, "for") is var targets && (targets.Count == 0 || targets.Contains("diagram") || targets.Contains("selection")
-            || self is not null && targets.Any(self.IsA));
+            || isA is not null && targets.Any(isA));
         if (!applies) return NotApplicable(specification, diagram, operationId);
 
         if (specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("editGate", out var gate)
