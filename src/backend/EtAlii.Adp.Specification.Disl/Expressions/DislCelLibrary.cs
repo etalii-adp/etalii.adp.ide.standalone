@@ -42,20 +42,50 @@ public static class DislCelLibrary
             environment.AddFunction(CelFunction.Method(name, min, max));
         }
 
-        environment.AddFunction(Pending("enumLabel", 2, 2));
-        environment.AddFunction(Pending("clamp", 3, 3));
-        environment.AddFunction(Pending("min", 2, 4));
-        environment.AddFunction(Pending("max", 2, 4));
-        environment.AddFunction(Pending("yearMonth", 2, 2));
-        environment.AddFunction(Pending("formatYearMonth", 2, 2));
-        environment.AddFunction(Pending("parseYearMonth", 1, 1));
-        environment.AddFunction(new CelFunction("year", CelCallStyle.Receiver, 0, 0, _ => throw NotYet("year")));
-        environment.AddFunction(new CelFunction("month", CelCallStyle.Receiver, 0, 0, _ => throw NotYet("month")));
+        environment.AddFunction(CelFunction.Global("enumLabel", 2, arguments => EnumLabel(enums, arguments[0], arguments[1])));
+        environment.AddFunction(CelFunction.Global("clamp", 3, arguments => Clamp(arguments[0], arguments[1], arguments[2])));
+        environment.AddFunction(new CelFunction("min", CelCallStyle.Global, 2, 4, call => Extreme(call.Arguments, -1)));
+        environment.AddFunction(new CelFunction("max", CelCallStyle.Global, 2, 4, call => Extreme(call.Arguments, 1)));
+        environment.AddFunction(CelFunction.Global("yearMonth", 2, arguments => YearMonth.Of(Int(arguments[0]), Int(arguments[1]))));
+        environment.AddFunction(CelFunction.Global("formatYearMonth", 2, arguments => YearMonth.Format(Int(arguments[0]), Text(arguments[1]))));
+        environment.AddFunction(CelFunction.Global("parseYearMonth", 1, arguments =>
+            YearMonth.Parse(Text(arguments[0])) is { } index ? CelOptional.Of(index) : CelOptional.None));
+        environment.AddFunction(CelFunction.Receiver("year", 0, arguments => YearMonth.YearOf(Int(arguments[0]))));
+        environment.AddFunction(CelFunction.Receiver("month", 0, arguments => YearMonth.MonthOf(Int(arguments[0]))));
         return environment;
     }
 
-    private static CelFunction Pending(string name, int min, int max) =>
-        new(name, CelCallStyle.Global, min, max, _ => throw NotYet(name));
+    /// <summary>The label of an enumeration's value (§4.5): its declared label, else its key; a value the enumeration lacks, as an extensible one may hold, is its own label.</summary>
+    private static string EnumLabel(Func<string, DislEnum?> enums, object? name, object? value)
+    {
+        var enumeration = enums(Text(name)) ?? throw new CelException($"'{name}' is not an enumeration of this specification.");
+        var key = Text(value);
+        return enumeration.ValueOf(key) is { } known ? known.Label ?? known.Key : key;
+    }
 
-    private static CelException NotYet(string name) => new($"'{name}()' is declared but not yet implemented by this runtime.");
+    /// <summary><c>clamp(v, lo, hi)</c>: <c>lo</c> below it, <c>hi</c> above it, otherwise <c>v</c> itself, of whichever kind each is.</summary>
+    private static object? Clamp(object? value, object? low, object? high) =>
+        Number(value) < Number(low) ? low : Number(value) > Number(high) ? high : value;
+
+    /// <summary>The smallest (<paramref name="sign"/> -1) or largest (1) argument, itself rather than converted, the first of equals; as <c>math.least</c> and <c>math.greatest</c>.</summary>
+    private static object? Extreme(IReadOnlyList<object?> arguments, int sign)
+    {
+        var best = arguments[0];
+        foreach (var candidate in arguments.Skip(1))
+        {
+            if (Number(candidate).CompareTo(Number(best)) * sign > 0) best = candidate;
+        }
+        return best;
+    }
+
+    private static double Number(object? value) => value switch
+    {
+        long integer => integer,
+        double real => real,
+        _ => throw new CelException("A number was expected."),
+    };
+
+    private static long Int(object? value) => value as long? ?? throw new CelException("An int was expected.");
+
+    private static string Text(object? value) => value as string ?? throw new CelException("A string was expected.");
 }
