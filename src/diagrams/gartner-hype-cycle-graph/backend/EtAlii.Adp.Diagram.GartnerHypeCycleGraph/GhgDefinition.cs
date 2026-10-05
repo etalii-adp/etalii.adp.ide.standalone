@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -75,6 +76,15 @@ internal static class GhgDefinition
         ];
     }
 
+    /// <summary>The property rows of <paramref name="elementId"/> in <paramref name="entry"/>: an element's form; none for anything else.</summary>
+    public static IReadOnlyList<ContextPropertyDefinition> Rows(GhgDocumentEntry entry, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        if (ElementOf(entry.Document.Disl.Diagram, elementId) is not { } element) return [];
+
+        return WithUnresolvedEnds(element, [.. FormDerivation.Derive(Specification, element, Env(entry), Ids).Select(Row)]);
+    }
+
     /// <summary>The element <paramref name="id"/> names, as <see cref="GhgEdits"/> finds it; null for none.</summary>
     public static DislElement? ElementOf(DislDiagram diagram, string id)
     {
@@ -105,6 +115,75 @@ internal static class GhgDefinition
         // Arrange carries its sentence even while it is available, as the hand-written menu did; the
         // client shows a reason only for an unavailable action.
         entry.Available && entry.Operation == "arrange" ? LoadedArrangeReason.Value : entry.UnavailableReason);
+
+    /// <summary>
+    /// A row as the grid draws it: a <c>textarea</c> is the Text editor, <c>tags</c> and <c>slider</c> their
+    /// own, anything else a line. Only those two carry candidates, the tags the graph uses and the slider's marks.
+    /// </summary>
+    private static ContextPropertyDefinition Row(DerivedRow row)
+    {
+        var editor = row.Widget switch
+        {
+            "textarea" => ContextPropertyEditor.Text,
+            "tags" => ContextPropertyEditor.Tags,
+            "slider" => ContextPropertyEditor.Slider,
+            _ => ContextPropertyEditor.Line,
+        };
+        var candidates = editor is ContextPropertyEditor.Tags or ContextPropertyEditor.Slider ? row.Candidates ?? [] : null;
+        return new ContextPropertyDefinition(row.Id, row.Label, row.Value, editor, row.ReadOnlyReason, row.Group, candidates);
+    }
+
+    /// <summary>
+    /// The rows that list an influence end the document names but does not hold, with that end written
+    /// as the code always wrote it: its id and phase, "x · Peak". DISL hands CEL a dangling end as null
+    /// and gives it no way to read the id it was written with (§4.9), so the definition's <c>endText</c>
+    /// fails there; every other row is the definition's.
+    /// </summary>
+    private static IReadOnlyList<ContextPropertyDefinition> WithUnresolvedEnds(DislElement element, IReadOnlyList<ContextPropertyDefinition> rows)
+    {
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (element.IsA("Influence"))
+        {
+            if (element.Source is null || element.Target is null)
+            {
+                values[Ids.PropertyId("From")] = EndText(element.Source, element.SourceId, Text(element, "fromPhase"));
+                values[Ids.PropertyId("To")] = EndText(element.Target, element.TargetId, Text(element, "toPhase"));
+            }
+        }
+        else
+        {
+            foreach (var phase in (string[])["peak", "trough", "slope", "plateau"])
+            {
+                var leaving = element.Outgoing.Where(relation => relation.IsA("Influence") && Text(relation, "fromPhase") == phase).ToList();
+                var arriving = element.Incoming.Where(relation => relation.IsA("Influence") && Text(relation, "toPhase") == phase).ToList();
+                if (leaving.Any(relation => relation.Target is null))
+                {
+                    values[Ids.PropertyId($"{phase}Influences")] = ListOrNone(leaving.Select(relation => EndText(relation.Target, relation.TargetId, Text(relation, "toPhase"))));
+                }
+
+                if (arriving.Any(relation => relation.Source is null))
+                {
+                    values[Ids.PropertyId($"{phase}InfluencedBy")] = ListOrNone(arriving.Select(relation => EndText(relation.Source, relation.SourceId, Text(relation, "fromPhase"))));
+                }
+            }
+        }
+
+        return values.Count == 0 ? rows : [.. rows.Select(row => values.TryGetValue(row.Id, out var value) ? row with { Value = value } : row)];
+    }
+
+    /// <summary>The definition's <c>endText</c>, which also writes an end it cannot resolve: by the id it names.</summary>
+    private static string EndText(DislElement? end, string? writtenId, string phase)
+    {
+        var name = end is null ? writtenId ?? "" : Text(end, "name") is { Length: > 0 } text ? text : end.Id;
+        if (end is not null && end.IsA("Trigger")) return name;
+        var title = phase is "peak" or "trough" or "slope" or "plateau" ? char.ToUpperInvariant(phase[0]) + phase[1..] : phase;
+        return $"{name} · {title}";
+    }
+
+    private static string ListOrNone(IEnumerable<string> entries) => entries.ToList() is { Count: > 0 } list ? string.Join("\n", list) : "None";
+
+    private static string Text(DislElement element, string attribute) =>
+        element.Attributes.TryGetValue(attribute, out var value) ? value as string ?? value?.ToString() ?? "" : "";
 
     /// <summary>The sentence of Arrange's one <c>unavailable</c> reason, as the definition writes it.</summary>
     private static string ArrangeReasonOf() =>

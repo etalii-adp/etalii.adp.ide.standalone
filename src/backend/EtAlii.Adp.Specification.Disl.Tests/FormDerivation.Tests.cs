@@ -34,14 +34,14 @@ public class FormDerivationTests
             "ghg.peak-end | Peak ends | 1812-07 | text | editable | group Phases",
             "ghg.trough-end | Trough ends | 1825-01 | text | editable | group Phases",
             "ghg.slope-end | Slope ends | 1837-07 | text | editable | group Phases",
-            "ghg.peak-influences | Influence | None | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Peak",
-            "ghg.peak-influenced-by | Influenced by | Watt's patent\\nRailways · Slope | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Peak",
-            "ghg.trough-influences | Influence | None | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Trough",
-            "ghg.trough-influenced-by | Influenced by | None | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Trough",
-            "ghg.slope-influences | Influence | None | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Slope",
-            "ghg.slope-influenced-by | Influenced by | None | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Slope",
-            "ghg.plateau-influences | Influence | Railways · Trough | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Plateau",
-            "ghg.plateau-influenced-by | Influenced by | None | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Plateau",
+            "ghg.peak-influences | Influence | None | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Peak",
+            "ghg.peak-influenced-by | Influenced by | Watt's patent\\nRailways · Slope | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Peak",
+            "ghg.trough-influences | Influence | None | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Trough",
+            "ghg.trough-influenced-by | Influenced by | None | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Trough",
+            "ghg.slope-influences | Influence | None | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Slope",
+            "ghg.slope-influenced-by | Influenced by | None | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Slope",
+            "ghg.plateau-influences | Influence | Railways · Trough | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Plateau",
+            "ghg.plateau-influenced-by | Influenced by | None | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Plateau",
         ], HypeCycle("steam"));
     }
 
@@ -52,8 +52,8 @@ public class FormDerivationTests
 
         Assert.Contains("ghg.peak-end | Peak ends | 1830-01 | text | editable | group Phases", rows);
         Assert.DoesNotContain(rows, row => row.StartsWith("ghg.trough-end", StringComparison.Ordinal));
-        Assert.Contains("ghg.trough-influenced-by | Influenced by | Steam engine · Plateau | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Trough", rows);
-        Assert.Contains("ghg.slope-influences | Influence | Steam engine · Peak | - | read-only (Draw, reattach or delete an influence on the canvas.) | group Slope (hidden)", rows);
+        Assert.Contains("ghg.trough-influenced-by | Influenced by | Steam engine · Plateau | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Trough", rows);
+        Assert.Contains("ghg.slope-influences | Influence | Steam engine · Peak | textarea | read-only (Draw, reattach or delete an influence on the canvas.) | group Slope (hidden)", rows);
         Assert.DoesNotContain(rows, row => row.Contains("group Plateau", StringComparison.Ordinal));
     }
 

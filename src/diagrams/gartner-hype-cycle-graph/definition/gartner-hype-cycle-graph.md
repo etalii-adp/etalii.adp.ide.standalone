@@ -237,6 +237,8 @@ Each item below is declared in the specification under an `x-` key shaped as the
 
 Two built-in findings also read detail keys that DISL 0.2 does not list, with a fallback so the specification stays correct without them: `std.duplicateId`'s `count` (the message says how many times an id is declared) and `std.references`' `end` (the message says whether the `from` or the `to` names nothing).
 
+One thing has no key, because no construct could carry it: **the written id of an influence end that names nothing.** DISL hands CEL a dangling end as null (4.9), and the binding cannot map `to` to both the end and an attribute, so `endText` cannot write the end as the property grid does (`x · Peak`, `GhgContextPropertyProvider.Describe`). A runtime shows such a list or From or To row empty; the standalone host writes it from the id the binding read.
+
 The per-type drop rows that once needed a plugin are standard DISL 0.2: snapping declared on a node notation, with `byGesture.drop`, is more specific than the coordinate system's.
 
 ## Fixed on the research branch
