@@ -692,7 +692,7 @@
           "bendpoints": { "editable": false }
         },
         "sourceMarker": "none",
-        "targetMarker": "arrow",
+        "targetMarker": "arrowFilled",
         "anchoring": {
           "source": {
             "mode": "part",

@@ -1,3 +1,4 @@
+import type { Binding } from "../definition/binding";
 import type { BuiltInRoute, BuiltInShape, MarkerKind, SegmentDeclaration } from "../definition/diagramDefinition";
 import type { DislCustomShape, DislShapeRef } from "./disTypes";
 
@@ -112,8 +113,9 @@ export function libraryRouteOf(routing: string): BuiltInRoute {
 export interface CustomShapeBinding {
   shape: BuiltInShape;
   /**
-   * The segment declaration, given the custom shape as the specification states it and the
-   * parameters the node (or the viewpoint's override) binds it with.
+   * The segment declaration, given the custom shape as the specification states it, the parameters
+   * the node (or the viewpoint's override) binds it with, and the compiler's own reading of a
+   * Bindable as a library binding.
    */
-  segments?: (shape: DislCustomShape, params: Readonly<Record<string, unknown>>) => SegmentDeclaration;
+  segments?: (context: { shape: DislCustomShape; params: Readonly<Record<string, unknown>>; bind: (value: unknown) => Binding }) => SegmentDeclaration;
 }

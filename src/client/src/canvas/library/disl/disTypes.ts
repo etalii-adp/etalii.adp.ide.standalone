@@ -4,7 +4,7 @@
  * <b>A subset, on purpose.</b> The backend loads the whole specification and runs its CEL; the
  * client reads only what turns into a {@link DiagramDefinition}: the metamodel's types and
  * relations, the coordinates' axes and rulers, the notation's nodes, edges and shapes, the toolbox's
- * context menus (for shortcuts and wire ids), the canvas's filters and legend, the viewpoints and the
+ * context menus (for shortcuts and wire ids), the notation canvas's filters and legend, the viewpoints and the
  * layout algorithms. Everything else is typed `unknown` or left out, so a reader of
  * `compileNotation.ts` sees exactly which keys it depends on.
  *
@@ -27,7 +27,6 @@ export interface DislDocument extends Extensions {
   coordinates?: DislCoordinates;
   notation: DislNotation;
   toolbox?: DislToolbox;
-  canvas?: DislCanvas;
   viewpoints?: Readonly<Record<string, DislViewpoint>>;
   layout?: DislLayout;
 }
@@ -107,6 +106,8 @@ export interface DislNotation {
   shapes?: Readonly<Record<string, DislCustomShape>>;
   nodes: Readonly<Record<string, DislNodeNotation>>;
   edges?: Readonly<Record<string, DislEdgeNotation>>;
+  /** The canvas's own chrome: filters and the legend (DISL §6.13). */
+  canvas?: DislCanvas;
 }
 
 export interface DislTheme {
