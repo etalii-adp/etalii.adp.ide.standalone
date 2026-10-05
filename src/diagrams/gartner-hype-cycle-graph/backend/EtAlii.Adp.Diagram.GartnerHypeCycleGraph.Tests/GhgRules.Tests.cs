@@ -81,6 +81,42 @@ public class GhgRulesTests
         Assert.Equal(GhgRuleIds.DuplicateInfluence, breach.RuleId);
     }
 
+    /// <summary>
+    /// DISL 11.5.4: of the entries that share an id the first keeps it, and the second and later are
+    /// still drawn, as ephemeral elements under an id of their own; the duplicate is still reported.
+    /// </summary>
+    [Fact]
+    public void ALaterTrendReusingAnId_IsStillDrawn_AndTheFirstKeepsTheId()
+    {
+        var model = GhgParser.Parse(Load("rule-duplicate-id.ghg"));
+
+        var drawn = new GhgElementMapper().Visible(model, DiagramViewport.Unbounded);
+
+        Assert.Contains(GhgValidator.Validate(model), breach => breach.RuleId == GhgRuleIds.DuplicateId);
+        var trends = drawn.Where(element => element.Type == GhgElementMapper.TrendType).ToList();
+        Assert.Equal(3, trends.Count);
+        Assert.Equal(3, trends.Select(trend => trend.Id).Distinct(StringComparer.Ordinal).Count());
+        var first = trends.Single(trend => trend.Id == "a");
+        var later = trends.Single(trend => trend.Id is not "a" and not "b");
+        var width = GhgScale.WidthOf(GhgScale.MonthIndex(1920, 1) - GhgScale.MonthIndex(1900, 1), model.TimeUnit);
+        Assert.Equal(GhgScale.XOf(GhgScale.MonthIndex(1900, 1), model.TimeUnit) + (width / 2), first.X, 6);
+        var laterWidth = GhgScale.WidthOf(GhgScale.MonthIndex(1950, 1) - GhgScale.MonthIndex(1940, 1), model.TimeUnit);
+        Assert.Equal(GhgScale.XOf(GhgScale.MonthIndex(1940, 1), model.TimeUnit) + (laterWidth / 2), later.X, 6);
+    }
+
+    /// <summary>DISL 11.5.4 across types: a trigger reusing a trend's id is drawn too, and the trend keeps the id.</summary>
+    [Fact]
+    public void ATriggerReusingATrendsId_IsStillDrawn()
+    {
+        const string text = "gartner-hypecycle-graph: 1\ntrends:\n  - id: same\n    name: A\n    start: 1900-01\n    stop: 1910-01\n    row: 0\n    phases: 4\ntriggers:\n  - id: same\n    name: T\n    date: 1899-01\n    row: 1\ninfluences: []\n";
+        var model = GhgParser.Parse(GhgBody.Parse(text));
+
+        var drawn = new GhgElementMapper().Visible(model, DiagramViewport.Unbounded);
+
+        Assert.Equal("same", Assert.Single(drawn, element => element.Type == GhgElementMapper.TrendType).Id);
+        Assert.NotEqual("same", Assert.Single(drawn, element => element.Type == GhgElementMapper.TriggerType).Id);
+    }
+
     /// <summary>The panel seam: every breach reaches the Errors and Warnings panel with its rule and line.</summary>
     [Fact]
     public async Task TheValidator_CarriesEachBreachToThePanel()

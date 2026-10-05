@@ -221,6 +221,26 @@ public sealed class GhgCommandsTests : IDisposable
     }
 
     /// <summary>
+    /// DISL 11.5.3 and 11.5.4: a later entry reusing an id is drawn as ephemeral, so a move that would
+    /// store its position is refused before it is applied, and the document is left as it was.
+    /// </summary>
+    [Fact]
+    public async Task AMoveOfALaterEntryReusingAnId_IsRefused_AndWritesNothing()
+    {
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "rule-duplicate-id.ghg"), Body, overwrite: true);
+        var before = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
+        using var historyStacks = new HistoryStackStore(_dispatcher);
+        await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(_folder));
+        var ephemeral = new GhgElementMapper().Visible(Parse(), DiagramViewport.Unbounded)
+            .Single(element => element.Type == GhgElementMapper.TrendType && element.Id is not "a" and not "b");
+
+        var error = await session.MoveElementToAsync(ephemeral.Id, GhgScale.XOf(M(1960)), GhgScale.TopOf(4), TestContext.Current.CancellationToken);
+
+        Assert.NotEqual("", error);
+        Assert.Equal(before, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>
     /// A document that could not be read is never written: its emptiness is not the document, and
     /// writing it would replace the only copy on disk.
     /// </summary>
