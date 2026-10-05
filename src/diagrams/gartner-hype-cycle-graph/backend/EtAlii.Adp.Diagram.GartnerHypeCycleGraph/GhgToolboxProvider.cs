@@ -7,8 +7,14 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// (Requirement 11.1, and ghg-triggers-and-notes Requirement 7.1).
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>Derived from the DISL definition</b> (<see cref="GhgDefinition.Toolbox"/>): its toolbox group's
+/// tools, their ids and drops from its <c>x-ghg</c> block.
+/// </para>
+/// <para>
 /// Influences are drawn, not dropped, so the palette has no item for one. The drop and the placement
 /// menu run the same action, so there is no second implementation for a drop to disagree with.
+/// </para>
 /// </remarks>
 public sealed class GhgToolboxProvider : IDiagramToolboxProvider
 {
@@ -25,25 +31,5 @@ public sealed class GhgToolboxProvider : IDiagramToolboxProvider
     public DiagramOrigin Origin => Diagram.HypeCycleGraph.Origin;
 
     /// <inheritdoc />
-    public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
-    [
-        new(
-            TrendItemId,
-            "Trend",
-            "mdi-arrow-right-bold-box-outline",
-            "A trend through the hype cycle. Drop it where it starts; it is a year long with all four phases.",
-            GhgContextActionProvider.AddTrendActionId),
-        new(
-            TriggerItemId,
-            "Trigger",
-            "mdi-circle-slice-8",
-            "A moment in time that set trends off - an invention, a political moment, a disaster. Drop it where it happened; draw influences from it.",
-            GhgContextActionProvider.AddTriggerActionId),
-        new(
-            NoteItemId,
-            "Note",
-            "mdi-note-text-outline",
-            "A remark of your own, placed where it applies. Drop it and start typing.",
-            GhgContextActionProvider.AddNoteActionId),
-    ];
+    public IReadOnlyList<ToolboxItemDefinition> Items => GhgDefinition.Toolbox;
 }

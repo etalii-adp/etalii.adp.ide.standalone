@@ -14,6 +14,11 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <b>The ids are the client's</b>, stated once in its <c>ghgIds.ts</c>, as FDG's are.
 /// </para>
 /// <para>
+/// <b>What is offered is derived from the DISL definition</b> (<see cref="GhgDefinition.Menus"/>): its
+/// context menus, their visibility, availability and groups, and the ids of its <c>x-ghg</c> block.
+/// What each action does, what it asks and what it refuses stays here.
+/// </para>
+/// <para>
 /// <b>Every action that needs no input dispatches here, in <see cref="ExecuteAsync"/></b>: a Completed
 /// execution never reaches the commit leg, so answering Completed without dispatching would do nothing.
 /// </para>
@@ -81,96 +86,10 @@ public sealed class GhgContextActionProvider : IContextActionProvider
             return Result([]);
         }
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-        if (!entry.IsUsable)
-        {
-            return Result([]);
-        }
-
-        var model = entry.Model;
-
-        // Arrange is about the whole graph, so it is offered wherever the reader is: on empty
-        // canvas and on every element alike, which keeps it in the ribbon too.
-        var arrange = new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(
-                ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
-                model.Trends.Count + model.Triggers.Count + model.Notes.Count > 0,
-                "There is nothing to arrange until this graph has a trend."),
-        ]);
-        ValueTask<IReadOnlyList<ContextActionGroupDefinition>> WithArrange(IReadOnlyList<ContextActionGroupDefinition> groups) =>
-            Result([.. groups, arrange]);
-        if (GhgEdits.TrendOf(model, target.ElementId) is { } trend)
-        {
-            List<ContextActionDefinition> actions =
-            [
-                new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            ];
-            if (trend.DraggedEnds.Any(boundary => boundary is not null))
-            {
-                actions.Add(new(EvenPhasesActionId, "Even phases", "mdi-arrow-split-vertical"));
-            }
-
-            actions.Add(new(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
-            return WithArrange([new ContextActionGroupDefinition(actions)]);
-        }
-
-        if (GhgEdits.TriggerOf(model, target.ElementId) is not null)
-        {
-            return WithArrange(
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                    new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-                ]),
-            ]);
-        }
-
-        if (GhgEdits.NoteOf(model, target.ElementId) is not null)
-        {
-            return WithArrange(
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(RenameActionId, "Edit text…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                    new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-                ]),
-            ]);
-        }
-
-        if (GhgEdits.InfluenceOf(model, target.ElementId) is not null)
-        {
-            return WithArrange(
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(DisconnectActionId, "Remove influence", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-                ]),
-            ]);
-        }
-
-        // Executing an action by id only finds actions its target discovers, so a drop and a finished
-        // gesture each discover what may be executed against them.
-        if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
-        {
-            return WithArrange(
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(AddTrendActionId, "Add trend here", "mdi-plus"),
-                    new ContextActionDefinition(AddTriggerActionId, "Add trigger here", "mdi-circle-slice-8"),
-                    new ContextActionDefinition(AddNoteActionId, "Add note here", "mdi-note-text-outline"),
-                ]),
-            ]);
-        }
-
-        if (GhgGestures.TryParseRelation(target.ElementId, out _, out _, out _, out _))
-        {
-            return Result([new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Influence", "mdi-ray-start-arrow")])]);
-        }
-
-        return Result([]);
+        // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
+        // menu, nothing offered on a read-only entry. Executing an action by id only finds actions its
+        // target discovers, so a drop and a finished gesture each discover what may be executed against them.
+        return Result(GhgDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />

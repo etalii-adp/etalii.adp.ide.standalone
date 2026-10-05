@@ -9,6 +9,8 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
     <!-- The body is read and written through FBL: the binding below, applied by the library. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+    <!-- The toolbox, the context menus and the property rows are derived from the bundled DISL definition. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>

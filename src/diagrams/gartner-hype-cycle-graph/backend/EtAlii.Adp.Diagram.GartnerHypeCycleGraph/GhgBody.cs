@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.History;
@@ -33,6 +34,7 @@ public sealed class GhgBody
     // Each read is cached with the bytes it was read from, so a change makes it stale by itself.
     private (byte[] Bytes, FblModel Model)? _model;
     private (byte[] Bytes, IReadOnlyList<Line> Lines)? _lines;
+    private (byte[] Bytes, DislModel Model)? _disl;
 
     private GhgBody(OpenBody body)
     {
@@ -67,6 +69,23 @@ public sealed class GhgBody
             if (_model is not { } model || model.Bytes != _body.Bytes)
             {
                 _model = model = (_body.Bytes, _body.Model);
+            }
+
+            return model.Model;
+        }
+    }
+
+    /// <summary>
+    /// The DISL model of what the binding reads now (<see cref="DislModelBuilder"/>, under the bundled
+    /// definition): what the context menus and the property rows are derived from.
+    /// </summary>
+    public DislModel Disl
+    {
+        get
+        {
+            if (_disl is not { } model || model.Bytes != _body.Bytes)
+            {
+                _disl = model = (_body.Bytes, DislModelBuilder.From(Model, GhgDefinition.Specification));
             }
 
             return model.Model;

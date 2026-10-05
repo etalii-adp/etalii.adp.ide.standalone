@@ -66,6 +66,7 @@ public class ContextMenuDerivationTests
 
         Assert.Empty(HypeCycle(DislMenuTarget.Element(Derivations.Element(diagram, "steam")), Readable with { ReadOnly = true }));
         Assert.Empty(HypeCycle(DislMenuTarget.Canvas(diagram), Readable with { ReadOnly = true }));
+        Assert.Empty(HypeCycle(DislMenuTarget.Connection(diagram, null, null), Readable with { ReadOnly = true }));
     }
 
     [Fact]

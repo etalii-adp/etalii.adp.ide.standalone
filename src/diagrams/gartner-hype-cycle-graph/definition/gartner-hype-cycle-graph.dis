@@ -859,7 +859,7 @@
         "standardEntries": false,
         "runSingle": true,
         "tools": [
-          { "kind": "connect", "via": "Influence", "label": "Influence", "icon": "mdi-ray-start-arrow" }
+          { "kind": "connect", "via": "Influence", "label": "Influence", "icon": "mdi-ray-start-arrow", "visible": "!env.readOnly" }
         ],
         "doc": "A finished connect gesture from a phase's edge, or a trigger's handle, to a phase of another trend."
       }
