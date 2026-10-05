@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Specification.Fbl.Expressions;
+namespace EtAlii.Adp.Specification.Cel;
 
 using System.Text;
 using System.Text.RegularExpressions;

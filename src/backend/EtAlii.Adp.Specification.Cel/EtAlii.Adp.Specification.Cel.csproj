@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- CEL, the Common Expression Language that FBL (section 2.4) and DISL (section 12) evaluate, as a
+       library that takes an expression and variables and returns a value. It references no project
+       of this solution on purpose: FBL and DISL both build on it, and neither may lend it this
+       host's own primitives. Each language keeps its own presets - FBL's contexts stay in
+       EtAlii.Adp.Specification.Fbl. -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Specification.Cel.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 
 namespace EtAlii.Adp.Specification.Fbl.Documents;
@@ -678,7 +679,7 @@ internal static class BindingChecker
         if (expression is null) return;
         try
         {
-            CelCompiler.Compile(expression, context);
+            FblCel.Compile(expression, context);
         }
         catch (CelException e)
         {

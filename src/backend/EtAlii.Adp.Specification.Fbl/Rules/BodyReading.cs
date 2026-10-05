@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Json;
@@ -216,7 +217,7 @@ internal sealed class BodyReading
         if (_programs.TryGetValue(key, out var cached)) return cached;
         try
         {
-            cached = CelCompiler.Compile(expression, context);
+            cached = FblCel.Compile(expression, context);
         }
         catch (CelException e)
         {
