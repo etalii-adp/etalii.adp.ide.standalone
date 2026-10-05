@@ -1,11 +1,12 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>
 /// Adds a trend twelve steps of the diagram's time unit long - a year in a diagram of months - from
-/// the start of the step it was dropped in, with all four phases.
+/// the start of the step it was dropped in, with all four phases: the definition's
+/// <c>addTrendHere</c> operation, run by <see cref="OperationInterpreter"/>.
 /// </summary>
 public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICommandHandler<AddGhgTrendCommand>
 {
@@ -33,20 +34,15 @@ public sealed class AddGhgTrendCommandHandler(IGhgDocumentStore documents) : ICo
                 return GhgEdit.Refused("That id is already used in this graph.");
             }
 
-            var start = GhgScale.MonthContaining(minted.X, model.TimeUnit);
-            var trend = new GhgTrend(
-                minted.TrendId,
-                GhgEdits.UniqueName(model.Trends.Select(trend => trend.Name), DefaultName),
-                start,
-                start + (DefaultMonths * model.TimeUnit.Months),
-                GhgScale.RowAtMiddle(minted.Y),
-                GhgPhases.Count,
-                [null, null, null],
-                [],
-                Description: "",
-                Range: new LineRange(0, 0));
-
-            return GhgWriter.AddTrend(document, model, trend);
+            // The definition's addTrendHere, as the toolbox's trend drop: its name, its span and its row.
+            return GhgDefinition.Apply(document, OperationInterpreter.Run(
+                GhgDefinition.Specification,
+                "addTrendHere",
+                document.Disl.Diagram,
+                null,
+                DislIds.Fixed(minted.TrendId),
+                new DislInvocation(GhgDefinition.Position(minted.X, minted.Y, model.TimeUnit)),
+                GhgDefinition.EditEnv));
         });
     }
 }

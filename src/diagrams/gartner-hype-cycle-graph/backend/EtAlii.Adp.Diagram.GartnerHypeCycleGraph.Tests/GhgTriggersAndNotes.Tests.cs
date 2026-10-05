@@ -69,10 +69,10 @@ public class GhgTriggersAndNotesTests
     {
         var document = Load("lf-line-endings.ghg");
 
-        Assert.True(GhgWriter.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t1", "First", GhgScale.MonthIndex(1800, 3), 2, ["x"], "", default)).WasApplied);
-        Assert.True(GhgWriter.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t2", "Second", GhgScale.MonthIndex(1810, 3), 2, [], "", default)).WasApplied);
-        Assert.True(GhgWriter.AddNote(document, GhgParser.Parse(document), new GhgNote("n1", "A note", GhgScale.MonthIndex(1820, 1), 0, 160, 64, default)).WasApplied);
-        Assert.True(GhgWriter.AddNote(document, GhgParser.Parse(document), new GhgNote("n2", "Two\nlines", GhgScale.MonthIndex(1830, 1), 1, 160, 64, default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t1", "First", GhgScale.MonthIndex(1800, 3), 2, ["x"], "", default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t2", "Second", GhgScale.MonthIndex(1810, 3), 2, [], "", default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddNote(document, GhgParser.Parse(document), new GhgNote("n1", "A note", GhgScale.MonthIndex(1820, 1), 0, 160, 64, default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddNote(document, GhgParser.Parse(document), new GhgNote("n2", "Two\nlines", GhgScale.MonthIndex(1830, 1), 1, 160, 64, default)).WasApplied);
 
         var lines = document.Lines.Select(line => line.Text).ToList();
         Assert.Single(lines, line => line == "triggers:");
@@ -142,7 +142,7 @@ public class GhgTriggersAndNotesTests
         var document = Load("triggers-and-notes.ghg");
         var model = GhgParser.Parse(document);
 
-        Assert.True(GhgWriter.RemoveTrigger(document, model, model.Triggers[0]).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.RemoveTrigger(document, model, model.Triggers[0]).WasApplied);
 
         var reread = Reread(document);
         Assert.Empty(reread.Triggers);

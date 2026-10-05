@@ -82,6 +82,20 @@ public sealed class DislDiagram : ICelObject
         return element;
     }
 
+    /// <summary>Takes <paramref name="element"/> out of the diagram, with its relations' ends left as they are: an action's effect on the working state (§9.4).</summary>
+    internal void Remove(DislElement element)
+    {
+        if (element.Type.IsRelation)
+        {
+            _relations.Remove(element);
+            _ends = null;
+            return;
+        }
+        element.Parent?.RemoveChild(element);
+        _nodes.Remove(element);
+        _ends = null;
+    }
+
     /// <summary>Sets diagram attribute <paramref name="name"/>, as a reader does.</summary>
     internal void SetAttribute(string name, object? value) => _attributes[name] = value;
 

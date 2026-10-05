@@ -191,8 +191,8 @@ public class GhgDocumentTests
         var a = new GhgTrend("a", "A", 22800, 22812, 0, 4, [null, null, null], ["x"], "", default);
         var b = new GhgTrend("b", "B", 22806, 22830, 1, 2, [null, null, null], [], "", default);
 
-        Assert.True(GhgWriter.AddTrend(document, GhgParser.Parse(document), a).WasApplied);
-        Assert.True(GhgWriter.AddTrend(document, GhgParser.Parse(document), b).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddTrend(document, GhgParser.Parse(document), a).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddTrend(document, GhgParser.Parse(document), b).WasApplied);
         var influence = new GhgInfluence("ab", "a", new GhgEnd("slope", "bottom", 0.25), "b", new GhgEnd("peak", "top", 0.5), "", default);
         Assert.True(GhgWriter.AddInfluence(document, GhgParser.Parse(document), influence).WasApplied);
 
@@ -220,7 +220,7 @@ public class GhgDocumentTests
         var text = "gartner-hypecycle-graph: 1\ntrends:\n  - id: a\n    name: A\n    start: 1900-01\n    stop: 1920-01\n    row: 0\n    phases: 4\n";
         var document = GhgBody.Parse(text);
 
-        var edit = GhgWriter.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t", "T", 22810, 1, [], "", default));
+        var edit = Parity.HandWrittenGhgEdits.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t", "T", 22810, 1, [], "", default));
 
         Assert.True(edit.WasApplied);
         Assert.Equal(text + "triggers:\n  - id: t\n    name: T\n    date: 1900-11\n    row: 1\n", document.Text);
@@ -231,7 +231,7 @@ public class GhgDocumentTests
     {
         var document = GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n"));
 
-        var edit = GhgWriter.AddNote(document, GhgParser.Parse(document), new GhgNote("note", "", 22810, 1, 160, 64, default));
+        var edit = Parity.HandWrittenGhgEdits.AddNote(document, GhgParser.Parse(document), new GhgNote("note", "", 22810, 1, 160, 64, default));
 
         Assert.True(edit.WasApplied);
         Assert.Contains("  - id: note\n    text: \"\"\n    at: 1900-11\n", document.Text, StringComparison.Ordinal);
@@ -255,7 +255,7 @@ public class GhgDocumentTests
         var document = Load("crlf-line-endings.ghg");
         var model = GhgParser.Parse(document);
 
-        Assert.True(GhgWriter.RemoveTrend(document, model, model.Trends[1]).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.RemoveTrend(document, model, model.Trends[1]).WasApplied);
 
         var reread = GhgParser.Parse(GhgBody.Parse(document.Text));
         Assert.Equal(["steam-engine"], reread.Trends.Select(trend => trend.Id));

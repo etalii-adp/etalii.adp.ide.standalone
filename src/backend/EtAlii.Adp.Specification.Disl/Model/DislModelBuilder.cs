@@ -52,10 +52,10 @@ public static class DislModelBuilder
         List<FblElement> unreadable = [];
         if (reading.Unreadable) return new DislModel(diagram, findings, header, unreadable, true);
 
-        var map = TypeMap.Of(specification);
+        var map = DislTypeMap.Of(specification);
         var metamodel = specification.Metamodel;
         var built = new Dictionary<FblElement, DislElement>(ReferenceEqualityComparer.Instance);
-        var pending = new List<(FblElement Element, TypeMapping Mapping, DislType Type)>();
+        var pending = new List<(FblElement Element, DislTypeMapping Mapping, DislType Type)>();
 
         foreach (var element in reading.Elements)
         {
@@ -109,7 +109,7 @@ public static class DislModelBuilder
         findings.AddRange(Complete(diagram));
         return new DislModel(diagram, findings, header, unreadable, false);
 
-        DislElement Node(FblElement element, TypeMapping mapping, DislType type)
+        DislElement Node(FblElement element, DislTypeMapping mapping, DislType type)
         {
             if (built.TryGetValue(element, out var done)) return done;
             var parent = element.ParentId is { } parentId && pending.FirstOrDefault(entry => entry.Element.Id == parentId) is { Element: not null } owner && !owner.Type.IsRelation
@@ -295,7 +295,7 @@ public static class DislModelBuilder
     /// <summary>A binding element's attributes: the metamodel's typed, the ends named, the rest kept as read.</summary>
     private static Dictionary<string, object?> Attributes(
         FblElement element,
-        TypeMapping mapping,
+        DislTypeMapping mapping,
         DislType type,
         DislMetamodel metamodel,
         out Dictionary<string, object?> host,
@@ -321,35 +321,5 @@ public static class DislModelBuilder
             }
         }
         return attributes;
-    }
-
-    /// <summary>How one binding type becomes part of the model.</summary>
-    private sealed record TypeMapping(string As, IReadOnlyDictionary<string, string> Attributes, IReadOnlySet<string> HostAttributes);
-
-    /// <summary>The specification's <c>persistence.x-persistence.typeMap</c>, or the identity mapping.</summary>
-    private sealed class TypeMap(IReadOnlyDictionary<string, TypeMapping> mappings)
-    {
-        private static readonly IReadOnlyDictionary<string, string> NoRenames = new Dictionary<string, string>();
-
-        public static TypeMap Of(DislSpecification specification)
-        {
-            var mappings = new Dictionary<string, TypeMapping>(StringComparer.Ordinal);
-            if (specification.Root.TryGetProperty("persistence", out var persistence) && persistence.TryGetProperty("x-persistence.typeMap", out var map) && map.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var entry in map.EnumerateObject())
-                {
-                    var renames = DislJson.Members(entry.Value, "attributes")
-                        .Where(member => member.Value.ValueKind == JsonValueKind.String)
-                        .ToDictionary(member => member.Name, member => member.Value.GetString()!, StringComparer.Ordinal);
-                    mappings[entry.Name] = new TypeMapping(
-                        DislJson.String(entry.Value, "as") ?? entry.Name,
-                        renames,
-                        DislJson.Strings(entry.Value, "hostAttributes").ToHashSet(StringComparer.Ordinal));
-                }
-            }
-            return new TypeMap(mappings);
-        }
-
-        public TypeMapping For(string type) => mappings.GetValueOrDefault(type) ?? new TypeMapping(type, NoRenames, new HashSet<string>());
     }
 }

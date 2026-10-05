@@ -1,4 +1,5 @@
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -18,9 +19,14 @@ public sealed class ClearGhgBoundariesCommandHandler(IGhgDocumentStore documents
                 return GhgEdits.Gone();
             }
 
-            return trend.DraggedEnds.All(boundary => boundary is null)
-                ? GhgEdit.Refused("This trend's phases are already even.")
-                : GhgWriter.SetBoundaries(document, trend, [null, null, null]);
+            // The definition's evenPhases: refused with its unavailable reason, else every boundary unset.
+            return GhgDefinition.Apply(document, OperationInterpreter.Run(
+                GhgDefinition.Specification,
+                "evenPhases",
+                document.Disl.Diagram,
+                GhgDefinition.ElementOf(document.Disl.Diagram, trend.Id),
+                DislIds.Fixed(),
+                env: GhgDefinition.EditEnv));
         });
     }
 }

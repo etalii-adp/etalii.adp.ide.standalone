@@ -129,6 +129,26 @@ public sealed class DislElement : ICelObject
 
     internal void AddChild(DislElement child) => _children.Add(child);
 
+    internal void RemoveChild(DislElement child) => _children.Remove(child);
+
+    /// <summary>Stores <paramref name="value"/> for <paramref name="name"/>, or forgets the stored value for null: an action's effect on the working state (§9.4).</summary>
+    internal void Store(string name, object? value)
+    {
+        if (!Type.Attributes.ContainsKey(name)) throw new ArgumentException($"'{name}' is not an attribute of {Type.Name}.", nameof(name));
+        if (value is null) _attributes.Remove(name);
+        else _attributes[name] = value;
+    }
+
+    /// <summary>
+    /// The element as it is now, apart from the diagram: what a hook reads as <c>old</c> (§9.2). Its
+    /// attributes are a copy, its relations are not followed, and it is equal only to itself.
+    /// </summary>
+    internal DislElement Snapshot() => new(Diagram, Type, Id, _attributes)
+    {
+        Parent = Parent, Slot = Slot, Source = Source, Target = Target, IsDerived = IsDerived, Sources = Sources,
+        IdIsStored = IdIsStored, SourceId = SourceId, TargetId = TargetId, HostAttributes = HostAttributes, Line = Line,
+    };
+
     public override string ToString() => $"{Type.Name} {Id}";
 
     /// <summary>Identity, as everywhere; the element a finding names it by its written id (<see cref="DislWrittenElement"/>) is this one too.</summary>

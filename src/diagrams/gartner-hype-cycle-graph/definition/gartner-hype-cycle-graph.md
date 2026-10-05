@@ -213,7 +213,7 @@ The backend refuses what the canvas would not offer anyway, because a request is
 - "An influence has a from end and a to end." and "An influence attaches to a phase, on its top or bottom edge, at a fraction from 0 to 1."
 - "That id is already used in this graph." and "That is no longer in this graph."
 
-**Removing with influences.** Removing a trend or trigger that has influences asks first, in a danger-styled confirmation titled "Remove" with the button "Remove": "Removing this trend also removes the 1 influence to or from it." or "… the N influences to or from it." With no influences it removes at once; a note never asks. The specification states this with a `Confirmation` whose `count` is the influences and whose `threshold` is 1.
+**Removing with influences.** Removing a trend or trigger that has influences asks first, in a danger-styled confirmation titled "Remove" with the button "Remove": "Removing this trend also removes the 1 influence to or from it." or "… the N influences to or from it." With no influences it removes at once; a note never asks. The specification states this with a `Confirmation` whose `count` is the influences, a trend's influence on itself counted once, and whose `threshold` is 1.
 
 ## What DISL 0.2 cannot express
 

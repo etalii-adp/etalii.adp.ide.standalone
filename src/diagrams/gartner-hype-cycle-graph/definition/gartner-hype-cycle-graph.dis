@@ -1239,7 +1239,7 @@
       "Trend": {
         "relations": "delete",
         "confirm": {
-          "count": "self.incoming.size() + self.outgoing.size()",
+          "count": "self.incoming.size() + self.outgoing.filter(r, r.target != self).size()",
           "threshold": 1,
           "title": "Remove",
           "message": { "cel": "'Removing this trend also removes the ' + string(count) + (count == 1 ? ' influence' : ' influences') + ' to or from it.'" },
@@ -1250,7 +1250,7 @@
       "Trigger": {
         "relations": "delete",
         "confirm": {
-          "count": "self.incoming.size() + self.outgoing.size()",
+          "count": "self.incoming.size() + self.outgoing.filter(r, r.target != self).size()",
           "threshold": 1,
           "title": "Remove",
           "message": { "cel": "'Removing this trigger also removes the ' + string(count) + (count == 1 ? ' influence' : ' influences') + ' to or from it.'" },

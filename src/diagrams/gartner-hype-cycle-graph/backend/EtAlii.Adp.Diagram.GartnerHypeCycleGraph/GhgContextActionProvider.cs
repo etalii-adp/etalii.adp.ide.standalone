@@ -2,6 +2,7 @@ using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -150,23 +151,21 @@ public sealed class GhgContextActionProvider : IContextActionProvider
 
             case RemoveActionId when trend is not null || trigger is not null || note is not null:
             {
-                // Says how many influences go with it before it runs; with none, no ceremony.
+                // The definition's deletion confirmation: how many influences go with it, asked before
+                // it runs; with none, no ceremony.
                 var id = target.ElementId;
-                var what = trend is not null ? "trend" : "trigger";
-                var going = note is not null ? 0 : model.Influences.Count(influence => influence.From == id || influence.To == id);
-                if (going == 0)
+                if (GhgDefinition.ElementOf(entry.Document.Disl.Diagram, id) is not { } element
+                    || DeletionPolicy.Confirmation(GhgDefinition.Specification, element, env: GhgDefinition.EditEnv) is not { } confirmation)
                 {
                     return await DispatchAsync(target, new RemoveGhgElementCommand(body, id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
+                    confirmation.Title,
                     "mdi-delete-outline",
-                    going == 1
-                        ? $"Removing this {what} also removes the 1 influence to or from it."
-                        : $"Removing this {what} also removes the {going} influences to or from it.",
-                    "Remove",
-                    Danger: true));
+                    confirmation.Message,
+                    confirmation.ConfirmLabel,
+                    Danger: confirmation.Danger));
             }
 
             case DisconnectActionId when GhgEdits.InfluenceOf(model, target.ElementId) is not null:

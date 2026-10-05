@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -33,16 +33,14 @@ public sealed class AddGhgNoteCommandHandler(IGhgDocumentStore documents) : ICom
                 return GhgEdit.Refused("That id is already used in this graph.");
             }
 
-            var note = new GhgNote(
-                minted.NoteId,
-                "",
-                GhgScale.MonthContaining(minted.X, model.TimeUnit),
-                (int)Math.Floor(minted.Y / GhgScale.RowStep),
-                DefaultWidth,
-                DefaultHeight,
-                new LineRange(0, 0));
-
-            return GhgWriter.AddNote(document, model, note);
+            return GhgDefinition.Apply(document, OperationInterpreter.Run(
+                GhgDefinition.Specification,
+                "addNoteHere",
+                document.Disl.Diagram,
+                null,
+                DislIds.Fixed(minted.NoteId),
+                new DislInvocation(GhgDefinition.Position(minted.X, minted.Y, model.TimeUnit)),
+                GhgDefinition.EditEnv));
         });
     }
 }

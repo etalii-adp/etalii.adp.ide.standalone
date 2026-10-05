@@ -194,7 +194,7 @@ public static class GhgPhases
     /// clamped between their neighbouring anchors with room for the phases between; a boundary beyond
     /// the last visible phase is only kept inside the span.
     /// </summary>
-    private static int?[] KeptAMonthApart(IReadOnlyList<int?> stored, int start, int stop, int phases, int pinned = -1)
+    internal static int?[] KeptAMonthApart(IReadOnlyList<int?> stored, int start, int stop, int phases, int pinned = -1)
     {
         var slots = Slots(stored);
         var inner = Math.Clamp(phases, 1, Count) - 1;

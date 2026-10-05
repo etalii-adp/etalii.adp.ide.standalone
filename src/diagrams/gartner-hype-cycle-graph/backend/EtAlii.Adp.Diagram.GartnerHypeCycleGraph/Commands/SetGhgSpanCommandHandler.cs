@@ -1,10 +1,13 @@
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
 /// <summary>Changes a trend's span, scaling its dragged boundaries with it, or a trigger's date.</summary>
 public sealed class SetGhgSpanCommandHandler(IGhgDocumentStore documents) : ICommandHandler<SetGhgSpanCommand>
 {
+    private static readonly string[] BoundaryAttributes = ["peakEnd", "troughEnd", "slopeEnd"];
+
     /// <inheritdoc />
     public Task<CommandResult> ExecuteAsync(SetGhgSpanCommand command, CancellationToken cancellationToken = default)
     {
@@ -47,7 +50,24 @@ public sealed class SetGhgSpanCommandHandler(IGhgDocumentStore documents) : ICom
                 return tooShort;
             }
 
-            var dragged = GhgPhases.Rescaled(trend.DraggedEnds, trend.Start!.Value, trend.Stop!.Value, start.Value, stop.Value, trend.VisiblePhases);
+            // The stored boundaries follow the span by the definition's rescaleBoundaries hook, then the
+            // host's clamp keeps every visible phase a month long (x-bounds.neighbour, still code).
+            if (GhgDefinition.ElementOf(document.Disl.Diagram, trend.Id) is not { } element)
+            {
+                return GhgEdits.Gone();
+            }
+
+            var old = HookRunner.Snapshot(element);
+            HookRunner.Store(element, "start", (long)start.Value);
+            HookRunner.Store(element, "stop", (long)stop.Value);
+            var hooks = HookRunner.AfterChange(GhgDefinition.Specification, element, old, ["start", "stop"], DislIds.Fixed(), GhgDefinition.EditEnv);
+            if (!hooks.WasApplied)
+            {
+                return GhgEdit.Refused(hooks.Refusal!);
+            }
+
+            int?[] scaled = [.. BoundaryAttributes.Select(name => element.Attributes.TryGetValue(name, out var month) && month is long value ? (int?)value : null)];
+            var dragged = GhgPhases.KeptAMonthApart(scaled, start.Value, stop.Value, trend.VisiblePhases);
             return GhgWriter.SetSpan(document, trend, start.Value, stop.Value, trend.Row, dragged);
         });
     }

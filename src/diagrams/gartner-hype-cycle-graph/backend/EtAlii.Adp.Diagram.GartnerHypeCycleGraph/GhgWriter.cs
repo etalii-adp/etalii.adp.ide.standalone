@@ -162,19 +162,6 @@ public static class GhgWriter
             ($"{side}At", Math.Round(end.At!.Value, 2))));
     }
 
-    /// <summary>
-    /// Removes a trend and every influence touching it - the binding's cascade - in one edit, so one
-    /// undo restores all of them (Requirement 11.2).
-    /// </summary>
-    public static GhgEdit RemoveTrend(GhgBody body, GhgModel model, GhgTrend trend)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(trend);
-
-        return body.Remove(Trend, trend.Id, trend.Range);
-    }
-
     /// <summary>Removes one influence.</summary>
     public static GhgEdit RemoveInfluence(GhgBody body, GhgInfluence influence)
     {
@@ -182,27 +169,6 @@ public static class GhgWriter
         ArgumentNullException.ThrowIfNull(influence);
 
         return body.Remove(Influence, influence.Id, influence.Range);
-    }
-
-    /// <summary>Appends a trend entry, in the indentation the document already uses.</summary>
-    public static GhgEdit AddTrend(GhgBody body, GhgModel model, GhgTrend trend)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(trend);
-
-        if (!trend.HasSpan)
-        {
-            return GhgEdit.Refused("A trend must be at least one month long.");
-        }
-
-        return body.Change(new ModelChange.Add(Trend, trend.Id, Values(
-            ("name", trend.Name),
-            ("start", GhgScale.FormatMonth(trend.Start!.Value)),
-            ("stop", GhgScale.FormatMonth(trend.Stop!.Value)),
-            ("row", trend.Row),
-            ("phases", trend.Phases),
-            ("tags", TagList(trend.Tags)))));
     }
 
     /// <summary>Appends an influence entry.</summary>
@@ -357,71 +323,6 @@ public static class GhgWriter
         values["width"] = width;
         values["height"] = height;
         return body.Set(Note, note.Id, note.Range, values);
-    }
-
-    /// <summary>
-    /// Removes a trigger and every influence touching it - the binding's cascade - in one edit
-    /// (Requirement 3.5).
-    /// </summary>
-    public static GhgEdit RemoveTrigger(GhgBody body, GhgModel model, GhgTrigger trigger)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(trigger);
-
-        return body.Remove(Trigger, trigger.Id, trigger.Range);
-    }
-
-    /// <summary>Removes one note. A note takes part in no relation, so nothing else goes with it.</summary>
-    public static GhgEdit RemoveNote(GhgBody body, GhgNote note)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(note);
-
-        return body.Remove(Note, note.Id, note.Range);
-    }
-
-    /// <summary>
-    /// Appends a trigger entry. A document without a <c>triggers:</c> list gets one before
-    /// <c>influences:</c> (the binding's <c>insert.create</c>), so it is written exactly as before
-    /// until one is added.
-    /// </summary>
-    public static GhgEdit AddTrigger(GhgBody body, GhgModel model, GhgTrigger trigger)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(trigger);
-
-        if (trigger.Date is not { } date)
-        {
-            return GhgEdit.Refused("A trigger needs a date.");
-        }
-
-        return body.Change(new ModelChange.Add(Trigger, trigger.Id, Values(
-            ("name", trigger.Name),
-            ("date", GhgScale.FormatMonth(date)),
-            ("row", trigger.Row),
-            ("tags", TagList(trigger.Tags)))));
-    }
-
-    /// <summary>Appends a note entry, opening a <c>notes:</c> list before <c>influences:</c> when the document has none.</summary>
-    public static GhgEdit AddNote(GhgBody body, GhgModel model, GhgNote note)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(note);
-
-        if (!note.IsPlaceable)
-        {
-            return GhgEdit.Refused("A note needs a position, a width and a height.");
-        }
-
-        return body.Change(new ModelChange.Add(Note, note.Id, Values(
-            ("text", Normalised(note.Text)),
-            ("at", GhgScale.FormatMonth(note.At!.Value)),
-            ("row", note.Row),
-            ("width", note.Width!.Value),
-            ("height", note.Height!.Value))));
     }
 
     private static Dictionary<string, object?> Values(params (string Attribute, object? Value)[] values) =>

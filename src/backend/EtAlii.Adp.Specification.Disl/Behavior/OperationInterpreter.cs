@@ -1,0 +1,210 @@
+using System.Text.Json;
+
+namespace EtAlii.Adp.Specification.Disl;
+
+/// <summary>What an operation is invoked with besides its target (DISL §9.3, §12.3).</summary>
+/// <param name="Position">The domain point it was invoked at, such as a context menu's on empty canvas: a map with <c>x</c> and <c>y</c>.</param>
+/// <param name="Selection">The selected elements, for an operation <c>for: "selection"</c>.</param>
+/// <param name="Parameters">The answered parameters, bound as <c>p</c>.</param>
+public sealed record DislInvocation(IReadOnlyDictionary<string, object?>? Position = null, IReadOnlyList<DislElement>? Selection = null, IReadOnlyDictionary<string, object?>? Parameters = null);
+
+/// <summary>
+/// Runs a definition's operations (DISL §9.3) and a toolbox tool's drop (§7.1) as one transaction
+/// each, into <see cref="DislChange"/>s a host writes and <see cref="HostAction"/>s it carries out.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>The diagram given is the transaction's working state</b>, changed as the actions run
+/// (<see cref="ActionRunner"/>); a host gives each transaction a diagram of its own.
+/// </para>
+/// <para>
+/// <b>An operation that is not available is refused with its reason</b>: the edit gate's
+/// (§9.1), the first of its <c>unavailable</c> reasons that applies, or, when only <c>enabled</c> is
+/// false, <c>std.notApplicable</c>. A <c>plugin</c> operation is handed back whole.
+/// </para>
+/// </remarks>
+public static class OperationInterpreter
+{
+    /// <summary>Runs operation <paramref name="operationId"/> on <paramref name="self"/> (null for one <c>for: "diagram"</c>).</summary>
+    public static DislTransaction Run(
+        DislSpecification specification,
+        string operationId,
+        DislDiagram diagram,
+        DislElement? self,
+        IIdSource ids,
+        DislInvocation? invocation = null,
+        DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(operationId);
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(ids);
+
+        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
+            || !operations.TryGetProperty(operationId, out var operation))
+        {
+            return DislTransaction.Refused($"There is no operation '{operationId}'.");
+        }
+
+        var pointer = DislJson.Pointer("/behavior/operations", operationId);
+        var variables = Variables(DislContexts.Operation, diagram, env);
+        variables["self"] = self;
+        variables["selection"] = invocation?.Selection?.Cast<object?>().ToList() ?? (self is null ? [] : [self]);
+        variables["position"] = Map(invocation?.Position);
+        variables["p"] = Map(invocation?.Parameters);
+
+        if (Unavailable(specification, operation, pointer, diagram, self, variables, operationId) is { } reason) return DislTransaction.Refused(reason);
+
+        if (operation.TryGetProperty("plugin", out var plugin))
+        {
+            var name = plugin.ValueKind == JsonValueKind.String ? plugin.GetString()! : DislJson.String(plugin, "name") ?? "";
+            return new DislTransaction([], [new HostAction.Plugin(name, new Dictionary<string, object?>())], null);
+        }
+
+        var runner = new ActionRunner(specification, diagram, ids, DislContexts.Operation);
+        if (operation.TryGetProperty("actions", out var actions)) runner.Run(actions, DislJson.Pointer(pointer, "actions"), variables);
+        return runner.Transaction;
+    }
+
+    /// <summary>
+    /// Drops toolbox tool <paramref name="toolId"/> at <paramref name="position"/> (§7.1): a <c>create</c>
+    /// of its type with its <c>initial</c> values, and its <c>after</c> (<c>select</c> or <c>editLabel</c>) handed back.
+    /// </summary>
+    public static DislTransaction Drop(
+        DislSpecification specification,
+        string toolId,
+        DislDiagram diagram,
+        IReadOnlyDictionary<string, object?> position,
+        IIdSource ids,
+        DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(ids);
+
+        if (Tool(specification, toolId) is not var (tool, pointer)) return DislTransaction.Refused($"There is no tool '{toolId}'.");
+        if (DislJson.String(tool, "creates") is not { } type || specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false } created)
+        {
+            return DislTransaction.Refused($"Tool '{toolId}' creates no node.");
+        }
+
+        var variables = Variables(DislContexts.Create, diagram, env);
+        variables["position"] = Map(position);
+        variables["elementType"] = type;
+        variables["tool"] = toolId;
+
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var property in DislJson.Members(tool, "initial"))
+        {
+            if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return DislTransaction.Refused($"{type} has no attribute '{property.Name}'.");
+            var value = property.Value.ValueKind == JsonValueKind.Object
+                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(DislJson.Pointer(pointer, "initial"), property.Name), DislContexts.Create, variables)
+                : DislValues.FromJson(property.Value, attribute, specification.Metamodel);
+            if (value is Cel.CelError error) return DislTransaction.Refused(error.Message);
+            if (value is not null) attributes[property.Name] = value;
+        }
+
+        var element = diagram.AddNode(type, ids.Next(type), attributes);
+        List<HostAction> after = DislJson.String(tool, "after") switch
+        {
+            "editLabel" => [new HostAction.EditLabel(element.Id, null)],
+            "select" or null => [new HostAction.Select([element.Id])],
+            _ => [],
+        };
+        return new DislTransaction([new DislChange.Create(type, element.Id, attributes, null, Map(position))], after, null);
+    }
+
+    /// <summary>Why operation <paramref name="operationId"/> cannot run on <paramref name="self"/> now, or null when it can.</summary>
+    public static string? Unavailable(DislSpecification specification, string operationId, DislDiagram diagram, DislElement? self, DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(diagram);
+        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
+            || !operations.TryGetProperty(operationId, out var operation))
+        {
+            return $"There is no operation '{operationId}'.";
+        }
+        var variables = Variables(DislContexts.Operation, diagram, env);
+        variables["self"] = self;
+        variables["selection"] = self is null ? new List<object?>() : [self];
+        return Unavailable(specification, operation, DislJson.Pointer("/behavior/operations", operationId), diagram, self, variables, operationId);
+    }
+
+    internal static Dictionary<string, object?> Variables(string context, DislDiagram diagram, DislEnv? env)
+    {
+        var variables = DislContexts.VariablesOf(context).ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal);
+        variables["diagram"] = diagram;
+        variables["env"] = (env ?? new DislEnv()).ToCel();
+        return variables;
+    }
+
+    private static string? Unavailable(DislSpecification specification, JsonElement operation, string pointer, DislDiagram diagram, DislElement? self, Dictionary<string, object?> variables, string operationId)
+    {
+        var applies = DislJson.Strings(operation, "for") is var targets && (targets.Count == 0 || targets.Contains("diagram") || targets.Contains("selection")
+            || self is not null && targets.Any(self.IsA));
+        if (!applies) return NotApplicable(specification, diagram, operationId);
+
+        if (specification.Root.TryGetProperty("behavior", out var behavior) && behavior.TryGetProperty("editGate", out var gate)
+            && DislEvaluation.FirstReason(specification, gate, "/behavior/editGate", DislContexts.Element, Gate(diagram, variables)) is { } gated)
+        {
+            return gated;
+        }
+        if (operation.TryGetProperty("unavailable", out var unavailable)
+            && DislEvaluation.FirstReason(specification, unavailable, DislJson.Pointer(pointer, "unavailable"), DislContexts.Operation, variables) is { } reason)
+        {
+            return reason;
+        }
+        return operation.TryGetProperty("enabled", out var enabled) && !DislEvaluation.Holds(specification, enabled, DislJson.Pointer(pointer, "enabled"), DislContexts.Operation, variables)
+            ? NotApplicable(specification, diagram, operationId)
+            : null;
+    }
+
+    private static string NotApplicable(DislSpecification specification, DislDiagram diagram, string operationId)
+    {
+        var variables = Variables(DislContexts.Element, diagram, null);
+        variables["self"] = diagram;
+        variables["operationId"] = operationId;
+        return DislEvaluation.StandardMessage(specification, "std.notApplicable", variables, "That does not apply to this selection.");
+    }
+
+    private static Dictionary<string, object?> Gate(DislDiagram diagram, Dictionary<string, object?> variables) =>
+        new(StringComparer.Ordinal) { ["self"] = diagram, ["diagram"] = diagram, ["env"] = variables["env"] };
+
+    /// <summary>The tool <paramref name="toolId"/> as the palette declares it, inline in a group or from the toolbox's library, with its pointer.</summary>
+    private static (JsonElement Tool, string Pointer)? Tool(DislSpecification specification, string toolId)
+    {
+        if (!specification.Root.TryGetProperty("toolbox", out var toolbox)) return null;
+        return toolbox.TryGetProperty("groups", out var groups) ? InGroups(groups, "/toolbox/groups") : null;
+
+        (JsonElement, string)? InGroups(JsonElement list, string at)
+        {
+            if (list.ValueKind != JsonValueKind.Array) return null;
+            var index = 0;
+            foreach (var group in list.EnumerateArray())
+            {
+                var groupAt = DislJson.Pointer(at, index++);
+                var position = 0;
+                var tools = group.TryGetProperty("tools", out var declared) && declared.ValueKind == JsonValueKind.Array ? declared.EnumerateArray().ToList() : [];
+                foreach (var entry in tools)
+                {
+                    var entryAt = DislJson.Pointer(DislJson.Pointer(groupAt, "tools"), position++);
+                    if (entry.ValueKind == JsonValueKind.String && entry.GetString() == toolId
+                        && toolbox.TryGetProperty("tools", out var library) && library.TryGetProperty(toolId, out var shared))
+                    {
+                        return (shared, DislJson.Pointer("/toolbox/tools", toolId));
+                    }
+                    if (entry.ValueKind == JsonValueKind.Object && DislJson.String(entry, "id") == toolId) return (entry, entryAt);
+                }
+                if (group.TryGetProperty("groups", out var nested) && InGroups(nested, DislJson.Pointer(groupAt, "groups")) is { } found) return found;
+            }
+            return null;
+        }
+    }
+
+    private static Cel.CelMap Map(IReadOnlyDictionary<string, object?>? values)
+    {
+        var map = new Cel.CelMap();
+        foreach (var (key, value) in values ?? new Dictionary<string, object?>()) map[key] = value;
+        return map;
+    }
+}

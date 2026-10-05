@@ -97,6 +97,39 @@ internal static class GhgDefinition
         return diagram.RelationsOfType("Influence").FirstOrDefault(relation => WrittenId(relation) == id);
     }
 
+    /// <summary>
+    /// A point on the canvas as the definition's <c>position</c> reads it (DISL §12.3), in domain
+    /// values: <c>x</c> the month index on the time axis, four canvas units per step of
+    /// <paramref name="unit"/> from 1900-01, and <c>y</c> the row, 56 units apart.
+    /// </summary>
+    public static IReadOnlyDictionary<string, object?> Position(double x, double y, GhgTimeUnit unit)
+    {
+        ArgumentNullException.ThrowIfNull(unit);
+        return new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["x"] = GhgScale.OriginMonth + (x / GhgScale.UnitsPerStep * unit.Months),
+            ["y"] = y / GhgScale.RowStep,
+        };
+    }
+
+    /// <summary>Writes the changes of <paramref name="transaction"/> into <paramref name="document"/>, in order; the first refusal, the transaction's own or the binding's, stops it.</summary>
+    public static GhgEdit Apply(GhgBody document, DislTransaction transaction)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(transaction);
+        if (!transaction.WasApplied) return GhgEdit.Refused(transaction.Refusal!);
+
+        foreach (var change in transaction.Changes)
+        {
+            var edit = document.Change(DislWrite.ToFbl(Specification, change));
+            if (!edit.WasApplied) return edit;
+        }
+        return GhgEdit.Applied;
+    }
+
+    /// <summary>What <c>env</c> reads for an edit: true time, editable.</summary>
+    public static DislEnv EditEnv { get; } = new(Viewpoint: Viewpoint);
+
     /// <summary>The id written in the document, the binding's <c>storedId</c>: empty for an entry without one.</summary>
     public static string WrittenId(DislElement element)
     {

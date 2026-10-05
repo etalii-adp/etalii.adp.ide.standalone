@@ -1,4 +1,5 @@
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -11,21 +12,10 @@ public sealed class RemoveGhgElementCommandHandler(IGhgDocumentStore documents) 
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
+        // The definition's deletion policy: the influences at a trend or trigger, then the element.
         return GhgEdits.Run(documents, command.BodyPath, command, (document, model) =>
-        {
-            if (GhgEdits.TrendOf(model, command.ElementId) is { } trend)
-            {
-                return GhgWriter.RemoveTrend(document, model, trend);
-            }
-
-            if (GhgEdits.TriggerOf(model, command.ElementId) is { } trigger)
-            {
-                return GhgWriter.RemoveTrigger(document, model, trigger);
-            }
-
-            return GhgEdits.NoteOf(model, command.ElementId) is { } note
-                ? GhgWriter.RemoveNote(document, note)
-                : GhgEdits.Gone();
-        });
+            GhgEdits.IsElement(model, command.ElementId) && GhgDefinition.ElementOf(document.Disl.Diagram, command.ElementId) is { } element
+                ? GhgDefinition.Apply(document, DeletionPolicy.Changes(GhgDefinition.Specification, element))
+                : GhgEdits.Gone());
     }
 }
