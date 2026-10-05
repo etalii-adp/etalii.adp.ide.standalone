@@ -283,7 +283,7 @@ internal abstract record CelNode
                 args.Insert(0, receiver);
             }
             scope.Budget.Charge(Function.CostOf(args));
-            return Function.Body!(new CelCall(args, scope.Budget));
+            return Function.Body!(new CelCall(args, scope.Budget) { Variables = scope.Variables });
         }
     }
 }

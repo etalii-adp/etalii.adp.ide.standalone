@@ -13,6 +13,15 @@ public enum CelCallStyle
 /// <summary>One call of a function: its arguments (a receiver first) and the budget it may charge further.</summary>
 public sealed record CelCall(IReadOnlyList<object?> Arguments, CelBudget Budget)
 {
+    private static readonly IReadOnlyDictionary<string, object?> NoVariables = new Dictionary<string, object?>();
+
+    /// <summary>
+    /// The variables the evaluation the call is part of was given - not those a comprehension or
+    /// <c>cel.bind</c> bound. A function that may read a context variable, as a DISL user function with
+    /// <c>uses</c> may read <c>diagram</c>, takes it from here.
+    /// </summary>
+    public IReadOnlyDictionary<string, object?> Variables { get; init; } = NoVariables;
+
     public object? this[int index] => Arguments[index];
 
     public int Count => Arguments.Count;

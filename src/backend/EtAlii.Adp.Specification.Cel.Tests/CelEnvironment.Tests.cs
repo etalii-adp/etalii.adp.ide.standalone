@@ -183,4 +183,18 @@ public class CelEnvironmentTests
         string s => s + s,
         _ => throw new CelException("twice() needs an int or a string."),
     };
+
+    [Fact]
+    public void AFunctionSeesTheVariablesTheEvaluationWasGiven_NotThoseAComprehensionBound()
+    {
+        // Arrange: what a DISL user function with uses: [diagram] needs - the caller's diagram.
+        var environment = CelEnvironment.Standard().DeclareVariables("diagram");
+        environment.AddFunction(new CelFunction("seen", CelCallStyle.Global, 0, 0, call => string.Join(",", call.Variables.Keys.Order(StringComparer.Ordinal))));
+
+        // Act.
+        var seen = environment.Compile("[1].map(x, cel.bind(y, x, seen()))[0]").Evaluate(new Dictionary<string, object?> { ["diagram"] = "d" });
+
+        // Assert.
+        Assert.Equal("diagram", seen);
+    }
 }

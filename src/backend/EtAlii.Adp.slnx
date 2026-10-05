@@ -43,6 +43,8 @@
   <Project Path="EtAlii.Adp.Problems.Tests/EtAlii.Adp.Problems.Tests.csproj" />
   <Project Path="EtAlii.Adp.Specification.Cel/EtAlii.Adp.Specification.Cel.csproj" />
   <Project Path="EtAlii.Adp.Specification.Cel.Tests/EtAlii.Adp.Specification.Cel.Tests.csproj" />
+  <Project Path="EtAlii.Adp.Specification.Disl/EtAlii.Adp.Specification.Disl.csproj" />
+  <Project Path="EtAlii.Adp.Specification.Disl.Tests/EtAlii.Adp.Specification.Disl.Tests.csproj" />
   <Project Path="EtAlii.Adp.Specification.Fbl/EtAlii.Adp.Specification.Fbl.csproj" />
   <Project Path="EtAlii.Adp.Specification.Fbl.Tests/EtAlii.Adp.Specification.Fbl.Tests.csproj" />
   <Project Path="EtAlii.Adp.Hierarchy/EtAlii.Adp.Hierarchy.csproj" />

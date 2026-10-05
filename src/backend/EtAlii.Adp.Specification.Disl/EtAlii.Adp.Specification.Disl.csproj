@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- DISL 0.2, the Diagram Specification Language of etalii-adp/etalii.adp, as a runtime: it loads a
+       specification (DISL section 14.1), compiles every expression of it in its CEL context
+       (section 12), and builds the elements a diagram's model holds (sections 4 and 11.5). It
+       references the CEL engine and the FBL library and no other project of this solution, on
+       purpose, as they do: what it proves about DISL must not be borrowed from this host's own
+       document primitives. Each diagram module maps what it derives onto the host's own types. -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Specification.Disl.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Cel\EtAlii.Adp.Specification.Cel.csproj" />
+    <!-- A model read through a format binding (DISL section 14.2) is built from FBL's elements. -->
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+  </ItemGroup>
+
+</Project>
