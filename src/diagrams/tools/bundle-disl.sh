@@ -41,7 +41,9 @@ done
 
 mkdir -p "$target"
 git -C "$checkout" show "HEAD:$source_dis" > "$target/$module.dis"
-git -C "$checkout" show "HEAD:$source_md" > "$target/$module.md"
+# The .md is ordinary text, CRLF in the working tree as .gitattributes asks; the .dis is -text and
+# kept byte for byte, because its sha256 is recorded below.
+git -C "$checkout" show "HEAD:$source_md" | sed -e 's/\r$//' -e 's/$/\r/' > "$target/$module.md"
 
 sha256="$(sha256sum "$target/$module.dis" | cut -d' ' -f1)"
 
