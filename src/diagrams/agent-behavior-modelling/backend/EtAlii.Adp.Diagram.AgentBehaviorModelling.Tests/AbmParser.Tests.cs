@@ -116,6 +116,28 @@ public class AbmParserTests
         Assert.Equal("1", model.NodeOf("1.1")!.ParentId);
     }
 
+    /// <summary>
+    /// A line of three or more marks of one kind, <c>-</c>, <c>*</c> or <c>_</c>, optionally separated
+    /// by spaces, is a CommonMark thematic break and not a list item, so it is no node.
+    /// </summary>
+    [Theory]
+    [InlineData("---")]
+    [InlineData("- - -")]
+    [InlineData("* * *")]
+    [InlineData("***")]
+    [InlineData("-  -  -")]
+    [InlineData("- - - -")]
+    [InlineData("-\t-\t-")]
+    [InlineData("   * * *")]
+    public void AThematicBreak_IsNoNode(string line)
+    {
+        // Act.
+        var model = Parse("## Behavior", line);
+
+        // Assert.
+        Assert.Empty(model.Nodes);
+    }
+
     [Fact]
     public void AFileWithoutASection_HasNoTree()
     {

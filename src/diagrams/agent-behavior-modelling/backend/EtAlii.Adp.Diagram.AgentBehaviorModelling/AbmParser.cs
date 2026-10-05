@@ -310,7 +310,10 @@ public static partial class AbmParser
     [GeneratedRegex(@"^ {0,3}(?<hashes>#{1,6})\s+(?<text>.*?)\s*#*\s*$", RegexOptions.CultureInvariant)]
     private static partial Regex Heading();
 
-    [GeneratedRegex(@"^(?<indent>[ \t]*)(?<marker>[-*+])(?<space>[ \t]+)(?<text>(?![-*_](\s*[-*_]){2,}\s*$)\S.*)$", RegexOptions.CultureInvariant)]
+    // A line of three or more marks of one kind, optionally separated by spaces, is a CommonMark
+    // thematic break and not an item, whatever mark it starts with: the first lookahead counts the
+    // marker itself among the three, so "- - -" and "* * *" are breaks.
+    [GeneratedRegex(@"^(?<indent>[ \t]*)(?!(?<rule>[-*])(?:[ \t]*\k<rule>){2,}[ \t]*$)(?<marker>[-*+])(?<space>[ \t]+)(?<text>(?![-*_](\s*[-*_]){2,}\s*$)\S.*)$", RegexOptions.CultureInvariant)]
     private static partial Regex Item();
 
     [GeneratedRegex(@"^\*\*(?<keyword>[^*]+?)\*\*(?<label>.*)$", RegexOptions.CultureInvariant)]
