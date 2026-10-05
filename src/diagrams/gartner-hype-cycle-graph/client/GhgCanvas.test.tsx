@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import { GhgAttachmentSchema, GhgInfluencePayloadSchema, GhgTrendPayloadSchema } from "@client/generated/gartner-hypecycle-graph_pb";
+import {
+  GhgAttachmentSchema,
+  GhgInfluencePayloadSchema,
+  GhgNotePayloadSchema,
+  GhgTrendPayloadSchema,
+  GhgTriggerPayloadSchema,
+} from "@client/generated/gartner-hypecycle-graph_pb";
 import { expectLibrarySelection } from "@client/canvas/library/testing/expectLibrarySelection";
 import { emptyModel, type GhgModel } from "./ghgModel";
 import { fakeContextConnection, idsPushed } from "@client/canvas/library/testing/canvasHarness";
@@ -133,5 +139,37 @@ describe("the hype cycle graph canvas, mounted", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // The diagram's unit is the document's, so it reaches the canvas whichever elements carry it: a
+  // diagram of triggers or notes only, in years, is drawn in years and not in months.
+  describe("draws the diagram's own unit whatever elements it holds", () => {
+    const only = (kind: "trend" | "trigger" | "note", unit: string): GhgModel => ({
+      ...emptyModel,
+      trends: kind !== "trend" ? new Map() : new Map([["t", { id: "t", x: 200, y: 16, payload: create(GhgTrendPayloadSchema, { name: "T", phases: 4, width: 400, unit }) }]]),
+      triggers: kind !== "trigger" ? new Map() : new Map([["g", { id: "g", x: 200, y: 16, payload: create(GhgTriggerPayloadSchema, { name: "G", unit }) }]]),
+      notes: kind !== "note" ? new Map() : new Map([["n", { id: "n", x: 200, y: 16, payload: create(GhgNotePayloadSchema, { text: "N", width: 160, height: 64, unit }) }]]),
+    });
+    /** The ruler's ticks, as (month, label) pairs. */
+    const rulerOf = (model: GhgModel) => {
+      currentModel = model;
+      const { container, unmount } = renderCanvas();
+      const ticks = [...container.querySelectorAll(".library-ruler-tick")].map((tick) => `${tick.getAttribute("data-at")} ${tick.textContent}`);
+      unmount();
+      return ticks;
+    };
+
+    it.each(["trend", "trigger", "note"] as const)("a diagram of one %s, in years", (kind) => {
+      // Act: the same element in the same place, once in years and once in months.
+      const years = rulerOf(only(kind, "year"));
+      const months = rulerOf(only(kind, "month"));
+
+      // Assert: the same view spans twelve times the months in years, and no rung finer than a year is labelled.
+      expect(years).not.toEqual(months);
+      expect(years.length).toBeGreaterThan(0);
+      for (const tick of years) {
+        expect(tick, "a tick finer than a year in a diagram of years").toMatch(/^-?\d+ -?\d+$/);
+      }
+    });
   });
 });

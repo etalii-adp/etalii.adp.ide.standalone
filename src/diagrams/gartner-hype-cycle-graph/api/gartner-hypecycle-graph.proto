@@ -24,9 +24,9 @@ message GhgTrendPayload {
   // The span in canvas units: months times the scale's units per month.
   double width = 5;
   // The diagram's time unit - "month", "year", "decade" or "century" - which sets the scale the
-  // width and position are drawn in. It is the same on every trend, because the diagram stream has
-  // no diagram-level payload; the client reads it from any trend it holds, and changing it changes
-  // every trend's payload bytes, so a delta carries it like any other change.
+  // width and position are drawn in. It is the same on every trend, trigger and note, because the
+  // diagram stream has no diagram-level payload; the client reads it from any of them it holds, and
+  // changing it changes every one's payload bytes, so a delta carries it like any other change.
   string unit = 6;
   // The snap origins, both 0 for a trend. Every element type binds the same two paths, so a trigger
   // can offset its own to put its centre on a step line and a row's middle.
@@ -59,6 +59,8 @@ message GhgNotePayload {
   string text = 1;
   double width = 2;
   double height = 3;
+  // The diagram's time unit, as on a trend, so a diagram of notes alone is still drawn in it.
+  string unit = 4;
 }
 
 // Where one end of an influence attaches: an edge of one phase of a trend, and how far along it.

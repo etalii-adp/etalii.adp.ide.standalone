@@ -245,7 +245,7 @@ public sealed class GhgElementMapper
 
     private static DiagramElement Note(GhgNote note, GhgTimeUnit unit)
     {
-        var payload = new GhgNotePayload { Text = note.Text, Width = note.Width!.Value, Height = note.Height!.Value };
+        var payload = new GhgNotePayload { Text = note.Text, Width = note.Width!.Value, Height = note.Height!.Value, Unit = unit.Name };
         var box = Bounds(note, unit);
         return Pack(note.Id, (box.MinX + box.MaxX) / 2, (box.MinY + box.MaxY) / 2, NoteType, payload);
     }

@@ -133,6 +133,26 @@ public sealed class GhgTimeUnitTests : IDisposable
         Assert.All(elements, element => Assert.Equal("decade", GhgTrendPayload.Parser.ParseFrom(element.Payload.ToArray()).Unit));
     }
 
+    /// <summary>
+    /// A diagram with no trend still names its unit to the canvas: every trigger and note carries it, so
+    /// a diagram of triggers or notes alone is not drawn in months.
+    /// </summary>
+    [Fact]
+    public void TheMapper_NamesTheUnit_OnEveryTriggerAndNote_WithNoTrend()
+    {
+        const string text = "gartner-hypecycle-graph: 1\nunit: year\ntrends: []\n"
+            + "triggers:\n  - id: t\n    name: T\n    date: 1947-12\n    row: 1\n"
+            + "notes:\n  - id: n\n    text: N\n    at: 1950-01\n    row: 2\n    width: 160\n    height: 64\n"
+            + "influences: []\n";
+
+        var elements = new GhgElementMapper().Visible(Parse(text), DiagramViewport.Unbounded);
+
+        var trigger = elements.Single(element => element.Type == GhgElementMapper.TriggerType);
+        var note = elements.Single(element => element.Type == GhgElementMapper.NoteType);
+        Assert.Equal("year", GhgTriggerPayload.Parser.ParseFrom(trigger.Payload.ToArray()).Unit);
+        Assert.Equal("year", GhgNotePayload.Parser.ParseFrom(note.Payload.ToArray()).Unit);
+    }
+
     /// <summary>A trend moved in a diagram of decades starts on a decade, and keeps its length.</summary>
     [Fact]
     public async Task AMove_InADiagramOfDecades_LandsOnADecade()

@@ -302,8 +302,10 @@ export function GhgCanvas({ projectId, entryId, path }: ToolContentProps) {
   // Compact places every trend by where all the others start, so it needs the whole document: while
   // it is on, the view reported to the backend is everything, not the part of the canvas on screen.
   const [compact, setCompact] = useState(false);
-  // Every trend carries the diagram's unit; an empty diagram is drawn in months until it has one.
-  const unit = timeUnitOf(model.trends.values().next().value?.payload.unit);
+  // Every trend, trigger and note carries the diagram's unit, so a diagram of triggers or notes alone
+  // is drawn in it too; an empty diagram is drawn in months until it has one.
+  const carrier = model.trends.values().next().value ?? model.triggers.values().next().value ?? model.notes.values().next().value;
+  const unit = timeUnitOf(carrier?.payload.unit);
   const dateAt = (x: number) => formatMonth(monthAt(x, unit));
 
   const diagramModel = useMemo<DiagramModel>(() => {
