@@ -53,7 +53,7 @@ public sealed class GhgProvidersTests : IDisposable
     private async Task<IReadOnlyList<ContextPropertyDefinition>> RowsOf(string elementId, GhgContextPropertyProvider? provider = null) =>
         await (provider ?? _properties).DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);
 
-    private GhgModel Parse() => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private GhgModel Parse() => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(Body)));
 
     /// <summary>The toolbox is data: its first item is the Trend, whose drop runs the add action.</summary>
     [Fact]

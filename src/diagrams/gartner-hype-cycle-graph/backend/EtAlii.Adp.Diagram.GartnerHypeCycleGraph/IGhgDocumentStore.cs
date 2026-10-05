@@ -24,7 +24,7 @@ public interface IGhgDocumentStore : IReloadableDocumentStore
     /// <see cref="GhgDocumentEntry.Unreadable"/>: its emptiness is not the document, and writing it would
     /// replace the only copy on disk.
     /// </remarks>
-    DocumentSaveResult Save(string path, LineDocument document);
+    DocumentSaveResult Save(string path, GhgBody document);
 
     /// <summary>Drops a loaded document, so the next open reads the file afresh.</summary>
     void Forget(string path);

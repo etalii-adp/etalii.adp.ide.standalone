@@ -12,8 +12,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </para>
 /// <para>
 /// <b>The first added entry opens the flow form into a block one</b>, which
-/// <see cref="LineSplice.InsertionPointFor"/> does: appending a block item under a key that
-/// already carries <c>[]</c> would leave the key with two values and the file unparseable.
+/// FBL's yaml family does (FBL §6.2): appending a block item under a key that already carries
+/// <c>[]</c> would leave the key with two values and the file unparseable.
 /// </para>
 /// <para>
 /// <b>It is also the module's <see cref="IDiagramDocumentFactory"/>, and the host will not start

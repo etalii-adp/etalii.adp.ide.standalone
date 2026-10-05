@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -147,14 +146,14 @@ public sealed class GhgSessionTests : IDisposable
         return session;
     }
 
-    private GhgModel Parse() => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private GhgModel Parse() => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(Body)));
 
-    private static GhgTrend Trend(LineDocument document, string id) =>
+    private static GhgTrend Trend(GhgBody document, string id) =>
         GhgParser.Parse(document).Trends.Single(trend => trend.Id == id);
 
-    private void Edit(Func<LineDocument, GhgEdit> edit)
+    private void Edit(Func<GhgBody, GhgEdit> edit)
     {
-        var document = LineDocument.Parse(File.ReadAllText(Body));
+        var document = GhgBody.Parse(File.ReadAllText(Body));
         Assert.True(edit(document).WasApplied);
         File.WriteAllText(Body, document.Text);
         _store.Reload(Body);

@@ -11,9 +11,9 @@ public class GhgTriggersAndNotesTests
 {
     private static string FixturePath(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
-    private static LineDocument Load(string name) => LineDocument.Parse(File.ReadAllText(FixturePath(name)));
+    private static GhgBody Load(string name) => GhgBody.Parse(File.ReadAllText(FixturePath(name)));
 
-    private static GhgModel Reread(LineDocument document) => GhgParser.Parse(LineDocument.Parse(document.Text));
+    private static GhgModel Reread(GhgBody document) => GhgParser.Parse(GhgBody.Parse(document.Text));
 
     [Fact]
     public void TriggersAndNotes_ReadEveryKeyTheDesignStates()
@@ -157,7 +157,7 @@ public class GhgTriggersAndNotesTests
         var model = GhgParser.Parse(document);
 
         Assert.True(GhgWriter.SetPlacement(document, model.Triggers[0], GhgScale.MonthIndex(1948, 6), 2).WasApplied);
-        Assert.True(GhgWriter.SetSize(document, GhgParser.Parse(LineDocument.Parse(document.Text)).Notes[1], GhgScale.MonthIndex(1959, 1), 5, 200.5, 48).WasApplied);
+        Assert.True(GhgWriter.SetSize(document, GhgParser.Parse(GhgBody.Parse(document.Text)).Notes[1], GhgScale.MonthIndex(1959, 1), 5, 200.5, 48).WasApplied);
 
         var reread = Reread(document);
         Assert.Equal((GhgScale.MonthIndex(1948, 6), 2), (reread.Triggers[0].Date!.Value, reread.Triggers[0].Row));
@@ -170,7 +170,7 @@ public class GhgTriggersAndNotesTests
     public void AMalformedTriggerOrNote_IsKeptAndReported()
     {
         const string text = "gartner-hypecycle-graph: 1\ntrends: []\ntriggers:\n  - just text\n  - id: t\n    name: T\n    date: 1900-01\n    row: two\n    colour: red\nnotes:\n  - id: n\n    text: x\n    at: never\n    row: 0\n    width: wide\n    height: 10\ninfluences: []\n";
-        var document = LineDocument.Parse(text);
+        var document = GhgBody.Parse(text);
 
         var model = GhgParser.Parse(document);
 
@@ -188,7 +188,7 @@ public class GhgTriggersAndNotesTests
     {
         const string text = "gartner-hypecycle-graph: 1\ntrends:\n  - id: same\n    name: A\n    start: 1900-01\n    stop: 1910-01\n    row: 0\n    phases: 4\ntriggers:\n  - id: same\n    name: T\n    date: 1899-01\n    row: 1\ninfluences: []\n";
 
-        var breach = Assert.Single(GhgValidator.Validate(LineDocument.Parse(text)));
+        var breach = Assert.Single(GhgValidator.Validate(GhgBody.Parse(text)));
 
         Assert.Equal(GhgRuleIds.DuplicateId, breach.RuleId);
     }
@@ -199,7 +199,9 @@ public class GhgTriggersAndNotesTests
         var document = Load("triggers-and-notes.ghg");
         var model = GhgParser.Parse(document);
         var influence = model.Influences.Single(entry => entry.Id == "i-12");
-        document.Insert(influence.Range.Start + 2, ["    from-phase: peak"]);
+        var lines = document.Lines.Select(line => line.Text + line.Ending).ToList();
+        lines.Insert(influence.Range.Start + 2, "    from-phase: peak" + lines[0][^(lines[0].EndsWith("\r\n", StringComparison.Ordinal) ? 2 : 1)..]);
+        document = GhgBody.Parse(string.Concat(lines));
 
         var reread = Reread(document);
 

@@ -71,6 +71,20 @@ internal static partial class YamlScalars
         return true;
     }
 
+    /// <summary>
+    /// Whether <paramref name="value"/> can be written in plain style, which a kept plain style and an
+    /// attribute's <c>style: plain</c> ask for (FBL §6.3): plain-safe, or a <c>-</c> followed by a
+    /// non-space that is otherwise plain-safe, which YAML reads as a plain string rather than a sequence
+    /// entry (<c>-3200-01</c>), as long as it reads back as that string under both schemas.
+    /// </summary>
+    public static bool IsPlainWritable(string value, bool timeTyped)
+    {
+        if (IsPlainSafe(value, timeTyped)) return true;
+        if (value.Length < 2 || value[0] != '-' || char.IsWhiteSpace(value[1]) || value.StartsWith("---", StringComparison.Ordinal)) return false;
+        if (!IsPlainSafe("x" + value[1..], timeTyped)) return false;
+        return Typed(value) is string && !(Yaml11Number().IsMatch(value) && value.Any(char.IsAsciiDigit));
+    }
+
     public static string DoubleQuoted(string value)
     {
         var builder = new StringBuilder("\"");

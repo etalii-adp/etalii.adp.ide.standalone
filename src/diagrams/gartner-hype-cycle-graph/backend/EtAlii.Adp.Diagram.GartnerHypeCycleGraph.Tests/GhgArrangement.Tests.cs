@@ -17,7 +17,7 @@ public class GhgArrangementTests
     public void EveryExample_ArrangesWithoutOverlap_InNoMoreRowsThanItHad(string example)
     {
         // Arrange.
-        var model = GhgParser.Parse(LineDocument.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(example))));
+        var model = GhgParser.Parse(GhgBody.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(example))));
         var trends = model.Trends.Where(trend => trend.HasSpan).ToList();
 
         // Act.
@@ -42,7 +42,7 @@ public class GhgArrangementTests
     public void InfluencedTrends_AreArrangedOnRowsCloseTogether()
     {
         // Arrange: a far-off trend that influences one at the bottom of a stack of three.
-        var model = GhgParser.Parse(LineDocument.Parse("""
+        var model = GhgParser.Parse(GhgBody.Parse("""
             gartner-hypecycle-graph: 1
             trends:
               - id: a

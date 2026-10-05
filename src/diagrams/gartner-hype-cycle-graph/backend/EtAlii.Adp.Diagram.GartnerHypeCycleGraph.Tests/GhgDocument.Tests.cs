@@ -1,5 +1,4 @@
 using System.Text;
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -23,7 +22,7 @@ public class GhgDocumentTests
 
     private static byte[] Bytes(string name) => File.ReadAllBytes(FixturePath(name));
 
-    private static LineDocument Load(string name) => LineDocument.Parse(File.ReadAllText(FixturePath(name)));
+    private static GhgBody Load(string name) => GhgBody.Parse(File.ReadAllText(FixturePath(name)));
 
     public static TheoryData<string> EveryFixture =>
     [
@@ -44,7 +43,7 @@ public class GhgDocumentTests
     {
         var original = Bytes(fixture);
 
-        var document = LineDocument.Parse(Encoding.UTF8.GetString(original));
+        var document = GhgBody.Parse(Encoding.UTF8.GetString(original));
         _ = GhgParser.Parse(document);
 
         Assert.Equal(original, Encoding.UTF8.GetBytes(document.Text));
@@ -165,7 +164,7 @@ public class GhgDocumentTests
         Assert.Equal("    slope-end: 1900-01", lines[phases + 2]);
         Assert.DoesNotContain("\r", document.Text, StringComparison.Ordinal);
 
-        var reread = GhgParser.Parse(LineDocument.Parse(document.Text)).Trends.Single(trend => trend.Id == "railways");
+        var reread = GhgParser.Parse(GhgBody.Parse(document.Text)).Trends.Single(trend => trend.Id == "railways");
         Assert.True(GhgWriter.SetBoundaries(document, reread, [null, null, null]).WasApplied);
         Assert.Equal(File.ReadAllText(FixturePath("lf-line-endings.ghg")), document.Text);
     }
@@ -177,7 +176,7 @@ public class GhgDocumentTests
 
         Assert.Equal("gartner-hypecycle-graph: 1\ntrends: []\ninfluences: []\n", text);
 
-        var model = GhgParser.Parse(LineDocument.Parse(text));
+        var model = GhgParser.Parse(GhgBody.Parse(text));
         Assert.Equal(GhgModel.CurrentVersion, model.Version);
         Assert.Empty(model.Trends);
         Assert.Empty(model.Influences);
@@ -188,7 +187,7 @@ public class GhgDocumentTests
     [Fact]
     public void AddingToAnEmptyDocument_OpensBothFlowSections()
     {
-        var document = LineDocument.Parse(GhgDocumentFactory.EmptyDocument("\n"));
+        var document = GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n"));
         var a = new GhgTrend("a", "A", 22800, 22812, 0, 4, [null, null, null], ["x"], "", default);
         var b = new GhgTrend("b", "B", 22806, 22830, 1, 2, [null, null, null], [], "", default);
 
@@ -197,11 +196,57 @@ public class GhgDocumentTests
         var influence = new GhgInfluence("ab", "a", new GhgEnd("slope", "bottom", 0.25), "b", new GhgEnd("peak", "top", 0.5), "", default);
         Assert.True(GhgWriter.AddInfluence(document, GhgParser.Parse(document), influence).WasApplied);
 
-        var reread = GhgParser.Parse(LineDocument.Parse(document.Text));
+        var reread = GhgParser.Parse(GhgBody.Parse(document.Text));
         Assert.Empty(reread.Problems);
         Assert.Equal(["a", "b"], reread.Trends.Select(trend => trend.Id));
         Assert.Equal(new GhgEnd("slope", "bottom", 0.25), Assert.Single(reread.Influences).FromEnd);
         Assert.Empty(GhgValidator.Validate(reread));
+    }
+
+    [Fact]
+    public void AddingAnInfluenceWithoutAnInfluencesSection_IsRefusedInTheModulesOwnWords()
+    {
+        var document = GhgBody.Parse("gartner-hypecycle-graph: 1\ntrends:\n  - id: a\n    name: A\n    start: 1900-01\n    stop: 1920-01\n    row: 0\n    phases: 4\n");
+        var influence = new GhgInfluence("aa", "a", new GhgEnd("slope", "bottom", 0.25), "a", new GhgEnd("peak", "top", 0.5), "", default);
+
+        var edit = GhgWriter.AddInfluence(document, GhgParser.Parse(document), influence);
+
+        Assert.Equal("The document has no `influences:` section to add to.", edit.Refusal);
+    }
+
+    [Fact]
+    public void AddingATriggerWithoutAnInfluencesSection_OpensItsListAtTheEnd()
+    {
+        var text = "gartner-hypecycle-graph: 1\ntrends:\n  - id: a\n    name: A\n    start: 1900-01\n    stop: 1920-01\n    row: 0\n    phases: 4\n";
+        var document = GhgBody.Parse(text);
+
+        var edit = GhgWriter.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t", "T", 22810, 1, [], "", default));
+
+        Assert.True(edit.WasApplied);
+        Assert.Equal(text + "triggers:\n  - id: t\n    name: T\n    date: 1900-11\n    row: 1\n", document.Text);
+    }
+
+    [Fact]
+    public void AddingANoteWithNoText_WritesItsTextEmpty()
+    {
+        var document = GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n"));
+
+        var edit = GhgWriter.AddNote(document, GhgParser.Parse(document), new GhgNote("note", "", 22810, 1, 160, 64, default));
+
+        Assert.True(edit.WasApplied);
+        Assert.Contains("  - id: note\n    text: \"\"\n    at: 1900-11\n", document.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MovingATrendBeforeYearOne_WritesItsMonthsPlain()
+    {
+        var document = Load("lf-line-endings.ghg");
+        var trend = GhgParser.Parse(document).Trends[0];
+
+        var edit = GhgWriter.SetSpan(document, trend, -3200 * 12, -3180 * 12, trend.Row, [null, null, null]);
+
+        Assert.True(edit.WasApplied);
+        Assert.Contains("    start: -3200-01\n    stop: -3180-01\n", document.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -212,7 +257,7 @@ public class GhgDocumentTests
 
         Assert.True(GhgWriter.RemoveTrend(document, model, model.Trends[1]).WasApplied);
 
-        var reread = GhgParser.Parse(LineDocument.Parse(document.Text));
+        var reread = GhgParser.Parse(GhgBody.Parse(document.Text));
         Assert.Equal(["steam-engine"], reread.Trends.Select(trend => trend.Id));
         Assert.Empty(reread.Influences);
     }
@@ -229,6 +274,6 @@ public class GhgDocumentTests
 
         Assert.Equal(before, document.Lines.Count);
         Assert.Contains("    tags: [energy, \"a, b\", \"c:d\"]", document.Text, StringComparison.Ordinal);
-        Assert.Equal(["energy", "a, b", "c:d"], GhgParser.Parse(LineDocument.Parse(document.Text)).Trends[0].Tags);
+        Assert.Equal(["energy", "a, b", "c:d"], GhgParser.Parse(GhgBody.Parse(document.Text)).Trends[0].Tags);
     }
 }

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -242,7 +241,7 @@ public sealed class GhgCommandsTests : IDisposable
         var edited = await new GhgTestDispatcher(store).DispatchAsync(
             new RenameGhgElementCommand(Body, "railways", "Railroads"),
             TestContext.Current.CancellationToken);
-        var saved = store.Save(Body, LineDocument.Parse(GhgDocumentFactory.EmptyDocument("\n")));
+        var saved = store.Save(Body, GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n")));
 
         Assert.False(edited.IsSuccess);
         Assert.True(saved.Failed);
@@ -252,5 +251,5 @@ public sealed class GhgCommandsTests : IDisposable
     private static int Touching(GhgModel model, string id) =>
         model.Influences.Count(influence => influence.From == id || influence.To == id);
 
-    private GhgModel Parse() => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private GhgModel Parse() => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(Body)));
 }

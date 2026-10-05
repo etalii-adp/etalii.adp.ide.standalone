@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -39,7 +38,7 @@ public sealed class GhgTimeUnitTests : IDisposable
         + "  - id: printing\n    name: Printing\n    start: 1440-01\n    stop: 1700-01\n    row: 2\n    phases: 4\n"
         + "influences:\n";
 
-    private static GhgModel Parse(string text) => GhgParser.Parse(LineDocument.Parse(text));
+    private static GhgModel Parse(string text) => GhgParser.Parse(GhgBody.Parse(text));
 
     [Theory]
     [InlineData("month", 1)]

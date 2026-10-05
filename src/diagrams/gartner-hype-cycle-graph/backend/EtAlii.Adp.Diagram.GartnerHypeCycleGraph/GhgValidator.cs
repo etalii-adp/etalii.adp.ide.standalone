@@ -20,7 +20,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 public sealed class GhgValidator : IDiagramValidator
 {
     /// <summary>Everything wrong with the document, parse problems and rule breaches together.</summary>
-    public static IReadOnlyList<GhgBreach> Validate(LineDocument document)
+    public static IReadOnlyList<GhgBreach> Validate(GhgBody document)
     {
         ArgumentNullException.ThrowIfNull(document);
         return GhgRuleSet.Breaches(GhgParser.Parse(document));
@@ -40,7 +40,7 @@ public sealed class GhgValidator : IDiagramValidator
 
         IReadOnlyList<DiagramProblem> problems =
         [
-            .. Validate(LineDocument.Parse(request.Document)).Select(breach => new DiagramProblem(
+            .. Validate(GhgBody.Parse(request.Document)).Select(breach => new DiagramProblem(
                 DiagramProblemSeverity.Warning,
                 breach.Message,
                 breach.RuleId,

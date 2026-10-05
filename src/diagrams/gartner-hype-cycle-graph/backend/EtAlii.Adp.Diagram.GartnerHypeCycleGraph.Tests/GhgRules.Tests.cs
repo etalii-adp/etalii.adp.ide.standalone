@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -9,8 +8,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </summary>
 public class GhgRulesTests
 {
-    private static LineDocument Load(string name) =>
-        LineDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name)));
+    private static GhgBody Load(string name) =>
+        GhgBody.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name)));
 
     public static TheoryData<string, string> EveryRule => new()
     {

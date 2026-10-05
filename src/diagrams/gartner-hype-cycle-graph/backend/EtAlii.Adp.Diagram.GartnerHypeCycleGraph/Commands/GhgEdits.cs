@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -26,7 +25,7 @@ internal static class GhgEdits
         IGhgDocumentStore documents,
         string bodyPath,
         ICommand self,
-        Func<LineDocument, GhgModel, GhgEdit> edit)
+        Func<GhgBody, GhgModel, GhgEdit> edit)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
@@ -41,7 +40,7 @@ internal static class GhgEdits
         }
 
         var before = entry.Document.Text;
-        var document = LineDocument.Parse(before);
+        var document = GhgBody.Parse(before);
         var outcome = edit(document, GhgParser.Parse(document));
         if (!outcome.WasApplied)
         {
