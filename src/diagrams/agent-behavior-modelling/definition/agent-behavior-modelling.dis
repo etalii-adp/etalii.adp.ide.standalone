@@ -1771,6 +1771,7 @@
         "tools": [
           {
             "kind": "editLabel",
+            "x-menu.group": "edit",
             "label": "Rename…",
             "icon": "mdi-pencil-outline",
             "shortcut": "F2"
@@ -1778,23 +1779,27 @@
           {
             "kind": "operation",
             "operation": "editNotes",
+            "x-menu.group": "edit",
             "label": "Edit notes…",
             "icon": "mdi-note-text-outline"
           },
           {
             "kind": "moveUp",
+            "x-menu.group": "edit",
             "label": "Move earlier",
             "icon": "mdi-arrow-left",
             "shortcut": "Alt+Up"
           },
           {
             "kind": "moveDown",
+            "x-menu.group": "edit",
             "label": "Move later",
             "icon": "mdi-arrow-right",
             "shortcut": "Alt+Down"
           },
           {
             "kind": "delete",
+            "x-menu.group": "edit",
             "label": "Remove",
             "icon": "mdi-delete-outline",
             "shortcut": "Delete"
@@ -1802,6 +1807,7 @@
           {
             "kind": "operation",
             "operation": "addChild",
+            "x-menu.group": "add",
             "forEach": "kinds()",
             "as": "kind",
             "label": {
@@ -1816,6 +1822,7 @@
           {
             "kind": "operation",
             "operation": "arrangeFromNode",
+            "x-menu.group": "arrange",
             "label": "Arrange diagram",
             "icon": "mdi-sitemap-outline"
           }
@@ -1831,6 +1838,7 @@
           {
             "kind": "operation",
             "operation": "addHere",
+            "x-menu.group": "add",
             "forEach": "kinds()",
             "as": "kind",
             "label": {
@@ -1844,6 +1852,7 @@
           {
             "kind": "operation",
             "operation": "arrange",
+            "x-menu.group": "arrange",
             "label": "Arrange diagram",
             "icon": "mdi-sitemap-outline"
           }

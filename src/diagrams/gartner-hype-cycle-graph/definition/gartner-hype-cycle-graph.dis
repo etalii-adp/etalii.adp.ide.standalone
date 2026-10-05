@@ -805,10 +805,10 @@
         "placement": "menu",
         "standardEntries": false,
         "tools": [
-          { "kind": "editLabel", "label": "Rename…", "icon": "mdi-pencil-outline", "shortcut": "F2", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "evenPhases", "label": "Even phases", "icon": "mdi-arrow-split-vertical", "visible": "!env.readOnly && (has(self.peakEnd) || has(self.troughEnd) || has(self.slopeEnd))" },
-          { "kind": "delete", "label": "Remove", "icon": "mdi-delete-outline", "shortcut": "Delete", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
+          { "kind": "editLabel", "x-menu.group": "edit", "label": "Rename…", "icon": "mdi-pencil-outline", "shortcut": "F2", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "evenPhases", "x-menu.group": "edit", "label": "Even phases", "icon": "mdi-arrow-split-vertical", "visible": "!env.readOnly && (has(self.peakEnd) || has(self.troughEnd) || has(self.slopeEnd))" },
+          { "kind": "delete", "x-menu.group": "edit", "label": "Remove", "icon": "mdi-delete-outline", "shortcut": "Delete", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "arrange", "x-menu.group": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
         ]
       },
       {
@@ -816,9 +816,9 @@
         "placement": "menu",
         "standardEntries": false,
         "tools": [
-          { "kind": "editLabel", "label": "Rename…", "icon": "mdi-pencil-outline", "shortcut": "F2", "visible": "!env.readOnly" },
-          { "kind": "delete", "label": "Remove", "icon": "mdi-delete-outline", "shortcut": "Delete", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
+          { "kind": "editLabel", "x-menu.group": "edit", "label": "Rename…", "icon": "mdi-pencil-outline", "shortcut": "F2", "visible": "!env.readOnly" },
+          { "kind": "delete", "x-menu.group": "edit", "label": "Remove", "icon": "mdi-delete-outline", "shortcut": "Delete", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "arrange", "x-menu.group": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
         ]
       },
       {
@@ -826,9 +826,9 @@
         "placement": "menu",
         "standardEntries": false,
         "tools": [
-          { "kind": "editLabel", "label": "Edit text…", "icon": "mdi-pencil-outline", "shortcut": "F2", "visible": "!env.readOnly" },
-          { "kind": "delete", "label": "Remove", "icon": "mdi-delete-outline", "shortcut": "Delete", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
+          { "kind": "editLabel", "x-menu.group": "edit", "label": "Edit text…", "icon": "mdi-pencil-outline", "shortcut": "F2", "visible": "!env.readOnly" },
+          { "kind": "delete", "x-menu.group": "edit", "label": "Remove", "icon": "mdi-delete-outline", "shortcut": "Delete", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "arrange", "x-menu.group": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
         ]
       },
       {
@@ -836,8 +836,8 @@
         "placement": "menu",
         "standardEntries": false,
         "tools": [
-          { "kind": "delete", "label": "Remove influence", "icon": "mdi-vector-polyline-remove", "shortcut": "Delete", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
+          { "kind": "delete", "x-menu.group": "edit", "label": "Remove influence", "icon": "mdi-vector-polyline-remove", "shortcut": "Delete", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "arrange", "x-menu.group": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
         ]
       },
       {
@@ -846,10 +846,10 @@
         "placement": "menu",
         "standardEntries": false,
         "tools": [
-          { "kind": "operation", "operation": "addTrendHere", "label": "Add trend here", "icon": "mdi-plus", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "addTriggerHere", "label": "Add trigger here", "icon": "mdi-circle-slice-8", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "addNoteHere", "label": "Add note here", "icon": "mdi-note-text-outline", "visible": "!env.readOnly" },
-          { "kind": "operation", "operation": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
+          { "kind": "operation", "operation": "addTrendHere", "x-menu.group": "add", "label": "Add trend here", "icon": "mdi-plus", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "addTriggerHere", "x-menu.group": "add", "label": "Add trigger here", "icon": "mdi-circle-slice-8", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "addNoteHere", "x-menu.group": "add", "label": "Add note here", "icon": "mdi-note-text-outline", "visible": "!env.readOnly" },
+          { "kind": "operation", "operation": "arrange", "x-menu.group": "arrange", "label": "Arrange diagram", "icon": "mdi-sitemap-outline", "visible": "!env.readOnly" }
         ],
         "doc": "Empty canvas in true time only: a compact x is no date, so compact has no background menu."
       },
@@ -898,26 +898,26 @@
           { "attribute": "slopeEnd", "label": "Slope ends", "widget": "text", "visible": "visiblePhases(self) >= 4", "x-field.display": { "cel": "monthText(phaseBoundaries(self)[2])" }, "validate": [ { "rule": "parseYearMonth(string(value)).hasValue()", "message": { "cel": "'\\'' + string(value) + '\\' is not a date; write it as YYYY-MM, such as 2007-06.'" }, "timing": "commit" } ] }
         ] },
         { "kind": "section", "label": "Peak", "items": [
-          { "kind": "computed", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'peak').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
-          { "kind": "computed", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'peak').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
+          { "kind": "computed", "x-field.id": "peakInfluences", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'peak').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
+          { "kind": "computed", "x-field.id": "peakInfluencedBy", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'peak').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
         ] },
         { "kind": "section", "label": { "cel": "visiblePhases(self) >= 2 ? 'Trough' : 'Trough (hidden)'" },
           "visible": "visiblePhases(self) >= 2 || self.outgoingOf('Influence').exists(r, r.?fromPhase.orValue('') == 'trough') || self.incomingOf('Influence').exists(r, r.?toPhase.orValue('') == 'trough')",
           "items": [
-          { "kind": "computed", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'trough').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
-          { "kind": "computed", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'trough').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
+          { "kind": "computed", "x-field.id": "troughInfluences", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'trough').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
+          { "kind": "computed", "x-field.id": "troughInfluencedBy", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'trough').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
         ] },
         { "kind": "section", "label": { "cel": "visiblePhases(self) >= 3 ? 'Slope' : 'Slope (hidden)'" },
           "visible": "visiblePhases(self) >= 3 || self.outgoingOf('Influence').exists(r, r.?fromPhase.orValue('') == 'slope') || self.incomingOf('Influence').exists(r, r.?toPhase.orValue('') == 'slope')",
           "items": [
-          { "kind": "computed", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'slope').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
-          { "kind": "computed", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'slope').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
+          { "kind": "computed", "x-field.id": "slopeInfluences", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'slope').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
+          { "kind": "computed", "x-field.id": "slopeInfluencedBy", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'slope').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
         ] },
         { "kind": "section", "label": { "cel": "visiblePhases(self) >= 4 ? 'Plateau' : 'Plateau (hidden)'" },
           "visible": "visiblePhases(self) >= 4 || self.outgoingOf('Influence').exists(r, r.?fromPhase.orValue('') == 'plateau') || self.incomingOf('Influence').exists(r, r.?toPhase.orValue('') == 'plateau')",
           "items": [
-          { "kind": "computed", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'plateau').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
-          { "kind": "computed", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'plateau').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
+          { "kind": "computed", "x-field.id": "plateauInfluences", "label": "Influence", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'plateau').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
+          { "kind": "computed", "x-field.id": "plateauInfluencedBy", "label": "Influenced by", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.incomingOf('Influence').filter(r, r.?toPhase.orValue('') == 'plateau').map(r, endText(r.source, r.?fromPhase.orValue(''))))" } }
         ] }
       ]
     },
@@ -1377,6 +1377,52 @@
       "Influence": { "as": "Influence", "attributes": { "from": "source", "to": "target" }, "hostAttributes": [ "storedId", "unknownKeys" ] },
       "Unreadable": { "as": "unreadable" },
       "doc": "The FBL binding's element types and attributes, mapped onto this metamodel. The binding reads an influence as an element with reference attributes, so one whose end names nothing is kept and reported, and the unit and header as elements of their own."
+    }
+  },
+
+  "x-ghg": {
+    "doc": "Today's wire ids, which the standalone client (client/ghgIds.ts) and backend share, mapped from this specification's names, as x-abm does for the behavior model. A tool is keyed by its id. An action is keyed by its entry's operation, else its kind; a key \"<Type>/<operation>\" or \"<Type>/<kind>\" overrides that for the entries offered on <Type>. A property is keyed by its form item's x-field.id, else its attribute, else a computed item's label.",
+    "tools": {
+      "trend": { "id": "ghg.toolbox.trend", "drop": "ghg.add.trend" },
+      "trigger": { "id": "ghg.toolbox.trigger", "drop": "ghg.add.trigger" },
+      "note": { "id": "ghg.toolbox.note", "drop": "ghg.add.note" }
+    },
+    "actions": {
+      "editLabel": "ghg.rename",
+      "delete": "ghg.remove",
+      "Influence/delete": "ghg.disconnect",
+      "evenPhases": "ghg.even-phases",
+      "arrange": "ghg.arrange",
+      "addTrendHere": "ghg.add.trend",
+      "addTriggerHere": "ghg.add.trigger",
+      "addNoteHere": "ghg.add.note",
+      "connect": "ghg.connect.influence"
+    },
+    "properties": {
+      "name": "ghg.name",
+      "description": "ghg.description",
+      "tags": "ghg.tags",
+      "start": "ghg.start",
+      "stop": "ghg.stop",
+      "date": "ghg.date",
+      "text": "ghg.text",
+      "Size": "ghg.size",
+      "phases": "ghg.phases",
+      "peakEnd": "ghg.peak-end",
+      "troughEnd": "ghg.trough-end",
+      "slopeEnd": "ghg.slope-end",
+      "peakInfluences": "ghg.peak-influences",
+      "peakInfluencedBy": "ghg.peak-influenced-by",
+      "troughInfluences": "ghg.trough-influences",
+      "troughInfluencedBy": "ghg.trough-influenced-by",
+      "slopeInfluences": "ghg.slope-influences",
+      "slopeInfluencedBy": "ghg.slope-influenced-by",
+      "plateauInfluences": "ghg.plateau-influences",
+      "plateauInfluencedBy": "ghg.plateau-influenced-by",
+      "From": "ghg.from",
+      "To": "ghg.to",
+      "From attachment": "ghg.from-attachment",
+      "To attachment": "ghg.to-attachment"
     }
   }
 }

@@ -82,7 +82,7 @@ One line each, with the project that owns it. Their internals are deliberately o
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
 | Reading and writing bodies through FBL bindings | `EtAlii.Adp.Specification.Fbl` |
 | Evaluating CEL expressions, for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
-| Loading DISL specifications and the bundled definitions, and building a diagram's model from a reading | `EtAlii.Adp.Specification.Disl` |
+| Loading DISL specifications and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus and property rows | `EtAlii.Adp.Specification.Disl` |
 
 For how a subsystem behaves rather than which project holds it, read [`tech.md`](../.spec-workflow/steering/tech.md).
 

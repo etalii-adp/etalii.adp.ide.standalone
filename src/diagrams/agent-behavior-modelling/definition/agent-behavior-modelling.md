@@ -107,13 +107,14 @@ The rule ids, in `backend/…/AbmRuleSet.cs`, reach the Errors and Warnings pane
 
 ## What DISL 0.2 and FBL 0.1 cannot state yet
 
-Five behaviours have no construct yet. The `.dis` states each through an `x-` key shaped as the construct proposed for the specification, so that once a proposal is accepted the key is renamed and nothing else changes:
+Six behaviours have no construct yet. The `.dis` states each through an `x-` key shaped as the construct proposed for the specification, so that once a proposal is accepted the key is renamed and nothing else changes:
 
 1. **Drop placement under the nearest node above** — `behavior.x-abm-placements.underNearestAbove`, referred to by `x-abm-place` on each drop tool and on `addHere`'s create. Proposed for DISL as `behavior.placements` with a `place` key.
 2. **A Kind field filtered by children** — `x-abm-retype` on the Kind item of the `node` form. Proposed for DISL as a form item of kind `type`.
 3. **Right-button connect** — `x-abm-connectGesture` on the Child edge. Proposed for DISL as an edge's `connectGesture`.
 4. **The tidy-tree layout with stored rows** — `x-abm-tidyTree` on the `tree` algorithm. Proposed for DISL as a built-in algorithm `tidyTree`.
 5. **Move, retype and an insert position for a persistence plugin** — `x-abm-plan` on the `abmMarkdown` plugin. Proposed for FBL §11.2.
+6. **Menu groups** — `x-menu.group` on each context-menu entry: consecutive entries with one name form one group, so a node's edits, its eleven Add child entries and Arrange diagram are three groups, and the canvas's adds and Arrange two (`AbmContextActionProvider.cs:75-136`). Proposed for DISL as a `group` property of a context tool.
 
 Until then three plugins carry the behaviour: `abmMarkdown` (persistence, required), `abmTreeLayout` (layout) and `abmArrange` (Arrange diagram). The 0.1 definition's `abmReorder` plugin is gone: DISL 0.2's `moveUp` and `moveDown` state the reorder exactly.
 
