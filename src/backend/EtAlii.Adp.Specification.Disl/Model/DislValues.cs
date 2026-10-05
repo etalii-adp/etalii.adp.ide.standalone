@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Globalization;
 using System.Text.Json;
 using EtAlii.Adp.Specification.Cel;
 
@@ -62,6 +64,77 @@ internal static class DislValues
         (_, JsonValueKind.String) => json.GetString(),
         _ => null,
     };
+
+    /// <summary>
+    /// A value a format binding read (FBL: text, <see cref="long"/>, <see cref="double"/>,
+    /// <see cref="bool"/>, lists, or null for an empty scalar) as <paramref name="attribute"/>'s type
+    /// has it in CEL; false when it does not fit, so the attribute stays unset and reads as its default.
+    /// </summary>
+    /// <remarks>
+    /// A scalar is read through its text, as written: <c>int</c> and <c>number</c> parse it,
+    /// <c>yearMonth</c> reads the <c>±YYYY-MM</c> form (§4.2), the text types take it as it is, and an
+    /// empty scalar is the empty text. An enum maps a stored form to its key; a form the enum lacks is
+    /// kept as written (§4.5), for <c>std.facets</c> and the rules to report. A <c>many</c> attribute
+    /// takes a list and keeps the items that fit.
+    /// </remarks>
+    public static bool TryFromRead(object? raw, DislAttribute attribute, DislMetamodel metamodel, out object? value)
+    {
+        value = null;
+        if (attribute.Many)
+        {
+            if (raw is string or null || raw is not IEnumerable items) return false;
+            var list = new List<object?>();
+            foreach (var item in items)
+            {
+                if (OneFromRead(item, attribute.Type, metamodel, out var one)) list.Add(one);
+            }
+            value = list;
+            return true;
+        }
+        return OneFromRead(raw, attribute.Type, metamodel, out value);
+    }
+
+    private static bool OneFromRead(object? raw, string type, DislMetamodel metamodel, out object? value)
+    {
+        value = null;
+        if (type == "json" || metamodel.DataTypes.Contains(type))
+        {
+            value = raw;
+            return true;
+        }
+        if (raw is IEnumerable and not string) return false;
+        var text = raw switch
+        {
+            null => "",
+            string written => written,
+            bool flag => flag ? "true" : "false",
+            IFormattable number => number.ToString(null, CultureInfo.InvariantCulture),
+            _ => raw.ToString() ?? "",
+        };
+        switch (type)
+        {
+            case "int":
+                if (!long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var integer)) return false;
+                value = integer;
+                return true;
+            case "number":
+                if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var real)) return false;
+                value = real;
+                return true;
+            case "bool":
+                if (text is not ("true" or "false")) return false;
+                value = text == "true";
+                return true;
+            case "yearMonth":
+                value = YearMonth.Parse(text);
+                return value is not null;
+            case "date" or "datetime" or "time" or "duration" or "binary":
+                value = text;
+                return true;
+        }
+        value = metamodel.Enums.TryGetValue(type, out var enumeration) ? enumeration.StoredAs(text)?.Key ?? text : text;
+        return true;
+    }
 
     /// <summary>Any JSON as CEL values: objects as maps, arrays as lists, integral numbers as <c>int</c>.</summary>
     public static object? Json(JsonElement json) => json.ValueKind switch

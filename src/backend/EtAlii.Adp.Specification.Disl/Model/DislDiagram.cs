@@ -8,8 +8,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// their computation order (§12.5).
 /// </summary>
 /// <remarks>
-/// Built element by element, parents before their children, by the model builder or a test. The
-/// element lists are what the expressions iterate, so their order is the order every derived id,
+/// Built element by element, parents before their children, by <see cref="DislModelBuilder"/> or a
+/// test. The element lists are what the expressions iterate, so their order is the order every derived id,
 /// finding and position depends on.
 /// </remarks>
 public sealed class DislDiagram : ICelObject
@@ -52,31 +52,38 @@ public sealed class DislDiagram : ICelObject
     public IReadOnlyList<DislElement> Elements => [.. _nodes, .. _relations];
 
     /// <summary>Adds a node of <paramref name="type"/>, beneath <paramref name="parent"/> when one is given.</summary>
-    public DislElement AddNode(string type, string id, IReadOnlyDictionary<string, object?>? attributes = null, DislElement? parent = null, string? slot = null)
-    {
-        var declared = TypeOf(type, relation: false);
-        if (parent is not null && parent.Diagram != this) throw new ArgumentException("The parent belongs to another diagram.", nameof(parent));
-        var node = new DislElement(this, declared, id, attributes) { Parent = parent, Slot = parent is null ? null : slot };
-        parent?.AddChild(node);
-        _nodes.Add(node);
-        return node;
-    }
+    public DislElement AddNode(string type, string id, IReadOnlyDictionary<string, object?>? attributes = null, DislElement? parent = null, string? slot = null) =>
+        Add(new DislElement(this, TypeOf(type, relation: false), id, attributes) { Parent = parent, Slot = parent is null ? null : slot });
 
     /// <summary>Adds a relation of <paramref name="type"/> from <paramref name="source"/> to <paramref name="target"/>; either may be missing, as a model being read can have it.</summary>
     public DislElement AddRelation(string type, string id, DislElement? source, DislElement? target, IReadOnlyDictionary<string, object?>? attributes = null) =>
-        AddRelation(TypeOf(type, relation: true), id, source, target, attributes, derived: false, []);
+        Add(new DislElement(this, TypeOf(type, relation: true), id, attributes) { Source = source, Target = target, SourceId = source?.Id, TargetId = target?.Id });
 
-    internal DislElement AddRelation(DislType type, string id, DislElement? source, DislElement? target, IReadOnlyDictionary<string, object?>? attributes, bool derived, IReadOnlyList<DislElement> sources)
+    /// <summary>Adds an element made for this diagram: a node beneath its parent, a relation at its ends.</summary>
+    internal DislElement Add(DislElement element)
     {
-        if (source is not null && source.Diagram != this || target is not null && target.Diagram != this)
+        if (element.Diagram != this) throw new ArgumentException("The element was made for another diagram.", nameof(element));
+        if (element.Type.IsRelation)
         {
-            throw new ArgumentException("A relation's ends belong to its own diagram.");
+            if (element.Source is not null && element.Source.Diagram != this || element.Target is not null && element.Target.Diagram != this)
+            {
+                throw new ArgumentException("A relation's ends belong to its own diagram.", nameof(element));
+            }
+            _relations.Add(element);
+            _ends = null;
+            return element;
         }
-        var relation = new DislElement(this, type, id, attributes) { Source = source, Target = target, IsDerived = derived, Sources = sources };
-        _relations.Add(relation);
-        _ends = null;
-        return relation;
+        if (element.Parent is { } parent)
+        {
+            if (parent.Diagram != this) throw new ArgumentException("The parent belongs to another diagram.", nameof(element));
+            parent.AddChild(element);
+        }
+        _nodes.Add(element);
+        return element;
     }
+
+    /// <summary>Sets diagram attribute <paramref name="name"/>, as a reader does.</summary>
+    internal void SetAttribute(string name, object? value) => _attributes[name] = value;
 
     /// <summary>The value CEL reads for diagram attribute <paramref name="name"/>: stored, else its default, else its type's zero value (§4.3).</summary>
     public object? ValueOf(string name) =>

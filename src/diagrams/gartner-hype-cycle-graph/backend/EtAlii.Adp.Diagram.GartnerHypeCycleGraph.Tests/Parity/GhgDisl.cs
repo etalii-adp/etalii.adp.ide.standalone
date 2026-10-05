@@ -16,10 +16,13 @@ internal static class GhgDisl
         BundledDefinition.Load(typeof(GhgParser).Assembly, "gartner-hype-cycle-graph.dis").Specification;
 
     /// <summary>Every document of the parity corpus, parsed: <c>src/</c>-relative path and model.</summary>
-    public static IEnumerable<(string Path, GhgModel Model)> Corpus()
+    public static IEnumerable<(string Path, GhgModel Model)> Corpus() => Texts().Select(document => (document.Path, GhgParser.Parse(document.Text)));
+
+    /// <summary>Every document of the parity corpus: <c>src/</c>-relative path and text.</summary>
+    public static IEnumerable<(string Path, string Text)> Texts()
     {
         var source = Path.GetFullPath(Path.Combine(GhgTranscript.ModuleFolder, "..", ".."));
-        return GhgTranscript.Corpus().Select(relative => (relative, GhgParser.Parse(File.ReadAllText(Path.Combine(source, relative)))));
+        return GhgTranscript.Corpus().Select(relative => (relative, File.ReadAllText(Path.Combine(source, relative))));
     }
 
     /// <summary>A diagram of <paramref name="model"/>'s unit holding its trends, in document order.</summary>

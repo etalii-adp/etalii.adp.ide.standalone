@@ -77,6 +77,21 @@ public sealed class DislElement : ICelObject
     /// <summary>A derived element's sources (§4.11.4); empty for a stored one.</summary>
     public IReadOnlyList<DislElement> Sources { get; internal init; } = [];
 
+    /// <summary>Whether the id was read from storage; false for an id the reader made up or the runtime computed.</summary>
+    public bool IdIsStored { get; internal set; } = true;
+
+    /// <summary>A relation's source as stored, which names nothing when <see cref="Source"/> is null.</summary>
+    public string? SourceId { get; internal init; }
+
+    /// <summary>A relation's target as stored, which names nothing when <see cref="Target"/> is null.</summary>
+    public string? TargetId { get; internal init; }
+
+    /// <summary>What the reader read beside the metamodel's attributes (<c>hostAttributes</c>, unmapped keys), as it read it; CEL does not see these.</summary>
+    public IReadOnlyDictionary<string, object?> HostAttributes { get; internal init; } = new Dictionary<string, object?>();
+
+    /// <summary>The 1-based line the reader found the element on, when it was read.</summary>
+    public int? Line { get; internal init; }
+
     /// <summary>Whether the element's type is <paramref name="type"/> or one of its subtypes (§2.7).</summary>
     public bool IsA(string type) => Type.Linearisation.Contains(type);
 
