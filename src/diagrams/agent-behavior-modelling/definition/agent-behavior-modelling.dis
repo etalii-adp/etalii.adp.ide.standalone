@@ -1592,7 +1592,7 @@
             "initial": {
               "label": "New steps"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1608,7 +1608,7 @@
             "initial": {
               "label": "New alternatives"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1624,7 +1624,7 @@
             "initial": {
               "label": "New independent work"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1640,7 +1640,7 @@
             "initial": {
               "label": ""
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1656,7 +1656,7 @@
             "initial": {
               "label": "New condition"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1672,7 +1672,7 @@
             "initial": {
               "label": "New condition"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1688,7 +1688,7 @@
             "initial": {
               "label": ""
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1704,7 +1704,7 @@
             "initial": {
               "label": "New question"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1720,7 +1720,7 @@
             "initial": {
               "label": "New action"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1736,7 +1736,7 @@
             "initial": {
               "label": "New question for the user"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"
@@ -1752,7 +1752,7 @@
             "initial": {
               "label": "New task"
             },
-            "after": "editLabel",
+            "after": "none",
             "drop": {
               "elsewhere": "create",
               "x-abm-place": "underNearestAbove"

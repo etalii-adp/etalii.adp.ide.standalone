@@ -40,11 +40,12 @@ import { libraryMarkerOf, libraryRouteOf, libraryShapeOf, shapeNameOf, type Cust
  * the backend runs it, and the client imports the same bytes with Vite's `?raw` and compiles them
  * here at module load. There is no generated file, so nothing can go stale between the two tiers.
  *
- * <b>Structural, and refusing.</b> The notation's nodes, edges, anchors, labels, sizes, placements,
- * the coordinates' snapping and ruler, the canvas's filter and legend, the context menus' shortcuts
- * and the viewpoints are mapped onto the library's vocabulary key by key. A construct this compiler
- * does not map is refused with an error naming it, never skipped: a skipped key is a drawing that
- * silently differs from its specification.
+ * <b>Structural, and refusing what it reads.</b> The notation's nodes, edges, anchors, labels, sizes,
+ * placements, the coordinates' snapping and ruler, the canvas's filter and legend, the context menus'
+ * shortcuts and the viewpoints are mapped onto the library's vocabulary key by key. A value it reads
+ * and cannot map - a shape, a marker, a label position, a CEL term - is refused with an error naming
+ * it. Keys it never reads (styles, conditions, a viewpoint's styling) are not checked here: the
+ * modules' compiled-definition tests hold the result to the hand-written drawing instead.
  *
  * <b>What stays code - {@link NotationBindings}.</b> The library has no CEL, so a CEL label becomes a
  * template over the payload the backend computes, through the module's table of expression-to-path
