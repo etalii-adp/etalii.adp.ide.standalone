@@ -28,7 +28,7 @@ public class CelBindTests
     public void ABindingIsNotVisibleOutsideItsBody()
     {
         // Act.
-        var refused = Record.Exception(() => CelEnvironment.Standard().DeclareVariable("self").Compile("cel.bind(x, 1, x) + x"));
+        var refused = Assert.Throws<CelException>(() => CelEnvironment.Standard().DeclareVariable("self").Compile("cel.bind(x, 1, x) + x"));
 
         // Assert.
         Assert.Equal("'x' is not a variable here; available: self.", refused.Message);

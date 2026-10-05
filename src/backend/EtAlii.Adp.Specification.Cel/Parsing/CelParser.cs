@@ -176,7 +176,10 @@ internal sealed class CelParser(string source, CelEnvironment environment)
         (string kind, string text) = _tokens[_position++];
         switch (kind)
         {
-            case "int": return new CelNode.Literal(long.Parse(text, CultureInfo.InvariantCulture));
+            case "int":
+                return long.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var number)
+                    ? new CelNode.Literal(number)
+                    : throw new CelException($"The int {text} is out of range, in '{source}'.");
             case "double": return new CelNode.Literal(double.Parse(text, CultureInfo.InvariantCulture));
             case "string": return new CelNode.Literal(text);
             case "ident":
@@ -308,6 +311,17 @@ internal sealed class CelParser(string source, CelEnvironment environment)
                     isDouble = true;
                     i++;
                     while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
+                }
+                if (i < source.Length && source[i] is 'e' or 'E')
+                {
+                    var exponent = i + 1;
+                    if (exponent < source.Length && source[exponent] is '+' or '-') exponent++;
+                    if (exponent < source.Length && char.IsAsciiDigit(source[exponent]))
+                    {
+                        isDouble = true;
+                        i = exponent;
+                        while (i < source.Length && char.IsAsciiDigit(source[i])) i++;
+                    }
                 }
                 if (i < source.Length && source[i] is 'u' or 'U') throw new CelException("Unsigned integers are not supported by this CEL evaluator.");
                 tokens.Add((isDouble ? "double" : "int", source[start..i]));

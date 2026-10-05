@@ -19,4 +19,10 @@
     <ProjectReference Include="..\EtAlii.Adp.Specification.Cel\EtAlii.Adp.Specification.Cel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The two bundled DISL definitions, read only to parse every expression in them with this engine. -->
+    <EmbeddedResource Include="..\..\diagrams\gartner-hype-cycle-graph\definition\gartner-hype-cycle-graph.dis" LogicalName="gartner-hype-cycle-graph.dis" />
+    <EmbeddedResource Include="..\..\diagrams\agent-behavior-modelling\definition\agent-behavior-modelling.dis" LogicalName="agent-behavior-modelling.dis" />
+  </ItemGroup>
+
 </Project>

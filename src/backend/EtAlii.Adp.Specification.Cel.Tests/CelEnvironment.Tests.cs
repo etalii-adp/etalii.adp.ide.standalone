@@ -12,10 +12,9 @@ public class CelEnvironmentTests
         var environment = CelEnvironment.Standard().DeclareVariables("self", "diagram");
 
         // Act.
-        var refused = Record.Exception(() => environment.Compile("self.name == other.name"));
+        var refused = Assert.Throws<CelException>(() => environment.Compile("self.name == other.name"));
 
         // Assert.
-        Assert.IsType<CelException>(refused);
         Assert.Equal("'other' is not a variable here; available: self, diagram.", refused.Message);
     }
 
@@ -68,10 +67,9 @@ public class CelEnvironmentTests
             .AddFunction(new CelFunction("pick", CelCallStyle.Global, 1, 3, call => call[0]));
 
         // Act.
-        var refused = Record.Exception(() => environment.Compile(expression));
+        var refused = Assert.Throws<CelException>(() => environment.Compile(expression));
 
         // Assert.
-        Assert.IsType<CelException>(refused);
         Assert.Equal(message, refused.Message);
     }
 
@@ -84,7 +82,7 @@ public class CelEnvironmentTests
 
         // Act and assert.
         Assert.Equal(5L, Evaluate.Expression("count(1, 2, 3, 4, 5)", environment: environment));
-        Assert.Equal("The function 'count' takes at least 1 argument, not 0, in 'count()'.", Record.Exception(() => environment.Compile("count()")).Message);
+        Assert.Equal("The function 'count' takes at least 1 argument, not 0, in 'count()'.", Assert.Throws<CelException>(() => environment.Compile("count()")).Message);
     }
 
     [Fact]
@@ -140,7 +138,7 @@ public class CelEnvironmentTests
     public void AMacroTheEnvironmentLacksIsRefusedAsAFunction()
     {
         // Act.
-        var refused = Record.Exception(() => new CelEnvironment().Compile("[1].all(x, x > 0)"));
+        var refused = Assert.Throws<CelException>(() => new CelEnvironment().Compile("[1].all(x, x > 0)"));
 
         // Assert.
         Assert.Equal("The function 'all' is not supported by this CEL evaluator.", refused.Message);
@@ -171,7 +169,7 @@ public class CelEnvironmentTests
             .DeclareVariable("math");
 
         // Act.
-        var refused = Record.Exception(() => environment.Compile("math.half(3.0)"));
+        var refused = Assert.Throws<CelException>(() => environment.Compile("math.half(3.0)"));
         var selected = environment.Compile("math.pi").Evaluate(new Dictionary<string, object?> { ["math"] = new CelMap { ["pi"] = 3.0 } });
 
         // Assert.

@@ -38,7 +38,7 @@ public static class CelCore
 
     private static long Size(object? value) => value switch
     {
-        string s => new StringInfo(s).LengthInTextElements,
+        string s => CodePoints.Count(s),
         IReadOnlyList<object?> l => l.Count,
         IReadOnlyDictionary<string, object?> m => m.Count,
         _ => throw new CelException("size() needs a string, a list or a map."),
@@ -50,10 +50,12 @@ public static class CelCore
     private static long Int(object? value) => value switch
     {
         long l => l,
-        double d => (long)d,
+        double d when double.IsFinite(d) && d > long.MinValue && d < long.MaxValue => (long)d,
         string s when long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) => v,
         _ => throw new CelException("int() cannot convert this value."),
     };
 
-    private static double Double(object? value) => CelValues.AsDouble(value is string s ? double.Parse(s, CultureInfo.InvariantCulture) : value);
+    private static double Double(object? value) => value is string s
+        ? double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : throw new CelException($"double() cannot convert '{s}'.")
+        : CelValues.AsDouble(value);
 }

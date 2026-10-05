@@ -72,7 +72,7 @@ public class CelOptionalsTests
     public void HasRefusesAnOptionalSelection()
     {
         // Act.
-        var refused = Record.Exception(() => CelEnvironment.Standard().DeclareVariable("m").Compile("has(m.?k)"));
+        var refused = Assert.Throws<CelException>(() => CelEnvironment.Standard().DeclareVariable("m").Compile("has(m.?k)"));
 
         // Assert.
         Assert.Equal("has() needs a field selection such as has(entry.end).", refused.Message);

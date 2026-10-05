@@ -141,7 +141,8 @@ internal abstract record CelNode
             return Operator switch
             {
                 "!" => value is bool b ? !b : throw new CelException("'!' needs a bool."),
-                "-" => value is long l ? -l : value is double d ? -d : throw new CelException("'-' needs a number."),
+                // Each arm boxes its own type: a conditional of long and double would make every negated int a double.
+                "-" => value is long l ? (object)(-l) : value is double d ? -d : throw new CelException("'-' needs a number."),
                 _ => throw new CelException($"Unknown operator '{Operator}'."),
             };
         }
@@ -194,8 +195,9 @@ internal abstract record CelNode
                         (IReadOnlyList<object?> a, IReadOnlyList<object?> b) => a.Concat(b).ToList(),
                         _ => CelValues.AsDouble(l) + CelValues.AsDouble(r),
                     };
-                case "-": return (l, r) is (long a1, long b1) ? a1 - b1 : CelValues.AsDouble(l) - CelValues.AsDouble(r);
-                case "*": return (l, r) is (long a2, long b2) ? a2 * b2 : CelValues.AsDouble(l) * CelValues.AsDouble(r);
+                // An int result is boxed as itself: a conditional of long and double would be a double.
+                case "-": return (l, r) is (long a1, long b1) ? (object)(a1 - b1) : CelValues.AsDouble(l) - CelValues.AsDouble(r);
+                case "*": return (l, r) is (long a2, long b2) ? (object)(a2 * b2) : CelValues.AsDouble(l) * CelValues.AsDouble(r);
                 case "/":
                     if ((l, r) is (long a3, long b3)) return b3 == 0 ? throw new CelException("Division by zero.") : a3 / b3;
                     return CelValues.AsDouble(l) / CelValues.AsDouble(r);

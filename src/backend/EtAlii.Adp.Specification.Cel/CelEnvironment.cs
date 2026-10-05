@@ -39,14 +39,16 @@ public sealed class CelEnvironment
 
     /// <summary>
     /// The CEL standard environment: the core functions and conversions, the strings, math, lists and
-    /// optional libraries, and the macros <c>all</c>, <c>exists</c>, <c>exists_one</c>, <c>filter</c>
-    /// and <c>map</c>. No variables.
+    /// optional libraries, and the macros <c>all</c>, <c>exists</c>, <c>exists_one</c>, <c>filter</c>,
+    /// <c>map</c> and <c>sortBy</c>. No variables.
     /// </summary>
     public static CelEnvironment Standard()
     {
         var environment = new CelEnvironment();
         CelCore.Register(environment);
         CelStrings.Register(environment);
+        CelMath.Register(environment);
+        CelLists.Register(environment);
         CelOptionals.Register(environment);
         return environment;
     }

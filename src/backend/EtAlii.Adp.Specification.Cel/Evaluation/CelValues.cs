@@ -36,7 +36,7 @@ internal static class CelValues
 
     public static int Compare(object? a, object? b) => (a, b) switch
     {
-        (string x, string y) => string.CompareOrdinal(x, y),
+        (string x, string y) => CodePoints.Compare(x, y),
         (bool x, bool y) => x.CompareTo(y),
         _ => AsDouble(a).CompareTo(AsDouble(b)),
     };
@@ -47,7 +47,7 @@ internal static class CelValues
         string s => s,
         bool b => b ? "true" : "false",
         long l => l.ToString(CultureInfo.InvariantCulture),
-        double d => d.ToString("R", CultureInfo.InvariantCulture),
+        double d => DoubleText.Of(d),
         _ => value.ToString() ?? "",
     };
 }
