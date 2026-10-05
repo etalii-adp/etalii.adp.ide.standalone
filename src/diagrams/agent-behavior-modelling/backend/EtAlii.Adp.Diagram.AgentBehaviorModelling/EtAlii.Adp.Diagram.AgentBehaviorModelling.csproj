@@ -23,6 +23,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\agent-behavior-modelling.dis" LogicalName="agent-behavior-modelling.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="agent-behavior-modelling.provenance.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests" />
   </ItemGroup>
 

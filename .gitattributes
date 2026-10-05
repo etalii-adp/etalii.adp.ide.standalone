@@ -136,6 +136,14 @@ src/client/src/generated/**   text eol=lf
 # write is a splice, an unchanged document round-trips byte-identical, and its fixtures include the
 # `crlf-line-endings` / `lf-line-endings` pair. Added before its first fixture.
 *.skv   -text
+# `.dis` is a DISL diagram specification, bundled verbatim from etalii-adp/etalii.adp into
+# `src/diagrams/<module>/definition/` by `src/diagrams/tools/bundle-disl.sh`. Its bytes are the
+# test subject in a different way from the documents above: `provenance.json` beside it records
+# the sha256 of the bundled bytes, and each module's test recomputes that hash from the embedded
+# resource. Under `eol=crlf` the working file - and so the embedded resource - would be CRLF while
+# the upstream file is LF, and the hash would measure git rather than the definition. Added before
+# the first `.dis` was committed, for the reason given above.
+*.dis   -text
 
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,

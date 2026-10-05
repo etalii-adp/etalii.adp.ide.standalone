@@ -30,6 +30,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\gartner-hype-cycle-graph.dis" LogicalName="gartner-hype-cycle-graph.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="gartner-hype-cycle-graph.provenance.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests" />
   </ItemGroup>
 
