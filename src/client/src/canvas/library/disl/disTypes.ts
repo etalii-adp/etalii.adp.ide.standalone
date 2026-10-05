@@ -1,0 +1,297 @@
+/**
+ * The part of a DISL 0.2 diagram specification (`*.dis`) the client reads, typed.
+ *
+ * <b>A subset, on purpose.</b> The backend loads the whole specification and runs its CEL; the
+ * client reads only what turns into a {@link DiagramDefinition}: the metamodel's types and
+ * relations, the coordinates' axes and rulers, the notation's nodes, edges and shapes, the toolbox's
+ * context menus (for shortcuts and wire ids), the notation canvas's filters and legend, the viewpoints and the
+ * layout algorithms. Everything else is typed `unknown` or left out, so a reader of
+ * `compileNotation.ts` sees exactly which keys it depends on.
+ *
+ * Keys starting with `x-` are proposals DISL 0.2 does not define yet. They are kept as data
+ * (`[key: `x-${string}`]: unknown`) and read only by name.
+ *
+ * [`DiagramDefinition`]: ../definition/diagramDefinition.ts
+ */
+
+/** A value given literally, or bound to an attribute or to a CEL expression (DISL §2.6 Bindable). */
+export type Bindable<T> = T | { attribute: string } | { cel: string } | { layout: true };
+
+/** An `x-` extension key, kept as data. */
+export type Extensions = { [key: `x-${string}`]: unknown };
+
+export interface DislDocument extends Extensions {
+  disl: string;
+  language: { id: string; version: string; label?: string };
+  metamodel: DislMetamodel;
+  coordinates?: DislCoordinates;
+  notation: DislNotation;
+  toolbox?: DislToolbox;
+  viewpoints?: Readonly<Record<string, DislViewpoint>>;
+  layout?: DislLayout;
+}
+
+export interface DislMetamodel {
+  diagram?: { attributes?: Readonly<Record<string, DislAttribute>> };
+  enums?: Readonly<Record<string, DislEnum>>;
+  types: Readonly<Record<string, DislType>>;
+  relations?: Readonly<Record<string, DislRelation>>;
+}
+
+export interface DislAttribute {
+  type: string;
+  default?: unknown;
+  many?: boolean;
+}
+
+export interface DislEnum {
+  ordered?: boolean;
+  values: Readonly<Record<string, { label?: string; color?: string } & Extensions>>;
+}
+
+export interface DislType extends Extensions {
+  abstract?: boolean;
+  extends?: string;
+  label?: string;
+  attributes?: Readonly<Record<string, DislAttribute>>;
+  /** Present when the type may hold children (DISL §4.6 containment). */
+  children?: { allowed: readonly string[]; ordered?: boolean; min?: number; max?: number };
+}
+
+export interface DislRelation extends Extensions {
+  label?: string;
+  source: string | readonly string[];
+  target: string | readonly string[];
+  directed?: boolean;
+  allowSelfLoops?: boolean;
+  allowParallel?: boolean;
+  acyclic?: boolean;
+  attributes?: Readonly<Record<string, DislAttribute>>;
+  /** A relation computed from the model rather than stored (DISL §4.11). */
+  derived?: unknown;
+}
+
+export interface DislCoordinates {
+  axes?: Readonly<Record<string, DislAxis>>;
+  systems: Readonly<Record<string, DislCoordinateSystem>>;
+  default?: string;
+}
+
+export interface DislAxis {
+  kind: string;
+  valueType?: string;
+  origin?: string | number;
+  unit?: string;
+  scale?: number | { unit: Bindable<string>; size: number };
+  ruler?: DislRuler;
+}
+
+export interface DislRuler extends Extensions {
+  visible?: boolean;
+  position?: "top" | "bottom" | "left" | "right";
+  attach?: "view" | "canvas";
+  levels: readonly { unit: string; format: string; minSpacingPx?: number }[];
+}
+
+export interface DislCoordinateSystem {
+  kind: string;
+  /** An axis name, or an inline axis. */
+  x: string | DislAxis;
+  y: string | DislAxis;
+}
+
+export interface DislNotation {
+  theme?: DislTheme;
+  styles?: Readonly<Record<string, unknown>>;
+  shapes?: Readonly<Record<string, DislCustomShape>>;
+  nodes: Readonly<Record<string, DislNodeNotation>>;
+  edges?: Readonly<Record<string, DislEdgeNotation>>;
+  /** The canvas's own chrome: filters and the legend (DISL §6.13). */
+  canvas?: DislCanvas;
+}
+
+export interface DislTheme {
+  tokens: Readonly<Record<string, string>>;
+  modes?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  defaultMode?: string;
+  followSystem?: boolean;
+}
+
+/** A GeomExpr: a number, or a CEL expression over the shape context `w`, `h` and `p` (DISL §6.8). */
+export type GeomExpr = number | string;
+
+/** One path segment of a custom shape (DISL §6.8). */
+export type DislPathSegment =
+  | { op: "M" | "L"; x: GeomExpr; y: GeomExpr }
+  | { op: "A"; rx: GeomExpr; ry: GeomExpr; rotation: GeomExpr; largeArc: boolean; sweep: boolean; x: GeomExpr; y: GeomExpr }
+  | { op: "Z" };
+
+export interface DislBox {
+  x: GeomExpr;
+  y: GeomExpr;
+  w: GeomExpr;
+  h: GeomExpr;
+}
+
+export interface DislShapePart extends Extensions {
+  id: string;
+  when?: string;
+  hit?: boolean;
+  style?: unknown;
+  box?: DislBox;
+  shape?: string | { path: { segments: readonly DislPathSegment[] } };
+}
+
+export interface DislCustomShape {
+  label?: string;
+  params?: Readonly<Record<string, { type: string; default?: unknown; min?: number; max?: number }>>;
+  /** A single outline (`outline`), or a path (`path`): DISL allows either name for the body. */
+  outline?: { segments: readonly DislPathSegment[] };
+  path?: { segments: readonly DislPathSegment[] };
+  textArea?: DislBox;
+  parts?: readonly DislShapePart[];
+  handles?: readonly { param: string; x: GeomExpr; y: GeomExpr; axis?: string; visible?: string }[];
+}
+
+/** A shape reference: a name, or a name with parameters (DISL §6.7). */
+export type DislShapeRef = string | { type: string; params?: Readonly<Record<string, Bindable<unknown>>> };
+
+export interface DislLabel extends Extensions {
+  id: string;
+  text: Bindable<string>;
+  position?: string | { anchor: readonly [number, number]; offset?: readonly [number, number] };
+  distance?: number;
+  editable?: boolean | "inline" | "multiline";
+  wrap?: "none" | "word";
+  maxWidth?: number | "parent";
+  overflow?: "visible" | "ellipsis" | "clip";
+  style?: string | Readonly<Record<string, unknown>>;
+  tooltip?: Bindable<string>;
+}
+
+export interface DislSize {
+  default?: readonly [number | null, number | null];
+  fixed?: readonly [number, number];
+  min?: readonly [number | null, number | null];
+  max?: readonly [number | null, number | null];
+  width?: Bindable<number>;
+  height?: Bindable<number>;
+  resizable?: boolean | "horizontal" | "vertical";
+}
+
+export interface DislPlacement {
+  system?: string;
+  anchor?: string;
+  movable?: boolean | { x: boolean; y: boolean };
+  resizable?: boolean | { x: boolean; y: boolean };
+}
+
+export interface DislAnchors extends Extensions {
+  mode?: "outline" | "center" | "fixed" | "sides";
+  points?: readonly { id: string; x: number; y: number }[];
+  sides?: readonly ("top" | "right" | "bottom" | "left")[];
+}
+
+export interface DislNodeNotation extends Extensions {
+  shape: DislShapeRef;
+  style?: string | Readonly<Record<string, unknown>>;
+  size?: DislSize;
+  placement?: DislPlacement;
+  snapping?: unknown;
+  labels?: readonly DislLabel[];
+  tooltip?: Bindable<string>;
+  anchors?: DislAnchors;
+  accessibility?: { role?: string; name?: Bindable<string> };
+  doubleClick?: string;
+  connectable?: boolean;
+  conditions?: readonly { when: string; style: string }[];
+}
+
+export interface DislEndAnchoring {
+  mode: "part" | "fixed" | "outline" | "sides" | "center";
+  part?: Bindable<string>;
+  side?: Bindable<string>;
+  at?: Bindable<number>;
+  movable?: boolean;
+}
+
+export interface DislEdgeNotation extends Extensions {
+  style?: string | Readonly<Record<string, unknown>>;
+  line?: { routing?: string; stroke?: unknown; bendpoints?: { editable?: boolean } } & Readonly<Record<string, unknown>>;
+  sourceMarker?: string;
+  targetMarker?: string;
+  anchoring?: { source?: DislEndAnchoring; target?: DislEndAnchoring };
+  variants?: readonly unknown[];
+  deletable?: boolean;
+  reconnectable?: boolean;
+}
+
+export interface DislContextTool {
+  kind: string;
+  operation?: string;
+  label?: Bindable<string>;
+  shortcut?: string;
+}
+
+export interface DislContextMenu {
+  for: readonly string[];
+  when?: string;
+  placement?: string;
+  tools: readonly DislContextTool[];
+}
+
+export interface DislTool {
+  id: string;
+  creates?: string;
+  mode?: string;
+  after?: string;
+}
+
+export interface DislToolbox {
+  groups?: readonly { id: string; tools: readonly DislTool[] }[];
+  contextMenus?: readonly DislContextMenu[];
+}
+
+export interface DislFilter {
+  label: string;
+  control?: string;
+  appliesTo?: readonly string[];
+}
+
+export interface DislCanvas {
+  filters?: Readonly<Record<string, DislFilter>>;
+  legend?: { visible?: boolean; position?: string; entries: readonly string[] };
+}
+
+export interface DislViewpoint {
+  label?: string;
+  default?: boolean;
+  variantOf?: string;
+  toggle?: { label: string; position?: string };
+  coordinateSystem?: string;
+  layout?: string;
+  notation?: { nodes?: Readonly<Record<string, Partial<DislNodeNotation>>> };
+}
+
+export interface DislLayout {
+  algorithms?: Readonly<Record<string, { algorithm: string } & Extensions>>;
+  default?: string;
+}
+
+/**
+ * The bundled text as a document, refusing a DISL version this client was not written against.
+ * A `.dis` is JSON (DISL §2.1); the bundle is the backend's own copy, so both tiers read one file.
+ */
+export function parseDisl(text: string): DislDocument {
+  const document = JSON.parse(text) as DislDocument;
+  if (document.disl !== "0.2") {
+    throw new Error(`This client reads DISL 0.2; the bundled specification declares "${String(document.disl)}".`);
+  }
+
+  return document;
+}
+
+/** A relation end's types as a list, whichever form the specification wrote. */
+export function typeList(value: string | readonly string[]): readonly string[] {
+  return typeof value === "string" ? [value] : value;
+}
