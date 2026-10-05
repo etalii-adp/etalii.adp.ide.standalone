@@ -1,6 +1,6 @@
-namespace EtAlii.Adp.Specification.Cel;
-
 using System.Globalization;
+
+namespace EtAlii.Adp.Specification.Cel;
 
 internal static class CelValues
 {
@@ -11,6 +11,8 @@ internal static class CelValues
 
     public static long AsInt(object? value) => value is long l ? l : throw new CelException("An int was expected.");
 
+    public static bool AsBool(object? value) => value is bool b ? b : throw new CelException("A bool was expected.");
+
     public static double AsDouble(object? value) => value switch
     {
         long l => l,
@@ -18,12 +20,17 @@ internal static class CelValues
         _ => throw new CelException("A number was expected."),
     };
 
+    public static IReadOnlyList<object?> AsList(object? value) => value as IReadOnlyList<object?> ?? throw new CelException("A list was expected.");
+
     public static bool Equal(object? a, object? b) => (a, b) switch
     {
         (null, null) => true,
         (long x, double y) => Math.Abs(x - y) < Tolerance,
         (double x, long y) => Math.Abs(x - y) < Tolerance,
-        (List<object?> x, List<object?> y) => x.Count == y.Count && x.Zip(y).All(p => Equal(p.First, p.Second)),
+        (string x, string y) => string.Equals(x, y, StringComparison.Ordinal),
+        (IReadOnlyList<object?> x, IReadOnlyList<object?> y) => x.Count == y.Count && x.Zip(y).All(p => Equal(p.First, p.Second)),
+        (IReadOnlyDictionary<string, object?> x, IReadOnlyDictionary<string, object?> y) =>
+            x.Count == y.Count && x.All(p => y.TryGetValue(p.Key, out var other) && Equal(p.Value, other)),
         _ => Equals(a, b),
     };
 

@@ -3,12 +3,13 @@ namespace EtAlii.Adp.Specification.Cel;
 /// <summary>A compiled CEL expression.</summary>
 public sealed class CelProgram
 {
-    private const int StepBudget = 100_000;
+    private readonly long _budget;
 
-    internal CelProgram(string source, CelNode root)
+    internal CelProgram(string source, CelNode root, long budget)
     {
         Source = source;
         Root = root;
+        _budget = budget;
     }
 
     public string Source { get; }
@@ -16,12 +17,17 @@ public sealed class CelProgram
     internal CelNode Root { get; }
 
     /// <summary>Evaluates with <paramref name="variables"/>; a value of <see cref="CelError"/> when evaluation fails.</summary>
-    public object? Evaluate(IReadOnlyDictionary<string, object?> variables)
+    public object? Evaluate(IReadOnlyDictionary<string, object?> variables) => Evaluate(variables, new CelBudget(_budget));
+
+    /// <summary>
+    /// Evaluates with <paramref name="variables"/>, charging <paramref name="budget"/>: how a function
+    /// that evaluates another expression keeps the whole evaluation within one limit.
+    /// </summary>
+    public object? Evaluate(IReadOnlyDictionary<string, object?> variables, CelBudget budget)
     {
-        var steps = 0;
         try
         {
-            return Root.Evaluate(new CelScope(variables, null), ref steps);
+            return Root.Evaluate(new CelScope(variables, budget));
         }
         catch (CelException e)
         {
@@ -31,9 +37,4 @@ public sealed class CelProgram
 
     /// <summary>True only when the expression evaluates to true.</summary>
     public bool IsTrue(IReadOnlyDictionary<string, object?> variables) => Evaluate(variables) is true;
-
-    internal static void Step(ref int steps)
-    {
-        if (++steps > StepBudget) throw new CelException("The expression exceeded its evaluation budget.");
-    }
 }

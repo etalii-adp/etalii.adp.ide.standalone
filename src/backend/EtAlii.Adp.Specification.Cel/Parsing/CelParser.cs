@@ -1,13 +1,15 @@
-namespace EtAlii.Adp.Specification.Cel;
-
 using System.Globalization;
 using System.Text;
 
-internal sealed class CelParser(string source)
-{
-    private static readonly HashSet<string> _macros = ["all", "exists", "exists_one", "filter", "map"];
-    private static readonly HashSet<string> _functions = ["size", "matches", "startsWith", "endsWith", "contains", "replace", "lowerAscii", "upperAscii", "int", "double", "string"];
+namespace EtAlii.Adp.Specification.Cel;
 
+/// <summary>
+/// Parses CEL against an environment: a call resolves to one of its functions and a comprehension to
+/// one of its macros while parsing, so anything the environment does not offer is refused here,
+/// naming it.
+/// </summary>
+internal sealed class CelParser(string source, CelEnvironment environment)
+{
     private readonly List<(string Kind, string Text)> _tokens = Tokenize(source);
     private int _position;
 
@@ -99,6 +101,12 @@ internal sealed class CelParser(string source)
     {
         while (true)
         {
+            if (Peek(".?"))
+            {
+                _position++;
+                node = new CelNode.Member(node, ExpectIdent(), true);
+                continue;
+            }
             if (Peek("."))
             {
                 _position++;
@@ -106,32 +114,44 @@ internal sealed class CelParser(string source)
                 if (Peek("("))
                 {
                     _position++;
-                    if (_macros.Contains(name))
+                    if (environment.TryGetMacro(name, out var macro))
                     {
                         var variable = ExpectIdent();
                         Expect(",");
                         var body = ParseExpression();
                         Expect(")");
-                        node = new CelNode.Macro(name, node, variable, body);
+                        node = new CelNode.Comprehension(macro, node, variable, body);
                         continue;
                     }
-                    if (!_functions.Contains(name)) throw new CelException($"The function '{name}' is not supported by this CEL evaluator.");
-                    node = new CelNode.Call(name, node, ParseArguments());
+                    node = Resolve(name, CelCallStyle.Receiver, node, ParseArguments());
                     continue;
                 }
-                node = new CelNode.Member(node, name);
+                node = new CelNode.Member(node, name, false);
                 continue;
             }
-            if (Peek("["))
+            if (Peek("[") || Peek("[?"))
             {
-                _position++;
+                var optional = _tokens[_position++].Text == "[?";
                 var key = ParseExpression();
                 Expect("]");
-                node = new CelNode.Index(node, key);
+                node = new CelNode.Index(node, key, optional);
                 continue;
             }
             return node;
         }
+    }
+
+    private CelNode.Call Resolve(string name, CelCallStyle style, CelNode? receiver, List<CelNode> arguments)
+    {
+        if (!environment.TryGetFunction(name, style, out var function))
+        {
+            throw new CelException($"The function '{name}' is not supported by this CEL evaluator.");
+        }
+        if (arguments.Count < function.MinArguments || arguments.Count > function.MaxArguments)
+        {
+            throw new CelException($"The function '{name}' takes {function.Arity} argument{(function.MinArguments == 1 && function.MaxArguments is 1 or CelFunction.Variadic ? "" : "s")}, not {arguments.Count}, in '{source}'.");
+        }
+        return new CelNode.Call(function, receiver, arguments);
     }
 
     private List<CelNode> ParseArguments()
@@ -165,18 +185,18 @@ internal sealed class CelParser(string source)
                     case "true": return new CelNode.Literal(true);
                     case "false": return new CelNode.Literal(false);
                     case "null": return new CelNode.Literal(null);
-                    case "has":
+                    case "has" when Peek("("):
                         Expect("(");
                         var target = ParsePostfix(ParsePrimary());
                         Expect(")");
-                        return target is CelNode.Member m ? new CelNode.Has(m.Target, m.Name) : throw new CelException("has() needs a field selection such as has(entry.end).");
+                        return target is CelNode.Member { Optional: false } m ? new CelNode.Has(m.Target, m.Name) : throw new CelException("has() needs a field selection such as has(entry.end).");
                 }
                 if (Peek("("))
                 {
                     _position++;
-                    if (!_functions.Contains(text)) throw new CelException($"The function '{text}' is not supported by this CEL evaluator.");
-                    return new CelNode.Call(text, null, ParseArguments());
+                    return Resolve(text, CelCallStyle.Global, null, ParseArguments());
                 }
+                if (QualifiedCall(text) is { } qualified) return qualified;
                 return new CelNode.Ident(text);
             case "op":
                 if (text == "(")
@@ -209,6 +229,7 @@ internal sealed class CelParser(string source)
                         do
                         {
                             if (Peek(",")) _position++;
+                            if (Peek("}")) break;
                             var key = ParseExpression();
                             Expect(":");
                             entries.Add((key, ParseExpression()));
@@ -221,6 +242,34 @@ internal sealed class CelParser(string source)
                 break;
         }
         throw new CelException($"Unexpected '{text}' in '{source}'.");
+    }
+
+    /// <summary>
+    /// <c>cel.bind(…)</c>, or a global function with a dotted name such as <c>math.round(…)</c>, when
+    /// <paramref name="head"/> is not a variable; null when the tokens are an ordinary selection.
+    /// </summary>
+    private CelNode? QualifiedCall(string head)
+    {
+        if (!Peek(".") || _position + 2 >= _tokens.Count || _tokens[_position + 1].Kind != "ident" || !(_tokens[_position + 2] is ("op", "(")))
+        {
+            return null;
+        }
+        if (environment.IsVariable(head)) return null;
+        var name = $"{head}.{_tokens[_position + 1].Text}";
+        if (name == "cel.bind")
+        {
+            _position += 3;
+            var variable = ExpectIdent();
+            Expect(",");
+            var init = ParseExpression();
+            Expect(",");
+            var body = ParseExpression();
+            Expect(")");
+            return new CelNode.Bind(variable, init, body);
+        }
+        if (!environment.TryGetFunction(name, CelCallStyle.Global, out _)) return null;
+        _position += 3;
+        return Resolve(name, CelCallStyle.Global, null, ParseArguments());
     }
 
     private bool Peek(string text) => _position < _tokens.Count && _tokens[_position].Text == text && _tokens[_position].Kind is "op";
@@ -300,7 +349,8 @@ internal sealed class CelParser(string source)
                 continue;
             }
             var two = i + 1 < source.Length ? source.Substring(i, 2) : "";
-            if (two is "&&" or "||" or "==" or "!=" or "<=" or ">=")
+            // '.?' (optional selection) and '[?' (optional index) are taken before '.', '[' and '?'.
+            if (two is "&&" or "||" or "==" or "!=" or "<=" or ">=" or ".?" or "[?")
             {
                 tokens.Add(("op", two));
                 i += 2;

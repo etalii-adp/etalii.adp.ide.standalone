@@ -19,7 +19,7 @@ public class CelEvaluationTests
     {
         // Arrange.
         var entry = new CelMap { ["end"] = "2026-10-01", ["kind"] = "task", ["count"] = 3L, ["tags"] = new List<object?> { "a", "b" } };
-        var program = CelCompiler.Compile(expression, ["entry"]);
+        var program = CelEnvironment.Standard().DeclareVariable("entry").Compile(expression);
 
         // Act.
         var value = program.Evaluate(new Dictionary<string, object?> { ["entry"] = entry });
