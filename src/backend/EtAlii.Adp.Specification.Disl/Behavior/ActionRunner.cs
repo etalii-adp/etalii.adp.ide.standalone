@@ -23,8 +23,9 @@ namespace EtAlii.Adp.Specification.Disl;
 /// not do part of it.
 /// </para>
 /// <para>
-/// <b>A <c>reparent</c> is recorded, not applied</b>: the working state keeps the element where it
-/// was, so an action after it does not see the move.
+/// <b>A <c>reparent</c> is applied like the others</b>: the node moves, with everything beneath it,
+/// to its new parent at the place its <c>after</c> or <c>before</c> names, or last, and the change
+/// records that place as an index among the new parent's children counted before the move.
 /// </para>
 /// </remarks>
 internal sealed class ActionRunner(DislSpecification specification, DislDiagram diagram, IIdSource ids, string context)
@@ -127,7 +128,21 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                     || !Member(body, bodyAt, "after", variables, null, out var after)
                     || !Member(body, bodyAt, "before", variables, null, out var before)) return false;
                 if (target is not DislElement element) return Refuse($"The reparent at {at} has no element to move.");
-                _changes.Add(new DislChange.Reparent(element.Id, (parent as DislElement)?.Id, slot as string, (after as DislElement)?.Id, (before as DislElement)?.Id));
+                var newParent = parent as DislElement;
+                var siblings = diagram.SiblingsUnder(newParent);
+                var index = -1;
+                if (after is DislElement previous && (index = siblings.IndexOf(previous)) >= 0) index++;
+                else if (before is DislElement next) index = siblings.IndexOf(next);
+                if (index < 0 && (after is DislElement || before is DislElement)) return Refuse($"The reparent at {at} places the element beside one that is not beneath its new parent.");
+                try
+                {
+                    diagram.Reparent(element, newParent, slot as string, index);
+                }
+                catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+                {
+                    return Refuse(e.Message);
+                }
+                _changes.Add(new DislChange.Reparent(element.Id, newParent?.Id, slot as string, (after as DislElement)?.Id, (before as DislElement)?.Id, index));
                 return true;
             }
             case "let":

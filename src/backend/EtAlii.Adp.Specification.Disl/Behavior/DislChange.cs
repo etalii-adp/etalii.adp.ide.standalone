@@ -17,7 +17,11 @@ public abstract record DislChange
     public sealed record Remove(string ElementId) : DislChange;
 
     /// <summary>A node moved under another parent, or to the top level (<c>reparent</c>).</summary>
-    public sealed record Reparent(string ElementId, string? ParentId, string? Slot, string? After, string? Before) : DislChange;
+    /// <param name="Index">
+    /// Where among the new parent's children it went, counted before the move with the node itself
+    /// included; negative for last.
+    /// </param>
+    public sealed record Reparent(string ElementId, string? ParentId, string? Slot, string? After, string? Before, int Index = -1) : DislChange;
 }
 
 /// <summary>

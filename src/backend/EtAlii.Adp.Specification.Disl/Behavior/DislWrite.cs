@@ -8,8 +8,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <c>yearMonth</c> as <c>±YYYY-MM</c>, an enum value as its stored form, an element as its id.
 /// </summary>
 /// <remarks>
-/// <b>A <see cref="DislChange.Reparent"/> has no FBL change yet</b> (runtime plan step S16 adds a
-/// move), so it is refused rather than written as something else.
+/// A <see cref="DislChange.Reparent"/> is written as a <see cref="ModelChange.Move"/>, which only a
+/// persistence plugin writes: a declared binding refuses it with a sentence.
 /// </remarks>
 public static class DislWrite
 {
@@ -24,7 +24,7 @@ public static class DislWrite
             DislChange.Create create => new ModelChange.Add(map.BindingTypeOf(create.Type), create.Id, Written(specification, map, create.Type, create.Attributes), create.ParentId),
             DislChange.Set set => new ModelChange.Set(set.ElementId, Written(specification, map, set.Type, set.Attributes)),
             DislChange.Remove remove => new ModelChange.Remove(remove.ElementId),
-            DislChange.Reparent => throw new NotSupportedException("FBL has no change that moves an element to another parent yet."),
+            DislChange.Reparent reparent => new ModelChange.Move(reparent.ElementId, reparent.ParentId, reparent.Index),
             _ => throw new ArgumentException($"{change.GetType().Name} is no change this runtime writes.", nameof(change)),
         };
     }

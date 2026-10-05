@@ -57,10 +57,10 @@ public sealed class DislElement : ICelObject
     public IReadOnlyDictionary<string, object?> Attributes => _attributes;
 
     /// <summary>A node's parent; null for a top-level node and for a relation.</summary>
-    public DislElement? Parent { get; internal init; }
+    public DislElement? Parent { get; internal set; }
 
     /// <summary>The children slot a node is in beneath its parent (§4.8); null at the top level.</summary>
-    public string? Slot { get; internal init; }
+    public string? Slot { get; internal set; }
 
     /// <summary>A node's children, in model order.</summary>
     public IReadOnlyList<DislElement> Children => _children;
@@ -130,6 +130,8 @@ public sealed class DislElement : ICelObject
     internal void AddChild(DislElement child) => _children.Add(child);
 
     internal void RemoveChild(DislElement child) => _children.Remove(child);
+
+    internal void InsertChild(int index, DislElement child) => _children.Insert(index, child);
 
     /// <summary>Stores <paramref name="value"/> for <paramref name="name"/>, or forgets the stored value for null: an action's effect on the working state (§9.4).</summary>
     internal void Store(string name, object? value)

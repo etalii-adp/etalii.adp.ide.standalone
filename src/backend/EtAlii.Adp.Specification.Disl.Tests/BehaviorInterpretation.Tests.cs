@@ -142,7 +142,7 @@ public class BehaviorInterpretationTests
 
         Assert.Equal("Crate n title=N made=2001-02 size=L", $"{add.Type} {add.Id} {Values(add.Attributes)}");
         Assert.Equal("-0001-12", DislWrite.StoredForm(Specification, "Box", "made", -1L));
-        Assert.Throws<NotSupportedException>(() => DislWrite.ToFbl(Specification, new DislChange.Reparent("n", null, null, null, null)));
+        Assert.Equal(new ModelChange.Move("n", null, -1), DislWrite.ToFbl(Specification, new DislChange.Reparent("n", null, null, null, null)));
     }
 
     [Fact]

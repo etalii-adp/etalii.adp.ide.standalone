@@ -96,6 +96,48 @@ public sealed class DislDiagram : ICelObject
         _ends = null;
     }
 
+    /// <summary>
+    /// Moves node <paramref name="element"/>, with everything beneath it, under <paramref name="parent"/>
+    /// in <paramref name="slot"/>, or to the top level: an action's effect on the working state (§9.4).
+    /// </summary>
+    /// <param name="index">
+    /// Where among the new parent's children it goes, counted before the move with the node itself
+    /// included, as <c>ModelChange.Move</c> counts it; negative or past the end puts it last.
+    /// </param>
+    /// <remarks>The node list keeps document order: the moved subtree follows the sibling it now comes after.</remarks>
+    internal void Reparent(DislElement element, DislElement? parent, string? slot, int index)
+    {
+        if (element.Diagram != this || element.Type.IsRelation) throw new ArgumentException("Only a node of this diagram can move.", nameof(element));
+        if (parent is not null && (parent.Diagram != this || parent.Type.IsRelation)) throw new ArgumentException("A node moves beneath a node of its own diagram.", nameof(parent));
+        if (parent is not null && (parent == element || parent.Ancestors().Contains(element))) throw new InvalidOperationException("A node cannot move beneath itself.");
+
+        var siblings = SiblingsUnder(parent);
+        var at = index < 0 || index > siblings.Count ? siblings.Count : index;
+        var current = element.Parent == parent ? siblings.IndexOf(element) : -1;
+        if (current >= 0 && current < at) at--;
+
+        var subtree = element.Descendants().Prepend(element).ToHashSet();
+        var block = _nodes.Where(subtree.Contains).ToList();
+        _nodes.RemoveAll(subtree.Contains);
+        element.Parent?.RemoveChild(element);
+        element.Parent = parent;
+        element.Slot = parent is null ? null : slot;
+        parent?.InsertChild(at, element);
+
+        var after = SiblingsUnder(parent).Where(sibling => sibling != element).ElementAtOrDefault(at - 1);
+        var position = after is not null
+            ? after.Descendants().Prepend(after).Max(_nodes.IndexOf) + 1
+            : parent is not null
+                ? _nodes.IndexOf(parent) + 1
+                : _nodes.FindIndex(node => node.Parent is null) is var first and >= 0 ? first : _nodes.Count;
+        _nodes.InsertRange(position, block);
+        _ends = null;
+    }
+
+    /// <summary>The children of <paramref name="parent"/>, or the top-level nodes, in model order.</summary>
+    internal List<DislElement> SiblingsUnder(DislElement? parent) =>
+        parent is not null ? [.. parent.Children] : [.. _nodes.Where(node => node.Parent is null)];
+
     /// <summary>Sets diagram attribute <paramref name="name"/>, as a reader does.</summary>
     internal void SetAttribute(string name, object? value) => _attributes[name] = value;
 
