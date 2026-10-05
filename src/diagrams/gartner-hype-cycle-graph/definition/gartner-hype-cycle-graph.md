@@ -179,11 +179,11 @@ The specification's `compact` viewpoint is a variant of true time with a "Compac
 
 ## Validation rules
 
-All twelve rules report as warnings in the Errors and Warnings panel, each with the line of the entry it concerns (`backend/GhgRuleSet.cs`, `backend/GhgValidator.cs`). Saving is never blocked. Every finding carries the tool's code, and the messages are the tool's sentences. How each rule is carried in the specification:
+All twelve rules report as warnings in the Errors and Warnings panel, each with the line of the entry it concerns (`backend/GhgValidator.cs`, which evaluates this specification's constraints; the hand-written rule set they replaced is kept as the tests' oracle, `Parity/GhgRuleSet.cs`). Saving is never blocked. Every finding carries the tool's code, and the messages are the tool's sentences. The findings are listed in the order of `constraints.x-order`, by code, and within a code by line. How each rule is carried in the specification:
 
 | Rule | Where it is in the specification |
 |---|---|
-| `ghg.duplicate-influence` | `allowParallel: false` on `Influence` (built-in `std.endpoints`, code per case in `x-builtIn.code`). |
+| `ghg.duplicate-influence` | `allowParallel: false` on `Influence` (built-in `std.endpoints`, code per case in `x-builtIn.code`, one finding per pair, at the second influence, in `x-builtIn.oncePerGroup`). |
 | `ghg.self-influence` | `allowSelfLoops: false` on `Influence` (`std.endpoints`). |
 | `ghg.influence-into-trigger` | `target: "Trend"` on `Influence` (`std.endpoints`). |
 | `ghg.stop-before-start` | Constraint `stopAfterStart`. |
@@ -191,8 +191,8 @@ All twelve rules report as warnings in the Errors and Warnings panel, each with 
 | `ghg.boundary-order` | Constraint `boundaryOrder`: stored boundaries strictly inside the span and strictly in order, naming the first that is not. |
 | `ghg.bad-attachment` | Constraints `fromAttachment` and `toAttachment`, for every end not at a trigger. |
 | `ghg.dangling-reference` | `std.references`, with the code. |
-| `ghg.duplicate-id` | `std.duplicateId`, with the code. |
-| `ghg.unreadable-entry` | `std.unreadableEntry` and `std.unparseable` with the code, and constraints `trendStart` and `trendStop`. |
+| `ghg.duplicate-id` | `std.duplicateId`, with the code, reported once, at the last entry declaring the id (`x-builtIn.oncePerGroup`). |
+| `ghg.unreadable-entry` | `std.unreadableEntry` and `std.unparseable` with the code. A trend without a readable `start` or `stop` is the reader's finding, as an unknown key is: a constraint over the model cannot tell a missing date from a malformed one, which the reader also reads as absent. |
 | `ghg.trigger-date` | Constraint `triggerDate`. |
 | `ghg.note-position` | Constraint `notePosition`. |
 
@@ -205,6 +205,7 @@ The backend refuses what the canvas would not offer anyway, because a request is
 - "A trend must stop after it starts, at least one month later." and "A trend must be at least one month long."
 - "A trend showing N phases must be at least N months long, one per phase." (`GhgEdits.cs`)
 - "A trend shows 1 to 4 phases."
+- "This note's position cannot be read, so it cannot be resized until it is fixed in the file." and "A note needs a width and a height."
 - "'…' is not a date; write it as YYYY-MM, such as 2007-06." (for a trigger, "such as 1947-12.")
 - "Only a boundary between two visible phases can be moved."
 - "This trend's phases are already even."
@@ -230,12 +231,14 @@ Each item below is declared in the specification under an `x-` key shaped as the
 | `x-field.id` | the per-phase Influence and Influenced by items | A name for a form item that edits no attribute, so `x-ghg.properties` can give each of the eight lists its own row id. | The eight lists share the ids of their two labels. |
 | `x-menu.group` | each context-menu entry | The group the entry is shown in: consecutive entries with one name form one group, so Arrange diagram stands apart from an element's edits and from the canvas's adds. | Each menu is one group. |
 | `x-ghg` | the specification | Today's wire ids of the toolbox items and their drops, the context actions and the property rows (`client/ghgIds.ts`), as `x-abm` states the behavior model's. An action is keyed by its operation or kind, and `"Influence/delete": "ghg.disconnect"` overrides that for one type. | Ids are the specification's own names, which the client does not know. |
-| `x-builtIn.code` | `std.endpoints` | The code per case: into a trigger, to itself, or a second one in the same direction. See [Validation rules](#validation-rules). | The findings carry no tool code. |
+| `x-builtIn.code` | `std.endpoints` | The code per case: into a trigger, to itself, or a second one in the same direction, read from the finding's `violation` detail. See [Validation rules](#validation-rules). | The findings carry no tool code. |
+| `x-builtIn.oncePerGroup` | `std.endpoints`, `std.duplicateId` | Which member of a group of parallel relations or of entries sharing an id is reported: `second` reports the group once, at its second member; `last` reports it once, at its last. | Every member after the first is reported, as DISL 0.2 says for `std.duplicateId`, so three influences in one direction are two findings. |
+| `x-order` | `constraints` | The order findings are listed in: by code, in the order given, then by line. | Findings are listed as DISL 0.2 orders them, the reader's first, then the built-ins', then the rules'. |
 | `x-layout.rowPacked` | the `rowPacked` layout | Compact's row-packed placement. See [Compact mode](#compact-mode). | `lanes`. |
 | `x-layout.rowArrange` | the `rowArrange` layout | Arrange diagram's rows-only arrangement and its refusals. See [Arrange diagram](#arrange-diagram). | Arrange does nothing. |
 | `x-persistence.typeMap` | `persistence` | How the FBL binding's types (`Graph`, `Unit`, `Influence` as an element with `from` and `to`, `Unreadable`) and its host attributes map onto the metamodel. See [The document](#the-document). | The binding's types and the metamodel's do not line up, and the document cannot be read. |
 
-Two built-in findings also read detail keys that DISL 0.2 does not list, with a fallback so the specification stays correct without them: `std.duplicateId`'s `count` (the message says how many times an id is declared) and `std.references`' `end` (the message says whether the `from` or the `to` names nothing).
+Three built-in findings also read detail keys that DISL 0.2 does not list, with a fallback so the specification stays correct without them: `std.duplicateId`'s `count` (the message says how many times an id is declared), `std.references`' `end` (the message says whether the `from` or the `to` names nothing) and `std.endpoints`' `violation` (`target`, `selfLoop` or `parallel`: which of the relation's limits the finding is about, so a duplicated influence into a trigger or into itself is told from a third one in the same direction).
 
 One thing has no key, because no construct could carry it: **the written id of an influence end that names nothing.** DISL hands CEL a dangling end as null (4.9), and the binding cannot map `to` to both the end and an attribute, so `endText` cannot write the end as the property grid does (`x · Peak`, `GhgContextPropertyProvider.Describe`). A runtime shows such a list or From or To row empty; the standalone host writes it from the id the binding read.
 

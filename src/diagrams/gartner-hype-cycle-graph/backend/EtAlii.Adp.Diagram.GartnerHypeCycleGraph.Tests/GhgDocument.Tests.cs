@@ -181,7 +181,7 @@ public class GhgDocumentTests
         Assert.Empty(model.Trends);
         Assert.Empty(model.Influences);
         Assert.Empty(model.Problems);
-        Assert.Empty(GhgValidator.Validate(model));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(text)));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class GhgDocumentTests
         Assert.Empty(reread.Problems);
         Assert.Equal(["a", "b"], reread.Trends.Select(trend => trend.Id));
         Assert.Equal(new GhgEnd("slope", "bottom", 0.25), Assert.Single(reread.Influences).FromEnd);
-        Assert.Empty(GhgValidator.Validate(reread));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(document.Text)));
     }
 
     [Fact]

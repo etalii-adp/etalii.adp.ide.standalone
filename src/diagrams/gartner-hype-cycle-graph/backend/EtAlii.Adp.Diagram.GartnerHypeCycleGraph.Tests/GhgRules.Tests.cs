@@ -34,7 +34,7 @@ public class GhgRulesTests
     {
         var model = GhgParser.Parse(Load(fixture));
 
-        var breaches = GhgValidator.Validate(model);
+        var breaches = GhgValidator.Validate(Load(fixture));
 
         Assert.True(
             breaches.Count > 0 && breaches.All(breach => breach.RuleId == ruleId),
@@ -64,7 +64,7 @@ public class GhgRulesTests
         var model = GhgParser.Parse(Load("rule-opposite-directions.ghg"));
         Assert.Equal(2, model.Influences.Count);
 
-        Assert.Empty(GhgValidator.Validate(model));
+        Assert.Empty(GhgValidator.Validate(Load("rule-opposite-directions.ghg")));
     }
 
     /// <summary>Requirement 7.3: a duplicate whose first copy is on a hidden phase is still a duplicate.</summary>
@@ -76,7 +76,7 @@ public class GhgRulesTests
         var hidden = model.Influences.Single(influence => influence.Id == "ab");
         Assert.True(hidden.FromEnd.PhaseIndex >= a.VisiblePhases, "the fixture's first copy must be on a hidden phase");
 
-        var breach = Assert.Single(GhgValidator.Validate(model));
+        var breach = Assert.Single(GhgValidator.Validate(Load("rule-duplicate-hidden.ghg")));
 
         Assert.Equal(GhgRuleIds.DuplicateInfluence, breach.RuleId);
     }
@@ -92,7 +92,7 @@ public class GhgRulesTests
 
         var drawn = new GhgElementMapper().Visible(model, DiagramViewport.Unbounded);
 
-        Assert.Contains(GhgValidator.Validate(model), breach => breach.RuleId == GhgRuleIds.DuplicateId);
+        Assert.Contains(GhgValidator.Validate(Load("rule-duplicate-id.ghg")), breach => breach.RuleId == GhgRuleIds.DuplicateId);
         var trends = drawn.Where(element => element.Type == GhgElementMapper.TrendType).ToList();
         Assert.Equal(3, trends.Count);
         Assert.Equal(3, trends.Select(trend => trend.Id).Distinct(StringComparer.Ordinal).Count());

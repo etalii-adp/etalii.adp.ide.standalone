@@ -75,7 +75,7 @@ public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) :
 
         // Every influence in the document counts, including one hidden by a phase count
         // (Requirement 7.3): the check reads the document, not what is drawn.
-        return GhgRuleSet.AlreadyInfluences(model, from, to)
+        return model.Influences.Any(influence => string.Equals(influence.From, from, StringComparison.Ordinal) && string.Equals(influence.To, to, StringComparison.Ordinal))
             ? "This trend already influences that one; a trend influences another once in each direction."
             : null;
     }

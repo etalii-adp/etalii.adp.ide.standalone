@@ -85,7 +85,7 @@ public class GhgTriggersAndNotesTests
         Assert.Equal(["t1", "t2"], reread.Triggers.Select(trigger => trigger.Id));
         Assert.Equal(["n1", "n2"], reread.Notes.Select(note => note.Id));
         Assert.Equal("Two\nlines", reread.Notes[1].Text);
-        Assert.Empty(GhgValidator.Validate(reread));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(document.Text)));
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class GhgTriggersAndNotesTests
         var reread = Reread(document);
         Assert.Empty(reread.Triggers);
         Assert.Equal(["i-13"], reread.Influences.Select(influence => influence.Id));
-        Assert.Empty(GhgValidator.Validate(reread));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(document.Text)));
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public class GhgTriggersAndNotesTests
         Assert.Contains(model.Problems, problem => problem.Message.Contains("A trigger entry is not a mapping", StringComparison.Ordinal));
         Assert.Contains(model.Problems, problem => problem.Message.Contains("`row: two` is not a whole number", StringComparison.Ordinal));
         Assert.Contains(model.Problems, problem => problem.Message.Contains("`colour` is not a key this module reads on a trigger", StringComparison.Ordinal));
-        Assert.Contains(GhgValidator.Validate(model), breach => breach.RuleId == GhgRuleIds.NotePosition);
+        Assert.Contains(GhgValidator.Validate(document), breach => breach.RuleId == GhgRuleIds.NotePosition);
     }
 
     /// <summary>
@@ -208,7 +208,7 @@ public class GhgTriggersAndNotesTests
         Assert.Null(Assert.Single(model.Notes).At);
         Assert.Contains(model.Problems, problem => problem.Message == $"`start: 1900-{month}` is not a date written as YYYY-MM.");
         Assert.Contains(model.Problems, problem => problem.Message == $"`stop: 1910-{month}` is not a date written as YYYY-MM.");
-        var breaches = GhgValidator.Validate(model);
+        var breaches = GhgValidator.Validate(GhgBody.Parse(text));
         Assert.Contains(breaches, breach => breach.RuleId == GhgRuleIds.TriggerDate);
         Assert.Contains(breaches, breach => breach.RuleId == GhgRuleIds.NotePosition);
         Assert.Empty(new GhgElementMapper().Visible(model, DiagramViewport.Unbounded));

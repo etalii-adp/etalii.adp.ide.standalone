@@ -135,8 +135,8 @@
     "endReadable": {
       "params": [ { "name": "phase", "type": "dyn" }, { "name": "edge", "type": "dyn" }, { "name": "at", "type": "dyn" } ],
       "returns": "bool",
-      "cel": "phase.hasValue() && edge.hasValue() && at.hasValue() && at.value() >= 0.0 && at.value() <= 1.0",
-      "doc": "Whether an end names a phase, a top or bottom edge, and an `at` from 0 to 1 (`GhgEnd.IsReadable`)."
+      "cel": "phase.hasValue() && phase.value() in ['peak', 'trough', 'slope', 'plateau'] && edge.hasValue() && edge.value() in ['top', 'bottom'] && at.hasValue() && at.value() >= 0.0 && at.value() <= 1.0",
+      "doc": "Whether an end names a phase, a top or bottom edge, and an `at` from 0 to 1 (`GhgEnd.IsReadable`). A phase or edge the enum does not know is kept as written (4.5), so it is checked by name."
     },
     "endText": {
       "params": [ { "name": "e", "type": "dyn" }, { "name": "phase", "type": "string" } ],
@@ -993,14 +993,19 @@
   "constraints": {
     "defaults": { "severity": "warning", "timing": [ "live" ] },
     "blockSaveOn": "never",
+    "x-order": [
+      "ghg.duplicate-influence", "ghg.self-influence", "ghg.stop-before-start", "ghg.phase-count", "ghg.boundary-order", "ghg.bad-attachment",
+      "ghg.dangling-reference", "ghg.duplicate-id", "ghg.unreadable-entry", "ghg.influence-into-trigger", "ghg.trigger-date", "ghg.note-position"
+    ],
     "builtIn": {
       "std.facets": { "severity": "warning" },
       "std.endpoints": {
         "severity": "warning",
-        "message": { "cel": "self.target.isA('Trigger') ? '`' + self.id + '` ends at the trigger `' + self.target.id + '`; an influence cannot end at a trigger.' : (self.source == self.target ? '`' + self.id + '` has `' + self.source.id + '` influence itself; a trend cannot.' : '`' + self.source.id + '` influences `' + self.target.id + '` ' + string(self.source.outgoingOf('Influence').filter(r, r.target == self.target).size()) + ' times; a trend influences another once in each direction.')" },
+        "message": { "cel": "cel.bind(v, detail.?violation.orValue(self.target.isA('Trigger') ? 'target' : (self.source == self.target ? 'selfLoop' : 'parallel')), v == 'target' ? '`' + self.id + '` ends at the trigger `' + self.target.id + '`; an influence cannot end at a trigger.' : (v == 'selfLoop' ? '`' + self.id + '` has `' + self.source.id + '` influence itself; a trend cannot.' : '`' + self.source.id + '` influences `' + self.target.id + '` ' + string(self.source.outgoingOf('Influence').filter(r, r.target == self.target).size()) + ' times; a trend influences another once in each direction.'))" },
         "refusal": { "cel": "target.isA('Trigger') ? 'An influence cannot end at a trigger.' : (!target.isA('Trend') || !(source.isA('Trend') || source.isA('Trigger')) ? 'An influence is drawn from one trend to another.' : (source == target ? 'A trend cannot influence itself.' : 'This trend already influences that one; a trend influences another once in each direction.'))" },
-        "x-builtIn.code": { "cel": "self.target.isA('Trigger') ? 'ghg.influence-into-trigger' : (self.source == self.target ? 'ghg.self-influence' : 'ghg.duplicate-influence')" },
-        "doc": "Covers ghg.influence-into-trigger, ghg.self-influence and ghg.duplicate-influence; the code per case is `x-builtIn.code`. A hidden influence counts like any other, because the rule reads the model, not what is drawn."
+        "x-builtIn.code": { "cel": "cel.bind(v, detail.?violation.orValue(self.target.isA('Trigger') ? 'target' : (self.source == self.target ? 'selfLoop' : 'parallel')), v == 'target' ? 'ghg.influence-into-trigger' : (v == 'selfLoop' ? 'ghg.self-influence' : 'ghg.duplicate-influence'))" },
+        "x-builtIn.oncePerGroup": "second",
+        "doc": "Covers ghg.influence-into-trigger, ghg.self-influence and ghg.duplicate-influence; the code per case is `x-builtIn.code`, by `detail.violation` (`target`, `selfLoop` or `parallel`), so an influence that is both a loop and a repeat is reported as each. A repeat is reported once per pair, on the second influence, however many follow (`x-builtIn.oncePerGroup`). A hidden influence counts like any other, because the rule reads the model, not what is drawn."
       },
       "std.references": {
         "severity": "warning",
@@ -1010,10 +1015,11 @@
       "std.duplicateId": {
         "code": "ghg.duplicate-id",
         "message": { "cel": "'`' + detail.id + '` is declared ' + string(detail.?count.orValue(2)) + ' times; an id names one entry.'" },
-        "doc": "Ids are unique across all four lists together. The later holder of an id is drawn, with an ephemeral id."
+        "x-builtIn.oncePerGroup": "last",
+        "doc": "Ids are unique across all four lists together. The later holder of an id is drawn, with an ephemeral id. An id held several times is reported once, on its last holder, with the count (`x-builtIn.oncePerGroup`)."
       },
       "std.unreadableEntry": { "code": "ghg.unreadable-entry", "message": { "cel": "detail.reason" } },
-      "std.unparseable": { "code": "ghg.unreadable-entry", "message": { "cel": "'The document could not be read as YAML: ' + detail.reason" } }
+      "std.unparseable": { "severity": "warning", "code": "ghg.unreadable-entry", "message": { "cel": "'The document could not be read as YAML: ' + detail.reason" } }
     },
     "rules": [
       {
@@ -1041,20 +1047,6 @@
         "rule": "badBoundary(self) == ''",
         "message": { "cel": "'`' + self.id + '`\\'s `' + badBoundary(self) + '` is out of order or outside ' + monthText(self.start) + ' to ' + monthText(self.stop) + '.'" },
         "doc": "Stored boundaries lie strictly inside the span and strictly in phase order; one finding per trend, for the first that does not. For drawing they are clamped, never rejected."
-      },
-      {
-        "id": "trendStart",
-        "code": "ghg.unreadable-entry",
-        "scope": "Trend",
-        "rule": "has(self.start)",
-        "message": "A trend has no `start` date; it cannot be drawn."
-      },
-      {
-        "id": "trendStop",
-        "code": "ghg.unreadable-entry",
-        "scope": "Trend",
-        "rule": "has(self.stop)",
-        "message": "A trend has no `stop` date; it cannot be drawn."
       },
       {
         "id": "fromAttachment",
@@ -1131,6 +1123,23 @@
         "enforcement": "prevent",
         "rule": "attribute != 'phases' || (newValue >= 1 && newValue <= 4)",
         "message": "A trend shows 1 to 4 phases."
+      },
+      {
+        "id": "noteSizeNeedsPosition",
+        "kind": "change",
+        "scope": "Note",
+        "enforcement": "prevent",
+        "rule": "!(attribute in ['width', 'height']) || has(self.at)",
+        "message": "This note's position cannot be read, so it cannot be resized until it is fixed in the file.",
+        "doc": "A resize can move a note's left edge, which is written as its month; a note whose month cannot be read has no edge to move from."
+      },
+      {
+        "id": "noteSizePositive",
+        "kind": "change",
+        "scope": "Note",
+        "enforcement": "prevent",
+        "rule": "!(attribute in ['width', 'height']) || double(newValue) > 0.0",
+        "message": "A note needs a width and a height."
       },
       {
         "id": "spanFitsPhasesOnCanvas",

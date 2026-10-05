@@ -131,6 +131,11 @@ public sealed class DislElement : ICelObject
 
     public override string ToString() => $"{Type.Name} {Id}";
 
+    /// <summary>Identity, as everywhere; the element a finding names it by its written id (<see cref="DislWrittenElement"/>) is this one too.</summary>
+    public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is DislWrittenElement written && ReferenceEquals(this, written.Element);
+
+    public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
+
     // ---- CEL -------------------------------------------------------------------------------------
 
     /// <inheritdoc />

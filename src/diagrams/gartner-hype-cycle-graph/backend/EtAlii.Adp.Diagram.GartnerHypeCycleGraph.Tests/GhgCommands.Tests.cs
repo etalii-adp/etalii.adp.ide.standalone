@@ -168,7 +168,7 @@ public sealed class GhgCommandsTests : IDisposable
     [Fact]
     public async Task AScriptedDuplicate_IsRefused_WhileTheOppositeDirectionIsAccepted()
     {
-        Assert.True(GhgRuleSet.AlreadyInfluences(Parse(), "steam-engine", "railways"));
+        Assert.True(Parity.GhgRuleSet.AlreadyInfluences(Parse(), "steam-engine", "railways"));
 
         var duplicate = await _dispatcher.DispatchAsync(
             new AddGhgInfluenceCommand(Body, "steam-engine", new GhgEnd("plateau", "bottom", 0.9), "railways", new GhgEnd("slope", "top", 0.2)),
@@ -184,7 +184,7 @@ public sealed class GhgCommandsTests : IDisposable
 
         Assert.True(opposite.IsSuccess, opposite.Error);
         Assert.Contains(Parse().Influences, influence => influence.From == "railways" && influence.To == "steam-engine");
-        Assert.Empty(GhgValidator.Validate(Parse()));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken))));
     }
 
     /// <summary>Requirement 4.6: a boundary dragged past its neighbour stops a month short of it.</summary>

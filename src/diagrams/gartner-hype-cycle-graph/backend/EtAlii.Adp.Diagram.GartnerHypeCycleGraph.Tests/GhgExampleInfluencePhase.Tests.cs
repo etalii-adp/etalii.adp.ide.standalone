@@ -139,7 +139,7 @@ public class GhgExampleInfluencePhaseTests
         var model = Model(name);
 
         Assert.Contains(model.Triggers, trigger => model.Influences.Any(influence => influence.From == trigger.Id));
-        Assert.Empty(GhgValidator.Validate(model));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(name)))));
     }
 
     /// <summary>

@@ -89,7 +89,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 
         Assert.True(result.IsSuccess, result.Error);
         Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
-        Assert.Empty(GhgValidator.Validate(Parse()));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken))));
 
         var undone = await _dispatcher.DispatchAsync(Assert.IsAssignableFrom<ICommand>(result.Inverse), TestContext.Current.CancellationToken);
 

@@ -1,5 +1,6 @@
 using System.Globalization;
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 using EtAlii.Adp.Specification.Fbl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -25,8 +26,8 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </para>
 /// <para>
 /// <b>What breaks a RULE is not a parse problem.</b> A stop before its start, a phase count of 7 or a
-/// second influence in one direction all read perfectly well; <see cref="GhgRuleSet"/> reports them
-/// under their own rule ids, as it does a duplicate id or a dangling end, which is why the library's
+/// second influence in one direction all read perfectly well; the definition's constraints report them
+/// under their own rule ids, as they do a duplicate id or a dangling end, which is why the library's
 /// own findings for those are not repeated as problems.
 /// </para>
 /// </remarks>
@@ -90,6 +91,26 @@ public static class GhgParser
             Triggers = triggers,
             Notes = notes,
         };
+    }
+
+    /// <summary>
+    /// The reader's findings for the definition's constraints (DISL §8.7): a body that could not be
+    /// read is one <c>std.unparseable</c>, with the YAML reader's own sentence as its reason; otherwise
+    /// every problem of <paramref name="model"/> is a <c>std.unreadableEntry</c>, in the order the
+    /// problems are listed, each on its 1-based line.
+    /// </summary>
+    internal static IReadOnlyList<DislReaderFinding> ReaderFindings(GhgBody body, GhgModel model)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (body.Model.Unreadable)
+        {
+            var finding = body.Model.Findings.FirstOrDefault();
+            return [DislReaderFinding.NotParsed(YamlMessage(finding), LineOf(finding) + 1)];
+        }
+
+        return [.. model.Problems.Select(problem => DislReaderFinding.Unreadable(problem.Message, problem.Line + 1))];
     }
 
     /// <summary>A scalar's text as the module reads it: strings as they are, numbers and booleans as written; null for a list or nothing.</summary>
