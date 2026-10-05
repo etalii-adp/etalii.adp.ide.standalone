@@ -22,7 +22,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </remarks>
 internal static class DislEvaluation
 {
-    private static readonly ConditionalWeakTable<DislSpecification, ConcurrentDictionary<(string Context, string Source), CelProgram>> Compiled = [];
+    private static readonly ConditionalWeakTable<DislSpecification, ConcurrentDictionary<(string Context, string Source, string Bindings), CelProgram>> Compiled = [];
 
     private static readonly CelProgram Text = CelEnvironment.Standard().DeclareVariable("v").Compile("string(v)");
 
@@ -32,14 +32,20 @@ internal static class DislEvaluation
             ? expression.Program.Evaluate(variables)
             : new CelError($"No expression was compiled at {pointer}.");
 
-    /// <summary>The value of <paramref name="source"/> compiled in <paramref name="context"/>, for an expression the loader does not walk.</summary>
+    /// <summary>
+    /// The value of <paramref name="source"/> compiled in <paramref name="context"/>, for an expression the
+    /// loader does not walk; a variable beyond the context's (an option's <c>item</c>) is declared as bound.
+    /// </summary>
     public static object? Of(DislSpecification specification, string context, string source, IReadOnlyDictionary<string, object?> variables)
     {
-        var programs = Compiled.GetValue(specification, _ => new ConcurrentDictionary<(string, string), CelProgram>());
+        var programs = Compiled.GetValue(specification, _ => new ConcurrentDictionary<(string, string, string), CelProgram>());
+        var declared = DislContexts.VariablesOf(context);
+        var bindings = string.Join(",", variables.Keys.Where(name => !declared.Contains(name)).Order(StringComparer.Ordinal));
         CelProgram program;
         try
         {
-            program = programs.GetOrAdd((context, source), key => specification.Environment(key.Context).Compile(key.Source));
+            program = programs.GetOrAdd((context, source, bindings), key =>
+                specification.Environment(key.Context, key.Bindings.Length == 0 ? [] : key.Bindings.Split(',')).Compile(key.Source));
         }
         catch (CelException e)
         {

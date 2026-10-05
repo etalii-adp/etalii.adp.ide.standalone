@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.Parity;
 public class AbmDislModelTests
 {
     /// <summary>Three roots and nesting four deep, which the corpus lacks: its documents each have one root.</summary>
-    private const string Forest =
+    internal const string Forest =
         "## Behavior\n- **Do:** A\n- **Do in order:** B\n  - **Do:** B1\n  - **Try in order:** B2\n    - **Do:** B2a\n    - **Retry up to 2 times:** B2b\n      - **Ask the user:** B2b1\n  - **Check:** B3\n- **Check:** C\n";
 
     public static TheoryData<string> Documents() => [.. Texts().Select(document => document.Name)];

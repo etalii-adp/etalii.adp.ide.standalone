@@ -350,7 +350,7 @@
           "edits": {
             "connect": "moveUnder"
           },
-          "doc": "One line per node with a parent. The source end is any node rather than Composite or Decorator, so a leaf's children keep their lines; which nodes may start a new line is said by `moveUnder`'s reasons."
+          "doc": "One line per node with a parent. The source end is any node rather than Composite or Decorator, so a leaf's children keep their lines; which nodes may start a new line is said by `moveUnder`'s aborts."
         }
       }
     }
@@ -1990,30 +1990,52 @@
           "Child"
         ],
         "icon": "mdi-file-tree-outline",
-        "unavailable": [
-          {
-            "when": "self.source.id == self.target.id || self.target.descendants().exists(d, d.id == self.source.id)",
-            "message": "A node cannot move beneath itself."
-          },
-          {
-            "when": "self.source.isA('Leaf')",
-            "message": {
-              "cel": "'\"' + keyword(self.source) + '\" holds no children.'"
-            }
-          },
-          {
-            "when": "self.source.isA('Decorator') && self.source.children.size() > 0 && !(self.target.parent != null && self.target.parent.id == self.source.id)",
-            "message": {
-              "cel": "'\"' + keyword(self.source) + '\" holds exactly one child, and already has it.'"
-            }
-          },
-          {
-            "when": "self.target.parent != null && self.target.parent.id == self.source.id && self.target.positionIn(self.source.children) == self.source.children.size() - 1",
-            "message": "That node is already there."
-          }
-        ],
-        "doc": "Run by a new line drawn from a node (the source) to another (the target), mapped from the derived Child's `connect` gesture: the target moves, with everything under it, to be the source's last child.",
+        "doc": "Run by a new line drawn from a node (the source) to another (the target), mapped from the derived Child's `connect` gesture: the target moves, with everything under it, to be the source's last child. The menu always offers it, as the module does; a line that cannot move the target is refused when it is run, with the writer's sentence, so the refusals are aborts rather than `unavailable` reasons.",
         "actions": [
+          {
+            "if": "self.source.id == self.target.id || self.target.descendants().exists(d, d.id == self.source.id)",
+            "then": [
+              {
+                "abort": {
+                  "message": "'A node cannot move beneath itself.'"
+                }
+              }
+            ]
+          },
+          {
+            "if": "self.source.isA('Leaf')",
+            "then": [
+              {
+                "abort": {
+                  "message": {
+                    "cel": "'\"' + keyword(self.source) + '\" holds no children.'"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "if": "self.source.isA('Decorator') && self.source.children.size() > 0 && !(self.target.parent != null && self.target.parent.id == self.source.id)",
+            "then": [
+              {
+                "abort": {
+                  "message": {
+                    "cel": "'\"' + keyword(self.source) + '\" holds exactly one child, and already has it.'"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "if": "self.target.parent != null && self.target.parent.id == self.source.id && self.target.positionIn(self.source.children) == self.source.children.size() - 1",
+            "then": [
+              {
+                "abort": {
+                  "message": "'That node is already there.'"
+                }
+              }
+            ]
+          },
           {
             "reparent": {
               "target": "self.target",

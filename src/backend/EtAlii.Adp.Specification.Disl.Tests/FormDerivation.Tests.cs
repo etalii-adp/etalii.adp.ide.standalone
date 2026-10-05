@@ -99,12 +99,37 @@ public class FormDerivationTests
 
         Assert.Equal(
         [
-            "abm.kind | Kind | Check | - | editable | group Node",
+            "abm.kind | Kind | Check | - | editable | group Node | [Do in order, Try in order, Do together, Retry, Repeat until, Only while, Ask approval before, Check, Do, Ask the user, Delegate]",
             "abm.label | Label | Is it known? | - | editable | group Node",
             "abm.notes | Notes |  | textarea | editable | group Node",
             "abm.place | Place | 1.1 | - | read-only (A node's place follows from where it sits in the tree.) | group Node",
         ], check);
         Assert.Equal("abm.attempts | Attempts | 3 | - | editable | group Node", retry[2]);
+    }
+
+    [Fact]
+    public void ARetypeItem_OffersTheTypesItsOptionsGive_NamedByItsOptionLabel()
+    {
+        // Arrange.
+        var specification = Specifications.Loaded(Specifications.With("""
+            "metamodel": { "types": { "Box": { "attributes": { "name": { "type": "string" } } }, "Crate": { "attributes": { "name": { "type": "string" } } } } },
+            "forms": { "thing": { "for": ["Box", "Crate"], "items": [
+              { "kind": "computed", "label": "Type", "value": { "cel": "self.type" },
+                "x-test-retype": { "options": "['Box', 'Crate'].filter(t, t != self.type || self.name == 'keep')", "optionLabel": "item + ' (' + self.name + ')'" } },
+              { "kind": "computed", "label": "Plain", "value": { "cel": "self.type" } } ] } }
+            """));
+        var diagram = new DislDiagram(specification);
+        var box = diagram.AddNode("Box", "a", new Dictionary<string, object?> { ["name"] = "A" });
+        var kept = diagram.AddNode("Crate", "b", new Dictionary<string, object?> { ["name"] = "keep" });
+
+        // Act.
+        var rows = FormDerivation.Derive(specification, box, new DislEnv(), WireIdMap.None);
+        var keptRows = FormDerivation.Derive(specification, kept, new DislEnv(), WireIdMap.None);
+
+        // Assert.
+        Assert.Equal(("Type", "Box", true, "Crate (A)"), (rows[0].Label, rows[0].Value, rows[0].Retypes, string.Join(", ", rows[0].Candidates!)));
+        Assert.Equal("Box (keep), Crate (keep)", string.Join(", ", keptRows[0].Candidates!));
+        Assert.Equal((false, null), (rows[1].Retypes, rows[1].Candidates));
     }
 
     [Fact]

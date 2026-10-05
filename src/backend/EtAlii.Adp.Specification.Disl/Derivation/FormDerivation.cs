@@ -11,7 +11,11 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="Group">The title of the section (or group, or tab) it is in; empty outside one.</param>
 /// <param name="Candidates">What the value may be chosen from: a tags or select item's <c>options</c>, a slider's mark labels; null for none.</param>
 /// <param name="Attribute">The attribute it edits, or null for a computed item.</param>
-public sealed record DerivedRow(string Id, string Label, string Value, string? Widget, string ReadOnlyReason, string Group, IReadOnlyList<string>? Candidates, string? Attribute);
+/// <param name="Retypes">
+/// Whether the row changes the element's type: a computed item with a proposed <c>x-…-retype</c> member,
+/// whose <c>options</c> are the types it can become and whose <c>optionLabel</c> names each.
+/// </param>
+public sealed record DerivedRow(string Id, string Label, string Value, string? Widget, string ReadOnlyReason, string Group, IReadOnlyList<string>? Candidates, string? Attribute, bool Retypes = false);
 
 /// <summary>
 /// The property rows of an element (DISL §7.5): the items of the first form <c>for</c> its type whose
@@ -32,6 +36,11 @@ public sealed record DerivedRow(string Id, string Label, string Value, string? W
 /// </para>
 /// <para>
 /// <b>A row's id</b> is the map's for the item's <c>x-field.id</c>, else its attribute, else its label.
+/// </para>
+/// <para>
+/// <b>A retype row</b> is a computed item with a proposed <c>x-…-retype</c> member (abm-proposals.md, 2):
+/// its candidates are the types the member's <c>options</c> give, each named by its <c>optionLabel</c>
+/// with <c>item</c> bound, and the row says <see cref="DerivedRow.Retypes"/> so a host offers a choice.
 /// </para>
 /// </remarks>
 public static class FormDerivation
@@ -141,7 +150,32 @@ public static class FormDerivation
             if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
 
             var key = DislJson.String(item, "x-field.id") ?? attribute ?? label;
+            if (kind == "computed" && Retype(item) is { } retype)
+            {
+                return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(retype.Value, DislJson.Pointer(pointer, retype.Name), variables), attribute, Retypes: true);
+            }
             return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Candidates(item, pointer, variables), attribute);
+        }
+
+        /// <summary>The proposed <c>x-…-retype</c> member of a computed item (abm-proposals.md, 2), or null.</summary>
+        private static JsonProperty? Retype(JsonElement item) =>
+            item.EnumerateObject().Where(member => member.Name.StartsWith("x-", StringComparison.Ordinal) && member.Name.EndsWith("-retype", StringComparison.Ordinal) && member.Value.ValueKind == JsonValueKind.Object)
+                .Select(member => (JsonProperty?)member).FirstOrDefault();
+
+        /// <summary>The types a retype row offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>
+        private List<string> Types(JsonElement retype, string pointer, Dictionary<string, object?> variables)
+        {
+            if (!retype.TryGetProperty("options", out var options)
+                || DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContexts.Form, variables) is not IReadOnlyList<object?> types)
+            {
+                return [];
+            }
+            if (!retype.TryGetProperty("optionLabel", out var optionLabel)) return [.. types.Select(Text)];
+            return
+            [
+                .. types.Select(type => Text(DislEvaluation.Expression(
+                    specification, optionLabel, DislJson.Pointer(pointer, "optionLabel"), DislContexts.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))),
+            ];
         }
 
         private List<string>? Candidates(JsonElement item, string pointer, Dictionary<string, object?> variables)
