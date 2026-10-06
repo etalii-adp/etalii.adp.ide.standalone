@@ -80,7 +80,7 @@ public class GhgDerivedGesturesTests
             {
                 foreach (var month in Around(start, stop))
                 {
-                    foreach (var (from, to) in new[] { (month, stop), (start, month), (month, month + (stop - start)) })
+                    foreach ((int from, int to) in new[] { (month, stop), (start, month), (month, month + (stop - start)) })
                     {
                         var handled = await RunAsync(new SetGhgSpanCommandHandler(store), new SetGhgSpanCommand(Body, trend.Id, GhgScale.FormatMonth(from), GhgScale.FormatMonth(to)));
                         var derived = GestureConstraintEvaluator.Placement(
@@ -106,7 +106,7 @@ public class GhgDerivedGesturesTests
         foreach (var note in Sampled(model.Notes, note => note.At is null).Where(note => unique.Contains(note.Id)))
         {
             var self = diagram.ElementById(note.Id)!;
-            foreach (var (width, height) in new[] { (160.0, 64.0), (0.0, 64.0), (160.0, 0.0), (0.0, 0.0), (12.5, 1.0) })
+            foreach ((double width, double height) in new[] { (160.0, 64.0), (0.0, 64.0), (160.0, 0.0), (0.0, 0.0), (12.5, 1.0) })
             {
                 var handled = await RunAsync(new SetGhgNoteSizeCommandHandler(store), new SetGhgNoteSizeCommand(Body, note.Id, SetGhgNoteSizeCommand.Format(width, height)));
                 var derived = GestureConstraintEvaluator.Change(GhgDefinition.Specification, self, "width", width) is { Count: > 0 } refused
@@ -147,7 +147,7 @@ public class GhgDerivedGesturesTests
     public async Task TheCorpus_ReachesEveryRefusal()
     {
         HashSet<string> refused = new(StringComparer.Ordinal);
-        foreach (var (_, text) in Gestured())
+        foreach ((var _, string text) in Gestured())
         {
             var store = new Store(text);
             var model = GhgParser.Parse(text);

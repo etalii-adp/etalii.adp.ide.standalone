@@ -17,7 +17,7 @@ internal static class Specifications
             """)!.AsObject();
         if (parts.Length > 0)
         {
-            foreach (var (key, value) in JsonNode.Parse("{" + parts + "}")!.AsObject().ToList())
+            foreach ((string key, JsonNode? value) in JsonNode.Parse("{" + parts + "}")!.AsObject().ToList())
             {
                 root[key] = value?.DeepClone();
             }

@@ -51,7 +51,7 @@ public static class HookRunner
 
         bool Changed(DislElement element, DislElement before, IReadOnlyCollection<string> changed)
         {
-            foreach (var (hook, pointer) in Hooks(specification, element, changed))
+            foreach ((JsonElement hook, string pointer) in Hooks(specification, element, changed))
             {
                 var id = DislJson.String(hook, "id") ?? pointer;
                 if (!ran.Add((id, element))) continue;

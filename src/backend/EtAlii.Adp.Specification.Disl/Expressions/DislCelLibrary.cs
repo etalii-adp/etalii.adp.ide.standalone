@@ -37,7 +37,7 @@ public static class DislCelLibrary
         ArgumentNullException.ThrowIfNull(environment);
         ArgumentNullException.ThrowIfNull(enums);
 
-        foreach (var (name, min, max) in Methods)
+        foreach ((string name, int min, int max) in Methods)
         {
             environment.AddFunction(CelFunction.Method(name, min, max));
         }

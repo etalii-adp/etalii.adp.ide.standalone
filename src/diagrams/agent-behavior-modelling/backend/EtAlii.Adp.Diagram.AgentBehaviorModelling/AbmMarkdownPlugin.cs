@@ -93,7 +93,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
             case ModelChange.Set set:
             {
                 if (model.NodeOf(set.Id) is null) return Gone();
-                foreach (var (name, value) in set.Attributes)
+                foreach ((string name, object? value) in set.Attributes)
                 {
                     // Each attribute is written on the lines as they are after the one before.
                     var node = AbmParser.Parse(document).NodeOf(set.Id)!;
@@ -116,7 +116,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
                 AbmNode? parent = null;
                 if (add.ParentId is { } parentId && (parent = model.NodeOf(parentId)) is null) return Gone();
                 var attempts = add.Attributes.TryGetValue("attempts", out var count) ? Number(count) ?? 0 : 0;
-                var (edit, id) = AbmWriter.Add(document, model, parent, add.Index ?? -1, kind, Text(add.Attributes.GetValueOrDefault("label")), attempts);
+                (AbmEdit edit, string id) = AbmWriter.Add(document, model, parent, add.Index ?? -1, kind, Text(add.Attributes.GetValueOrDefault("label")), attempts);
                 if (!edit.WasApplied) return edit;
                 var notes = Text(add.Attributes.GetValueOrDefault("notes"));
                 return notes.Length == 0 ? edit : AbmWriter.SetNotes(document, AbmParser.Parse(document).NodeOf(id)!, notes);

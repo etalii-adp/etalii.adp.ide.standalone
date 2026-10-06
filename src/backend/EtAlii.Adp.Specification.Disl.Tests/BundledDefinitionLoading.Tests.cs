@@ -63,7 +63,7 @@ public class BundledDefinitionLoadingTests
             switch (node)
             {
                 case JsonObject members:
-                    foreach (var (name, value) in members)
+                    foreach ((string name, JsonNode? value) in members)
                     {
                         var at = pointer + "/" + name;
                         if (renamed.Contains(name)) found.Add(at);

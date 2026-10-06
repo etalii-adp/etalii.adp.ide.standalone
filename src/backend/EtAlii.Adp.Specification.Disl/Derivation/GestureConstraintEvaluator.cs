@@ -99,7 +99,7 @@ public static class GestureConstraintEvaluator
     private static CelMap Map(IReadOnlyDictionary<string, object?> values)
     {
         var map = new CelMap();
-        foreach (var (key, value) in values) map[key] = value;
+        foreach ((string key, object? value) in values) map[key] = value;
         return map;
     }
 }

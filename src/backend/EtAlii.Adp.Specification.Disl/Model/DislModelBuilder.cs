@@ -66,7 +66,7 @@ public static class DislModelBuilder
                     header.Add(element);
                     continue;
                 case "diagram":
-                    foreach (var (name, raw) in element.Attributes)
+                    foreach ((string name, object? raw) in element.Attributes)
                     {
                         var target = mapping.Attributes.GetValueOrDefault(name, name);
                         if (metamodel.DiagramAttributes.TryGetValue(target, out var attribute) && DislValues.TryFromRead(raw, attribute, metamodel, out var value))
@@ -85,11 +85,11 @@ public static class DislModelBuilder
         }
 
         // Nodes in reading order, each after its parent; then relations, whose ends are nodes.
-        foreach (var (element, mapping, type) in pending.Where(entry => !entry.Type.IsRelation))
+        foreach ((FblElement element, DislTypeMapping mapping, DislType type) in pending.Where(entry => !entry.Type.IsRelation))
         {
             Node(element, mapping, type);
         }
-        foreach (var (element, mapping, type) in pending.Where(entry => entry.Type.IsRelation))
+        foreach ((FblElement element, DislTypeMapping mapping, DislType type) in pending.Where(entry => entry.Type.IsRelation))
         {
             var attributes = Attributes(element, mapping, type, metamodel, out var host, out var ends);
             var sourceId = ends.GetValueOrDefault("source") ?? element.Source;
@@ -275,7 +275,7 @@ public static class DislModelBuilder
             {
                 findings.Add(new Finding(DerivedFailed, FindingSeverity.Warning, $"Items of {type.Name} were dropped: {failure}", null));
             }
-            foreach (var (end, count) in badEnds)
+            foreach ((string end, int count) in badEnds)
             {
                 findings.Add(new Finding(DerivedEnds, FindingSeverity.Warning, $"{count} item(s) of {type.Name} were dropped: their {end} is not one its declaration allows.", null));
             }
@@ -304,7 +304,7 @@ public static class DislModelBuilder
         var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
         host = new Dictionary<string, object?>(StringComparer.Ordinal);
         ends = new Dictionary<string, string?>(StringComparer.Ordinal);
-        foreach (var (name, raw) in element.Attributes)
+        foreach ((string name, object? raw) in element.Attributes)
         {
             var target = mapping.Attributes.GetValueOrDefault(name, name);
             if (type.IsRelation && target is "source" or "target")

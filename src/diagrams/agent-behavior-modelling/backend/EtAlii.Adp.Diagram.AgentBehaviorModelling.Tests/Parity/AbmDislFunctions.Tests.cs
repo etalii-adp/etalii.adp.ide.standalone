@@ -21,11 +21,11 @@ public class AbmDislFunctionsTests
     public void Keyword_IsKeywordOf_OverTheCorpus()
     {
         var nodes = 0;
-        foreach (var (name, text) in AbmDisl.Corpus())
+        foreach ((string name, string text) in AbmDisl.Corpus())
         {
             var model = AbmDisl.Parse(text);
             var diagram = AbmDisl.DiagramOf(model);
-            foreach (var (node, element) in model.Nodes.Zip(diagram.Nodes))
+            foreach ((AbmNode node, DislElement element) in model.Nodes.Zip(diagram.Nodes))
             {
                 Assert.True(node.Keyword == (string?)AbmDisl.Evaluate("keyword(n)", new Dictionary<string, object?> { ["n"] = element }), $"{name} {node.Id}: {node.Keyword}");
                 nodes++;

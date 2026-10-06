@@ -242,7 +242,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         if (Before is not null && !Before.ContainsKey(target)) Before[target] = target.Snapshot();
         try
         {
-            foreach (var (name, value) in values) target.Store(name, value);
+            foreach ((string name, object? value) in values) target.Store(name, value);
         }
         catch (ArgumentException e)
         {

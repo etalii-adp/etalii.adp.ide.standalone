@@ -60,7 +60,7 @@ internal static class DislEvaluation
     /// </summary>
     public static object? Expression(DislSpecification specification, JsonElement json, string pointer, string context, IReadOnlyDictionary<string, object?> variables)
     {
-        var (source, at) = json.ValueKind switch
+        (string? source, string at) = json.ValueKind switch
         {
             JsonValueKind.String => (json.GetString(), pointer),
             JsonValueKind.Object when DislJson.String(json, "cel") is { } cel => (cel, DislJson.Pointer(pointer, "cel")),

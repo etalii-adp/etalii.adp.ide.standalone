@@ -33,7 +33,7 @@ public sealed class DislElement : ICelObject
         Type = type;
         Id = id;
         _attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var (name, value) in attributes ?? new Dictionary<string, object?>())
+        foreach ((string name, object? value) in attributes ?? new Dictionary<string, object?>())
         {
             if (!type.Attributes.ContainsKey(name))
             {

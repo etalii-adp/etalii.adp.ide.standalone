@@ -113,7 +113,7 @@ public static class ContextMenuDerivation
 
         var groups = new List<DerivedMenuGroup>();
         var cel = env.ToCel();
-        var (context, variables, types) = target switch
+        (string context, Dictionary<string, object?> variables, IReadOnlyList<string> types) = target switch
         {
             DislMenuTarget.OnElement element => (DislContexts.Element, Variables(element.Self, target.Diagram, cel), element.Self.Type.Linearisation),
             DislMenuTarget.OnConnection connection => (DislContexts.Connection, Connection(connection, cel), (IReadOnlyList<string>)["connection"]),
@@ -344,7 +344,7 @@ public static class ContextMenuDerivation
             _ => null,
         };
         var p = new CelMap();
-        foreach (var (name, value) in arguments) p[name] = value;
+        foreach ((string name, object? value) in arguments) p[name] = value;
         return new Dictionary<string, object?>(variables)
         {
             ["self"] = self,
@@ -366,7 +366,7 @@ public static class ContextMenuDerivation
 
     private static Dictionary<string, object?> Also(this Dictionary<string, object?> variables, IReadOnlyDictionary<string, object?> more)
     {
-        foreach (var (name, value) in more) variables[name] = value;
+        foreach ((string name, object? value) in more) variables[name] = value;
         return variables;
     }
 }

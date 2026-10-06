@@ -39,7 +39,7 @@ public class GhgDerivedOperationsTests
         List<string> mismatches = [];
         var compared = 0;
 
-        foreach (var (x, y) in Points)
+        foreach ((double x, double y) in Points)
         {
             await Compare($"add trend at {x}, {y}", store => new AddGhgTrendCommandHandler(store), new AddGhgTrendCommand(Body, x, y, NewId), (document, read) => HandWrittenGhgEdits.AddTrendAt(document, read, NewId, x, y));
             await Compare($"add trigger at {x}, {y}", store => new AddGhgTriggerCommandHandler(store), new AddGhgTriggerCommand(Body, x, y, NewId), (document, read) => HandWrittenGhgEdits.AddTriggerAt(document, read, NewId, x, y));
@@ -51,8 +51,8 @@ public class GhgDerivedOperationsTests
             await Compare($"even phases of {trend.Id}", store => new ClearGhgBoundariesCommandHandler(store), new ClearGhgBoundariesCommand(Body, trend.Id), (document, read) => HandWrittenGhgEdits.ClearBoundaries(document, read, trend.Id));
             if (!trend.HasSpan) continue;
 
-            var (start, stop) = (trend.Start!.Value, trend.Stop!.Value);
-            foreach (var (from, to) in new[] { (start - 7, stop - 7), (start + 5, stop + 5), (start, stop + 13), (start - 11, stop), (start + 1, stop + 37), (start - 30, stop - 3) })
+            (int start, int stop) = (trend.Start!.Value, trend.Stop!.Value);
+            foreach ((int from, int to) in new[] { (start - 7, stop - 7), (start + 5, stop + 5), (start, stop + 13), (start - 11, stop), (start + 1, stop + 37), (start - 30, stop - 3) })
             {
                 if (to - from < Math.Max(1, trend.VisiblePhases)) continue;
                 await Compare(
@@ -110,10 +110,10 @@ public class GhgDerivedOperationsTests
     [InlineData("note", "addNoteHere")]
     public void EveryDrop_IsItsAddHereOperation(string tool, string operation)
     {
-        foreach (var (_, text) in Edited())
+        foreach ((var _, string text) in Edited())
         {
             var model = GhgParser.Parse(text);
-            foreach (var (x, y) in Points)
+            foreach ((double x, double y) in Points)
             {
                 var position = GhgDefinition.Position(x, y, model.TimeUnit);
                 var dropped = OperationInterpreter.Drop(GhgDefinition.Specification, tool, GhgBody.Parse(text).Disl.Diagram, position, DislIds.Fixed(NewId));

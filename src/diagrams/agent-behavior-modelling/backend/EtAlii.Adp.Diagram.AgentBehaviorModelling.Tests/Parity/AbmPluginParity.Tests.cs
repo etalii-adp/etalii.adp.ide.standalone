@@ -26,7 +26,7 @@ public class AbmPluginParityTests
     public static TheoryData<string, string> Documents()
     {
         var data = new TheoryData<string, string>();
-        foreach (var (name, _) in Texts())
+        foreach ((string name, var _) in Texts())
         {
             foreach (var variant in (string[])["as-is", "lf", "crlf", "no-final-newline", "bom"]) data.Add(name, variant);
         }
@@ -60,7 +60,7 @@ public class AbmPluginParityTests
         var count = 0;
 
         // Act.
-        foreach (var (label, change, edit) in Edits(model))
+        foreach ((string label, ModelChange change, Func<LineDocument, AbmModel, AbmEdit> edit) in Edits(model))
         {
             count++;
             var expected = Writer(bytes, edit);

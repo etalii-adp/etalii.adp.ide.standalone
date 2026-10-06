@@ -74,7 +74,7 @@ public static class ConstraintEvaluator
                 if (!setting.Enabled) continue;
                 Unparseable |= finding.BuiltIn == DislReaderFinding.Unparseable;
                 var detail = new CelMap();
-                foreach (var (key, value) in finding.Detail) detail[key] = value;
+                foreach ((string key, object? value) in finding.Detail) detail[key] = value;
                 var variables = Variables(diagram, detail);
                 var fallback = detail.TryGetValue("reason", out var reason) && reason is string text ? text : finding.BuiltIn;
                 _found.Add((new DislFinding(setting.CodeOf(variables), finding.BuiltIn, setting.Severity, setting.MessageOf(variables, fallback), [], finding.Line), reading++, finding.Line));
@@ -122,7 +122,7 @@ public static class ConstraintEvaluator
                 }
             }
 
-            foreach (var (relation, violation) in violations)
+            foreach ((DislElement relation, string violation) in violations)
             {
                 var position = relation;
                 if (violation == "parallel")

@@ -32,14 +32,14 @@ public class BundledDefinitionExpressionsTests
         // Arrange.
         using var document = JsonDocument.Parse(Read(resource));
         var root = document.RootElement;
-        var (functionsEnvironment, functions) = FunctionsOf(root);
+        (CelEnvironment functionsEnvironment, List<(string Name, string[] Parameters, string[] Uses, string Body)> functions) = FunctionsOf(root);
         var environment = functionsEnvironment.Clone().DeclareVariables(ContextVariables).DeclareVariables(BindingsOf(root));
         var expressions = new List<(string Pointer, string Source)>();
         Collect(root, [], expressions);
         var failures = new List<string>();
 
         // Act.
-        foreach (var (pointer, source) in expressions)
+        foreach ((string pointer, string source) in expressions)
         {
             try
             {
@@ -50,7 +50,7 @@ public class BundledDefinitionExpressionsTests
                 failures.Add($"{pointer}: {e.Message}");
             }
         }
-        foreach (var (name, parameters, uses, body) in functions)
+        foreach ((string name, string[] parameters, string[] uses, string body) in functions)
         {
             try
             {
@@ -72,7 +72,7 @@ public class BundledDefinitionExpressionsTests
     {
         // Arrange: the same environment the definitions compile in, given a function nobody declared.
         using var document = JsonDocument.Parse(Read("gartner-hype-cycle-graph.dis"));
-        var (environment, _) = FunctionsOf(document.RootElement);
+        (CelEnvironment environment, _) = FunctionsOf(document.RootElement);
 
         // Act.
         var refused = Assert.Throws<CelException>(() => environment.Clone().DeclareVariables(ContextVariables).Compile("self.name.soundex() == ''"));

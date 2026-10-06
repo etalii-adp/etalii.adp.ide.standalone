@@ -27,7 +27,7 @@ public sealed class DislDiagram : ICelObject
         ArgumentNullException.ThrowIfNull(specification);
         Specification = specification;
         _attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var (name, value) in attributes ?? new Dictionary<string, object?>())
+        foreach ((string name, object? value) in attributes ?? new Dictionary<string, object?>())
         {
             if (!specification.Metamodel.DiagramAttributes.ContainsKey(name))
             {

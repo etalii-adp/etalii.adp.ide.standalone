@@ -53,10 +53,10 @@ public class GhgDislFunctionsTests
     public void PhaseBoundaries_IsBoundariesOf_OverTheCorpus()
     {
         var trends = 0;
-        foreach (var (path, model) in GhgDisl.Corpus())
+        foreach ((string path, GhgModel model) in GhgDisl.Corpus())
         {
             var diagram = GhgDisl.DiagramOf(model);
-            foreach (var (trend, element) in model.Trends.Zip(diagram.Nodes).Where(pair => pair.First.HasSpan))
+            foreach ((GhgTrend trend, DislElement element) in model.Trends.Zip(diagram.Nodes).Where(pair => pair.First.HasSpan))
             {
                 AssertBoundaries(GhgPhases.BoundariesOf(trend), element, $"{path} {trend.Id}");
                 trends++;
@@ -149,7 +149,7 @@ public class GhgDislFunctionsTests
     /// <summary>One model per span and phase count, holding a trend for every arrangement of stored boundaries.</summary>
     private static IEnumerable<GhgModel> BoundaryGrid()
     {
-        foreach (var (start, stop) in new[] { (-38400, -38390), (0, 3), (24000, 24120) })
+        foreach ((int start, int stop) in new[] { (-38400, -38390), (0, 3), (24000, 24120) })
         {
             int?[] slots = [null, start - 1, start, start + 1, (start + stop) / 2, stop - 1, stop, stop + 1];
             var trends = new List<GhgTrend>();

@@ -260,7 +260,7 @@ public static class OperationInterpreter
     private static Cel.CelMap Map(IReadOnlyDictionary<string, object?>? values)
     {
         var map = new Cel.CelMap();
-        foreach (var (key, value) in values ?? new Dictionary<string, object?>()) map[key] = value;
+        foreach ((string key, object? value) in values ?? new Dictionary<string, object?>()) map[key] = value;
         return map;
     }
 }
