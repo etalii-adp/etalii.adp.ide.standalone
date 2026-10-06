@@ -85,6 +85,17 @@ A module's service registration lives in **one file** - `ServiceCollection.AddX.
 
 Moved to [processes.md, *Checking that the conventions are actually followed*](processes.md#checking-that-the-conventions-are-actually-followed): `dotnet format style` is the fast check and JetBrains InspectCode the thorough, authoritative one — passing either says nothing about the other.
 
+# JetBrains Rider warnings
+
+**In a C# project every JetBrains Rider warning is corrected.** Ruled by the user on 2026-10-07, and held for the whole organization as principle VI of the [etalii.adp constitution](https://github.com/etalii-adp/etalii.adp/blob/develop/.specify/memory/constitution.md); this is the standalone repository's copy of the rule and how it is applied here.
+
+* **What counts**: every finding Rider's code inspection reports at severity Warning or higher, in any C# project of the solution - `src/backend/` and every module's `backend/` and tests alike. Rider shows them in the editor and in *Problems*; `jb inspectcode` runs the same engine without the IDE, and its report is the one that settles a disagreement.
+* **Correct the code.** A warning is fixed where it occurs. Code being written now adds none, and a piece of work is not finished while a file it touched still reports one.
+* **Where an inspection does not fit, change the rule and say why** - in the `.DotSettings` beside the project or solution, or in `src/.editorconfig`, with a note, exactly as *Backend code style* in CLAUDE.md does for an `.editorconfig` rule. A `// ReSharper disable` comment or a `[SuppressMessage]` placed only to make a warning disappear is not a correction; one that stays carries its reason on the same line.
+* **A warning left reported is the one outcome that is not available.** A list that always shows something is a list nobody reads, and the next real defect arrives in it.
+* **A clean report only counts from a run that could see the code.** Build first, pass `jb inspectcode` the SDK and toolset explicitly, and read its count of unresolved symbols beside its count of warnings: [processes.md, *An instrument that reports absence must first prove it is present*](processes.md#an-instrument-that-reports-absence-must-first-prove-it-is-present) names the flags and the three ways this tool reports nothing while seeing nothing.
+* **The warnings that existed when this rule was made** are cleared by the `rider-warnings-cleanup` specification, not by whoever happens to touch a file next. Until it lands, an unrelated change is held to *adds none*, not to *clears the backlog*.
+
 # Frontend
 
 * All styling for the application should be done in a centralized manner, avoiding inline styles and promoting consistency and maintainability as much as possible.
