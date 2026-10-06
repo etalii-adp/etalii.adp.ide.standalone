@@ -23,10 +23,19 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <b>Undo stays the host's</b>: the shared restore command puts the text back. The library's own
 /// history is per open body, and a command opens a fresh one on the cached text each time.
 /// </para>
+/// <para>
+/// <b>A text read recently is not read again.</b> Reading is a pure function of the bytes, so
+/// <see cref="Parse"/> forks the open body of a text it read or wrote lately (<see cref="OpenBody.Fork"/>)
+/// rather than reading it once more: a command's copy of the cached document, the validator's
+/// reading of the text the store holds and an undo's restored text all cost no reading. Each fork
+/// is its own body, so an edit to one is never seen by another.
+/// </para>
 /// </remarks>
 public sealed class GhgBody
 {
     private static readonly Lazy<FblBinding> LoadedBinding = new(LoadBinding);
+
+    private static readonly RecentBodies Recent = new();
 
     private readonly OpenBody _body;
     private int[]? _lineStarts;
@@ -35,6 +44,9 @@ public sealed class GhgBody
     private (byte[] Bytes, FblModel Model)? _model;
     private (byte[] Bytes, IReadOnlyList<Line> Lines)? _lines;
     private (byte[] Bytes, DislModel Model)? _disl;
+
+    // While a batch is open, the changes asked for and their edits, planned against the body as it was.
+    private List<(ModelChange Change, Edit Edit)>? _batch;
 
     private GhgBody(OpenBody body)
     {
@@ -96,7 +108,12 @@ public sealed class GhgBody
     public static GhgBody Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return new GhgBody(OpenBody.Open(Encoding.UTF8.GetBytes(text), Binding, new FblOptions { FileName = "body.ghg" }));
+        var bytes = Encoding.UTF8.GetBytes(text);
+        if (Recent.Find(bytes) is { } known) return new GhgBody(known.Fork());
+
+        var body = OpenBody.Open(bytes, Binding, new FblOptions { FileName = "body.ghg" });
+        Recent.Remember(body.Fork());
+        return new GhgBody(body);
     }
 
     /// <summary>The 0-based lines <paramref name="span"/> covers.</summary>
@@ -148,9 +165,80 @@ public sealed class GhgBody
     /// <summary>Plans and applies one change; the refusal's sentence when the library refuses it.</summary>
     internal GhgEdit Change(ModelChange change)
     {
+        if (_batch is not null)
+        {
+            var planned = _body.Plan(change);
+            if (planned is PlanResult.Planned { Edit: var edit }) _batch.Add((change, edit));
+            return planned is PlanResult.Refused declined ? GhgEdit.Refused(declined.Reason) : GhgEdit.Applied;
+        }
+
         var result = _body.Change(change);
         _lineStarts = null;
+        if (result is not PlanResult.Refused) Recent.Remember(_body.Fork());
         return result is PlanResult.Refused refused ? GhgEdit.Refused(refused.Reason) : GhgEdit.Applied;
+    }
+
+    /// <summary>
+    /// Runs <paramref name="writes"/>, each a change to a different entry that reads only that entry,
+    /// and applies them together: as one edit, read once, when their splices keep apart; else one by
+    /// one, in the order they were asked for, as <see cref="Change"/> would have.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Every change is planned against the body as it was before any of them</b>, so an element is
+    /// found where it was read and a refusal is the one that body gives. That is what the writes would
+    /// meet one by one only when each touches its own entry alone, which is the caller's to promise:
+    /// Arrange, which rewrites rows bottom-up for exactly that reason.
+    /// </para>
+    /// <para>
+    /// <b>Why</b>: applying a change reads the whole body again, so N changes one by one cost N
+    /// readings, which made arranging a large graph take seconds.
+    /// </para>
+    /// </remarks>
+    internal void Batch(Action writes)
+    {
+        ArgumentNullException.ThrowIfNull(writes);
+        if (_batch is not null) throw new InvalidOperationException("A batch is already open on this body.");
+
+        _batch = [];
+        List<(ModelChange Change, Edit Edit)> batch;
+        try
+        {
+            writes();
+        }
+        finally
+        {
+            batch = _batch;
+            _batch = null;
+        }
+
+        if (Combined(batch) is { } combined)
+        {
+            _body.Apply(combined);
+            _lineStarts = null;
+            Recent.Remember(_body.Fork());
+            return;
+        }
+
+        foreach ((var change, _) in batch)
+        {
+            Change(change);
+        }
+    }
+
+    /// <summary>The edits of a batch as one, when no two of them touch and none needs a snapshot to undo; else null.</summary>
+    private static Edit? Combined(List<(ModelChange Change, Edit Edit)> batch)
+    {
+        var edits = batch.Select(planned => planned.Edit).Where(edit => edit.Splices.Count > 0).ToList();
+        if (edits.Count == 0 || edits.Any(edit => edit.Snapshot)) return null;
+
+        edits.Sort((left, right) => left.Splices.Min(splice => splice.Start).CompareTo(right.Splices.Min(splice => splice.Start)));
+        for (var index = 1; index < edits.Count; index++)
+        {
+            if (edits[index - 1].Splices.Max(splice => splice.End) >= edits[index].Splices.Min(splice => splice.Start)) return null;
+        }
+
+        return new Edit([.. edits.SelectMany(edit => edit.Splices)]);
     }
 
     /// <summary>Sets attributes of the element the module knows by <paramref name="id"/> and <paramref name="range"/>.</summary>
@@ -186,6 +274,61 @@ public sealed class GhgBody
     {
         var index = Array.BinarySearch(starts, offset);
         return index >= 0 ? index : ~index - 1;
+    }
+
+    /// <summary>The open bodies of the last few texts read or written, by their bytes: forks no one edits, only forked again.</summary>
+    private sealed class RecentBodies
+    {
+        private const int Capacity = 8;
+
+        private readonly LinkedList<(int Hash, OpenBody Body)> _bodies = [];
+        private readonly Lock _lock = new();
+
+        public OpenBody? Find(byte[] bytes)
+        {
+            var hash = Hash(bytes);
+            lock (_lock)
+            {
+                for (var node = _bodies.First; node is not null; node = node.Next)
+                {
+                    if (node.Value.Hash != hash || !node.Value.Body.Bytes.AsSpan().SequenceEqual(bytes)) continue;
+                    _bodies.Remove(node);
+                    _bodies.AddFirst(node);
+                    return node.Value.Body;
+                }
+            }
+
+            return null;
+        }
+
+        public void Remember(OpenBody body)
+        {
+            var hash = Hash(body.Bytes);
+            lock (_lock)
+            {
+                for (var node = _bodies.First; node is not null; node = node.Next)
+                {
+                    if (node.Value.Hash == hash && node.Value.Body.Bytes.AsSpan().SequenceEqual(body.Bytes))
+                    {
+                        _bodies.Remove(node);
+                        break;
+                    }
+                }
+
+                _bodies.AddFirst((hash, body));
+                while (_bodies.Count > Capacity)
+                {
+                    _bodies.RemoveLast();
+                }
+            }
+        }
+
+        private static int Hash(byte[] bytes)
+        {
+            var hash = new HashCode();
+            hash.AddBytes(bytes);
+            return hash.ToHashCode();
+        }
     }
 
     private static FblBinding LoadBinding()
