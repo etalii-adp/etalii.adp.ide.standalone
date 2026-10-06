@@ -393,4 +393,20 @@ public class LineSpliceTests
         Assert.Equal("\"say \\\"hi\\\": now\"", LineSplice.Quote("say \"hi\": now"));
         Assert.Equal("\"a\\\\b: c\"", LineSplice.Quote("a\\b: c"));
     }
+
+    /// <summary>
+    /// A line break in a plain scalar ends the key: the rest lands at column 0 and the document no
+    /// longer parses. Every break - LF, CRLF and a lone CR - is therefore written as a YAML
+    /// double-quoted escape, so the value stays on its key's line and reads back unchanged.
+    /// </summary>
+    [Theory]
+    [InlineData("Line one\nline two", "\"Line one\\nline two\"")]
+    [InlineData("Line one\r\nline two", "\"Line one\\r\\nline two\"")]
+    [InlineData("Line one\rline two", "\"Line one\\rline two\"")]
+    [InlineData("a \"b\"\nc\\d", "\"a \\\"b\\\"\\nc\\\\d\"")]
+    public void Quote_WritesALineBreakAsAnEscapeInsideDoubleQuotes(string value, string expected)
+    {
+        // Act & assert.
+        Assert.Equal(expected, LineSplice.Quote(value));
+    }
 }
