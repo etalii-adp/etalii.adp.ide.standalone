@@ -120,7 +120,6 @@ Two plugins carry what DISL leaves to code: `abmMarkdown` (persistence, required
 ## Where the `.dis` and the code may still differ
 
 - **Edge cases of text.** `shorten` counts characters as CEL does (code points); the code counts UTF-16 units, so a label with characters outside the Basic Multilingual Plane may be cut at a different place.
-- **The Kind choice's list.** DISL 0.3 offers a `type` item the types `behavior.retype` lists for the node's own type, limited by `options`; `retype` never lists a type as a target of itself, so that reading drops the node's own kind, which the module's choice lists among the kinds the node can become.
 - **Refusing a line from a leaf.** Today the client does not offer a line starting at a leaf; the `.dis` offers `moveUnder` and refuses it with the writer's sentence.
 - **The label's editing box** (27 below the top, 22 high) and the removal dialog's icon are not stated.
 

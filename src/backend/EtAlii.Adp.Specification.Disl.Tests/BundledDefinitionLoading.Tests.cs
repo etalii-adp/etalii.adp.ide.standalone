@@ -27,8 +27,8 @@ public class BundledDefinitionLoadingTests
 
     /// <summary>
     /// Both bundled definitions are DISL 0.3 and say nothing through the <c>x-</c> keys DISL 0.3 adopted
-    /// (2026-10-05): each is renamed to its standard key, which is the only one the runtime reads. The two
-    /// <c>x-</c> keys that still hold a construct not yet ruled on hold that construct and nothing else.
+    /// (2026-10-05): each is renamed to its standard key, which is the only one the runtime reads. The
+    /// <c>x-</c> key that still holds a construct not yet ruled on holds that construct and nothing else.
     /// </summary>
     [Theory]
     [InlineData(Resources.HypeCycle)]
@@ -39,12 +39,11 @@ public class BundledDefinitionLoadingTests
         var renamed = new HashSet<string>(StringComparer.Ordinal)
         {
             "x-bounds.neighbour", "x-enumValue.colorToken", "x-ruler.minUnit", "x-part.tooltip", "x-label.editText", "x-anchors.drawnFrom",
-            "x-field.display", "x-field.parse", "x-builtIn.code", "x-layout.rowPacked", "x-persistence.typeMap",
+            "x-field.display", "x-field.parse", "x-builtIn.code", "x-layout.rowPacked", "x-layout.rowArrange", "x-persistence.typeMap",
             "x-abm-connectGesture", "x-abm-retype", "x-abm-place", "x-abm-placements", "x-abm-tidyTree",
         };
         var keptFor = new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
-            ["x-layout.rowArrange"] = ["pinRowsOfTallNotes", "doc"],
             ["x-abm-plan"] = ["retype", "doc"],
         };
         var root = JsonNode.Parse(Resources.Text(resource))!;

@@ -1293,11 +1293,7 @@
           "affinity": "Influence",
           "ties": "lower",
           "swapPasses": 64,
-          "doc": "Interval partitioning into the fewest rows, each element on the free row nearest the average row of its already-placed linked elements (the lower on a tie, the first free row with none), then whole rows swapped with their neighbour while that shortens the links in total, for at most 64 passes. A trend's extent starts at its name, 8 units before its banner; a trigger's at its label, the name and date, 8 units before its circle; text is measured by the notation's `textMetric`. Only changed rows are written, in one undo step; the refusals are on the `ghg.arrange` operation's `layout` action."
-        },
-        "x-layout.rowArrange": {
-          "pinRowsOfTallNotes": true,
-          "doc": "A row touched by a note taller than one row stays where it is while rows are swapped, because swapping it would tear the note in two. Not yet a DISL key."
+          "doc": "Interval partitioning, into the fewest rows while no note is taller than a row, each element on the free row nearest the average row of its already-placed linked elements (the lower on a tie, the first free row with none), then whole rows swapped with their neighbour while that shortens the links in total, for at most 64 passes, a row a tall note spans never swapped. A trend's extent starts at its name, 8 units before its banner; a trigger's at its label, the name and date, 8 units before its circle; text is measured by the notation's `textMetric`. Only changed rows are written, in one undo step; the refusals are on the `ghg.arrange` operation's `layout` action."
         },
         "doc": "Arrange diagram (`ghg.arrange`): rows only, because across is the data."
       }
