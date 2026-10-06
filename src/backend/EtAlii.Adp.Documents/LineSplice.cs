@@ -224,6 +224,12 @@ public static class LineSplice
     /// Quotes a value only where YAML needs it, so an ordinary label stays unquoted and a document
     /// does not sprout quotation marks it never had.
     /// </summary>
+    /// <remarks>
+    /// A value with a line break - LF, CRLF or a lone CR - is always double-quoted, with each break
+    /// written as its YAML escape (<c>\n</c>, <c>\r</c>). Left plain, the text after the break would
+    /// land at column 0 as a line of its own, and the document would no longer parse. A value without
+    /// a line break is written exactly as before.
+    /// </remarks>
     public static string Quote(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -240,10 +246,20 @@ public static class LineSplice
             value.StartsWith(' ') ||
             value.EndsWith(' ') ||
             value.StartsWith('"') ||
-            value.StartsWith('\'');
+            value.StartsWith('\'') ||
+            value.Contains('\n', StringComparison.Ordinal) ||
+            value.Contains('\r', StringComparison.Ordinal);
 
-        return needsQuoting
-            ? $"\"{value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\""
-            : value;
+        if (!needsQuoting)
+        {
+            return value;
+        }
+
+        var escaped = value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal)
+            .Replace("\r", "\\r", StringComparison.Ordinal)
+            .Replace("\n", "\\n", StringComparison.Ordinal);
+        return $"\"{escaped}\"";
     }
 }

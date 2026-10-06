@@ -87,6 +87,36 @@ public class GhgDocumentTests
         Assert.Equal("Locomotion needed a dependable engine first.", influence.Description);
     }
 
+    public static TheoryData<string> MultiLineDescriptions =>
+    [
+        "Line one\nline two",
+        "Line one\r\nline two",
+        "Line one\rline two",
+    ];
+
+    /// <summary>
+    /// A multi-line Description, as the Description row lets a user type, is written so the document
+    /// still reads and the same text comes back - not as a second line at column 0, which made the
+    /// document unparseable and blanked the canvas.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(MultiLineDescriptions))]
+    public void AMultiLineDescription_RoundTripsAndTheDocumentStillReads(string description)
+    {
+        var document = Load("crlf-line-endings.ghg");
+        var model = GhgParser.Parse(document);
+
+        Assert.True(GhgWriter.SetDescription(document, model.Trends.Single(trend => trend.Id == "steam-engine"), description).WasApplied);
+        Assert.True(GhgWriter.SetDescription(document, Assert.Single(model.Influences), description).WasApplied);
+
+        var reread = GhgParser.Parse(LineDocument.Parse(document.Text));
+
+        Assert.Empty(reread.Problems);
+        Assert.Equal(["steam-engine", "railways"], reread.Trends.Select(trend => trend.Id));
+        Assert.Equal(description, reread.Trends[0].Description);
+        Assert.Equal(description, Assert.Single(reread.Influences).Description);
+    }
+
     /// <summary>What the parser does not understand survives, is reported, and never throws.</summary>
     [Fact]
     public void WhatTheParserDoesNotUnderstand_SurvivesAndIsReported()
