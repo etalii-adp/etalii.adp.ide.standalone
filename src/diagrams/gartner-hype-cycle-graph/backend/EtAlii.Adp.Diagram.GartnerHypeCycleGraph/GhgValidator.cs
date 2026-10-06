@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <para>
 /// <b>The findings are the DISL definition's</b> (<see cref="ConstraintEvaluator"/>, runtime plan step
 /// S12): its live invariants and its built-ins over the document's DISL model, in the order of its
-/// <c>constraints.x-order</c>. What the reader could not read - an unknown key, a value that is not a
+/// <c>constraints.order</c>. What the reader could not read - an unknown key, a value that is not a
 /// date or a number, an entry that is not a mapping, a body that is not YAML - is the parser's to say
 /// (<see cref="GhgParser.ReaderFindings"/>); the definition gives those their code and wording.
 /// </para>

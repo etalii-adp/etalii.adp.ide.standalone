@@ -99,10 +99,10 @@ public class ConstraintEvaluationTests
         var specification = Specifications.Loaded(Specifications.With(Metamodel + """
             ,
             "constraints": {
-              "x-order": ["dup", "par"],
+              "order": ["dup", "par"],
               "builtIn": {
-                "std.endpoints": { "code": "par", "message": "parallel", "x-builtIn.oncePerGroup": "second" },
-                "std.duplicateId": { "code": "dup", "message": { "cel": "detail.id" }, "x-builtIn.oncePerGroup": "last" }
+                "std.endpoints": { "code": "par", "message": "parallel", "oncePerGroup": "second" },
+                "std.duplicateId": { "code": "dup", "message": { "cel": "detail.id" }, "oncePerGroup": "last" }
               },
               "rules": [ { "id": "late", "code": "early", "scope": "Box", "rule": "false", "message": "first in no order" } ]
             }

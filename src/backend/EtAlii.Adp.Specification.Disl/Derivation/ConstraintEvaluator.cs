@@ -15,13 +15,14 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <c>std.references</c> for a relation end that names nothing. Each takes its <c>code</c>,
 /// <c>severity</c>, <c>message</c> and <c>enabled</c> from <c>constraints.builtIn</c> - a <c>code</c>
 /// that is a <c>{cel}</c> object is computed per finding in the message's context (DISL 0.3 §8.1),
-/// falling back to the built-in's id - and one proposed key, <c>x-builtIn.oncePerGroup</c>
-/// (<c>second</c> or <c>last</c>), which reports a group of duplicates once, at that member, rather
-/// than once for each member after the first.
+/// falling back to the built-in's id - and <c>oncePerGroup</c> (DISL 0.3 §8.1; <c>second</c> or
+/// <c>last</c>), which reports a group of duplicates once, at that member, rather than once for each
+/// member after the first. <c>std.endpoints</c> binds <c>detail.violation</c> (§8.7): <c>source</c>,
+/// <c>target</c>, <c>selfLoop</c> or <c>parallel</c>, one finding per limit broken.
 /// </para>
 /// <para>
-/// <b>Order</b>: without <c>constraints.x-order</c>, §8.6's - the reader's findings, the built-ins,
-/// then the rules in declaration order, each by element in model order. With it (a proposed key, a
+/// <b>Order</b>: without <c>constraints.order</c>, §8.6's - the reader's findings, the built-ins,
+/// then the rules in declaration order, each by element in model order. With it (DISL 0.3 §8.6, a
 /// list of codes), findings sort by the position of their code in it, codes it does not list last;
 /// then the reader's findings in reading order, then the rest in document order: by the line of the
 /// element a rule was evaluated for, and for a group of duplicates, by the line of its first member.
@@ -229,10 +230,10 @@ public static class ConstraintEvaluator
             }
         }
 
-        /// <summary>The findings in the order of <c>constraints.x-order</c>, or as they arose.</summary>
+        /// <summary>The findings in the order of <c>constraints.order</c>, or as they arose.</summary>
         public IReadOnlyList<DislFinding> Ordered()
         {
-            var order = _constraints.ValueKind == JsonValueKind.Object && _constraints.TryGetProperty("x-order", out var declared) ? DislJson.Strings(declared) : [];
+            var order = _constraints.ValueKind == JsonValueKind.Object && _constraints.TryGetProperty("order", out var declared) ? DislJson.Strings(declared) : [];
             if (order.Count == 0) return [.. _found.Select(found => found.Finding)];
             return
             [
@@ -320,7 +321,7 @@ public static class ConstraintEvaluator
             _ => "error",
         };
 
-        public string? OncePerGroup => json.ValueKind == JsonValueKind.Object ? DislJson.String(json, "x-builtIn.oncePerGroup") : null;
+        public string? OncePerGroup => json.ValueKind == JsonValueKind.Object ? DislJson.String(json, "oncePerGroup") : null;
 
         public string CodeOf(IReadOnlyDictionary<string, object?> variables)
         {

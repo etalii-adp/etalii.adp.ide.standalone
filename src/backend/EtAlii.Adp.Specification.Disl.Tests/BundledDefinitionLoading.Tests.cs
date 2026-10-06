@@ -27,7 +27,8 @@ public class BundledDefinitionLoadingTests
 
     /// <summary>
     /// Both bundled definitions are DISL 0.3 and say nothing through the <c>x-</c> keys DISL 0.3 adopted
-    /// (2026-10-05): each is renamed to its standard key, which is the only one the runtime reads. The
+    /// (2026-10-05, and the menu group, row id, findings order and once-per-group keys by the ruling of
+    /// 2026-10-06): each is renamed to its standard key, which is the only one the runtime reads. The
     /// <c>x-</c> key that still holds a construct not yet ruled on holds that construct and nothing else.
     /// </summary>
     [Theory]
@@ -41,6 +42,7 @@ public class BundledDefinitionLoadingTests
             "x-bounds.neighbour", "x-enumValue.colorToken", "x-ruler.minUnit", "x-part.tooltip", "x-label.editText", "x-anchors.drawnFrom",
             "x-field.display", "x-field.parse", "x-builtIn.code", "x-layout.rowPacked", "x-layout.rowArrange", "x-persistence.typeMap",
             "x-abm-connectGesture", "x-abm-retype", "x-abm-place", "x-abm-placements", "x-abm-tidyTree",
+            "x-menu.group", "x-field.id", "x-order", "x-builtIn.oncePerGroup",
         };
         var keptFor = new Dictionary<string, string[]>(StringComparer.Ordinal)
         {

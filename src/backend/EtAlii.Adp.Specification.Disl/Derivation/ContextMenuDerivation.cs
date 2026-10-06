@@ -82,7 +82,7 @@ public sealed record DerivedMenuEntry(
     string UnavailableReason,
     IReadOnlyDictionary<string, object?> Arguments);
 
-/// <summary>One group of a context menu: consecutive entries with one <c>x-menu.group</c> name (null when they state none).</summary>
+/// <summary>One group of a context menu: consecutive entries with one <c>group</c> name (null when they state none).</summary>
 public sealed record DerivedMenuGroup(string? Name, IReadOnlyList<DerivedMenuEntry> Entries);
 
 /// <summary>
@@ -93,7 +93,7 @@ public sealed record DerivedMenuGroup(string? Name, IReadOnlyList<DerivedMenuEnt
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Groups</b> follow the proposed key <c>x-menu.group</c> (decision D2): consecutive entries of
+/// <b>Groups</b> follow <c>group</c> (DISL 0.3 §7.3): consecutive entries of
 /// one set with an equal name, or with none, form one group, decided by the entries as declared; a
 /// group whose entries are all hidden is dropped, so a menu with nothing visible has no groups.
 /// </para>
@@ -173,7 +173,7 @@ public static class ContextMenuDerivation
         foreach (var tool in tools.EnumerateArray())
         {
             var at = DislJson.Pointer(DislJson.Pointer(pointer, "tools"), index);
-            var name = DislJson.String(tool, "x-menu.group");
+            var name = DislJson.String(tool, "group");
             if (current is null || name != currentName)
             {
                 if (current is { Count: > 0 }) groups.Add(new DerivedMenuGroup(currentName, current));

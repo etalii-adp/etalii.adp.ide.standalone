@@ -1759,7 +1759,7 @@
         "tools": [
           {
             "kind": "editLabel",
-            "x-menu.group": "edit",
+            "group": "edit",
             "label": "Rename…",
             "icon": "mdi-pencil-outline",
             "shortcut": "F2"
@@ -1767,27 +1767,27 @@
           {
             "kind": "operation",
             "operation": "editNotes",
-            "x-menu.group": "edit",
+            "group": "edit",
             "label": "Edit notes…",
             "icon": "mdi-note-text-outline"
           },
           {
             "kind": "moveUp",
-            "x-menu.group": "edit",
+            "group": "edit",
             "label": "Move earlier",
             "icon": "mdi-arrow-left",
             "shortcut": "Alt+Up"
           },
           {
             "kind": "moveDown",
-            "x-menu.group": "edit",
+            "group": "edit",
             "label": "Move later",
             "icon": "mdi-arrow-right",
             "shortcut": "Alt+Down"
           },
           {
             "kind": "delete",
-            "x-menu.group": "edit",
+            "group": "edit",
             "label": "Remove",
             "icon": "mdi-delete-outline",
             "shortcut": "Delete"
@@ -1795,7 +1795,7 @@
           {
             "kind": "operation",
             "operation": "addChild",
-            "x-menu.group": "add",
+            "group": "add",
             "forEach": "kinds()",
             "as": "kind",
             "label": {
@@ -1810,7 +1810,7 @@
           {
             "kind": "operation",
             "operation": "arrangeFromNode",
-            "x-menu.group": "arrange",
+            "group": "arrange",
             "label": "Arrange diagram",
             "icon": "mdi-sitemap-outline"
           }
@@ -1826,7 +1826,7 @@
           {
             "kind": "operation",
             "operation": "addHere",
-            "x-menu.group": "add",
+            "group": "add",
             "forEach": "kinds()",
             "as": "kind",
             "label": {
@@ -1840,7 +1840,7 @@
           {
             "kind": "operation",
             "operation": "arrange",
-            "x-menu.group": "arrange",
+            "group": "arrange",
             "label": "Arrange diagram",
             "icon": "mdi-sitemap-outline"
           }
@@ -2275,7 +2275,7 @@
   "constraints": {
     "doc": "A Markdown file edited by hand that breaks a rule still opens and draws; each finding is reported on its node's line. Three built-ins are switched off because a declared rule reports the same breach once, in today's words: `std.containment` (a leaf with children), `std.multiplicity` (a wrapper without exactly one child, a composite without children) and `std.facets` (a Retry with no attempt). The reader adds `abm.no-behavior` (information) when the file has no Behavior heading or the section holds no list.",
     "blockSaveOn": "never",
-    "x-order": [
+    "order": [
       "abm.no-keyword",
       "abm.several-roots"
     ],

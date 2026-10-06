@@ -2,7 +2,7 @@ using Xunit;
 
 namespace EtAlii.Adp.Specification.Disl.Tests;
 
-/// <summary>The context menus of each bundled definition (DISL §7.3), grouped by <c>x-menu.group</c> (decision D2).</summary>
+/// <summary>The context menus of each bundled definition (DISL §7.3), grouped by <c>group</c> (DISL 0.3 §7.3).</summary>
 public class ContextMenuDerivationTests
 {
     private static readonly DislEnv Readable = new(ReadOnly: false, Viewpoint: "trueTime");
@@ -168,10 +168,10 @@ public class ContextMenuDerivationTests
     {
         var specification = Specifications.Loaded(Specifications.With("""
             "toolbox": { "contextMenus": [ { "for": [ "Thing" ], "tools": [
-              { "kind": "editLabel", "label": "A", "x-menu.group": "one" },
-              { "kind": "delete", "label": "B", "x-menu.group": "two", "visible": "false" },
-              { "kind": "duplicate", "label": "C", "x-menu.group": "one" },
-              { "kind": "duplicate", "label": "D", "x-menu.group": "one" },
+              { "kind": "editLabel", "label": "A", "group": "one" },
+              { "kind": "delete", "label": "B", "group": "two", "visible": "false" },
+              { "kind": "duplicate", "label": "C", "group": "one" },
+              { "kind": "duplicate", "label": "D", "group": "one" },
               { "kind": "openForm", "label": "E" } ] } ] }
             """));
         var diagram = new DislDiagram(specification);

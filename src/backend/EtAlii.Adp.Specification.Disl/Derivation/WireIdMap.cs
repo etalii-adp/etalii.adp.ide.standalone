@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <c>"&lt;Type&gt;/&lt;kind&gt;"</c> overrides it for entries offered on that type or its subtypes. A
 /// <c>&lt;name&gt;</c> in an id is replaced by the entry's binding of that name (its <c>as</c> name or an argument), mapped
 /// through <c>types</c> when it is a type name there.</item>
-/// <item><c>properties</c>: per form item key - its <c>x-field.id</c>, else its attribute, else a computed item's label - the row id.</item>
+/// <item><c>properties</c>: per form item key - its row id: its <c>id</c>, else its attribute, else a computed item's label - the row id.</item>
 /// <item><c>types</c>: per type name, the host's kind, which <c>&lt;name&gt;</c> substitution reads.</item>
 /// </list>
 /// <para>A name the block does not map is its own id, so a specification without a block keeps DISL's names.</para>

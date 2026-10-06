@@ -1,6 +1,6 @@
 # Gartner hype cycle graph: what DISL does not express
 
-This document accompanies [gartner-hype-cycle-graph.dis](gartner-hype-cycle-graph.dis), the DISL 0.3 specification of the Gartner hype cycle graph diagram. The specification holds everything DISL 0.3 can state: the metamodel, the `yearMonth` time axis and its ruler, snapping per gesture, the phased banner with its boundary handles, influence ends bound to phase parts, the tag filter, the compact toggle, the menus, the forms, the constraints with the tool's own codes and sentences, and the FBL binding the document is read and written through. What DISL 0.3 cannot state is declared in the specification under `x-` keys, each shaped as the construct proposed for DISL, and described here in [What DISL 0.3 cannot express](#what-disl-03-cannot-express). This document also holds the background and the rest of the detail, each point tied to the code, specification or ruling that shows it.
+This document accompanies [gartner-hype-cycle-graph.dis](gartner-hype-cycle-graph.dis), the DISL 0.3 specification of the Gartner hype cycle graph diagram. The specification holds everything DISL 0.3 can state: the metamodel, the `yearMonth` time axis and its ruler, snapping per gesture, the phased banner with its boundary handles, influence ends bound to phase parts, the tag filter, the compact toggle, the menus, the forms, the constraints with the tool's own codes and sentences, and the FBL binding the document is read and written through. What DISL 0.3 cannot state, the wire ids, is declared in the specification under an `x-` key and described here in [What DISL 0.3 cannot express](#what-disl-03-cannot-express). This document also holds the background and the rest of the detail, each point tied to the code, specification or ruling that shows it.
 
 The tool it describes is the standalone module `src/diagrams/gartner-hype-cycle-graph/` in [etalii-adp/etalii.adp.ide.standalone](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/develop/src/diagrams/gartner-hype-cycle-graph), read on branch `research/hype-cycle-fbl-qa6b70` at commit `466cc56b`. It is also implemented in the Visual Studio Code plug-in, [etalii-adp/etalii.adp.ide.vscode](https://github.com/etalii-adp/etalii.adp.ide.vscode), against this definition; where that host differs is recorded in its `docs/parity.md`. Its tool type origin is `gartner/hypecycle-graph` (`language.origin`) and its documents use the extension `.ghg`. Unless a path says otherwise, it is relative to that module: `backend/` is `backend/EtAlii.Adp.Diagram.GartnerHypeCycleGraph/`, and `client/` is the module's client folder.
 
@@ -112,7 +112,7 @@ An influence end is a phase, an edge and a fraction: it attaches anywhere along 
 
 - A box outlined 1.5 wide in the border colour, with the author's text, 12 units high, word-wrapped and centred in the box less 6 on every side, edited in place over several lines; overflowing text ends in an ellipsis. A note has no tooltip.
 - Dropped from the toolbox it is 160 by 64, its top-left at the step start and row of the drop, and its editor opens at once (`after: "editLabel"`).
-- It moves and resizes in both directions. A resize sends one command, `W x H at YYYY-MM row N`, so size and position change in one undo step. In the grid, Size reads `160 x 64` and accepts the same form; anything else is refused with "'…' is not a size; write it as width x height, such as 160 x 64." The grid field is declared with `x-field.parse`.
+- It moves and resizes in both directions. A resize sends one command, `W x H at YYYY-MM row N`, so size and position change in one undo step. In the grid, Size reads `160 x 64` and accepts the same form; anything else is refused with "'…' is not a size; write it as width x height, such as 160 x 64." The grid field is declared with `parse`.
 - `width` and `height` are canvas units, stored with at most two decimals, and are not snapped.
 - No anchors, no tags, no influences, and it stays visible under every tag filter.
 - A note whose position cannot be read cannot be resized: "This note's position cannot be read, so it cannot be resized until it is fixed in the file."
@@ -179,11 +179,11 @@ The specification's `compact` viewpoint is a variant of true time with a "Compac
 
 ## Validation rules
 
-All twelve rules report as warnings in the Errors and Warnings panel, each with the line of the entry it concerns (`backend/GhgValidator.cs`, which evaluates this specification's constraints; the hand-written rule set they replaced is kept as the tests' oracle, `Parity/GhgRuleSet.cs`). Saving is never blocked. Every finding carries the tool's code, and the messages are the tool's sentences. The findings are listed in the order of `constraints.x-order`, by code, and within a code by line. How each rule is carried in the specification:
+All twelve rules report as warnings in the Errors and Warnings panel, each with the line of the entry it concerns (`backend/GhgValidator.cs`, which evaluates this specification's constraints; the hand-written rule set they replaced is kept as the tests' oracle, `Parity/GhgRuleSet.cs`). Saving is never blocked. Every finding carries the tool's code, and the messages are the tool's sentences. The findings are listed in the order of `constraints.order`, by code, and within a code by line. How each rule is carried in the specification:
 
 | Rule | Where it is in the specification |
 |---|---|
-| `ghg.duplicate-influence` | `allowParallel: false` on `Influence` (built-in `std.endpoints`, code per case in its computed `code`, one finding per pair, at the second influence, in `x-builtIn.oncePerGroup`). |
+| `ghg.duplicate-influence` | `allowParallel: false` on `Influence` (built-in `std.endpoints`, code per case in its computed `code`, one finding per pair, at the second influence, by `oncePerGroup`). |
 | `ghg.self-influence` | `allowSelfLoops: false` on `Influence` (`std.endpoints`). |
 | `ghg.influence-into-trigger` | `target: "Trend"` on `Influence` (`std.endpoints`). |
 | `ghg.stop-before-start` | Constraint `stopAfterStart`. |
@@ -191,7 +191,7 @@ All twelve rules report as warnings in the Errors and Warnings panel, each with 
 | `ghg.boundary-order` | Constraint `boundaryOrder`: stored boundaries strictly inside the span and strictly in order, naming the first that is not. |
 | `ghg.bad-attachment` | Constraints `fromAttachment` and `toAttachment`, for every end not at a trigger. |
 | `ghg.dangling-reference` | `std.references`, with the code. |
-| `ghg.duplicate-id` | `std.duplicateId`, with the code, reported once, at the last entry declaring the id (`x-builtIn.oncePerGroup`). |
+| `ghg.duplicate-id` | `std.duplicateId`, with the code, reported once, at the last entry declaring the id (`oncePerGroup`). |
 | `ghg.unreadable-entry` | `std.unreadableEntry` and `std.unparseable` with the code. A trend without a readable `start` or `stop` is the reader's finding, as an unknown key is: a constraint over the model cannot tell a missing date from a malformed one, which the reader also reads as absent. |
 | `ghg.trigger-date` | Constraint `triggerDate`. |
 | `ghg.note-position` | Constraint `notePosition`. |
@@ -217,17 +217,22 @@ The backend refuses what the canvas would not offer anyway, because a request is
 
 ## What DISL 0.3 cannot express
 
-Each item below is declared in the specification under an `x-` key shaped as the construct proposed for DISL, so that the key can be renamed once DISL adopts it. The keys DISL 0.3 adopted (2026-10-05) are renamed already: `bounds.neighbour`, the ruler's `minUnit`, a part's `tooltip`, a label's `editText`, the anchors' `drawnFrom`, an enum value's `color` as a token, a form item's `display` and `parse`, a built-in's computed `code`, the layout algorithms `rowPacked` and `rows` (with `rows` pinning the rows a tall note spans, once `x-layout.rowArrange.pinRowsOfTallNotes`), the `layout` action's `refusals` and `persistence.typeMap`. A runtime that does not know a key ignores it and falls back as the last column says.
+One item is declared in the specification under an `x-` key: the wire ids, which stay the host's own (Peter, 2026-10-06, "Spec all but wire ids"). A runtime that does not know the key ignores it and falls back as the last column says.
 
 | Key | On | What it states | Without it |
 |---|---|---|---|
-| `x-field.id` | the per-phase Influence and Influenced by items | A name for a form item that edits no attribute, so `x-ghg.properties` can give each of the eight lists its own row id. | The eight lists share the ids of their two labels. |
-| `x-menu.group` | each context-menu entry | The group the entry is shown in: consecutive entries with one name form one group, so Arrange diagram stands apart from an element's edits and from the canvas's adds. | Each menu is one group. |
-| `x-ghg` | the specification | Today's wire ids of the toolbox items and their drops, the context actions and the property rows (`client/ghgIds.ts`), as `x-abm` states the behavior model's. An action is keyed by its operation or kind, and `"Influence/delete": "ghg.disconnect"` overrides that for one type. | Ids are the specification's own names, which the client does not know. |
-| `x-builtIn.oncePerGroup` | `std.endpoints`, `std.duplicateId` | Which member of a group of parallel relations or of entries sharing an id is reported: `second` reports the group once, at its second member; `last` reports it once, at its last. | Every member after the first is reported, as DISL 0.2 says for `std.duplicateId`, so three influences in one direction are two findings. |
-| `x-order` | `constraints` | The order findings are listed in: by code, in the order given, then by line. | Findings are listed as DISL 0.2 orders them, the reader's first, then the built-ins', then the rules'. |
+| `x-ghg` | the specification | Today's wire ids of the toolbox items and their drops, the context actions and the property rows (`client/ghgIds.ts`), as `x-abm` states the behavior model's. An action is keyed by its operation or kind, and `"Influence/delete": "ghg.disconnect"` overrides that for one type. A property row is keyed by its form item's row id. | Ids are the specification's own names, which the client does not know. |
 
-Three built-in findings also read detail keys that DISL 0.2 does not list, with a fallback so the specification stays correct without them. DISL 0.3 lists two of them, `std.duplicateId`'s `count` (the message says how many times an id is declared) and `std.references`' `end` (the message says whether the `from` or the `to` names nothing); the third is still not listed: `std.endpoints`' `violation` (`target`, `selfLoop` or `parallel`: which of the relation's limits the finding is about, so a duplicated influence into a trigger or into itself is told from a third one in the same direction).
+The other keys this specification once declared under `x-` are standard DISL 0.3 and renamed. Those DISL 0.3 adopted on 2026-10-05: `bounds.neighbour`, the ruler's `minUnit`, a part's `tooltip`, a label's `editText`, the anchors' `drawnFrom`, an enum value's `color` as a token, a form item's `display` and `parse`, a built-in's computed `code`, the layout algorithms `rowPacked` and `rows` (with `rows` pinning the rows a tall note spans, once `x-layout.rowArrange.pinRowsOfTallNotes`), the `layout` action's `refusals` and `persistence.typeMap`. Those Peter's ruling of 2026-10-06 made standard:
+
+| Key | Was | On | What it states |
+|---|---|---|---|
+| `id` | `x-field.id` | the per-phase Influence and Influenced by items | The item's row id (DISL 7.5), so `x-ghg.properties` gives each of the eight lists its own row id rather than the ids of their two labels. |
+| `group` | `x-menu.group` | each context-menu entry | The group the entry is shown in (DISL 7.3): consecutive entries with one name form one group, so Arrange diagram stands apart from an element's edits and from the canvas's adds. |
+| `oncePerGroup` | `x-builtIn.oncePerGroup` | `std.endpoints`, `std.duplicateId` | Which member of a group of parallel relations or of entries sharing an id is reported (DISL 8.1): `second` reports the group once, at its second member; `last` once, at its last. Without it three influences in one direction would be two findings. |
+| `order` | `x-order` | `constraints` | The order findings are listed in (DISL 8.6): by code, in the order given, then by line, a pair of influences or a shared id by its first member. |
+
+Three built-in findings read detail keys that DISL 0.2 does not list, with a fallback so the specification stays correct without them; DISL 0.3 lists all three: `std.duplicateId`'s `count` (the message says how many times an id is declared), `std.references`' `end` (the message says whether the `from` or the `to` names nothing) and, since 2026-10-06, `std.endpoints`' `violation` (`target`, `selfLoop` or `parallel`: which of the relation's limits the finding is about, so a duplicated influence into a trigger or into itself is told from a third one in the same direction).
 
 One thing has no key, because no construct could carry it: **the written id of an influence end that names nothing.** DISL hands CEL a dangling end as null (4.9), and the binding cannot map `to` to both the end and an attribute, so `endText` cannot write the end as the property grid does (`x · Peak`, `GhgContextPropertyProvider.Describe`). A runtime shows such a list or From or To row empty; the standalone host writes it from the id the binding read.
 
@@ -259,7 +264,7 @@ Decisions Peter made in the project's conversations while the module was built, 
 - The filter is tag chips with an Any/All switch.
 - Compact trends are twice as wide as a new true-time trend, a share per phase, and causes read left of their effects (2026-09-27, cited in `client/GhgCanvas.tsx`).
 - The six open questions of the triggers and notes specification took their proposed defaults.
-- DISL gaps are proposed as additions to the DISL specification rather than kept as plugins (2026-10-05); the `x-` keys above are shaped as those proposals.
+- DISL gaps are proposed as additions to the DISL specification rather than kept as plugins (2026-10-05); the `x-` keys were shaped as those proposals, and all but the wire ids are standard DISL 0.3 (2026-10-06).
 
 ## The Notion row
 

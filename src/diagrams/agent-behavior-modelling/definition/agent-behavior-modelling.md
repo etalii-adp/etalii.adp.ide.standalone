@@ -107,11 +107,15 @@ The rule ids, in `backend/…/AbmBreach.cs`, reach the Errors and Warnings panel
 
 ## What DISL 0.3 and FBL 0.2 cannot state yet
 
-Three behaviours have no construct yet. The `.dis` states each through an `x-` key shaped as the construct proposed for the specification, so that once a proposal is accepted the key is renamed and nothing else changes:
+Two things are still stated through `x-` keys:
 
-1. **Menu groups** — `x-menu.group` on each context-menu entry: consecutive entries with one name form one group, so a node's edits, its eleven Add child entries and Arrange diagram are three groups, and the canvas's adds and Arrange two (`AbmContextActionProvider.cs:75-136`). Proposed for DISL as a `group` property of a context tool.
-2. **Findings order** — `constraints.x-order`: the item without a keyword first, then more than one root, then every other finding by its node's line, a node's structure finding before its Retry finding, as the module's hand-written rules listed them. Proposed for DISL as an `order` of the findings, as the hype cycle graph also uses it.
-3. **What a retype keeps** — `x-abm-plan.retype.keeps` on the `abmMarkdown` plugin: a node retyped through the plugin keeps its label and its notes, because only its keyword is rewritten.
+1. **Wire ids** — the top-level `x-abm` mapping and each concrete type's own `x-abm` key, described under *Wire ids* above. They stay the host's own and are not proposed for the specification (Peter, 2026-10-06, "Spec all but wire ids").
+2. **What a retype keeps** — `x-abm-plan.retype.keeps` on the `abmMarkdown` plugin: a node retyped through the plugin keeps its label and its notes, because only its keyword is rewritten.
+
+Two behaviours that needed an `x-` key under DISL 0.3 as first drafted became standard DISL 0.3 on 2026-10-06, by Peter's ruling, and the `.dis` uses the standard keys:
+
+1. **Menu groups** — `group` on each context-menu entry (DISL 7.3; was `x-menu.group`): consecutive entries with one name form one group, so a node's edits, its eleven Add child entries and Arrange diagram are three groups, and the canvas's adds and Arrange two (`AbmContextActionProvider.cs:75-136`).
+2. **Findings order** — `constraints.order` (DISL 8.6; was `constraints.x-order`): the item without a keyword first, then more than one root, then every other finding by its node's line, a node's structure finding before its Retry finding, as the module's hand-written rules listed them.
 
 Five behaviours that needed an `x-` key under DISL 0.2 and FBL 0.1 are standard in DISL 0.3 and FBL 0.2 (approved 2026-10-05), and the `.dis` uses those keys: drop placement under the nearest node above (`behavior.placements`, `place` on each drop and on `addHere`'s create), the Kind field (a form item of kind `type`), the right-button connect (`connect.pointer`), the tidy tree with stored rows (`tidyTree`) and the plugin's planned changes (`plans`, `add`, `move`).
 

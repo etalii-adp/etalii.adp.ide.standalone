@@ -86,7 +86,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
         }
 
         // Derived from the DISL definition (AbmDefinition.Menus): its context-menu sets, grouped by
-        // x-menu.group, the ids mapped by its x-abm block. Executing an action by id only finds actions
+        // group, the ids mapped by its x-abm block. Executing an action by id only finds actions
         // its target discovers, so a drop and a finished gesture each discover what may be run on them.
         return Result(AbmDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }

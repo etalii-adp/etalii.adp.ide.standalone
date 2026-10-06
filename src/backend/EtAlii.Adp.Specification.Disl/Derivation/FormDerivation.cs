@@ -36,7 +36,7 @@ public sealed record DerivedRow(string Id, string Label, string Value, string? W
 /// is the host's to accept or refuse a value for, as its <c>parse</c> says.
 /// </para>
 /// <para>
-/// <b>A row's id</b> is the map's for the item's <c>x-field.id</c>, else its attribute, else its label.
+/// <b>A row's id</b> is the map's for the item's <c>id</c> (DISL 0.3 §7.5), else its attribute, else its label.
 /// </para>
 /// <para>
 /// <b>A retype row</b> is an item of kind <c>type</c> (DISL 0.3 §7.5): its candidates are the types its
@@ -155,7 +155,7 @@ public static class FormDerivation
                 : null;
             if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
 
-            var key = DislJson.String(item, "x-field.id") ?? attribute ?? label;
+            var key = DislJson.String(item, "id") ?? attribute ?? label;
             if (kind == "type")
             {
                 return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(item, pointer, variables), attribute, Retypes: true);

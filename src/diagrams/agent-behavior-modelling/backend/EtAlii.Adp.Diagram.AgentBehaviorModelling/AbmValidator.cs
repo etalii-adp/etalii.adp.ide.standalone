@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// <remarks>
 /// <para>
 /// <b>The findings are the DISL definition's</b> (<see cref="ConstraintEvaluator"/>, runtime plan step
-/// S19b): its rules over the document's DISL model, in the order of its <c>constraints.x-order</c> -
+/// S19b): its rules over the document's DISL model, in the order of its <c>constraints.order</c> -
 /// the item without a keyword first, then more than one root, then the rest by their node's line.
 /// </para>
 /// <para>
