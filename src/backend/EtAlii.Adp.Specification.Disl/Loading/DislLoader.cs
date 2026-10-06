@@ -35,7 +35,7 @@ public static class DislLoader
 {
     /// <summary>The DISL major version this runtime reads, and the highest minor it knows.</summary>
     private const int Major = 0;
-    private const int Minor = 2;
+    private const int Minor = 3;
 
     /// <summary>The default per-evaluation cost limit of DISL §2.5.</summary>
     private const long DefaultCostLimit = 1_000_000;

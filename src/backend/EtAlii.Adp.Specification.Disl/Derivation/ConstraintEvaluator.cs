@@ -13,10 +13,11 @@ namespace EtAlii.Adp.Specification.Disl;
 /// (<see cref="DislConstraintOptions.ReaderFindings"/>); <c>std.duplicateId</c> over the written ids;
 /// <c>std.endpoints</c> from each relation type's ends, <c>allowSelfLoops</c> and <c>allowParallel</c>;
 /// <c>std.references</c> for a relation end that names nothing. Each takes its <c>code</c>,
-/// <c>severity</c>, <c>message</c> and <c>enabled</c> from <c>constraints.builtIn</c>, and two
-/// proposed keys: <c>x-builtIn.code</c>, an expression in the message's context giving the code per
-/// finding, and <c>x-builtIn.oncePerGroup</c> (<c>second</c> or <c>last</c>), which reports a group
-/// of duplicates once, at that member, rather than once for each member after the first.
+/// <c>severity</c>, <c>message</c> and <c>enabled</c> from <c>constraints.builtIn</c> - a <c>code</c>
+/// that is a <c>{cel}</c> object is computed per finding in the message's context (DISL 0.3 §8.1),
+/// falling back to the built-in's id - and one proposed key, <c>x-builtIn.oncePerGroup</c>
+/// (<c>second</c> or <c>last</c>), which reports a group of duplicates once, at that member, rather
+/// than once for each member after the first.
 /// </para>
 /// <para>
 /// <b>Order</b>: without <c>constraints.x-order</c>, §8.6's - the reader's findings, the built-ins,
@@ -323,13 +324,13 @@ public static class ConstraintEvaluator
 
         public string CodeOf(IReadOnlyDictionary<string, object?> variables)
         {
-            if (json.ValueKind != JsonValueKind.Object) return id;
-            if (json.TryGetProperty("x-builtIn.code", out var computed))
+            if (json.ValueKind != JsonValueKind.Object || !json.TryGetProperty("code", out var code)) return id;
+            return code.ValueKind switch
             {
-                var source = computed.ValueKind == JsonValueKind.Object ? DislJson.String(computed, "cel") : computed.ValueKind == JsonValueKind.String ? computed.GetString() : null;
-                if (source is not null && DislEvaluation.Of(specification, DislContexts.BuiltInMessage, source, variables) is string code) return code;
-            }
-            return DislJson.String(json, "code") ?? id;
+                JsonValueKind.String => code.GetString()!,
+                JsonValueKind.Object when DislEvaluation.Expression(specification, code, DislJson.Pointer(_pointer, "code"), DislContexts.BuiltInMessage, variables) is string computed => computed,
+                _ => id,
+            };
         }
 
         public string MessageOf(IReadOnlyDictionary<string, object?> variables, string fallback) =>

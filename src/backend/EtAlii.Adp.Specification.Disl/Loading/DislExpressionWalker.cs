@@ -25,6 +25,12 @@ internal sealed record DislExpressionSite(string Pointer, string Source, string 
 /// every variable any context binds: a definition that grows a construct this runtime does not place
 /// says so instead of passing unchecked.
 /// </para>
+/// <para>
+/// <b>Not compiled yet</b>: the DISL 0.3 expressions this runtime does not evaluate, because the
+/// behaviour they state is code — a ParentPlacement's candidates and rank (<c>behavior.placements</c>),
+/// a <c>rows</c> layout's extents and a <c>rowPacked</c> layout's <c>rowsCovered</c>. They are walked
+/// as literals, so a mistake in one is not reported at load.
+/// </para>
 /// </remarks>
 internal static partial class DislExpressionWalker
 {
@@ -37,7 +43,7 @@ internal static partial class DislExpressionWalker
     /// <summary>The keywords and names of an action, which are never CEL (§2.5 d).</summary>
     private static readonly HashSet<string> ActionNames = new(StringComparer.Ordinal)
     {
-        "as", "algorithm", "unset", "call", "plugin", "severity", "form",
+        "as", "algorithm", "unset", "call", "plugin", "severity", "form", "place",
     };
 
     /// <summary>The coordinates a shape states as GeomExprs (§2.5 c, §6.8).</summary>
@@ -152,6 +158,8 @@ internal static partial class DislExpressionWalker
             // Inside an action every value is CEL but the keywords and names.
             if (frame.Mode == Mode.Action)
             {
+                // A layout action's refusals are Messages (§9.4), not value positions.
+                if (key == "refusals" && path[^1] == "layout") return frame.As(Mode.Literal);
                 return ActionNames.Contains(key) || (key == "label" && path[^1] == "editLabel") ? null : frame;
             }
 
@@ -250,6 +258,7 @@ internal static partial class DislExpressionWalker
                 {
                     "message" => frame.In(DislContexts.BuiltInMessage).As(Mode.Literal),
                     "refusal" => frame.In(DislContexts.BuiltInRefusal).As(Mode.Literal),
+                    "code" => frame.In(DislContexts.BuiltInMessage).As(Mode.Literal),
                     _ => frame.As(Mode.Literal),
                 };
             }
@@ -288,6 +297,13 @@ internal static partial class DislExpressionWalker
             if (key == "initial") return frame.Binding(["position"]).As(value.ValueKind == JsonValueKind.String ? Mode.Expression : Mode.Literal);
             if (key == "confirm") return frame.Binding(["count"]);
             if (key == "options" && value.ValueKind == JsonValueKind.String) return frame.As(Mode.Expression);
+
+            // A type item (DISL 0.3 §7.5): its optionLabel sees each option as item, its refusals the chosen newValue.
+            if (key == "optionLabel") return frame.Binding(["item"]).As(Mode.Expression);
+            if (key == "refusals") return frame.Binding(["newValue"]);
+
+            // A field's parse (DISL 0.3 §7.5): accepts is an Expression over value; its write is an action list.
+            if (key == "accepts") return frame.As(Mode.Expression);
             return frame;
         }
 

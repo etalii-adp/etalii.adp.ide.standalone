@@ -12,8 +12,8 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="Candidates">What the value may be chosen from: a tags or select item's <c>options</c>, a slider's mark labels; null for none.</param>
 /// <param name="Attribute">The attribute it edits, or null for a computed item.</param>
 /// <param name="Retypes">
-/// Whether the row changes the element's type: a computed item with a proposed <c>x-…-retype</c> member,
-/// whose <c>options</c> are the types it can become and whose <c>optionLabel</c> names each.
+/// Whether the row changes the element's type: an item of kind <c>type</c> (DISL 0.3 §7.5), whose
+/// <c>options</c> are the types it can become and whose <c>optionLabel</c> names each.
 /// </param>
 public sealed record DerivedRow(string Id, string Label, string Value, string? Widget, string ReadOnlyReason, string Group, IReadOnlyList<string>? Candidates, string? Attribute, bool Retypes = false);
 
@@ -24,23 +24,25 @@ public sealed record DerivedRow(string Id, string Label, string Value, string? W
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A row's value</b> is its <c>x-field.display</c> when it has one (the tool's own text, declared as
-/// the proposed key), else a computed item's <c>value</c>, else the attribute's text: a stored value as
+/// <b>A row's value</b> is its <c>display</c> when it has one (the tool's own text, DISL 0.3 §7.5), else
+/// a type item's <c>optionLabel</c> for the element's own type, else a computed item's <c>value</c>,
+/// else the attribute's text: a stored value as
 /// CEL writes it (a <c>yearMonth</c> as <c>uuuu-MM</c>, a list joined by <c>, </c>), an unset one as
 /// its default when it has one, else empty.
 /// </para>
 /// <para>
 /// <b>A row's read-only reason</b> is the first of its <c>readOnlyReasons</c> that applies, else, on a
 /// read-only diagram, <c>behavior.messages</c>' <c>std.readOnly</c>. A computed item without reasons
-/// is the host's to accept or refuse a value for, as its <c>x-field.parse</c> says.
+/// is the host's to accept or refuse a value for, as its <c>parse</c> says.
 /// </para>
 /// <para>
 /// <b>A row's id</b> is the map's for the item's <c>x-field.id</c>, else its attribute, else its label.
 /// </para>
 /// <para>
-/// <b>A retype row</b> is a computed item with a proposed <c>x-…-retype</c> member (abm-proposals.md, 2):
-/// its candidates are the types the member's <c>options</c> give, each named by its <c>optionLabel</c>
-/// with <c>item</c> bound, and the row says <see cref="DerivedRow.Retypes"/> so a host offers a choice.
+/// <b>A retype row</b> is an item of kind <c>type</c> (DISL 0.3 §7.5): its candidates are the types its
+/// <c>options</c> give, each named by its <c>optionLabel</c> with <c>item</c> bound, and the row says
+/// <see cref="DerivedRow.Retypes"/> so a host offers a choice. The candidates are <c>options</c> as they
+/// evaluate, not limited further by <c>behavior.retype</c>, so the element's own type stays among them.
 /// </para>
 /// </remarks>
 public static class FormDerivation
@@ -114,7 +116,7 @@ public static class FormDerivation
                         Items(each, DislJson.Pointer(at, "items"), tabTitle);
                     }
                     return;
-                case "field" or "computed":
+                case "field" or "computed" or "type":
                     rows.Add(Row(item, pointer, group, kind, attribute, variables));
                     return;
             }
@@ -129,9 +131,13 @@ public static class FormDerivation
                 : defaultLabel;
 
             string value;
-            if (item.TryGetProperty("x-field.display", out var display))
+            if (item.TryGetProperty("display", out var display))
             {
-                value = Text(DislEvaluation.Expression(specification, display, DislJson.Pointer(pointer, "x-field.display"), DislContexts.Form, variables));
+                value = Text(DislEvaluation.Expression(specification, display, DislJson.Pointer(pointer, "display"), DislContexts.Form, variables));
+            }
+            else if (kind == "type")
+            {
+                value = OptionLabel(item, pointer, variables, self.Type.Name);
             }
             else if (kind == "computed")
             {
@@ -150,33 +156,29 @@ public static class FormDerivation
             if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
 
             var key = DislJson.String(item, "x-field.id") ?? attribute ?? label;
-            if (kind == "computed" && Retype(item) is { } retype)
+            if (kind == "type")
             {
-                return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(retype.Value, DislJson.Pointer(pointer, retype.Name), variables), attribute, Retypes: true);
+                return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(item, pointer, variables), attribute, Retypes: true);
             }
             return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Candidates(item, pointer, variables), attribute);
         }
 
-        /// <summary>The proposed <c>x-…-retype</c> member of a computed item (abm-proposals.md, 2), or null.</summary>
-        private static JsonProperty? Retype(JsonElement item) =>
-            item.EnumerateObject().Where(member => member.Name.StartsWith("x-", StringComparison.Ordinal) && member.Name.EndsWith("-retype", StringComparison.Ordinal) && member.Value.ValueKind == JsonValueKind.Object)
-                .Select(member => (JsonProperty?)member).FirstOrDefault();
-
-        /// <summary>The types a retype row offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>
-        private List<string> Types(JsonElement retype, string pointer, Dictionary<string, object?> variables)
+        /// <summary>The types a type item offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>
+        private List<string> Types(JsonElement item, string pointer, Dictionary<string, object?> variables)
         {
-            if (!retype.TryGetProperty("options", out var options)
+            if (!item.TryGetProperty("options", out var options)
                 || DislEvaluation.Expression(specification, options, DislJson.Pointer(pointer, "options"), DislContexts.Form, variables) is not IReadOnlyList<object?> types)
             {
                 return [];
             }
-            if (!retype.TryGetProperty("optionLabel", out var optionLabel)) return [.. types.Select(Text)];
-            return
-            [
-                .. types.Select(type => Text(DislEvaluation.Expression(
-                    specification, optionLabel, DislJson.Pointer(pointer, "optionLabel"), DislContexts.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))),
-            ];
+            return [.. types.Select(type => OptionLabel(item, pointer, variables, type))];
         }
+
+        /// <summary>A type item's name for <paramref name="type"/>: its <c>optionLabel</c> with <c>item</c> bound, else the type as text.</summary>
+        private string OptionLabel(JsonElement item, string pointer, Dictionary<string, object?> variables, object? type) =>
+            item.TryGetProperty("optionLabel", out var optionLabel)
+                ? Text(DislEvaluation.Expression(specification, optionLabel, DislJson.Pointer(pointer, "optionLabel"), DislContexts.Form, new Dictionary<string, object?>(variables) { ["item"] = type }))
+                : Text(type);
 
         private List<string>? Candidates(JsonElement item, string pointer, Dictionary<string, object?> variables)
         {

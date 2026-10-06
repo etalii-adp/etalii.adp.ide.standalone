@@ -75,7 +75,7 @@ export const GHG_BINDINGS: NotationBindings = {
           max: shape.params?.count?.max ?? GHG_PHASES.length,
           boundaries: stored ? "payload.boundaries" : undefined,
           classNames: GHG_PHASES.map((phase) => `ghg-${phase}`),
-          tooltips: (shape.parts ?? []).flatMap((part) => (typeof part["x-part.tooltip"] === "string" ? [part["x-part.tooltip"]] : [])),
+          tooltips: (shape.parts ?? []).flatMap((part) => (typeof part.tooltip === "string" ? [part.tooltip] : [])),
           divider: "chevron",
           draggableBoundaries: stored,
         };

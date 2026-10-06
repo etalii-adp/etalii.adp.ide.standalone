@@ -34,7 +34,7 @@ import {
 import { libraryMarkerOf, libraryRouteOf, libraryShapeOf, shapeNameOf, type CustomShapeBinding } from "./shapeCatalog";
 
 /**
- * A DISL 0.2 notation compiled into the library's {@link DiagramDefinition}.
+ * A DISL 0.3 notation compiled into the library's {@link DiagramDefinition}.
  *
  * <b>One file, two readers.</b> A diagram module bundles its `.dis` (`src/diagrams/<module>/definition/`),
  * the backend runs it, and the client imports the same bytes with Vite's `?raw` and compiles them
@@ -82,7 +82,7 @@ export interface NotationBindings {
   snapOrigins?: { x: string; y: string };
   /** The class a legend swatch takes for one enum value. */
   legendSwatchClass?: (enumName: string, value: string) => string;
-  /** Library declarations the specification states only under a module's `x-` key. */
+  /** Library declarations the specification states only under a module's `x-` key, which DISL has no construct for. */
   extras?: (spec: DislDocument) => Partial<DiagramDefinition>;
 }
 
@@ -205,9 +205,25 @@ class Compiler {
       layout: this.layout(rulers, backgroundMenu, dragging),
       dragging,
       ...(backgroundMenu ? { backgroundMenu } : {}),
+      ...(this.connectsOnRightDrag() ? { connectOnRightDrag: true } : {}),
     };
 
     return { ...definition, ...this.bindings.extras?.(spec) };
+  }
+
+  /**
+   * Whether a connection is drawn with the right button from a node's body: the edges' `connect.pointer`
+   * (DISL 0.3 §6.10). The library has one switch for the whole canvas, so every edge that states a pointer
+   * must state that one; any other pointer is refused.
+   */
+  private connectsOnRightDrag(): boolean {
+    const pointers = Object.entries(this.spec.notation.edges ?? {}).flatMap(([name, edge]) => (edge.connect?.pointer === undefined ? [] : [[name, edge.connect.pointer] as const]));
+    for (const [name, pointer] of pointers) {
+      if (pointer.button !== "secondary" || pointer.start !== "body" || (pointer.modifiers ?? []).length > 0) {
+        fail(`edge "${name}" connects with the pointer ${JSON.stringify({ button: pointer.button, start: pointer.start, modifiers: pointer.modifiers })}; the library connects only on a right drag from the body.`);
+      }
+    }
+    return pointers.length > 0;
   }
 
   // ---- names --------------------------------------------------------------------------------
@@ -408,7 +424,7 @@ class Compiler {
         }
         return point.id as CompassPosition;
       });
-      const drawnFrom = anchors["x-anchors.drawnFrom"];
+      const drawnFrom = anchors.drawnFrom;
       return { kind: "compass", positions, ...(drawnFrom === "outline" ? { attachDrawnBy: "edge" as const } : {}), visible: false };
     }
 
@@ -674,8 +690,8 @@ class Compiler {
       }
 
       const unitMonths = this.unitMonths(this.diagramValue(axis.scale.unit));
-      const minUnit = ruler["x-ruler.minUnit"];
-      const finest = minUnit === undefined ? 1 : this.unitMonths(this.diagramValue(minUnit as Bindable<string>));
+      const minUnit = ruler.minUnit;
+      const finest = minUnit === undefined ? 1 : this.unitMonths(this.diagramValue(minUnit));
       const spacings = new Set(ruler.levels.map((level) => level.minSpacingPx));
       if (spacings.size !== 1) {
         fail("the ruler's levels ask for different spacings; the library spaces every rung alike.");
@@ -749,19 +765,22 @@ class Compiler {
 
   // ---- layout and viewpoints ----------------------------------------------------------------
 
-  /** The canvas's layout mode for a layout algorithm: a lanes layout with `x-layout.rowPacked`, or by hand. */
+  /**
+   * The canvas's layout mode for a layout algorithm: the standard `rowPacked` (DISL 0.3 §10.1) packs rows;
+   * the host computes `rows` (§10.2), `tidyTree` (§10.3) and a plugin's layout and sends positions, and
+   * `none` leaves them where they are, so the canvas draws them by hand.
+   */
   private layoutMode(algorithmName: string | undefined): LayoutMode {
     if (algorithmName === undefined) {
       return "manual";
     }
 
     const algorithm = this.spec.layout?.algorithms?.[algorithmName] ?? fail(`layout "${algorithmName}" is not declared.`);
-    if (algorithm["x-layout.rowPacked"] !== undefined) {
+    if (algorithm.algorithm === "rowPacked") {
       return "row-packed";
     }
 
-    // The host computes a plugin's layout and sends positions; the canvas draws them where they are.
-    if (algorithm.algorithm.startsWith("plugin:") || algorithm.algorithm === "none") {
+    if (algorithm.algorithm.startsWith("plugin:") || ["none", "rows", "tidyTree"].includes(algorithm.algorithm)) {
       return "manual";
     }
 
@@ -810,7 +829,7 @@ class Compiler {
   /** The row-packed layout: the width the viewpoint binds, the lanes' gap, the rows' step. */
   private rowPacked(variant: DislViewpoint, nodes: readonly (readonly [string, DislNodeNotation])[]): NonNullable<LayoutDefinition["rowPacked"]> {
     const algorithm = this.spec.layout!.algorithms![variant.layout!]!;
-    const packed = algorithm["x-layout.rowPacked"] as { gap?: number; followConnections?: string } | undefined;
+    const packed = algorithm.rowPacked;
     const sized = nodes.filter(([name]) => variant.notation?.nodes?.[name]?.size?.width !== undefined);
     const widths = new Set(sized.map(([, node]) => JSON.stringify(node.size!.width)));
     if (sized.length === 0 || widths.size !== 1) {

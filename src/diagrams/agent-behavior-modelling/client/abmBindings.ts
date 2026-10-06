@@ -22,8 +22,9 @@ import type { NotationBindings } from "@client/canvas/library/disl/compileNotati
  *   canvas has always declared it; the specification's `sides` anchors say the same of every node.
  * - **The diode.** The specification's custom `diode` is drawn as the library's diode, which
  *   `abmShapeGeometry.test.ts` proves is the same outline.
- * - **The right-button connect.** DISL 0.2 has no pointer-button gesture; the specification proposes
- *   one as `x-abm-connectGesture`, which this reads.
+ *
+ * The right-button connect is no longer here: the parent line's `connect.pointer` (DISL 0.3) states
+ * it, and `compileNotation` compiles it.
  */
 export const ABM_BINDINGS: NotationBindings = {
   wireIds: "x-abm",
@@ -38,8 +39,4 @@ export const ABM_BINDINGS: NotationBindings = {
   relationClassName: () => "abm-child",
   endpointAnchors: (_relation, end) => (end === "target" ? "edge" : undefined),
   customShapes: { diode: { shape: "diode" } },
-  extras: (spec) => {
-    const gesture = spec.notation.edges?.Child?.["x-abm-connectGesture"] as { button?: string } | undefined;
-    return gesture?.button === "secondary" ? { connectOnRightDrag: true } : {};
-  },
 };

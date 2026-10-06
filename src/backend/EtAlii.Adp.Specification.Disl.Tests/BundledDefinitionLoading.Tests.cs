@@ -21,8 +21,63 @@ public class BundledDefinitionLoadingTests
         // Assert.
         Assert.Empty(bundled.Diagnostics);
         Assert.Equal(language, bundled.Specification.LanguageId);
-        Assert.Equal("0.2", bundled.Specification.Disl);
+        Assert.Equal("0.3", bundled.Specification.Disl);
         Assert.True(bundled.Specification.Expressions.Count + bundled.Specification.Functions.Count >= atLeast, $"Only {bundled.Specification.Expressions.Count} expressions were compiled; the walk has lost some.");
+    }
+
+    /// <summary>
+    /// Both bundled definitions are DISL 0.3 and say nothing through the <c>x-</c> keys DISL 0.3 adopted
+    /// (2026-10-05): each is renamed to its standard key, which is the only one the runtime reads. The two
+    /// <c>x-</c> keys that still hold a construct not yet ruled on hold that construct and nothing else.
+    /// </summary>
+    [Theory]
+    [InlineData(Resources.HypeCycle)]
+    [InlineData(Resources.BehaviorModel)]
+    public void TheBundledDefinition_IsDisl03WithoutTheRenamedExtensionKeys(string resource)
+    {
+        // Arrange.
+        var renamed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "x-bounds.neighbour", "x-enumValue.colorToken", "x-ruler.minUnit", "x-part.tooltip", "x-label.editText", "x-anchors.drawnFrom",
+            "x-field.display", "x-field.parse", "x-builtIn.code", "x-layout.rowPacked", "x-persistence.typeMap",
+            "x-abm-connectGesture", "x-abm-retype", "x-abm-place", "x-abm-placements", "x-abm-tidyTree",
+        };
+        var keptFor = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["x-layout.rowArrange"] = ["pinRowsOfTallNotes", "doc"],
+            ["x-abm-plan"] = ["retype", "doc"],
+        };
+        var root = JsonNode.Parse(Resources.Text(resource))!;
+        var found = new List<string>();
+
+        // Act.
+        Walk(root, "");
+
+        // Assert: the version and every renamed key in one list, so a 0.2 bundle shows both.
+        if (root["disl"]?.GetValue<string>() is var disl && disl != "0.3") found.Insert(0, $"/disl is \"{disl}\"");
+        Assert.Empty(found);
+
+        void Walk(JsonNode? node, string pointer)
+        {
+            switch (node)
+            {
+                case JsonObject members:
+                    foreach (var (name, value) in members)
+                    {
+                        var at = pointer + "/" + name;
+                        if (renamed.Contains(name)) found.Add(at);
+                        if (keptFor.TryGetValue(name, out var allowed) && value is JsonObject kept)
+                        {
+                            found.AddRange(kept.Select(member => member.Key).Where(key => !allowed.Contains(key)).Select(key => at + "/" + key));
+                        }
+                        Walk(value, at);
+                    }
+                    break;
+                case JsonArray items:
+                    for (var index = 0; index < items.Count; index++) Walk(items[index], pointer + "/" + index.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    break;
+            }
+        }
     }
 
     [Theory]

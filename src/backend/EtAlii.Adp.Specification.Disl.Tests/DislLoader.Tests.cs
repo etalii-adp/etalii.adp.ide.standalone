@@ -57,10 +57,10 @@ public class DislLoaderTests
     [Fact]
     public void AHigherMinorVersion_IsWarnedAboutAndLoaded()
     {
-        var result = DislLoader.Load(Specifications.With("\"disl\": \"0.3\""));
+        var result = DislLoader.Load(Specifications.With("\"disl\": \"0.4\""));
 
         Assert.NotNull(result.Specification);
-        Assert.Equal("warning at /disl: This runtime knows DISL up to 0.2; what DISL 0.3 adds is not read (DISL §2.9).", Assert.Single(result.Diagnostics).ToString());
+        Assert.Equal("warning at /disl: This runtime knows DISL up to 0.3; what DISL 0.4 adds is not read (DISL §2.9).", Assert.Single(result.Diagnostics).ToString());
     }
 
     [Fact]

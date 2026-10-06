@@ -14,7 +14,7 @@ public class BehaviorInterpretationTests
           },
           "relations": { "Link": { "source": "Box", "target": "Box", "directed": true, "attributes": { "weight": { "type": "number" } } } }
         },
-        "persistence": { "x-persistence.typeMap": { "Crate": { "as": "Box", "attributes": { "title": "name" } } } },
+        "persistence": { "typeMap": { "Crate": { "as": "Box", "attributes": { "title": "name" } } } },
         "toolbox": { "groups": [ { "id": "all", "tools": [ { "id": "box", "creates": "Box", "initial": { "name": { "cel": "'Box ' + string(int(position.x))" }, "count": 3 }, "after": "editLabel" } ] } ] },
         "behavior": {
           "operations": {

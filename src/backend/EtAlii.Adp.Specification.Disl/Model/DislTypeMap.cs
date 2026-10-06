@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Specification.Disl;
 internal sealed record DislTypeMapping(string As, IReadOnlyDictionary<string, string> Attributes, IReadOnlySet<string> HostAttributes);
 
 /// <summary>
-/// The specification's <c>persistence.x-persistence.typeMap</c>, or the identity mapping: read from
+/// The specification's <c>persistence.typeMap</c> (DISL 0.3), or the identity mapping: read from
 /// the binding to the model by <see cref="DislModelBuilder"/>, and back by <see cref="DislWrite"/>.
 /// </summary>
 internal sealed class DislTypeMap(IReadOnlyDictionary<string, DislTypeMapping> mappings)
@@ -19,7 +19,7 @@ internal sealed class DislTypeMap(IReadOnlyDictionary<string, DislTypeMapping> m
     public static DislTypeMap Of(DislSpecification specification)
     {
         var mappings = new Dictionary<string, DislTypeMapping>(StringComparer.Ordinal);
-        if (specification.Root.TryGetProperty("persistence", out var persistence) && persistence.TryGetProperty("x-persistence.typeMap", out var map) && map.ValueKind == JsonValueKind.Object)
+        if (specification.Root.TryGetProperty("persistence", out var persistence) && persistence.TryGetProperty("typeMap", out var map) && map.ValueKind == JsonValueKind.Object)
         {
             foreach (var entry in map.EnumerateObject())
             {

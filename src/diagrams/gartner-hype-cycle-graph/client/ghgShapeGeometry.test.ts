@@ -31,9 +31,9 @@ const FRACTIONS: readonly (readonly [number, number, number])[] = [
 /** The parts by role, read from their structure rather than their names. */
 const PARTS = BANNER.parts ?? [];
 /** A phase's fill: a path with the phase's tooltip. */
-const FILLS = PARTS.filter((part) => typeof part.shape === "object" && part["x-part.tooltip"] !== undefined);
+const FILLS = PARTS.filter((part) => typeof part.shape === "object" && part.tooltip !== undefined);
 /** A chevron: a path that is neither a fill nor hit. */
-const CHEVRONS = PARTS.filter((part) => typeof part.shape === "object" && part["x-part.tooltip"] === undefined);
+const CHEVRONS = PARTS.filter((part) => typeof part.shape === "object" && part.tooltip === undefined);
 /** A phase's attachment stretch: a rectangle. */
 const STRETCHES = PARTS.filter((part) => part.shape === "rect");
 
@@ -132,7 +132,7 @@ describe("the specification's phased banner is the library's segmented arrow ban
   });
 
   it("names the four phases' tooltips in the order the segments are drawn", () => {
-    expect(FILLS.map((part) => part["x-part.tooltip"])).toEqual([
+    expect(FILLS.map((part) => part.tooltip)).toEqual([
       "Peak of Inflated Expectations",
       "Trough of Disillusionment",
       "Slope of Enlightenment",

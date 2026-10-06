@@ -34,7 +34,7 @@ public sealed record ConnectAbmChildCommand(string BodyPath, string ParentId, st
 /// <remarks>
 /// The definition's <c>addChild</c> adds a node as a parent's last child; any other add is its
 /// <c>addHere</c>, placed where the command says - under the nearest node above a drop, the host's
-/// <c>x-abm-place</c> - and given the command's label when it has one.
+/// placement <c>underNearestAbove</c> (<c>create.place</c>) - and given the command's label when it has one.
 /// </remarks>
 public sealed class AddAbmNodeCommandHandler(IAbmDocumentStore documents) : ICommandHandler<AddAbmNodeCommand>
 {

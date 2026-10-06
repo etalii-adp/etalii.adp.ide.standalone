@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.Parity;
 
 /// <summary>
 /// The DISL model built from the binding's reading (<see cref="DislModelBuilder.From"/>, through the
-/// definition's <c>x-persistence.typeMap</c>) holds what <see cref="GhgParser.Parse(GhgBody)"/>
+/// definition's <c>persistence.typeMap</c>) holds what <see cref="GhgParser.Parse(GhgBody)"/>
 /// reads, for every document of the corpus: the same trends, triggers, notes and influences, in the
 /// same order, with the same ids and the same values - a value the parser falls back on read as the
 /// attribute's default, one it passes over left unset.

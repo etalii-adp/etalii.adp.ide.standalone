@@ -155,8 +155,9 @@ public class BundledDefinitionExpressionsTests
     /// Every string the DISL schema makes CEL, outside <c>x-</c> and <c>doc</c>: a <c>cel</c> member
     /// (an Expression object or a Bindable), the Expression-typed members, GeomExprs in shapes, every
     /// value position of an action (DISL §2.5 d) but its keywords and names, and the members of
-    /// derived relations, retyping, ids and context-tool arguments that are Expressions. The
-    /// <c>functions</c> block is compiled separately, over each function's parameters.
+    /// derived relations, retyping, ids and context-tool arguments that are Expressions, and a form
+    /// item's <c>optionLabel</c> and <c>accepts</c> (DISL 0.3 §7.5). The <c>functions</c> block is
+    /// compiled separately, over each function's parameters.
     /// </summary>
     private static void Collect(JsonElement element, List<string> path, List<(string, string)> expressions)
     {
@@ -200,10 +201,12 @@ public class BundledDefinitionExpressionsTests
         if (names is ["metamodel", "relations", _, "derived", "from" or "source" or "target" or "sources"]) return true;
         if (names is ["behavior", "retype", _, "attributeMapping", _]) return true;
         if (parentKey == "args") return true;
+        if (names[0] == "forms" && key is "optionLabel" or "accepts") return true;
         if (names.Contains("actions") || names.Contains("write"))
         {
-            // Every value position of an action is CEL, except its keywords and names (DISL §2.5 d).
-            return !(key is "as" or "algorithm" or "unset" or "call" or "plugin" or "severity" or "form"
+            // Every value position of an action is CEL, except its keywords and names (DISL §2.5 d) and a layout action's refusals, which are Messages.
+            if (parentKey == "refusals" && names.Count > 2 && names[^3] == "layout") return false;
+            return !(key is "as" or "algorithm" or "unset" or "call" or "plugin" or "severity" or "form" or "place"
                 || (key == "label" && parentKey == "editLabel"));
         }
         if (names is ["notation", "shapes", ..] && key is "x" or "y" or "w" or "h" or "rx" or "ry" or "x1" or "y1" or "x2" or "y2" or "cx" or "cy" or "r")

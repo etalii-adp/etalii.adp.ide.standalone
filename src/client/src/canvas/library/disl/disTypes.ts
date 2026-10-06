@@ -1,5 +1,5 @@
 /**
- * The part of a DISL 0.2 diagram specification (`*.dis`) the client reads, typed.
+ * The part of a DISL 0.3 diagram specification (`*.dis`) the client reads, typed.
  *
  * <b>A subset, on purpose.</b> The backend loads the whole specification and runs its CEL; the
  * client reads only what turns into a {@link DiagramDefinition}: the metamodel's types and
@@ -8,7 +8,7 @@
  * layout algorithms. Everything else is typed `unknown` or left out, so a reader of
  * `compileNotation.ts` sees exactly which keys it depends on.
  *
- * Keys starting with `x-` are proposals DISL 0.2 does not define yet. They are kept as data
+ * Keys starting with `x-` are proposals DISL 0.3 does not define yet. They are kept as data
  * (`[key: `x-${string}`]: unknown`) and read only by name.
  *
  * [`DiagramDefinition`]: ../definition/diagramDefinition.ts
@@ -46,7 +46,8 @@ export interface DislAttribute {
 
 export interface DislEnum {
   ordered?: boolean;
-  values: Readonly<Record<string, { label?: string; color?: string } & Extensions>>;
+  /** A value's `color` is a fixed colour, or a theme token resolved in the current mode (DISL 0.3). */
+  values: Readonly<Record<string, { label?: string; color?: string | { token: string } } & Extensions>>;
 }
 
 export interface DislType extends Extensions {
@@ -91,6 +92,8 @@ export interface DislRuler extends Extensions {
   position?: "top" | "bottom" | "left" | "right";
   attach?: "view" | "canvas";
   levels: readonly { unit: string; format: string; minSpacingPx?: number }[];
+  /** The finest level shown (DISL 0.3): levels finer than this unit are left out. */
+  minUnit?: Bindable<string>;
 }
 
 export interface DislCoordinateSystem {
@@ -140,6 +143,8 @@ export interface DislShapePart extends Extensions {
   style?: unknown;
   box?: DislBox;
   shape?: string | { path: { segments: readonly DislPathSegment[] } };
+  /** The part's own tooltip (DISL 0.3). */
+  tooltip?: Bindable<string>;
 }
 
 export interface DislCustomShape {
@@ -167,6 +172,8 @@ export interface DislLabel extends Extensions {
   overflow?: "visible" | "ellipsis" | "clip";
   style?: string | Readonly<Record<string, unknown>>;
   tooltip?: Bindable<string>;
+  /** The text the inline editor opens on, when not the label's own text (DISL 0.3). */
+  editText?: Bindable<string>;
 }
 
 export interface DislSize {
@@ -190,6 +197,8 @@ export interface DislAnchors extends Extensions {
   mode?: "outline" | "center" | "fixed" | "sides";
   points?: readonly { id: string; x: number; y: number }[];
   sides?: readonly ("top" | "right" | "bottom" | "left")[];
+  /** Where an edge's end is drawn (DISL 0.3 §6.9): at its anchor (`point`, the default), or where the line crosses the outline. */
+  drawnFrom?: "point" | "outline";
 }
 
 export interface DislNodeNotation extends Extensions {
@@ -224,6 +233,8 @@ export interface DislEdgeNotation extends Extensions {
   variants?: readonly unknown[];
   deletable?: boolean;
   reconnectable?: boolean;
+  /** How a new connection is drawn (DISL 0.3 §6.10): the pointer button, where it starts and the modifier keys held. */
+  connect?: { pointer?: { button?: "primary" | "secondary" | "middle"; start?: "anchor" | "body"; modifiers?: readonly ("Alt" | "Shift" | "Ctrl" | "Meta")[] } };
 }
 
 export interface DislContextTool {
@@ -273,8 +284,17 @@ export interface DislViewpoint {
   notation?: { nodes?: Readonly<Record<string, Partial<DislNodeNotation>>> };
 }
 
+/** One layout algorithm: a standard one (DISL 0.3 §10) with its options under its own name, or a plugin's. */
+interface DislLayoutAlgorithm extends Extensions {
+  algorithm: string;
+  scope?: string;
+  rowPacked?: { gap?: number; followConnections?: string } & Readonly<Record<string, unknown>>;
+  rows?: Readonly<Record<string, unknown>>;
+  tidyTree?: Readonly<Record<string, unknown>>;
+}
+
 export interface DislLayout {
-  algorithms?: Readonly<Record<string, { algorithm: string } & Extensions>>;
+  algorithms?: Readonly<Record<string, DislLayoutAlgorithm>>;
   default?: string;
 }
 
@@ -284,8 +304,8 @@ export interface DislLayout {
  */
 export function parseDisl(text: string): DislDocument {
   const document = JSON.parse(text) as DislDocument;
-  if (document.disl !== "0.2") {
-    throw new Error(`This client reads DISL 0.2; the bundled specification declares "${String(document.disl)}".`);
+  if (document.disl !== "0.3") {
+    throw new Error(`This client reads DISL 0.3; the bundled specification declares "${String(document.disl)}".`);
   }
 
   return document;

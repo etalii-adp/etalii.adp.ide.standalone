@@ -1,6 +1,6 @@
 {
   "$schema": "https://etalii.net/adp/disl/schema/0.2/disl.schema.json#/$defs/Specification",
-  "disl": "0.2",
+  "disl": "0.3",
   "language": {
     "id": "net.etalii.adp.etalii.agent-behavior-modelling",
     "version": "0.3.0",
@@ -1469,10 +1469,12 @@
         "targetMarker": "arrowFilled",
         "deletable": false,
         "reconnectable": false,
-        "x-abm-connectGesture": {
-          "button": "secondary",
-          "start": "body",
-          "doc": "Proposed as ConnectGesture `pointer` (abm-proposals.md, 3): a new line is drawn by dragging with the right mouse button from the parent's body to the child's body, because side anchors draw no handle."
+        "connect": {
+          "pointer": {
+            "button": "secondary",
+            "start": "body",
+            "doc": "A new line is drawn by dragging with the right mouse button from the parent's body to the child's body, because side anchors draw no handle."
+          }
         },
         "doc": "An orthogonal line from the middle of the parent's bottom down to the middle of the child's top, with an arrowhead at the child."
       }
@@ -1491,30 +1493,27 @@
           "title": "Node",
           "items": [
             {
-              "kind": "computed",
+              "kind": "type",
               "label": "Kind",
-              "value": {
-                "cel": "kindChoice(self.type)"
+              "options": {
+                "cel": "kinds().filter(t, canBecome(t, self))"
               },
-              "x-abm-retype": {
-                "options": "kinds().filter(t, canBecome(t, self))",
-                "optionLabel": "kindChoice(item)",
-                "refusals": [
-                  {
-                    "when": "familyOf(newValue) == 'leaf' && self.children.size() > 0",
-                    "message": {
-                      "cel": "'\"' + kindChoice(newValue) + '\" holds no children, and this node has ' + (self.children.size() == 1 ? '1 child' : string(self.children.size()) + ' children') + '.'"
-                    }
-                  },
-                  {
-                    "when": "familyOf(newValue) == 'decorator' && self.children.size() > 1",
-                    "message": {
-                      "cel": "'\"' + (newValue == 'Retry' ? 'Retry up to 3 times' : kindChoice(newValue)) + '\" holds exactly one child, and this node has ' + string(self.children.size()) + '.'"
-                    }
+              "optionLabel": "kindChoice(item)",
+              "refusals": [
+                {
+                  "when": "familyOf(newValue) == 'leaf' && self.children.size() > 0",
+                  "message": {
+                    "cel": "'\"' + kindChoice(newValue) + '\" holds no children, and this node has ' + (self.children.size() == 1 ? '1 child' : string(self.children.size()) + ' children') + '.'"
                   }
-                ],
-                "doc": "Proposed as a form field of kind `type` (abm-proposals.md, 2): an editable choice of the kinds this node can become without losing a child, shown by their menu names, which retypes the node through `behavior.retype` as one undoable step. The refusals are reached only by a value typed past the list."
-              }
+                },
+                {
+                  "when": "familyOf(newValue) == 'decorator' && self.children.size() > 1",
+                  "message": {
+                    "cel": "'\"' + (newValue == 'Retry' ? 'Retry up to 3 times' : kindChoice(newValue)) + '\" holds exactly one child, and this node has ' + string(self.children.size()) + '.'"
+                  }
+                }
+              ],
+              "doc": "An editable choice of the kinds this node can become without losing a child, shown by their menu names, which retypes the node through `behavior.retype` as one undoable step. The refusals are reached only by a value typed past the list."
             },
             {
               "attribute": "label",
@@ -1594,8 +1593,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1610,8 +1608,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1626,8 +1623,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1642,8 +1638,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1658,8 +1653,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1674,8 +1668,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1690,8 +1683,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1706,8 +1698,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1722,8 +1713,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1738,8 +1728,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           },
           {
@@ -1754,8 +1743,7 @@
             },
             "after": "none",
             "drop": {
-              "elsewhere": "create",
-              "x-abm-place": "underNearestAbove"
+              "place": "underNearestAbove"
             }
           }
         ]
@@ -1867,7 +1855,7 @@
       "std.atStart": "It is already the first of its siblings.",
       "std.atEnd": "It is already the last of its siblings."
     },
-    "x-abm-placements": {
+    "placements": {
       "underNearestAbove": {
         "candidates": "diagram.nodes.filter(n, takesAnotherChild(n) && n.view.bounds.center()[1] < position.y)",
         "as": "candidate",
@@ -1875,7 +1863,7 @@
         "index": "parent.children.filter(c, c.view.bounds.center()[0] < position.x).size()",
         "whenEmpty": "root",
         "refusal": "Drop the node below the node it belongs under: a Do in order, a Try in order, a Do together, or a Retry, Repeat until, Only while or Ask approval before that has no child yet.",
-        "doc": "Proposed as `behavior.placements` with a `place` key on drops and `create` actions (abm-proposals.md, 1). The parent is the candidate of lowest rank, the first in model order on a tie; the new node goes before its first child whose centre lies right of the drop. An empty tree takes the node as its root."
+        "doc": "The parent is the candidate of lowest rank, the first in model order on a tie; the new node goes before its first child whose centre lies right of the drop. An empty tree takes the node as its root."
       }
     },
     "operations": {
@@ -1945,10 +1933,10 @@
               "type": "p.kind",
               "attributes": {
                 "label": "startingLabel(p.kind)"
-              }
+              },
+              "place": "underNearestAbove"
             },
-            "as": "added",
-            "x-abm-place": "underNearestAbove"
+            "as": "added"
           },
           {
             "select": "added"
@@ -2391,30 +2379,27 @@
   "layout": {
     "algorithms": {
       "tree": {
-        "algorithm": "plugin:net.etalii.adp.etalii.abmTreeLayout",
+        "algorithm": "tidyTree",
         "direction": "down",
         "spacing": {
           "node": 28,
           "layer": 56,
           "component": 56
         },
-        "x-abm-tidyTree": {
+        "tidyTree": {
           "order": "children",
           "parentAlign": "firstLastCentre",
-          "packing": "outline",
           "origin": "leftmostAtZero",
           "rows": {
             "stored": "y",
-            "hang": "layer",
             "minGap": 16
           },
           "drag": {
             "carry": "subtree",
             "across": "reorder",
-            "down": "row",
-            "reorderBy": "centre"
+            "down": "row"
           },
-          "doc": "Proposed as the built-in algorithm `tidyTree` (abm-proposals.md, 4): Reingold-Tilford outline packing in document order, each parent centred over its first and last child, the roots packed 56 apart, the leftmost node at x = 0. Across, a node's x is always the computed one; down, all children of one parent share a row, drawn at the first height stored for any of them or 56 below the parent's bottom, never closer than 16. A drag carries the subtree, takes a sibling's place once dropped past its centre (the order is written to the Markdown), and stores the row's height for every node in the row and beneath it, as one undo step."
+          "doc": "Reingold-Tilford outline packing in document order, each parent centred over its first and last child, the roots packed 56 apart, the leftmost node at x = 0. Across, a node's x is always the computed one; down, all children of one parent share a row, drawn at the first height stored for any of them or 56 below the parent's bottom, never closer than 16. A drag carries the subtree, takes a sibling's place once dropped past its centre (the order is written to the Markdown), and stores the row's height for every node in the row and beneath it, as one undo step."
         },
         "doc": "Top-down: the root at the top, each node's children left to right in document order beneath it, each subtree packed as close as its outline allows."
       }
@@ -2449,39 +2434,28 @@
       ],
       "required": true,
       "doc": "The FBL section 11 reader of the binding agent-behavior-modelling.fbl#abm, wrapping today's AbmParser and AbmWriter: reads the tree from a Markdown file's Behavior section, sets `implicit` on an item without a keyword, reports `abm.no-behavior` (information) on line 1 when the file has no Behavior heading or on the heading's line when the section holds no list, and plans every edit as line splices so every other byte survives.",
+      "plans": [
+        "add",
+        "set",
+        "remove",
+        "move",
+        "retype"
+      ],
+      "add": {
+        "position": true
+      },
+      "move": {
+        "position": true
+      },
       "x-abm-plan": {
-        "changes": [
-          "add",
-          "set",
-          "remove",
-          "move",
-          "retype"
-        ],
-        "add": {
-          "position": "index"
-        },
-        "move": {
-          "position": "index"
-        },
         "retype": {
           "keeps": [
             "label",
             "notes"
           ]
         },
-        "doc": "Proposed for FBL section 11.2 (abm-proposals.md, 5): the plan operation receives a move with the new parent and an index, an add with an index, and a type change, none of which FBL 0.1 gives a plugin."
+        "doc": "A retype keeps the node's label and notes in the Markdown. Not yet a DISL key."
       }
-    },
-    "net.etalii.adp.etalii.abmTreeLayout": {
-      "version": "^0.1.0",
-      "provides": [
-        "layout"
-      ],
-      "required": false,
-      "fallback": {
-        "layout": "mrtree"
-      },
-      "doc": "The tidy top-down tree layout, with the rows' stored heights from the registration applied over it; stands in for the proposed `tidyTree` algorithm."
     },
     "net.etalii.adp.etalii.abmArrange": {
       "version": "^0.1.0",

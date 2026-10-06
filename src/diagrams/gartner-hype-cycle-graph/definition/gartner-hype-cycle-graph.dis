@@ -1,6 +1,6 @@
 {
   "$schema": "https://etalii.net/adp/disl/schema/0.2/disl.schema.json#/$defs/Specification",
-  "disl": "0.2",
+  "disl": "0.3",
   "language": {
     "id": "net.etalii.adp.gartner.hypecycle-graph",
     "version": "1.1.0",
@@ -193,10 +193,10 @@
       "Phase": {
         "ordered": true,
         "values": {
-          "peak": { "label": "Peak", "color": "#f7e7a1", "doc": "Peak of Inflated Expectations", "x-enumValue.colorToken": "ghg.peak" },
-          "trough": { "label": "Trough", "color": "#dfe3e8", "doc": "Trough of Disillusionment", "x-enumValue.colorToken": "ghg.trough" },
-          "slope": { "label": "Slope", "color": "#f6c99a", "doc": "Slope of Enlightenment", "x-enumValue.colorToken": "ghg.slope" },
-          "plateau": { "label": "Plateau", "color": "#cde8a8", "doc": "Plateau of Productivity", "x-enumValue.colorToken": "ghg.plateau" }
+          "peak": { "label": "Peak", "color": { "token": "ghg.peak" }, "doc": "Peak of Inflated Expectations" },
+          "trough": { "label": "Trough", "color": { "token": "ghg.trough" }, "doc": "Trough of Disillusionment" },
+          "slope": { "label": "Slope", "color": { "token": "ghg.slope" }, "doc": "Slope of Enlightenment" },
+          "plateau": { "label": "Plateau", "color": { "token": "ghg.plateau" }, "doc": "Plateau of Productivity" }
         }
       },
       "Edge": {
@@ -224,15 +224,17 @@
           "troughEnd": { "type": "yearMonth", "group": "Phases", "order": 3, "doc": "Where Trough ends, once dragged." },
           "slopeEnd": { "type": "yearMonth", "group": "Phases", "order": 4, "doc": "Where Slope ends, once dragged." }
         },
-        "x-bounds.neighbour": {
-          "attributes": [ "peakEnd", "troughEnd", "slopeEnd" ],
-          "between": [ "start", "stop" ],
-          "gap": 1,
-          "inner": { "cel": "visiblePhases(self) - 1" },
-          "absent": "spread",
-          "on": [ "change", "handle" ],
-          "pinned": "edited",
-          "doc": "After a boundary is set (pinned) or the span changes, every stored boundary is clamped so each visible phase, including those spread evenly around it, stays at least one month long; a stored boundary beyond the last visible phase is only kept inside the span (`GhgPhases.KeptAMonthApart`). See the companion, Keeping every phase at least a month long."
+        "bounds": {
+          "neighbour": {
+            "attributes": [ "peakEnd", "troughEnd", "slopeEnd" ],
+            "between": [ "start", "stop" ],
+            "gap": 1,
+            "inner": { "cel": "visiblePhases(self) - 1" },
+            "absent": "spread",
+            "on": [ "change", "handle" ],
+            "pinned": "edited",
+            "doc": "After a boundary is set (pinned) or the span changes, every stored boundary is clamped so each visible phase, including those spread evenly around it, stays at least one month long; a stored boundary beyond the last visible phase is only kept inside the span (`GhgPhases.KeptAMonthApart`). See the companion, Keeping every phase at least a month long."
+          }
         }
       },
       "Trigger": {
@@ -304,9 +306,9 @@
             { "unit": "century", "format": "uuuu", "minSpacingPx": 64 },
             { "unit": "millennium", "format": "uuuu", "minSpacingPx": 64 }
           ],
-          "x-ruler.minUnit": { "attribute": "unit" }
+          "minUnit": { "attribute": "unit" }
         },
-        "doc": "A month-index axis counted from 1900-01, four canvas units per step of the diagram's `unit`, linear and never logarithmic. Dates are signed astronomical years (`0000` is 1 BCE, `-3200-01` is 3201 BCE). The ruler is pinned to the bottom of the view; a level finer than one step of the unit is never shown (`x-ruler.minUnit`)."
+        "doc": "A month-index axis counted from 1900-01, four canvas units per step of the diagram's `unit`, linear and never logarithmic. Dates are signed astronomical years (`0000` is 1 BCE, `-3200-01` is 3201 BCE). The ruler is pinned to the bottom of the view; a level finer than one step of the unit is never shown (`minUnit`)."
       },
       "rows": {
         "kind": "linear",
@@ -358,6 +360,7 @@
   },
 
   "notation": {
+    "textMetric": { "kind": "average", "advance": 0.55, "count": "utf16" },
     "theme": {
       "tokens": {
         "ghg.peak": "#f7e7a1",
@@ -426,7 +429,7 @@
               { "op": "L", "x": "p.count == 1 ? w - min(h / 2.0, w / 2.0) : min(w * p.b1 - min(min(h / 2.0, w / 2.0), w * p.b1), w - min(h / 2.0, w / 2.0))", "y": "h" },
               { "op": "L", "x": 0, "y": "h" },
               { "op": "Z" } ] } },
-            "x-part.tooltip": "Peak of Inflated Expectations"
+            "tooltip": "Peak of Inflated Expectations"
           },
           {
             "id": "troughFill",
@@ -441,7 +444,7 @@
               { "op": "L", "x": "min(w * p.b1 - min(min(h / 2.0, w / 2.0), w * p.b1), w - min(h / 2.0, w / 2.0))", "y": "h" },
               { "op": "L", "x": "w * p.b1", "y": "h / 2.0" },
               { "op": "Z" } ] } },
-            "x-part.tooltip": "Trough of Disillusionment"
+            "tooltip": "Trough of Disillusionment"
           },
           {
             "id": "slopeFill",
@@ -456,7 +459,7 @@
               { "op": "L", "x": "min(w * p.b2 - min(min(h / 2.0, w / 2.0), w * (p.b2 - p.b1)), w - min(h / 2.0, w / 2.0))", "y": "h" },
               { "op": "L", "x": "w * p.b2", "y": "h / 2.0" },
               { "op": "Z" } ] } },
-            "x-part.tooltip": "Slope of Enlightenment"
+            "tooltip": "Slope of Enlightenment"
           },
           {
             "id": "plateauFill",
@@ -471,7 +474,7 @@
               { "op": "L", "x": "min(w * p.b3 - min(min(h / 2.0, w / 2.0), w * (p.b3 - p.b2)), w - min(h / 2.0, w / 2.0))", "y": "h" },
               { "op": "L", "x": "w * p.b3", "y": "h / 2.0" },
               { "op": "Z" } ] } },
-            "x-part.tooltip": "Plateau of Productivity"
+            "tooltip": "Plateau of Productivity"
           },
           {
             "id": "chevron1",
@@ -625,7 +628,7 @@
               "write": [ { "set": { "name": "value.trim()" } } ],
               "doc": "Only the name is edited; the date part is shown, not written."
             },
-            "x-label.editText": { "attribute": "name" }
+            "editText": { "attribute": "name" }
           }
         ],
         "tooltip": { "cel": "'Trigger: ' + self.name + ', ' + formatWhen(self.date, diagram.unit, true)" },
@@ -636,7 +639,7 @@
             { "id": "e", "x": 1, "y": 0.5 },
             { "id": "s", "x": 0.5, "y": 1 }
           ],
-          "x-anchors.drawnFrom": "outline",
+          "drawnFrom": "outline",
           "doc": "An influence leaves a trigger from its top, right or bottom handle; the line is drawn from the outline facing its target. The anchors are never drawn."
         }
       },
@@ -740,7 +743,7 @@
         "position": "outside-top-left",
         "entries": [ "Phase" ]
       },
-      "doc": "The phase legend sits under the filter box, one swatch per phase painted with the phase's theme token (`x-enumValue.colorToken`), so it follows dark mode; the Compact toggle sits under the legend."
+      "doc": "The phase legend sits under the filter box, one swatch per phase painted with the phase's theme token (its `color`), so it follows dark mode; the Compact toggle sits under the legend."
     }
   },
 
@@ -886,16 +889,16 @@
             "label": "Phases",
             "widget": "slider",
             "widgetOptions": { "min": 1, "max": 4, "step": 1, "marks": [ { "value": 1, "label": "Peak" }, { "value": 2, "label": "Peak and Trough" }, { "value": 3, "label": "Peak, Trough and Slope" }, { "value": 4, "label": "All four" } ] },
-            "x-field.display": { "cel": "['Peak', 'Peak and Trough', 'Peak, Trough and Slope', 'All four'][visiblePhases(self) - 1]" },
-            "x-field.parse": {
+            "display": { "cel": "['Peak', 'Peak and Trough', 'Peak, Trough and Slope', 'All four'][visiblePhases(self) - 1]" },
+            "parse": {
               "accepts": "value.trim() in ['Peak', 'Peak and Trough', 'Peak, Trough and Slope', 'All four']",
               "write": [ { "set": { "phases": "['Peak', 'Peak and Trough', 'Peak, Trough and Slope', 'All four'].indexOf(value.trim()) + 1" } } ],
               "refusal": { "cel": "'\\'' + value + '\\' is not one of Peak, Peak and Trough, Peak, Trough and Slope, All four.'" }
             }
           },
-          { "attribute": "peakEnd", "label": "Peak ends", "widget": "text", "visible": "has(self.start) && has(self.stop) && self.stop > self.start && visiblePhases(self) >= 2", "x-field.display": { "cel": "monthText(phaseBoundaries(self)[0])" }, "validate": [ { "rule": "parseYearMonth(string(value)).hasValue()", "message": { "cel": "'\\'' + string(value) + '\\' is not a date; write it as YYYY-MM, such as 2007-06.'" }, "timing": "commit" } ] },
-          { "attribute": "troughEnd", "label": "Trough ends", "widget": "text", "visible": "has(self.start) && has(self.stop) && self.stop > self.start && visiblePhases(self) >= 3", "x-field.display": { "cel": "monthText(phaseBoundaries(self)[1])" }, "validate": [ { "rule": "parseYearMonth(string(value)).hasValue()", "message": { "cel": "'\\'' + string(value) + '\\' is not a date; write it as YYYY-MM, such as 2007-06.'" }, "timing": "commit" } ] },
-          { "attribute": "slopeEnd", "label": "Slope ends", "widget": "text", "visible": "has(self.start) && has(self.stop) && self.stop > self.start && visiblePhases(self) >= 4", "x-field.display": { "cel": "monthText(phaseBoundaries(self)[2])" }, "validate": [ { "rule": "parseYearMonth(string(value)).hasValue()", "message": { "cel": "'\\'' + string(value) + '\\' is not a date; write it as YYYY-MM, such as 2007-06.'" }, "timing": "commit" } ] }
+          { "attribute": "peakEnd", "label": "Peak ends", "widget": "text", "visible": "has(self.start) && has(self.stop) && self.stop > self.start && visiblePhases(self) >= 2", "display": { "cel": "monthText(phaseBoundaries(self)[0])" }, "validate": [ { "rule": "parseYearMonth(string(value)).hasValue()", "message": { "cel": "'\\'' + string(value) + '\\' is not a date; write it as YYYY-MM, such as 2007-06.'" }, "timing": "commit" } ] },
+          { "attribute": "troughEnd", "label": "Trough ends", "widget": "text", "visible": "has(self.start) && has(self.stop) && self.stop > self.start && visiblePhases(self) >= 3", "display": { "cel": "monthText(phaseBoundaries(self)[1])" }, "validate": [ { "rule": "parseYearMonth(string(value)).hasValue()", "message": { "cel": "'\\'' + string(value) + '\\' is not a date; write it as YYYY-MM, such as 2007-06.'" }, "timing": "commit" } ] },
+          { "attribute": "slopeEnd", "label": "Slope ends", "widget": "text", "visible": "has(self.start) && has(self.stop) && self.stop > self.start && visiblePhases(self) >= 4", "display": { "cel": "monthText(phaseBoundaries(self)[2])" }, "validate": [ { "rule": "parseYearMonth(string(value)).hasValue()", "message": { "cel": "'\\'' + string(value) + '\\' is not a date; write it as YYYY-MM, such as 2007-06.'" }, "timing": "commit" } ] }
         ] },
         { "kind": "section", "label": "Peak", "items": [
           { "kind": "computed", "x-field.id": "peakInfluences", "label": "Influence", "widget": "textarea", "readOnlyReasons": [ "Draw, reattach or delete an influence on the canvas." ], "value": { "cel": "listOrNone(self.outgoingOf('Influence').filter(r, r.?fromPhase.orValue('') == 'peak').map(r, endText(r.target, r.?toPhase.orValue(''))))" } },
@@ -945,7 +948,7 @@
             "kind": "computed",
             "label": "Size",
             "value": { "cel": "has(self.width) && has(self.height) ? sizeText(self.width) + ' x ' + sizeText(self.height) : ''" },
-            "x-field.parse": {
+            "parse": {
               "accepts": "value.matches('^\\\\s*[0-9.]+\\\\s*x\\\\s*[0-9.]+\\\\s*(at\\\\s+\\\\S+)?\\\\s*(row\\\\s+-?[0-9]+)?\\\\s*$')",
               "write": [ { "set": { "width": "double(value.trim().split('x')[0].trim())", "height": "double(value.trim().split('x')[1].trim().split(' ')[0])" } } ],
               "refusal": { "cel": "'\\'' + value + '\\' is not a size; write it as width x height, such as 160 x 64.'" },
@@ -969,7 +972,7 @@
             "kind": "computed",
             "label": "From attachment",
             "value": { "cel": "endSpec(self.?fromPhase, self.?fromEdge, self.?fromAt)" },
-            "x-field.parse": {
+            "parse": {
               "accepts": "value.trim().split('/').size() == 3 && value.trim().split('/')[0].trim() in ['peak', 'trough', 'slope', 'plateau'] && value.trim().split('/')[1].trim() in ['top', 'bottom'] && value.trim().split('/')[2].trim().matches('^[-+]?[0-9]*\\\\.?[0-9]+([eE][-+]?[0-9]+)?$') && double(value.trim().split('/')[2].trim()) >= 0.0 && double(value.trim().split('/')[2].trim()) <= 1.0",
               "write": [ { "set": { "fromPhase": "value.trim().split('/')[0].trim()", "fromEdge": "value.trim().split('/')[1].trim()", "fromAt": "math.round(double(value.trim().split('/')[2].trim()) * 100.0) / 100.0" } } ],
               "refusal": { "cel": "'\\'' + value + '\\' is not an attachment; write it as phase/edge/at, such as plateau/bottom/0.3.'" }
@@ -979,7 +982,7 @@
             "kind": "computed",
             "label": "To attachment",
             "value": { "cel": "endSpec(self.?toPhase, self.?toEdge, self.?toAt)" },
-            "x-field.parse": {
+            "parse": {
               "accepts": "value.trim().split('/').size() == 3 && value.trim().split('/')[0].trim() in ['peak', 'trough', 'slope', 'plateau'] && value.trim().split('/')[1].trim() in ['top', 'bottom'] && value.trim().split('/')[2].trim().matches('^[-+]?[0-9]*\\\\.?[0-9]+([eE][-+]?[0-9]+)?$') && double(value.trim().split('/')[2].trim()) >= 0.0 && double(value.trim().split('/')[2].trim()) <= 1.0",
               "write": [ { "set": { "toPhase": "value.trim().split('/')[0].trim()", "toEdge": "value.trim().split('/')[1].trim()", "toAt": "math.round(double(value.trim().split('/')[2].trim()) * 100.0) / 100.0" } } ],
               "refusal": { "cel": "'\\'' + value + '\\' is not an attachment; write it as phase/edge/at, such as plateau/bottom/0.3.'" }
@@ -1003,9 +1006,9 @@
         "severity": "warning",
         "message": { "cel": "cel.bind(v, detail.?violation.orValue(self.target.isA('Trigger') ? 'target' : (self.source == self.target ? 'selfLoop' : 'parallel')), v == 'target' ? '`' + self.id + '` ends at the trigger `' + self.target.id + '`; an influence cannot end at a trigger.' : (v == 'selfLoop' ? '`' + self.id + '` has `' + self.source.id + '` influence itself; a trend cannot.' : '`' + self.source.id + '` influences `' + self.target.id + '` ' + string(self.source.outgoingOf('Influence').filter(r, r.target == self.target).size()) + ' times; a trend influences another once in each direction.'))" },
         "refusal": { "cel": "target.isA('Trigger') ? 'An influence cannot end at a trigger.' : (!target.isA('Trend') || !(source.isA('Trend') || source.isA('Trigger')) ? 'An influence is drawn from one trend to another.' : (source == target ? 'A trend cannot influence itself.' : 'This trend already influences that one; a trend influences another once in each direction.'))" },
-        "x-builtIn.code": { "cel": "cel.bind(v, detail.?violation.orValue(self.target.isA('Trigger') ? 'target' : (self.source == self.target ? 'selfLoop' : 'parallel')), v == 'target' ? 'ghg.influence-into-trigger' : (v == 'selfLoop' ? 'ghg.self-influence' : 'ghg.duplicate-influence'))" },
+        "code": { "cel": "cel.bind(v, detail.?violation.orValue(self.target.isA('Trigger') ? 'target' : (self.source == self.target ? 'selfLoop' : 'parallel')), v == 'target' ? 'ghg.influence-into-trigger' : (v == 'selfLoop' ? 'ghg.self-influence' : 'ghg.duplicate-influence'))" },
         "x-builtIn.oncePerGroup": "second",
-        "doc": "Covers ghg.influence-into-trigger, ghg.self-influence and ghg.duplicate-influence; the code per case is `x-builtIn.code`, by `detail.violation` (`target`, `selfLoop` or `parallel`), so an influence that is both a loop and a repeat is reported as each. A repeat is reported once per pair, on the second influence, however many follow (`x-builtIn.oncePerGroup`). A hidden influence counts like any other, because the rule reads the model, not what is drawn."
+        "doc": "Covers ghg.influence-into-trigger, ghg.self-influence and ghg.duplicate-influence; the code per case is the computed `code`, by `detail.violation` (`target`, `selfLoop` or `parallel`), so an influence that is both a loop and a repeat is reported as each. A repeat is reported once per pair, on the second influence, however many follow (`x-builtIn.oncePerGroup`). A hidden influence counts like any other, because the rule reads the model, not what is drawn."
       },
       "std.references": {
         "severity": "warning",
@@ -1175,7 +1178,7 @@
           { "set": { "troughEnd": "newStart + int(math.round(double(old.troughEnd - oldStart) * double(newSpan) / double(oldSpan)))" }, "when": "has(old.troughEnd)" },
           { "set": { "slopeEnd": "newStart + int(math.round(double(old.slopeEnd - oldStart) * double(newSpan) / double(oldSpan)))" }, "when": "has(old.slopeEnd)" }
         ],
-        "doc": "Stored boundaries follow the span: a move shifts them exactly, a resize scales each offset from the start by the new span over the old (`GhgPhases.Rescaled`). The clamp that follows is the Trend type's `x-bounds.neighbour`."
+        "doc": "Stored boundaries follow the span: a move shifts them exactly, a resize scales each offset from the start by the new span over the old (`GhgPhases.Rescaled`). The clamp that follows is the Trend type's `bounds.neighbour`."
       }
     ],
     "operations": {
@@ -1196,7 +1199,7 @@
         "unavailable": [
           { "when": "diagram.nodes.size() == 0", "message": "There is nothing to arrange until this graph has a trend." }
         ],
-        "actions": [ { "layout": { "algorithm": "rowArrange" } } ],
+        "actions": [ { "layout": { "algorithm": "rowArrange", "refusals": { "nothingDrawn": "There is nothing to arrange until this graph has a trend.", "unchanged": "This graph is already arranged." } } } ],
         "doc": "Puts every trend, trigger and note on the row that leaves the graph least cluttered, as one undoable step; only rows change, never a date. Invoked, never automatic. The algorithm is the layout `rowArrange`."
       },
       "addTrendHere": {
@@ -1264,40 +1267,37 @@
   "layout": {
     "algorithms": {
       "rowPacked": {
-        "algorithm": "lanes",
-        "x-layout.rowPacked": {
+        "algorithm": "rowPacked",
+        "scope": "all",
+        "rowPacked": {
           "keepRows": true,
           "order": "start",
           "gap": 4,
           "followConnections": "Influence",
           "targetAfter": "sourceMiddle",
-          "rowsCovered": "ceil(height / 56)",
-          "scope": "all",
-          "doc": "Every element keeps its stored row; within a row, elements keep the order of their start dates and are placed as far left as they fit, 4 canvas units apart. An influence's target starts after the middle of its source, so causes read to the left of their effects. A note covers every row its height reaches. The whole model is laid out, not only what is on screen. `lanes` is what a runtime without this extension uses."
+          "rowsCovered": "int(math.ceil(self.height / 56.0))",
+          "doc": "Every element keeps its stored row; within a row, elements keep the order of their start dates and are placed as far left as they fit, 4 canvas units apart. An influence's target starts after the middle of its source, so causes read to the left of their effects. A note covers every row its height reaches. The whole model is laid out, not only what is on screen (`scope`)."
         },
         "doc": "The compact viewpoint's layout."
       },
       "rowArrange": {
-        "algorithm": "none",
-        "x-layout.rowArrange": {
+        "algorithm": "rows",
+        "rows": {
           "writes": [ "row" ],
           "extent": {
-            "Trend": { "from": "x - 8 - textWidth(name)", "to": "x2" },
-            "Trigger": { "from": "x - 8 - 8 - textWidth(label)", "to": "x + 8" },
-            "Note": { "from": "x", "to": "x + width", "rows": "ceil(height / 56)" }
+            "Trend": { "from": "x - 8.0 - textWidth(self.name, 12.0)", "to": "x2" },
+            "Trigger": { "from": "x - 8.0 - textWidth(self.name + ' · ' + formatWhen(self.date, diagram.unit, false), 12.0)", "to": "x2" },
+            "Note": { "from": "x", "to": "x + width", "rows": "int(math.ceil(height / 56.0))" }
           },
-          "textWidth": "length * 12 * 0.55",
           "clearance": 16,
-          "order": [ "left", "right", "document" ],
           "affinity": "Influence",
           "ties": "lower",
           "swapPasses": 64,
+          "doc": "Interval partitioning into the fewest rows, each element on the free row nearest the average row of its already-placed linked elements (the lower on a tie, the first free row with none), then whole rows swapped with their neighbour while that shortens the links in total, for at most 64 passes. A trend's extent starts at its name, 8 units before its banner; a trigger's at its label, the name and date, 8 units before its circle; text is measured by the notation's `textMetric`. Only changed rows are written, in one undo step; the refusals are on the `ghg.arrange` operation's `layout` action."
+        },
+        "x-layout.rowArrange": {
           "pinRowsOfTallNotes": true,
-          "refusals": {
-            "nothingDrawn": "There is nothing to arrange until this graph has a trend.",
-            "unchanged": "This graph is already arranged."
-          },
-          "doc": "Interval partitioning into the fewest rows, each element on the free row nearest the average row of its already-placed linked elements (the lower on a tie, the first free row with none), then whole rows swapped with their neighbour while that shortens the links in total, for at most 64 passes; a row touched by a note taller than one row stays. Only changed rows are written, in one undo step."
+          "doc": "A row touched by a note taller than one row stays where it is while rows are swapped, because swapping it would tear the note in two. Not yet a DISL key."
         },
         "doc": "Arrange diagram (`ghg.arrange`): rows only, because across is the data."
       }
@@ -1377,16 +1377,16 @@
       "doc": "New entries get a ShortGuid: a version 4 GUID written as 25 characters of base 36. Hand-written ids such as `steam-engine` are kept as written. Ids are unique across all four lists together."
     },
     "view": { "store": [], "viewer": [ "viewpoint", "filters", "viewport" ] },
-    "x-persistence.typeMap": {
+    "typeMap": {
       "Graph": { "as": "header", "doc": "The `gartner-hypecycle-graph: 1` header; the binding's `header` reads it." },
       "Unit": { "as": "diagram", "attributes": { "value": "unit" } },
       "Trend": { "as": "Trend", "hostAttributes": [ "storedId", "unknownKeys" ] },
       "Trigger": { "as": "Trigger", "hostAttributes": [ "storedId", "unknownKeys" ] },
       "Note": { "as": "Note", "hostAttributes": [ "storedId", "unknownKeys" ] },
       "Influence": { "as": "Influence", "attributes": { "from": "source", "to": "target" }, "hostAttributes": [ "storedId", "unknownKeys" ] },
-      "Unreadable": { "as": "unreadable" },
-      "doc": "The FBL binding's element types and attributes, mapped onto this metamodel. The binding reads an influence as an element with reference attributes, so one whose end names nothing is kept and reported, and the unit and header as elements of their own."
-    }
+      "Unreadable": { "as": "unreadable" }
+    },
+    "doc": "The FBL binding's element types and attributes, mapped onto this metamodel. The binding reads an influence as an element with reference attributes, so one whose end names nothing is kept and reported, and the unit and header as elements of their own."
   },
 
   "x-ghg": {

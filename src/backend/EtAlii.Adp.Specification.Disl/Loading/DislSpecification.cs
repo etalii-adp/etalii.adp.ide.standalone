@@ -38,7 +38,7 @@ public sealed class DislSpecification
     /// <summary>The specification's JSON, as it was read.</summary>
     public JsonElement Root { get; }
 
-    /// <summary>The DISL version it targets (§2.9): <c>0.1</c> or <c>0.2</c>.</summary>
+    /// <summary>The DISL version it targets (§2.9): <c>0.1</c>, <c>0.2</c> or <c>0.3</c>.</summary>
     public string Disl => DislJson.String(Root, "disl") ?? DislJson.String(Root, "dedl") ?? "";
 
     public string LanguageId => DislJson.String(Language, "id") ?? "";

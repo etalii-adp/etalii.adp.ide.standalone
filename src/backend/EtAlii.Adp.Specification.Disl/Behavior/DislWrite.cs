@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>
 /// A <see cref="DislChange"/> as the FBL change that writes it: the metamodel's types and attribute
-/// names mapped back through <c>x-persistence.typeMap</c>, and each value in its stored form - a
+/// names mapped back through <c>persistence.typeMap</c>, and each value in its stored form - a
 /// <c>yearMonth</c> as <c>±YYYY-MM</c>, an enum value as its stored form, an element as its id.
 /// </summary>
 /// <remarks>

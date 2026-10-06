@@ -51,7 +51,7 @@ public sealed class SetGhgSpanCommandHandler(IGhgDocumentStore documents) : ICom
             }
 
             // The stored boundaries follow the span by the definition's rescaleBoundaries hook, then the
-            // host's clamp keeps every visible phase a month long (x-bounds.neighbour, still code).
+            // host's clamp keeps every visible phase a month long (bounds.neighbour, still code).
             if (GhgDefinition.ElementOf(document.Disl.Diagram, trend.Id) is not { } element)
             {
                 return GhgEdits.Gone();

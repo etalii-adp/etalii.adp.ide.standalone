@@ -20,7 +20,7 @@ public class DislModelBuilderTests
               "tags": { "type": "int", "many": true } },
               "children": { "allowed": ["Box"] } } },
           "relations": { "Arrow": { "source": "Box", "target": "Box", "attributes": { "label": { "type": "string" } } } } },
-        "persistence": { "x-persistence.typeMap": {
+        "persistence": { "typeMap": {
           "Head": { "as": "header" },
           "Setting": { "as": "diagram", "attributes": { "value": "scale" } },
           "Item": { "as": "Box", "attributes": { "title": "name" }, "hostAttributes": ["raw"] },

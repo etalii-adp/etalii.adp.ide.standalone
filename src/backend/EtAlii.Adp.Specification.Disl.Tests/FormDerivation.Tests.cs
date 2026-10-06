@@ -114,8 +114,8 @@ public class FormDerivationTests
         var specification = Specifications.Loaded(Specifications.With("""
             "metamodel": { "types": { "Box": { "attributes": { "name": { "type": "string" } } }, "Crate": { "attributes": { "name": { "type": "string" } } } } },
             "forms": { "thing": { "for": ["Box", "Crate"], "items": [
-              { "kind": "computed", "label": "Type", "value": { "cel": "self.type" },
-                "x-test-retype": { "options": "['Box', 'Crate'].filter(t, t != self.type || self.name == 'keep')", "optionLabel": "item + ' (' + self.name + ')'" } },
+              { "kind": "type", "label": "Type", "display": { "cel": "self.type" },
+                "options": "['Box', 'Crate'].filter(t, t != self.type || self.name == 'keep')", "optionLabel": "item + ' (' + self.name + ')'" },
               { "kind": "computed", "label": "Plain", "value": { "cel": "self.type" } } ] } }
             """));
         var diagram = new DislDiagram(specification);

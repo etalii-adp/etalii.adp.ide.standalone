@@ -18,7 +18,7 @@ public sealed record DislModel(DislDiagram Diagram, IReadOnlyList<Finding> Findi
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The binding's types are mapped by the specification's <c>x-persistence.typeMap</c></b> when it
+/// <b>The binding's types are mapped by the specification's <c>persistence.typeMap</c></b> when it
 /// has one: a type <c>as</c> a metamodel type (with <c>attributes</c> renamed, <c>source</c> and
 /// <c>target</c> taking a relation's ends, and <c>hostAttributes</c> kept beside the model), <c>as</c>
 /// <c>diagram</c> for diagram attributes, <c>as</c> <c>header</c> or <c>unreadable</c> to keep the
