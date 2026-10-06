@@ -55,6 +55,25 @@ public class HistoryTests
     }
 
     [Fact]
+    public void AnEditToAFork_LeavesTheBodyItWasForkedFrom_AsItWas()
+    {
+        // Arrange.
+        var body = Open(Timeline);
+        var fork = body.Fork();
+
+        // Act.
+        var result = fork.Change(new ModelChange.Set("a", new Dictionary<string, object?> { ["label"] = "Beta" }));
+
+        // Assert.
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal(Encoding.UTF8.GetBytes(Timeline), body.Bytes);
+        Assert.Equal("Alpha", body.Model.Elements.Single().Attributes["label"]);
+        Assert.Equal("Beta", fork.Model.Elements.Single().Attributes["label"]);
+        Assert.False(body.CanUndo);
+        Assert.True(fork.CanUndo);
+    }
+
+    [Fact]
     public void AReloadClearsTheHistory()
     {
         // Arrange.
