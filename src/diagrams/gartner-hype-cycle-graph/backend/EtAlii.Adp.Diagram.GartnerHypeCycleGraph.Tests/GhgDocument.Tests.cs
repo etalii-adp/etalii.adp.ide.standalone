@@ -109,7 +109,7 @@ public class GhgDocumentTests
         Assert.True(GhgWriter.SetDescription(document, model.Trends.Single(trend => trend.Id == "steam-engine"), description).WasApplied);
         Assert.True(GhgWriter.SetDescription(document, Assert.Single(model.Influences), description).WasApplied);
 
-        var reread = GhgParser.Parse(LineDocument.Parse(document.Text));
+        var reread = GhgParser.Parse(GhgBody.Parse(document.Text));
 
         Assert.Empty(reread.Problems);
         Assert.Equal(["steam-engine", "railways"], reread.Trends.Select(trend => trend.Id));
