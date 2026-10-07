@@ -10,9 +10,17 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// without understanding - this module changes nothing in the panel.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>The rows are derived from the DISL definition</b> (<see cref="DependencyGraphDefinition.Rows"/>):
+/// its forms' items, labels, groups and read-only reasons, with the row ids of its
+/// <c>x-dependencies</c> block. Setting a value is here: it is parsed as the file reads it, with
+/// .NET's invariant number rules, and written as a splice.
+/// </para>
+/// <para>
 /// Three rows for a node where the timeline had four or five, and the difference is the whole
 /// point: begin, end and duration are <b>absent</b> rather than blank. A grid that offered an
 /// empty "Begin" would be inviting a value this type has nowhere to put.
+/// </para>
 /// </remarks>
 public sealed class DependencyGraphContextPropertyProvider : IContextPropertyProvider
 {
@@ -30,10 +38,6 @@ public sealed class DependencyGraphContextPropertyProvider : IContextPropertyPro
 
     /// <summary>A dependency's depended-upon end, read-only.</summary>
     public const string ToProperty = "dependencies.to";
-
-    private const string IdentityGroup = "Identity";
-    private const string PlacementGroup = "Placement";
-    private const string ReconnectOnCanvas = "Reconnecting is done on the canvas, by dragging the dependency's end to another node.";
 
     private readonly IHistoryStackStore _historyStacks;
     private readonly IDependencyGraphDocumentStore _documents;
@@ -63,42 +67,10 @@ public sealed class DependencyGraphContextPropertyProvider : IContextPropertyPro
             return Rows([]);
         }
 
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        var element = DependencyGraphEdits.ElementOf(model, target.ElementId);
-        if (element is not null)
-        {
-            return Rows(
-            [
-                new ContextPropertyDefinition(LabelProperty, "Label", element.Label, Group: IdentityGroup),
-                new ContextPropertyDefinition(
-                    XProperty,
-                    "X",
-                    DependencyGraphWriter.Number(element.X),
-                    Group: PlacementGroup),
-                new ContextPropertyDefinition(
-                    RowProperty,
-                    "Row",
-                    element.Row.ToString(CultureInfo.InvariantCulture),
-                    Group: PlacementGroup),
-            ]);
-        }
-
-        var relation = DependencyGraphEdits.RelationOf(model, target.ElementId);
-        if (relation is not null)
-        {
-            // From and To are read-only and labelled by what they mean rather than by their key
-            // names: which end is which is this type's whole content, and "From"/"To" alone
-            // leaves the reader to guess which way the arrow points.
-            return Rows(
-            [
-                new ContextPropertyDefinition(LabelProperty, "Label", relation.Label, Group: IdentityGroup),
-                new ContextPropertyDefinition(FromProperty, "Depends on (from)", relation.From, ReadOnlyReason: ReconnectOnCanvas, Group: IdentityGroup),
-                new ContextPropertyDefinition(ToProperty, "Depended on (to)", relation.To, ReadOnlyReason: ReconnectOnCanvas, Group: IdentityGroup),
-            ]);
-        }
-
-        return Rows([]);
+        // From and To are read-only and labelled by what they mean rather than by their key names:
+        // which end is which is this type's whole content, and "From"/"To" alone leaves the reader to
+        // guess which way the arrow points. The rows are the definition's forms.
+        return Rows(DependencyGraphDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />
