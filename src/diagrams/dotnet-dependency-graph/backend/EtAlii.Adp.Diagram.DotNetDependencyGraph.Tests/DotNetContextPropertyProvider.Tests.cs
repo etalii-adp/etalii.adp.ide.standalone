@@ -88,7 +88,7 @@ public class DotNetContextPropertyProviderTests
 
         // Assert.
         var row = Assert.Single(rows, candidate => candidate.Id == "dotnet.dotnet-version");
-        Assert.Equal(DotNetContextPropertyProvider.NotDiscoverable, row.Value);
+        Assert.Equal("Not discoverable", row.Value);
         Assert.NotEqual("", row.Value);
     }
 
@@ -122,7 +122,7 @@ public class DotNetContextPropertyProviderTests
         var rows = await Describe(graph, "package:Obscure");
 
         // Assert.
-        Assert.Equal(DotNetContextPropertyProvider.NotCached, Assert.Single(rows, row => row.Id == "dotnet.package-description").Value);
+        Assert.Equal("Not available - this package is not in the local NuGet cache", Assert.Single(rows, row => row.Id == "dotnet.package-description").Value);
     }
 
     [Fact]
