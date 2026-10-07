@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/rider-warnings-cleanup/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-06T23:28:05.146Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791329284300_hrvrvatxe",
+      "approvalTitle": "rider-warnings-cleanup design: a pinned inspection script first, then six pull requests by kind of finding"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-07T07:39:02.095Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791329284300_hrvrvatxe",
+      "approvalTitle": "rider-warnings-cleanup design: a pinned inspection script first, then six pull requests by kind of finding"
+    }
+  ]
+}
