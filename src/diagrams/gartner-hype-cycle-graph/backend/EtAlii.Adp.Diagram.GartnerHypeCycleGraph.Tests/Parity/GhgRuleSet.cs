@@ -35,8 +35,7 @@ internal static class GhgRuleSet
             .ToHashSet(StringComparer.Ordinal);
         var triggerIds = TriggerIds(model);
 
-        List<GhgBreach> breaches = [];
-        breaches.AddRange(DuplicateInfluences(model));
+        List<GhgBreach> breaches = [.. DuplicateInfluences(model)];
         breaches.AddRange(SelfInfluences(model));
         breaches.AddRange(Spans(model));
         breaches.AddRange(PhaseCounts(model));

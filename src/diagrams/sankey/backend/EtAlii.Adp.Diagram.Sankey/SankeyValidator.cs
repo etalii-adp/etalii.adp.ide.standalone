@@ -51,11 +51,10 @@ public sealed class SankeyValidator : IDiagramValidator
         List<SankeyBreach> breaches =
         [
             .. model.Problems.Select(problem => new SankeyBreach(SankeyRuleIds.UnreadableEntry, problem.Message, problem.Line, true)),
+            .. model.Nodes
+                .Where(node => node.Id.Length == 0)
+                .Select(node => new SankeyBreach(SankeyRuleIds.MissingId, "A node has no id and is not drawn.", node.Range.Start, false)),
         ];
-
-        breaches.AddRange(model.Nodes
-            .Where(node => node.Id.Length == 0)
-            .Select(node => new SankeyBreach(SankeyRuleIds.MissingId, "A node has no id and is not drawn.", node.Range.Start, false)));
 
         var entries = model.Nodes.Where(node => node.Id.Length > 0).Select(node => (node.Id, What: "node", node.Range.Start))
             .Concat(model.Flows.Select(flow => (flow.Id, What: "flow", flow.Range.Start)))

@@ -272,8 +272,7 @@ public static class SupplyChainWriter
         }
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
-        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}"];
-        lines.AddRange(keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}"));
+        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
 
         document.Insert(at, lines);
         return SupplyChainEdit.Applied;
