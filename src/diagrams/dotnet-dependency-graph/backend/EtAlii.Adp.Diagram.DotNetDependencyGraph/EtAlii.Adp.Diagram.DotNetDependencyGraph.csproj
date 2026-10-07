@@ -10,6 +10,8 @@
       MSBuild, NuGet or solution vocabulary from it.
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <!-- The property rows are derived from the bundled DISL definition. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +32,12 @@
       named entry per proto is a rule that cannot be forgotten.
     -->
     <Protobuf Include="..\..\api\dotnet-dependency-graph.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\dotnet-dependency-graph.dis" LogicalName="dotnet-dependency-graph.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="dotnet-dependency-graph.provenance.json" />
   </ItemGroup>
 
   <ItemGroup>

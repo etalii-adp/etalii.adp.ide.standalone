@@ -16,6 +16,7 @@
     <!-- The context seam this module's property provider implements. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.DotNetDependencyGraph\EtAlii.Adp.Diagram.DotNetDependencyGraph.csproj" />
   </ItemGroup>
 
