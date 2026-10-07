@@ -10,10 +10,18 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// etalii-adp/etalii.adp), loaded once, and what the providers derive from it: the palette, the
 /// context menus, the property rows, the node a placement adds and the confirmation a remove asks
 /// for, mapped onto the host's types with the wire ids of its <c>x-dependencies</c> block.
-/// Everything else - the findings, the other edits, the writing - stays in code; the module's readme
-/// says why for each.
+/// Everything else stays in code, for the reasons below.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>What stays in code, and why.</b> The findings (<see cref="DependencyGraphRuleSet"/>): the definition
+/// states their codes and messages, but their order, an empty end that is no reference and a
+/// self-dependency judged on the ids as written are the code's and DISL cannot say them
+/// (<c>definition/dependency-graph.md</c>, section 3). Adding a node to the right or below: the
+/// definition's operations create and <c>connect</c> in one transaction, and the DISL runtime cannot
+/// run a <c>connect</c> action yet. The other edits, and every write, which are splices of the file's own
+/// lines that no DISL change says how to make.
+/// </para>
 /// <para>
 /// <b>The model is built from the module's own reading</b> (<see cref="DependencyGraphParser"/>), one
 /// DISL element per entry in the order the reader produced them, and kept with that reading so a
