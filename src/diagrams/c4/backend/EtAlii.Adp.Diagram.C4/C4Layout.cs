@@ -379,7 +379,7 @@ public static class C4LayoutEngine
 
         // Relax the ranks as many times as there are elements: enough for the longest possible
         // acyclic path, and bounded so a cycle cannot spin.
-        for (var pass = 0; pass < members.Count; pass++)
+        foreach (var _ in members)
         {
             var moved = false;
             foreach (var element in members)
@@ -620,7 +620,7 @@ public static class C4LayoutEngine
         SweepApart(boxes, pushedVertically.Where(entry => !entry.Value).Select(entry => entry.Key), horizontally: false, nodeSeparation);
 
         // Stage two, bounded so a set that cannot be separated cannot spin either.
-        for (var pass = 0; pass < outsiders.Count; pass++)
+        foreach (var _ in outsiders)
         {
             var moved = false;
             foreach ((string id, bool vertically) in pushedVertically)
