@@ -15,7 +15,10 @@ import type {
   LayoutDefinition,
   LayoutMode,
   RelationTypeDefinition,
+  RouteLabelRule,
   SegmentDeclaration,
+  SideFraction,
+  SnapAxis,
   SnapDeclaration,
 } from "../definition/diagramDefinition";
 import { BEFORE_GAP } from "../definition/labels";
@@ -27,6 +30,7 @@ import {
   type DislCoordinateSystem,
   type DislCustomShape,
   type DislDocument,
+  type DislEdgeNotation,
   type DislLabel,
   type DislNodeNotation,
   type DislRelation,
@@ -77,12 +81,31 @@ export interface NotationBindings {
   relationClassName?: (relation: string) => string | undefined;
   /** A relation's line's own class, where the stylesheet paints the line rather than the whole relation. */
   relationLineClassName?: (relation: string) => string | undefined;
+  /** A relation's wide, invisible hit line's class, where the stylesheet dresses it. */
+  relationHitClassName?: (relation: string) => string | undefined;
   /** An endpoint's anchor rule, where the module states one. */
   endpointAnchors?: (relation: string, end: "source" | "target") => EndpointConstraint["anchors"] | undefined;
   /** What each custom shape of the specification is drawn as. */
   customShapes?: Readonly<Record<string, CustomShapeBinding>>;
   /** The payload paths of each element's own snap origin. */
   snapOrigins?: { x: string; y: string };
+  /**
+   * An axis's resting lines where they are the module's arithmetic rather than a step of the axis: a
+   * timeline's day, whose width in canvas units follows the scale the canvas froze, rides each element's
+   * payload. Given for an axis, it replaces what the snapping rule would state.
+   */
+  snapAxes?: Partial<Record<"x" | "y", SnapAxis>>;
+  /**
+   * The value a drag shows, where the default system's snapping asks for one (`feedback.showValue`, DISL
+   * §5.6): what the value is - a time, a row - is the axes' arithmetic over the live bounds, which no
+   * template over the payload carries. It is added to every type that moves.
+   */
+  dragHint?: LabelDeclaration;
+  /**
+   * Whether the module draws its axes' rulers itself, as the timeline does beside the canvas: the
+   * compiler then leaves the specification's rulers to it rather than refusing one it cannot map.
+   */
+  ownRulers?: boolean;
   /** The class a legend swatch takes for one enum value. */
   legendSwatchClass?: (enumName: string, value: string) => string;
   /** Library declarations the specification states only under a module's `x-` key, which DISL has no construct for. */
@@ -93,8 +116,9 @@ export interface NotationBindings {
    */
   celConditions?: Readonly<Record<string, Condition>>;
   /**
-   * What a DISL built-in shape this library has no drawing of (`roundedRect`) is drawn as, where a
-   * module has stated it: a shared shape of its own family, such as the dependency graphs' `span`.
+   * What a DISL built-in shape is drawn as, where a module has stated it: one this library has no drawing
+   * of (`roundedRect`) as a shared shape of its own family, such as the dependency graphs' `span`; or one
+   * it draws otherwise in the module's family, such as the timeline's `diamond` as its `moment` marker.
    */
   builtInShapes?: Readonly<Record<string, BuiltInShape>>;
   /** Whether every element is in the tab order, which DISL leaves to the runtime (§6.15: keyboard navigation). */
@@ -346,7 +370,8 @@ class Compiler {
     const where = `node "${name}"`;
     const { shape, segments } = this.shape(name, node);
     const classNames = this.bindings.classNames(name, node);
-    const labels = (node.labels ?? []).map((label) => this.label(name, label));
+    const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
+    const labels = [...(node.labels ?? []).map((label) => this.label(name, label)), ...hint];
     const { sizing, resize } = this.sizing(node);
     const editOnDrop = (this.spec.toolbox?.groups ?? []).some((group) => group.tools.some((tool) => tool.creates === name && tool.after === "editLabel"));
 
@@ -368,16 +393,16 @@ class Compiler {
   }
 
   private shape(name: string, node: DislNodeNotation): { shape: BuiltInShape; segments?: SegmentDeclaration } {
-    const builtIn = libraryShapeOf(node.shape);
-    if (builtIn !== undefined) {
-      return { shape: builtIn };
-    }
-
     const { name: shapeName, params } = shapeNameOf(node.shape);
     const custom: DislCustomShape | undefined = this.spec.notation.shapes?.[shapeName];
     const drawnAs = custom === undefined ? this.bindings.builtInShapes?.[shapeName] : undefined;
     if (drawnAs !== undefined) {
       return { shape: drawnAs };
+    }
+
+    const builtIn = libraryShapeOf(node.shape);
+    if (builtIn !== undefined) {
+      return { shape: builtIn };
     }
 
     const binding = this.bindings.customShapes?.[shapeName];
@@ -399,6 +424,11 @@ class Compiler {
         fail(`${where} sits ${label.distance} before its node; the library's before label sits ${BEFORE_GAP}.`);
       }
       declaration.placement = "before";
+    } else if (position === "outside-right") {
+      if (label.distance !== undefined) {
+        fail(`${where} sits ${label.distance} beside its node; the library's beside label sits at its own gap.`);
+      }
+      declaration.placement = "beside";
     } else if (isObject(position)) {
       const [ax, ay] = position.anchor as readonly [number, number];
       const anchorTo = ay === 0 ? "top" : ay === 0.5 ? "centre" : ay === 1 ? "bottom" : undefined;
@@ -497,13 +527,19 @@ class Compiler {
 
     const anchors = node.anchors;
     if (anchors?.mode === "fixed") {
-      const positions = (anchors.points ?? []).map((point) => {
+      const points = anchors.points ?? [];
+      const atCompass = points.every((point) => {
         const fraction = COMPASS[point.id as CompassPosition];
-        if (fraction === undefined || fraction[0] !== point.x || fraction[1] !== point.y) {
-          return fail(`node "${name}" anchor "${point.id}" at (${point.x}, ${point.y}) is no compass position the library has.`);
-        }
-        return point.id as CompassPosition;
+        return fraction !== undefined && fraction[0] === point.x && fraction[1] === point.y;
       });
+      if (!atCompass && points.some((point) => COMPASS[point.id as CompassPosition] !== undefined)) {
+        const misplaced = points.find((point) => COMPASS[point.id as CompassPosition] !== undefined)!;
+        fail(`node "${name}" anchor "${misplaced.id}" at (${misplaced.x}, ${misplaced.y}) is no compass position the library has.`);
+      }
+      if (!atCompass) {
+        return this.namedSideAnchors(name, points);
+      }
+      const positions = points.map((point) => point.id as CompassPosition);
       const drawnFrom = anchors.drawnFrom;
       return { kind: "compass", positions, ...(drawnFrom === "outline" ? { attachDrawnBy: "edge" as const } : {}), visible: false };
     }
@@ -541,6 +577,27 @@ class Compiler {
     }
 
     return { kind: "along", edges: [...sides] as ("top" | "bottom" | "left" | "right")[], regions: "segments", visible: false };
+  }
+
+  /**
+   * Fixed anchors named for what they are rather than where (a timeline's `begin` and `end`): each a
+   * named fraction of the side it lies on, so an edge's `connect.from` can name it. A line's other end
+   * attaches only on the sides these lie on - the left and right of a notation read left to right.
+   */
+  private namedSideAnchors(name: string, points: readonly { id: string; x: number; y: number }[]): AnchorSet {
+    const fractions = points.map((point): SideFraction => {
+      // `at` runs clockwise round the bounds, as the library measures it.
+      const side = point.x === 0 ? "left" : point.x === 1 ? "right" : point.y === 0 ? "top" : point.y === 1 ? "bottom" : undefined;
+      if (side === undefined) {
+        return fail(`node "${name}" anchor "${point.id}" at (${point.x}, ${point.y}) lies on no side of its bounds.`);
+      }
+      const at = side === "left" ? 1 - point.y : side === "right" ? point.y : side === "top" ? point.x : 1 - point.x;
+      return { side, at, name: point.id };
+    });
+    const sides = new Set(fractions.map((fraction) => fraction.side));
+    const horizontal = [...sides].every((side) => side === "left" || side === "right");
+    const vertical = [...sides].every((side) => side === "top" || side === "bottom");
+    return { kind: "sides", fractions, ...(horizontal ? { edgeSides: "horizontal" as const } : vertical ? { edgeSides: "vertical" as const } : {}) };
   }
 
   /**
@@ -582,14 +639,16 @@ class Compiler {
     const ends = [edge.anchoring?.source, edge.anchoring?.target];
     const className = this.bindings.relationClassName?.(name);
     const lineClassName = this.bindings.relationLineClassName?.(name);
+    const hitClassName = this.bindings.relationHitClassName?.(name);
     const customRoute = this.bindings.customRoutes?.[name];
+    const label = this.edgeLabel(name, edge);
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
     const sourceTypes = typeList(relation.source).flatMap((type) => this.concreteTypes(type)).filter((type) => !derivedFromParent || this.holdsChildren(type));
     const targetTypes = typeList(relation.target).flatMap((type) => this.concreteTypes(type));
     const endpoint = (types: readonly string[], end: "source" | "target"): EndpointConstraint => {
-      const anchors = this.bindings.endpointAnchors?.(name, end);
+      const anchors = this.bindings.endpointAnchors?.(name, end) ?? this.startingAnchors(edge, types, end);
       return { elementTypes: types.map((type) => this.typeId(type)), ...(anchors !== undefined ? { anchors } : {}) };
     };
 
@@ -603,6 +662,8 @@ class Compiler {
       style: { ...(source !== "none" ? { startMarker: libraryMarkerOf(source) } : {}), endMarker: libraryMarkerOf(target) },
       ...(className !== undefined ? { className } : {}),
       ...(lineClassName !== undefined ? { lineClassName } : {}),
+      ...(hitClassName !== undefined ? { hitClassName } : {}),
+      ...(label !== undefined ? { label } : {}),
       ...(edge.selectable === false ? { selectable: false } : {}),
       ...(ends.some((end) => end?.movable === true) ? { movableEnds: true } : {}),
       ...(ends.some((end) => end?.mode === "part") ? { hideWhenAttachmentHidden: true } : {}),
@@ -612,7 +673,67 @@ class Compiler {
         allowSelf: relation.allowSelfLoops === true,
         ...(perPair !== undefined ? { cardinality: { perPair } } : {}),
       },
+      ...(this.createsOnEmptyRelease(name, edge) ? { emptyRelease: "complete" as const } : {}),
     };
+  }
+
+  /**
+   * The anchors a drawn connection may start from at this end: the named anchors the edge's `connect.from`
+   * maps (DISL 0.3 §6.10), whichever end of the relation each starts, in the order the end's node lists
+   * them. A gesture's direction is the module's to read from the anchor it lifted from.
+   */
+  private startingAnchors(edge: DislEdgeNotation, types: readonly string[], end: "source" | "target"): readonly string[] | undefined {
+    const from = edge.connect?.from;
+    if (from === undefined || end !== "source") {
+      return undefined;
+    }
+
+    const listed = types.flatMap((type) => (this.spec.notation.nodes[type]?.anchors?.points ?? []).map((point) => point.id));
+    const named = Object.keys(from);
+    return [...new Set([...listed.filter((id) => named.includes(id)), ...named])];
+  }
+
+  /**
+   * Whether a connect gesture released on empty canvas creates the missing end: the tool the edge's
+   * `connect.tool` names, else a library tool creating this relation, has a `createTarget` or a
+   * `createSource` (DISL 0.3 §7.2). The library then raises the release for the module to answer.
+   */
+  private createsOnEmptyRelease(name: string, edge: DislEdgeNotation): boolean {
+    const tools = this.spec.toolbox?.tools ?? {};
+    const named = edge.connect?.tool;
+    const tool = named !== undefined
+      ? tools[named] ?? (this.spec.toolbox?.groups ?? []).flatMap((group) => group.tools).find((each) => each.id === named) ?? fail(`edge "${name}" connects with the tool "${named}", which the toolbox does not declare.`)
+      : Object.values(tools).find((each) => each.creates === name);
+    return tool !== undefined && (tool.createTarget !== undefined || tool.createSource !== undefined);
+  }
+
+  /**
+   * The edge's label along its route: at its start, middle or end, the side above or below the line at its
+   * distance. The text is the connection's own label, which the model carries; only an attribute can be it.
+   */
+  private edgeLabel(name: string, edge: DislEdgeNotation): RouteLabelRule | undefined {
+    const labels = edge.labels ?? [];
+    if (labels.length === 0) {
+      return undefined;
+    }
+
+    const where = `edge "${name}" label`;
+    if (labels.length > 1) {
+      fail(`${where}s: the library draws one label along a line; the specification declares ${labels.length}.`);
+    }
+
+    const label = labels[0]!;
+    if (!isObject(label.text) || !("attribute" in label.text) || typeof label.text.attribute !== "string") {
+      fail(`${where} "${label.id}" binds ${JSON.stringify(label.text)}; the library draws a line's label from the connection's own label, an attribute.`);
+    }
+
+    const at = label.at ?? "middle";
+    const placement = at === "start" ? "source" : at === "middle" ? "midpoint" : at === "end" ? "target" : fail(`${where} "${label.id}" sits at ${JSON.stringify(at)}; the library places a line's label at its start, middle or end.`);
+    const distance = label.distance ?? 0;
+    const side = label.side ?? "on";
+    const offset = side === "above" ? -distance : side === "below" ? distance : side === "on" && distance === 0 ? 0 : fail(`${where} "${label.id}" sits ${distance} ${side} its line, which the library cannot place.`);
+    const editable = label.editable === true || label.editable === "inline" || label.editable === "multiline";
+    return { placement, ...(offset !== 0 ? { offset } : {}), ...(editable ? { editable } : {}) };
   }
 
   // ---- actions ------------------------------------------------------------------------------
@@ -775,13 +896,35 @@ class Compiler {
       return fail(`the ${axisName} snapping rule ${JSON.stringify(rule)} has no step this compiler can state.`);
     };
 
-    const axisSnap = (axisName: "x" | "y") => ({ step: step(axisName), ...(origins !== undefined ? { origin: { path: origins[axisName] } } : {}) });
-    return { x: axisSnap("x"), y: axisSnap("y") };
+    const axisSnap = (axisName: "x" | "y"): SnapAxis | undefined => {
+      const bound = this.bindings.snapAxes?.[axisName];
+      if (bound !== undefined) {
+        return bound;
+      }
+      // An axis that does not snap (`"none"`) moves freely: it has no resting lines to state.
+      if (snapping[axisName] === "none") {
+        return undefined;
+      }
+      return { step: step(axisName), ...(origins !== undefined ? { origin: { path: origins[axisName] } } : {}) };
+    };
+    const y = axisSnap("y");
+    const x = axisSnap("x");
+    return x === undefined && y === undefined ? undefined : { ...(y !== undefined ? { y } : {}), ...(x !== undefined ? { x } : {}) };
+  }
+
+  /** Whether a drag shows the value it would rest on: the default system's `snapping.feedback.showValue`. */
+  private showsDragValue(): boolean {
+    const snapping = (this.system as (DislCoordinateSystem & { snapping?: Record<string, unknown> }) | undefined)?.snapping;
+    return isObject(snapping?.feedback) && snapping.feedback.showValue === true;
+  }
+
+  private dragHint(): LabelDeclaration {
+    return this.bindings.dragHint ?? fail("the snapping shows the value a drag would rest on; the module states no dragHint to show it with.");
   }
 
   /** The view-fixed rulers of a coordinate system's axes. */
   private rulers(system: DislCoordinateSystem | undefined): RulerDeclaration[] {
-    if (system === undefined) {
+    if (system === undefined || this.bindings.ownRulers === true) {
       return [];
     }
 

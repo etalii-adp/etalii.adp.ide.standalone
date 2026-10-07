@@ -61,10 +61,13 @@ export interface DislType extends Extensions {
   children?: { allowed: readonly string[]; ordered?: boolean; min?: number; max?: number };
 }
 
+/** A relation end: a type name, a list of them, or an end object naming its types and role (DISL §4.9). */
+export type DislRelationEnd = string | readonly string[] | { types: string | readonly string[]; role?: string };
+
 export interface DislRelation extends Extensions {
   label?: string;
-  source: string | readonly string[];
-  target: string | readonly string[];
+  source: DislRelationEnd;
+  target: DislRelationEnd;
   directed?: boolean;
   allowSelfLoops?: boolean;
   allowParallel?: boolean;
@@ -240,8 +243,27 @@ export interface DislEdgeNotation extends Extensions {
   reconnectable?: boolean;
   /** Whether a press on the edge selects it (DISL §6.10); `false` makes a press on it a press on the background. */
   selectable?: boolean;
-  /** How a new connection is drawn (DISL 0.3 §6.10): the pointer button, where it starts and the modifier keys held. */
-  connect?: { pointer?: { button?: "primary" | "secondary" | "middle"; start?: "anchor" | "body"; modifiers?: readonly ("Alt" | "Shift" | "Ctrl" | "Meta")[] } };
+  /**
+   * How a new connection is drawn (DISL 0.3 §6.10): the pointer button, where it starts and the modifier keys
+   * held; which end of the relation each named anchor starts (`from`); and the tool the gesture runs (`tool`).
+   */
+  connect?: {
+    pointer?: { button?: "primary" | "secondary" | "middle"; start?: "anchor" | "body"; modifiers?: readonly ("Alt" | "Shift" | "Ctrl" | "Meta")[] };
+    from?: Readonly<Record<string, "source" | "target">>;
+    tool?: string;
+  };
+  /** The labels drawn along the edge (DISL §6.10). */
+  labels?: readonly DislEdgeLabel[];
+}
+
+/** A label along an edge (DISL §6.10): where along it, on which side and how far off the line. */
+export interface DislEdgeLabel extends Extensions {
+  id: string;
+  text: Bindable<string>;
+  at?: "start" | "middle" | "end" | number;
+  side?: "above" | "below" | "on";
+  distance?: number;
+  editable?: boolean | "inline" | "multiline";
 }
 
 export interface DislContextTool {
@@ -263,10 +285,15 @@ export interface DislTool {
   creates?: string;
   mode?: string;
   after?: string;
+  /** What a connect gesture released on empty canvas creates at its missing end (DISL 0.3 §7.2). */
+  createTarget?: unknown;
+  createSource?: unknown;
 }
 
 export interface DislToolbox {
   groups?: readonly { id: string; tools: readonly DislTool[] }[];
+  /** Tools no palette group shows, which a gesture or an edge's `connect.tool` names (DISL 0.3 §7.2). */
+  tools?: Readonly<Record<string, DislTool>>;
   contextMenus?: readonly DislContextMenu[];
 }
 
@@ -318,7 +345,7 @@ export function parseDisl(text: string): DislDocument {
   return document;
 }
 
-/** A relation end's types as a list, whichever form the specification wrote. */
-export function typeList(value: string | readonly string[]): readonly string[] {
-  return typeof value === "string" ? [value] : value;
+/** A relation end's types as a list, whichever form the specification wrote: a name, a list, or an end object's `types` (DISL §4.9). */
+export function typeList(value: DislRelationEnd): readonly string[] {
+  return typeof value === "string" ? [value] : "types" in value ? typeList(value.types) : value as readonly string[];
 }
