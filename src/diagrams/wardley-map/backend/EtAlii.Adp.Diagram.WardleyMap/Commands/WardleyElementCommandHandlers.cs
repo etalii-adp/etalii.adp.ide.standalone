@@ -675,7 +675,7 @@ public sealed class RestoreWardleyDocumentCommandHandler : ICommandHandler<Resto
 
         var published = _documents.Save(command.BodyPath, document);
         return Task.FromResult(!published.Failed
-            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, replaced), published.Warning)
+            ? CommandResult.Success(command with { Text = replaced }, published.Warning)
             : CommandResult.Failure(published.Error));
     }
 }

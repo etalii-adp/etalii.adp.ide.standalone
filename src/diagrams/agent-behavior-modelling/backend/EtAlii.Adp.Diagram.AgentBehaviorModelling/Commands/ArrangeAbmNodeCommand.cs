@@ -173,7 +173,7 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
         foreach (var moved in model.Nodes.Where(candidate => row.Any(member => AbmModel.IsWithin(candidate.Id, member.Id))))
         {
             var at = arranged[moved.Id];
-            positions[moved.Id] = new RegistrationPosition(at.X, at.Y + arrangement.Dy);
+            positions[moved.Id] = at with { Y = at.Y + arrangement.Dy };
         }
 
         // The positions first: the Markdown's save is what redraws the diagram, and it must find the
@@ -237,6 +237,6 @@ public sealed class RestoreAbmArrangementCommandHandler(IAbmDocumentStore docume
             return Task.FromResult(CommandResult.Failure($"Could not put the drop back: {exception.Message}"));
         }
 
-        return Task.FromResult(CommandResult.Success(new RestoreAbmArrangementCommand(command.BodyPath, command.RegistrationPath, text, positions)));
+        return Task.FromResult(CommandResult.Success(command with { Text = text, Positions = positions }));
     }
 }

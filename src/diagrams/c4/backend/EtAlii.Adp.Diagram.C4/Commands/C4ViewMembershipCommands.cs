@@ -73,7 +73,7 @@ internal sealed class RestoreC4ElementPositionCommandHandler(IC4DocumentStore do
         // Redoing a "restore to computed" means moving back to where the drag put it; when
         // there was nothing to move back to, the inverse is a no-op restore.
         return Task.FromResult(CommandResult.Success(
-            (ICommand?)current ?? new RestoreC4ElementPositionCommand(command.BodyPath, command.ViewKey, command.ElementId, null, null),
+            (ICommand?)current ?? command with { X = null, Y = null },
             warning));
     }
 }

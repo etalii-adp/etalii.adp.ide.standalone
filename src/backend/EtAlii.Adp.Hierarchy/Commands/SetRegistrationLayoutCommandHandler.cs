@@ -45,7 +45,7 @@ public sealed class SetRegistrationLayoutCommandHandler : ICommandHandler<SetReg
 
         // The inverse restores what was there before: the prior entry, or its absence.
         ICommand inverse = prior is { } previous
-            ? new SetRegistrationLayoutCommand(command.AdpPath, command.ElementId, previous.X, previous.Y)
+            ? command with { X = previous.X, Y = previous.Y }
             : new RemoveRegistrationLayoutCommand(command.AdpPath, command.ElementId);
         return Task.FromResult(CommandResult.Success(inverse));
     }

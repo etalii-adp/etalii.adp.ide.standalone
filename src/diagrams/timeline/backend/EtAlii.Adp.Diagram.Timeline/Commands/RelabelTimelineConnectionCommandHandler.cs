@@ -33,7 +33,7 @@ public sealed class RelabelTimelineConnectionCommandHandler : ICommandHandler<Re
             return Task.FromResult(CommandResult.Failure("That relation is no longer in this timeline."));
         }
 
-        var inverse = new RelabelTimelineConnectionCommand(command.BodyPath, command.ConnectionId, connection.Label);
+        var inverse = command with { Label = connection.Label };
         TimelineWriter.SetConnectionLabel(entry.Document, connection, command.Label);
 
         var saved = _documents.Save(command.BodyPath, entry);

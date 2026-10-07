@@ -56,13 +56,12 @@ public sealed class SetTimelinePlacementCommandHandler : ICommandHandler<SetTime
             return Task.FromResult(CommandResult.Failure("An element cannot end before it begins."));
         }
 
-        var inverse = new SetTimelinePlacementCommand(
-            command.BodyPath,
-            command.ElementId,
-            element.Begin.Text,
-            element.End?.Text,
-            element.Row,
-            command.Description);
+        var inverse = command with
+        {
+            Begin = element.Begin.Text,
+            End = element.End?.Text,
+            Row = element.Row,
+        };
 
         // Each edit is a one-for-one line replace within the element's range, so the ranges the
         // parser recorded stay valid between them and no re-parse is needed mid-command. SetEnd

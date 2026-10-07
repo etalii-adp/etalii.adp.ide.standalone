@@ -33,7 +33,7 @@ public sealed class RenameTimelineElementCommandHandler : ICommandHandler<Rename
             return Task.FromResult(CommandResult.Failure("That element is no longer in this timeline."));
         }
 
-        var inverse = new RenameTimelineElementCommand(command.BodyPath, command.ElementId, element.Label);
+        var inverse = command with { Label = element.Label };
         TimelineWriter.SetLabel(entry.Document, element, command.Label);
 
         var saved = _documents.Save(command.BodyPath, entry);
