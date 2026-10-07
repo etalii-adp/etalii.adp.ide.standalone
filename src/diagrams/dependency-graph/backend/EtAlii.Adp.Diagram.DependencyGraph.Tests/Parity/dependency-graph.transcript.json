@@ -6422,6 +6422,357 @@
         }
       ],
       "undoAll": "18 undone; the original text is NOT back"
+    },
+    {
+      "document": "inline/far-and-fine-coordinates",
+      "sha256": "571b46d5fc28b3a4bbe57481ea3873de2d7b6336e8b92aa6e0425768ea42754e",
+      "readable": "yes",
+      "menus": [
+        [
+          "g1 dependencies.rename | Rename… | mdi-pencil-outline | F2 | on",
+          "g1 dependencies.remove | Remove | mdi-delete-outline | Delete | on",
+          "g2 dependencies.add-after | Add node to the right | mdi-arrow-expand-right | Tab | on",
+          "g2 dependencies.add-below | Add node below | mdi-arrow-expand-down | Enter | on"
+        ],
+        [
+          "g1 dependencies.relabel | Relabel… | mdi-pencil-outline | F2 | on",
+          "g1 dependencies.disconnect | Remove dependency | mdi-vector-polyline-remove | Delete | on"
+        ],
+        [],
+        [
+          "g1 dependencies.add-element | Add node here | mdi-plus | - | on"
+        ],
+        [
+          "g1 dependencies.connect | Depends on | mdi-ray-start-arrow | - | on"
+        ]
+      ],
+      "choices": [],
+      "targets": [
+        "\"far\" => menu #0, read-only #0",
+        "\"fine\" => menu #0, read-only #0",
+        "\"huge\" => menu #0, read-only #0",
+        "\"signed-zero\" => menu #0, read-only #0",
+        "\"across\" => menu #1, read-only #1",
+        "\"\" => menu #2, read-only #2",
+        "\"new:240,2\" => menu #3, read-only #3",
+        "\"rel:far->fine\" => menu #4, read-only #4",
+        "\"rel:far->new:240,2\" => menu #4, read-only #4",
+        "\"rel:new:240,2->far\" => menu #4, read-only #4",
+        "\"parity:unknown\" => menu #2, read-only #2"
+      ],
+      "rows": [
+        {
+          "target": "far",
+          "rows": [
+            "dependencies.label | Label | \"A million across\" | Line | editable | group Identity",
+            "dependencies.x | X | \"1000000\" | Line | editable | group Placement",
+            "dependencies.row | Row | \"0\" | Line | editable | group Placement"
+          ],
+          "rowsReadOnly": "same"
+        },
+        {
+          "target": "fine",
+          "rows": [
+            "dependencies.label | Label | \"A hundred-thousandth across\" | Line | editable | group Identity",
+            "dependencies.x | X | \"1E-05\" | Line | editable | group Placement",
+            "dependencies.row | Row | \"1\" | Line | editable | group Placement"
+          ],
+          "rowsReadOnly": "same"
+        },
+        {
+          "target": "huge",
+          "rows": [
+            "dependencies.label | Label | \"Past every screen\" | Line | editable | group Identity",
+            "dependencies.x | X | \"1E+21\" | Line | editable | group Placement",
+            "dependencies.row | Row | \"2\" | Line | editable | group Placement"
+          ],
+          "rowsReadOnly": "same"
+        },
+        {
+          "target": "signed-zero",
+          "rows": [
+            "dependencies.label | Label | \"Minus nothing\" | Line | editable | group Identity",
+            "dependencies.x | X | \"-0\" | Line | editable | group Placement",
+            "dependencies.row | Row | \"-1\" | Line | editable | group Placement"
+          ],
+          "rowsReadOnly": "same"
+        },
+        {
+          "target": "across",
+          "rows": [
+            "dependencies.label | Label | \"\" | Line | editable | group Identity",
+            "dependencies.from | Depends on (from) | \"far\" | Line | read-only (Reconnecting is done on the canvas, by dragging the dependency's end to another node.) | group Identity",
+            "dependencies.to | Depended on (to) | \"fine\" | Line | read-only (Reconnecting is done on the canvas, by dragging the dependency's end to another node.) | group Identity"
+          ],
+          "rowsReadOnly": "same"
+        }
+      ],
+      "findings": [],
+      "payloads": [
+        "far | generic/dependencies+node | 1000000, 0 | DependencyGraphElementPayload { \"x\": 1000000, \"label\": \"A million across\" }",
+        "fine | generic/dependencies+node | 1E-05, 60 | DependencyGraphElementPayload { \"x\": 1e-05, \"row\": 1, \"label\": \"A hundred-thousandth across\" }",
+        "huge | generic/dependencies+node | 1E+21, 120 | DependencyGraphElementPayload { \"x\": 1e+21, \"row\": 2, \"label\": \"Past every screen\" }",
+        "signed-zero | generic/dependencies+node | -0, -60 | DependencyGraphElementPayload { \"row\": -1, \"label\": \"Minus nothing\" }",
+        "across | generic/dependencies+relation | 0, 0 | DependencyGraphRelationPayload { \"fromElementId\": \"far\", \"toElementId\": \"fine\" }"
+      ],
+      "edits": [
+        {
+          "do": "set far dependencies.label = \"Parity: renamed, with a colon\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"    label: \\\"Parity: renamed, with a colon\\\"\\n\""
+          ],
+          "sha256": "ac602d2876e394d20ac0c23991fcda050417bd6712082d49eaf2cba568d433c4"
+        },
+        {
+          "do": "set far dependencies.x = \"not a number\"",
+          "answer": "refused: 'not a number' is not a number this graph can place a node at.",
+          "unchanged": true
+        },
+        {
+          "do": "set far dependencies.x = \"1234.5\"",
+          "answer": "ok",
+          "hunks": [
+            "@5 -1 +\"    x: 1234.5\\n\""
+          ],
+          "sha256": "998b630a7818880834216ea485c47bc2e526ad0e5f5c407fa2afe34b6dcdf513"
+        },
+        {
+          "do": "set far dependencies.row = \"1.5\"",
+          "answer": "refused: '1.5' is not a number this graph can place a node at.",
+          "unchanged": true
+        },
+        {
+          "do": "set far dependencies.row = \"-2\"",
+          "answer": "ok",
+          "hunks": [
+            "@6 -1 +\"    row: -2\\n\""
+          ],
+          "sha256": "5e9d62e202bb9fcebcbb1c15c1c5f664f7c3aef86b8d9cefc0cd1155f722c391"
+        },
+        {
+          "do": "set far dependencies.from = \"x\"",
+          "answer": "refused: 'dependencies.from' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.rename on far",
+          "answer": "asks: ContextInputRequest { Title = Rename, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Parity: renamed, with a colon, ConfirmLabel = Rename, InlineLabelElementId = far, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.rename on far = \"Parity renamed\"",
+          "answer": "ok",
+          "hunks": [
+            "@4 -1 +\"    label: Parity renamed\\n\""
+          ],
+          "sha256": "1403c8b18485db9c50080a6eb1cefb45681989b6f7449d0d92d6c97cc477d9cf"
+        },
+        {
+          "do": "execute dependencies.add-after on far",
+          "answer": "ok",
+          "hunks": [
+            "@19 -0 +\"  - id: {minted-1}\\n    label: New node\\n    x: 1474.5\\n    row: -2\\n\"",
+            "@23 -0 +\"  - id: {minted-2}\\n    from: far\\n    to: {minted-1}\\n\""
+          ],
+          "sha256": "3b4ea3cb3485f15cc34223ddaba52d74ec57e51c52fa7e4c49f2d56235cb6392"
+        },
+        {
+          "do": "execute dependencies.add-below on far",
+          "answer": "ok",
+          "hunks": [
+            "@23 -0 +\"  - id: {minted-3}\\n    label: New node\\n    x: 1234.5\\n    row: -1\\n\"",
+            "@30 -0 +\"  - id: {minted-4}\\n    from: far\\n    to: {minted-3}\\n\""
+          ],
+          "sha256": "63471ad767b1356b3ea58ac3d9ccee70a2698a923ddfd9a6e7e0f9496fd4058c"
+        },
+        {
+          "do": "execute dependencies.add-element on far",
+          "answer": "asks: ContextInputRequest { Title = Add node, Icon = mdi-plus, FieldLabel = Label, InitialValue = New node, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.add-element on far = \"Committed from a node\"",
+          "answer": "ok",
+          "hunks": [
+            "@27 -0 +\"  - id: {minted-5}\\n    label: Committed from a node\\n    x: 1474.5\\n    row: -2\\n\""
+          ],
+          "sha256": "7d5441b4413a958f8693b2180afeec97434602ca199262b49b41c3ced8f4fd1e"
+        },
+        {
+          "do": "execute dependencies.relabel on far",
+          "answer": "refused: That is no longer in this graph.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.connect on rel:far->far",
+          "answer": "refused: A node cannot depend on itself.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.connect on rel:far->parity:unknown",
+          "answer": "refused: Both ends of a dependency must be nodes of this graph.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.connect on rel:far->new:-120.5,3",
+          "answer": "ok",
+          "hunks": [
+            "@31 -0 +\"  - id: {minted-6}\\n    label: New node\\n    x: -120.5\\n    row: 3\\n\"",
+            "@41 -0 +\"  - id: {minted-7}\\n    from: far\\n    to: {minted-6}\\n\""
+          ],
+          "sha256": "04775def8a4ad601f5535e9d84b2b60533aa9ea8abbab69108d89640aae2b002"
+        },
+        {
+          "do": "execute dependencies.connect on rel:new:-120.5,3->far",
+          "answer": "ok",
+          "hunks": [
+            "@35 -0 +\"  - id: {minted-8}\\n    label: New node\\n    x: -120.5\\n    row: 3\\n\"",
+            "@48 -0 +\"  - id: {minted-9}\\n    from: {minted-8}\\n    to: far\\n\""
+          ],
+          "sha256": "740f6f382148fdf0a666eff51a52f2cbf519e2027517339dff13dbd5466f8b1d"
+        },
+        {
+          "do": "execute dependencies.connect on rel:far->fine",
+          "answer": "ok",
+          "hunks": [
+            "@55 -0 +\"  - id: {minted-10}\\n    from: far\\n    to: fine\\n\""
+          ],
+          "sha256": "65065d753de9de7e3671bc4b22c698fbdb4cff53917dca309ff5ebffc4172f71"
+        },
+        {
+          "do": "command move fine to (300, 4)",
+          "answer": "ok",
+          "hunks": [
+            "@9 -2 +\"    x: 300\\n    row: 4\\n\""
+          ],
+          "sha256": "b36f6d59c692072737f4697dc4ac65fc21f0aa5f926dd4848a806a40da53ed23"
+        },
+        {
+          "do": "set across dependencies.label = \"Parity relabelled\"",
+          "answer": "ok",
+          "hunks": [
+            "@41 -0 +\"    label: Parity relabelled\\n\""
+          ],
+          "sha256": "cc0e6eeba55ea9294efcbda690de633eb23ed0d5848abefba5cd6f098943f896"
+        },
+        {
+          "do": "set across dependencies.x = \"1\"",
+          "answer": "refused: 'dependencies.x' cannot be edited on this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.relabel on across",
+          "answer": "asks: ContextInputRequest { Title = Relabel, Icon = mdi-pencil-outline, FieldLabel = Label, InitialValue = Parity relabelled, ConfirmLabel = Relabel, InlineLabelElementId = across, CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.relabel on across = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@41 -1 +\"\""
+          ],
+          "sha256": "b36f6d59c692072737f4697dc4ac65fc21f0aa5f926dd4848a806a40da53ed23"
+        },
+        {
+          "do": "execute dependencies.remove on across",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.rename on across = \"Not a node\"",
+          "answer": "refused: 'dependencies.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.disconnect on across",
+          "answer": "ok",
+          "hunks": [
+            "@40 -3 +\"\""
+          ],
+          "sha256": "c6956718d20077d5d561c898875b103235409c7bebf2a1ebf3815a15e48b4b4e"
+        },
+        {
+          "do": "execute dependencies.add-element on new:480.25,-1",
+          "answer": "ok",
+          "hunks": [
+            "@39 -0 +\"  - id: {minted-11}\\n    label: New node\\n    x: 480.25\\n    row: -1\\n\""
+          ],
+          "sha256": "52be4b1b465eca412a84cca19ec4e67c0421fbc537a3d271fcc3df26fcf84fac"
+        },
+        {
+          "do": "execute dependencies.add-element on ",
+          "answer": "asks: ContextInputRequest { Title = Add node, Icon = mdi-plus, FieldLabel = Label, InitialValue = New node, ConfirmLabel = Add, InlineLabelElementId = , CommitActionId =  }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.add-element on  = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@43 -0 +\"  - id: {minted-12}\\n    label: New node\\n    x: 0\\n    row: 0\\n\""
+          ],
+          "sha256": "0a00ab7fd565bd7ca78e7a808f728bd758c36440a4ab9919783f434028d8f2c7"
+        },
+        {
+          "do": "execute dependencies.connect on rel:new:-120.5,3->parity:unknown",
+          "answer": "refused: The node this dependency reaches is no longer in this graph.",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.remove on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.disconnect on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.relabel on parity:unknown",
+          "answer": "refused: That is no longer in this graph.",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.rename on parity:unknown = \"Nobody\"",
+          "answer": "refused: 'dependencies.rename' does not apply to this selection.",
+          "unchanged": true
+        },
+        {
+          "do": "execute parity.no-such-action on parity:unknown",
+          "answer": "ok",
+          "unchanged": true
+        },
+        {
+          "do": "execute dependencies.remove on fine",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this node also removes the 1 dependency attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.remove on fine = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@7 -4 +\"\"",
+            "@60 -3 +\"\""
+          ],
+          "sha256": "4c30fab2eb72bd572991106e9d41cae6f43ac6190dabc0f6dc424df5226314cd"
+        },
+        {
+          "do": "execute dependencies.remove on far",
+          "answer": "confirms: ContextConfirmationRequest { Title = Remove, Icon = mdi-delete-outline, Message = Removing this node also removes the 4 dependencies attached to it., ConfirmLabel = Remove, Danger = True }",
+          "unchanged": true
+        },
+        {
+          "do": "commit dependencies.remove on far = \"\"",
+          "answer": "ok",
+          "hunks": [
+            "@3 -4 +\"\"",
+            "@44 -12 +\"\""
+          ],
+          "sha256": "aac76ae9734646aea40d20f35a6f2f0e961f72ded67d9a153356e553eda5ff68"
+        }
+      ],
+      "undoAll": "18 undone; the original text is NOT back"
     }
   ]
 }
