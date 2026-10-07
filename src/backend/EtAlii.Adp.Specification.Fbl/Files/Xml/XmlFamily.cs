@@ -346,7 +346,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         {
             foreach (var entry in _entries)
             {
-                if (entry.Parent is XmlElement { IsRoot: false, LineSpan: not null } parent && entry.LineSpan is not null && entry.Indent >= parent.Indent)
+                if (entry is { Parent: XmlElement { IsRoot: false, LineSpan: not null } parent, LineSpan: not null } && entry.Indent >= parent.Indent)
                 {
                     return entry.Indent - parent.Indent;
                 }

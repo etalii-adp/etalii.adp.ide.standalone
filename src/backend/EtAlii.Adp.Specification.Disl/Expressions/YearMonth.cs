@@ -21,7 +21,11 @@ internal static partial class YearMonth
         month is >= 1 and <= 12 ? (year * 12) + (month - 1) : throw new CelException($"yearMonth() takes a month from 1 to 12, not {month}.");
 
     /// <summary><c>ym.year()</c>: floored, so month index −1 is December of year −1.</summary>
-    public static long YearOf(long index) => Math.DivRem(index, 12) is var (quotient, remainder) && remainder < 0 ? quotient - 1 : quotient;
+    public static long YearOf(long index)
+    {
+        var (quotient, remainder) = Math.DivRem(index, 12);
+        return remainder < 0 ? quotient - 1 : quotient;
+    }
 
     /// <summary><c>ym.month()</c>, from 1 to 12.</summary>
     public static long MonthOf(long index) => index - (YearOf(index) * 12) + 1;
