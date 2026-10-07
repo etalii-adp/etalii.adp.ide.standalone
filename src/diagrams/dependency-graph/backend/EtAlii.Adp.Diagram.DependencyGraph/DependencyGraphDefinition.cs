@@ -9,18 +9,19 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// The dependency graph's bundled DISL definition (<c>definition/dependency-graph.dis</c>, from
 /// etalii-adp/etalii.adp), loaded once, and what the providers derive from it: the palette, the
 /// context menus, the property rows, the node a placement adds and the confirmation a remove asks
-/// for, mapped onto the host's types with the wire ids of its <c>x-dependencies</c> block.
-/// Everything else stays in code, for the reasons below.
+/// for, mapped onto the host's types with the wire ids of its <c>x-dependencies</c> block; adding a
+/// node to the right or below (the <c>addRight</c> and <c>addBelow</c> operations, run by the DISL
+/// runtime with their <c>connect</c>) and a dependency dragged onto empty canvas (its tool's
+/// <c>createTarget</c> or <c>createSource</c>), each mapped onto the module's command; and the findings
+/// (<see cref="DependencyGraphFindings"/>). Everything else stays in code, for the reasons below.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>What stays in code, and why.</b> The findings (<see cref="DependencyGraphRuleSet"/>): the definition
-/// states their codes and messages, but their order, an empty end that is no reference and a
-/// self-dependency judged on the ids as written are the code's and DISL cannot say them
-/// (<c>definition/dependency-graph.md</c>, section 3). Adding a node to the right or below: the
-/// definition's operations create and <c>connect</c> in one transaction, and the DISL runtime cannot
-/// run a <c>connect</c> action yet. The other edits, and every write, which are splices of the file's own
-/// lines that no DISL change says how to make.
+/// <b>What stays in code, and why.</b> The order the findings are reported in, which
+/// <c>constraints.order</c> cannot state (<c>definition/dependency-graph.md</c>, section 3), and the ids
+/// and ends as written, which the definition's <c>writtenEnd</c> function reads from the module's reading.
+/// Every write, which is a splice of the file's own lines that no DISL change says how to make, so a
+/// DISL transaction is mapped onto the command that makes that splice.
 /// </para>
 /// <para>
 /// <b>The model is built from the module's own reading</b> (<see cref="DependencyGraphParser"/>), one
@@ -41,7 +42,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// </remarks>
 internal static class DependencyGraphDefinition
 {
-    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(DependencyGraphDefinition).Assembly, "dependency-graph.dis"));
+    private static readonly Lazy<BundledDefinition> Loaded = new(() => BundledDefinition.Load(typeof(DependencyGraphDefinition).Assembly, "dependency-graph.dis", DependencyGraphFindings.Plugins()));
 
     private static readonly Lazy<WireIdMap> LoadedIds = new(() => WireIdMap.Of(Specification, "x-dependencies"));
 
@@ -127,6 +128,64 @@ internal static class DependencyGraphDefinition
         }
 
         return (new AddDependencyGraphElementCommand(body, create.Id, label, at, checked((int)on)), "");
+    }
+
+    /// <summary>
+    /// The node <paramref name="operation"/> (<c>addRight</c> or <c>addBelow</c>) adds beside
+    /// <paramref name="elementId"/>, and the dependency on it, as the definition computes them: one command,
+    /// under two new ids; or, when the operation refuses or makes anything else, why not.
+    /// </summary>
+    public static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) Grown(DependencyGraphModel model, string body, string operation, string elementId)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        var diagram = Build(model);
+        if (diagram.NodesOfType("Node").FirstOrDefault(node => node.Id == elementId) is not { } self) return (null, "That is no longer in this graph.");
+
+        var transaction = OperationInterpreter.Run(Specification, operation, diagram, self, NewIds(), null, Env);
+        return Related(transaction, body, elementId, operation, newElementIsSource: false, self);
+    }
+
+    /// <summary>
+    /// A dependency gesture released on empty canvas at <paramref name="x"/> and <paramref name="row"/>: the
+    /// node the definition's <c>dependsOn</c> tool creates there, as the gesture's <paramref name="newEnd"/>
+    /// (<c>source</c> from a left anchor, <c>target</c> from a right one), and the dependency between it and
+    /// <paramref name="elementId"/>, as one command; or why not.
+    /// </summary>
+    public static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) RelatedHere(DependencyGraphModel model, string body, string elementId, string newEnd, double x, int row)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        var diagram = Build(model);
+        if (diagram.NodesOfType("Node").FirstOrDefault(node => node.Id == elementId) is not { } existing) return (null, "That is no longer in this graph.");
+
+        var transaction = OperationInterpreter.ConnectToNew(
+            Specification,
+            "DependsOn",
+            diagram,
+            existing,
+            newEnd,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = x, ["y"] = (double)row },
+            NewIds(),
+            Env);
+        return Related(transaction, body, elementId, "dependsOn tool", newElementIsSource: newEnd == "source", existing);
+    }
+
+    /// <summary>Two ids for a node and its dependency, minted in that order as the hand-written commands did.</summary>
+    private static IIdSource NewIds() => DislIds.Fixed(ShortGuid.NewShortGuid().ToString(), ShortGuid.NewShortGuid().ToString());
+
+    /// <summary>A transaction that creates one node and relates it to <paramref name="existing"/>, as the command that writes both.</summary>
+    private static (AddConnectedDependencyGraphElementCommand? Command, string Refusal) Related(DislTransaction transaction, string body, string elementId, string what, bool newElementIsSource, DislElement existing)
+    {
+        if (!transaction.WasApplied) return (null, transaction.Refusal!);
+        if (transaction.Changes is not [DislChange.Create { Type: "Node" } created, DislChange.Connect { Type: "DependsOn" } relation]
+            || (newElementIsSource ? (relation.SourceId, relation.TargetId) : (relation.TargetId, relation.SourceId)) != (created.Id, existing.Id)
+            || created.Attributes.GetValueOrDefault("label") is not string label
+            || created.Attributes.GetValueOrDefault("x") is not double x
+            || created.Attributes.GetValueOrDefault("row") is not long row)
+        {
+            return (null, $"The definition's {what} does not add one node with a label, an x and a row, related to this one.");
+        }
+
+        return (new AddConnectedDependencyGraphElementCommand(body, elementId, created.Id, relation.Id, x, checked((int)row), newElementIsSource, label), "");
     }
 
     /// <summary>The element <paramref name="id"/> names, as <see cref="DependencyGraphEdits"/> finds it; null for none.</summary>

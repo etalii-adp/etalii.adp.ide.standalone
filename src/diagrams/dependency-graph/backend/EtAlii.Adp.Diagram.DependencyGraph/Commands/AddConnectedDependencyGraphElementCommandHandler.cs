@@ -48,7 +48,7 @@ public sealed class AddConnectedDependencyGraphElementCommandHandler
         }
 
         DependencyGraphWriter.InsertElement(
-            entry.Document, entry.Model, command.NewElementId, NewElementLabel, command.X, command.Row);
+            entry.Document, entry.Model, command.NewElementId, command.Label ?? NewElementLabel, command.X, command.Row);
 
         // The insert moved lines, so the relation is spliced against a fresh parse rather than
         // the ranges the first model recorded.

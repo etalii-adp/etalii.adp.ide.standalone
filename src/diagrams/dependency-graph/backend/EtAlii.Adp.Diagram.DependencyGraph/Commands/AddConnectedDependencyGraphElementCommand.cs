@@ -24,6 +24,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// the existing node's incoming anchor, where the thing that depends on it is the new one -
 /// rather than the other way round.
 /// </param>
+/// <param name="Label">The new node's label; null for "New node".</param>
 public sealed record AddConnectedDependencyGraphElementCommand(
     string BodyPath,
     string FromElementId,
@@ -31,4 +32,5 @@ public sealed record AddConnectedDependencyGraphElementCommand(
     string RelationId,
     double X,
     int Row,
-    bool NewElementIsSource = false) : ICommand;
+    bool NewElementIsSource = false,
+    string? Label = null) : ICommand;

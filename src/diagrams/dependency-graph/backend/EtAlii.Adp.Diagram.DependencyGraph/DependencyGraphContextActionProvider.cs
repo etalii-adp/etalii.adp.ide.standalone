@@ -13,9 +13,10 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// <para>
 /// <b>What is offered is derived from the DISL definition</b>
 /// (<see cref="DependencyGraphDefinition.Menus"/>): its context menus' entries, groups, labels, icons
-/// and shortcuts, with the ids of its <c>x-dependencies</c> block. What each action does is here: the
-/// definition's operations create and connect in one step, which the DISL runtime cannot run yet, and
-/// every edit is a splice of the file's own lines.
+/// and shortcuts, with the ids of its <c>x-dependencies</c> block. Adding a node to the right or below,
+/// and a dependency dragged onto empty canvas, run the definition's operations and tool in the DISL
+/// runtime (<see cref="DependencyGraphDefinition.Grown"/>, <see cref="DependencyGraphDefinition.RelatedHere"/>);
+/// what each action writes is here, because every edit is a splice of the file's own lines.
 /// </para>
 /// <para>
 /// Every mutating action dispatches a command through the project's history, so each is one undo
@@ -136,20 +137,18 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             }
 
             case AddAfterActionId when element is not null:
-            {
-                // Tab: the next thing, a step to the right on the same row - and depending on
-                // the one it grew from, because a node added from another is a thing that node
-                // needs. Derived entirely from the selected node, so nothing is asked.
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, element.X + XStep, element.Row), cancellationToken);
-            }
-
             case AddBelowActionId when element is not null:
             {
-                // Enter: the same coordinate, one row down, and likewise depended upon - a second
-                // thing the selected node needs, stacked under the first.
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, element.X, element.Row + 1), cancellationToken);
+                // Tab: the next thing, a step to the right on the same row; Enter: the same
+                // coordinate, one row down - each depended upon by the one it grew from, because a
+                // node added from another is a thing that node needs. Where it lands, what it is
+                // called and the dependency are the definition's addRight and addBelow, run on the
+                // selected node, so nothing is asked.
+                var (grown, refusal) = DependencyGraphDefinition.Grown(
+                    model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addRight" : "addBelow", element.Id);
+                return grown is null
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, grown, cancellationToken);
             }
 
             case ConnectActionId when DependencyGraphRelationGesture.TryParse(target.ElementId, out var from, out var to):
@@ -168,15 +167,8 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                     }
 
                     // The new node is the relation's SOURCE: created at the drop, depending on
-                    // the existing node.
-                    return await DispatchAsync(target, new AddConnectedDependencyGraphElementCommand(
-                        target.ResolvedFullPath,
-                        to,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        fromX,
-                        fromRow,
-                        NewElementIsSource: true), cancellationToken);
+                    // the existing node, as the dependsOn tool's createSource makes it.
+                    return await RelateHereAsync(target, model, to, "source", fromX, fromRow, cancellationToken);
                 }
 
                 if (DependencyGraphEdits.ElementOf(model, from) is null)
@@ -187,14 +179,9 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 if (DependencyGraphNewPlacement.TryParse(to, out var toX, out var toRow))
                 {
                     // Released on empty canvas: what the node depends on does not exist yet, so
-                    // it is created there and related in one command - one undo taking both.
-                    return await DispatchAsync(target, new AddConnectedDependencyGraphElementCommand(
-                        target.ResolvedFullPath,
-                        from,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        toX,
-                        toRow), cancellationToken);
+                    // it is created there and related in one command - one undo taking both - as
+                    // the dependsOn tool's createTarget makes it.
+                    return await RelateHereAsync(target, model, from, "target", toX, toRow, cancellationToken);
                 }
 
                 return await DispatchAsync(target, new ConnectDependencyGraphElementsCommand(
@@ -309,21 +296,22 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
     private const string NewElementLabel = AddConnectedDependencyGraphElementCommandHandler.NewElementLabel;
 
     /// <summary>
-    /// A freshly added node grown from another: created and depended upon, in one command.
+    /// A dependency gesture released on empty canvas at <paramref name="x"/> and <paramref name="row"/>: the
+    /// node the definition's dependsOn tool creates there, related to <paramref name="elementId"/> as the
+    /// gesture's <paramref name="newEnd"/>, in one command.
     /// </summary>
     /// <remarks>
-    /// The ids are generated here, once, where the gesture happens - so the command instance the
-    /// history holds carries them, and a redo re-creates under the ids it had.
+    /// The ids are generated once, where the gesture happens - so the command instance the history
+    /// holds carries them, and a redo re-creates under the ids it had.
     /// </remarks>
-    private static AddConnectedDependencyGraphElementCommand NewRelatedElementAt(
-        string body, string fromElementId, double x, int row) =>
-        new(
-            body,
-            fromElementId,
-            ShortGuid.NewShortGuid().ToString(),
-            ShortGuid.NewShortGuid().ToString(),
-            x,
-            row);
+    private async ValueTask<ContextExecutionResult> RelateHereAsync(
+        ContextTarget target, DependencyGraphModel model, string elementId, string newEnd, double x, int row, CancellationToken cancellationToken)
+    {
+        var (related, refusal) = DependencyGraphDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, x, row);
+        return related is null
+            ? new ContextExecutionFailed(refusal)
+            : await DispatchAsync(target, related, cancellationToken);
+    }
 
     private static AddDependencyGraphElementCommand NewElementAt(string body, double x, int row, string? label = null) =>
         new(
