@@ -46,7 +46,7 @@ internal static class DatabricksSplices
     }
 
     /// <summary>The leading whitespace of a line's text.</summary>
-    public static string Indent(string text) => text[..(text.Length - text.TrimStart().Length)];
+    public static string Indent(string text) => text[..^text.TrimStart().Length];
 
     /// <summary>
     /// The indentation the keys inside a range already use - copied from the file rather than

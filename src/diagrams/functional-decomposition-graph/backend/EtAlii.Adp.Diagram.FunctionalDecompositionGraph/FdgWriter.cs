@@ -312,7 +312,7 @@ public static class FdgWriter
         document.Replace(new LineRange(at, end), lines);
     }
 
-    private static string Indent(string text) => text[..(text.Length - text.TrimStart().Length)];
+    private static string Indent(string text) => text[..^text.TrimStart().Length];
 
     /// <summary>
     /// A canvas number, written the way the document reads it.

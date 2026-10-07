@@ -91,7 +91,7 @@ public static class LineSplice
         if (index >= 0)
         {
             var existing = document.Lines[index].Text;
-            var indent = existing[..(existing.Length - existing.TrimStart().Length)];
+            var indent = existing[..^existing.TrimStart().Length];
             // The dash belongs to the sequence, not to the key, so a key written on the `- id:`
             // line keeps its dash and everything after the colon is replaced.
             var prefix = existing.TrimStart().StartsWith("- ", StringComparison.Ordinal) ? "- " : "";
@@ -127,14 +127,14 @@ public static class LineSplice
             var text = document.Lines[i].Text;
             if (!string.IsNullOrWhiteSpace(text))
             {
-                return text[..(text.Length - text.TrimStart().Length)];
+                return text[..^text.TrimStart().Length];
             }
         }
 
         // A one-line element has no neighbour to copy, so the dash's own indentation plus two
         // spaces puts the new key under it - which is what the `- ` prefix occupies.
         var first = document.Lines[range.Start].Text;
-        return first[..(first.Length - first.TrimStart().Length)] + DefaultItemIndent;
+        return first[..^first.TrimStart().Length] + DefaultItemIndent;
     }
 
     /// <summary>
@@ -161,14 +161,14 @@ public static class LineSplice
 
         var range = first.Value;
         var dash = document.Lines[range.Start].Text;
-        var itemIndent = dash[..(dash.Length - dash.TrimStart().Length)];
+        var itemIndent = dash[..^dash.TrimStart().Length];
 
         var afterDash = dash.TrimStart();
         var gap = " ";
         if (afterDash.StartsWith('-'))
         {
             var rest = afterDash[1..];
-            gap = rest[..(rest.Length - rest.TrimStart().Length)];
+            gap = rest[..^rest.TrimStart().Length];
             if (gap.Length == 0)
             {
                 gap = " ";
@@ -210,7 +210,7 @@ public static class LineSplice
             var value = text.TrimStart()[sectionKey.Length..].Trim();
             if (value is "[]" or "[ ]")
             {
-                var indent = text[..(text.Length - text.TrimStart().Length)];
+                var indent = text[..^text.TrimStart().Length];
                 document.Replace(new LineRange(i, i), [$"{indent}{sectionKey}"]);
             }
 
