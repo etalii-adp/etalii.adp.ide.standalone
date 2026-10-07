@@ -3,10 +3,10 @@ import disText from "../definition/timeline.dis?raw";
 import { ELEMENT_HEIGHT, MOMENT_RADIUS, ROW_HEIGHT, TIMELINE_DEFINITION } from "./TimelineCanvas";
 
 /**
- * The canvas definition is stated by hand (`TIMELINE_DEFINITION`), because what it draws - the span,
- * the named begin and end anchors, the loop-back route, the drag hint, the day snap carried in each
- * payload - is not in what `compileNotation` reads. These checks hold it to what the bundled DISL
- * specification (`definition/timeline.dis`) states, so the two cannot drift apart unnoticed.
+ * The canvas definition (`TIMELINE_DEFINITION`) is compiled from the bundled DISL specification
+ * (`definition/timeline.dis`); `timelineCompiledDefinition.test.tsx` holds it to the drawing it replaced.
+ * These checks hold the canvas's own constants, which the compiled definition does not carry, to what
+ * the specification states, so the two cannot drift apart unnoticed.
  */
 
 interface MenuTool {
