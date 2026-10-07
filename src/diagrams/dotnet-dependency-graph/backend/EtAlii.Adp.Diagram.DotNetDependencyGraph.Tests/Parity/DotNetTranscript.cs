@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Diagram.DotNetDependencyGraph.Wire;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
-using EtAlii.Adp.Diagram.DotNetDependencyGraph.Wire;
 using Google.Protobuf.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Path = System.IO.Path;
@@ -254,7 +254,7 @@ internal static partial class DotNetTranscript
     /// </summary>
     private static IEnumerable<(string Name, DependencyGraphModel Graph)> HandBuiltGraphs()
     {
-        ProjectNode Project(string path, IReadOnlyList<string> frameworks, string? version) =>
+        static ProjectNode Project(string path, IReadOnlyList<string> frameworks, string? version) =>
             new($"project:{path}", Path.GetFileNameWithoutExtension(path), path, frameworks, version);
 
         yield return ("descriptions and conflicts", new DependencyGraphModel(
