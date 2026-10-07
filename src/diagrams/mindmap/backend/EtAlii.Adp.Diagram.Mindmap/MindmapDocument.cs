@@ -46,10 +46,12 @@ public sealed class MindmapDocument
         var content = text.TrimEnd('\r', '\n', ' ', '\t');
         var tail = text[content.Length..];
 
+        // Line info is what locates a node for the DISL model (MindmapFreeplanePlugin); the escape
+        // keeps one '\n' per original line break, so the lines are the file's own.
         XDocument xml;
         try
         {
-            xml = XDocument.Parse(content.Replace("\r\n", "&#xD;\n"), LoadOptions.PreserveWhitespace);
+            xml = XDocument.Parse(content.Replace("\r\n", "&#xD;\n"), LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo);
         }
         catch (XmlException exception)
         {

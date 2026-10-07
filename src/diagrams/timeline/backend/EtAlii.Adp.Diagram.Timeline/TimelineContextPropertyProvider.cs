@@ -36,11 +36,6 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
     /// <summary>A connection's target, read-only.</summary>
     public const string ToProperty = "timeline.to";
 
-    private const string IdentityGroup = "Identity";
-    private const string TimingGroup = "Timing";
-    private const string PlacementGroup = "Placement";
-    private const string ReconnectOnCanvas = "Reconnecting is done on the canvas, by dragging the relation's end to another element.";
-
     private readonly IHistoryStackStore _historyStacks;
     private readonly ITimelineDocumentStore _documents;
 
@@ -68,46 +63,10 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
             return Rows([]);
         }
 
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        var element = TimelineEdits.ElementOf(model, target.ElementId);
-        if (element is not null)
-        {
-            var rows = new List<ContextPropertyDefinition>
-            {
-                new(LabelProperty, "Label", element.Label, Group: IdentityGroup),
-                new(BeginProperty, "Begin", element.Begin.Text, Group: TimingGroup),
-            };
-
-            // An absent end is not contributed as an empty row: a moment has no end, and the
-            // action that gives it one is the context menu's (Requirement 7.5), not a blank
-            // field inviting a value.
-            if (element.End is not null)
-            {
-                rows.Add(new ContextPropertyDefinition(EndProperty, "End", element.End.Text, Group: TimingGroup));
-            }
-
-            rows.Add(new ContextPropertyDefinition(
-                RowProperty,
-                "Row",
-                element.Row.ToString(CultureInfo.InvariantCulture),
-                Group: PlacementGroup));
-
-            return Rows(rows);
-        }
-
-        var connection = TimelineEdits.ConnectionOf(model, target.ElementId);
-        if (connection is not null)
-        {
-            return Rows(
-            [
-                new ContextPropertyDefinition(LabelProperty, "Label", connection.Label, Group: IdentityGroup),
-                new ContextPropertyDefinition(FromProperty, "From", connection.From, ReadOnlyReason: ReconnectOnCanvas, Group: IdentityGroup),
-                new ContextPropertyDefinition(ToProperty, "To", connection.To, ReadOnlyReason: ReconnectOnCanvas, Group: IdentityGroup),
-            ]);
-        }
-
-        return Rows([]);
+        // Derived from the definition's forms (TimelineDefinition.Rows). A moment has no End row:
+        // giving it an end is the context menu's action (Requirement 7.5), not a blank field
+        // inviting a value. A relation's From and To are read-only and say why.
+        return Rows(TimelineDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />

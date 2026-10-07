@@ -35,7 +35,7 @@ public class BehaviorInterpretationTests
               "actions": [ { "unset": ["count", "size"] }, { "if": "self.name == ''", "then": [ { "set": { "name": "'unnamed'" } } ], "else": [ { "layout": { "algorithm": "tidy" } } ] } ]
             },
             "refuse": { "label": "Refuse", "for": ["Box"], "actions": [ { "set": { "count": "1" } }, { "abort": { "message": "'No, ' + self.name + '.'" } } ] },
-            "unknown": { "label": "Unknown", "for": ["Box"], "actions": [ { "retype": { "to": "'Box'" } } ] }
+            "unknown": { "label": "Unknown", "for": ["Box"], "actions": [ { "resize": { "width": "10" } } ] }
           },
           "hooks": [
             { "id": "copyCount", "on": "change", "for": "Box", "attribute": "count", "actions": [ { "set": { "copy": "self.count * 100 + (old == null ? 0 : old.count)" } } ] },
@@ -92,7 +92,7 @@ public class BehaviorInterpretationTests
         Assert.Equal("refused: Nothing to clear.\n", Text(OperationInterpreter.Run(Specification, "clear", diagram, empty, DislIds.Fixed())));
         Assert.Equal("set b count=null size=null\nlayout tidy", Text(OperationInterpreter.Run(Specification, "clear", diagram, full, DislIds.Fixed())));
         Assert.Equal("refused: No, B.\n", Text(OperationInterpreter.Run(Specification, "refuse", diagram, full, DislIds.Fixed())));
-        Assert.StartsWith("refused: This runtime cannot run a `retype` action", Text(OperationInterpreter.Run(Specification, "unknown", diagram, full, DislIds.Fixed())), StringComparison.Ordinal);
+        Assert.StartsWith("refused: This runtime cannot run a `resize` action", Text(OperationInterpreter.Run(Specification, "unknown", diagram, full, DislIds.Fixed())), StringComparison.Ordinal);
     }
 
     [Fact]

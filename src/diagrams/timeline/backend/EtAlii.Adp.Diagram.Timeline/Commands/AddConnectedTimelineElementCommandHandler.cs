@@ -8,6 +8,9 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </summary>
 public sealed class AddConnectedTimelineElementCommandHandler : ICommandHandler<AddConnectedTimelineElementCommand>
 {
+    /// <summary>What an element added with its relation is called when the command names no label.</summary>
+    public const string NewElementLabel = "New element";
+
     private readonly ITimelineDocumentStore _documents;
 
     /// <summary>Creates the handler over the one store that owns the documents.</summary>
@@ -42,7 +45,7 @@ public sealed class AddConnectedTimelineElementCommandHandler : ICommandHandler<
         }
 
         TimelineWriter.InsertElement(
-            entry.Document, entry.Model, command.NewElementId, "New element", command.Begin, command.End, command.Row);
+            entry.Document, entry.Model, command.NewElementId, command.Label ?? NewElementLabel, command.Begin, command.End, command.Row);
 
         // The insert moved lines, so the relation is spliced against a fresh parse rather than
         // the ranges the first model recorded.

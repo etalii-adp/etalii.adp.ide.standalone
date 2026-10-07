@@ -67,10 +67,6 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     /// <summary>Put every element on the row that keeps the diagram least cluttered (<see cref="TimelineArrangement"/>).</summary>
     public const string ArrangeActionId = "timeline.arrange";
 
-    /// <summary>How much later "after" is, and how long a freshly added element runs.</summary>
-    private const int GapDays = 6;
-    private const int NewElementDays = 14;
-
     private const string Gone = "That is no longer in this timeline.";
 
     private readonly IHistoryStackStore _historyStacks;
@@ -104,48 +100,12 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             return Result([]);
         }
 
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        // Arrange is about the whole diagram, so it is offered wherever the reader is: on empty
-        // canvas, on an element and on a relation alike, which keeps it in the ribbon too.
-        var arrange = new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(
-                ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
-                model.Elements.Count > 0, "There is nothing to arrange until this timeline has an element."),
-        ]);
-
-        var element = TimelineEdits.ElementOf(model, target.ElementId);
-        if (element is not null)
-        {
-            return Result([.. ForElement(element), arrange]);
-        }
-
-        var relation = TimelineEdits.ConnectionOf(model, target.ElementId);
-        if (relation is not null)
-        {
-            return Result([.. ForRelation(), arrange]);
-        }
-
-        if (TimelineNewPlacement.TryParse(target.ElementId, out _, out _))
-        {
-            // A placement discovers what can happen at empty canvas, because executing an action
-            // by id only finds actions its target discovers - a drop resolves through this list.
-            return Result([.. ForPlacement(), arrange]);
-        }
-
-        if (TimelineRelationGesture.TryParse(target.ElementId, out _, out _))
-        {
-            // A finished relation gesture discovers its one action, for the same reason: the
-            // canvas executes it by id against this target.
-            return Result(
-            [
-                new ContextActionGroupDefinition(
-                    [new ContextActionDefinition(ConnectActionId, "Relate", "mdi-ray-start-arrow")]),
-            ]);
-        }
-
-        return Result([]);
+        // Derived from the definition (TimelineDefinition.Menus): an element's and a relation's
+        // menus, empty canvas at a placement - which a drop resolves its add through, because
+        // executing an action by id only finds actions its target discovers - and a finished
+        // relation gesture's one action, which the canvas executes by id against that target.
+        // Arrange is offered wherever the reader is, which keeps it in the ribbon too.
+        return Result(TimelineDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />
@@ -167,28 +127,21 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // nothing is asked and the element appears where it was dropped.
                 var begin = TimelineScale.ToTime(placedSeconds, TimelinePrecision.Date);
                 return await DispatchAsync(target, NewElementAt(
-                    target.ResolvedFullPath, begin, placedRow, period: actionId == AddElementActionId), cancellationToken);
+                    model, target.ResolvedFullPath, begin, placedRow, period: actionId == AddElementActionId), cancellationToken);
             }
 
             case AddAfterActionId when element is not null:
-            {
-                // Tab: the next thing, a little later on the same row - and RELATED to the one
-                // it grew from, because an element added from another continues it. Derived
-                // entirely from the selected element, so nothing is asked.
-                var anchor = element.End is { IsReadable: true } end ? end.Value!.Value
-                    : element.Begin.IsReadable ? element.Begin.Value!.Value
-                    : DateTimeOffset.UtcNow;
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, anchor.AddDays(GapDays), element.Row), cancellationToken);
-            }
-
             case AddBelowActionId when element is not null:
             {
-                // Enter: the same begin, one row down, related - a parallel track that starts
-                // together with the one it grew from.
-                var begin = element.Begin.IsReadable ? element.Begin.Value!.Value : DateTimeOffset.UtcNow;
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, begin, element.Row + 1), cancellationToken);
+                // Tab: the next thing, a little later on the same row; Enter: a parallel track, one
+                // row down, from the same begin - each RELATED to the one it grew from, in one
+                // command. Where it lands and what it is are the definition's addAfter and
+                // addBelow, run on the selected element, so nothing is asked.
+                var (grown, refusal) = TimelineDefinition.Grown(
+                    model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addAfter" : "addBelow", element.Id);
+                return grown is null
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, grown, cancellationToken);
             }
 
             case ConnectActionId when TimelineRelationGesture.TryParse(target.ElementId, out var from, out var to):
@@ -207,17 +160,9 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                     }
 
                     // The new element is the relation's SOURCE: created at the drop, its end
-                    // pointing into the existing element's start.
-                    var newBegin = TimelineScale.ToTime(fromSeconds, TimelinePrecision.Date);
-                    return await DispatchAsync(target, new AddConnectedTimelineElementCommand(
-                        target.ResolvedFullPath,
-                        to,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        TimelineScale.ToText(newBegin, TimelinePrecision.Date),
-                        TimelineScale.ToText(newBegin.AddDays(NewElementDays), TimelinePrecision.Date),
-                        fromRow,
-                        NewElementIsSource: true), cancellationToken);
+                    // pointing into the existing element's start, as the relation tool's
+                    // createSource makes it.
+                    return await RelateHereAsync(target, model, to, "source", fromSeconds, fromRow, cancellationToken);
                 }
 
                 if (TimelineEdits.ElementOf(model, from) is null)
@@ -228,16 +173,9 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 if (TimelineNewPlacement.TryParse(to, out var toSeconds, out var toRow))
                 {
                     // Released on empty canvas: what the relation reaches does not exist yet, so
-                    // it is created there and related in one command - one undo taking both.
-                    var begin = TimelineScale.ToTime(toSeconds, TimelinePrecision.Date);
-                    return await DispatchAsync(target, new AddConnectedTimelineElementCommand(
-                        target.ResolvedFullPath,
-                        from,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        TimelineScale.ToText(begin, TimelinePrecision.Date),
-                        TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
-                        toRow), cancellationToken);
+                    // it is created there and related in one command - one undo taking both - as
+                    // the relation tool's createTarget makes it.
+                    return await RelateHereAsync(target, model, from, "target", toSeconds, toRow, cancellationToken);
                 }
 
                 return await DispatchAsync(target, new ConnectTimelineElementsCommand(
@@ -280,29 +218,34 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // an action that answers Completed without dispatching has done nothing at all.
                 // That trap has now been walked into three times in this module; every action
                 // that needs no input dispatches in this method.
-                var going = TimelineWriter.ConnectionsTouching(model, element.Id).Count;
-                if (going == 0)
+                // Whether it asks, and what, is the definition's deletion policy.
+                if (TimelineDefinition.RemoveConfirmation(model, target.ElementId) is not { } confirmation)
                 {
                     return await DispatchAsync(target,
                         new RemoveTimelineElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
+                    confirmation.Title,
                     "mdi-delete-outline",
-                    going == 1
-                        ? "Removing this element also removes the 1 relation attached to it."
-                        : $"Removing this element also removes the {going} relations attached to it.",
-                    "Remove",
-                    Danger: true));
+                    confirmation.Message,
+                    confirmation.ConfirmLabel,
+                    Danger: confirmation.Danger));
             }
 
             case ArrangeActionId:
                 return await DispatchAsync(target, new ArrangeTimelineCommand(target.ResolvedFullPath), cancellationToken);
 
             case RemoveEndActionId when element is not null:
-                return await DispatchAsync(target,
-                    new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
+            {
+                // The definition's removeEnd: the end unset and the period made a moment. A moment,
+                // which it is not for, has no end to remove; that stays the one recorded step that
+                // changes nothing it always was, rather than a refusal.
+                var (removal, refusal) = TimelineDefinition.EndChange(model, target.ResolvedFullPath, "removeEnd", element.Id, null);
+                return refusal.Length > 0
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, removal ?? new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
+            }
 
             case DisconnectActionId when TimelineEdits.ConnectionOf(model, target.ElementId) is not null:
                 return await DispatchAsync(target,
@@ -321,17 +264,13 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
         if (actionId == GiveEndActionId)
         {
-            // Validated as typed, so the dialog can refuse before the commit does - on exactly
-            // the terms the handler will apply again (Requirement 3.4).
-            if (TimelineInstants.Parse(value) is not { } end)
+            // Validated as typed, so the dialog can refuse before the commit does - by running the
+            // definition's giveEnd, whose refusals the handler applies again (Requirement 3.4).
+            var (_, refusal) = TimelineDefinition.EndChange(
+                _documents.GetOrLoad(target.ResolvedFullPath).Model, target.ResolvedFullPath, "giveEnd", target.ElementId, value);
+            if (refusal.Length > 0)
             {
-                return ValueTask.FromResult(ContextValidationResult.Rejected($"'{value}' is not a time this timeline can read."));
-            }
-
-            var element = TimelineEdits.ElementOf(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId);
-            if (element is { Begin.IsReadable: true } && end < element.Begin.Value)
-            {
-                return ValueTask.FromResult(ContextValidationResult.Rejected("An element cannot end before it begins."));
+                return ValueTask.FromResult(ContextValidationResult.Rejected(refusal));
             }
         }
 
@@ -369,31 +308,36 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             : new ContextExecutionFailed(result.Error);
     }
 
-    /// <summary>A freshly added element: born a week long, or a moment, at the given placement.</summary>
-    /// <remarks>
-    /// The ids are generated here, once, where the gesture happens - so the command instance the
-    /// history holds carries them, and a redo re-creates under the ids it had. A week rather
-    /// than zero length, because a zero-length element renders as an unreachable sliver and a
-    /// week gives the adorners something to grab.
-    /// </remarks>
-    /// <summary>A freshly added element grown from another: created and related in one command.</summary>
-    private static AddConnectedTimelineElementCommand NewRelatedElementAt(string body, string fromElementId, DateTimeOffset begin, int row) =>
-        new(
-            body,
-            fromElementId,
-            ShortGuid.NewShortGuid().ToString(),
-            ShortGuid.NewShortGuid().ToString(),
-            TimelineScale.ToText(begin, TimelinePrecision.Date),
-            TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
-            row);
+    /// <summary>
+    /// A relation gesture released on empty canvas at <paramref name="seconds"/> and <paramref name="row"/>:
+    /// the element the definition's relation tool creates there, the date under the pointer as its begin,
+    /// related to <paramref name="elementId"/> as the gesture's <paramref name="newEnd"/>, in one command.
+    /// </summary>
+    private async ValueTask<ContextExecutionResult> RelateHereAsync(
+        ContextTarget target, TimelineModel model, string elementId, string newEnd, double seconds, int row, CancellationToken cancellationToken)
+    {
+        var begin = TimelineScale.ToText(TimelineScale.ToTime(seconds, TimelinePrecision.Date), TimelinePrecision.Date);
+        var (related, refusal) = TimelineDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, begin, row);
+        return related is null
+            ? new ContextExecutionFailed(refusal)
+            : await DispatchAsync(target, related, cancellationToken);
+    }
 
-    private static AddTimelineElementCommand NewElementAt(string body, DateTimeOffset begin, int row, bool period) =>
-        new(
+    /// <summary>
+    /// A freshly added element, a period or a moment, at the given placement: the definition's
+    /// <c>addElementHere</c> or <c>addMomentHere</c>, its begin the date of <paramref name="begin"/>.
+    /// </summary>
+    /// <remarks>
+    /// The id is generated here, once, where the gesture happens - so the command instance the
+    /// history holds carries it, and a redo re-creates under the id it had.
+    /// </remarks>
+    private static AddTimelineElementCommand NewElementAt(TimelineModel model, string body, DateTimeOffset begin, int row, bool period) =>
+        TimelineDefinition.Addition(
+            model,
             body,
+            period ? "addElementHere" : "addMomentHere",
             ShortGuid.NewShortGuid().ToString(),
-            period ? "New element" : "New moment",
             TimelineScale.ToText(begin, TimelinePrecision.Date),
-            period ? TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date) : null,
             row);
 
     private ICommand? CommandFor(ContextTarget target, string actionId, string value)
@@ -412,8 +356,10 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         {
             RenameActionId when isElement => new RenameTimelineElementCommand(body, id, value),
             RemoveActionId when isElement => new RemoveTimelineElementCommand(body, id),
-            GiveEndActionId when isElement => new SetTimelineEndCommand(body, id, value),
-            RemoveEndActionId when isElement => new SetTimelineEndCommand(body, id, null),
+            GiveEndActionId when isElement => TimelineDefinition.EndChange(model, body, "giveEnd", id, value).Command,
+            RemoveEndActionId when isElement => TimelineDefinition.EndChange(model, body, "removeEnd", id, null) is var (removal, refusal) && refusal.Length == 0
+                ? removal ?? new SetTimelineEndCommand(body, id, null)
+                : null,
             DisconnectActionId when isRelation => new DisconnectTimelineConnectionCommand(body, id),
             RelabelActionId when isRelation => new RelabelTimelineConnectionCommand(body, id, value),
             // The dialog path: the value is the begin the user typed, and the row comes from the
@@ -432,57 +378,10 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             return null;
         }
 
-        var anchor = TimelineEdits.ElementOf(_documents.GetOrLoad(body).Model, anchorElementId);
-        return NewElementAt(body, begin, anchor?.Row ?? 0, period);
+        var model = _documents.GetOrLoad(body).Model;
+        var anchor = TimelineEdits.ElementOf(model, anchorElementId);
+        return NewElementAt(model, body, begin, anchor?.Row ?? 0, period);
     }
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForElement(TimelineElement element)
-    {
-        List<ContextActionDefinition> edits =
-        [
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-        ];
-
-        // For an element with an end, the end can be removed; for a moment, granted - the
-        // gesture that is not there (no right adorner) is replaced by the action that is
-        // (Requirement 7.5).
-        edits.Add(element.IsPeriod
-            ? new ContextActionDefinition(RemoveEndActionId, "Remove its end", "mdi-ray-start")
-            : new ContextActionDefinition(GiveEndActionId, "Give it an end…", "mdi-ray-start-end"));
-
-        edits.Add(new ContextActionDefinition(
-            RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
-
-        // The additions, as their own group so the menu separates changing this element from
-        // adding the next - the mindmap's Insert/Enter pattern, on this type's two axes: after
-        // in time, below in rows.
-        List<ContextActionDefinition> additions =
-        [
-            new(AddAfterActionId, "Add element after", "mdi-arrow-expand-right", new ContextShortcutDefinition("Tab")),
-            new(AddBelowActionId, "Add element below", "mdi-arrow-expand-down", new ContextShortcutDefinition("Enter")),
-        ];
-
-        return [new ContextActionGroupDefinition(edits), new ContextActionGroupDefinition(additions)];
-    }
-
-    /// <summary>What empty canvas offers: the two adds, and the completion of a relation gesture.</summary>
-    private static IReadOnlyList<ContextActionGroupDefinition> ForPlacement() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(AddElementActionId, "Add element here", "mdi-plus"),
-            new ContextActionDefinition(AddMomentActionId, "Add moment here", "mdi-rhombus-medium"),
-        ]),
-    ];
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForRelation() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(RelabelActionId, "Relabel…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new ContextActionDefinition(DisconnectActionId, "Remove relation", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-        ]),
-    ];
 
     private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
         ValueTask.FromResult(groups);

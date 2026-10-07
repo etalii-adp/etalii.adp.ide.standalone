@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Specification.Disl;
 /// </para>
 /// <para>
 /// <b>Model actions become <see cref="DislChange"/>s</b>: <c>set</c>, <c>unset</c>, <c>create</c>,
-/// <c>delete</c> and <c>reparent</c>. <c>let</c>, <c>if</c> and <c>forEach</c> steer the run.
+/// <c>connect</c>, <c>retype</c>, <c>delete</c> and <c>reparent</c>. <c>let</c>, <c>if</c> and <c>forEach</c> steer the run.
 /// <c>layout</c>, <c>plugin</c>, <c>select</c> and <c>editLabel</c> are handed back as
 /// <see cref="HostAction"/>s. <c>abort</c> refuses the transaction with its message. Any other action,
 /// and an expression that fails, refuses it too: a runtime that cannot do what a definition says does
@@ -105,6 +105,10 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             }
             case "create":
                 return Create(action, body, bodyAt, variables);
+            case "connect":
+                return Connect(action, body, bodyAt, variables);
+            case "retype":
+                return Retype(body, bodyAt, variables);
             case "delete":
             {
                 if (!Value(body, bodyAt, variables, out var value)) return false;
@@ -234,6 +238,59 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         }
         _changes.Add(new DislChange.Create(type, created.Id, attributes, (parent as DislElement)?.Id, point));
         if (DislJson.String(action, "as") is { } name) variables[name] = created;
+        return true;
+    }
+
+    /// <summary>
+    /// A <c>connect</c> (§9.4): a relation of its <c>type</c> from its <c>source</c> to its <c>target</c>, both
+    /// elements of the working diagram, with its <c>attributes</c>, under a new id; <c>as</c> names it.
+    /// </summary>
+    private bool Connect(JsonElement action, JsonElement body, string at, Dictionary<string, object?> variables)
+    {
+        if (!Member(body, at, "type", variables, null, out var typeValue)) return false;
+        if (typeValue is not string type || specification.Metamodel.TypeOf(type) is not { IsRelation: true, Abstract: false }) return Refuse($"The connect at {at} names no relation type it can create.");
+        if (!Member(body, at, "source", variables, null, out var source) || !Member(body, at, "target", variables, null, out var target)) return false;
+        if (source is not DislElement from || target is not DislElement to) return Refuse($"The connect at {at} does not name two elements to connect.");
+
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var property in DislJson.Members(body, "attributes"))
+        {
+            if (!Value(property.Value, DislJson.Pointer(DislJson.Pointer(at, "attributes"), property.Name), variables, out var value)) return false;
+            if (value is not null) attributes[property.Name] = Stored(value);
+        }
+
+        DislElement created;
+        try
+        {
+            created = diagram.AddRelation(type, ids.Next(type), from, to, attributes);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        {
+            return Refuse(e.Message);
+        }
+        _changes.Add(new DislChange.Connect(type, created.Id, from.Id, to.Id, attributes));
+        if (DislJson.String(action, "as") is { } name) variables[name] = created;
+        return true;
+    }
+
+    /// <summary>
+    /// A <c>retype</c> (§9.4): its <c>target</c>, by default <c>self</c>, made the type <c>to</c> names, as
+    /// <c>behavior.retype</c> allows (<see cref="RetypePolicy"/>). The element changes type in the working
+    /// diagram, so the actions after it see it as the new type.
+    /// </summary>
+    private bool Retype(JsonElement body, string at, Dictionary<string, object?> variables)
+    {
+        if (!Member(body, at, "target", variables, variables.GetValueOrDefault("self"), out var target)
+            || !Member(body, at, "to", variables, null, out var to)) return false;
+        if (target is not DislElement element) return Refuse($"The retype at {at} has no element to change.");
+        if (to is not string type) return Refuse($"The retype at {at} names no type.");
+
+        var transaction = RetypePolicy.Change(specification, element, type);
+        if (!transaction.WasApplied) return Refuse(transaction.Refusal!);
+        var retype = (DislChange.Retype)transaction.Changes[0];
+        if (Before is not null && !Before.ContainsKey(element)) Before[element] = element.Snapshot();
+        element.Retype(specification.Metamodel.TypeOf(type)!, retype.Attributes);
+        _changes.Add(retype);
         return true;
     }
 

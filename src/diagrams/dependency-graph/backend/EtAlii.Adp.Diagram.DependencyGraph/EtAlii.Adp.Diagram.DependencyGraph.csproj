@@ -9,6 +9,9 @@
       "core learns nothing new" claim rests on.
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <!-- The toolbox, the context menus and the property rows are derived from the bundled DISL definition. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +27,12 @@
   <ItemGroup>
     <!-- This type's own wire payload, packed into the core Element's Any. -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\dependency-graph.dis" LogicalName="dependency-graph.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="dependency-graph.provenance.json" />
   </ItemGroup>
 
   <ItemGroup>

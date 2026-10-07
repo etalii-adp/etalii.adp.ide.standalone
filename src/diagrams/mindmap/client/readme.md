@@ -20,9 +20,18 @@ without that, nothing here could resolve `react`.
   the bug recorded in `tests.md` — equal specificity, so source order decides, and jsdom cannot
   catch it. A selected node has no rule here at all: selection and its look are the canvas
   library's, the same on every diagram.
+- **The canvas definition is compiled from the bundled DISL specification**,
+  `../definition/mindmap.dis`, imported with Vite's `?raw` and compiled by the library's
+  `compileNotation` at module load. What the library cannot read from it is in
+  **`mindmapBindings.ts`**, each entry with its reason: the payload path of the corner glyphs
+  (`indicators(self)`, computed in `MindmapCanvas.tsx`), the class names `mindmap.css` paints, the
+  topic box drawn as the library's `centered-box`, the drag preview, and the key each action sends
+  the backend, with Tab as a second key for add-child. `mindmapCompiledDefinition.test.ts` holds the
+  compiled definition to the one this canvas stated by hand before, and
+  `mindmapShapeGeometry.test.ts` holds the specification's `topicBox` to the rect the canvas draws.
 - **Branches are not selectable, by decision.** A branch is a node's link to its parent, not a
-  thing a reader picks, so its relation type declares `selectable: false` and a press on one is a
-  press on the background. That is a decision about the notation, not an omission; making
+  thing a reader picks, so the specification's branch edge says `selectable: false` and a press on
+  one is a press on the background. That is a decision about the notation, not an omission; making
   branches selectable is a separate question for the user
   ([centralized-selection](../../../../.spec-workflow/specs/centralized-selection/requirements.md),
   Requirement 2.4).

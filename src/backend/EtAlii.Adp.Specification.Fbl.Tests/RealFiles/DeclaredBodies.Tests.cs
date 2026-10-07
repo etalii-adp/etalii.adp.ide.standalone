@@ -101,6 +101,8 @@ public class DeclaredBodiesTests
         if (body.IsReadOnly) return;
         var element = body.Reading.Elements.FirstOrDefault(e => e.Rule.Remove is not null && e.Rule.ReadOnly is null);
         if (element is null) return;
+        var holders = body.Model.Elements.Count(e => e.Type == element.Rule.Type);
+        var idsShift = body.Model.Elements.Any(e => e.Type == element.Rule.Type && !e.IdIsStored);
 
         // Act.
         var result = body.Change(new ModelChange.Remove(element.Id));
@@ -110,7 +112,10 @@ public class DeclaredBodiesTests
         if (result is not PlanResult.Planned planned) return;
         Assert.NotEmpty(planned.Edit.Splices);
         AssertOnlySplicesChanged(bytes, body.Bytes, planned.Edit.Splices, file);
-        Assert.DoesNotContain(body.Model.Elements, e => e.Id == element.Id && e.Type == element.Rule.Type);
+        // Where an entry of the type is named by its place (no id, or one an earlier entry holds), ids
+        // move up with the entries and the removed id is taken over, so there the count tells.
+        if (idsShift) Assert.True(body.Model.Elements.Count(e => e.Type == element.Rule.Type) < holders);
+        else Assert.DoesNotContain(body.Model.Elements, e => e.Id == element.Id && e.Type == element.Rule.Type);
         Assert.IsType<UndoResult.Done>(body.Undo());
         Assert.Equal(bytes, body.Bytes);
     }

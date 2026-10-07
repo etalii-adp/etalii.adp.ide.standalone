@@ -46,3 +46,18 @@ at which point these tests would be measuring git rather than the writer.
 
 That entry is a prerequisite for this corpus, not a detail. If a round-trip test starts failing
 in a way that makes no sense, check that the attribute is still there before suspecting the code.
+
+## Documents that exist to be judged: `findings/`
+
+The files above are all clean; nothing in them raises a finding. `findings/` holds the opposite: documents written to raise every finding the rules know, so the parity transcript (`Parity/timeline.transcript.json`) pins each message, its location and the order the findings arrive in. They sit in a folder of their own because the round-trip tests above enumerate `Fixtures/*.tml` and expect every document there to parse.
+
+| File | Exists to prove |
+| --- | --- |
+| `identity.tml` | Missing ids (absent and empty), an id held three times, an id shared by an element and a relation, and a relation without an id. |
+| `times.tml` | Unreadable begins and ends (an empty `end:` included), ends before begins, mixed precision, and forms .NET reads that ISO 8601 does not (`2026/07/01`, `July 5, 2026`) - one of them containing a `T`, which counts as a time of day. |
+| `dangling.tml` | Relations naming elements that are not there, at either end or both, and ends left empty, which are not reported. |
+| `combined.tml` | Every kind at once, interleaved, plus a sequence entry that is not a mapping, so the order of the findings is pinned. |
+| `unparseable.tml` | A document that is not YAML: the one error finding. |
+| `empty.tml` | No elements: nothing to arrange. |
+
+`unparseable.tml` breaks the YAML with a mapping value where none is allowed. An unclosed flow sequence (`label: [unclosed` at the end of the file) would be the more obvious choice, and is not used because YamlDotNet throws an `InvalidOperationException` for it rather than a `YamlException`, which neither the store nor the validator catches.

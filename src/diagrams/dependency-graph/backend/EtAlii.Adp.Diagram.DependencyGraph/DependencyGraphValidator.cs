@@ -41,14 +41,7 @@ public sealed class DependencyGraphValidator : IDiagramValidator
         {
             var line = (uint)Math.Max(exception.Start.Line, 1);
             _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, line);
-            return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
-            [
-                new DiagramProblem(
-                    DiagramProblemSeverity.Error,
-                    $"This is not YAML that can be read: {exception.Message}",
-                    UnparseableRuleId,
-                    new DiagramProblemLineLocation(line)),
-            ]);
+            return ValueTask.FromResult(DependencyGraphFindings.Unparseable(exception.Message, (int)line));
         }
 
         return ValueTask.FromResult(DependencyGraphRuleSet.Judge(model));

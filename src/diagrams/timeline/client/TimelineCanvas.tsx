@@ -1,31 +1,27 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { forwardBezierPath, horizontalBezierPath } from "@client/canvas/connectors";
 import { elementSourceOf } from "@client/canvas/selection";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { ToolContentProps as ShellCanvasProps } from "@client/shell/panels/toolPanelRegistration";
 import { DiagramCanvas, snapToStep } from "@client/canvas/library/DiagramCanvas";
-import type { DiagramDefinition, LabelDeclaration } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import type { DiagramEventHandlers, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
 import { TimelineRuler } from "./TimelineRuler";
 import { useTimelineStream } from "./useTimelineStream";
 import type { TimelineElement, TimelineModel } from "./timelineModel";
 import { placementId, relationId } from "@client/canvas/gestureIds";
+import disText from "../definition/timeline.dis?raw";
+import { ELEMENT_HEIGHT, ROW_HEIGHT, TIMELINE_BINDINGS } from "./timelineBindings";
 
-/**
- * The vertical distance between adjacent rows, in the module's own y units. Mirrors
- * `TimelineRows.Height` in the backend and must stay equal to it.
- */
-const ROW_HEIGHT = 60;
-
-/** How tall an element's box is drawn, leaving a gutter between rows. */
-const ELEMENT_HEIGHT = 36;
+export { ELEMENT_HEIGHT, ROW_HEIGHT };
 
 /** A moment's marker radius. */
-const MOMENT_RADIUS = 9;
+export const MOMENT_RADIUS = 9;
 
 const DAY = 86400;
 
@@ -117,12 +113,6 @@ export function endSecondsOf(element: TimelineElement): number {
   return Number.isFinite(parsed) ? parsed : element.x;
 }
 
-/** One canvas unit as a fraction of a row, for the hint's declared row arithmetic. */
-const ROWS_PER_UNIT = 1 / ROW_HEIGHT;
-
-/** How far above the box the drag hint sits, matching where the shared span drew it. */
-const HINT_ABOVE = ELEMENT_HEIGHT / 2 + 8;
-
 /**
  * The nearest row for a module-space y, by the library's one rounding rule - halves away from
  * zero, never negative zero - which TimelineRows.ToNearestRow shares on the backend. A dragged
@@ -146,147 +136,16 @@ function newPlacementId(seconds: number, row: number): string {
 }
 
 /**
- * The drag hint both element types show, declared once.
- *
- * <b>The one row in the tree whose text is arithmetic rather than a field</b>: the time under
- * the element's left edge, and the row its top would land on. Both read the LIVE bounds, which
- * is why `bounds` is a binding root at all - the model still holds the PRE-drag position while
- * this is on screen, so no payload could carry either number.
+ * What a timeline allows, compiled from the bundled DISL specification (`definition/timeline.dis`) with
+ * what the library cannot read from it in `timelineBindings.ts`: periods that drag and resize, moments
+ * that drag, either connecting to either from its begin or end anchor, with one bezier relation whose
+ * empty release is itself a gesture - the create-and-relate the notation offers - and the background
+ * menu, whose placement this canvas converts into seconds and a row (`config` below).
  */
-const DRAG_HINT: LabelDeclaration = {
-  // THE DRAG HINT, and the one row in the whole tree whose text is arithmetic rather
-  // than a field: the time under the element's left edge, and the row its top would
-  // land on. Both read the LIVE bounds, which is why `bounds` is a root at all - the
-  // model still holds the PRE-drag position while this is on screen, so a payload
-  // could not carry either of them.
-  text: {
-    parts: [
-      {
-        path: "bounds.left",
-        number: { times: "payload.secondsPerUnit", plus: "payload.originSeconds", format: "yyyy-MM-ddTHH:mm:ss" },
-      },
-      {
-        // `row N`: a literal word beside a computed number, which is why parts nest.
-        parts: [
-          { template: "row" },
-          { path: "bounds.top", number: { times: ROWS_PER_UNIT, plus: "payload.originRows", round: "nearest" } },
-        ],
-        join: " ",
-      },
-    ],
-    join: " · ",
-  },
-  when: { path: "state.dragging", is: "true" },
-  offset: { x: 0, y: -HINT_ABOVE },
-  className: "timeline-hint canvas-hint",
-};
+export const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(parseDisl(disText), TIMELINE_BINDINGS));
 
-
-/**
- * What a timeline allows, stated once: periods that drag and resize, moments that drag,
- * either connecting to either from its begin or end anchor, with one bezier relation whose
- * empty release is itself a gesture - the create-and-relate the notation offers.
- */
-const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes: [
-    {
-      id: "period",
-      // The box the shared span drew, chosen by TYPE rather than by a payload flag: the
-      // definition already had two types and the renderer decided between them again at draw
-      // time, which is the duplication this migration removes.
-      shape: "span",
-      classNames: [{ className: "timeline-period canvas-node", on: "shape" }],
-      labels: [
-        {
-          text: { template: "{element.label}" },
-          placement: "inside",
-          truncate: true,
-          editable: true,
-          className: "timeline-label canvas-node-label",
-        },
-        DRAG_HINT,
-      ],
-      anchors: {
-        kind: "sides",
-        fractions: [
-          { side: "left", at: 0.5, name: "begin" },
-          { side: "right", at: 0.5, name: "end" },
-        ],
-        edgeSides: "horizontal",
-      },
-      sizing: "user",
-    },
-    {
-      id: "moment",
-      // A diamond rather than a box - the built-in that exists because this row needed it.
-      shape: "moment",
-      classNames: [{ className: "timeline-moment", on: "shape" }],
-      labels: [
-        {
-          text: { template: "{element.label}" },
-          placement: "beside",
-          editable: true,
-          className: "timeline-label canvas-node-label",
-        },
-        DRAG_HINT,
-      ],
-      anchors: {
-        kind: "sides",
-        fractions: [
-          { side: "left", at: 0.5, name: "begin" },
-          { side: "right", at: 0.5, name: "end" },
-        ],
-        edgeSides: "horizontal",
-      },
-      sizing: "model",
-    },
-  ],
-  relationTypes: [
-    {
-      id: "gates",
-      // The loop is decided by geometry: a target beginning before the source ends gets the
-      // forward-and-back curve, exactly as the interactive bezier drew it.
-      route: {
-        customRoute: "timeline-bezier",
-        path: (from, to) => (to.x < from.x ? forwardBezierPath(from, to) : horizontalBezierPath(from, to)),
-      },
-      label: { placement: "midpoint", offset: -6, editable: true },
-      className: "timeline-connection",
-      lineClassName: "timeline-connection-line",
-      hitClassName: "timeline-connection-hit",
-      endpoints: {
-        source: { elementTypes: ["period", "moment"] },
-        target: { elementTypes: ["period", "moment"], anchors: "edge" },
-        allowSelf: false,
-      },
-      emptyRelease: "complete",
-    },
-  ],
-  // WHAT THIS TYPE OFFERS, AND WHAT INVOKES IT. The key list was hand-written in this canvas
-  // and the delete was a keystroke it built to describe a gesture the library had already
-  // handed it. Declared, the library derives the key set and dispatches an action id.
-  actions: [
-    { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-    { id: "insert", backendKey: "Insert", invokedBy: [{ kind: "shortcut", key: "Insert" }], appliesTo: [{ kind: "element" }] },
-    { id: "add-right", backendKey: "Tab", invokedBy: [{ kind: "shortcut", key: "Tab" }], appliesTo: [{ kind: "element" }] },
-    { id: "add-below", backendKey: "Enter", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
-    { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }, { kind: "connection" }] },
-  ],
-  // Where a dragged element comes to rest, said once so the drag shows what the drop sends: an
-  // element's top on a row, and a date-only element's begin on the start of a day - where
-  // TimelineScale.ToTime lands a date-only begin. The day lattice depends on the frozen scale,
-  // so it rides each element's payload; an element with a time of day carries none and moves
-  // freely in x, as its backend keeps its seconds.
-  snap: {
-    y: { step: ROW_HEIGHT },
-    x: { step: { path: "payload.dayUnits" }, origin: { path: "payload.dayOriginUnits" } },
-  },
-  layout: { modes: ["manual"] },
-  dragging: "enabled",
-  // Arrange diagram and "Add … here" on empty canvas, from the backend's own list; the canvas
-  // supplies where the click lands in seconds and rows, because the scale is frozen per canvas.
-  backgroundMenu: true,
-});
+/** The relation type the compiled definition draws a connection as. */
+const CONNECTION = TIMELINE_DEFINITION.relationTypes[0]!.id;
 
 /**
  * The timeline, drawn through the diagram library: the axis-shaped reference canvas
@@ -344,7 +203,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     });
     const connections = [...model.connections.values()].map((connection) => ({
       id: connection.id,
-      type: "gates",
+      type: CONNECTION,
       sourceId: connection.fromElementId,
       targetId: connection.toElementId,
       // Fixed sides, deliberately: a timeline reads left to right, so a relation always

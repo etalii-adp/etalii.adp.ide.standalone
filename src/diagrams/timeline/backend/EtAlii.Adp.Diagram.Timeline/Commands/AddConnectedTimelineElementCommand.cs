@@ -25,6 +25,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// from an element's begin anchor, where what precedes it points into it - rather than the
 /// other way round.
 /// </param>
+/// <param name="Label">The new element's label; null for <see cref="AddConnectedTimelineElementCommandHandler.NewElementLabel"/>.</param>
 public sealed record AddConnectedTimelineElementCommand(
     string BodyPath,
     string FromElementId,
@@ -33,4 +34,5 @@ public sealed record AddConnectedTimelineElementCommand(
     string Begin,
     string? End,
     int Row,
-    bool NewElementIsSource = false) : ICommand;
+    bool NewElementIsSource = false,
+    string? Label = null) : ICommand;

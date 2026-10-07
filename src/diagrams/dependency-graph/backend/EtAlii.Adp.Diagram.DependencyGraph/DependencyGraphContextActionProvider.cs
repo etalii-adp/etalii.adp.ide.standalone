@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -9,6 +10,14 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// path the context service defines.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>What is offered is derived from the DISL definition</b>
+/// (<see cref="DependencyGraphDefinition.Menus"/>): its context menus' entries, groups, labels, icons
+/// and shortcuts, with the ids of its <c>x-dependencies</c> block. Adding a node to the right or below,
+/// and a dependency dragged onto empty canvas, run the definition's operations and tool in the DISL
+/// runtime (<see cref="DependencyGraphDefinition.Grown"/>, <see cref="DependencyGraphDefinition.RelatedHere"/>);
+/// what each action writes is here, because every edit is a splice of the file's own lines.
+/// </para>
 /// <para>
 /// Every mutating action dispatches a command through the project's history, so each is one undo
 /// away like every other edit in the IDE. <see cref="ConnectActionId"/> arrives as one call
@@ -97,37 +106,11 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             return Result([]);
         }
 
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        if (DependencyGraphEdits.ElementOf(model, target.ElementId) is not null)
-        {
-            return Result(ForElement());
-        }
-
-        if (DependencyGraphEdits.RelationOf(model, target.ElementId) is not null)
-        {
-            return Result(ForRelation());
-        }
-
-        if (DependencyGraphNewPlacement.TryParse(target.ElementId, out _, out _))
-        {
-            // A placement discovers what can happen at empty canvas, because executing an action
-            // by id only finds actions its target discovers - a drop resolves through this list.
-            return Result(ForPlacement());
-        }
-
-        if (DependencyGraphRelationGesture.TryParse(target.ElementId, out _, out _))
-        {
-            // A finished relation gesture discovers its one action, for the same reason: the
-            // canvas executes it by id against this target.
-            return Result(
-            [
-                new ContextActionGroupDefinition(
-                    [new ContextActionDefinition(ConnectActionId, "Depends on", "mdi-ray-start-arrow")]),
-            ]);
-        }
-
-        return Result([]);
+        // A node, a dependency, a placement - which discovers what can happen at empty canvas, because
+        // executing an action by id only finds actions its target discovers, so a drop resolves through
+        // this list - and a finished relation gesture, which the canvas executes by id likewise. Each
+        // menu is the definition's, in its groups.
+        return Result(DependencyGraphDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />
@@ -145,26 +128,27 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             case AddElementActionId when placed:
             {
                 // The gesture already said everything an add needs - where it landed - so
-                // nothing is asked and the node appears where it was dropped.
-                return await DispatchAsync(target, NewElementAt(
-                    target.ResolvedFullPath, placedX, placedRow), cancellationToken);
+                // nothing is asked and the node appears where it was dropped, as the definition's
+                // addNodeHere places and labels it.
+                var (added, refusal) = DependencyGraphDefinition.NodeHere(model, target.ResolvedFullPath, placedX, placedRow);
+                return added is null
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, added, cancellationToken);
             }
 
             case AddAfterActionId when element is not null:
-            {
-                // Tab: the next thing, a step to the right on the same row - and depending on
-                // the one it grew from, because a node added from another is a thing that node
-                // needs. Derived entirely from the selected node, so nothing is asked.
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, element.X + XStep, element.Row), cancellationToken);
-            }
-
             case AddBelowActionId when element is not null:
             {
-                // Enter: the same coordinate, one row down, and likewise depended upon - a second
-                // thing the selected node needs, stacked under the first.
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, element.X, element.Row + 1), cancellationToken);
+                // Tab: the next thing, a step to the right on the same row; Enter: the same
+                // coordinate, one row down - each depended upon by the one it grew from, because a
+                // node added from another is a thing that node needs. Where it lands, what it is
+                // called and the dependency are the definition's addRight and addBelow, run on the
+                // selected node, so nothing is asked.
+                var (grown, refusal) = DependencyGraphDefinition.Grown(
+                    model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addRight" : "addBelow", element.Id);
+                return grown is null
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, grown, cancellationToken);
             }
 
             case ConnectActionId when DependencyGraphRelationGesture.TryParse(target.ElementId, out var from, out var to):
@@ -183,15 +167,8 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                     }
 
                     // The new node is the relation's SOURCE: created at the drop, depending on
-                    // the existing node.
-                    return await DispatchAsync(target, new AddConnectedDependencyGraphElementCommand(
-                        target.ResolvedFullPath,
-                        to,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        fromX,
-                        fromRow,
-                        NewElementIsSource: true), cancellationToken);
+                    // the existing node, as the dependsOn tool's createSource makes it.
+                    return await RelateHereAsync(target, model, to, "source", fromX, fromRow, cancellationToken);
                 }
 
                 if (DependencyGraphEdits.ElementOf(model, from) is null)
@@ -202,14 +179,9 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 if (DependencyGraphNewPlacement.TryParse(to, out var toX, out var toRow))
                 {
                     // Released on empty canvas: what the node depends on does not exist yet, so
-                    // it is created there and related in one command - one undo taking both.
-                    return await DispatchAsync(target, new AddConnectedDependencyGraphElementCommand(
-                        target.ResolvedFullPath,
-                        from,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        toX,
-                        toRow), cancellationToken);
+                    // it is created there and related in one command - one undo taking both - as
+                    // the dependsOn tool's createTarget makes it.
+                    return await RelateHereAsync(target, model, from, "target", toX, toRow, cancellationToken);
                 }
 
                 return await DispatchAsync(target, new ConnectDependencyGraphElementsCommand(
@@ -249,21 +221,20 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 // answers Completed without dispatching has done nothing at all. That trap was
                 // walked into three times in the module this was forked from; every action that
                 // needs no input dispatches in this method.
-                var going = DependencyGraphWriter.RelationsTouching(model, element.Id).Count;
-                if (going == 0)
+                // What is asked, and when, is the definition's deletion confirmation.
+                if (DependencyGraphDefinition.ElementOf(DependencyGraphDefinition.Disl(model), element.Id) is not { } node
+                    || DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, node) is not { } confirmation)
                 {
                     return await DispatchAsync(target,
                         new RemoveDependencyGraphElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
+                    confirmation.Title,
                     "mdi-delete-outline",
-                    going == 1
-                        ? "Removing this node also removes the 1 dependency attached to it."
-                        : $"Removing this node also removes the {going} dependencies attached to it.",
-                    "Remove",
-                    Danger: true));
+                    confirmation.Message,
+                    confirmation.ConfirmLabel,
+                    Danger: confirmation.Danger));
             }
 
             case DisconnectActionId when DependencyGraphEdits.RelationOf(model, target.ElementId) is not null:
@@ -325,21 +296,22 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
     private const string NewElementLabel = AddConnectedDependencyGraphElementCommandHandler.NewElementLabel;
 
     /// <summary>
-    /// A freshly added node grown from another: created and depended upon, in one command.
+    /// A dependency gesture released on empty canvas at <paramref name="x"/> and <paramref name="row"/>: the
+    /// node the definition's dependsOn tool creates there, related to <paramref name="elementId"/> as the
+    /// gesture's <paramref name="newEnd"/>, in one command.
     /// </summary>
     /// <remarks>
-    /// The ids are generated here, once, where the gesture happens - so the command instance the
-    /// history holds carries them, and a redo re-creates under the ids it had.
+    /// The ids are generated once, where the gesture happens - so the command instance the history
+    /// holds carries them, and a redo re-creates under the ids it had.
     /// </remarks>
-    private static AddConnectedDependencyGraphElementCommand NewRelatedElementAt(
-        string body, string fromElementId, double x, int row) =>
-        new(
-            body,
-            fromElementId,
-            ShortGuid.NewShortGuid().ToString(),
-            ShortGuid.NewShortGuid().ToString(),
-            x,
-            row);
+    private async ValueTask<ContextExecutionResult> RelateHereAsync(
+        ContextTarget target, DependencyGraphModel model, string elementId, string newEnd, double x, int row, CancellationToken cancellationToken)
+    {
+        var (related, refusal) = DependencyGraphDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, x, row);
+        return related is null
+            ? new ContextExecutionFailed(refusal)
+            : await DispatchAsync(target, related, cancellationToken);
+    }
 
     private static AddDependencyGraphElementCommand NewElementAt(string body, double x, int row, string? label = null) =>
         new(
@@ -378,44 +350,6 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             _ => null,
         };
     }
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForElement()
-    {
-        List<ContextActionDefinition> edits =
-        [
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-        ];
-
-        // The additions, as their own group so the menu separates changing this node from adding
-        // the next - the mindmap's Insert/Enter pattern, on this type's two axes: to the right,
-        // and below.
-        List<ContextActionDefinition> additions =
-        [
-            new(AddAfterActionId, "Add node to the right", "mdi-arrow-expand-right", new ContextShortcutDefinition("Tab")),
-            new(AddBelowActionId, "Add node below", "mdi-arrow-expand-down", new ContextShortcutDefinition("Enter")),
-        ];
-
-        return [new ContextActionGroupDefinition(edits), new ContextActionGroupDefinition(additions)];
-    }
-
-    /// <summary>What empty canvas offers: the add, and the completion of a relation gesture.</summary>
-    private static IReadOnlyList<ContextActionGroupDefinition> ForPlacement() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(AddElementActionId, "Add node here", "mdi-plus"),
-        ]),
-    ];
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForRelation() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(RelabelActionId, "Relabel…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new ContextActionDefinition(DisconnectActionId, "Remove dependency", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-        ]),
-    ];
 
     private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
         ValueTask.FromResult(groups);

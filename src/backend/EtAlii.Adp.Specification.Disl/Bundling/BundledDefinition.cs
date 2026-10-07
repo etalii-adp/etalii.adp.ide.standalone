@@ -23,8 +23,15 @@ public sealed record BundledDefinition(DislSpecification Specification, Definiti
     /// A resource is missing, the bytes are not the ones the provenance names, or the specification
     /// does not load: a module cannot run from a definition it does not have.
     /// </exception>
-    public static BundledDefinition Load(Assembly assembly, string logicalName)
+    public static BundledDefinition Load(Assembly assembly, string logicalName) => Load(assembly, logicalName, DislPluginFunctions.None);
+
+    /// <summary>
+    /// Loads the bundled definition as <see cref="Load(Assembly, string)"/> does, with the host's
+    /// implementations of its plugins' CEL functions (DISL §13.1.1).
+    /// </summary>
+    public static BundledDefinition Load(Assembly assembly, string logicalName, DislPluginFunctions plugins)
     {
+        ArgumentNullException.ThrowIfNull(plugins);
         ArgumentNullException.ThrowIfNull(assembly);
         ArgumentException.ThrowIfNullOrEmpty(logicalName);
 
@@ -38,7 +45,7 @@ public sealed record BundledDefinition(DislSpecification Specification, Definiti
             throw new InvalidOperationException($"{logicalName} hashes to {actual}, not to the {provenance.Sha256} its provenance records; re-bundle it with src/diagrams/tools/bundle-disl.sh.");
         }
 
-        var loaded = DislLoader.Load(bytes);
+        var loaded = DislLoader.Load(bytes, plugins);
         if (loaded.Specification is null)
         {
             throw new InvalidOperationException($"{logicalName} does not load: {string.Join("; ", loaded.Errors)}");

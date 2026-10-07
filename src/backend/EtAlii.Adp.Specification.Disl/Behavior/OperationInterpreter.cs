@@ -169,6 +169,103 @@ public static class OperationInterpreter
         return new DislTransaction([new DislChange.Create(type, element.Id, attributes, null, Map(position))], after, null);
     }
 
+    /// <summary>
+    /// Runs a connect gesture of <paramref name="relationType"/> released on empty canvas (§6.10, §7.2): the
+    /// missing end - the <paramref name="newEnd"/>, <c>source</c> or <c>target</c> - created at
+    /// <paramref name="position"/> from the <c>createSource</c> or <c>createTarget</c> of the tool the edge's
+    /// <c>connect.tool</c> names, else of a toolbox tool that creates the relation type, and the relation
+    /// between it and <paramref name="existing"/>, as one transaction: a <see cref="DislChange.Create"/>, then a
+    /// <see cref="DislChange.Connect"/>.
+    /// </summary>
+    /// <remarks>
+    /// A CreateEnd's <c>initial</c> is evaluated in the <c>create</c> context (§12.3) with <c>position</c> the
+    /// release point in domain values; a bare type creates the node with no attributes. A tool that states no
+    /// such end, or <c>"ask"</c>, is refused: the runtime has no menu of targets to offer.
+    /// </remarks>
+    public static DislTransaction ConnectToNew(
+        DislSpecification specification,
+        string relationType,
+        DislDiagram diagram,
+        DislElement existing,
+        string newEnd,
+        IReadOnlyDictionary<string, object?> position,
+        IIdSource ids,
+        DislEnv? env = null)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        ArgumentNullException.ThrowIfNull(relationType);
+        ArgumentNullException.ThrowIfNull(diagram);
+        ArgumentNullException.ThrowIfNull(existing);
+        ArgumentNullException.ThrowIfNull(position);
+        ArgumentNullException.ThrowIfNull(ids);
+        if (newEnd is not ("source" or "target")) throw new ArgumentException("The new end is the source or the target.", nameof(newEnd));
+
+        if (specification.Metamodel.TypeOf(relationType) is not { IsRelation: true, Abstract: false }) return DislTransaction.Refused($"There is no relation type '{relationType}'.");
+        if (ConnectTool(specification, relationType) is not var (tool, pointer)) return DislTransaction.Refused($"No tool creates a {relationType} on empty canvas.");
+        var key = newEnd == "target" ? "createTarget" : "createSource";
+        if (!tool.TryGetProperty(key, out var end) || end.ValueKind == JsonValueKind.String && end.GetString() == "ask")
+        {
+            return DislTransaction.Refused($"A {relationType} cannot end on empty canvas.");
+        }
+
+        var type = end.ValueKind == JsonValueKind.String ? end.GetString() : DislJson.String(end, "type");
+        if (type is null || specification.Metamodel.TypeOf(type) is not { IsRelation: false, Abstract: false } created) return DislTransaction.Refused($"The {key} of {relationType} names no node type it can create.");
+
+        var variables = Variables(DislContexts.Create, diagram, env);
+        variables["position"] = Map(position);
+        variables["elementType"] = type;
+        variables["tool"] = DislJson.String(tool, "id");
+
+        var attributes = new Dictionary<string, object?>(StringComparer.Ordinal);
+        var initialAt = DislJson.Pointer(DislJson.Pointer(pointer, key), "initial");
+        foreach (var property in DislJson.Members(end, "initial"))
+        {
+            if (!created.Attributes.TryGetValue(property.Name, out var attribute)) return DislTransaction.Refused($"{type} has no attribute '{property.Name}'.");
+            var value = property.Value.ValueKind == JsonValueKind.Object
+                ? DislEvaluation.Expression(specification, property.Value, DislJson.Pointer(initialAt, property.Name), DislContexts.Create, variables)
+                : DislValues.FromJson(property.Value, attribute, specification.Metamodel);
+            if (value is Cel.CelError error) return DislTransaction.Refused(error.Message);
+            if (value is not null) attributes[property.Name] = value;
+        }
+
+        try
+        {
+            var node = diagram.AddNode(type, ids.Next(type), attributes);
+            var (source, target) = newEnd == "target" ? (existing, node) : (node, existing);
+            var relation = diagram.AddRelation(relationType, ids.Next(relationType), source, target);
+            return new DislTransaction(
+                [
+                    new DislChange.Create(type, node.Id, attributes, null, Map(position)),
+                    new DislChange.Connect(relationType, relation.Id, source.Id, target.Id, new Dictionary<string, object?>(StringComparer.Ordinal)),
+                ],
+                [],
+                null);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+        {
+            return DislTransaction.Refused(e.Message);
+        }
+    }
+
+    /// <summary>
+    /// Whether operation <paramref name="operationId"/> is for <paramref name="self"/> (null for the diagram):
+    /// its <c>for</c> names the element's type or one it inherits from, or the diagram, the selection, or nothing.
+    /// Unlike <see cref="Unavailable(DislSpecification, string, DislDiagram, DislElement?, DislEnv?)"/> it asks
+    /// nothing about the operation's state, so a host can tell an entry that is not offered here from one
+    /// that is refused now.
+    /// </summary>
+    public static bool AppliesTo(DislSpecification specification, string operationId, DislElement? self)
+    {
+        ArgumentNullException.ThrowIfNull(specification);
+        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
+            || !operations.TryGetProperty(operationId, out var operation))
+        {
+            return false;
+        }
+        var targets = DislJson.Strings(operation, "for");
+        return targets.Count == 0 || targets.Contains("diagram") || targets.Contains("selection") || self is not null && targets.Any(self.IsA);
+    }
+
     /// <summary>Why operation <paramref name="operationId"/> cannot run on <paramref name="self"/> now, or null when it can.</summary>
     public static string? Unavailable(DislSpecification specification, string operationId, DislDiagram diagram, DislElement? self, DislEnv? env = null)
     {
@@ -255,6 +352,24 @@ public static class OperationInterpreter
             }
             return null;
         }
+    }
+
+    /// <summary>
+    /// The tool a connect gesture of <paramref name="relationType"/> runs: the one its edge notation's
+    /// <c>connect.tool</c> names (§6.10), else the first library tool (<c>toolbox.tools</c>) that creates it.
+    /// </summary>
+    private static (JsonElement Tool, string Pointer)? ConnectTool(DislSpecification specification, string relationType)
+    {
+        if (!specification.Root.TryGetProperty("toolbox", out var toolbox) || !toolbox.TryGetProperty("tools", out var library) || library.ValueKind != JsonValueKind.Object) return null;
+        var named = specification.Root.TryGetProperty("notation", out var notation) && notation.TryGetProperty("edges", out var edges)
+            && edges.TryGetProperty(relationType, out var edge) && edge.TryGetProperty("connect", out var connect)
+                ? DislJson.String(connect, "tool")
+                : null;
+        foreach (var tool in library.EnumerateObject())
+        {
+            if (named is not null ? tool.Name == named : DislJson.String(tool.Value, "creates") == relationType) return (tool.Value, DislJson.Pointer("/toolbox/tools", tool.Name));
+        }
+        return null;
     }
 
     private static Cel.CelMap Map(IReadOnlyDictionary<string, object?>? values)

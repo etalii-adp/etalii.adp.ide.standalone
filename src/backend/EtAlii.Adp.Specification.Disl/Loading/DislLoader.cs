@@ -55,8 +55,16 @@ public static class DislLoader
         return Load(Encoding.UTF8.GetBytes(json));
     }
 
-    public static DislLoadResult Load(ReadOnlyMemory<byte> utf8)
+    public static DislLoadResult Load(ReadOnlyMemory<byte> utf8) => Load(utf8, DislPluginFunctions.None);
+
+    /// <summary>
+    /// Loads a specification whose plugins' CEL functions (§13.1.1) the host implements in
+    /// <paramref name="plugins"/>; a declared function it does not implement is evaluated through its
+    /// <c>fallback</c>, or is an evaluation error without one.
+    /// </summary>
+    public static DislLoadResult Load(ReadOnlyMemory<byte> utf8, DislPluginFunctions plugins)
     {
+        ArgumentNullException.ThrowIfNull(plugins);
         var diagnostics = new List<DislDiagnostic>();
 
         // Step 1: parse, rejecting a byte-order mark and duplicate keys (§2.1).
@@ -115,11 +123,12 @@ public static class DislLoader
         var metamodel = DislInheritance.Build(metamodelJson, diagnostics);
         DislNames.Resolve(root, metamodel, diagnostics);
 
-        // Step 8: the user functions in declaration order, then every expression in its context.
+        // Step 8: the plugins' functions, the user functions in declaration order, then every expression in its context.
         var functions = Functions(root, diagnostics);
         var environment = CelEnvironment.Standard();
         environment.Budget = CostLimit(root);
         DislCelLibrary.Register(environment, name => metamodel.Enums.GetValueOrDefault(name));
+        PluginFunctions.Register(environment, root, plugins, diagnostics);
         UserFunctions.Compile(environment, functions, diagnostics);
         var expressions = Compile(root, environment, diagnostics);
 

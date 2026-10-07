@@ -7,17 +7,13 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// prompt, command and undo without an implementation of its own (tech.md's "Specifying a
 /// diagram type": one implementation behind every trigger).
 /// </summary>
+/// <remarks>
+/// <b>Derived from the DISL definition</b> (<see cref="MindmapDefinition.Toolbox"/>): its toolbox
+/// group's one tool, its id and its drop from the <c>x-mindmap</c> block.
+/// </remarks>
 public sealed class MindmapToolboxProvider : IDiagramToolboxProvider
 {
     public DiagramOrigin Origin { get; } = Diagram.Mindmap.Origin;
 
-    public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
-    [
-        new ToolboxItemDefinition(
-            "mindmap.toolbox.node",
-            "Node",
-            "mdi-card-plus-outline",
-            "Drop on a node to add a child under it.",
-            MindmapContextActionProvider.AddChildActionId),
-    ];
+    public IReadOnlyList<ToolboxItemDefinition> Items => MindmapDefinition.Toolbox;
 }

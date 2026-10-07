@@ -8,12 +8,13 @@ The rules this document leans on live where they already live — [CLAUDE.md](..
 
 ## What a module is
 
-A diagram type is a folder under `src/diagrams/<diagram>/` with up to four subfolders — `backend/`, `api/`, `client/`, `examples/` — as [`src/diagrams/readme.md`](../src/diagrams/readme.md) and [`structure.md`](../.spec-workflow/steering/structure.md) define. Timeline has all four:
+A diagram type is a folder under `src/diagrams/<diagram>/` with up to four subfolders — `backend/`, `api/`, `client/`, `examples/` — as [`src/diagrams/readme.md`](../src/diagrams/readme.md) and [`structure.md`](../.spec-workflow/steering/structure.md) define, and a fifth, `definition/`, when the type bundles its DISL specification. Timeline has all five:
 
 - `backend/` — `EtAlii.Adp.Diagram.Timeline` and `EtAlii.Adp.Diagram.Timeline.Tests`, both listed in `src/backend/EtAlii.Adp.slnx`.
 - `api/` — `timeline.proto`, the type's own wire payloads.
 - `client/` — the canvas, its registration, and a small `package.json`.
 - `examples/` — documents a reader can open and click around in.
+- `definition/` — `timeline.dis`, the type's DISL specification, with `timeline.md` beside it and the `provenance.json` that names the etalii-adp/etalii.adp revision it was copied from. It is bundled by [`bundle-disl.sh`](../src/diagrams/tools/bundle-disl.sh), never edited here, and embedded in the backend project.
 
 The dependency direction is absolute: a module depends on core abstractions (`EtAlii.Adp.Backend`, `EtAlii.Adp.Diagram`, the shared contracts), and **nothing in core depends on any module**. Core compiles and runs with your module's assembly absent. Everything below is a consequence of that rule.
 
@@ -47,6 +48,8 @@ The module's identity is one static class, `Diagram`, in the backend project —
 | `IContextPropertyProvider` | `TimelineContextPropertyProvider` | To fill the property grid. |
 | `IDiagramToolboxProvider` | `TimelineToolboxProvider` | To offer palette entries. A type that registers none simply has an empty toolbox. |
 | `IDiagramValidator` | `TimelineValidator` | To report problems to the Errors and Warnings panel. A type with no rules registers nothing. |
+
+**Derived from the specification, where one is bundled.** Timeline's toolbox, context menus, property rows, findings, placement additions and removal confirmation are not written in its providers: [`TimelineDefinition.cs`](../src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/TimelineDefinition.cs) loads `definition/timeline.dis` once and derives them through `EtAlii.Adp.Specification.Disl`, mapping the specification's names onto the wire ids of its `x-timeline` block, and the providers hand them out. What the specification cannot state - what each action does to the file, the gestures, the arrangement - stays in the module's commands. Its canvas definition is still written by hand; a module whose notation the library can read compiles it from the same file instead ([the client API](diagram-module-client-api.md#compiling-it-from-the-bundled-specification)).
 
 Everything below `IDiagramSessionFactory` is optional in the mechanical sense — the app runs without it — but a type without selection, actions and properties is a picture, not an editor. Register the document store with `TryAddSingleton` (one store shared by every connection; a test that registers its own keeps it). Splitting a second `AddTimelineCommands` method out is done only when a concrete consumer needs the handlers alone — tech.md's [Registering a diagram module's services](../.spec-workflow/steering/tech.md#registering-a-diagram-modules-services) has the rule.
 
