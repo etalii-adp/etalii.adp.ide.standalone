@@ -66,7 +66,7 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
         IReadOnlyList<ContextPropertyDefinition> properties = MindmapDefinition.ElementOf(model, node.Id) is { } element
             ? MindmapDefinition.Rows(element)
             : [];
-        return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>(properties);
+        return ValueTask.FromResult(properties);
     }
 
     public async ValueTask<ContextPropertyResult> SetAsync(

@@ -1,6 +1,5 @@
 using System.Text;
 using EtAlii.Adp.Context;
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Disl;
