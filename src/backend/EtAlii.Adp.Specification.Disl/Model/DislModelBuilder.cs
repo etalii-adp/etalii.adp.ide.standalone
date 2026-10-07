@@ -225,7 +225,7 @@ public static class DislModelBuilder
                 {
                     if (Evaluate(specification, DislJson.Pointer(pointer, "id"), item) is not string written)
                     {
-                        failures.Add($"the id of an item is not a string");
+                        failures.Add("the id of an item is not a string");
                         continue;
                     }
                     id = written;
