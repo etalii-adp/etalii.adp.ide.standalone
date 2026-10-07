@@ -73,11 +73,12 @@ Not every production project has a matching test project, and that is not a gap 
 
 ## A module's folder shape
 
-A diagram type is `src/diagrams/<type>/` with up to four parts:
+A diagram type is `src/diagrams/<type>/` with up to five parts:
 
 - `backend/` — its projects, `EtAlii.Adp.Diagram.<Type>` and `.Tests`
 - `api/` — its own `.proto`, when it has wire messages of its own
 - `client/` — its canvas and registration
+- `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
 - `examples/` — documents a reader can open
 
 Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers will be too, under `src/designers` with a `Designer` project per type named the same way, once the first exists; today that folder holds only its readme. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
