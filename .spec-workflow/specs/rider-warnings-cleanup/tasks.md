@@ -45,7 +45,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 3.1, 3.2, 3.4_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer familiar with ReSharper settings layers | Task: Exclude `Broken.csproj` from inspection by a file-mask entry in the solution settings file, with its reason recorded | Restrictions: mask the full file name only, never `*.csproj` or the `Fixtures` folder; the path escape for a dot is `_002E`; do not touch the fixture; check line endings with `git ls-files --eol` | _Leverage: `src/backend/EtAlii.Adp.sln.DotSettings`, CLAUDE.md Folders and namespaces for the file's shape | _Requirements: 3.1, 3.2, 3.4 | Success: a run reports zero XML errors and every other count unchanged from the run before the entry, both runs' totals stated in the implementation log | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [-] 4. Add the inspection job in report mode, measure again, and run the planted control
+- [x] 4. Add the inspection job in report mode, measure again, and run the planted control
   - File: `.github/workflows/build.yml`
   - Add a job `inspection` beside `gates`, on pull requests into `develop` and pushes to it, on `ubuntu-latest`, repeating the checkout, .NET, Node and NuGet-cache steps, then `dotnet tool restore` and `inspect.sh --report`; leave `release` needing `gates` alone
   - Run the planted control by hand: plant one warning and one suggestion in a real file, see `inspect.sh` exit 1 naming both, remove them, see the previous result return
