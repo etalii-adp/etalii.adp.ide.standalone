@@ -14,7 +14,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
 
 ## Pull request 1 - the instrument
 
-- [ ] 1. Pin the inspector and write the script that runs it
+- [x] 1. Pin the inspector and write the script that runs it
   - Files: `.config/dotnet-tools.json`, `.github/tools/inspect/inspect.sh`
   - Add a local tool manifest naming `jetbrains.resharper.globaltools` at 2026.2.2
   - Write `inspect.sh`: resolve the SDK version from `src/global.json` and the toolset path from `dotnet --list-sdks`, build unless `--no-build` is given, run `dotnet jb inspectcode` on `src/backend/EtAlii.Adp.slnx` with `--no-build`, `--dotnetcoresdk`, `--toolset-path` and `--severity=SUGGESTION`, keep the console log beside the report, then hand both to the evaluator of task 2 and exit with its code
@@ -24,7 +24,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 4.1_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Build engineer fluent in bash and the .NET CLI | Task: Create the local tool manifest and `.github/tools/inspect/inspect.sh` exactly as the design's section The instrument describes, so that one command runs JetBrains InspectCode over the whole solution with the SDK and toolset named explicitly | Restrictions: Do not hard-code an SDK version or a Windows path; do not add a second solution file; capture the inspector's exit code before any later command; the script must run under Git Bash on Windows and bash on ubuntu-latest | _Leverage: `.github/tools/gate/gate.sh`, `src/global.json` | _Requirements: 4.1 | Success: on a clean checkout `dotnet tool restore` then `inspect.sh --report` produces a SARIF report and a console log, and the run inspects at least as many `.cs` files as git tracks under `src/` | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 2. Write the evaluator and its tests
+- [x] 2. Write the evaluator and its tests
   - Files: `.github/tools/inspect/evaluate.mjs`, `.github/tools/inspect/fixtures/*.sarif` and `*.log`, `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/InspectScript.Tests.cs`
   - Implement the five ordered checks of the design: report parses; no compiler error or unresolved symbol; inspected count not below tracked count; any Error, Warning or Suggestion result listed as `path:line  Inspection  message` grouped by inspection; otherwise clean
   - Exit 0 clean, 1 findings, 2 blind; under `--report` findings exit 0 and blind still exits 2
@@ -35,7 +35,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 4.2, 4.3, 4.4, 4.5_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Tooling developer in Node.js and xUnit | Task: Write `evaluate.mjs` and its fixtures and facts so that health is judged before findings, per the design's five numbered checks and its Testing Strategy | Restrictions: Node standard library only; the report is SARIF JSON whatever its extension; do not invent a SARIF shape, cut fixtures from a real report; do not use a blocking call inside an async test method; a fact that passes against the evaluator with its rule removed is deleted, not kept | _Leverage: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/GateScript.Tests.cs` | _Requirements: 4.2, 4.3, 4.4, 4.5 | Success: every fact passes, and each was observed failing with its rule removed, the observation recorded in the implementation log | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 3. Exclude the deliberately broken fixture
+- [x] 3. Exclude the deliberately broken fixture
   - File: `src/backend/EtAlii.Adp.sln.DotSettings`
   - Add one file-mask entry for `Broken.csproj`, keeping the file's shape: BOM, tab indentation, the closing tag on the last entry's line
   - Put the note where the repository's convention for a `.DotSettings` note allows, naming `EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests` as the test the file serves; if the format admits no comment, the note goes in the *JetBrains Rider warnings* section of tech.md as a list of what the settings file excludes and why
@@ -45,7 +45,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 3.1, 3.2, 3.4_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer familiar with ReSharper settings layers | Task: Exclude `Broken.csproj` from inspection by a file-mask entry in the solution settings file, with its reason recorded | Restrictions: mask the full file name only, never `*.csproj` or the `Fixtures` folder; the path escape for a dot is `_002E`; do not touch the fixture; check line endings with `git ls-files --eol` | _Leverage: `src/backend/EtAlii.Adp.sln.DotSettings`, CLAUDE.md Folders and namespaces for the file's shape | _Requirements: 3.1, 3.2, 3.4 | Success: a run reports zero XML errors and every other count unchanged from the run before the entry, both runs' totals stated in the implementation log | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 4. Add the inspection job in report mode, measure again, and run the planted control
+- [-] 4. Add the inspection job in report mode, measure again, and run the planted control
   - File: `.github/workflows/build.yml`
   - Add a job `inspection` beside `gates`, on pull requests into `develop` and pushes to it, on `ubuntu-latest`, repeating the checkout, .NET, Node and NuGet-cache steps, then `dotnet tool restore` and `inspect.sh --report`; leave `release` needing `gates` alone
   - Run the planted control by hand: plant one warning and one suggestion in a real file, see `inspect.sh` exit 1 naming both, remove them, see the previous result return

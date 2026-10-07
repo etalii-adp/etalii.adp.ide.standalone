@@ -177,7 +177,7 @@ internal static class DependencyGraphDefinition
     {
         if (!transaction.WasApplied) return (null, transaction.Refusal!);
         if (transaction.Changes is not [DislChange.Create { Type: "Node" } created, DislChange.Connect { Type: "DependsOn" } relation]
-            || (newElementIsSource ? (relation.SourceId, relation.TargetId) : (relation.TargetId, relation.SourceId)) != (created.Id, existing.Id)
+            || (newElementIsSource ? relation.SourceId : relation.TargetId, newElementIsSource ? relation.TargetId : relation.SourceId) != (created.Id, existing.Id)
             || created.Attributes.GetValueOrDefault("label") is not string label
             || created.Attributes.GetValueOrDefault("x") is not double x
             || created.Attributes.GetValueOrDefault("row") is not long row)

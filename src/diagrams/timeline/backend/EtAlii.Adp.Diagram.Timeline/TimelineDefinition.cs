@@ -224,7 +224,7 @@ internal static class TimelineDefinition
     {
         if (!transaction.WasApplied) return (null, transaction.Refusal!);
         if (transaction.Changes is not [DislChange.Create { Type: "Period" or "Moment" } created, DislChange.Connect { Type: "Connection" } relation]
-            || (newElementIsSource ? (relation.SourceId, relation.TargetId) : (relation.TargetId, relation.SourceId)) != (created.Id, existingId))
+            || (newElementIsSource ? relation.SourceId : relation.TargetId, newElementIsSource ? relation.TargetId : relation.SourceId) != (created.Id, existingId))
         {
             return (null, $"The definition's {what} does not add one element related to this one.");
         }
