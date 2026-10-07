@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/rider-warnings-cleanup/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-06T23:12:12.500Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791328331539_lo1ltj8nk",
+      "approvalTitle": "rider-warnings-cleanup requirements: clear 89 warnings and 799 suggestions, then fail pull requests on new ones"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-06T23:23:17.190Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791328331539_lo1ltj8nk",
+      "approvalTitle": "rider-warnings-cleanup requirements: clear 89 warnings and 799 suggestions, then fail pull requests on new ones"
+    }
+  ]
+}
