@@ -83,6 +83,50 @@ jobs:
         working-directory: src/client
         run: npm run typecheck
 
+  # JetBrains InspectCode, the engine Rider runs, over the whole solution (rider-warnings-cleanup).
+  # A job of its own rather than a fifth step in `gates`, so a red run names which of the two
+  # failed and the four local gates stay four; it is not a local gate, and `release` does not wait
+  # for it. The script judges the run's health before its findings: a run that could not see the
+  # code exits 2 and fails this job in every mode.
+  #
+  # REPORT MODE, for now: `--report` lists every finding with its count per inspection and exits 0
+  # on findings, so the job exists - and shows whether this Linux runner reports what Windows does -
+  # before the tree is clean. It is not continue-on-error: a job allowed to fail is a job nobody
+  # reads. The specification's last pull request drops `--report`, once develop reports nothing.
+  inspection:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # fetch-depth: 0 for the same reason as in `gates`: Nerdbank.GitVersioning fails the build
+      # on a shallow clone.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/global.json
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/Directory.Packages.props', 'src/global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # The inspector's version is the one .config/dotnet-tools.json pins.
+      - name: Restore the inspector
+        run: dotnet tool restore
+
+      - name: Inspect
+        run: bash .github/tools/inspect/inspect.sh --report
+
   # Flags a retired use of the ADP vocabulary (etalii.adp spec 002, FR-017). The runner and its list of retired
   # patterns and allowances live in etalii.adp and are read from its develop branch, so every repository is checked
   # against the same list.

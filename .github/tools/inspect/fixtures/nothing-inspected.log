@@ -1,0 +1,7 @@
+JetBrains Inspect Code 2026.2.2
+Running on x64 OS in x64 architecture, .NET 10.0.12 under Ubuntu 24.04.5 LTS
+Using toolset version 18.0 from /usr/lib/dotnet/sdk/10.0.112
+Configuration: Debug, Platform: Any CPU
+Inspecting EtAlii.Adp.Authentication.Tests.csproj
+Inspecting EtAlii.Adp.Authentication.csproj
+Inspection report was written to /tmp/rw-report.sarif
