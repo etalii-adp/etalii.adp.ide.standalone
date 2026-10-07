@@ -183,7 +183,7 @@ public sealed class GhgCommandsTests : IDisposable
             TestContext.Current.CancellationToken);
 
         Assert.True(opposite.IsSuccess, opposite.Error);
-        Assert.Contains(Parse().Influences, influence => influence.From == "railways" && influence.To == "steam-engine");
+        Assert.Contains(Parse().Influences, influence => influence is { From: "railways", To: "steam-engine" });
         Assert.Empty(GhgValidator.Validate(GhgBody.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken))));
     }
 
@@ -232,7 +232,7 @@ public sealed class GhgCommandsTests : IDisposable
         using var historyStacks = new HistoryStackStore(_dispatcher);
         await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(_folder));
         var ephemeral = new GhgElementMapper().Visible(Parse(), DiagramViewport.Unbounded)
-            .Single(element => element.Type == GhgElementMapper.TrendType && element.Id is not "a" and not "b");
+            .Single(element => element is { Type: GhgElementMapper.TrendType, Id: not "a" and not "b" });
 
         var error = await session.MoveElementToAsync(ephemeral.Id, GhgScale.XOf(M(1960)), GhgScale.TopOf(4), TestContext.Current.CancellationToken);
 

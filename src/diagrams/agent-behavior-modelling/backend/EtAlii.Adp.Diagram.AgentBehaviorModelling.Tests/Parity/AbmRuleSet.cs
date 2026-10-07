@@ -62,7 +62,7 @@ internal static class AbmRuleSet
                     break;
             }
 
-            if (node.Kind == AbmNodeKinds.Retry && node.RetryCount < 1)
+            if (node is { Kind: AbmNodeKinds.Retry, RetryCount: < 1 })
             {
                 breaches.Add(new AbmBreach(AbmRuleIds.NoAttempts, "A Retry that allows no attempt never runs its child.", node.Line, IsError: true));
             }

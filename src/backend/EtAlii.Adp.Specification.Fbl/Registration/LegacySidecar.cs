@@ -145,7 +145,7 @@ public sealed class LegacySidecar : SplicedFile
         {
             foreach (var entry in _reading.Entries.OfType<TreeEntry>())
             {
-                if (entry.Parent is TreeEntry { IsRoot: false } parent && entry.LineSpan is not null && parent.LineSpan is not null && entry.Indent > parent.Indent)
+                if (entry.Parent is TreeEntry { IsRoot: false, LineSpan: not null } parent && entry.LineSpan is not null && entry.Indent > parent.Indent)
                 {
                     return entry.Indent - parent.Indent;
                 }

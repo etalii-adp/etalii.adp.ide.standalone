@@ -98,7 +98,7 @@ public static class FdgRuleSet
                     element.Range.Start);
             }
 
-            if (element.IsComment && element.DrawnHeight < FdgGeometry.MinimumCommentHeight)
+            if (element is { IsComment: true, DrawnHeight: < FdgGeometry.MinimumCommentHeight })
             {
                 yield return new FdgBreach(
                     FdgRuleIds.UnreadableEntry,

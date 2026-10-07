@@ -51,7 +51,7 @@ public class C4LayoutTests
 
         // Assert.
         Assert.Equal(3, layout.Boxes.Count);
-        Assert.All(layout.Boxes.Values, box => Assert.True(box.Width > 0 && box.Height > 0));
+        Assert.All(layout.Boxes.Values, box => Assert.True(box is { Width: > 0, Height: > 0 }));
     }
 
     [Fact]

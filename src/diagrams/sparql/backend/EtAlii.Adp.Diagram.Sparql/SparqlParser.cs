@@ -1083,7 +1083,7 @@ public static class SparqlParser
             }
 
             var projection = model.Projection;
-            if (model.ProjectsAll && model.Form == SparqlQueryForm.Select)
+            if (model is { ProjectsAll: true, Form: SparqlQueryForm.Select })
             {
                 projection = usages.Keys.OrderBy(name => usages[name].FirstSeen).Select(name => new SparqlProjectionItem(name, "")).ToList();
             }

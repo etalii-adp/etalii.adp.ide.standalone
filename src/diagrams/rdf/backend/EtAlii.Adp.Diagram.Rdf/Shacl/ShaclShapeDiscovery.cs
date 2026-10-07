@@ -165,9 +165,7 @@ public static class ShaclShapeDiscovery
             grew = false;
             foreach (var triple in model.Triples)
             {
-                if (triple.Predicate.Iri == ShaclVocabulary.RdfsSubClassOf
-                    && triple.Subject is IriTerm subject
-                    && triple.Object is IriTerm parent
+                if (triple is { Predicate.Iri: ShaclVocabulary.RdfsSubClassOf, Subject: IriTerm subject, Object: IriTerm parent }
                     && classIris.Contains(parent.Iri)
                     && classIris.Add(subject.Iri))
                 {

@@ -72,5 +72,5 @@ public static class CelLists
     private static long Squared(object? list) => list is IReadOnlyList<object?> l ? 1 + ((long)l.Count * l.Count) : 1;
 
     private static long Logarithmic(IReadOnlyList<object?> arguments) =>
-        arguments[0] is IReadOnlyList<object?> l && l.Count > 1 ? 1 + (long)(l.Count * Math.Log2(l.Count)) : 1;
+        arguments[0] is IReadOnlyList<object?> { Count: > 1 } l ? 1 + (long)(l.Count * Math.Log2(l.Count)) : 1;
 }

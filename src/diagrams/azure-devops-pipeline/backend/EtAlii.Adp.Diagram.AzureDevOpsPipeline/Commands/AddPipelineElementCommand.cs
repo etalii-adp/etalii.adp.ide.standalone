@@ -69,7 +69,7 @@ internal sealed class AddPipelineElementCommandHandler(IPipelineDocumentStore do
     /// </remarks>
     private static PipelineAddOutcome AddStage(PipelineDocumentEntry entry, AddPipelineElementCommand command)
     {
-        var declared = entry.Model.Stages.Where(stage => !stage.IsImplicit && !stage.IsFromTemplate).ToList();
+        var declared = entry.Model.Stages.Where(stage => stage is { IsImplicit: false, IsFromTemplate: false }).ToList();
         if (declared.Count == 0)
         {
             return PipelineAddOutcome.Failed(

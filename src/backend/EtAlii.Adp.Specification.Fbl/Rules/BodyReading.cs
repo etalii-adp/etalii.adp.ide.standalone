@@ -345,7 +345,7 @@ internal sealed class BodyReading
             {
                 value = words.Select(w => (object?)w.Text).ToList();
             }
-            if (!read.Present && !binding.Flag && binding.Default is { } fallback) value = FromJson(fallback);
+            if (!read.Present && binding is { Flag: false, Default: { } fallback }) value = FromJson(fallback);
             if (read.Present || binding.Flag || binding.Default is not null) element.Attributes[name] = value;
         }
         if (rule.Source is { } source) element.SourceRead = ReadSlot(element.Candidate, source, element);

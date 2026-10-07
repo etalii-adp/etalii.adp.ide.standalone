@@ -28,9 +28,9 @@ public class AnsibleGraphTests
         // Assert.
         // webservers.yml and dbservers.yml each have one play, so the edges run from the
         // playbook: a single-play file drawn as two boxes would say the same thing twice.
-        Assert.Contains(uses, e => e.SourceId == "playbook:webservers.yml" && e.TargetId == "role:common");
-        Assert.Contains(uses, e => e.SourceId == "playbook:webservers.yml" && e.TargetId == "role:nginx");
-        Assert.Contains(uses, e => e.SourceId == "playbook:dbservers.yml" && e.TargetId == "role:postgres");
+        Assert.Contains(uses, e => e is { SourceId: "playbook:webservers.yml", TargetId: "role:common" });
+        Assert.Contains(uses, e => e is { SourceId: "playbook:webservers.yml", TargetId: "role:nginx" });
+        Assert.Contains(uses, e => e is { SourceId: "playbook:dbservers.yml", TargetId: "role:postgres" });
         Assert.All(uses, e => Assert.Equal(AnsibleTargetResolution.Resolved, e.Resolution));
     }
 
@@ -82,8 +82,8 @@ public class AnsibleGraphTests
         // Assert.
         // Both environments define web and db, so both plays reach both inventories.
         Assert.Equal(4, targets.Length);
-        Assert.Contains(targets, e => e.SourceId == "playbook:webservers.yml" && e.TargetId == "inventory:inventories/production");
-        Assert.Contains(targets, e => e.SourceId == "playbook:webservers.yml" && e.TargetId == "inventory:inventories/staging");
+        Assert.Contains(targets, e => e is { SourceId: "playbook:webservers.yml", TargetId: "inventory:inventories/production" });
+        Assert.Contains(targets, e => e is { SourceId: "playbook:webservers.yml", TargetId: "inventory:inventories/staging" });
         // The edge is labelled with the pattern as written (Requirement 5.6).
         Assert.All(
             targets.Where(e => e.SourceId == "playbook:webservers.yml"),

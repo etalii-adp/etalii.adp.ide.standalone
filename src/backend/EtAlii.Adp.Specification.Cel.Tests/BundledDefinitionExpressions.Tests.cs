@@ -134,8 +134,8 @@ public class BundledDefinitionExpressionsTests
                 foreach (var property in element.EnumerateObject())
                 {
                     if (property.Name.StartsWith("x-", StringComparison.Ordinal) || property.Name == "doc") continue;
-                    if (property.Name == "as" && property.Value.ValueKind == JsonValueKind.String) yield return property.Value.GetString()!;
-                    if (property.Name == "let" && property.Value.ValueKind == JsonValueKind.Object)
+                    if (property is { Name: "as", Value.ValueKind: JsonValueKind.String }) yield return property.Value.GetString()!;
+                    if (property is { Name: "let", Value.ValueKind: JsonValueKind.Object })
                     {
                         foreach (var bound in property.Value.EnumerateObject()) yield return bound.Name;
                     }

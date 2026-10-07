@@ -237,7 +237,7 @@ public class ShaclSessionTests : IDisposable
         var model = store.GetOrLoad(body).Model;
         Assert.Equal(2, ShaclProjection.Project(model).Cards.Count);
         Assert.Contains(model.Triples, triple =>
-            triple.Subject is IriTerm subject && subject.Iri == "http://example.org/AddressShape");
+            triple.Subject is IriTerm { Iri: "http://example.org/AddressShape" });
 
         Assert.True((await history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
         Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));

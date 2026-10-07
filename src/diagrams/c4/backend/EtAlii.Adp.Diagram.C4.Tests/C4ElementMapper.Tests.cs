@@ -192,7 +192,7 @@ public class C4ElementMapperTests
         Assert.Equal("Reads from and writes to", payload.Description);
         Assert.Equal("SQL/TCP", payload.Technology);
         // Both ends carry their measured boxes, so the canvas anchors the line on real edges.
-        Assert.True(payload.SourceWidth > 0 && payload.DestinationWidth > 0);
+        Assert.True(payload is { SourceWidth: > 0, DestinationWidth: > 0 });
     }
 
     [Fact]

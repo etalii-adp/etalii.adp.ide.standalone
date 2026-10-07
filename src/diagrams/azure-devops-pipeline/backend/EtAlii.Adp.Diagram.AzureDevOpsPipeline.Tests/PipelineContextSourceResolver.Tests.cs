@@ -411,7 +411,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         var edges = DrawnEdges(path);
         Assert.Contains(edges, edge => edge.IsImplicit);
         Assert.Contains(edges, edge => edge.IsBroken);
-        Assert.Contains(edges, edge => !edge.IsImplicit && !edge.IsBroken && edge.ToId == "Deploy");
+        Assert.Contains(edges, edge => edge is { IsImplicit: false, IsBroken: false, ToId: "Deploy" });
         Assert.Contains(edges, edge => edge.ToId == "Build/Pack");
 
         // Act & assert.
@@ -464,7 +464,7 @@ public class PipelineContextSourceResolverTests : IDisposable
     {
         // Arrange: Track shares Find, so an arrow is followed the way an element is (3.3).
         var path = Write("azure-pipelines", Arrows);
-        var edge = DrawnEdges(path).Single(candidate => candidate.FromId == "Test" && candidate.ToId == "Deploy");
+        var edge = DrawnEdges(path).Single(candidate => candidate is { FromId: "Test", ToId: "Deploy" });
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, PipelineElementMapper.EdgeId(edge))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, updated => reported.Add(updated));

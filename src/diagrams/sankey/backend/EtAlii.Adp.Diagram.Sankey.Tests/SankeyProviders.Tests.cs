@@ -166,7 +166,7 @@ public sealed class SankeyProvidersTests : IDisposable
         Assert.IsType<ContextExecutionCompleted>(connected);
         var model = Parse();
         Assert.Equal(3, model.Nodes.Single(node => node.Name == "New node").Column);
-        Assert.Contains(model.Flows, flow => flow.From == "a" && flow.To == "x");
+        Assert.Contains(model.Flows, flow => flow is { From: "a", To: "x" });
     }
 
     [Fact]

@@ -171,7 +171,7 @@ internal static class HandWrittenGhg
             return
             [
                 new(GhgContextPropertyProvider.TextProperty, "Text", note.Text, ContextPropertyEditor.Text, readOnly, identityGroup),
-                new(GhgContextPropertyProvider.SizeProperty, "Size", note.Width is { } width && note.Height is { } height ? SetGhgNoteSizeCommand.Format(width, height) : "", ReadOnlyReason: readOnly, Group: identityGroup),
+                new(GhgContextPropertyProvider.SizeProperty, "Size", note is { Width: { } width, Height: { } height } ? SetGhgNoteSizeCommand.Format(width, height) : "", ReadOnlyReason: readOnly, Group: identityGroup),
             ];
         }
 

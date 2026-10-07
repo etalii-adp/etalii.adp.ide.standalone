@@ -234,8 +234,8 @@ internal static partial class MindmapTranscript
 
         MindmapDocument? Document() => session.TryDocument();
         MindmapNode? Root() => Document()?.Root;
-        MindmapNode? Leaf() => Document()?.Nodes.FirstOrDefault(node => !node.IsRoot && !node.HasChildren);
-        MindmapNode? Branch() => Document()?.Nodes.FirstOrDefault(node => !node.IsRoot && node.HasChildren);
+        MindmapNode? Leaf() => Document()?.Nodes.FirstOrDefault(node => node is { IsRoot: false, HasChildren: false });
+        MindmapNode? Branch() => Document()?.Nodes.FirstOrDefault(node => node is { IsRoot: false, HasChildren: true });
 
         if (Root() is { } root)
         {

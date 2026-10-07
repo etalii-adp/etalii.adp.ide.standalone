@@ -132,7 +132,7 @@ public class C4ParserTests
         var workspace = ParseFixture("deployment-nested.dsl");
 
         // Act and assert, step by step.
-        var instances = workspace.Elements.Where(e => e.Kind == C4ElementKind.ContainerInstance && e.ReferencedId == "db").ToArray();
+        var instances = workspace.Elements.Where(e => e is { Kind: C4ElementKind.ContainerInstance, ReferencedId: "db" }).ToArray();
         Assert.Equal(2, instances.Length);
         Assert.Equal(["primary", "replica"], instances.Select(i => i.ParentId).Order());
     }
@@ -146,7 +146,7 @@ public class C4ParserTests
         var workspace = ParseFixture("comments-everywhere.dsl");
 
         // Act and assert, step by step.
-        var relationship = workspace.Relationships.Single(r => r.SourceId == "web" && r.DestinationId == "db");
+        var relationship = workspace.Relationships.Single(r => r is { SourceId: "web", DestinationId: "db" });
         Assert.Equal("Reads from and writes to", relationship.Description);
         Assert.Equal("SQL/TCP", relationship.Technology);
     }

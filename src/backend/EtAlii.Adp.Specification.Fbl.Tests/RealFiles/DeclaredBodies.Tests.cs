@@ -166,7 +166,7 @@ public class DeclaredBodiesTests
     /// </summary>
     internal static (ReadElement Element, string Attribute, string Value)? FirstWritable(BodyReading reading)
     {
-        foreach (var element in reading.Elements.Where(e => !e.IsRelation && e.Rule.ReadOnly is null))
+        foreach (var element in reading.Elements.Where(e => e is { IsRelation: false, Rule.ReadOnly: null }))
         {
             foreach ((string name, AttributeBinding binding) in element.Rule.Attributes)
             {

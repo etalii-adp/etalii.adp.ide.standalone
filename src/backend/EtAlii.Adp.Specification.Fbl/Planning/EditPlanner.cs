@@ -93,7 +93,7 @@ internal static class EditPlanner
                 Planning.Plan.Refuse(read.Reason is { Length: > 0 } reason ? reason : $"The {attribute} of a {element.Rule.Type} cannot be changed in this file.");
             }
             var empty = NewText.IsEmpty(value) || (binding.Flag && value is false);
-            if (empty && !binding.Flag && binding.Empty == "refuse") Planning.Plan.Refuse($"The {attribute} of a {element.Rule.Type} cannot be empty.");
+            if (empty && binding is { Flag: false, Empty: "refuse" }) Planning.Plan.Refuse($"The {attribute} of a {element.Rule.Type} cannot be empty.");
             if (!read.Present && !empty && !binding.Flag && binding.Absent.TryGetValue(reading.Family.FamilyName, out var absent) && absent == "refuse")
             {
                 Planning.Plan.Refuse($"The {reading.Binding.Name} file has no \"{SlotName(binding)}\" to rewrite.");

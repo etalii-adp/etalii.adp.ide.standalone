@@ -283,7 +283,7 @@ public static class DislModelBuilder
     }
 
     private static bool Allows(DislRelationEnd? end, object? value) =>
-        value is DislElement element && !element.Type.IsRelation
+        value is DislElement { Type.IsRelation: false } element
         && (end is null || end.Types.Count == 0 || end.Types.Any(element.IsA))
         && (end is null || !end.Exclude.Any(element.IsA));
 

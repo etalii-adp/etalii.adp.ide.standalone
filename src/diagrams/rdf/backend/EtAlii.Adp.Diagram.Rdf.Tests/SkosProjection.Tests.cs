@@ -151,7 +151,7 @@ public class SkosProjectionTests
         // Assert: one node, two hierarchy edges - and the XL triple is a fact for validation,
         // not a label for the chooser.
         Assert.Single(projection.Concepts, concept => concept.Iri == "http://example.org/c");
-        Assert.Equal(2, projection.Edges.Count(edge => edge.Kind == SkosEdgeKind.Hierarchy && edge.ToId == "res:http://example.org/c"));
+        Assert.Equal(2, projection.Edges.Count(edge => edge is { Kind: SkosEdgeKind.Hierarchy, ToId: "res:http://example.org/c" }));
         Assert.True(SkosProjection.HasXlLabels(model));
         var c = Assert.Single(projection.Concepts, concept => concept.Iri == "http://example.org/c");
         Assert.Empty(c.Labels);

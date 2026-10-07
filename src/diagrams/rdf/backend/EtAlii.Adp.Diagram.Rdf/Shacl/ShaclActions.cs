@@ -142,7 +142,7 @@ public static class ShaclActions
         // The writer refuses this independently; the gate refuses it here without asking the
         // writer, so neither layer relies on the other (Requirement 3.3).
         var decision = ShaclEditGate.For(entry.Model, target.ElementId, RdfSelection.IsTruncated(entry));
-        if (decision.Applies && !decision.Available)
+        if (decision is { Applies: true, Available: false })
         {
             return new ContextExecutionFailed(decision.Reason);
         }

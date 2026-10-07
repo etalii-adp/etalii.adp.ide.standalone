@@ -74,8 +74,7 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
         var supers = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var triple in model.Triples)
         {
-            if (triple.Predicate.Iri == OwlVocabulary.SubClassOf
-                && triple.Subject is IriTerm child && triple.Object is IriTerm parent)
+            if (triple is { Predicate.Iri: OwlVocabulary.SubClassOf, Subject: IriTerm child, Object: IriTerm parent })
             {
                 Adjacency(child.Iri).Add(parent.Iri);
                 _ = Adjacency(parent.Iri);

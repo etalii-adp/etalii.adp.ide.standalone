@@ -267,7 +267,7 @@ internal static class TimelineDefinition
         entry.Available,
         // Arrange carries its sentence even while it is available, as the hand-written menu did; the
         // client shows a reason only for an unavailable action.
-        entry.Available && entry.Operation == "arrange" ? LoadedArrangeReason.Value : entry.UnavailableReason);
+        entry is { Available: true, Operation: "arrange" } ? LoadedArrangeReason.Value : entry.UnavailableReason);
 
     private static string? Text(IReadOnlyDictionary<string, object?> attributes, string name) =>
         attributes.TryGetValue(name, out var value) ? value as string ?? Convert.ToString(value, CultureInfo.InvariantCulture) : null;

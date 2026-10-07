@@ -78,7 +78,7 @@ public class RdfWriterTests
         // Arrange.
         (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = model.Triples.Single(t =>
-            t.Subject is IriTerm { Iri: "http://example.org/alice" } && t.Object is LiteralTerm { Lexical: "Alice" });
+            t is { Subject: IriTerm { Iri: "http://example.org/alice" }, Object: LiteralTerm { Lexical: "Alice" } });
 
         // Act.
         var refusal = RdfWriter.RemoveTriple(document, model, triple);
@@ -100,7 +100,7 @@ public class RdfWriterTests
         // Arrange.
         (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = model.Triples.Single(t =>
-            t.Subject is IriTerm { Iri: "http://example.org/bob" } && t.Object is LiteralTerm { Lexical: "Bob" });
+            t is { Subject: IriTerm { Iri: "http://example.org/bob" }, Object: LiteralTerm { Lexical: "Bob" } });
 
         // Act.
         var refusal = RdfWriter.RemoveTriple(document, model, triple);
@@ -177,7 +177,7 @@ public class RdfWriterTests
         // Arrange.
         (LineDocument document, RdfModel model) = Load(Corpus);
         var triple = model.Triples.Single(t =>
-            t.Subject is IriTerm { Iri: "http://example.org/alice" } && t.Object is LiteralTerm);
+            t is { Subject: IriTerm { Iri: "http://example.org/alice" }, Object: LiteralTerm });
 
         // Act.
         var refusal = RdfWriter.ReplaceObjectLiteral(document, model, triple, "Alicia", "en", null);

@@ -106,8 +106,7 @@ internal static class OwlSelection
         var declared = entry.Model.Triples.Any(t =>
             t.Subject is IriTerm s && s.Iri == candidate
             && t.Predicate.Iri == RdfVocabulary.Type
-            && t.Object is IriTerm { } type
-            && type.Iri is OwlVocabulary.ObjectProperty or OwlVocabulary.DatatypeProperty);
+            && t.Object is IriTerm { Iri: OwlVocabulary.ObjectProperty or OwlVocabulary.DatatypeProperty });
         return declared ? candidate : null;
     }
 

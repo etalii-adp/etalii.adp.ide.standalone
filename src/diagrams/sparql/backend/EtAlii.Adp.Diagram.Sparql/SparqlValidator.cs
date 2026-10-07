@@ -72,7 +72,7 @@ public sealed class SparqlValidator(DiagramOrigin origin) : IDiagramValidator
                 continue;
             }
 
-            if (usage.PatternOccurrences == 0 && usage.DefiningExpression.Length == 0)
+            if (usage is { PatternOccurrences: 0, DefiningExpression.Length: 0 })
             {
                 problems.Add(new DiagramProblem(
                     DiagramProblemSeverity.Warning,

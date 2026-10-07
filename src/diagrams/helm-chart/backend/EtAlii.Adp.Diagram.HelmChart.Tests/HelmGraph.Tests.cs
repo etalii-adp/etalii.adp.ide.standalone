@@ -24,8 +24,8 @@ public class HelmGraphTests
         var declares = graph.Edges.Where(edge => edge.Kind == HelmEdgeKind.Declares).ToArray();
         Assert.Equal(2, declares.Length);
         Assert.All(declares, edge => Assert.Equal("chart", edge.SourceId));
-        Assert.Contains(declares, edge => edge.TargetId == "dep:cache" && edge.Label == ">=17.0.0");
-        Assert.Contains(declares, edge => edge.TargetId == "dep:postgres" && edge.Label == "12.1.0");
+        Assert.Contains(declares, edge => edge is { TargetId: "dep:cache", Label: ">=17.0.0" });
+        Assert.Contains(declares, edge => edge is { TargetId: "dep:postgres", Label: "12.1.0" });
     }
 
     [Fact]
@@ -38,8 +38,8 @@ public class HelmGraphTests
         // redis is vendored (matched via the chart name even though the alias is "cache");
         // postgres is Unvendored - drawn as a marked open end, not a finding.
         var resolves = graph.Edges.Where(edge => edge.Kind == HelmEdgeKind.Resolves).ToArray();
-        Assert.Contains(resolves, edge => edge.SourceId == "dep:cache" && edge.TargetId == "sub:charts/redis" && !edge.OpenEnd);
-        Assert.Contains(resolves, edge => edge.SourceId == "dep:postgres" && edge.TargetId.Length == 0 && edge.OpenEnd);
+        Assert.Contains(resolves, edge => edge is { SourceId: "dep:cache", TargetId: "sub:charts/redis", OpenEnd: false });
+        Assert.Contains(resolves, edge => edge is { SourceId: "dep:postgres", TargetId.Length: 0, OpenEnd: true });
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class HelmGraphTests
 
         // Assert.
         var includes = graph.Edges
-            .Where(edge => edge.Kind == HelmEdgeKind.Includes && edge.SourceId == "tpl:templates/deployment.yaml")
+            .Where(edge => edge is { Kind: HelmEdgeKind.Includes, SourceId: "tpl:templates/deployment.yaml" })
             .ToArray();
         Assert.Equal(2, includes.Length);
         Assert.All(includes, edge =>

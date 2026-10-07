@@ -53,7 +53,7 @@ public class AbmDislModelTests
         var actual = diagram.Relations.Select(relation =>
             $"{relation.Id} {relation.Source?.Id} -> {relation.Target?.Id} from {string.Join(",", relation.Sources.Select(source => source.Id))}");
         Assert.Equal(expected, actual);
-        Assert.All(diagram.Relations, relation => Assert.True(relation.IsDerived && relation.Type.Name == "Child" && !relation.IdIsStored));
+        Assert.All(diagram.Relations, relation => Assert.True(relation is { IsDerived: true, Type.Name: "Child", IdIsStored: false }));
     }
 
     /// <summary>An id read from storage that differs from the computed one gives way to it (DISL §11.5.2).</summary>

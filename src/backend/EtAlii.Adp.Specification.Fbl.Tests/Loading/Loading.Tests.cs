@@ -48,7 +48,7 @@ public class LoadingTests
         var problems = Load(Binding(), version);
 
         // Assert.
-        Assert.Contains(problems, p => p.Severity == ProblemSeverity.Error && p.Pointer == "/fbl");
+        Assert.Contains(problems, p => p is { Severity: ProblemSeverity.Error, Pointer: "/fbl" });
     }
 
     [Fact]

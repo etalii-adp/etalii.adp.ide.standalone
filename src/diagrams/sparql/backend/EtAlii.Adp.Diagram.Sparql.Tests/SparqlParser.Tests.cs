@@ -57,12 +57,12 @@ public class SparqlParserTests
         Assert.Same(labeled[0].Subject, labeled[1].Subject);
 
         // The anonymous property list stated its triple and became a subject itself.
-        Assert.Contains(model.Where.Patterns, p => p.Subject is AnonymousTerm { Label: "" } && p.Predicate is IriTerm { Iri: "http://example.org/leader" });
-        Assert.Contains(model.Where.Patterns, p => p.Subject is AnonymousTerm { Label: "" } && p.Predicate is IriTerm { Iri: "http://example.org/size" });
+        Assert.Contains(model.Where.Patterns, p => p is { Subject: AnonymousTerm { Label: "" }, Predicate: IriTerm { Iri: "http://example.org/leader" } });
+        Assert.Contains(model.Where.Patterns, p => p is { Subject: AnonymousTerm { Label: "" }, Predicate: IriTerm { Iri: "http://example.org/size" } });
 
         // The collection expanded to its cons cells, ending at nil.
         Assert.Contains(model.Where.Patterns, p => p.Predicate is IriTerm { Iri: SparqlVocabulary.First });
-        Assert.Contains(model.Where.Patterns, p => p.Predicate is IriTerm { Iri: SparqlVocabulary.Rest } && p.Object is IriTerm { Iri: SparqlVocabulary.Nil });
+        Assert.Contains(model.Where.Patterns, p => p is { Predicate: IriTerm { Iri: SparqlVocabulary.Rest }, Object: IriTerm { Iri: SparqlVocabulary.Nil } });
 
         // The solution modifiers arrived as written rows, in order - frame, never structure.
         Assert.Equal(

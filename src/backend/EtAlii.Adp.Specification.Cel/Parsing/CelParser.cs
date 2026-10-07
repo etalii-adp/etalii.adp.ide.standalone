@@ -149,7 +149,7 @@ internal sealed class CelParser(string source, CelEnvironment environment)
         }
         if (arguments.Count < function.MinArguments || arguments.Count > function.MaxArguments)
         {
-            throw new CelException($"The function '{name}' takes {function.Arity} argument{(function.MinArguments == 1 && function.MaxArguments is 1 or CelFunction.Variadic ? "" : "s")}, not {arguments.Count}, in '{source}'.");
+            throw new CelException($"The function '{name}' takes {function.Arity} argument{(function is { MinArguments: 1, MaxArguments: 1 or CelFunction.Variadic } ? "" : "s")}, not {arguments.Count}, in '{source}'.");
         }
         return new CelNode.Call(function, receiver, arguments);
     }

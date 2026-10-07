@@ -64,7 +64,7 @@ internal sealed class RestoreC4ElementPositionCommandHandler(IC4DocumentStore do
             ? new MoveC4ElementCommand(command.BodyPath, command.ViewKey, command.ElementId, was.X, was.Y)
             : null;
 
-        var warning = command.X is { } x && command.Y is { } y
+        var warning = command is { X: { } x, Y: { } y }
             ? sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(x, y))
             : sidecar.Remove(command.BodyPath, command.ViewKey, command.ElementId);
 

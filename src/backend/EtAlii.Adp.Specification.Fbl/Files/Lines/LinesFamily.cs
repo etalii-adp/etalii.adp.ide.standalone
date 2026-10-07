@@ -425,7 +425,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
                 if (read.Present) pending.Add((SpliceOperation.RemoveKey, Removable(read), ""));
                 continue;
             }
-            if (read.Present && read.Span is { } span)
+            if (read is { Present: true, Span: { } span })
             {
                 var text = Format(read, binding, change.Value);
                 if (text != Text.Text(span)) pending.Add((SpliceOperation.ReplaceValue, span, text));

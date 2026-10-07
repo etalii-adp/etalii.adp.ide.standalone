@@ -147,7 +147,7 @@ public sealed class C4ElementMapper
             return workspace.Name.Length > 0 ? $"System Landscape diagram for {workspace.Name}" : "System Landscape diagram";
         }
 
-        if (view.Kind == C4ViewKind.Deployment && view.Environment is { Length: > 0 } environment)
+        if (view is { Kind: C4ViewKind.Deployment, Environment: { Length: > 0 } environment })
         {
             return scope is { Length: > 0 } ? $"Deployment diagram for {scope} - {environment}" : $"Deployment diagram - {environment}";
         }

@@ -188,7 +188,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         {
             var read = change.Read;
             var member = read.Node as TreeEntry;
-            if (change.IsEmpty && change.Binding.Empty == "remove")
+            if (change is { IsEmpty: true, Binding.Empty: "remove" })
             {
                 if (member is not null) plan.Add(SpliceOperation.RemoveKey, member.LineSpan ?? member.Own, "");
                 continue;
@@ -322,7 +322,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             plan.Add(SpliceOperation.InsertEntry, offset, offset, NewLine(offset, Item(keys, dash, dash + 2)));
             return;
         }
-        if (value.Style == ValueStyle.FlowSequence && value.Flow is List<object?> { Count: 0 } && container.KeySpan is { } keySpan)
+        if (value is { Style: ValueStyle.FlowSequence, Flow: List<object?> { Count: 0 } } && container.KeySpan is { } keySpan)
         {
             // An empty flow sequence ("elements: []", the template's) becomes a block sequence: the
             // flow value goes and the item follows on its own line.

@@ -112,7 +112,7 @@ public abstract class C4CommandHandler(IC4DocumentStore documents)
     private static int KeywordIndexOf(string line)
     {
         var tokens = C4Tokens.SplitWithSpans(line);
-        if (tokens.Count >= 3 && tokens[1].Value == "=")
+        if (tokens is [_, { Value: "=" }, _, ..])
         {
             return 2;
         }

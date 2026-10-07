@@ -87,7 +87,7 @@ public static class AnsibleLayout
         // Playbook depth by longest path over imports, so a playbook always sits to the right
         // of everything that imports it however many hops away that is.
         var importers = graph.Edges
-            .Where(edge => edge.Kind == AnsibleEdgeKind.ImportsPlaybook && edge.TargetId.Length > 0)
+            .Where(edge => edge is { Kind: AnsibleEdgeKind.ImportsPlaybook, TargetId.Length: > 0 })
             .ToLookup(edge => edge.TargetId, edge => edge.SourceId, StringComparer.Ordinal);
 
         var playbooks = graph.Nodes.Where(node => node.Kind == AnsibleNodeKind.Playbook).ToArray();

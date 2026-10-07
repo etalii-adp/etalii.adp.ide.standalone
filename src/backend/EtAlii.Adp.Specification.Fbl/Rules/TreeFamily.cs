@@ -171,7 +171,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
     {
         if (mapping.Member(name) is { } member)
         {
-            var writable = !member.Value.ViaAlias && member.Value.Kind == ValueKind.Scalar;
+            var writable = member.Value is { ViaAlias: false, Kind: ValueKind.Scalar };
             var reason = member.Value.ViaAlias ? "The value is reached through an alias, so it is read-only." : writable ? null : "The value is a block collection, which a slot does not write.";
             return new SlotRead(Cel(member.Value), member.Value.Span, true, writable, reason)
             {

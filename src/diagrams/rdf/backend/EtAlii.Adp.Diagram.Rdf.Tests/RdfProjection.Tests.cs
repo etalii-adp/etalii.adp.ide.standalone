@@ -39,7 +39,7 @@ public class RdfProjectionTests
 
         // IRI objects draw as edges between cards.
         Assert.Contains(projection.Edges, edge =>
-            edge.FromId == "res:http://example.org/alice" && edge.ToId == "res:http://example.org/bob" && edge.Predicate == "foaf:knows");
+            edge is { FromId: "res:http://example.org/alice", ToId: "res:http://example.org/bob", Predicate: "foaf:knows" });
 
         // The collection renders as ordered member edges; its cons cells never become nodes.
         var carol = "res:http://example.org/carol";

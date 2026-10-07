@@ -158,7 +158,7 @@ public class AdpFileWriterTests : IDisposable
 
         // Assert.
         var bytes = File.ReadAllBytes(path);
-        Assert.False(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF, "a BOM was written");
+        Assert.False(bytes is [0xEF, 0xBB, 0xBF, ..], "a BOM was written");
         Assert.Equal("content", Encoding.UTF8.GetString(bytes));
     }
 

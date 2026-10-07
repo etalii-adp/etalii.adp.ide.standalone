@@ -179,7 +179,7 @@ public static class GhgWriter
         ArgumentNullException.ThrowIfNull(influence);
 
         // An influence from a trigger states no from end at all; every other end must read.
-        if ((!influence.FromEnd.IsNone && !influence.FromEnd.IsReadable) || !influence.ToEnd.IsReadable)
+        if (influence.FromEnd is { IsNone: false, IsReadable: false } || !influence.ToEnd.IsReadable)
         {
             return GhgEdit.Refused("An influence attaches to a phase, on its top or bottom edge, at a fraction from 0 to 1.");
         }

@@ -33,7 +33,7 @@ public static class Router
             var extended = extension.Length > 0 && claims.Extensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase));
             if (!named && !extended) continue;
             if (claims.Marker is { } marker && !MarkerEvaluator.Matches(marker, bytes)) continue;
-            if (claims.Shared && claims.Marker is null) continue;
+            if (claims is { Shared: true, Marker: null }) continue;
             candidates.Add(binding);
         }
         return candidates;

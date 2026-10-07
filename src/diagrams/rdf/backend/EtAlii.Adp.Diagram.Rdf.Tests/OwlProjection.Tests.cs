@@ -40,39 +40,39 @@ public class OwlProjectionTests
         Assert.Equal("Pizza", pizza.Display);
 
         // Punning: the same IRI's individual role draws in its own place (Requirement 2.4).
-        Assert.Contains(graph.Nodes, node => node.Id == $"ind:{Ns}Pizza" && node.Kind == OwlNodeKind.Individual);
+        Assert.Contains(graph.Nodes, node => node is { Id: $"ind:{Ns}Pizza", Kind: OwlNodeKind.Individual });
 
         // The axiom edges (Requirement 2.1, 2.2).
         Assert.Contains(graph.Edges, edge =>
-            edge is { Kind: OwlEdgeKind.Subclass } && edge.FromId == $"res:{Ns}Vegetarian" && edge.ToId == $"res:{Ns}Pizza");
+            edge is { Kind: OwlEdgeKind.Subclass, FromId: $"res:{Ns}Vegetarian", ToId: $"res:{Ns}Pizza" });
         Assert.Contains(graph.Edges, edge =>
-            edge is { Kind: OwlEdgeKind.Equivalent } && edge.FromId == $"res:{Ns}Vegetarian" && edge.ToId == $"res:{Ns}VeggiePizza");
+            edge is { Kind: OwlEdgeKind.Equivalent, FromId: $"res:{Ns}Vegetarian", ToId: $"res:{Ns}VeggiePizza" });
         Assert.Contains(graph.Edges, edge =>
-            edge is { Kind: OwlEdgeKind.Disjoint } && edge.FromId == $"res:{Ns}VegetarianTopping" && edge.ToId == $"res:{Ns}MeatTopping");
+            edge is { Kind: OwlEdgeKind.Disjoint, FromId: $"res:{Ns}VegetarianTopping", ToId: $"res:{Ns}MeatTopping" });
 
         // The AllDisjointClasses group becomes pairwise disjointness (Requirement 2.2).
         Assert.Contains(graph.Edges, edge =>
-            edge is { Kind: OwlEdgeKind.Disjoint } && edge.FromId == $"res:{Ns}Pizza" && edge.ToId == $"res:{Ns}Topping");
+            edge is { Kind: OwlEdgeKind.Disjoint, FromId: $"res:{Ns}Pizza", ToId: $"res:{Ns}Topping" });
 
         // An object property is an edge between its domain and range, characteristics and the
         // inverse folded into its label, never extra nodes (Requirements 1.1, 2.3).
-        var hasTopping = graph.Edges.Single(edge => edge.Kind == OwlEdgeKind.ObjectProperty && edge.PropertyIri == $"{Ns}hasTopping");
+        var hasTopping = graph.Edges.Single(edge => edge is { Kind: OwlEdgeKind.ObjectProperty, PropertyIri: $"{Ns}hasTopping" });
         Assert.Equal($"res:{Ns}Pizza", hasTopping.FromId);
         Assert.Equal($"res:{Ns}Topping", hasTopping.ToId);
         Assert.Contains("inverse functional", hasTopping.Label);
         Assert.Contains("inverse of", hasTopping.Label);
 
         // A property without stated ends anchors at its own materialized owl:Thing pair (Requirement 1.2).
-        Assert.Contains(graph.Nodes, node => node.Id == $"thing:{Ns}toppingOf|domain" && node.Kind == OwlNodeKind.Thing);
+        Assert.Contains(graph.Nodes, node => node is { Id: $"thing:{Ns}toppingOf|domain", Kind: OwlNodeKind.Thing });
         Assert.Contains(graph.Edges, edge =>
-            edge.PropertyIri == $"{Ns}toppingOf" && edge.FromId == $"thing:{Ns}toppingOf|domain" && edge.ToId == $"thing:{Ns}toppingOf|range");
+            edge is { PropertyIri: $"{Ns}toppingOf", FromId: $"thing:{Ns}toppingOf|domain", ToId: $"thing:{Ns}toppingOf|range" });
 
         // A datatype property reaches a datatype node - the schema half of the literal-node
         // position (Requirement 1.1) - and one with no range reaches a materialized Literal.
         var xsdInteger = graph.Nodes.Single(node => node.Id == "res:http://www.w3.org/2001/XMLSchema#integer");
         Assert.Equal(OwlNodeKind.Datatype, xsdInteger.Kind);
         Assert.Contains(graph.Edges, edge =>
-            edge is { Kind: OwlEdgeKind.DatatypeProperty } && edge.FromId == $"res:{Ns}Pizza" && edge.ToId == xsdInteger.Id);
+            edge is { Kind: OwlEdgeKind.DatatypeProperty, FromId: $"res:{Ns}Pizza" } && edge.ToId == xsdInteger.Id);
         Assert.Contains(graph.Nodes, node => node.Id == $"dt:{Ns}hasNote" && node is { Kind: OwlNodeKind.Datatype, Display: "Literal" });
 
         // Individuals are cards: types as badges, literal assertions as rows, object assertions
@@ -112,7 +112,7 @@ public class OwlProjectionTests
         // The axiom edge carries its kind to the expression node; the structure edge reaches the
         // named filler (Requirement 3.1).
         Assert.Contains(graph.Edges, edge =>
-            edge is { Kind: OwlEdgeKind.Subclass } && edge.FromId == $"res:{Ns}Vegetarian" && edge.ToId == restrictionId);
+            edge is { Kind: OwlEdgeKind.Subclass, FromId: $"res:{Ns}Vegetarian" } && edge.ToId == restrictionId);
         Assert.Contains(graph.Edges, edge =>
             edge is { Kind: OwlEdgeKind.Expression } && edge.FromId == restrictionId && edge.ToId == $"res:{Ns}VegetarianTopping");
 

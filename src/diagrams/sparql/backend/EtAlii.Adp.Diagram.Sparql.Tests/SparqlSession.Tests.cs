@@ -159,9 +159,9 @@ public class SparqlSessionTests : IDisposable
         var elements = ElementsOf(session);
 
         // Assert.
-        Assert.Contains(elements, element => element.Id == "var:x" && element.Type == SparqlElementMapper.VariableType);
+        Assert.Contains(elements, element => element is { Id: "var:x", Type: SparqlElementMapper.VariableType });
         Assert.Contains(elements, element => element.Type == SparqlElementMapper.EdgeType);
-        Assert.Contains(elements, element => element.Id == "region:where/optional.0" && element.Type == SparqlElementMapper.RegionType);
+        Assert.Contains(elements, element => element is { Id: "region:where/optional.0", Type: SparqlElementMapper.RegionType });
         Assert.Contains(elements, element => element.Type == SparqlElementMapper.AnnotationType);
         Assert.Contains(elements, element => element.Id == SparqlElementMapper.HeaderId);
         Assert.DoesNotContain(elements, element => element.Id == SparqlElementMapper.TruncationId);

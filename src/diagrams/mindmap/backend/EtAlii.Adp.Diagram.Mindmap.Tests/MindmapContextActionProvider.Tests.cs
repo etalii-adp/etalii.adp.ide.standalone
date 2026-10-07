@@ -278,7 +278,7 @@ public class MindmapContextActionProviderTests : IDisposable
         var result = Assert.IsType<ContextExecutionRequiresChoice>(await Execute("ID_88117422", MindmapContextActionProvider.LinkActionId));
 
         // Assert.
-        Assert.Contains(result.Request.Options, option => option.Id == "README.md" && option.Selectable);
+        Assert.Contains(result.Request.Options, option => option is { Id: "README.md", Selectable: true });
         var docs = Assert.Single(result.Request.Options, option => option.Id == "docs");
         Assert.Contains(docs.Children!, option => option.Id == "docs/architecture.mm");
     }

@@ -78,7 +78,7 @@ public class OwlSessionTests : IDisposable
         var elements = ElementsOf(session);
 
         // Assert: class nodes, axiom edges and expression nodes, in this reading's own types.
-        Assert.Contains(elements, element => element.Id == $"res:{Ns}Pizza" && element.Type == OwlElementMapper.NodeType);
+        Assert.Contains(elements, element => element is { Id: $"res:{Ns}Pizza", Type: OwlElementMapper.NodeType });
         Assert.Contains(elements, element => element.Type == OwlElementMapper.EdgeType);
         Assert.Contains(elements, element => element.Type == OwlElementMapper.ExpressionType);
         Assert.DoesNotContain(elements, element => element.Type == OwlElementMapper.TruncationType);

@@ -59,7 +59,7 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
                 entry.RefCount--;
             }
 
-            if (entry.RefCount == 0 && entry.EvictionTimer is null)
+            if (entry is { RefCount: 0, EvictionTimer: null })
             {
                 // Not dropped now: a reconnect within the grace re-retains and keeps its history.
                 entry.EvictionTimer = new Timer(_ => EvictIfIdle(rootPath), null, _grace, Timeout.InfiniteTimeSpan);

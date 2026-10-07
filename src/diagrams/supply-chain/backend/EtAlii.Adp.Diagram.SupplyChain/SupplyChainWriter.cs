@@ -198,7 +198,7 @@ public static class SupplyChainWriter
             keys.Add(("unit", Text(node.Unit)));
         }
 
-        if (node.X is { } x && node.Y is { } y)
+        if (node is { X: { } x, Y: { } y })
         {
             keys.Add(("x", Number(Math.Round(x))));
             keys.Add(("y", Number(Math.Round(y))));
@@ -215,7 +215,7 @@ public static class SupplyChainWriter
         ArgumentNullException.ThrowIfNull(group);
 
         List<(string Key, string Value)> keys = [("name", Text(group.Name))];
-        if (group.X is { } x && group.Y is { } y)
+        if (group is { X: { } x, Y: { } y })
         {
             keys.Add(("x", Number(Math.Round(x))));
             keys.Add(("y", Number(Math.Round(y))));

@@ -84,7 +84,7 @@ public class SparqlProjectionTests
         // carries its region's scope, and the region's label says what the region means.
         var s = Assert.Single(result.Nodes, node => node.Id == "var:s");
         Assert.Equal("where", s.ScopePath);
-        Assert.Single(result.Edges, edge => edge.ScopePath == "where/minus.0" && edge.FromId == "var:s");
+        Assert.Single(result.Edges, edge => edge is { ScopePath: "where/minus.0", FromId: "var:s" });
         Assert.Equal("MINUS", Assert.Single(result.Regions, region => region.Kind == "minus").Label);
     }
 
@@ -160,7 +160,7 @@ public class SparqlProjectionTests
         // The OPTIONAL's filter anchors to its region; the root's filter floats on the canvas.
         var regionFilter = Assert.Single(result.Annotations, a => a.ScopePath == "where/optional.0");
         Assert.Equal("region:where/optional.0", regionFilter.AttachedToId);
-        var rootFilter = Assert.Single(result.Annotations, a => a.Kind == "filter" && a.ScopePath == "where");
+        var rootFilter = Assert.Single(result.Annotations, a => a is { Kind: "filter", ScopePath: "where" });
         Assert.Equal("", rootFilter.AttachedToId);
 
         // BIND anchors to the variable it defines; VALUES to the first variable it feeds.
@@ -194,7 +194,7 @@ public class SparqlProjectionTests
         // ?s and ?o are matched in the where clause and rebuilt in the template: one node each,
         // on the open canvas, with the template's edge reaching in.
         Assert.Single(result.Nodes, node => node.Id == "var:s");
-        Assert.Single(result.Edges, edge => edge.ScopePath == "template" && edge.Label == "ex:mirrored");
+        Assert.Single(result.Edges, edge => edge is { ScopePath: "template", Label: "ex:mirrored" });
     }
 
     [Fact]
