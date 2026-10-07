@@ -131,8 +131,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
             ]);
         }
 
-        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: none that holds - RdfSelection.IsBlank(target.ElementId) on the left of the && is true only for a non-null id, so this coalesce can never apply and is dead code; it stays only because removing it is a code change outside this comment-only commit.
-        if (RdfSelection.IsBlank(target.ElementId) && RdfSelection.Describe(entry, target.ElementId ?? "") is { } text)
+        if (RdfSelection.IsBlank(target.ElementId) && RdfSelection.Describe(entry, target.ElementId) is { } text)
         {
             return Rows(
             [
