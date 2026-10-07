@@ -13,14 +13,19 @@ namespace EtAlii.Adp.Context;
 /// Every failure is answered with the same generic reason, so a caller learns nothing
 /// about ids it may not see - the same rule the context actions already follow.
 /// </remarks>
-public sealed class ContextSelectionResolver(IEnumerable<IContextSourceResolver> resolvers)
+public sealed class ContextSelectionResolver
 {
     /// <summary>Deeper chains than this are almost certainly a client bug, not a selection.</summary>
     public const int MaxDepth = 8;
 
     private const string GenericRejection = "This item is no longer available.";
 
-    private readonly IReadOnlyList<IContextSourceResolver> _resolvers = resolvers.ToList();
+    private readonly IReadOnlyList<IContextSourceResolver> _resolvers;
+
+    public ContextSelectionResolver(IEnumerable<IContextSourceResolver> resolvers)
+    {
+        _resolvers = resolvers.ToList();
+    }
 
     /// <summary>
     /// Resolves the whole chain, or nothing: a rejection at any level discards what was

@@ -6,16 +6,24 @@ namespace EtAlii.Adp.Context.Tests;
 /// Answers for entry ids, echoing the client path (or a fixed fill-in), and records
 /// which parent it was handed at each level so the chain walk can be asserted.
 /// </summary>
-internal sealed class ContextSelectionResolverStubResolver(
-    bool canResolve = true,
-    ContextNesting nesting = ContextNesting.Contained,
-    bool rejectWhenParentPresent = false,
-    IReadOnlyList<string>? fillPath = null) : IContextSourceResolver
+internal sealed class ContextSelectionResolverStubResolver : IContextSourceResolver
 {
-    private readonly bool _canResolve = canResolve;
-    private readonly ContextNesting _nesting = nesting;
-    private readonly bool _rejectWhenParentPresent = rejectWhenParentPresent;
-    private readonly IReadOnlyList<string>? _fillPath = fillPath;
+    private readonly bool _canResolve;
+    private readonly ContextNesting _nesting;
+    private readonly bool _rejectWhenParentPresent;
+    private readonly IReadOnlyList<string>? _fillPath;
+
+    public ContextSelectionResolverStubResolver(
+        bool canResolve = true,
+        ContextNesting nesting = ContextNesting.Contained,
+        bool rejectWhenParentPresent = false,
+        IReadOnlyList<string>? fillPath = null)
+    {
+        _canResolve = canResolve;
+        _nesting = nesting;
+        _rejectWhenParentPresent = rejectWhenParentPresent;
+        _fillPath = fillPath;
+    }
 
     public List<ContextResolvedLevel?> ParentsSeen { get; } = new();
 

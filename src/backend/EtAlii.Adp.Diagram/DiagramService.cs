@@ -14,25 +14,37 @@ namespace EtAlii.Adp.Diagram;
 /// <see cref="IDiagramSession"/>, and pumps that session's deltas onto the stream - mapping
 /// the module's backend delta records to the contract's proto through <see cref="DiagramWire"/>. It knows no diagram type (mindmap-diagram Requirement 13.4).
 /// </summary>
-public sealed partial class DiagramService(
-    IProjectStore projectStore,
-    DiagramFileRouter router,
-    DiagramSessionFactories sessionFactories,
-    EditorResolver editorResolver,
-    EditorSessionFactories editorSessionFactories,
-    IDiagramViewportRegistry viewports,
-    DiagramDocumentReloadBridge reloadBridge,
-    IEnumerable<IDiagramToolboxProvider> toolboxProviders) : Wire.DiagramService.DiagramServiceBase
+public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<DiagramService>();
 
-    private readonly IProjectStore _projectStore = projectStore;
-    private readonly DiagramFileRouter _router = router;
-    private readonly DiagramSessionFactories _sessionFactories = sessionFactories;
-    private readonly EditorResolver _editorResolver = editorResolver;
-    private readonly EditorSessionFactories _editorSessionFactories = editorSessionFactories;
-    private readonly DiagramDocumentReloadBridge _reloadBridge = reloadBridge;
-    private readonly IReadOnlyList<IDiagramToolboxProvider> _toolboxProviders = [.. toolboxProviders];
+    private readonly IProjectStore _projectStore;
+    private readonly DiagramFileRouter _router;
+    private readonly DiagramSessionFactories _sessionFactories;
+    private readonly EditorResolver _editorResolver;
+    private readonly EditorSessionFactories _editorSessionFactories;
+    private readonly DiagramDocumentReloadBridge _reloadBridge;
+    private readonly IReadOnlyList<IDiagramToolboxProvider> _toolboxProviders;
+
+    public DiagramService(
+        IProjectStore projectStore,
+        DiagramFileRouter router,
+        DiagramSessionFactories sessionFactories,
+        EditorResolver editorResolver,
+        EditorSessionFactories editorSessionFactories,
+        IDiagramViewportRegistry viewports,
+        DiagramDocumentReloadBridge reloadBridge,
+        IEnumerable<IDiagramToolboxProvider> toolboxProviders)
+    {
+        _projectStore = projectStore;
+        _router = router;
+        _sessionFactories = sessionFactories;
+        _editorResolver = editorResolver;
+        _editorSessionFactories = editorSessionFactories;
+        _viewports = viewports;
+        _reloadBridge = reloadBridge;
+        _toolboxProviders = [.. toolboxProviders];
+    }
 
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
     {

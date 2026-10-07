@@ -14,12 +14,18 @@ namespace EtAlii.Adp.Diagram;
 /// what only an editor does is asked here, so the diagram service carries no editor call
 /// (spec 002, naming convention alignment).
 /// </summary>
-public sealed class EditorService(IProjectStore projectStore, IHistoryStackStore historyStacks) : Editor.Wire.EditorService.EditorServiceBase
+public sealed class EditorService : Editor.Wire.EditorService.EditorServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<EditorService>();
 
-    private readonly IProjectStore _projectStore = projectStore;
-    private readonly IHistoryStackStore _historyStacks = historyStacks;
+    private readonly IProjectStore _projectStore;
+    private readonly IHistoryStackStore _historyStacks;
+
+    public EditorService(IProjectStore projectStore, IHistoryStackStore historyStacks)
+    {
+        _projectStore = projectStore;
+        _historyStacks = historyStacks;
+    }
 
     public override async Task<SaveTextResponse> SaveText(SaveTextRequest request, ServerCallContext context)
     {

@@ -3,19 +3,28 @@ using EtAlii.Adp.Documents.Wire;
 
 namespace EtAlii.Adp.Context.Tests;
 
-internal sealed class ContextActionResolverStubProvider(
-    ContextScope scope,
-    string actionId,
-    ContextShortcutDefinition? shortcut = null,
-    bool available = true,
-    DiagramOrigin? answersFor = null) : IContextActionProvider
+internal sealed class ContextActionResolverStubProvider : IContextActionProvider
 {
-    private readonly string _actionId = actionId;
-    private readonly ContextShortcutDefinition? _shortcut = shortcut;
-    private readonly bool _available = available;
-    private readonly DiagramOrigin? _answersFor = answersFor;
+    private readonly string _actionId;
+    private readonly ContextShortcutDefinition? _shortcut;
+    private readonly bool _available;
+    private readonly DiagramOrigin? _answersFor;
 
-    public ContextScope Scope { get; } = scope;
+    public ContextActionResolverStubProvider(
+        ContextScope scope,
+        string actionId,
+        ContextShortcutDefinition? shortcut = null,
+        bool available = true,
+        DiagramOrigin? answersFor = null)
+    {
+        _answersFor = answersFor;
+        Scope = scope;
+        _actionId = actionId;
+        _shortcut = shortcut;
+        _available = available;
+    }
+
+    public ContextScope Scope { get; }
 
     public bool WasConsulted { get; private set; }
 

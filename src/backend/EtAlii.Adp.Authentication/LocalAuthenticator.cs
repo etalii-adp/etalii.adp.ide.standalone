@@ -7,9 +7,14 @@ namespace EtAlii.Adp.Authentication;
 /// against a single credential from configuration, requiring no external
 /// identity provider (Requirement 1.4).
 /// </summary>
-public sealed class LocalAuthenticator(IOptions<LocalAuthenticatorOptions> options) : IAuthenticator
+public sealed class LocalAuthenticator : IAuthenticator
 {
-    private readonly LocalAuthenticatorOptions _options = options.Value;
+    private readonly LocalAuthenticatorOptions _options;
+
+    public LocalAuthenticator(IOptions<LocalAuthenticatorOptions> options)
+    {
+        _options = options.Value;
+    }
 
     public bool Validate(string username, string credential) =>
         username == _options.Username && credential == _options.Credential;

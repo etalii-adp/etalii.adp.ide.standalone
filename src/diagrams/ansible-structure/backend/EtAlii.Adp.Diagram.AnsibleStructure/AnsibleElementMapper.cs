@@ -22,7 +22,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// the whole graph and deliver the entire project, which is what a viewport exists to avoid.
 /// </para>
 /// </remarks>
-public sealed class AnsibleElementMapper(AnsibleMetrics? metrics = null)
+public sealed class AnsibleElementMapper
 {
     /// <summary>The mime-style element kinds this type puts on the wire (Requirement 7.1).</summary>
     public const string PlaybookType = "ansible/structure+playbook";
@@ -36,7 +36,9 @@ public sealed class AnsibleElementMapper(AnsibleMetrics? metrics = null)
     private static readonly string PayloadTypeUrl =
         $"type.googleapis.com/{Wire.AnsibleElementPayload.Descriptor.FullName}";
 
-    private readonly AnsibleMetrics _metrics = metrics ?? AnsibleMetrics.Default;
+    private readonly AnsibleMetrics _metrics;
+
+    public AnsibleElementMapper(AnsibleMetrics? metrics = null) => _metrics = metrics ?? AnsibleMetrics.Default;
 
     /// <summary>
     /// Every element a connection with this viewport should see: the nodes it intersects, their

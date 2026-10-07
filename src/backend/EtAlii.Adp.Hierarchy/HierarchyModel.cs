@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Hierarchy;
 /// kept in sync with disk via <see cref="OnWatcherEvent"/> and <see cref="Reconcile"/>.
 /// Never shared with another connection.
 /// </summary>
-public sealed class HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
+public sealed class HierarchyModel
 {
     // Guards every field below: ListEntries (gRPC threads) and the connection's own
     // FileSystemWatcher (its own background thread, via OnWatcherEvent) can call into
@@ -19,9 +19,9 @@ public sealed class HierarchyModel(string rootPath, IDiagramDefinitionCatalog? c
     private static readonly ILogger _logger = Log.ForContext<HierarchyModel>();
 
     private readonly Lock _gate = new();
-    private readonly IDiagramDefinitionCatalog? _catalog = catalog;
-    private readonly DiagramFileRouter? _router = router;
-    private readonly EditorResolver? _editorResolver = editorResolver;
+    private readonly IDiagramDefinitionCatalog? _catalog;
+    private readonly DiagramFileRouter? _router;
+    private readonly EditorResolver? _editorResolver;
     private readonly Dictionary<ShortGuid, EntryNode> _entriesById = new();
     private readonly Dictionary<ShortGuid, string> _pathById = new();
     private readonly Dictionary<string, ShortGuid> _idByPath = new(StringComparer.OrdinalIgnoreCase);
@@ -38,8 +38,16 @@ public sealed class HierarchyModel(string rootPath, IDiagramDefinitionCatalog? c
     private static readonly TimeSpan RenameEchoWindow = TimeSpan.FromSeconds(5);
     private readonly List<(string OldPath, string NewPath, long Ticks)> _appliedRenames = new();
 
+    public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
+    {
+        RootPath = IoPath.GetFullPath(rootPath);
+        _catalog = catalog;
+        _router = router;
+        _editorResolver = editorResolver;
+    }
+
     /// <summary>The absolute project root this model views; what the store matches on to route a rename to it.</summary>
-    public string RootPath { get; } = IoPath.GetFullPath(rootPath);
+    public string RootPath { get; }
 
     public event Action<HierarchyEntryChange>? EntryChanged;
 

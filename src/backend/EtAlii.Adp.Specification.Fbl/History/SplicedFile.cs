@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Specification.Fbl.History;
 /// registration. Applying an edit applies its splices and reads the file again. Undo and redo
 /// check for drift first and refuse with FBL §7.2's sentence, writing nothing (FBL §7.2).
 /// </summary>
-public abstract class SplicedFile(byte[] bytes)
+public abstract class SplicedFile
 {
     /// <summary>FBL §7.2's sentence for an undo refused because the file changed underneath it.</summary>
     public const string DriftUndo = "The file has changed since this edit, so it cannot be undone.";
@@ -16,8 +16,13 @@ public abstract class SplicedFile(byte[] bytes)
 
     private readonly EditHistory _history = new();
 
+    protected SplicedFile(byte[] bytes)
+    {
+        Bytes = bytes;
+    }
+
     /// <summary>The file's bytes after every applied edit.</summary>
-    public byte[] Bytes { get; private set; } = bytes;
+    public byte[] Bytes { get; private set; }
 
     public bool CanUndo => _history.CanUndo;
 

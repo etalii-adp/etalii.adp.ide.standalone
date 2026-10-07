@@ -19,26 +19,38 @@ namespace EtAlii.Adp.Context;
 /// Nothing here knows about files, folders or any diagram type: resolution goes through
 /// <see cref="ContextSelectionResolver"/> and actions through <see cref="IContextActionResolver"/>.
 /// </remarks>
-public sealed partial class ContextService(
-    IProjectStore projectStore,
-    IContextSelectionStore selectionStore,
-    ContextSelectionResolver selectionResolver,
-    IContextActionResolver contextActionResolver,
-    IContextPropertyResolver contextPropertyResolver,
-    IContextInteractionStore contextInteractionStore,
-    IHistoryStackStore historyStacks,
-    IContextWatchHooks watchHooks) : Wire.ContextService.ContextServiceBase
+public sealed partial class ContextService : Wire.ContextService.ContextServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<ContextService>();
 
-    private readonly IProjectStore _projectStore = projectStore;
-    private readonly IContextSelectionStore _selectionStore = selectionStore;
-    private readonly ContextSelectionResolver _selectionResolver = selectionResolver;
-    private readonly IContextActionResolver _contextActionResolver = contextActionResolver;
-    private readonly IContextPropertyResolver _contextPropertyResolver = contextPropertyResolver;
-    private readonly IContextInteractionStore _contextInteractionStore = contextInteractionStore;
-    private readonly IHistoryStackStore _historyStacks = historyStacks;
-    private readonly IContextWatchHooks _watchHooks = watchHooks;
+    private readonly IProjectStore _projectStore;
+    private readonly IContextSelectionStore _selectionStore;
+    private readonly ContextSelectionResolver _selectionResolver;
+    private readonly IContextActionResolver _contextActionResolver;
+    private readonly IContextPropertyResolver _contextPropertyResolver;
+    private readonly IContextInteractionStore _contextInteractionStore;
+    private readonly IHistoryStackStore _historyStacks;
+    private readonly IContextWatchHooks _watchHooks;
+
+    public ContextService(
+        IProjectStore projectStore,
+        IContextSelectionStore selectionStore,
+        ContextSelectionResolver selectionResolver,
+        IContextActionResolver contextActionResolver,
+        IContextPropertyResolver contextPropertyResolver,
+        IContextInteractionStore contextInteractionStore,
+        IHistoryStackStore historyStacks,
+        IContextWatchHooks watchHooks)
+    {
+        _projectStore = projectStore;
+        _selectionStore = selectionStore;
+        _selectionResolver = selectionResolver;
+        _contextActionResolver = contextActionResolver;
+        _contextPropertyResolver = contextPropertyResolver;
+        _contextInteractionStore = contextInteractionStore;
+        _historyStacks = historyStacks;
+        _watchHooks = watchHooks;
+    }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
     {

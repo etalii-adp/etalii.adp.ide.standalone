@@ -10,7 +10,7 @@ namespace EtAlii.Adp;
 /// (25 is the smallest width in which every possible 128-bit value fits: 36^24 &lt; 2^128 &#le; 36^25).
 /// </summary>
 [JsonConverter(typeof(ShortGuidJsonConverter))]
-public readonly record struct ShortGuid(Guid Guid) :
+public readonly record struct ShortGuid :
     IComparable<ShortGuid>,
     ISpanFormattable,
     ISpanParsable<ShortGuid>
@@ -19,6 +19,10 @@ public readonly record struct ShortGuid(Guid Guid) :
     private const string Alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
 
     public static readonly ShortGuid Empty = default;
+
+    public ShortGuid(Guid value) => Guid = value;
+
+    public Guid Guid { get; }
 
     public static ShortGuid NewShortGuid() => new(Guid.NewGuid());
 
