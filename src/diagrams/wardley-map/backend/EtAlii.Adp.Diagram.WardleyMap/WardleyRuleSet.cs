@@ -240,7 +240,7 @@ public static class WardleyRuleSet
     /// </remarks>
     private static void Anchor(WardleyMap map, List<DiagramProblem> problems)
     {
-        if (map.Components.Count > 0 && !map.Components.Any(component => component.Kind == WardleyElementKind.Anchor))
+        if (map.Components.Count > 0 && map.Components.All(component => component.Kind != WardleyElementKind.Anchor))
         {
             problems.Add(new DiagramProblem(
                 DiagramProblemSeverity.Warning,

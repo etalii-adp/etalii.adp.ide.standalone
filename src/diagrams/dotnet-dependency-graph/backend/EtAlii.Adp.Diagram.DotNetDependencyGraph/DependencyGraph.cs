@@ -211,7 +211,7 @@ public sealed class DependencyGraph
                 }
 
                 var edge = new DependsOnEdge(IdOfEdge(id, packageId), id, packageId, DependsOnKind.Package);
-                if (!edges.Any(existing => existing.Id == edge.Id))
+                if (edges.All(existing => existing.Id != edge.Id))
                 {
                     // One project declaring the same package twice - across two ItemGroups, or
                     // once per target framework - is one dependency, not two edges.

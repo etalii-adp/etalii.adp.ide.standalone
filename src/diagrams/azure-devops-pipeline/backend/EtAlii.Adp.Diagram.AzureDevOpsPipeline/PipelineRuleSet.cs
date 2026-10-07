@@ -125,7 +125,7 @@ public static class PipelineRuleSet
         // Work forwards from the stages that can start, and whatever is not reached cannot run.
         var reachable = new HashSet<string>(StringComparer.Ordinal);
         var pending = new Queue<string>(model.Stages
-            .Where(stage => !graph.Edges.Any(edge => edge.ToId == stage.Id))
+            .Where(stage => graph.Edges.All(edge => edge.ToId != stage.Id))
             .Select(stage => stage.Id));
 
         foreach (var id in pending)
@@ -149,7 +149,7 @@ public static class PipelineRuleSet
             // consequence rather than a cause, and teaches the reader that the panel repeats
             // itself. What survives here is a stage whose cause is genuinely somewhere upstream.
             .Where(stage => !graph.Cycles.Any(cycle => cycle.Contains(stage.Id)))
-            .Where(stage => !graph.BrokenEdges.Any(edge => edge.ToId == stage.Id))
+            .Where(stage => graph.BrokenEdges.All(edge => edge.ToId != stage.Id))
             .Select(stage => new DiagramProblem(
                 DiagramProblemSeverity.Warning,
                 $"Nothing can reach '{stage.Label}': what it waits for can never finish, so it will never run.",

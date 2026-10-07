@@ -99,7 +99,7 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
                     Location(group.First().Triple)));
             }
 
-            if (!concept.Labels.Any(label => label.Source == SkosLabelSource.Preferred))
+            if (concept.Labels.All(label => label.Source != SkosLabelSource.Preferred))
             {
                 problems.Add(new DiagramProblem(
                     DiagramProblemSeverity.Warning,
