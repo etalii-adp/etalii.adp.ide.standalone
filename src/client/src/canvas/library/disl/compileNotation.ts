@@ -1,11 +1,12 @@
 import type { ActionDeclaration, ActionInvocation } from "../definition/actions";
-import type { Binding } from "../definition/binding";
+import type { Binding, Condition } from "../definition/binding";
 import type { CalendarStep, RulerDeclaration, RulerRung } from "../definition/chrome";
 import type {
   AnchorSet,
   BuiltInShape,
   ClassDeclaration,
   CompassPosition,
+  CustomRouteRef,
   DiagramDefinition,
   ElementTypeDefinition,
   EndpointConstraint,
@@ -84,6 +85,25 @@ export interface NotationBindings {
   legendSwatchClass?: (enumName: string, value: string) => string;
   /** Library declarations the specification states only under a module's `x-` key, which DISL has no construct for. */
   extras?: (spec: DislDocument) => Partial<DiagramDefinition>;
+  /**
+   * The condition each CEL `visible` of a label stands for, keyed by the expression as written, as
+   * {@link celPaths} does for a value: the library has no CEL, so the payload carries what it tests.
+   */
+  celConditions?: Readonly<Record<string, Condition>>;
+  /**
+   * What a DISL built-in shape this library has no drawing of (`roundedRect`) is drawn as, where a
+   * module has stated it: a shared shape of its own family, such as the dependency graphs' `span`.
+   */
+  builtInShapes?: Readonly<Record<string, BuiltInShape>>;
+  /** Whether every element is in the tab order, which DISL leaves to the runtime (§6.15: keyboard navigation). */
+  focusable?: boolean;
+  /** The class of a relation's line, beside its {@link relationClassName}. */
+  relationLineClassName?: (relation: string) => string | undefined;
+  /**
+   * The route each edge is drawn with where the library's built-in route for its DISL routing is not
+   * the drawing: a bezier's exact reach and its way back round, which DISL states only in outline.
+   */
+  customRoutes?: Readonly<Record<string, CustomRouteRef>>;
 }
 
 export interface CompileOptions {
@@ -327,6 +347,7 @@ class Compiler {
       sizing,
       ...(resize !== undefined ? { resize } : {}),
       ...(this.movable(node) ? {} : { draggable: false }),
+      ...(node.deletable === false ? { deletable: false } : {}),
       ...(editOnDrop ? { editOnDrop } : {}),
       ...(segments !== undefined ? { segments } : {}),
     };
@@ -340,6 +361,11 @@ class Compiler {
 
     const { name: shapeName, params } = shapeNameOf(node.shape);
     const custom: DislCustomShape | undefined = this.spec.notation.shapes?.[shapeName];
+    const drawnAs = custom === undefined ? this.bindings.builtInShapes?.[shapeName] : undefined;
+    if (drawnAs !== undefined) {
+      return { shape: drawnAs };
+    }
+
     const binding = this.bindings.customShapes?.[shapeName];
     if (custom === undefined || binding === undefined) {
       return fail(`node "${name}" is drawn as "${shapeName}", which is no built-in the library draws and no custom shape the module binds.`);
@@ -385,6 +411,9 @@ class Compiler {
     if (label.tooltip !== undefined) {
       declaration.tooltip = this.binding(label.tooltip, `${where} tooltip`);
     }
+    if (label.visible !== undefined && label.visible !== true) {
+      declaration.when = this.condition(label.visible, `${where} visible`);
+    }
 
     const className = this.bindings.labelClassName?.(type, label);
     if (className !== undefined) {
@@ -398,10 +427,18 @@ class Compiler {
     return declaration as unknown as LabelDeclaration;
   }
 
+  /** A CEL `visible` as the library's condition, through the module's `celConditions`; a literal `false` is refused. */
+  private condition(value: unknown, where: string): Condition {
+    const cel = isObject(value) && typeof value.cel === "string" ? value.cel : typeof value === "string" ? value : undefined;
+    const condition = cel === undefined ? undefined : this.bindings.celConditions?.[cel];
+    return condition ?? fail(`${where} is ${JSON.stringify(value)}, which has no condition in the module's celConditions.`);
+  }
+
   private accessibility(node: DislNodeNotation, where: string): NonNullable<ElementTypeDefinition["accessibility"]> {
     const { role, name } = node.accessibility!;
     return {
       ...(role !== undefined ? { role } : {}),
+      ...(this.bindings.focusable === true ? { focusable: true } : {}),
       ...(name !== undefined ? { label: this.binding(name, `${where} accessible name`) } : {}),
     } as NonNullable<ElementTypeDefinition["accessibility"]>;
   }
@@ -501,6 +538,8 @@ class Compiler {
     const source = edge.sourceMarker ?? "none";
     const ends = [edge.anchoring?.source, edge.anchoring?.target];
     const className = this.bindings.relationClassName?.(name);
+    const lineClassName = this.bindings.relationLineClassName?.(name);
+    const customRoute = this.bindings.customRoutes?.[name];
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
@@ -517,9 +556,10 @@ class Compiler {
 
     return {
       id: this.typeId(name),
-      route: libraryRouteOf(routing),
+      route: customRoute ?? libraryRouteOf(routing),
       style: { ...(source !== "none" ? { startMarker: libraryMarkerOf(source) } : {}), endMarker: libraryMarkerOf(target) },
       ...(className !== undefined ? { className } : {}),
+      ...(lineClassName !== undefined ? { lineClassName } : {}),
       ...(ends.some((end) => end?.movable === true) ? { movableEnds: true } : {}),
       ...(ends.some((end) => end?.mode === "part") ? { hideWhenAttachmentHidden: true } : {}),
       endpoints: {
@@ -586,6 +626,25 @@ class Compiler {
           }
         }
       }
+    }
+
+    // A double-click that runs an operation no menu lists (DISL §6.9 `doubleClick`) is still the activate gesture.
+    for (const type of this.nodeNames) {
+      const operation = this.spec.notation.nodes[type]?.doubleClick;
+      if (operation === undefined || this.spec.behavior?.operations?.[operation] === undefined
+        || found.some((action) => action.kind === "element" && action.types.has(type) && action.gestures.includes("activate"))) {
+        continue;
+      }
+
+      const id = this.wire.actions?.[`${type}/${operation}`] ?? this.wire.actions?.[operation] ?? fail(`the double-click operation "${operation}" of ${type} has no wire id in ${this.bindings.wireIds}.actions.`);
+      let action = found.find((entry) => entry.id === id && entry.kind === "element");
+      if (action === undefined) {
+        action = { id, kind: "element", types: new Set(), keys: [], gestures: ["activate"], rank: 0 };
+        found.push(action);
+      } else if (!action.gestures.includes("activate")) {
+        action.gestures.push("activate");
+      }
+      action.types.add(type);
     }
 
     const allNodes = new Set(this.nodeNames);
