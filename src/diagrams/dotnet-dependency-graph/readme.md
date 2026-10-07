@@ -7,8 +7,9 @@ authored**.
 | Folder | What is in it |
 |---|---|
 | `api/` | The wire payload a node or edge carries. |
-| `backend/` | The readers, the graph, the session and the read-only property provider. |
-| `client/` | The canvas and the registration the shell discovers. |
+| `backend/` | The readers, the graph, the session and the read-only property provider, whose rows are derived from the definition. |
+| `client/` | The canvas, compiled from the definition, and the registration the shell discovers. |
+| `definition/` | The DISL definition bundled from etalii-adp/etalii.adp (`definitions/diagrams/dotnet-dependency-graph.dis`), its companion `.md` and `provenance.json`; re-bundle with `src/diagrams/tools/bundle-disl.sh dotnet-dependency-graph <etalii.adp checkout>`. |
 | `examples/` | Shipped examples, replicated per structure.md's example-replication rule. |
 
 ## What this type writes

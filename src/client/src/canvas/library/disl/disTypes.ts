@@ -29,6 +29,8 @@ export interface DislDocument extends Extensions {
   toolbox?: DislToolbox;
   viewpoints?: Readonly<Record<string, DislViewpoint>>;
   layout?: DislLayout;
+  /** The operations a node's `doubleClick` may name (DISL §9.3). */
+  behavior?: { operations?: Readonly<Record<string, unknown>> };
 }
 
 export interface DislMetamodel {
@@ -174,6 +176,8 @@ export interface DislLabel extends Extensions {
   tooltip?: Bindable<string>;
   /** The text the inline editor opens on, when not the label's own text (DISL 0.3). */
   editText?: Bindable<string>;
+  /** Whether the label is drawn: a boolean, or CEL (DISL §6.12). */
+  visible?: boolean | string | { cel: string };
 }
 
 export interface DislSize {
@@ -213,6 +217,7 @@ export interface DislNodeNotation extends Extensions {
   accessibility?: { role?: string; name?: Bindable<string> };
   doubleClick?: string;
   connectable?: boolean;
+  deletable?: boolean;
   conditions?: readonly { when: string; style: string }[];
 }
 
