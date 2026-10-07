@@ -441,10 +441,9 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                 $"{DisconnectActionPrefix}{dependency.TaskKey}",
                 $"Disconnect from '{dependency.TaskKey}'",
                 "mdi-vector-polyline-remove")),
-        ];
 
-        edits.Add(new ContextActionDefinition(
-            RemoveTaskActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
+            new(RemoveTaskActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
+        ];
 
         return
         [
