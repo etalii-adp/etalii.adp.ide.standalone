@@ -11,7 +11,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// loaded once with the module's plugin functions (<see cref="TimelineTimes"/>), and what the
 /// providers derive from it: the palette, the context menus, the property rows, the findings, the
 /// placement additions and the removal's confirmation, mapped onto the host's types with the wire
-/// ids of its <c>x-timeline</c> block.
+/// ids of its <c>x-timeline</c> block; and the edits the DISL runtime runs from the definition's
+/// operations and tools - adding after and below (with their <c>connect</c>), a relation dragged onto
+/// empty canvas (its tool's <c>createTarget</c> or <c>createSource</c>), and giving and removing an end
+/// (a <c>retype</c>) - each mapped onto the module's command, because every write is a splice of the
+/// file's own lines that no DISL change says how to make.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -149,6 +153,92 @@ internal static class TimelineDefinition
             Text(created.Attributes, "begin") ?? "",
             created.Type == "Period" ? Text(created.Attributes, "end") ?? "" : null,
             created.Attributes.TryGetValue("row", out var written) && written is long value ? (int)value : 0);
+    }
+
+    /// <summary>
+    /// The element <paramref name="operation"/> (<c>addAfter</c> or <c>addBelow</c>) grows from
+    /// <paramref name="elementId"/>, and the relation from it, as the definition computes them: one command,
+    /// under two new ids; or, when the operation refuses or makes anything else, why not.
+    /// </summary>
+    public static (AddConnectedTimelineElementCommand? Command, string Refusal) Grown(TimelineModel model, string body, string operation, string elementId)
+    {
+        var diagram = TimelineDisl.Build(model).Diagram;
+        if (TimelineDisl.ElementOf(diagram, elementId) is not { Kind: "node" } self) return (null, "That is no longer in this timeline.");
+
+        var transaction = OperationInterpreter.Run(Specification, operation, diagram, self, NewIds(), null, Env);
+        return Related(transaction, body, elementId, operation, newElementIsSource: false, self.Id);
+    }
+
+    /// <summary>
+    /// A relation gesture released on empty canvas at <paramref name="begin"/> and <paramref name="row"/>:
+    /// the element the definition's relation tool creates there, as the gesture's <paramref name="newEnd"/>
+    /// (<c>source</c> from a begin anchor, <c>target</c> from an end anchor), and the relation between it and
+    /// <paramref name="elementId"/>, as one command; or why not.
+    /// </summary>
+    public static (AddConnectedTimelineElementCommand? Command, string Refusal) RelatedHere(TimelineModel model, string body, string elementId, string newEnd, string begin, int row)
+    {
+        var diagram = TimelineDisl.Build(model).Diagram;
+        if (TimelineDisl.ElementOf(diagram, elementId) is not { Kind: "node" } existing) return (null, "That is no longer in this timeline.");
+
+        var transaction = OperationInterpreter.ConnectToNew(
+            Specification,
+            "Connection",
+            diagram,
+            existing,
+            newEnd,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = begin, ["y"] = (long)row },
+            NewIds(),
+            Env);
+        return Related(transaction, body, elementId, "relation tool", newElementIsSource: newEnd == "source", existing.Id);
+    }
+
+    /// <summary>
+    /// What <paramref name="operation"/> (<c>giveEnd</c> or <c>removeEnd</c>) does to <paramref name="elementId"/>,
+    /// with <paramref name="end"/> as its <c>end</c> parameter: the end it writes, or none, as one command; or, when
+    /// it refuses, why not. Null and no refusal when the operation is not for that element at all.
+    /// </summary>
+    public static (SetTimelineEndCommand? Command, string Refusal) EndChange(TimelineModel model, string body, string operation, string elementId, string? end)
+    {
+        var diagram = TimelineDisl.Build(model).Diagram;
+        if (TimelineDisl.ElementOf(diagram, elementId) is not { Kind: "node" } self || !OperationInterpreter.AppliesTo(Specification, operation, self)) return (null, "");
+
+        var parameters = end is null ? null : new Dictionary<string, object?>(StringComparer.Ordinal) { ["end"] = end };
+        var transaction = OperationInterpreter.Run(Specification, operation, diagram, self, DislIds.Fixed(), new DislInvocation(Parameters: parameters), Env);
+        if (!transaction.WasApplied) return (null, transaction.Refusal!);
+
+        var written = transaction.Changes.OfType<DislChange.Set>().Where(set => set.ElementId == self.Id && set.Attributes.ContainsKey("end")).ToList();
+        if (written.Count != 1 || transaction.Changes.Any(change => change is not (DislChange.Set or DislChange.Retype)))
+        {
+            return (null, $"The definition's {operation} does not change one element's end.");
+        }
+
+        // An unset end is null - no end line - where the other attributes' text would read it as empty.
+        return (new SetTimelineEndCommand(body, elementId, written[0].Attributes["end"] is null ? null : Text(written[0].Attributes, "end")), "");
+    }
+
+    /// <summary>Two ids for an element and its relation, minted in that order as the hand-written commands did.</summary>
+    private static IIdSource NewIds() => DislIds.Fixed(ShortGuid.NewShortGuid().ToString(), ShortGuid.NewShortGuid().ToString());
+
+    /// <summary>A transaction that creates one element and relates it to <paramref name="existingId"/>, as the command that writes both.</summary>
+    private static (AddConnectedTimelineElementCommand? Command, string Refusal) Related(DislTransaction transaction, string body, string elementId, string what, bool newElementIsSource, string existingId)
+    {
+        if (!transaction.WasApplied) return (null, transaction.Refusal!);
+        if (transaction.Changes is not [DislChange.Create { Type: "Period" or "Moment" } created, DislChange.Connect { Type: "Connection" } relation]
+            || (newElementIsSource ? (relation.SourceId, relation.TargetId) : (relation.TargetId, relation.SourceId)) != (created.Id, existingId))
+        {
+            return (null, $"The definition's {what} does not add one element related to this one.");
+        }
+
+        return (new AddConnectedTimelineElementCommand(
+            body,
+            elementId,
+            created.Id,
+            relation.Id,
+            Text(created.Attributes, "begin") ?? "",
+            created.Type == "Period" ? Text(created.Attributes, "end") ?? "" : null,
+            created.Attributes.TryGetValue("row", out var row) && row is long value ? checked((int)value) : 0,
+            newElementIsSource,
+            Text(created.Attributes, "label") ?? ""), "");
     }
 
     /// <summary>What removing <paramref name="elementId"/> asks first; null when it asks nothing.</summary>

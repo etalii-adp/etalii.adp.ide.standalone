@@ -67,10 +67,6 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     /// <summary>Put every element on the row that keeps the diagram least cluttered (<see cref="TimelineArrangement"/>).</summary>
     public const string ArrangeActionId = "timeline.arrange";
 
-    /// <summary>How much later "after" is, and how long a freshly added element runs.</summary>
-    private const int GapDays = 6;
-    private const int NewElementDays = 14;
-
     private const string Gone = "That is no longer in this timeline.";
 
     private readonly IHistoryStackStore _historyStacks;
@@ -135,24 +131,17 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             }
 
             case AddAfterActionId when element is not null:
-            {
-                // Tab: the next thing, a little later on the same row - and RELATED to the one
-                // it grew from, because an element added from another continues it. Derived
-                // entirely from the selected element, so nothing is asked.
-                var anchor = element.End is { IsReadable: true } end ? end.Value!.Value
-                    : element.Begin.IsReadable ? element.Begin.Value!.Value
-                    : DateTimeOffset.UtcNow;
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, anchor.AddDays(GapDays), element.Row), cancellationToken);
-            }
-
             case AddBelowActionId when element is not null:
             {
-                // Enter: the same begin, one row down, related - a parallel track that starts
-                // together with the one it grew from.
-                var begin = element.Begin.IsReadable ? element.Begin.Value!.Value : DateTimeOffset.UtcNow;
-                return await DispatchAsync(target, NewRelatedElementAt(
-                    target.ResolvedFullPath, element.Id, begin, element.Row + 1), cancellationToken);
+                // Tab: the next thing, a little later on the same row; Enter: a parallel track, one
+                // row down, from the same begin - each RELATED to the one it grew from, in one
+                // command. Where it lands and what it is are the definition's addAfter and
+                // addBelow, run on the selected element, so nothing is asked.
+                var (grown, refusal) = TimelineDefinition.Grown(
+                    model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addAfter" : "addBelow", element.Id);
+                return grown is null
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, grown, cancellationToken);
             }
 
             case ConnectActionId when TimelineRelationGesture.TryParse(target.ElementId, out var from, out var to):
@@ -171,17 +160,9 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                     }
 
                     // The new element is the relation's SOURCE: created at the drop, its end
-                    // pointing into the existing element's start.
-                    var newBegin = TimelineScale.ToTime(fromSeconds, TimelinePrecision.Date);
-                    return await DispatchAsync(target, new AddConnectedTimelineElementCommand(
-                        target.ResolvedFullPath,
-                        to,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        TimelineScale.ToText(newBegin, TimelinePrecision.Date),
-                        TimelineScale.ToText(newBegin.AddDays(NewElementDays), TimelinePrecision.Date),
-                        fromRow,
-                        NewElementIsSource: true), cancellationToken);
+                    // pointing into the existing element's start, as the relation tool's
+                    // createSource makes it.
+                    return await RelateHereAsync(target, model, to, "source", fromSeconds, fromRow, cancellationToken);
                 }
 
                 if (TimelineEdits.ElementOf(model, from) is null)
@@ -192,16 +173,9 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 if (TimelineNewPlacement.TryParse(to, out var toSeconds, out var toRow))
                 {
                     // Released on empty canvas: what the relation reaches does not exist yet, so
-                    // it is created there and related in one command - one undo taking both.
-                    var begin = TimelineScale.ToTime(toSeconds, TimelinePrecision.Date);
-                    return await DispatchAsync(target, new AddConnectedTimelineElementCommand(
-                        target.ResolvedFullPath,
-                        from,
-                        ShortGuid.NewShortGuid().ToString(),
-                        ShortGuid.NewShortGuid().ToString(),
-                        TimelineScale.ToText(begin, TimelinePrecision.Date),
-                        TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
-                        toRow), cancellationToken);
+                    // it is created there and related in one command - one undo taking both - as
+                    // the relation tool's createTarget makes it.
+                    return await RelateHereAsync(target, model, from, "target", toSeconds, toRow, cancellationToken);
                 }
 
                 return await DispatchAsync(target, new ConnectTimelineElementsCommand(
@@ -263,8 +237,15 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 return await DispatchAsync(target, new ArrangeTimelineCommand(target.ResolvedFullPath), cancellationToken);
 
             case RemoveEndActionId when element is not null:
-                return await DispatchAsync(target,
-                    new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
+            {
+                // The definition's removeEnd: the end unset and the period made a moment. A moment,
+                // which it is not for, has no end to remove; that stays the one recorded step that
+                // changes nothing it always was, rather than a refusal.
+                var (removal, refusal) = TimelineDefinition.EndChange(model, target.ResolvedFullPath, "removeEnd", element.Id, null);
+                return refusal.Length > 0
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, removal ?? new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
+            }
 
             case DisconnectActionId when TimelineEdits.ConnectionOf(model, target.ElementId) is not null:
                 return await DispatchAsync(target,
@@ -283,17 +264,13 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
         if (actionId == GiveEndActionId)
         {
-            // Validated as typed, so the dialog can refuse before the commit does - on exactly
-            // the terms the handler will apply again (Requirement 3.4).
-            if (TimelineInstants.Parse(value) is not { } end)
+            // Validated as typed, so the dialog can refuse before the commit does - by running the
+            // definition's giveEnd, whose refusals the handler applies again (Requirement 3.4).
+            var (_, refusal) = TimelineDefinition.EndChange(
+                _documents.GetOrLoad(target.ResolvedFullPath).Model, target.ResolvedFullPath, "giveEnd", target.ElementId, value);
+            if (refusal.Length > 0)
             {
-                return ValueTask.FromResult(ContextValidationResult.Rejected($"'{value}' is not a time this timeline can read."));
-            }
-
-            var element = TimelineEdits.ElementOf(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId);
-            if (element is { Begin.IsReadable: true } && end < element.Begin.Value)
-            {
-                return ValueTask.FromResult(ContextValidationResult.Rejected("An element cannot end before it begins."));
+                return ValueTask.FromResult(ContextValidationResult.Rejected(refusal));
             }
         }
 
@@ -331,16 +308,20 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             : new ContextExecutionFailed(result.Error);
     }
 
-    /// <summary>A freshly added element grown from another: created and related in one command.</summary>
-    private static AddConnectedTimelineElementCommand NewRelatedElementAt(string body, string fromElementId, DateTimeOffset begin, int row) =>
-        new(
-            body,
-            fromElementId,
-            ShortGuid.NewShortGuid().ToString(),
-            ShortGuid.NewShortGuid().ToString(),
-            TimelineScale.ToText(begin, TimelinePrecision.Date),
-            TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
-            row);
+    /// <summary>
+    /// A relation gesture released on empty canvas at <paramref name="seconds"/> and <paramref name="row"/>:
+    /// the element the definition's relation tool creates there, the date under the pointer as its begin,
+    /// related to <paramref name="elementId"/> as the gesture's <paramref name="newEnd"/>, in one command.
+    /// </summary>
+    private async ValueTask<ContextExecutionResult> RelateHereAsync(
+        ContextTarget target, TimelineModel model, string elementId, string newEnd, double seconds, int row, CancellationToken cancellationToken)
+    {
+        var begin = TimelineScale.ToText(TimelineScale.ToTime(seconds, TimelinePrecision.Date), TimelinePrecision.Date);
+        var (related, refusal) = TimelineDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, begin, row);
+        return related is null
+            ? new ContextExecutionFailed(refusal)
+            : await DispatchAsync(target, related, cancellationToken);
+    }
 
     /// <summary>
     /// A freshly added element, a period or a moment, at the given placement: the definition's
@@ -375,8 +356,10 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         {
             RenameActionId when isElement => new RenameTimelineElementCommand(body, id, value),
             RemoveActionId when isElement => new RemoveTimelineElementCommand(body, id),
-            GiveEndActionId when isElement => new SetTimelineEndCommand(body, id, value),
-            RemoveEndActionId when isElement => new SetTimelineEndCommand(body, id, null),
+            GiveEndActionId when isElement => TimelineDefinition.EndChange(model, body, "giveEnd", id, value).Command,
+            RemoveEndActionId when isElement => TimelineDefinition.EndChange(model, body, "removeEnd", id, null) is var (removal, refusal) && refusal.Length == 0
+                ? removal ?? new SetTimelineEndCommand(body, id, null)
+                : null,
             DisconnectActionId when isRelation => new DisconnectTimelineConnectionCommand(body, id),
             RelabelActionId when isRelation => new RelabelTimelineConnectionCommand(body, id, value),
             // The dialog path: the value is the begin the user typed, and the row comes from the
