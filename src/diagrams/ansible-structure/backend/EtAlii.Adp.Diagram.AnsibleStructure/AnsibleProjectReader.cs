@@ -516,9 +516,8 @@ public sealed class AnsibleProjectReader
 
                 sectionIsChildren = suffix == "children";
                 section = name;
-                if (!hostCounts.ContainsKey(name))
+                if (hostCounts.TryAdd(name, 0))
                 {
-                    hostCounts[name] = 0;
                     order.Add(name);
                 }
                 continue;
