@@ -90,7 +90,7 @@ public class RegistrationsTests
 
     [Theory]
     [MemberData(nameof(Registrations))]
-    public void W3cReadingsSuggestMatchesItsBody(string file)
+    public void W3CReadingsSuggestMatchesItsBody(string file)
     {
         // Arrange.
         var registration = RegistrationDocument.Read(File.ReadAllBytes(RealFileCorpus.FullPath(file)));
