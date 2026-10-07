@@ -5,16 +5,11 @@ using Serilog;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Projects;
 
-public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase
+public sealed class ProjectService(IProjectStore projectStore) : Wire.ProjectService.ProjectServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<ProjectService>();
 
-    private readonly IProjectStore _projectStore;
-
-    public ProjectService(IProjectStore projectStore)
-    {
-        _projectStore = projectStore;
-    }
+    private readonly IProjectStore _projectStore = projectStore;
 
     public override Task<ListProjectsResponse> ListProjects(ListProjectsRequest request, ServerCallContext context)
     {

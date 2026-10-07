@@ -8,20 +8,14 @@ namespace EtAlii.Adp.Editor.Tests;
 /// ordinal tie-break on a collision, a type-load failure, an enumeration failure - can be
 /// exercised without building extra assemblies.
 /// </summary>
-public sealed class FakeAssembly : Assembly
+public sealed class FakeAssembly(string name, Func<Type[]> getTypes) : Assembly
 {
-    private readonly string _name;
-    private readonly Func<Type[]> _getTypes;
+    private readonly string _name = name;
+    private readonly Func<Type[]> _getTypes = getTypes;
 
     public FakeAssembly(string name, params Type[] types)
         : this(name, () => types)
     {
-    }
-
-    public FakeAssembly(string name, Func<Type[]> getTypes)
-    {
-        _name = name;
-        _getTypes = getTypes;
     }
 
     public override string FullName => $"{_name}, Version=1.0.0.0";

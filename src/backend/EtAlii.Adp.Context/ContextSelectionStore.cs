@@ -7,19 +7,14 @@ using Path = EtAlii.Adp.Documents.Wire.Path;
 namespace EtAlii.Adp.Context;
 
 /// <inheritdoc cref="IContextSelectionStore" />
-public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
+public sealed class ContextSelectionStore(TimeSpan? idleTimeout = null) : IContextSelectionStore, IDisposable
 {
     private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(30);
 
     private static readonly ILogger _logger = Log.ForContext<ContextSelectionStore>();
 
-    private readonly TimeSpan _idleTimeout;
+    private readonly TimeSpan _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
     private readonly ConcurrentDictionary<ShortGuid, ContextSelectionStoreEntry> _entries = new();
-
-    public ContextSelectionStore(TimeSpan? idleTimeout = null)
-    {
-        _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
-    }
 
     public void Register(
         ShortGuid watchId,

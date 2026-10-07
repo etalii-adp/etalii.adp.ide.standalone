@@ -8,20 +8,14 @@ using Serilog;
 
 namespace EtAlii.Adp.Hierarchy;
 
-public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBase
+public sealed class HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore) : Wire.HierarchyService.HierarchyServiceBase
 {
     private static readonly TimeSpan RootRecoveryPollInterval = TimeSpan.FromSeconds(2);
 
     private static readonly ILogger _logger = Log.ForContext<HierarchyService>();
 
-    private readonly IProjectStore _projectStore;
-    private readonly IHierarchyModelStore _hierarchyModelStore;
-
-    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
-    {
-        _projectStore = projectStore;
-        _hierarchyModelStore = hierarchyModelStore;
-    }
+    private readonly IProjectStore _projectStore = projectStore;
+    private readonly IHierarchyModelStore _hierarchyModelStore = hierarchyModelStore;
 
     public override Task<ListEntriesResponse> ListEntries(ListEntriesRequest request, ServerCallContext context)
     {

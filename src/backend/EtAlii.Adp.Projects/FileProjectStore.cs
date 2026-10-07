@@ -12,16 +12,11 @@ namespace EtAlii.Adp.Projects;
 /// nested PathRecord) is serialized directly - no separate DTO - relying on
 /// ShortGuid's own JsonConverter (ShortGuidJsonConverter) for its Id.
 /// </summary>
-public sealed class FileProjectStore : IProjectStore
+public sealed class FileProjectStore(string appDataRoot) : IProjectStore
 {
     private static readonly ILogger _logger = Log.ForContext<FileProjectStore>();
 
-    private readonly string _appDataRoot;
-
-    public FileProjectStore(string appDataRoot)
-    {
-        _appDataRoot = appDataRoot;
-    }
+    private readonly string _appDataRoot = appDataRoot;
 
     public IReadOnlyList<ProjectRecord> List(ShortGuid userId) => Read(userId);
 

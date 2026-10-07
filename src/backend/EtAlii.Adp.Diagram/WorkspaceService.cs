@@ -28,22 +28,14 @@ namespace EtAlii.Adp.Diagram;
 /// correlated one-way legs the rest of the API already uses.
 /// </para>
 /// </remarks>
-public sealed class WorkspaceService : Wire.WorkspaceService.WorkspaceServiceBase
+public sealed class WorkspaceService(HierarchyService hierarchy, ContextService context, DiagramService diagrams, WorkspaceConnections connections) : Wire.WorkspaceService.WorkspaceServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<WorkspaceService>();
 
-    private readonly HierarchyService _hierarchy;
-    private readonly ContextService _context;
-    private readonly DiagramService _diagrams;
-    private readonly WorkspaceConnections _connections;
-
-    public WorkspaceService(HierarchyService hierarchy, ContextService context, DiagramService diagrams, WorkspaceConnections connections)
-    {
-        _hierarchy = hierarchy;
-        _context = context;
-        _diagrams = diagrams;
-        _connections = connections;
-    }
+    private readonly HierarchyService _hierarchy = hierarchy;
+    private readonly ContextService _context = context;
+    private readonly DiagramService _diagrams = diagrams;
+    private readonly WorkspaceConnections _connections = connections;
 
     public override async Task Watch(WatchWorkspaceRequest request, IServerStreamWriter<WorkspaceMessage> responseStream, ServerCallContext context)
     {

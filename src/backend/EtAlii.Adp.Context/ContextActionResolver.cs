@@ -5,14 +5,9 @@ namespace EtAlii.Adp.Context;
 /// Routes purely by scope and by what providers report - it knows no action id and no
 /// shortcut of its own, which is what lets a new provider be added by registration alone.
 /// </summary>
-public sealed class ContextActionResolver : IContextActionResolver
+public sealed class ContextActionResolver(IEnumerable<IContextActionProvider> providers) : IContextActionResolver
 {
-    private readonly IReadOnlyList<IContextActionProvider> _providers;
-
-    public ContextActionResolver(IEnumerable<IContextActionProvider> providers)
-    {
-        _providers = providers.ToList();
-    }
+    private readonly IReadOnlyList<IContextActionProvider> _providers = providers.ToList();
 
     // <inheritdoc />
     public async ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)

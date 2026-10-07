@@ -4,26 +4,18 @@ using Serilog;
 
 namespace EtAlii.Adp.Hierarchy;
 
-public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
+public sealed class HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null) : IHierarchyModelStore, IDisposable
 {
     private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(30);
 
     private static readonly ILogger _logger = Log.ForContext<HierarchyModelStore>();
 
-    private readonly TimeSpan _idleTimeout;
+    private readonly TimeSpan _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
     private readonly ConcurrentDictionary<ShortGuid, HierarchyModelEntry> _entries = new();
 
-    private readonly IDiagramDefinitionCatalog? _catalog;
-    private readonly DiagramFileRouter? _router;
-    private readonly EditorResolver? _editorResolver;
-
-    public HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
-    {
-        _catalog = catalog;
-        _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
-        _router = router;
-        _editorResolver = editorResolver;
-    }
+    private readonly IDiagramDefinitionCatalog? _catalog = catalog;
+    private readonly DiagramFileRouter? _router = router;
+    private readonly EditorResolver? _editorResolver = editorResolver;
 
     public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath) =>
         _entries.GetOrAdd(watchId, _ => CreateEntry(watchId, rootPath)).Model;

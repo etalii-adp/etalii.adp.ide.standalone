@@ -136,17 +136,11 @@ public static class RegexSubset
 }
 
 /// <summary>A compiled subset expression with a match timeout (FBL §16): a match that takes too long is a finding, not a hang.</summary>
-public sealed class BoundedRegex
+public sealed class BoundedRegex(string expression, bool caseInsensitive, TimeSpan timeout)
 {
-    public BoundedRegex(string expression, bool caseInsensitive, TimeSpan timeout)
-    {
-        Expression = expression;
-        Regex = new Regex(RegexSubset.ToDotNet(expression, caseInsensitive), RegexOptions.CultureInvariant, timeout);
-    }
+    public string Expression { get; } = expression;
 
-    public string Expression { get; }
-
-    public Regex Regex { get; }
+    public Regex Regex { get; } = new Regex(RegexSubset.ToDotNet(expression, caseInsensitive), RegexOptions.CultureInvariant, timeout);
 
     /// <summary>The match, null when there is none; throws <see cref="RegexMatchTimeoutException"/> when the bound is exceeded.</summary>
     public Match? Match(string input)

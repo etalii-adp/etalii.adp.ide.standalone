@@ -1,13 +1,8 @@
 namespace EtAlii.Adp.Hierarchy;
 
-internal sealed class HierarchyEntrySubscription : IDisposable
+internal sealed class HierarchyEntrySubscription(Action dispose) : IDisposable
 {
-    private Action? _dispose;
-
-    public HierarchyEntrySubscription(Action dispose)
-    {
-        _dispose = dispose;
-    }
+    private Action? _dispose = dispose;
 
     public void Dispose()
     {

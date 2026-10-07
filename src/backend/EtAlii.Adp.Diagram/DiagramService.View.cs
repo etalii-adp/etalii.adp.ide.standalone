@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram;
 
 public sealed partial class DiagramService
 {
-    private readonly IDiagramViewportRegistry _viewports;
+    private readonly IDiagramViewportRegistry _viewports = viewports;
 
     public override Task<UpdateViewResponse> UpdateView(UpdateViewRequest request, ServerCallContext context)
     {
