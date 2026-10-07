@@ -10,7 +10,8 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </summary>
 /// <remarks>
 /// Text in, problems out: parse, and hand the model to <see cref="TimelineRuleSet"/>. A file
-/// that will not parse is reported as one <b>error</b> naming the line - the same message the
+/// that will not parse is reported as one <b>error</b> naming the line - the definition's
+/// <c>std.unparseable</c>, with the parser's message as its reason, and the same message the
 /// unavailable state shows, so the panel and the canvas never disagree (Requirement 12.3) -
 /// because running rules over a model that is empty only because the parse failed would bury
 /// that one fact under a list of consequences.
@@ -41,14 +42,7 @@ public sealed class TimelineValidator : IDiagramValidator
         {
             var line = (uint)Math.Max(exception.Start.Line, 1);
             _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, line);
-            return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
-            [
-                new DiagramProblem(
-                    DiagramProblemSeverity.Error,
-                    $"This is not YAML that can be read: {exception.Message}",
-                    UnparseableRuleId,
-                    new DiagramProblemLineLocation(line)),
-            ]);
+            return ValueTask.FromResult(TimelineDefinition.Unparseable(exception.Message, (int)line));
         }
 
         return ValueTask.FromResult(TimelineRuleSet.Judge(model));

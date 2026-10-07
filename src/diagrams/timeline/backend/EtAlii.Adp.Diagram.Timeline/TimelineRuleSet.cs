@@ -1,5 +1,3 @@
-using EtAlii.Adp.Documents;
-
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
@@ -7,10 +5,17 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// canvas, no connection (Requirement 12.1).
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>The rules are the definition's</b> (<c>constraints</c> in <c>definition/timeline.dis</c>),
+/// evaluated by the DISL runtime over the model and reported grouped as this type always reported
+/// them (<see cref="TimelineDefinition.Problems"/>): the ids, then the times, then the relations' ends.
+/// </para>
+/// <para>
 /// Everything here is a <b>warning</b> naming its element, because Requirement 12.2 says the
 /// rest of the diagram still draws. The one error this type has - a document that is not YAML -
 /// never reaches these rules; the validator reports it as a single located problem instead of
 /// running graph rules over a model that is empty only because the parse failed.
+/// </para>
 /// </remarks>
 public static class TimelineRuleSet
 {
@@ -18,119 +23,6 @@ public static class TimelineRuleSet
     public static IReadOnlyList<DiagramProblem> Judge(TimelineModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
-
-        var problems = new List<DiagramProblem>();
-        JudgeIdentity(model, problems);
-        JudgeTimes(model, problems);
-        JudgeConnections(model, problems);
-        return problems;
+        return TimelineDefinition.Problems(model);
     }
-
-    private static void JudgeIdentity(TimelineModel model, List<DiagramProblem> problems)
-    {
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach ((string id, string name, LineRange range) in Declarations(model))
-        {
-            if (id.Length == 0)
-            {
-                problems.Add(Warn(
-                    $"{name} has no id, so nothing can select, connect or edit it.",
-                    TimelineRules.MissingId,
-                    range));
-                continue;
-            }
-
-            if (!seen.Add(id))
-            {
-                problems.Add(Warn(
-                    $"The id '{id}' is declared more than once, which makes every reference to it ambiguous.",
-                    TimelineRules.DuplicateId,
-                    range));
-            }
-        }
-    }
-
-    private static void JudgeTimes(TimelineModel model, List<DiagramProblem> problems)
-    {
-        foreach (var element in model.Elements)
-        {
-            var name = NameOf(element);
-
-            if (!element.Begin.IsReadable)
-            {
-                problems.Add(Warn(
-                    $"{name} begins at '{element.Begin.Text}', which is not a time this timeline can read.",
-                    TimelineRules.UnreadableTime,
-                    element));
-            }
-
-            if (element.End is { IsReadable: false })
-            {
-                problems.Add(Warn(
-                    $"{name} ends at '{element.End.Text}', which is not a time this timeline can read.",
-                    TimelineRules.UnreadableTime,
-                    element));
-            }
-
-            if (element is { Begin.IsReadable: true, End.IsReadable: true })
-            {
-                if (element.End.Value < element.Begin.Value)
-                {
-                    problems.Add(Warn(
-                        $"{name} ends before it begins. No edit in ADP can create this, so the file was changed by hand.",
-                        TimelineRules.EndBeforeBegin,
-                        element));
-                }
-
-                if (element.End.Precision != element.Begin.Precision)
-                {
-                    problems.Add(Warn(
-                        $"{name} mixes a date-only value with a date-time one; begin and end should use the same form.",
-                        TimelineRules.MixedPrecision,
-                        element));
-                }
-            }
-        }
-    }
-
-    private static void JudgeConnections(TimelineModel model, List<DiagramProblem> problems)
-    {
-        var ids = model.Elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
-        foreach (var connection in model.Connections)
-        {
-            foreach (var end in new[] { connection.From, connection.To })
-            {
-                if (end.Length > 0 && !ids.Contains(end))
-                {
-                    problems.Add(new DiagramProblem(
-                        DiagramProblemSeverity.Warning,
-                        $"A relation names '{end}', and no element with that id is on this timeline.",
-                        TimelineRules.DanglingConnection,
-                        new DiagramProblemElementLocation(connection.Id)));
-                }
-            }
-        }
-    }
-
-    private static IEnumerable<(string Id, string Name, LineRange Range)> Declarations(TimelineModel model)
-    {
-        foreach (var element in model.Elements)
-        {
-            yield return (element.Id, NameOf(element), element.Range);
-        }
-
-        foreach (var connection in model.Connections)
-        {
-            yield return (connection.Id, "A relation", connection.Range);
-        }
-    }
-
-    private static string NameOf(TimelineElement element) =>
-        element.Label.Length > 0 ? $"'{element.Label}'" : $"'{element.Id}'";
-
-    private static DiagramProblem Warn(string message, string ruleId, TimelineElement element) =>
-        new(DiagramProblemSeverity.Warning, message, ruleId, new DiagramProblemElementLocation(element.Id));
-
-    private static DiagramProblem Warn(string message, string ruleId, LineRange range) =>
-        new(DiagramProblemSeverity.Warning, message, ruleId, new DiagramProblemLineLocation((uint)(range.Start + 1)));
 }
