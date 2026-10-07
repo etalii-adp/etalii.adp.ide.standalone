@@ -45,7 +45,7 @@ public sealed class DislElement : ICelObject
 
     public DislDiagram Diagram { get; }
 
-    public DislType Type { get; }
+    public DislType Type { get; private set; }
 
     /// <summary>The element's id: stored, or computed from the id rule once the model is complete (§11.5).</summary>
     public string Id { get; internal set; }
@@ -133,6 +133,22 @@ public sealed class DislElement : ICelObject
 
     /// <summary>The value of the type's label attribute (§4.6), as text; empty when it has none.</summary>
     public string Label() => Type.LabelAttribute is { } name && ValueOf(name) is { } value ? value as string ?? value.ToString() ?? "" : "";
+
+    /// <summary>
+    /// Makes this node a <paramref name="type"/> in place (a <c>retype</c> action, §9.4): the attributes both
+    /// types declare are kept, the others forgotten, and <paramref name="mapped"/> stored over them. Its
+    /// parent, children and relations stay as they are.
+    /// </summary>
+    internal void Retype(DislType type, IReadOnlyDictionary<string, object?> mapped)
+    {
+        foreach (var name in _attributes.Keys.Where(name => !type.Attributes.ContainsKey(name)).ToList()) _attributes.Remove(name);
+        Type = type;
+        foreach ((string name, object? value) in mapped)
+        {
+            if (value is null) _attributes.Remove(name);
+            else _attributes[name] = value;
+        }
+    }
 
     internal void AddChild(DislElement child) => _children.Add(child);
 

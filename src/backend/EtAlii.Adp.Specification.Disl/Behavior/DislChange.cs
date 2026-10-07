@@ -10,6 +10,12 @@ public abstract record DislChange
     /// <param name="At">The domain point it was created at, when the action said one: placement is the host's.</param>
     public sealed record Create(string Type, string Id, IReadOnlyDictionary<string, object?> Attributes, string? ParentId, object? At) : DislChange;
 
+    /// <summary>
+    /// A relation of <paramref name="Type"/> created with <paramref name="Id"/> from <paramref name="SourceId"/> to
+    /// <paramref name="TargetId"/> (<c>connect</c>), with the attributes its action gave.
+    /// </summary>
+    public sealed record Connect(string Type, string Id, string SourceId, string TargetId, IReadOnlyDictionary<string, object?> Attributes) : DislChange;
+
     /// <summary>Attributes of an element of <paramref name="Type"/> assigned (<c>set</c>), or forgotten where the value is null (<c>unset</c>).</summary>
     public sealed record Set(string ElementId, string Type, IReadOnlyDictionary<string, object?> Attributes) : DislChange;
 
