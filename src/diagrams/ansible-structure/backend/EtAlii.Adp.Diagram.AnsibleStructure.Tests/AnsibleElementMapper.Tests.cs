@@ -253,8 +253,8 @@ public class AnsibleElementMapperTests
         // Assert.
         // Nothing on this diagram folds, so the two delta kinds that express folding have no
         // meaning here. Their absence is the design, not an omission.
-        Assert.All(deltas, delta => Assert.IsNotType<DiagramGroupDelta>(delta));
-        Assert.All(deltas, delta => Assert.IsNotType<DiagramUngroupDelta>(delta));
+        Assert.All(deltas, Assert.IsNotType<DiagramGroupDelta>);
+        Assert.All(deltas, Assert.IsNotType<DiagramUngroupDelta>);
     }
 
     [Fact]
@@ -311,7 +311,7 @@ public class AnsibleElementMapperTests
         var deltas = DiagramDiff.Between(elements, elements);
 
         // Assert.
-        Assert.All(deltas, delta => Assert.IsNotType<DiagramRemoveDelta>(delta));
+        Assert.All(deltas, Assert.IsNotType<DiagramRemoveDelta>);
         // Nor anything else: an unchanged project resends nothing (backend-centralization R4.2).
         Assert.Empty(deltas);
     }

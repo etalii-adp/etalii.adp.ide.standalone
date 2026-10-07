@@ -15,7 +15,7 @@ public static class CelLists
         environment.AddFunction(new CelFunction("flatten", CelCallStyle.Receiver, 0, 1, call => Flatten(CelValues.AsList(call[0]), call.Count > 1 ? CelValues.AsInt(call[1]) : 1), CelCore.Length));
         environment.AddFunction(CelFunction.Receiver("slice", 2, a => Slice(CelValues.AsList(a[0]), CelValues.AsInt(a[1]), CelValues.AsInt(a[2])), CelCore.Length));
         environment.AddFunction(CelFunction.Receiver("sort", 0, a => Sort(CelValues.AsList(a[0]), item => item), Logarithmic));
-        environment.AddMacro(new CelMacro("sortBy", (items, key) => Sort(items, key)));
+        environment.AddMacro(new CelMacro("sortBy", Sort));
     }
 
     private static List<object?> Range(long count)

@@ -308,7 +308,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         var path = Write("azure-pipelines", Pipeline);
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, "Test")).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, updated => reported.Add(updated));
+        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, reported.Add);
 
         // Act.
         await File.WriteAllTextAsync(BodyOf(path), "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
@@ -467,7 +467,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         var edge = DrawnEdges(path).Single(candidate => candidate is { FromId: "Test", ToId: "Deploy" });
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(path, PipelineElementMapper.EdgeId(edge))).Level;
         var reported = new List<IReadOnlyList<string>?>();
-        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, updated => reported.Add(updated));
+        using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, reported.Add);
 
         // Act: an edit elsewhere, then one that removes the dependency.
         _store.Touch(_workspace, BodyOf(path));

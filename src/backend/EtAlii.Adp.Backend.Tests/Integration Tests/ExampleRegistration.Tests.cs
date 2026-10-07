@@ -293,7 +293,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
             .ToList();
 
         var bySubject = registrations
-            .Select(name => DiagramRegistrationName.TryParse(name))
+            .Select(DiagramRegistrationName.TryParse)
             .Where(parsed => parsed is not null && !parsed.IsFolderScoped)
             .GroupBy(parsed => parsed!.SubjectBase, StringComparer.OrdinalIgnoreCase);
 

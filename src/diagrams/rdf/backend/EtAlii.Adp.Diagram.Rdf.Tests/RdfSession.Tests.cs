@@ -175,7 +175,7 @@ public class RdfSessionTests : IDisposable
 
         // Assert.
         var resent = seen.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id);
-        Assert.DoesNotContain(resent, id => culled.Contains(id));
+        Assert.DoesNotContain(resent, culled.Contains);
     }
 
     [Fact]

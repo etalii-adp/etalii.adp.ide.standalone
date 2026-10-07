@@ -81,7 +81,7 @@ public static class OwlProjection
             {
                 var badges = index.TypesOf(individual)
                     .Where(type => !OwlVocabulary.IsBuiltIn(type))
-                    .Select(type => Display(type))
+                    .Select(Display)
                     .ToList();
                 nodes[node.Id] = node with { Badges = badges };
             }
@@ -117,7 +117,7 @@ public static class OwlProjection
             var froms = EndpointIds(index.DomainsOf(property), property, "domain");
             var ranges = index.RangesOf(property).Where(index.IsDatatype).ToList();
             var tos = ranges.Count > 0
-                ? ranges.Select(range => EnsureDatatype(range)).ToList()
+                ? ranges.Select(EnsureDatatype).ToList()
                 : new List<string> { EnsureAnchor($"dt:{property}", OwlNodeKind.Datatype, "Literal", "") };
             foreach (var from in froms)
             {

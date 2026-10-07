@@ -178,7 +178,7 @@ public class ProblemStoreTests : IDisposable
         // Arrange.
         using var store = Store();
         var raised = new List<string>();
-        store.Changed += rootPath => raised.Add(rootPath);
+        store.Changed += raised.Add;
 
         // Act.
         store.Replace(_root, [Problem("a.adp")]);
