@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -11,7 +10,7 @@ public class GhgExampleInfluencePhaseTests
 {
     public static TheoryData<string> Examples => ["technology-trends", "digital-trends", "energy-breakthroughs", "llms-and-agents", "eras-of-innovation", "coal-technologies", "electric-vehicles", "internet-evolution", "warfare-in-ukraine"];
 
-    private static GhgModel Model(string name) => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(name))));
+    private static GhgModel Model(string name) => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(name))));
 
     /// <summary>
     /// The two phases an influence joins overlap in time. The one exception is a trend that ended before
@@ -140,7 +139,7 @@ public class GhgExampleInfluencePhaseTests
         var model = Model(name);
 
         Assert.Contains(model.Triggers, trigger => model.Influences.Any(influence => influence.From == trigger.Id));
-        Assert.Empty(GhgValidator.Validate(model));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(name)))));
     }
 
     /// <summary>

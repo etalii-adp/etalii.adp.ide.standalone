@@ -1,3 +1,4 @@
+using System.Globalization;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
@@ -25,8 +26,14 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </para>
 /// <para>
 /// <b>What cannot be drawn is left out, and what breaks a rule is still drawn</b>, as in FDG: a trend
-/// without a readable span, an influence whose end is not a drawable trend, and every later entry
-/// reusing an id already drawn (the shared diff throws on an id that appears twice).
+/// without a readable span and an influence whose end is not a drawable trend are left out.
+/// </para>
+/// <para>
+/// <b>A later entry reusing an id already drawn is still drawn, as ephemeral</b> (DISL 11.5.4): the
+/// first keeps the id, and every lookup and reference resolves to it. The later one is sent under an
+/// id of its own that the document never holds, because the shared diff throws on an id that
+/// appears twice; every gesture on it then names no entry and is refused before it is applied, so
+/// nothing is stored for it (DISL 11.5.3). <c>ghg.duplicate-id</c> still reports it.
 /// </para>
 /// </remarks>
 public sealed class GhgElementMapper
@@ -91,33 +98,76 @@ public sealed class GhgElementMapper
     }
 
     /// <summary>
-    /// What can be drawn: an element needs an id nothing drawn earlier took and a readable position;
-    /// an influence needs a drawable trend or trigger at its source and a drawable trend at its target.
+    /// What can be drawn: an element needs an id and a readable position; an influence needs a drawable
+    /// trend or trigger at its source and a drawable trend at its target. An entry reusing an id an
+    /// earlier drawn entry took is drawn under an ephemeral id (DISL 11.5.4), and no influence ends at it.
     /// </summary>
     private static (IReadOnlyList<GhgTrend> Trends, IReadOnlyList<GhgTrigger> Triggers, IReadOnlyList<GhgNote> Notes, IReadOnlyList<GhgInfluence> Influences) Drawable(GhgModel model)
     {
-        var taken = new HashSet<string>(StringComparer.Ordinal);
+        var ids = new DrawnIds(model);
 
         var trends = model.Trends
-            .Where(trend => trend.Id.Length > 0 && trend.HasSpan && taken.Add(trend.Id))
+            .Where(trend => trend.Id.Length > 0 && trend.HasSpan)
+            .Select(trend => trend with { Id = ids.Claim(trend.Id) })
             .ToList();
         var triggers = model.Triggers
-            .Where(trigger => trigger.Id.Length > 0 && trigger.Date is not null && taken.Add(trigger.Id))
+            .Where(trigger => trigger.Id.Length > 0 && trigger.Date is not null)
+            .Select(trigger => trigger with { Id = ids.Claim(trigger.Id) })
             .ToList();
         var notes = model.Notes
-            .Where(note => note.Id.Length > 0 && note.IsPlaceable && taken.Add(note.Id))
+            .Where(note => note.Id.Length > 0 && note.IsPlaceable)
+            .Select(note => note with { Id = ids.Claim(note.Id) })
             .ToList();
 
-        var trendIds = trends.Select(trend => trend.Id).ToHashSet(StringComparer.Ordinal);
-        var sourceIds = trendIds.Concat(triggers.Select(trigger => trigger.Id)).ToHashSet(StringComparer.Ordinal);
+        // Only an entry that kept its id can be an influence's end: a reference resolves to the first.
+        var trendIds = trends.Select(trend => trend.Id).Where(ids.IsKept).ToHashSet(StringComparer.Ordinal);
+        var sourceIds = trendIds.Concat(triggers.Select(trigger => trigger.Id).Where(ids.IsKept)).ToHashSet(StringComparer.Ordinal);
         var influences = model.Influences
             .Where(influence => influence.Id.Length > 0
                 && sourceIds.Contains(influence.From)
-                && trendIds.Contains(influence.To)
-                && taken.Add(influence.Id))
+                && trendIds.Contains(influence.To))
+            .Select(influence => influence with { Id = ids.Claim(influence.Id) })
             .ToList();
 
         return (trends, triggers, notes, influences);
+    }
+
+    /// <summary>
+    /// The ids handed out in one rendering: the first entry to claim an id keeps it, and a later one gets
+    /// an ephemeral id that no entry of the document holds and nothing earlier was given.
+    /// </summary>
+    private sealed class DrawnIds(GhgModel model)
+    {
+        private readonly HashSet<string> _written = model.Trends.Select(trend => trend.Id)
+            .Concat(model.Triggers.Select(trigger => trigger.Id))
+            .Concat(model.Notes.Select(note => note.Id))
+            .Concat(model.Influences.Select(influence => influence.Id))
+            .ToHashSet(StringComparer.Ordinal);
+
+        private readonly HashSet<string> _taken = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _ephemeral = new(StringComparer.Ordinal);
+
+        /// <summary><paramref name="id"/> when nothing drawn earlier took it, an ephemeral id otherwise.</summary>
+        public string Claim(string id)
+        {
+            if (_taken.Add(id))
+            {
+                return id;
+            }
+
+            for (var occurrence = 2; ; occurrence++)
+            {
+                var candidate = string.Create(CultureInfo.InvariantCulture, $"{id}~{occurrence}");
+                if (!_written.Contains(candidate) && _taken.Add(candidate))
+                {
+                    _ephemeral.Add(candidate);
+                    return candidate;
+                }
+            }
+        }
+
+        /// <summary>Whether <paramref name="id"/> is one the document holds rather than an ephemeral one.</summary>
+        public bool IsKept(string id) => !_ephemeral.Contains(id);
     }
 
     private readonly record struct Box(double MinX, double MinY, double MaxX, double MaxY);
@@ -195,7 +245,7 @@ public sealed class GhgElementMapper
 
     private static DiagramElement Note(GhgNote note, GhgTimeUnit unit)
     {
-        var payload = new GhgNotePayload { Text = note.Text, Width = note.Width!.Value, Height = note.Height!.Value };
+        var payload = new GhgNotePayload { Text = note.Text, Width = note.Width!.Value, Height = note.Height!.Value, Unit = unit.Name };
         var box = Bounds(note, unit);
         return Pack(note.Id, (box.MinX + box.MaxX) / 2, (box.MinY + box.MaxY) / 2, NoteType, payload);
     }

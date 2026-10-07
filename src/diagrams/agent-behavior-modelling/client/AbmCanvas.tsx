@@ -16,131 +16,40 @@ import { placementId, relationId } from "@client/canvas/gestureIds";
 import {
   ABM_ACTION_IDS,
   ABM_ADD_ACTION_PREFIX,
-  ABM_CATEGORY,
   ABM_CHILD_RELATION,
   ABM_NODE_KINDS,
   AbmActions,
-  AbmShortcuts,
   type AbmNodeKind,
 } from "./abmIds";
 import { applyDelta, emptyModel, type AbmModel } from "./abmModel";
 import { arrangementOf, previewOf, sameOffsets, type Offset } from "./abmDrag";
+import { ABM_BINDINGS } from "./abmBindings";
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
+import disText from "../definition/agent-behavior-modelling.dis?raw";
+
+/** The bundled specification: the same bytes the backend loads, read by Vite as text. */
+const SPEC = parseDisl(disText);
 
 /**
- * The shape each kind is drawn as - the library's built-ins, and nothing of this module's own. A
- * composite is a squircle and a wrapper a hexagon, as behavior tree editors in games set the two
- * families apart; among the leaves, a Check is a pill, a Do a box, an Ask the user the
- * parallelogram flowcharts give input, and a Delegate the diode that points onward.
+ * What a behavior model allows, stated once - compiled from the bundled DISL specification
+ * (`definition/agent-behavior-modelling.dis`), with the few things the library cannot read from it
+ * in `abmBindings.ts`. The tree is computed by the backend from the Markdown, so the canvas lays out
+ * nothing; a drag moves a node's row and may reorder its siblings, and a parent line drawn from one
+ * node to another moves the second under the first, which the cycle rule keeps from ever running a
+ * node beneath itself. `abmCompiledDefinition.test.ts` holds this to the definition once written
+ * here by hand.
  */
-export const ABM_SHAPES: Readonly<Record<AbmNodeKind, ElementTypeDefinition["shape"]>> = {
-  sequence: "superellipse",
-  fallback: "superellipse",
-  parallel: "superellipse",
-  retry: "hexagon",
-  repeat: "hexagon",
-  guard: "hexagon",
-  approval: "hexagon",
-  check: "pill",
-  action: "box",
-  ask: "parallelogram",
-  delegate: "diode",
-};
-
-/** The fill family a kind takes its colour from; `abm.css` maps each to a theme token. */
-function familyOf(kind: AbmNodeKind): string {
-  if (kind === "check" || kind === "action") {
-    return kind;
-  }
-
-  return ABM_CATEGORY[kind] === "leaf" ? "other" : ABM_CATEGORY[kind];
-}
+export const ABM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(SPEC, ABM_BINDINGS));
 
 /**
- * One kind: its shape and fill, the keyword on the top line and the label beneath it. Only the label
- * is editable - the keyword is the kind, changed through the property grid, where it can be refused
- * when the node's children would not fit the new kind.
+ * The shape each kind is drawn as - the library's built-ins, and nothing of this module's own: a
+ * composite is a squircle and a wrapper a hexagon; among the leaves a Check is a pill, a Do a box,
+ * an Ask the user a parallelogram and a Delegate a diode. Read from the compiled definition.
  */
-function nodeType(kind: AbmNodeKind): ElementTypeDefinition {
-  return {
-    id: kind,
-    shape: ABM_SHAPES[kind],
-    classNames: [
-      { className: "canvas-element abm-node", on: "element" },
-      { className: "abm-implicit", on: "element", when: { path: "payload.implicit", is: "true" } },
-      { className: `canvas-node abm-${familyOf(kind)}`, on: "shape" },
-    ],
-    accessibility: { role: "button", label: { template: "{payload.keyword}: {payload.label}" } },
-    labels: [
-      {
-        text: { path: "payload.keyword" },
-        anchorTo: "top",
-        offset: { x: 0, y: 20 },
-        truncate: true,
-        className: "abm-keyword",
-      },
-      {
-        text: { path: "payload.label" },
-        anchorTo: "top",
-        offset: { x: 0, y: 40 },
-        truncate: true,
-        editable: true,
-        editorBox: { top: 27, height: 22 },
-        tooltip: { path: "payload.label" },
-        className: "canvas-node-label abm-label",
-      },
-    ],
-    // A parent line leaves the middle of the parent's bottom and arrives at the middle of the
-    // child's top, as a tree drawn top-down reads; the orthogonal route then runs vertically out
-    // and in. A true edge intersection would put both ends wherever the slant between the two
-    // centres crossed the outline, and the route would lie along the borders.
-    anchors: { kind: "edge", edgeSides: "vertical" },
-    sizing: "model",
-  };
-}
-
-/** The kinds a parent line may start from: the ones that hold children. */
-const PARENTS: readonly AbmNodeKind[] = ABM_NODE_KINDS.filter((kind) => ABM_CATEGORY[kind] !== "leaf");
-
-/**
- * What a behavior model allows, stated once. The tree is computed by the backend from the Markdown,
- * so the canvas lays out nothing; a drag moves a node's row and may reorder its siblings, and a
- * parent line drawn from one node to another moves the second under the first, which the cycle rule
- * keeps from ever running a node beneath itself.
- */
-export const ABM_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes: ABM_NODE_KINDS.map(nodeType),
-  relationTypes: [
-    {
-      id: ABM_CHILD_RELATION,
-      route: "orthogonal",
-      style: { endMarker: "arrow" },
-      className: "abm-child",
-      endpoints: {
-        source: { elementTypes: PARENTS },
-        target: { elementTypes: ABM_NODE_KINDS, anchors: "edge" },
-        allowSelf: false,
-      },
-    },
-  ],
-  acyclic: [{ relationTypes: [ABM_CHILD_RELATION] }],
-  actions: [
-    {
-      id: AbmActions.rename,
-      invokedBy: [{ kind: "shortcut", key: AbmShortcuts.rename }, { kind: "gesture", gesture: "activate" }],
-      appliesTo: [{ kind: "element" }],
-    },
-    { id: AbmActions.remove, invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
-    { id: AbmActions.moveEarlier, invokedBy: [{ kind: "shortcut", key: AbmShortcuts.moveEarlier }], appliesTo: [{ kind: "element" }] },
-    { id: AbmActions.moveLater, invokedBy: [{ kind: "shortcut", key: AbmShortcuts.moveLater }], appliesTo: [{ kind: "element" }] },
-  ],
-  layout: { modes: ["manual"] },
-  dragging: "enabled",
-  // Edge anchors draw no handle, so a parent line is drawn by dragging with the right button from
-  // the parent's body to the child's - the gesture every edge-anchored module offers.
-  connectOnRightDrag: true,
-  // Arrange diagram and "Add … here" on empty canvas, from the backend's own list.
-  backgroundMenu: true,
-});
+export const ABM_SHAPES: Readonly<Record<AbmNodeKind, ElementTypeDefinition["shape"]>> = Object.fromEntries(
+  ABM_DEFINITION.elementTypes.map((type) => [type.id, type.shape]),
+) as Record<AbmNodeKind, ElementTypeDefinition["shape"]>;
 
 /** The declared actions this module forwards; anything else the library raises is not ours. */
 const FORWARDED_ACTIONS: ReadonlySet<string> = new Set(ABM_ACTION_IDS);

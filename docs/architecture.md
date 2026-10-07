@@ -80,6 +80,9 @@ One line each, with the project that owns it. Their internals are deliberately o
 | The workspace tree and file watching | `EtAlii.Adp.Hierarchy` |
 | Diagram-type abstractions | `EtAlii.Adp.Diagram` |
 | Editor-family abstractions | `EtAlii.Adp.Editor` |
+| Reading and writing bodies through FBL bindings | `EtAlii.Adp.Specification.Fbl` |
+| Evaluating CEL expressions, for FBL and DISL alike | `EtAlii.Adp.Specification.Cel` |
+| Loading DISL specifications and the bundled definitions, building a diagram's model from a reading, and deriving its toolbox, context menus, property rows, findings and gesture refusals, and running its operations, hooks, deletion policy and retyping | `EtAlii.Adp.Specification.Disl` |
 
 For how a subsystem behaves rather than which project holds it, read [`tech.md`](../.spec-workflow/steering/tech.md).
 

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -9,7 +8,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
 /// </summary>
 public class GhgDigitalExampleTests
 {
-    private static LineDocument Document() => LineDocument.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed("digital-trends")));
+    private static GhgBody Document() => GhgBody.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed("digital-trends")));
 
     private static GhgModel Model() => GhgParser.Parse(Document());
 

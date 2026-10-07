@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -40,7 +39,7 @@ public class GhgEnergyAndAgentsExamplesTests
         }
     }
 
-    private static LineDocument Document(string name) => LineDocument.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(name)));
+    private static GhgBody Document(string name) => GhgBody.Parse(File.ReadAllText(GhgModuleFiles.ExampleNamed(name)));
 
     private static GhgModel Model(string name) => GhgParser.Parse(Document(name));
 

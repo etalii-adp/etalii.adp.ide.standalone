@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Specification.Cel;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Expressions;
 using EtAlii.Adp.Specification.Fbl.Json;
@@ -20,6 +21,17 @@ internal sealed class BodyReading
     private readonly Dictionary<Entry, string> _claims = [];
     private readonly Dictionary<Entry, ReadElement> _byEntry = [];
     private readonly Dictionary<string, CelProgram?> _programs = new(StringComparer.Ordinal);
+
+    // An entry's parent as CEL reads it, converted once per reading: every item of a list shares the
+    // list as its parent, so converting it per item made reading quadratic in the list's length.
+    private readonly Dictionary<object, object?> _parents = new(ReferenceEqualityComparer.Instance);
+
+    // While claiming, the variables of the candidate being claimed: its when and its computed slots read the same ones.
+    private bool _isClaiming;
+    private (Candidate Candidate, Dictionary<string, object?> Variables)? _claiming;
+
+    // Per reference, the first element of each key, built on first use once the elements are final.
+    private readonly Dictionary<ReferenceBinding, Dictionary<string, ReadElement>> _referenced = new(ReferenceEqualityComparer.Instance);
     private readonly List<Finding> _findings = [];
 
     private BodyReading(BodyText text, FblBinding binding, FblOptions options, FamilyReader family)
@@ -109,7 +121,10 @@ internal sealed class BodyReading
             if (header.Required) return reading.MakeUnreadable(0, $"The body does not start with the mark the binding requires ({mark}).");
             family.Report(FindingCodes.HeaderMismatch, FindingSeverity.Warning, $"The body does not carry the binding's header mark ({mark}); it is read anyway.", new Span(text.BomLength, text.Lines[0].ContentEnd));
         }
+        reading._isClaiming = true;
         reading.Claim();
+        reading._isClaiming = false;
+        reading._claiming = null;
         reading.Resolve();
         family.AfterRead(reading.ClaimedBy);
         reading._findings.InsertRange(0, family.Findings);
@@ -216,7 +231,7 @@ internal sealed class BodyReading
         if (_programs.TryGetValue(key, out var cached)) return cached;
         try
         {
-            cached = CelCompiler.Compile(expression, context);
+            cached = FblCel.Compile(expression, context);
         }
         catch (CelException e)
         {
@@ -235,7 +250,7 @@ internal sealed class BodyReading
         if (program is null) return null;
         try
         {
-            var value = program.Evaluate(Variables(candidate));
+            var value = program.Evaluate(ClaimVariables(candidate));
             if (value is not CelError failed) return value;
             problem = failed.Message;
             return null;
@@ -263,6 +278,19 @@ internal sealed class BodyReading
         }
     }
 
+    /// <summary>
+    /// The variables of <paramref name="candidate"/>, kept while it is the one being read: while
+    /// claiming, nothing they are made of changes between its <c>when</c> and its computed slots.
+    /// </summary>
+    private Dictionary<string, object?> ClaimVariables(Candidate candidate)
+    {
+        if (!_isClaiming) return Variables(candidate);
+        if (_claiming is { } claiming && ReferenceEquals(claiming.Candidate, candidate)) return claiming.Variables;
+        var variables = Variables(candidate);
+        _claiming = (candidate, variables);
+        return variables;
+    }
+
     private Dictionary<string, object?> Variables(Candidate candidate)
     {
         var variables = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -280,14 +308,21 @@ internal sealed class BodyReading
         {
             if (_byEntry.TryGetValue(enclosing, out var element))
             {
-                parent = Family.CelValue(element.Candidate);
+                parent = ParentValue(element, () => Family.CelValue(element.Candidate));
                 break;
             }
-            parent ??= Family.CelValue(new Candidate(null, null, enclosing, new Dictionary<string, string>()));
+            parent ??= ParentValue(enclosing, () => Family.CelValue(new Candidate(null, null, enclosing, new Dictionary<string, string>())));
             break;
         }
         variables["parent"] = parent;
         return variables;
+    }
+
+    /// <summary>The CEL value of a parent, by the element or the entry it is a pure function of, converted on first use.</summary>
+    private object? ParentValue(object key, Func<object?> convert)
+    {
+        if (!_parents.TryGetValue(key, out var value)) _parents[key] = value = convert();
+        return value;
     }
 
     // ---- slots (FBL §5.2) ----
@@ -495,8 +530,21 @@ internal sealed class BodyReading
         }
     }
 
-    public ReadElement? ReferencedBy(ReferenceBinding reference, string key) =>
-        Elements.FirstOrDefault(e => reference.To.Contains(e.Rule.Name) && NewText.Plain(e.Attributes.GetValueOrDefault(reference.By), null) == key);
+    /// <summary>The first element, in document order, that <paramref name="reference"/> can name and whose key is <paramref name="key"/>.</summary>
+    /// <remarks>Read once the elements are final, so each reference's keys are indexed on first use rather than searched per key.</remarks>
+    public ReadElement? ReferencedBy(ReferenceBinding reference, string key)
+    {
+        if (!_referenced.TryGetValue(reference, out var index))
+        {
+            index = new Dictionary<string, ReadElement>(StringComparer.Ordinal);
+            foreach (var element in Elements.Where(e => reference.To.Contains(e.Rule.Name)))
+            {
+                index.TryAdd(NewText.Plain(element.Attributes.GetValueOrDefault(reference.By), null), element);
+            }
+            _referenced[reference] = index;
+        }
+        return index.GetValueOrDefault(key);
+    }
 
     // ---- the public model ----
 

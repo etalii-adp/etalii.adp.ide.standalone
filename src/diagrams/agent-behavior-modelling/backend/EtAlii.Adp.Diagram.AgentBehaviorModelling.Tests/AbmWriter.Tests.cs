@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.Parity;
 using EtAlii.Adp.Documents;
 using Xunit;
 
@@ -5,24 +6,8 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 
 public class AbmWriterTests
 {
-    private const string Tree =
-        "# Agent\r\n" +
-        "\r\n" +
-        "Prose the module never touches.\r\n" +
-        "\r\n" +
-        "## Behavior\r\n" +
-        "\r\n" +
-        "- **Do in order:** Work\r\n" +
-        "  - **Check:** Ready\r\n" +
-        "  - **Try in order:** Options\r\n" +
-        "    - **Do:** First\r\n" +
-        "      Notes for first.\r\n" +
-        "    - **Do:** Second\r\n" +
-        "  - **Do:** Finish\r\n" +
-        "\r\n" +
-        "## After\r\n" +
-        "\r\n" +
-        "More prose.";
+    // The parity corpus's own document, so the writer tests and the transcript read the same bytes.
+    private const string Tree = AbmCorpus.WriterTree;
 
     private static (LineDocument Document, AbmModel Model) Load(string text = Tree)
     {

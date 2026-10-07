@@ -26,7 +26,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// so a document that reads always has a model.
 /// </para>
 /// </remarks>
-public sealed record GhgDocumentEntry(LineDocument Document, GhgModel Model, string Unreadable = "")
+public sealed record GhgDocumentEntry(GhgBody Document, GhgModel Model, string Unreadable = "")
 {
     /// <summary>Whether this entry holds the document's content, rather than a stand-in for one that could not be read.</summary>
     public bool IsUsable => Unreadable.Length == 0;
@@ -36,7 +36,7 @@ public sealed record GhgDocumentEntry(LineDocument Document, GhgModel Model, str
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        var document = LineDocument.Parse(text);
+        var document = GhgBody.Parse(text);
         return new GhgDocumentEntry(document, GhgParser.Parse(document));
     }
 

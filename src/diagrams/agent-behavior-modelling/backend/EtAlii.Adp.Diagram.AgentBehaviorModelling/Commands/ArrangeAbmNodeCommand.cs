@@ -1,6 +1,7 @@
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 
@@ -149,18 +150,18 @@ public sealed class ArrangeAbmNodeCommandHandler(IAbmDocumentStore documents) : 
         var before = entry.Document.Text;
         var siblingCount = AbmArrangement.SiblingsOf(model, node).Count;
         var parent = node.ParentId is { } parentId ? model.NodeOf(parentId) : null;
-        LineDocument? reordered = null;
+        AbmBody? reordered = null;
         var renamed = stored;
         if (arrangement.From != arrangement.To)
         {
-            reordered = LineDocument.Parse(before);
-            var edit = AbmWriter.Move(reordered, model, node, parent, arrangement.MoveIndex);
+            reordered = AbmBody.Parse(before);
+            var edit = reordered.Change(new ModelChange.Move(node.Id, parent?.Id, arrangement.MoveIndex));
             if (!edit.WasApplied)
             {
                 return Task.FromResult(CommandResult.Failure(edit.Refusal!));
             }
 
-            model = AbmParser.Parse(reordered);
+            model = reordered.Model;
             renamed = arrangement.Renamed(node.ParentId, siblingCount, stored);
         }
 

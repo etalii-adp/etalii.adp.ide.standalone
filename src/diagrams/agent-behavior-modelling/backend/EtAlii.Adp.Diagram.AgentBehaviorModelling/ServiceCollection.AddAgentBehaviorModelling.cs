@@ -45,6 +45,7 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
         services.AddSingleton<ICommandHandler<SetAbmNodeKindCommand>, SetAbmNodeKindCommandHandler>();
         services.AddSingleton<ICommandHandler<SetAbmNotesCommand>, SetAbmNotesCommandHandler>();
         services.AddSingleton<ICommandHandler<MoveAbmNodeCommand>, MoveAbmNodeCommandHandler>();
+        services.AddSingleton<ICommandHandler<ConnectAbmChildCommand>, ConnectAbmChildCommandHandler>();
         services.AddSingleton<ICommandHandler<ArrangeAbmNodeCommand>, ArrangeAbmNodeCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreAbmArrangementCommand>, RestoreAbmArrangementCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IAbmDocumentStore>>, RestoreDocumentCommandHandler<IAbmDocumentStore>>();

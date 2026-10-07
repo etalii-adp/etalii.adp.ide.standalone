@@ -7,11 +7,13 @@
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
+    <!-- The body is read and written through FBL: the binding below, applied by the library. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+    <!-- The toolbox, the context menus and the property rows are derived from the bundled DISL definition. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Reading only. See the note beside its PackageVersion in src/Directory.Packages.props. -->
-    <PackageReference Include="YamlDotNet" />
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
     <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.Tools">
@@ -22,6 +24,17 @@
   <ItemGroup>
     <!-- This type's own wire payload, packed into the core Element's Any. -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The FBL binding of the .ghg body, loaded once by GhgBody. -->
+    <EmbeddedResource Include="gartner-hype-cycle-graph.fbl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\gartner-hype-cycle-graph.dis" LogicalName="gartner-hype-cycle-graph.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="gartner-hype-cycle-graph.provenance.json" />
   </ItemGroup>
 
   <ItemGroup>

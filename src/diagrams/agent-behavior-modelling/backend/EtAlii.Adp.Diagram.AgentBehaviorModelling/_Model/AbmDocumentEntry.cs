@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// <summary>
 /// One loaded Markdown document: its lines, and the model read from them.
 /// </summary>
-/// <param name="Document">The document's own lines, which every edit splices.</param>
+/// <param name="Document">The document's body, which every edit changes through FBL.</param>
 /// <param name="Model">What <see cref="AbmParser"/> read from them.</param>
 /// <param name="Unreadable">
 /// Empty for a document that was read; otherwise why its body could not be read.
@@ -26,18 +26,18 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// so a document that reads always has a model.
 /// </para>
 /// </remarks>
-public sealed record AbmDocumentEntry(LineDocument Document, AbmModel Model, string Unreadable = "")
+public sealed record AbmDocumentEntry(AbmBody Document, AbmModel Model, string Unreadable = "")
 {
     /// <summary>Whether this entry holds the document's content, rather than a stand-in for one that could not be read.</summary>
     public bool IsUsable => Unreadable.Length == 0;
 
-    /// <summary>The entry for a body's text: its lines, and the model read from them.</summary>
+    /// <summary>The entry for a body's text: the body, and the model read from it.</summary>
     public static AbmDocumentEntry Read(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        var document = LineDocument.Parse(text);
-        return new AbmDocumentEntry(document, AbmParser.Parse(document));
+        var document = AbmBody.Parse(text);
+        return new AbmDocumentEntry(document, document.Model);
     }
 
     /// <summary>

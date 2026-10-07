@@ -131,7 +131,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             null => "null",
             bool b => b ? "true" : "false",
             string s => String(s, old, binding, keyIndent),
-            IEnumerable<object?> list => "[" + string.Join(", ", list.Select(v => Scalar(v, null, binding, keyIndent))) + "]",
+            IEnumerable<object?> list => "[" + string.Join(", ", list.Select(v => v is string item ? FlowItem(item) : Scalar(v, null, binding, keyIndent))) + "]",
             _ => NewText.TryNumber(value, out var number) ? NewText.Number(number, binding?.Decimals) : String(NewText.Plain(value, binding), old, binding, keyIndent),
         };
     }
@@ -143,7 +143,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var multiline = value.Contains('\n') || value.Contains('\r');
         switch (old?.Style)
         {
-            case ValueStyle.Plain when YamlScalars.IsPlainSafe(value, timeTyped):
+            case ValueStyle.Plain when YamlScalars.IsPlainWritable(value, timeTyped):
                 return value;
             case ValueStyle.Single when !multiline:
                 return YamlScalars.SingleQuoted(value);
@@ -157,11 +157,19 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             case "single" when !multiline: return YamlScalars.SingleQuoted(value);
             case "double": return YamlScalars.DoubleQuoted(value);
             case "literal" when multiline: return Literal(value, keyIndent);
-            case "plain" when YamlScalars.IsPlainSafe(value, timeTyped): return value;
+            case "plain" when YamlScalars.IsPlainWritable(value, timeTyped): return value;
         }
         if (YamlScalars.IsPlainSafe(value, timeTyped)) return value;
         return Binding.Text.Quote == "single" && !multiline ? YamlScalars.SingleQuoted(value) : YamlScalars.DoubleQuoted(value);
     }
+
+    /// <summary>
+    /// A string inside a flow collection: plain only when it is plain-safe and holds none of the flow
+    /// indicators <c>, [ ] { }</c> nor a <c>:</c>, which a flow collection would read as a separator or a
+    /// mapping; double-quoted otherwise (FBL §6.3).
+    /// </summary>
+    private static string FlowItem(string value) =>
+        YamlScalars.IsPlainSafe(value, false) && value.IndexOfAny([',', '[', ']', '{', '}', ':']) < 0 ? value : YamlScalars.DoubleQuoted(value);
 
     /// <summary>A multi-line string written <c>|-</c>, its lines one step deeper than its key (FBL §6.3).</summary>
     private string Literal(string value, int keyIndent)
@@ -370,6 +378,11 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 offset = before.LineSpan?.Start ?? before.Own.Start;
                 indent = before.Indent;
                 break;
+            // Before a key the file does not have: at its end, as after-last falls back to end.
+            case "before" when mapping is { Kind: ValueKind.Mapping, Entries.Count: > 0 }:
+                offset = Text.Length;
+                indent = mapping.Entries[0].Indent;
+                break;
             case "under" when Container(create.Argument!, parent, new Dictionary<string, string>()) is { Value: { Kind: ValueKind.Mapping, Entries.Count: > 0 } under }:
                 offset = LineEndAfter(under.Entries[^1]);
                 indent = under.Entries[0].Indent;
@@ -389,9 +402,25 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         var item = new List<string>(lines.Count);
         for (var i = 0; i < lines.Count; i++)
         {
-            item.Add(i == 0 ? Indentation(dash) + "-" + new string(' ', Math.Max(1, keyIndent - dash - 1)) + lines[i] : Indentation(keyIndent) + lines[i]);
+            var line = Nested(lines[i], keyIndent);
+            item.Add(i == 0 ? Indentation(dash) + "-" + new string(' ', Math.Max(1, keyIndent - dash - 1)) + line : Indentation(keyIndent) + line);
         }
         return item;
+    }
+
+    /// <summary>
+    /// A key line whose value runs over several lines (a literal block, written relative to column 0)
+    /// with its continuation lines moved under the key's indentation; blank ones stay empty.
+    /// </summary>
+    private string Nested(string line, int keyIndent)
+    {
+        if (!line.Contains('\n', StringComparison.Ordinal)) return line;
+        var parts = line.Split('\n');
+        for (var j = 1; j < parts.Length; j++)
+        {
+            if (parts[j].TrimEnd('\r').Length > 0) parts[j] = Indentation(keyIndent) + parts[j];
+        }
+        return string.Join('\n', parts);
     }
 
     /// <summary>The key lines of a new item in <c>insert.keys</c> order, then the skeleton's lines.</summary>
@@ -421,7 +450,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         foreach ((string name, AttributeBinding binding) in rule.Attributes)
         {
             if (binding.Key != key || binding.Child is not null || binding.IsComputed) continue;
-            if (!request.Values.TryGetValue(name, out var value) || NewText.IsEmpty(value)) continue;
+            if (!request.Values.TryGetValue(name, out var value) || (NewText.IsEmpty(value) && binding.Empty != "keep")) continue;
             var wire = NewText.Wire(binding, value, null);
             return Scalar(wire ?? value, null, binding, 0);
         }
@@ -448,6 +477,20 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 if (!plan.Touches(head)) plan.Add(SpliceOperation.RemoveContainer, head, "");
             }
         }
-        plan.Add(SpliceOperation.RemoveEntry, span, "");
+        plan.Add(SpliceOperation.RemoveEntry, WithoutFinalNewline(span, removed), "");
+    }
+
+    /// <summary>
+    /// The last entry of a body without a final newline, removed with the line ending before it, so the
+    /// body still has no final newline - as an insertion after such a line keeps it so (FBL §6.3). Not
+    /// when the entry above is removed too, whose span ends where this one starts.
+    /// </summary>
+    private Span WithoutFinalNewline(Span span, IReadOnlySet<ReadElement> removed)
+    {
+        if (span.End != Text.Length || span.Start == 0 || Text.Bytes[^1] == (byte)'\n' || Text.Bytes[span.Start - 1] != (byte)'\n') return span;
+        if (removed.Any(other => other.Entry is TreeEntry entry && (entry.LineSpan ?? entry.Own).End == span.Start)) return span;
+        var start = span.Start - 1;
+        if (start > 0 && Text.Bytes[start - 1] == (byte)'\r') start--;
+        return new Span(start, span.End);
     }
 }

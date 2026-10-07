@@ -30,6 +30,10 @@ internal static class EditPlanner
                 case ModelChange.Remove remove:
                     PlanRemove(plan, remove);
                     break;
+                case ModelChange.Move:
+                    return new PlanResult.Refused("This file's binding cannot move an element to another place; only a persistence plugin can.");
+                case ModelChange.Retype:
+                    return new PlanResult.Refused("This file's binding cannot change an element's type; only a persistence plugin can.");
                 case ModelChange.Place or ModelChange.Identify:
                     throw new ArgumentException("Placements and stored ids are edits of the registration, not of the body.", nameof(change));
                 default:
@@ -186,6 +190,8 @@ internal static class EditPlanner
     private static void PlanAdd(Plan plan, ModelChange.Add add)
     {
         var reading = plan.Reading;
+        // A declared binding appends where its insert rule says; a position among siblings is a plugin's to honour.
+        if (add.Index is not null) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
         var rules = reading.Binding.AllRules.Where(r => r.Type == add.Type).ToList();
         if (rules.Count == 0) Planning.Plan.Refuse($"This file has no place for a {add.Type}.");
         var rule = rules.FirstOrDefault(r => r.Insert is not null);

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -8,8 +9,15 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Two halves, and they are different questions</b>, as in FDG: the parser answers what it could
-/// read, the rule set what the notation forbids. This puts the two together.
+/// <b>The findings are the DISL definition's</b> (<see cref="ConstraintEvaluator"/>, runtime plan step
+/// S12): its live invariants and its built-ins over the document's DISL model, in the order of its
+/// <c>constraints.order</c>. What the reader could not read - an unknown key, a value that is not a
+/// date or a number, an entry that is not a mapping, a body that is not YAML - is the parser's to say
+/// (<see cref="GhgParser.ReaderFindings"/>); the definition gives those their code and wording.
+/// </para>
+/// <para>
+/// <b>An element is named by the id written in the document</b>, its <c>storedId</c>: a later entry
+/// reusing an id has an ephemeral id in the model, but the panel names it as the file does.
 /// </para>
 /// <para>
 /// <b>Registered as the module's <see cref="IDiagramValidator"/></b>, which is where this module
@@ -19,15 +27,20 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </remarks>
 public sealed class GhgValidator : IDiagramValidator
 {
-    /// <summary>Everything wrong with the document, parse problems and rule breaches together.</summary>
-    public static IReadOnlyList<GhgBreach> Validate(LineDocument document)
+    /// <summary>Everything wrong with the document, reading problems and rule breaches together.</summary>
+    public static IReadOnlyList<GhgBreach> Validate(GhgBody document) =>
+        [.. Findings(document).Select(finding => new GhgBreach(finding.Code, finding.Message, finding.ElementIds, Math.Max(0, (finding.Line ?? 1) - 1)))];
+
+    /// <summary>The definition's findings for <paramref name="document"/>.</summary>
+    public static IReadOnlyList<DislFinding> Findings(GhgBody document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        return GhgRuleSet.Breaches(GhgParser.Parse(document));
+        var options = new DislConstraintOptions(
+            new DislEnv(Viewpoint: GhgDefinition.Viewpoint),
+            GhgParser.ReaderFindings(document, GhgParser.Parse(document)),
+            GhgDefinition.WrittenId);
+        return ConstraintEvaluator.Evaluate(GhgDefinition.Specification, document.Disl.Diagram, options);
     }
-
-    /// <summary>Everything wrong with a model already parsed.</summary>
-    public static IReadOnlyList<GhgBreach> Validate(GhgModel model) => GhgRuleSet.Breaches(model);
 
     /// <inheritdoc />
     public DiagramOrigin Origin => Diagram.HypeCycleGraph.Origin;
@@ -40,13 +53,20 @@ public sealed class GhgValidator : IDiagramValidator
 
         IReadOnlyList<DiagramProblem> problems =
         [
-            .. Validate(LineDocument.Parse(request.Document)).Select(breach => new DiagramProblem(
-                DiagramProblemSeverity.Warning,
-                breach.Message,
-                breach.RuleId,
-                new DiagramProblemLineLocation((uint)(breach.Line + 1)))),
+            .. Findings(GhgBody.Parse(request.Document)).Select(finding => new DiagramProblem(
+                Severity(finding.Severity),
+                finding.Message,
+                finding.Code,
+                new DiagramProblemLineLocation((uint)Math.Max(1, finding.Line ?? 1)))),
         ];
 
         return ValueTask.FromResult(problems);
     }
+
+    private static DiagramProblemSeverity Severity(string severity) => severity switch
+    {
+        "error" => DiagramProblemSeverity.Error,
+        "info" or "hint" => DiagramProblemSeverity.Info,
+        _ => DiagramProblemSeverity.Warning,
+    };
 }

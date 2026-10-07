@@ -18,6 +18,13 @@ public sealed class OpenBody : SplicedFile
         Reading = BodyReading.Read(bytes, binding, options);
     }
 
+    private OpenBody(OpenBody body) : base(body.Bytes)
+    {
+        Binding = body.Binding;
+        Options = body.Options;
+        Reading = body.Reading;
+    }
+
     public FblBinding Binding { get; }
 
     public FblOptions Options { get; }
@@ -36,8 +43,23 @@ public sealed class OpenBody : SplicedFile
         return new OpenBody(bytes, binding, options ?? new FblOptions());
     }
 
+    /// <summary>
+    /// Another open body on this one's bytes as they are now, with a history of its own, without
+    /// reading them again: the reading is a pure function of the bytes, the binding and the options,
+    /// so the two share it until either changes, when that one reads its own new bytes.
+    /// </summary>
+    public OpenBody Fork() => new(this);
+
     /// <summary>Plans <paramref name="change"/> against the current bytes without applying it.</summary>
-    public PlanResult Plan(ModelChange change) => EditPlanner.Plan(Reading, change);
+    /// <remarks>A reading shared by forks is planned against one at a time: planning fills its caches.</remarks>
+    public PlanResult Plan(ModelChange change)
+    {
+        var reading = Reading;
+        lock (reading)
+        {
+            return EditPlanner.Plan(reading, change);
+        }
+    }
 
     /// <summary>Plans and applies <paramref name="change"/>: the planned edit, or the refusal with nothing written.</summary>
     public PlanResult Change(ModelChange change)

@@ -3,8 +3,7 @@ import { useMemo, useState } from "react";
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { DiagramDefinition, EdgeAttachment, ElementTypeDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
-import type { RulerRung } from "@client/canvas/library/definition/chrome";
+import type { DiagramDefinition, EdgeAttachment, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import type { GhgAttachment } from "@client/generated/gartner-hypecycle-graph_pb";
@@ -18,15 +17,11 @@ import { useViewReport } from "@client/diagrams/useViewReport";
 import {
   GHG_ACTION_IDS,
   GHG_PHASES,
-  GHG_PHASE_TITLES,
-  GHG_PHASE_TOOLTIPS,
   GhgActions,
   GhgElementTypes,
   GhgProperties,
   GhgRelationTypes,
   GhgScale,
-  GhgShortcuts,
-  GhgTimeUnits,
   formatMonth,
   monthAt,
   timeUnitOf,
@@ -34,21 +29,10 @@ import {
 } from "./ghgIds";
 import { applyDelta, emptyModel } from "./ghgModel";
 import { placementId, relationId } from "@client/canvas/gestureIds";
-
-/**
- * The ruler's rungs, finest first, each with the months it spans. A diagram drawn in a coarser unit
- * keeps only the rungs at least one of its steps wide: a diagram of years never labels a month it
- * cannot snap to. A century and a millennium are ten and a hundred decades, which start on years
- * ending in 00 and 000.
- */
-const RULER_RUNGS: readonly { months: number; rung: RulerRung }[] = [
-  { months: 1, rung: { every: { calendar: "month" }, label: "MMM yyyy" } },
-  { months: 3, rung: { every: { calendar: "quarter" }, label: "MMM yyyy" } },
-  { months: 12, rung: { every: { calendar: "year" }, label: "yyyy" } },
-  { months: 120, rung: { every: { calendar: "decade" }, label: "yyyy" } },
-  { months: 1200, rung: { every: { calendar: "decade", count: 10 }, label: "yyyy" } },
-  { months: 12000, rung: { every: { calendar: "decade", count: 100 }, label: "yyyy" } },
-];
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
+import disText from "../definition/gartner-hype-cycle-graph.dis?raw";
+import { GHG_BINDINGS } from "./ghgBindings";
 
 /**
  * A compact trend's width when it shows all four phases: twice that of a new trend dropped in
@@ -62,171 +46,20 @@ export function compactWidthOf(phases: number): number {
   return (COMPACT_WIDTH * Math.min(Math.max(phases, 1), GHG_PHASES.length)) / GHG_PHASES.length;
 }
 
-/**
- * A trigger: a moment in time, drawn as a circle half a trend's height across. Its name and its date
- * are written left of it as a trend's name is, and only the name is edited in place. It offers three
- * handles to start an influence from, and the line leaves its outline facing the target wherever the
- * gesture began, so the document stores nothing for that end. Never resized: every trigger is one size.
- */
-const TRIGGER_TYPE: ElementTypeDefinition = {
-  id: GhgElementTypes.trigger,
-  shape: "ellipse",
-  classNames: [
-    { className: "canvas-element ghg-trigger", on: "element" },
-    { className: "canvas-node ghg-trigger-circle", on: "shape" },
-  ],
-  labels: [{ text: { template: "{payload.name} · {payload.when}" }, placement: "before", editable: true, className: "canvas-node-label ghg-label" }],
-  tooltip: { template: "Trigger: {payload.name}, {payload.whenLong}" },
-  // No dots are drawn: the handles still start an influence, but a small circle ringed with dots
-  // reads as a different shape (Peter, 2026-09-27).
-  anchors: { kind: "compass", positions: ["n", "e", "s"], attachDrawnBy: "edge", visible: false },
-  sizing: "model",
-};
+/** The bundled specification: the same bytes the backend loads, read by Vite as text. */
+const SPEC = parseDisl(disText);
 
 /**
- * A note: the author's own text in a box, word-wrapped and edited in place across several lines, with
- * no anchors, so no influence starts or ends at one. A note dropped from the toolbox opens its editor.
- */
-const NOTE_TYPE: ElementTypeDefinition = {
-  id: GhgElementTypes.note,
-  shape: "box",
-  classNames: [
-    { className: "canvas-element ghg-note", on: "element" },
-    { className: "canvas-node ghg-note-box", on: "shape" },
-  ],
-  labels: [{ text: { path: "payload.text" }, wrap: true, editable: true, className: "ghg-note-text" }],
-  anchors: { kind: "edge", enabled: false, visible: false },
-  sizing: "user",
-  resize: "both",
-  editOnDrop: true,
-};
-
-/**
- * What a hype cycle graph is, stated once for each time unit a document may name. Every piece of it
- * is a library declaration: the phased banner, the circle and the note, the attachments anywhere
- * along a phase's edge, one influence per direction, the ruler and the tag filter. The unit changes only the ruler's scale
- * and rungs; a snap is always one step of four units, whatever a step is. The backend states the
- * same rules in `GhgRuleSet` and refuses what the canvas refuses anyway, because a request is never
- * trusted to have come from this canvas.
+ * What a hype cycle graph is, stated once for each time unit a document may name - compiled from the
+ * bundled DISL specification (`definition/gartner-hype-cycle-graph.dis`), with the few things the
+ * library cannot read from it in `ghgBindings.ts`. The unit is the diagram attribute the axis, the
+ * snap and the ruler bind, so it is the one option the compilation takes. The backend states the
+ * same rules and refuses what the canvas refuses anyway, because a request is never trusted to have
+ * come from this canvas; `ghgCompiledDefinition.test.ts` holds this to the definition once written
+ * here by hand.
  */
 function definitionFor(unit: GhgTimeUnit): DiagramDefinition {
-  const months = GhgTimeUnits[unit];
-  const trendType: ElementTypeDefinition = {
-    id: GhgElementTypes.trend,
-    shape: "arrow-banner",
-    classNames: [{ className: "canvas-element ghg-trend", on: "element" }],
-    segments: {
-      count: { path: "payload.phases" },
-      max: GHG_PHASES.length,
-      boundaries: "payload.boundaries",
-      classNames: GHG_PHASES.map((phase) => `ghg-${phase}`),
-      tooltips: GHG_PHASE_TOOLTIPS,
-      divider: "chevron",
-      draggableBoundaries: true,
-    },
-    labels: [{ text: { path: "payload.name" }, placement: "before", editable: true, className: "canvas-node-label ghg-label" }],
-    // An influence attaches anywhere along a phase's top or bottom edge; no dot is drawn, because
-    // the whole edge is the handle.
-    anchors: { kind: "along", edges: ["top", "bottom"], regions: "segments", visible: false },
-    sizing: "user",
-  };
-  // Compact: every trend one width, its phases even, and nothing that would change a date offered -
-  // no move, no resize, no boundary drag - while influences, renaming and the toolbox still work.
-  const compactTrendType: ElementTypeDefinition = {
-    ...trendType,
-    sizing: "model",
-    draggable: false,
-    segments: { ...trendType.segments!, boundaries: undefined, draggableBoundaries: false },
-  };
-  return assertValidDiagramDefinition({
-    elementTypes: [trendType, TRIGGER_TYPE, NOTE_TYPE],
-    relationTypes: [
-      {
-        id: GhgRelationTypes.influence,
-        route: "cubic-bezier",
-        style: { endMarker: "arrow" },
-        className: "ghg-influence",
-        // A selected influence shows a handle on each end, slid along its trend's edge to move it.
-        movableEnds: true,
-        hideWhenAttachmentHidden: true,
-        // A trigger sets trends off and is never set off itself: it is a source, never a target.
-        endpoints: {
-          source: { elementTypes: [GhgElementTypes.trend, GhgElementTypes.trigger] },
-          target: { elementTypes: [GhgElementTypes.trend] },
-          allowSelf: false,
-          cardinality: { perPair: "ordered" },
-        },
-      },
-    ],
-    actions: [
-      {
-        id: GhgActions.rename,
-        invokedBy: [{ kind: "shortcut", key: GhgShortcuts.rename }, { kind: "gesture", gesture: "activate" }],
-        appliesTo: [{ kind: "element" }],
-      },
-      { id: GhgActions.remove, invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
-      { id: GhgActions.disconnect, invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "connection" }] },
-    ],
-    // A step of the unit is four units wide, so a snap of four lands every edge on the start of a
-    // month, a year, a decade or a century; a row is 56, and the snap rests the trend's top on it,
-    // which puts its middle on the row. The origin, 1900-01, starts all four. Each element carries
-    // its own origins: 0 for a trend and a note, and for a trigger the offsets that put its CENTRE
-    // on a step line and a row's middle.
-    snap: {
-      x: { step: GhgScale.unitsPerMonth, origin: { path: "payload.snapX" } },
-      y: { step: GhgScale.rowStep, origin: { path: "payload.snapY" } },
-    },
-    chrome: {
-      rulers: [
-        {
-          orientation: "horizontal",
-          edge: "bottom",
-          scale: { unit: "month", unitsPerStep: GhgScale.unitsPerMonth / months, origin: GhgScale.origin },
-          ladder: RULER_RUNGS.filter((entry) => entry.months >= months).map((entry) => entry.rung),
-          minSpacingPx: 64,
-        },
-      ],
-    },
-    filter: {
-      field: "payload.tags",
-      label: "Filter by tags",
-      // Notes carry no tags and stay on the canvas under every filter.
-      elementTypes: [GhgElementTypes.trend, GhgElementTypes.trigger],
-      // The key to the phase colours, each swatch painted by the rule that paints its phase.
-      legend: GHG_PHASES.map((phase, index) => ({ caption: GHG_PHASE_TITLES[index], swatchClass: `ghg-${phase}` })),
-    },
-    // True-time by default; the Compact toggle under the legend packs the trends along their rows
-    // at one width, in the order they start, and takes away the time axis with the gestures.
-    layout: {
-      modes: ["manual", "row-packed"],
-      toggle: { caption: "Compact", on: "row-packed" },
-      // Only a trend takes the compact width: a trigger keeps its circle and a note its box, and a
-      // note two rows tall keeps both rows clear, because an element covers every row line it spans.
-      // Each trend's width is its share of the compact width, and an influence's target starts after
-      // the middle of its source, so causes read to the left of their effects.
-      rowPacked: {
-        width: { path: "payload.compactWidth" },
-        gap: GhgScale.unitsPerMonth,
-        types: [GhgElementTypes.trend],
-        rowStep: GhgScale.rowStep,
-        followConnections: true,
-      },
-      modeOverrides: {
-        "row-packed": {
-          // Nothing that would change a date is offered: no trigger is dragged, and a note is
-          // neither dragged nor resized, while influences from a trigger are still drawn.
-          elementTypes: [compactTrendType, { ...TRIGGER_TYPE, draggable: false }, { ...NOTE_TYPE, sizing: "model", draggable: false }],
-          dragging: "disabled",
-          chrome: { rulers: [] },
-          // A compact x is no date, so empty canvas offers nothing there.
-          backgroundMenu: false,
-        },
-      },
-    },
-    dragging: "enabled",
-    // Arrange diagram and "Add … here" on empty canvas, from the backend's own list.
-    backgroundMenu: true,
-  });
+  return assertValidDiagramDefinition(compileNotation(SPEC, GHG_BINDINGS, { diagram: { unit } }));
 }
 
 /** One definition per unit, built once, so a canvas's definition keeps its identity across renders. */
@@ -302,8 +135,10 @@ export function GhgCanvas({ projectId, entryId, path }: ToolContentProps) {
   // Compact places every trend by where all the others start, so it needs the whole document: while
   // it is on, the view reported to the backend is everything, not the part of the canvas on screen.
   const [compact, setCompact] = useState(false);
-  // Every trend carries the diagram's unit; an empty diagram is drawn in months until it has one.
-  const unit = timeUnitOf(model.trends.values().next().value?.payload.unit);
+  // Every trend, trigger and note carries the diagram's unit, so a diagram of triggers or notes alone
+  // is drawn in it too; an empty diagram is drawn in months until it has one.
+  const carrier = model.trends.values().next().value ?? model.triggers.values().next().value ?? model.notes.values().next().value;
+  const unit = timeUnitOf(carrier?.payload.unit);
   const dateAt = (x: number) => formatMonth(monthAt(x, unit));
 
   const diagramModel = useMemo<DiagramModel>(() => {

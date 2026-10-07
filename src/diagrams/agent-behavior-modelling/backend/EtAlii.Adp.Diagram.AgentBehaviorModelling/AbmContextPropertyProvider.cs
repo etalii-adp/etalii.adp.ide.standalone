@@ -37,8 +37,6 @@ public sealed class AbmContextPropertyProvider : IContextPropertyProvider
     /// <summary>A node's place in the tree, read-only.</summary>
     public const string PlaceProperty = "abm.place";
 
-    private const string NodeGroup = "Node";
-
     private readonly IHistoryStackStore _historyStacks;
     private readonly IAbmDocumentStore _documents;
 
@@ -59,25 +57,11 @@ public sealed class AbmContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (target.Origin != Diagram.AgentBehaviorModelling.Origin
-            || _documents.GetOrLoad(target.ResolvedFullPath).Model.NodeOf(target.ElementId) is not { } node)
-        {
-            return Rows([]);
-        }
-
-        List<ContextPropertyDefinition> rows =
-        [
-            new(KindProperty, "Kind", Choice(node.Kind), ContextPropertyEditor.Choice, Group: NodeGroup, Candidates: [.. KindsFor(node).Select(Choice)]),
-            new(LabelProperty, "Label", node.Label, Group: NodeGroup),
-        ];
-        if (node.Kind == AbmNodeKinds.Retry)
-        {
-            rows.Add(new(AttemptsProperty, "Attempts", node.RetryCount.ToString(CultureInfo.InvariantCulture), Group: NodeGroup));
-        }
-
-        rows.Add(new(NotesProperty, "Notes", node.Notes, ContextPropertyEditor.Text, Group: NodeGroup));
-        rows.Add(new(PlaceProperty, "Place", node.Id, ReadOnlyReason: "A node's place follows from where it sits in the tree.", Group: NodeGroup));
-        return Rows(rows);
+        // Derived from the DISL definition (AbmDefinition.Rows): the node form's items, the Kind a
+        // choice among the kinds the node can become.
+        return target.Origin != Diagram.AgentBehaviorModelling.Origin
+            ? Rows([])
+            : Rows(AbmDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />
@@ -131,18 +115,8 @@ public sealed class AbmContextPropertyProvider : IContextPropertyProvider
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 
-    /// <summary>The kinds a node can become without losing a child.</summary>
-    private static IEnumerable<AbmNodeKind> KindsFor(AbmNode node) => AbmNodeKinds.All.Where(kind => kind.Category switch
-    {
-        AbmNodeCategory.Leaf => node.ChildIds.Count == 0,
-        AbmNodeCategory.Decorator => node.ChildIds.Count <= 1,
-        _ => true,
-    });
-
     /// <summary>A kind as the choice list reads it.</summary>
     private static string Choice(string kind) => kind == AbmNodeKinds.Retry ? "Retry" : AbmNodeKinds.Of(kind).Keyword;
-
-    private static string Choice(AbmNodeKind kind) => Choice(kind.Id);
 
     private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
         ValueTask.FromResult(rows);

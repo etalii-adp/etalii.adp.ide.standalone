@@ -3,6 +3,7 @@ using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 
@@ -84,55 +85,10 @@ public sealed class AbmContextActionProvider : IContextActionProvider
             return Result([]);
         }
 
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        // Arrange is about the whole tree, so it is offered on empty canvas and on every node alike,
-        // which keeps it in the ribbon too.
-        ContextActionGroupDefinition arrange = new(
-        [
-            new ContextActionDefinition(
-                ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
-                model.Nodes.Count > 0, "There is nothing to arrange until this behavior model has a node."),
-        ]);
-
-        if (model.NodeOf(target.ElementId) is { } node)
-        {
-            var siblings = Siblings(model, node);
-            var place = siblings.ToList().FindIndex(sibling => sibling.Id == node.Id);
-            List<ContextActionGroupDefinition> groups =
-            [
-                new(
-                [
-                    new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-                    new ContextActionDefinition(EditNotesActionId, "Edit notes…", "mdi-note-text-outline"),
-                    new ContextActionDefinition(MoveEarlierActionId, "Move earlier", "mdi-arrow-left", new ContextShortcutDefinition("Alt+Up"), place > 0, place > 0 ? "" : "It is already the first of its siblings."),
-                    new ContextActionDefinition(MoveLaterActionId, "Move later", "mdi-arrow-right", new ContextShortcutDefinition("Alt+Down"), place < siblings.Count - 1, place < siblings.Count - 1 ? "" : "It is already the last of its siblings."),
-                    new ContextActionDefinition(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-                ]),
-            ];
-
-            if (node.TakesAnotherChild)
-            {
-                groups.Add(new([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AddActionId(kind.Id), $"Add child: {Menu(kind)}", "mdi-plus"))]));
-            }
-
-            groups.Add(arrange);
-            return Result(groups);
-        }
-
-        // Executing an action by id only finds actions its target discovers, so a drop and a
-        // finished gesture each discover what may be executed against them.
-        if (GestureIds.TryParsePlacement(target.ElementId, out _, out _))
-        {
-            return Result([new([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AddActionId(kind.Id), $"Add {Menu(kind)} here", "mdi-plus"))]), arrange]);
-        }
-
-        if (GestureIds.TryParseRelation(target.ElementId, out _, out _))
-        {
-            return Result([new([new ContextActionDefinition(ConnectChildActionId, "Move under this node", "mdi-file-tree-outline")])]);
-        }
-
-        return Result([]);
+        // Derived from the DISL definition (AbmDefinition.Menus): its context-menu sets, grouped by
+        // group, the ids mapped by its x-abm block. Executing an action by id only finds actions
+        // its target discovers, so a drop and a finished gesture each discover what may be run on them.
+        return Result(AbmDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />
@@ -185,7 +141,7 @@ public sealed class AbmContextActionProvider : IContextActionProvider
                 return new ContextExecutionFailed("A parent line is drawn from the parent to the node that belongs under it.");
             }
 
-            return await DispatchAsync(target, new MoveAbmNodeCommand(body, to, from, -1), cancellationToken);
+            return await DispatchAsync(target, new ConnectAbmChildCommand(body, from, to), cancellationToken);
         }
 
         if (node is null)
@@ -216,20 +172,20 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
             case RemoveActionId:
             {
-                var below = model.Nodes.Count(candidate => AbmModel.IsWithin(candidate.Id, node.Id)) - 1;
-                if (below == 0)
+                // The definition's deletion confirmation: how many nodes go with it, asked before it
+                // runs; a node with nothing beneath it goes without asking.
+                if (AbmDefinition.ElementOf(_documents.GetOrLoad(body).Document.Disl.Diagram, node.Id) is not { } element
+                    || DeletionPolicy.Confirmation(AbmDefinition.Specification, element, env: AbmDefinition.Env) is not { } confirmation)
                 {
                     return await DispatchAsync(target, new RemoveAbmNodeCommand(body, node.Id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
+                    confirmation.Title,
                     "mdi-delete-outline",
-                    below == 1
-                        ? "Removing this node also removes the 1 node beneath it."
-                        : $"Removing this node also removes the {below} nodes beneath it.",
-                    "Remove",
-                    Danger: true));
+                    confirmation.Message,
+                    confirmation.ConfirmLabel,
+                    Danger: confirmation.Danger));
             }
 
             default:
@@ -347,8 +303,6 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
     private static bool IsOurs(ContextTarget target) =>
         target.Origin == Diagram.AgentBehaviorModelling.Origin;
-
-    private static string Menu(AbmNodeKind kind) => kind.Id == AbmNodeKinds.Retry ? "Retry" : kind.Keyword;
 
     private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
         ValueTask.FromResult(groups);

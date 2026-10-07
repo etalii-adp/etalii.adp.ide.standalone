@@ -36,6 +36,11 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// <b>Read-only offers nothing writable</b> (Requirement 11.4): for a document that could not be read,
 /// every row carries a read-only reason, and the service refuses a set to any of them.
 /// </para>
+/// <para>
+/// <b>The rows are the definition's</b> (runtime plan step S11): <see cref="GhgDefinition.Rows"/> derives
+/// them from the forms of the bundled DISL definition, with the ids of its <c>x-ghg</c> block. What a
+/// set does stays here: <see cref="SetAsync"/> turns a row's text into the command that edits the document.
+/// </para>
 /// </remarks>
 public sealed class GhgContextPropertyProvider : IContextPropertyProvider
 {
@@ -68,11 +73,6 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
     /// <summary>The slider's four stops, in order; the value is the one at <c>phases - 1</c>.</summary>
     public static readonly IReadOnlyList<string> PhaseCandidates = ["Peak", "Peak and Trough", "Peak, Trough and Slope", "All four"];
 
-    private const string IdentityGroup = "Identity";
-    private const string TimeGroup = "Time";
-    private const string PhasesGroup = "Phases";
-    private const string EndsGroup = "Ends";
-
     private readonly IHistoryStackStore _historyStacks;
     private readonly IGhgDocumentStore _documents;
 
@@ -98,69 +98,7 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
             return Rows([]);
         }
 
-        var entry = _documents.GetOrLoad(target.ResolvedFullPath);
-        var readOnly = entry.IsUsable ? "" : "The graph could not be read, so it cannot be edited.";
-        var model = entry.Model;
-
-        if (GhgEdits.TrendOf(model, target.ElementId) is { } trend)
-        {
-            List<ContextPropertyDefinition> rows =
-            [
-                new(NameProperty, "Name", trend.Name, ReadOnlyReason: readOnly, Group: IdentityGroup),
-                new(DescriptionProperty, "Description", trend.Description, ContextPropertyEditor.Text, readOnly, IdentityGroup),
-                new(TagsProperty, "Tags", string.Join(", ", trend.Tags), ContextPropertyEditor.Tags, readOnly, IdentityGroup, TagsOf(model)),
-                new(StartProperty, "Start", Month(trend.Start), ReadOnlyReason: readOnly, Group: TimeGroup),
-                new(StopProperty, "Stop", Month(trend.Stop), ReadOnlyReason: readOnly, Group: TimeGroup),
-                new(PhasesProperty, "Phases", PhaseCandidates[trend.VisiblePhases - 1], ContextPropertyEditor.Slider, readOnly, PhasesGroup, PhaseCandidates),
-            ];
-
-            // One row per DRAWN inner boundary: the ones a chevron can be dragged at.
-            var drawn = GhgPhases.BoundariesOf(trend);
-            for (var index = 0; index < drawn.Count; index++)
-            {
-                rows.Add(new(BoundaryProperties[index], $"{GhgPhases.Titles[index]} ends", GhgScale.FormatMonth(drawn[index]), ReadOnlyReason: readOnly, Group: PhasesGroup));
-            }
-
-            rows.AddRange(InfluenceRows(model, trend));
-            return Rows(rows);
-        }
-
-        // A trigger's rows are a trend's that a moment has: no stop, no phases.
-        if (GhgEdits.TriggerOf(model, target.ElementId) is { } trigger)
-        {
-            return Rows(
-            [
-                new(NameProperty, "Name", trigger.Name, ReadOnlyReason: readOnly, Group: IdentityGroup),
-                new(DescriptionProperty, "Description", trigger.Description, ContextPropertyEditor.Text, readOnly, IdentityGroup),
-                new(TagsProperty, "Tags", string.Join(", ", trigger.Tags), ContextPropertyEditor.Tags, readOnly, IdentityGroup, TagsOf(model)),
-                new(DateProperty, "Date", Month(trigger.Date), ReadOnlyReason: readOnly, Group: TimeGroup),
-            ]);
-        }
-
-        // A note's text, and the size row its resize reaches the document through.
-        if (GhgEdits.NoteOf(model, target.ElementId) is { } note)
-        {
-            return Rows(
-            [
-                new(TextProperty, "Text", note.Text, ContextPropertyEditor.Text, readOnly, IdentityGroup),
-                new(SizeProperty, "Size", note.Width is { } width && note.Height is { } height ? SetGhgNoteSizeCommand.Format(width, height) : "", ReadOnlyReason: readOnly, Group: IdentityGroup),
-            ]);
-        }
-
-        if (GhgEdits.InfluenceOf(model, target.ElementId) is { } influence)
-        {
-            const string shown = "Where it is attached; drag the end on the canvas to move it.";
-            return Rows(
-            [
-                new(DescriptionProperty, "Description", influence.Description, ContextPropertyEditor.Text, readOnly, IdentityGroup),
-                new(FromProperty, "From", Describe(model, influence.From, influence.FromEnd), ReadOnlyReason: shown, Group: EndsGroup),
-                new(ToProperty, "To", Describe(model, influence.To, influence.ToEnd), ReadOnlyReason: shown, Group: EndsGroup),
-                new(FromAttachmentProperty, "From attachment", influence.FromEnd.ToString(), ReadOnlyReason: readOnly, Group: EndsGroup),
-                new(ToAttachmentProperty, "To attachment", influence.ToEnd.ToString(), ReadOnlyReason: readOnly, Group: EndsGroup),
-            ]);
-        }
-
-        return Rows([]);
+        return Rows(GhgDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />
@@ -234,57 +172,6 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
         return result.IsSuccess ? ContextPropertyResult.Success : ContextPropertyResult.Failure(result.Error);
     }
 
-    /// <summary>
-    /// Per phase, its two influence lists: every drawn phase, and a hidden one only while an influence
-    /// still attaches to it.
-    /// </summary>
-    private static IEnumerable<ContextPropertyDefinition> InfluenceRows(GhgModel model, GhgTrend trend)
-    {
-        const string shown = "Draw, reattach or delete an influence on the canvas.";
-        for (var phase = 0; phase < GhgPhases.Titles.Count; phase++)
-        {
-            var leaving = model.Influences
-                .Where(influence => influence.From == trend.Id && influence.FromEnd.PhaseIndex == phase)
-                .Select(influence => Describe(model, influence.To, influence.ToEnd))
-                .ToList();
-            var arriving = model.Influences
-                .Where(influence => influence.To == trend.Id && influence.ToEnd.PhaseIndex == phase)
-                .Select(influence => Describe(model, influence.From, influence.FromEnd))
-                .ToList();
-
-            var drawn = phase < trend.VisiblePhases;
-            if (!drawn && leaving.Count == 0 && arriving.Count == 0)
-            {
-                continue;
-            }
-
-            var group = drawn ? GhgPhases.Titles[phase] : $"{GhgPhases.Titles[phase]} (hidden)";
-            yield return new(InfluencesProperties[phase], "Influence", List(leaving), ContextPropertyEditor.Text, shown, group);
-            yield return new(InfluencedByProperties[phase], "Influenced by", List(arriving), ContextPropertyEditor.Text, shown, group);
-        }
-    }
-
-    /// <summary>One entry a line, or <see cref="NoInfluences"/>.</summary>
-    private static string List(IReadOnlyList<string> entries) => entries.Count == 0 ? NoInfluences : string.Join("\n", entries);
-
-    /// <summary>An end as the grid shows it: "Steam engine · Plateau", or a trigger's name alone.</summary>
-    private static string Describe(GhgModel model, string id, GhgEnd end)
-    {
-        if (GhgEdits.TrendOf(model, id) is null && GhgEdits.TriggerOf(model, id) is { } trigger)
-        {
-            return trigger.Name.Length > 0 ? trigger.Name : id;
-        }
-
-        var trend = GhgEdits.TrendOf(model, id);
-        var name = trend is { Name.Length: > 0 } ? trend.Name : id;
-        var phase = end.PhaseIndex >= 0 ? GhgPhases.Titles[end.PhaseIndex] : end.Phase;
-        return $"{name} · {phase}";
-    }
-
-    /// <summary>Every tag the graph uses, once each, in order of first use: what a Tags row looks the typed text up among.</summary>
-    private static IReadOnlyList<string> TagsOf(GhgModel model) =>
-        [.. model.Trends.SelectMany(trend => trend.Tags).Concat(model.Triggers.SelectMany(trigger => trigger.Tags)).Distinct(StringComparer.Ordinal)];
-
     private static int IndexIn(IReadOnlyList<string> values, string value)
     {
         for (var index = 0; index < values.Count; index++)
@@ -297,8 +184,6 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
 
         return -1;
     }
-
-    private static string Month(int? month) => month is { } value ? GhgScale.FormatMonth(value) : "";
 
     private static ValueTask<IReadOnlyList<ContextPropertyDefinition>> Rows(IReadOnlyList<ContextPropertyDefinition> rows) =>
         ValueTask.FromResult(rows);

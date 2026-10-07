@@ -11,9 +11,9 @@ public class GhgTriggersAndNotesTests
 {
     private static string FixturePath(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
-    private static LineDocument Load(string name) => LineDocument.Parse(File.ReadAllText(FixturePath(name)));
+    private static GhgBody Load(string name) => GhgBody.Parse(File.ReadAllText(FixturePath(name)));
 
-    private static GhgModel Reread(LineDocument document) => GhgParser.Parse(LineDocument.Parse(document.Text));
+    private static GhgModel Reread(GhgBody document) => GhgParser.Parse(GhgBody.Parse(document.Text));
 
     [Fact]
     public void TriggersAndNotes_ReadEveryKeyTheDesignStates()
@@ -69,10 +69,10 @@ public class GhgTriggersAndNotesTests
     {
         var document = Load("lf-line-endings.ghg");
 
-        Assert.True(GhgWriter.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t1", "First", GhgScale.MonthIndex(1800, 3), 2, ["x"], "", default)).WasApplied);
-        Assert.True(GhgWriter.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t2", "Second", GhgScale.MonthIndex(1810, 3), 2, [], "", default)).WasApplied);
-        Assert.True(GhgWriter.AddNote(document, GhgParser.Parse(document), new GhgNote("n1", "A note", GhgScale.MonthIndex(1820, 1), 0, 160, 64, default)).WasApplied);
-        Assert.True(GhgWriter.AddNote(document, GhgParser.Parse(document), new GhgNote("n2", "Two\nlines", GhgScale.MonthIndex(1830, 1), 1, 160, 64, default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t1", "First", GhgScale.MonthIndex(1800, 3), 2, ["x"], "", default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddTrigger(document, GhgParser.Parse(document), new GhgTrigger("t2", "Second", GhgScale.MonthIndex(1810, 3), 2, [], "", default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddNote(document, GhgParser.Parse(document), new GhgNote("n1", "A note", GhgScale.MonthIndex(1820, 1), 0, 160, 64, default)).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.AddNote(document, GhgParser.Parse(document), new GhgNote("n2", "Two\nlines", GhgScale.MonthIndex(1830, 1), 1, 160, 64, default)).WasApplied);
 
         var lines = document.Lines.Select(line => line.Text).ToList();
         Assert.Single(lines, line => line == "triggers:");
@@ -85,7 +85,7 @@ public class GhgTriggersAndNotesTests
         Assert.Equal(["t1", "t2"], reread.Triggers.Select(trigger => trigger.Id));
         Assert.Equal(["n1", "n2"], reread.Notes.Select(note => note.Id));
         Assert.Equal("Two\nlines", reread.Notes[1].Text);
-        Assert.Empty(GhgValidator.Validate(reread));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(document.Text)));
     }
 
     [Fact]
@@ -142,12 +142,12 @@ public class GhgTriggersAndNotesTests
         var document = Load("triggers-and-notes.ghg");
         var model = GhgParser.Parse(document);
 
-        Assert.True(GhgWriter.RemoveTrigger(document, model, model.Triggers[0]).WasApplied);
+        Assert.True(Parity.HandWrittenGhgEdits.RemoveTrigger(document, model, model.Triggers[0]).WasApplied);
 
         var reread = Reread(document);
         Assert.Empty(reread.Triggers);
         Assert.Equal(["i-13"], reread.Influences.Select(influence => influence.Id));
-        Assert.Empty(GhgValidator.Validate(reread));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(document.Text)));
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public class GhgTriggersAndNotesTests
         var model = GhgParser.Parse(document);
 
         Assert.True(GhgWriter.SetPlacement(document, model.Triggers[0], GhgScale.MonthIndex(1948, 6), 2).WasApplied);
-        Assert.True(GhgWriter.SetSize(document, GhgParser.Parse(LineDocument.Parse(document.Text)).Notes[1], GhgScale.MonthIndex(1959, 1), 5, 200.5, 48).WasApplied);
+        Assert.True(GhgWriter.SetSize(document, GhgParser.Parse(GhgBody.Parse(document.Text)).Notes[1], GhgScale.MonthIndex(1959, 1), 5, 200.5, 48).WasApplied);
 
         var reread = Reread(document);
         Assert.Equal((GhgScale.MonthIndex(1948, 6), 2), (reread.Triggers[0].Date!.Value, reread.Triggers[0].Row));
@@ -170,7 +170,7 @@ public class GhgTriggersAndNotesTests
     public void AMalformedTriggerOrNote_IsKeptAndReported()
     {
         const string text = "gartner-hypecycle-graph: 1\ntrends: []\ntriggers:\n  - just text\n  - id: t\n    name: T\n    date: 1900-01\n    row: two\n    colour: red\nnotes:\n  - id: n\n    text: x\n    at: never\n    row: 0\n    width: wide\n    height: 10\ninfluences: []\n";
-        var document = LineDocument.Parse(text);
+        var document = GhgBody.Parse(text);
 
         var model = GhgParser.Parse(document);
 
@@ -180,7 +180,38 @@ public class GhgTriggersAndNotesTests
         Assert.Contains(model.Problems, problem => problem.Message.Contains("A trigger entry is not a mapping", StringComparison.Ordinal));
         Assert.Contains(model.Problems, problem => problem.Message.Contains("`row: two` is not a whole number", StringComparison.Ordinal));
         Assert.Contains(model.Problems, problem => problem.Message.Contains("`colour` is not a key this module reads on a trigger", StringComparison.Ordinal));
-        Assert.Contains(GhgValidator.Validate(model), breach => breach.RuleId == GhgRuleIds.NotePosition);
+        Assert.Contains(GhgValidator.Validate(document), breach => breach.RuleId == GhgRuleIds.NotePosition);
+    }
+
+    /// <summary>
+    /// A month outside 01 to 12 is no date on any path a document is read through: a trend's start and
+    /// stop, a trigger's date and a note's position are each left unread, reported, and not drawn.
+    /// </summary>
+    [Theory]
+    [InlineData("13")]
+    [InlineData("00")]
+    public void AMonthOutsideOneToTwelve_IsNoDate_WhereverItIsWritten(string month)
+    {
+        var text = "gartner-hypecycle-graph: 1\n"
+            + "trends:\n"
+            + $"  - id: a\n    name: A\n    start: 1900-{month}\n    stop: 1910-01\n    row: 0\n    phases: 4\n"
+            + $"  - id: b\n    name: B\n    start: 1900-01\n    stop: 1910-{month}\n    row: 1\n    phases: 4\n"
+            + $"triggers:\n  - id: t\n    name: T\n    date: 1900-{month}\n    row: 2\n"
+            + $"notes:\n  - id: n\n    text: x\n    at: 1900-{month}\n    row: 3\n    width: 10\n    height: 10\n"
+            + "influences: []\n";
+
+        var model = GhgParser.Parse(GhgBody.Parse(text));
+
+        Assert.Null(model.Trends[0].Start);
+        Assert.Null(model.Trends[1].Stop);
+        Assert.Null(Assert.Single(model.Triggers).Date);
+        Assert.Null(Assert.Single(model.Notes).At);
+        Assert.Contains(model.Problems, problem => problem.Message == $"`start: 1900-{month}` is not a date written as YYYY-MM.");
+        Assert.Contains(model.Problems, problem => problem.Message == $"`stop: 1910-{month}` is not a date written as YYYY-MM.");
+        var breaches = GhgValidator.Validate(GhgBody.Parse(text));
+        Assert.Contains(breaches, breach => breach.RuleId == GhgRuleIds.TriggerDate);
+        Assert.Contains(breaches, breach => breach.RuleId == GhgRuleIds.NotePosition);
+        Assert.Empty(new GhgElementMapper().Visible(model, DiagramViewport.Unbounded));
     }
 
     [Fact]
@@ -188,7 +219,7 @@ public class GhgTriggersAndNotesTests
     {
         const string text = "gartner-hypecycle-graph: 1\ntrends:\n  - id: same\n    name: A\n    start: 1900-01\n    stop: 1910-01\n    row: 0\n    phases: 4\ntriggers:\n  - id: same\n    name: T\n    date: 1899-01\n    row: 1\ninfluences: []\n";
 
-        var breach = Assert.Single(GhgValidator.Validate(LineDocument.Parse(text)));
+        var breach = Assert.Single(GhgValidator.Validate(GhgBody.Parse(text)));
 
         Assert.Equal(GhgRuleIds.DuplicateId, breach.RuleId);
     }
@@ -199,7 +230,9 @@ public class GhgTriggersAndNotesTests
         var document = Load("triggers-and-notes.ghg");
         var model = GhgParser.Parse(document);
         var influence = model.Influences.Single(entry => entry.Id == "i-12");
-        document.Insert(influence.Range.Start + 2, ["    from-phase: peak"]);
+        var lines = document.Lines.Select(line => line.Text + line.Ending).ToList();
+        lines.Insert(influence.Range.Start + 2, "    from-phase: peak" + lines[0][^(lines[0].EndsWith("\r\n", StringComparison.Ordinal) ? 2 : 1)..]);
+        document = GhgBody.Parse(string.Concat(lines));
 
         var reread = Reread(document);
 

@@ -1,5 +1,5 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -26,16 +26,14 @@ public sealed class AddGhgTriggerCommandHandler(IGhgDocumentStore documents) : I
                 return GhgEdit.Refused("That id is already used in this graph.");
             }
 
-            var trigger = new GhgTrigger(
-                minted.TriggerId,
-                GhgEdits.UniqueName(model.Triggers.Select(existing => existing.Name), DefaultName),
-                GhgScale.MonthContaining(minted.X, model.TimeUnit),
-                GhgScale.RowAtMiddle(minted.Y),
-                [],
-                Description: "",
-                Range: new LineRange(0, 0));
-
-            return GhgWriter.AddTrigger(document, model, trigger);
+            return GhgDefinition.Apply(document, OperationInterpreter.Run(
+                GhgDefinition.Specification,
+                "addTriggerHere",
+                document.Disl.Diagram,
+                null,
+                DislIds.Fixed(minted.TriggerId),
+                new DislInvocation(GhgDefinition.Position(minted.X, minted.Y, model.TimeUnit)),
+                GhgDefinition.EditEnv));
         });
     }
 }

@@ -47,7 +47,7 @@ public sealed class GhgDocumentStore : IGhgDocumentStore
     public GhgDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
     /// <inheritdoc />
-    public DocumentSaveResult Save(string path, LineDocument document)
+    public DocumentSaveResult Save(string path, GhgBody document)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(document);

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests;
@@ -39,7 +38,7 @@ public sealed class GhgTimeUnitTests : IDisposable
         + "  - id: printing\n    name: Printing\n    start: 1440-01\n    stop: 1700-01\n    row: 2\n    phases: 4\n"
         + "influences:\n";
 
-    private static GhgModel Parse(string text) => GhgParser.Parse(LineDocument.Parse(text));
+    private static GhgModel Parse(string text) => GhgParser.Parse(GhgBody.Parse(text));
 
     [Theory]
     [InlineData("month", 1)]
@@ -132,6 +131,26 @@ public sealed class GhgTimeUnitTests : IDisposable
         Assert.Equal((2900 * 12) * 4 / 120.0, payload.Width);
         Assert.Equal(GhgScale.XOf(M(-3400), GhgTimeUnit.Decade) + (payload.Width / 2), writing.X);
         Assert.All(elements, element => Assert.Equal("decade", GhgTrendPayload.Parser.ParseFrom(element.Payload.ToArray()).Unit));
+    }
+
+    /// <summary>
+    /// A diagram with no trend still names its unit to the canvas: every trigger and note carries it, so
+    /// a diagram of triggers or notes alone is not drawn in months.
+    /// </summary>
+    [Fact]
+    public void TheMapper_NamesTheUnit_OnEveryTriggerAndNote_WithNoTrend()
+    {
+        const string text = "gartner-hypecycle-graph: 1\nunit: year\ntrends: []\n"
+            + "triggers:\n  - id: t\n    name: T\n    date: 1947-12\n    row: 1\n"
+            + "notes:\n  - id: n\n    text: N\n    at: 1950-01\n    row: 2\n    width: 160\n    height: 64\n"
+            + "influences: []\n";
+
+        var elements = new GhgElementMapper().Visible(Parse(text), DiagramViewport.Unbounded);
+
+        var trigger = elements.Single(element => element.Type == GhgElementMapper.TriggerType);
+        var note = elements.Single(element => element.Type == GhgElementMapper.NoteType);
+        Assert.Equal("year", GhgTriggerPayload.Parser.ParseFrom(trigger.Payload.ToArray()).Unit);
+        Assert.Equal("year", GhgNotePayload.Parser.ParseFrom(note.Payload.ToArray()).Unit);
     }
 
     /// <summary>A trend moved in a diagram of decades starts on a decade, and keeps its length.</summary>

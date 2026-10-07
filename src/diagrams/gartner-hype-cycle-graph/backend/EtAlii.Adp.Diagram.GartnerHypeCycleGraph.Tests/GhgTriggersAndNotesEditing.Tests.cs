@@ -49,7 +49,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     /// <summary>The fixture is drawn in years: x of a year's start.</summary>
     private static double X(int year) => GhgScale.XOf(M(year), GhgTimeUnit.Year);
 
-    private GhgModel Parse() => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private GhgModel Parse() => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(Body)));
 
     private ContextTarget Target(string elementId) =>
         new(ContextScope.DiagramElement, Body, IsContainer: false, SourceId: default, _folder, ShortGuid.NewShortGuid(), elementId);
@@ -89,7 +89,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
 
         Assert.True(result.IsSuccess, result.Error);
         Assert.NotEqual(_original, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
-        Assert.Empty(GhgValidator.Validate(Parse()));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken))));
 
         var undone = await _dispatcher.DispatchAsync(Assert.IsAssignableFrom<ICommand>(result.Inverse), TestContext.Current.CancellationToken);
 
@@ -184,7 +184,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     public void ATriggersDate_IsWrittenInTheDiagramsUnit(string unit, string when, string whenLong)
     {
         var text = File.ReadAllText(Body).Replace("unit: year", $"unit: {unit}", StringComparison.Ordinal);
-        var model = GhgParser.Parse(LineDocument.Parse(text));
+        var model = GhgParser.Parse(GhgBody.Parse(text));
 
         var element = Assert.Single(new GhgElementMapper().Visible(model, DiagramViewport.Unbounded), candidate => candidate.Type == GhgElementMapper.TriggerType);
         var payload = GhgTriggerPayload.Parser.ParseFrom(element.Payload.ToArray());

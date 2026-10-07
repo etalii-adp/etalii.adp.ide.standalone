@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <!-- LogCapture, compiled into every test project by src/Directory.Build.targets, needs it; the
+         library under test references no package that would bring it along. -->
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The two bundled DISL definitions and their provenance, under the logical names the modules embed them by. -->
+    <EmbeddedResource Include="..\..\diagrams\gartner-hype-cycle-graph\definition\gartner-hype-cycle-graph.dis" LogicalName="gartner-hype-cycle-graph.dis" />
+    <EmbeddedResource Include="..\..\diagrams\gartner-hype-cycle-graph\definition\provenance.json" LogicalName="gartner-hype-cycle-graph.provenance.json" />
+    <EmbeddedResource Include="..\..\diagrams\agent-behavior-modelling\definition\agent-behavior-modelling.dis" LogicalName="agent-behavior-modelling.dis" />
+    <EmbeddedResource Include="..\..\diagrams\agent-behavior-modelling\definition\provenance.json" LogicalName="agent-behavior-modelling.provenance.json" />
+  </ItemGroup>
+
+</Project>

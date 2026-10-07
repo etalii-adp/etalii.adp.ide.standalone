@@ -1,4 +1,3 @@
-using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Xunit;
 
@@ -169,7 +168,7 @@ public sealed class GhgCommandsTests : IDisposable
     [Fact]
     public async Task AScriptedDuplicate_IsRefused_WhileTheOppositeDirectionIsAccepted()
     {
-        Assert.True(GhgRuleSet.AlreadyInfluences(Parse(), "steam-engine", "railways"));
+        Assert.True(Parity.GhgRuleSet.AlreadyInfluences(Parse(), "steam-engine", "railways"));
 
         var duplicate = await _dispatcher.DispatchAsync(
             new AddGhgInfluenceCommand(Body, "steam-engine", new GhgEnd("plateau", "bottom", 0.9), "railways", new GhgEnd("slope", "top", 0.2)),
@@ -185,7 +184,7 @@ public sealed class GhgCommandsTests : IDisposable
 
         Assert.True(opposite.IsSuccess, opposite.Error);
         Assert.Contains(Parse().Influences, influence => influence.From == "railways" && influence.To == "steam-engine");
-        Assert.Empty(GhgValidator.Validate(Parse()));
+        Assert.Empty(GhgValidator.Validate(GhgBody.Parse(await File.ReadAllTextAsync(Body, TestContext.Current.CancellationToken))));
     }
 
     /// <summary>Requirement 4.6: a boundary dragged past its neighbour stops a month short of it.</summary>
@@ -222,6 +221,26 @@ public sealed class GhgCommandsTests : IDisposable
     }
 
     /// <summary>
+    /// DISL 11.5.3 and 11.5.4: a later entry reusing an id is drawn as ephemeral, so a move that would
+    /// store its position is refused before it is applied, and the document is left as it was.
+    /// </summary>
+    [Fact]
+    public async Task AMoveOfALaterEntryReusingAnId_IsRefused_AndWritesNothing()
+    {
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "rule-duplicate-id.ghg"), Body, overwrite: true);
+        var before = await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken);
+        using var historyStacks = new HistoryStackStore(_dispatcher);
+        await using var session = new GhgSession(Body, _store, new GhgElementMapper(), historyStacks.Get(_folder));
+        var ephemeral = new GhgElementMapper().Visible(Parse(), DiagramViewport.Unbounded)
+            .Single(element => element.Type == GhgElementMapper.TrendType && element.Id is not "a" and not "b");
+
+        var error = await session.MoveElementToAsync(ephemeral.Id, GhgScale.XOf(M(1960)), GhgScale.TopOf(4), TestContext.Current.CancellationToken);
+
+        Assert.NotEqual("", error);
+        Assert.Equal(before, await File.ReadAllBytesAsync(Body, TestContext.Current.CancellationToken));
+    }
+
+    /// <summary>
     /// A document that could not be read is never written: its emptiness is not the document, and
     /// writing it would replace the only copy on disk.
     /// </summary>
@@ -242,7 +261,7 @@ public sealed class GhgCommandsTests : IDisposable
         var edited = await new GhgTestDispatcher(store).DispatchAsync(
             new RenameGhgElementCommand(Body, "railways", "Railroads"),
             TestContext.Current.CancellationToken);
-        var saved = store.Save(Body, LineDocument.Parse(GhgDocumentFactory.EmptyDocument("\n")));
+        var saved = store.Save(Body, GhgBody.Parse(GhgDocumentFactory.EmptyDocument("\n")));
 
         Assert.False(edited.IsSuccess);
         Assert.True(saved.Failed);
@@ -252,5 +271,5 @@ public sealed class GhgCommandsTests : IDisposable
     private static int Touching(GhgModel model, string id) =>
         model.Influences.Count(influence => influence.From == id || influence.To == id);
 
-    private GhgModel Parse() => GhgParser.Parse(LineDocument.Parse(File.ReadAllText(Body)));
+    private GhgModel Parse() => GhgParser.Parse(GhgBody.Parse(File.ReadAllText(Body)));
 }
