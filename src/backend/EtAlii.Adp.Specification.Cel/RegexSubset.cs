@@ -140,7 +140,7 @@ public sealed class BoundedRegex(string expression, bool caseInsensitive, TimeSp
 {
     public string Expression { get; } = expression;
 
-    public Regex Regex { get; } = new Regex(RegexSubset.ToDotNet(expression, caseInsensitive), RegexOptions.CultureInvariant, timeout);
+    public Regex Regex { get; } = new(RegexSubset.ToDotNet(expression, caseInsensitive), RegexOptions.CultureInvariant, timeout);
 
     /// <summary>The match, null when there is none; throws <see cref="RegexMatchTimeoutException"/> when the bound is exceeded.</summary>
     public Match? Match(string input)
