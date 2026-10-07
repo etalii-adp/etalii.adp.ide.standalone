@@ -39,6 +39,13 @@ public sealed class DislDiagram : ICelObject
 
     public DislSpecification Specification { get; }
 
+    /// <summary>
+    /// What <c>diagram.file</c> reads (§8.2): the file a finding attributes the diagram to, relative to
+    /// its subject, which a host binds when a message names it; null, and no <c>file</c> member, when
+    /// the host gives none. A diagram attribute named <c>file</c> shadows it.
+    /// </summary>
+    public string? File { get; set; }
+
     /// <summary>The diagram attributes that have a stored value.</summary>
     public IReadOnlyDictionary<string, object?> Attributes => _attributes;
 
@@ -198,6 +205,7 @@ public sealed class DislDiagram : ICelObject
             "type" => "diagram",
             "kind" => "diagram",
             _ when Specification.Metamodel.DiagramAttributes.ContainsKey(name) => ValueOf(name),
+            "file" when File is not null => File,
             _ => Missing,
         };
         if (ReferenceEquals(value, Missing))
