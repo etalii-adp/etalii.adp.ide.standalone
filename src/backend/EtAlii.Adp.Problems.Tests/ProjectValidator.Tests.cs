@@ -221,7 +221,7 @@ public class ProjectValidatorTests : IDisposable
         CreatePair("open", "reachable");
         var validator = Validator(problems: []);
 
-        using (new FileStream(IoPath.Combine(_root, "locked.mm"), FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(IoPath.Combine(_root, "locked.mm"), FileMode.Open, FileAccess.Read, FileShare.None))
         {
             var outcome = await Validate(validator, new ProjectValidationScope(_root));
 

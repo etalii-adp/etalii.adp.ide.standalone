@@ -250,7 +250,7 @@ public sealed class GhgCommandsTests : IDisposable
         // Another program holds the file, so the first open cannot read it.
         var store = new GhgDocumentStore();
         GhgDocumentEntry entry;
-        using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             entry = store.GetOrLoad(Body);
         }

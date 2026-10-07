@@ -278,7 +278,7 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     public async Task AGraphThatCouldNotBeRead_RefusesEveryNewCommand()
     {
         var store = new GhgDocumentStore();
-        using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.False(store.GetOrLoad(Body).IsUsable);
         }

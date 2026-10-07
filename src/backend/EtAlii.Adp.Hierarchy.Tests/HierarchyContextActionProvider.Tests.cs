@@ -383,7 +383,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         var target = FolderTarget(IoPath.Combine(_root, "sub"));
 
         // Act.
-        using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        await using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
             var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.DeleteActionId, "", "", TestContext.Current.CancellationToken);
 

@@ -129,7 +129,7 @@ public class ShippedExampleModelsTests : IClassFixture<WebApplicationFactory<Pro
         var second = await OpenAllAsync(services, source, name);
 
         using var buffer = new MemoryStream();
-        using (var json = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true, NewLine = "\n" }))
+        await using (var json = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true, NewLine = "\n" }))
         {
             json.WriteStartObject();
             json.WriteString("reason", Reason);

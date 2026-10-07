@@ -145,7 +145,7 @@ public class C4InteropTests : IDisposable
         // something Structurizr still reads - and ADP's edits are line surgery on someone
         // else's format.
         SkipWithoutTheCli();
-        using var services = Services();
+        await using var services = Services();
         var factory = services.GetServices<IDiagramDocumentFactory>().Single(candidate => candidate.Origin.Key == "c4/container");
         var history = services.GetRequiredService<IHistoryStackStore>().Get(_root);
 
