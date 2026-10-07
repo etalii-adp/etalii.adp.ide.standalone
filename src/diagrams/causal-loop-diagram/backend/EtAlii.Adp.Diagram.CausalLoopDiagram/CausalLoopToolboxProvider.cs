@@ -20,19 +20,19 @@ public sealed class CausalLoopToolboxProvider : IDiagramToolboxProvider
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
     [
-        new ToolboxItemDefinition(
+        new(
             "causal-loop.toolbox.variable",
             "Variable",
             "mdi-circle-outline",
             "Drop on the canvas to declare a quantity the system has.",
             CausalLoopContextActionProvider.AddVariableActionId),
-        new ToolboxItemDefinition(
+        new(
             "causal-loop.toolbox.link",
             "Causal link",
             "mdi-arrow-right-thin",
             "Drop on a variable to state that it affects another. It arrives stating the same direction; change it to the opposite from the link's own menu.",
             CausalLoopContextActionProvider.AddLinkActionId),
-        new ToolboxItemDefinition(
+        new(
             "causal-loop.toolbox.loop",
             "Feedback loop",
             "mdi-sync",

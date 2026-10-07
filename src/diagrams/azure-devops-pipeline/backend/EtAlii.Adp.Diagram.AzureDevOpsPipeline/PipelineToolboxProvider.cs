@@ -27,25 +27,25 @@ public sealed class PipelineToolboxProvider : IDiagramToolboxProvider
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
     [
-        new ToolboxItemDefinition(
+        new(
             "azure-pipeline.toolbox.stage",
             "Stage",
             "mdi-layers-plus",
             "Drop on a stage to add another after it. It arrives with a job and a step, so it runs.",
             PipelineContextActionProvider.AddStageActionId),
-        new ToolboxItemDefinition(
+        new(
             "azure-pipeline.toolbox.job",
             "Job",
             "mdi-plus-box-outline",
             "Drop on a stage to add a job to it.",
             PipelineContextActionProvider.AddJobActionId),
-        new ToolboxItemDefinition(
+        new(
             "azure-pipeline.toolbox.deployment-job",
             "Deployment job",
             "mdi-rocket-launch-outline",
             "Drop on a stage to add a deployment job, with the environment and strategy one needs.",
             PipelineContextActionProvider.AddDeploymentJobActionId),
-        new ToolboxItemDefinition(
+        new(
             "azure-pipeline.toolbox.step",
             "Script step",
             "mdi-console-line",

@@ -351,7 +351,7 @@ public class AnsibleElementMapperTests
         var moved = graph.Nodes[0].Id;
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
-            [moved] = new RegistrationPosition(4321, 1234),
+            [moved] = new(4321, 1234),
         };
 
         // Act.
@@ -372,7 +372,7 @@ public class AnsibleElementMapperTests
         var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
-            [moved] = new RegistrationPosition(4321, 1234),
+            [moved] = new(4321, 1234),
         };
 
         // Act.
@@ -405,7 +405,7 @@ public class AnsibleElementMapperTests
         var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
-            ["playbook:deleted-yesterday.yml"] = new RegistrationPosition(4321, 1234),
+            ["playbook:deleted-yesterday.yml"] = new(4321, 1234),
         };
 
         // Act.
@@ -430,7 +430,7 @@ public class AnsibleElementMapperTests
         var edge = graph.Edges.First(candidate => candidate.TargetId.Length > 0);
         var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
         {
-            [edge.SourceId] = new RegistrationPosition(4321, 1234),
+            [edge.SourceId] = new(4321, 1234),
         };
 
         // Act.

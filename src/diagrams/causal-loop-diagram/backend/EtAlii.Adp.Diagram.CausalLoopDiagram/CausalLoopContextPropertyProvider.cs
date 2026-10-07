@@ -156,10 +156,10 @@ public sealed class CausalLoopContextPropertyProvider(
 
             List<ContextPropertyDefinition> rows =
             [
-                new ContextPropertyDefinition(
+                new(
                     LoopIdentifierProperty, "Identifier", loop.Identifier, Group: IdentityGroup),
-                new ContextPropertyDefinition(LoopNameProperty, "Name", loop.Name, Group: IdentityGroup),
-                new ContextPropertyDefinition(
+                new(LoopNameProperty, "Name", loop.Name, Group: IdentityGroup),
+                new(
                     LoopComputedProperty, "Computed polarity", NameOf(computed),
                     ReadOnlyReason: ComputedFromTheArrows, Group: FeedbackGroup),
             ];
