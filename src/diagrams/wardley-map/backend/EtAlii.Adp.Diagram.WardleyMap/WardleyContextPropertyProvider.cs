@@ -203,8 +203,8 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
                         return await Dispatch(target, new SetWardleyEvolveCommand(bodyPath, entry.Id, Present: false, 0d), cancellationToken);
                     }
 
-                    return TryCoordinate(value, out var target_, out var evolveError)
-                        ? await Dispatch(target, new SetWardleyEvolveCommand(bodyPath, entry.Id, Present: true, target_, evolve?.Override ?? ""), cancellationToken)
+                    return TryCoordinate(value, out var evolveTarget, out var evolveError)
+                        ? await Dispatch(target, new SetWardleyEvolveCommand(bodyPath, entry.Id, Present: true, evolveTarget, evolve?.Override ?? ""), cancellationToken)
                         : ContextPropertyResult.Failure(evolveError);
                 }
 

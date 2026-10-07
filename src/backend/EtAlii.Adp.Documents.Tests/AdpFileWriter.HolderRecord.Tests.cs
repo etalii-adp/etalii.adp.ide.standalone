@@ -176,9 +176,9 @@ public class AdpFileWriterHolderRecordTests : IDisposable
         // this guard fail for somebody else's failure. Counting by path asks the question this
         // test is actually about and cannot be answered by another test's work.
         var asked = new System.Collections.Concurrent.ConcurrentBag<string>();
-        FileHolders.Query = asked_ =>
+        FileHolders.Query = queried =>
         {
-            asked.Add(asked_);
+            asked.Add(queried);
             return "asked";
         };
 
