@@ -109,7 +109,7 @@ DISL's CEL has no timestamps, so the specification reads times through the CEL f
 
 A row is an integer the author owns: negative rows are valid, gaps are allowed, and several elements share a row (R3.5). It is a placement grid and **nothing more**: no identity, label, membership or meaning (R3.6). That is what keeps this a timeline rather than a swimlane, so an implementation must not add lane headers, lane labels or lane packing. DISL's ordinal axis would give rows identity, so timeline.dis uses a linear axis in row units with grid snapping of one row instead.
 
-- A row is 60 canvas units high (`TimelineRows.Height`, mirrored as `ROW_HEIGHT` in `client/TimelineCanvas.tsx`). The height is a rendering constant, not data.
+- A row is 60 canvas units high (`TimelineRows.Height`, mirrored as `ROW_HEIGHT` in `client/timelineBindings.ts`). The height is a rendering constant, not data.
 - A vertical drag snaps to the nearest row; halves round **away from zero**, so the midpoint between two rows resolves the same way on both sides of the origin (`src/backend/EtAlii.Adp.Documents/RowRounding.cs`, shared by the client's `snapToStep`). DISL's `nearest` does not say how halves round.
 - A row that does not read as an integer is read as row 0.
 - Overlapping elements are drawn overlapping; the tool never moves anything to avoid overlap (R4.5), except when the reader asks for [Arrange diagram](#arrange-diagram).
@@ -120,7 +120,7 @@ A row is an integer the author owns: negative rows are valid, gaps are allowed, 
 - The client freezes a seconds-to-canvas-units scale when the first non-empty model arrives: the span of all elements plus 10 % on each side, fitted to about 1200 units; for an empty timeline, one day is 20 units (`timelineScaleOf` in `client/TimelineCanvas.tsx`). It is frozen so an edit never rescales the drawing under the user. DISL's fixed `scale` of 20 units per day in timeline.dis is the empty-timeline value; the fitted initial zoom is this implementation's.
 - The same document always draws identically (R4.7).
 
-**x snapping depends on the element.** A date-only element's begin snaps to the start of a day when dragged, and its edges snap to days when resized. An element whose times carry a time of day does not snap in x at all and keeps whole seconds (`snap` in `TIMELINE_DEFINITION`, `TimelineScale.ToTime`). DISL cannot make snapping depend on a value's written precision, so timeline.dis declares day snapping, which is the case for every element the tool itself creates.
+**x snapping depends on the element.** A date-only element's begin snaps to the start of a day when dragged, and its edges snap to days when resized. An element whose times carry a time of day does not snap in x at all and keeps whole seconds (`snapAxes` in `client/timelineBindings.ts`, which carries a day's width in each date-only element's payload; `TimelineScale.ToTime`). DISL cannot make snapping depend on a value's written precision, so timeline.dis declares day snapping, which is the case for every element the tool itself creates.
 
 ## The time ruler
 
@@ -137,7 +137,7 @@ The ruler is chrome fixed to the view, not to the diagram (R5). DISL's `ruler` d
 - A period is a box 36 units high, its left edge at begin and its right edge at end, at least 2 units wide. It sits at the top of its row, leaving a 24-unit gutter to the next row. Its label is inside, on one line, truncated.
 - A moment is a diamond with a radius of 9 units, drawn with its left tip at begin and its centre 18 units below the top of its row, so it lines up with the middle of the periods on the same row. Its label is beside it, to the right. It is filled with the accent colour and has no outline (`client/timeline.css`, the library's `moment` shape). timeline.dis expresses the vertical alignment as a placement offset of 0.3 row.
 - An element with an empty label shows its id instead (the specification's function `shownLabel`).
-- A connection leaves the **end** anchor (right-side midpoint) of its source and arrives at the **begin** anchor (left-side midpoint) of its target, always; anchors never move to the top, bottom or a corner (R8.1). It is a cubic bezier that leaves and arrives horizontally. When the target begins left of where the source ends, the curve loops forward out of the source and back into the target (`forwardBezierPath` versus `horizontalBezierPath` in `src/client/src/canvas/connectors.ts`); DISL's `bezier` routing has no such rule. It has no arrowhead. Its label sits at the midpoint, 6 units above the line.
+- A connection leaves the **end** anchor (right-side midpoint) of its source and arrives at the **begin** anchor (left-side midpoint) of its target, always; anchors never move to the top, bottom or a corner (R8.1). It is a cubic bezier that leaves and arrives horizontally. When the target begins left of where the source ends, the curve loops forward out of the source and back into the target (`forwardBezierPath` versus `horizontalBezierPath` in `src/client/src/canvas/connectors.ts`); DISL's `bezier` routing has no such rule. It ends in the library's arrowhead at its target, which timeline.dis states as `targetMarker: "arrowFilled"`; an earlier version of this document and of timeline.dis said it had none, which the canvas has not drawn since it moved onto the canvas library. Its label sits at the midpoint, 6 units above the line.
 - Connections are redrawn continuously while an element is dragged or resized, not only on release (R6.5, R7.7, R8.6).
 - The shared canvas styling (`src/client/src/canvas/canvas.css`) supplies colours and selection states; the timeline adds only the moment's fill and the ruler.
 
@@ -168,7 +168,7 @@ Actions reach the ribbon, the right-click menu and the keyboard through one path
 | Empty canvas | Add element here, Add moment here | | Placed at the clicked time and row. From a menu without a position, asks for the begin (prefilled with today, dialog titled "Add element" or "Add moment", field "Begin", button "Add") and uses the row of the element the gesture anchored on, or row 0. |
 | Anywhere | Arrange diagram | | See [Arrange diagram](#arrange-diagram). |
 
-An action that does not apply to the selection is reported as not applicable rather than failing silently (R11.8). Every edit is one command with an inverse on the project's history (R11.1).
+The client's keys come from the same menus (`compileNotation` over timeline.dis): F2, Delete, Tab and Enter on an element, F2 and Delete on a relation, each sent to the backend as that key, and a double-click on an element renames it, as the nodes' `doubleClick: "editLabel"` says. An action that does not apply to the selection is reported as not applicable rather than failing silently (R11.8). Every edit is one command with an inverse on the project's history (R11.1).
 
 ## Arrange diagram
 
@@ -219,15 +219,14 @@ The standalone client and backend share their own ids for the toolbox entries, t
 - **The file format and its writing discipline.** `persistence.format: "yaml"` describes a DID definition; the `.tml` layout, the splice-only writes, the indentation copied from the file and the `connections:` key created with its first entry are described in [The document on disk](#the-document-on-disk).
 - **Reading times.** CEL has no timestamps; the plugin functions above carry the tool's reading, and their fallbacks are an approximation.
 - **Precision-dependent snapping.** The x snapping depends on whether an element's times carry a time of day; the specification declares the day snapping of every element the tool creates.
-- **The connection route.** A forward loop when the target begins before the source ends is the tool's own route, and the named begin and end anchors at the side midpoints are fixed points of a rectangle and a diamond that the client draws itself.
-- **The drag hint and the ruler's tick choice.** Both are client chrome described above.
-- **Create and relate from the begin anchor.** The new element is the source there; DISL's `createTarget` covers only the end-anchor direction.
+- **The connection route.** A forward loop when the target begins before the source ends is the tool's own route (`client/timelineBindings.ts`). The named begin and end anchors are the specification's fixed points, compiled as named points on the sides; that a period is drawn as the shared span and a moment as the library's marker is the client's.
+- **The drag hint's text and the ruler's tick choice.** The snapping's `feedback.showValue` asks a drag to show the value it would rest on; that the value is the time under the left edge and the row under the top, computed from the live bounds over the frozen scale, is the client's (`client/timelineBindings.ts`), and the ruler is drawn beside the canvas.
 - **The row arrangement.** A layout plugin, described in [Arrange diagram](#arrange-diagram).
 - **A menu addition without a position** asks for the begin and takes its row from the element the menu was opened on; DISL's operation reads `position` and has no fallback for a menu opened without one.
 - **The grouping of findings.** Described in [Diagnostics](#diagnostics).
 - **The wire ids**, under `x-timeline`.
 
-The standalone module runs Add element after, Add element below, Give it an end, Remove its end, Relate and Remove in its own commands rather than through a DISL runtime's operation interpreter, because they create and connect in one step, retype, or splice lines the interpreter does not write; the operations in the specification say what those commands do.
+**What the standalone module runs from this specification, and what stays code.** The DISL runtime's operation interpreter runs `addAfter` and `addBelow` (a `create` and a `connect`) and `giveEnd` and `removeEnd` (a `retype` with its `set` or `unset`), and a relation released on empty canvas runs the `relate` tool's `createTarget` or `createSource`, the edge's `connect.from` saying which from the anchor the gesture started at. The transaction each produces is written by the module's own command, because the file changes by line splices that no DISL change says how to make (`backend/EtAlii.Adp.Diagram.Timeline/TimelineDefinition.cs`). Relating two existing elements and Remove are commands of their own. The client's canvas is compiled from this specification (`client/TimelineCanvas.tsx`), with what it cannot read in `client/timelineBindings.ts`.
 
 ## Scale and performance
 

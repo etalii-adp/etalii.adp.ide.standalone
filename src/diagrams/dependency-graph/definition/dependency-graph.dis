@@ -212,6 +212,7 @@
           "source": { "mode": "fixed", "points": [ { "id": "left", "x": 0, "y": 0.5 }, { "id": "right", "x": 1, "y": 0.5 } ] },
           "target": { "mode": "fixed", "points": [ { "id": "left", "x": 0, "y": 0.5 }, { "id": "right", "x": 1, "y": 0.5 } ] }
         },
+        "connect": { "from": { "right": "source", "left": "target" }, "tool": "dependsOn" },
         "sourceMarker": "none",
         "targetMarker": "arrowFilled",
         "labels": [
@@ -254,8 +255,22 @@
         "label": "Depends on",
         "icon": "mdi-ray-start-arrow",
         "mode": "drag",
-        "createSource": "Node",
-        "createTarget": "Node",
+        "createSource": {
+          "type": "Node",
+          "initial": {
+            "label": "New node",
+            "x": { "cel": "double(position.x)" },
+            "row": { "cel": "int(math.round(double(position.y)))" }
+          }
+        },
+        "createTarget": {
+          "type": "Node",
+          "initial": {
+            "label": "New node",
+            "x": { "cel": "double(position.x)" },
+            "row": { "cel": "int(math.round(double(position.y)))" }
+          }
+        },
         "doc": {
           "summary": "Drag from a node's side anchor to another node to make a dependency; release on empty canvas to create the other node there.",
           "description": "Dragged out of the right anchor, the dragged node depends on the one it lands on. Dragged out of the left anchor, the direction reverses: the node it lands on depends on the dragged one. Released on empty canvas, a new node labelled \"New node\" is created at the release point and related, as one undo step."
@@ -346,7 +361,7 @@
   },
 
   "constraints": {
-    "doc": "Every problem is a warning naming its element, because the rest of the graph still draws. The one error is a file that is not YAML, which replaces every other finding. The findings come in the order the identity checks and then the dependency checks meet them, which `dependency-graph.md` states because `constraints.order` cannot.",
+    "doc": "Every problem is a warning naming its element, because the rest of the graph still draws. The one error is a file that is not YAML, which replaces every other finding. The findings are reported in two groups, which `constraints.order` cannot state (see dependency-graph.md, section 3): first the ids (dependencies.missing-id and dependencies.duplicate-id, interleaved in declaration order, nodes before dependencies), then per dependency in declaration order its dangling source, its dangling target and its self-dependency.",
     "defaults": { "severity": "warning", "timing": ["live"] },
     "blockSaveOn": "never",
     "builtIn": {
@@ -356,27 +371,56 @@
         "message": { "cel": "'This is not YAML that can be read: ' + detail.reason" },
         "doc": "At the parser's line, or line 1 when it names none."
       },
-      "std.missingId": {
-        "code": "dependencies.missing-id",
-        "message": { "cel": "self.isA('DependsOn') ? 'A dependency has no id, so nothing can select, connect or edit it.' : '\\'' + self.label + '\\' has no id, so nothing can select, connect or edit it.'" },
-        "doc": "An absent or empty id, at the declaration's first line. A node is named by its label, which is empty when it has none."
-      },
       "std.duplicateId": {
         "code": "dependencies.duplicate-id",
         "message": { "cel": "'The id \\'' + detail.id + '\\' is declared more than once, which makes every reference to it ambiguous.'" },
         "doc": "Nodes and dependencies share one id space. Each second and later declaration is reported, at its first line; nodes are read before dependencies."
       },
       "std.references": {
-        "code": "dependencies.dangling-relation",
-        "message": { "cel": "'A dependency names \\'' + detail.missingId + '\\', and no node with that id is in this graph.'" },
-        "doc": "Once per end that names an id no node holds, on the dependency. An end that names nothing at all is not reported."
+        "enabled": false,
+        "doc": "Reported by danglingSource and danglingTarget instead, which leave an end written empty or not written at all unreported, as the tool does, and which read the id an end is written with."
       },
       "std.endpoints": {
-        "code": "dependencies.self-dependency",
-        "message": { "cel": "'\\'' + self.source.id + '\\' is declared to depend on itself, which says nothing about what needs what.'" },
-        "doc": "From `allowSelfLoops: false`: a dependency whose two ends name the same id, on the dependency, whether or not a node holds that id. Nothing in the tool can create one; the command refuses it with \"A node cannot depend on itself.\""
+        "enabled": false,
+        "doc": "A self-dependency is reported by selfDependency instead, which judges the ids as written, also when no node holds them; std.endpoints judges only a relation whose two ends both resolve. Nothing in the tool can create one; the command refuses it with \"A node cannot depend on itself.\""
       }
-    }
+    },
+    "rules": [
+      {
+        "id": "missingId",
+        "code": "dependencies.missing-id",
+        "scope": ["Node", "DependsOn"],
+        "rule": "self.id != ''",
+        "message": { "cel": "self.isA('DependsOn') ? 'A dependency has no id, so nothing can select, connect or edit it.' : '\\'' + self.label + '\\' has no id, so nothing can select, connect or edit it.'" },
+        "doc": "An absent or empty id, at the declaration's first line; the element is drawn under an ephemeral id. `self.id` is the id as written. A node is named by its label, which is empty when it has none."
+      },
+      {
+        "id": "danglingSource",
+        "code": "dependencies.dangling-relation",
+        "scope": "DependsOn",
+        "when": "writtenEnd(self, 'source') != ''",
+        "rule": "has(self.source) && self.source.isA('Node')",
+        "message": { "cel": "'A dependency names \\'' + writtenEnd(self, 'source') + '\\', and no node with that id is in this graph.'" },
+        "doc": "Once per end that names an id no node holds, on the dependency. An end that names nothing at all is not reported."
+      },
+      {
+        "id": "danglingTarget",
+        "code": "dependencies.dangling-relation",
+        "scope": "DependsOn",
+        "when": "writtenEnd(self, 'target') != ''",
+        "rule": "has(self.target) && self.target.isA('Node')",
+        "message": { "cel": "'A dependency names \\'' + writtenEnd(self, 'target') + '\\', and no node with that id is in this graph.'" }
+      },
+      {
+        "id": "selfDependency",
+        "code": "dependencies.self-dependency",
+        "scope": "DependsOn",
+        "when": "writtenEnd(self, 'source') != ''",
+        "rule": "writtenEnd(self, 'source') != writtenEnd(self, 'target')",
+        "message": { "cel": "'\\'' + writtenEnd(self, 'source') + '\\' is declared to depend on itself, which says nothing about what needs what.'" },
+        "doc": "From `allowSelfLoops: false`: a dependency whose two ends name the same id, on the dependency, whether or not a node holds that id."
+      }
+    ]
   },
 
   "behavior": {
@@ -456,6 +500,22 @@
   },
 
   "plugins": {
+    "net.etalii.adp.generic.dependencyEnds": {
+      "version": "^1.0.0",
+      "provides": ["celFunctions"],
+      "required": false,
+      "doc": "A dependency's ends as the file writes them, which DISL's CEL cannot read: an end that names no node is null in the model (4.9). The standalone module implements it over its own reading (`DependencyGraphFindings.cs`).",
+      "celFunctions": [
+        {
+          "name": "writtenEnd",
+          "params": [ { "name": "relation", "type": "dyn" }, { "name": "end", "type": "string" } ],
+          "returns": "string",
+          "cost": 1,
+          "fallback": "end == 'source' ? (has(relation.source) ? relation.source.id : '') : (has(relation.target) ? relation.target.id : '')",
+          "doc": "The id a dependency's `source` or `target` end is written with in the file (`from` or `to`), also when it names no node and the end is null in the model; the empty text when the key is absent or empty."
+        }
+      ]
+    },
     "net.etalii.adp.generic.dgr": {
       "version": "^1.0.0",
       "provides": ["persistenceFormat"],

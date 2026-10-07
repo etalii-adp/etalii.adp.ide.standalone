@@ -353,8 +353,9 @@
           "source": { "mode": "fixed", "points": [ { "id": "end", "x": 1, "y": 0.5 } ] },
           "target": { "mode": "fixed", "points": [ { "id": "begin", "x": 0, "y": 0.5 } ] }
         },
+        "connect": { "from": { "end": "source", "begin": "target" }, "tool": "relate" },
         "sourceMarker": "none",
-        "targetMarker": "none",
+        "targetMarker": "arrowFilled",
         "labels": [
           { "id": "label", "text": { "attribute": "label" }, "at": "middle", "side": "above", "distance": 6, "editable": "inline" }
         ],
@@ -406,6 +407,34 @@
         ]
       }
     ],
+    "tools": {
+      "relate": {
+        "id": "relate",
+        "creates": "Connection",
+        "label": "Relate",
+        "icon": "mdi-ray-start-arrow",
+        "mode": "drag",
+        "createTarget": {
+          "type": "Period",
+          "initial": {
+            "label": "New element",
+            "begin": { "cel": "position.x" },
+            "end": { "cel": "dateAfter(position.x, 14)" },
+            "row": { "cel": "position.y" }
+          }
+        },
+        "createSource": {
+          "type": "Period",
+          "initial": {
+            "label": "New element",
+            "begin": { "cel": "position.x" },
+            "end": { "cel": "dateAfter(position.x, 14)" },
+            "row": { "cel": "position.y" }
+          }
+        },
+        "doc": "The relation gesture, started from an element's anchor rather than from the palette, which does not show it. Released on empty canvas it creates a period two weeks long, its begin at the start of the day under the pointer, on the nearest row, and relates it in one step: as the target from the end anchor, as the source from the begin anchor."
+      }
+    },
     "generic": { "select": true, "pan": true },
     "contextTools": [
       {
