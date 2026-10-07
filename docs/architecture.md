@@ -55,7 +55,7 @@ A diagram is **a text file in the user's workspace**, in whatever format already
 
 ## How a diagram type plugs in
 
-A diagram type is a folder holding up to four parts — `backend`, `api`, `client`, `examples` — and is **discovered at runtime**: no core file names it, and deleting the folder removes the type.
+A diagram type is a folder holding up to five parts — `backend`, `api`, `client`, `examples` and, for a type whose palette, menus and property rows are derived from a DISL definition, `definition` — and is **discovered at runtime**: no core file names it, and deleting the folder removes the type.
 
 **The dependency runs one way.** A module may depend on the core abstractions; core code must never depend on a particular diagram type, and the canvas, the storage layer and the sync machinery must not know any one type's schema. That is what lets a type be added without a core file changing. One module is worth reading in full rather than many; [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one from end to end, and [creating-an-editor-module.md](creating-an-editor-module.md) does the same for the editor family.
 

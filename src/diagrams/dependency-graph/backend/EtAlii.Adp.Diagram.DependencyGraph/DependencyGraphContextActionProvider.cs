@@ -1,6 +1,7 @@
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
+using EtAlii.Adp.Specification.Disl;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -9,6 +10,13 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// path the context service defines.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>What is offered is derived from the DISL definition</b>
+/// (<see cref="DependencyGraphDefinition.Menus"/>): its context menus' entries, groups, labels, icons
+/// and shortcuts, with the ids of its <c>x-dependencies</c> block. What each action does is here: the
+/// definition's operations create and connect in one step, which the DISL runtime cannot run yet, and
+/// every edit is a splice of the file's own lines.
+/// </para>
 /// <para>
 /// Every mutating action dispatches a command through the project's history, so each is one undo
 /// away like every other edit in the IDE. <see cref="ConnectActionId"/> arrives as one call
@@ -97,37 +105,11 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             return Result([]);
         }
 
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        if (DependencyGraphEdits.ElementOf(model, target.ElementId) is not null)
-        {
-            return Result(ForElement());
-        }
-
-        if (DependencyGraphEdits.RelationOf(model, target.ElementId) is not null)
-        {
-            return Result(ForRelation());
-        }
-
-        if (DependencyGraphNewPlacement.TryParse(target.ElementId, out _, out _))
-        {
-            // A placement discovers what can happen at empty canvas, because executing an action
-            // by id only finds actions its target discovers - a drop resolves through this list.
-            return Result(ForPlacement());
-        }
-
-        if (DependencyGraphRelationGesture.TryParse(target.ElementId, out _, out _))
-        {
-            // A finished relation gesture discovers its one action, for the same reason: the
-            // canvas executes it by id against this target.
-            return Result(
-            [
-                new ContextActionGroupDefinition(
-                    [new ContextActionDefinition(ConnectActionId, "Depends on", "mdi-ray-start-arrow")]),
-            ]);
-        }
-
-        return Result([]);
+        // A node, a dependency, a placement - which discovers what can happen at empty canvas, because
+        // executing an action by id only finds actions its target discovers, so a drop resolves through
+        // this list - and a finished relation gesture, which the canvas executes by id likewise. Each
+        // menu is the definition's, in its groups.
+        return Result(DependencyGraphDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />
@@ -145,9 +127,12 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             case AddElementActionId when placed:
             {
                 // The gesture already said everything an add needs - where it landed - so
-                // nothing is asked and the node appears where it was dropped.
-                return await DispatchAsync(target, NewElementAt(
-                    target.ResolvedFullPath, placedX, placedRow), cancellationToken);
+                // nothing is asked and the node appears where it was dropped, as the definition's
+                // addNodeHere places and labels it.
+                var (added, refusal) = DependencyGraphDefinition.NodeHere(model, target.ResolvedFullPath, placedX, placedRow);
+                return added is null
+                    ? new ContextExecutionFailed(refusal)
+                    : await DispatchAsync(target, added, cancellationToken);
             }
 
             case AddAfterActionId when element is not null:
@@ -249,21 +234,20 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 // answers Completed without dispatching has done nothing at all. That trap was
                 // walked into three times in the module this was forked from; every action that
                 // needs no input dispatches in this method.
-                var going = DependencyGraphWriter.RelationsTouching(model, element.Id).Count;
-                if (going == 0)
+                // What is asked, and when, is the definition's deletion confirmation.
+                if (DependencyGraphDefinition.ElementOf(DependencyGraphDefinition.Disl(model), element.Id) is not { } node
+                    || DeletionPolicy.Confirmation(DependencyGraphDefinition.Specification, node) is not { } confirmation)
                 {
                     return await DispatchAsync(target,
                         new RemoveDependencyGraphElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
+                    confirmation.Title,
                     "mdi-delete-outline",
-                    going == 1
-                        ? "Removing this node also removes the 1 dependency attached to it."
-                        : $"Removing this node also removes the {going} dependencies attached to it.",
-                    "Remove",
-                    Danger: true));
+                    confirmation.Message,
+                    confirmation.ConfirmLabel,
+                    Danger: confirmation.Danger));
             }
 
             case DisconnectActionId when DependencyGraphEdits.RelationOf(model, target.ElementId) is not null:
@@ -378,44 +362,6 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             _ => null,
         };
     }
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForElement()
-    {
-        List<ContextActionDefinition> edits =
-        [
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
-        ];
-
-        // The additions, as their own group so the menu separates changing this node from adding
-        // the next - the mindmap's Insert/Enter pattern, on this type's two axes: to the right,
-        // and below.
-        List<ContextActionDefinition> additions =
-        [
-            new(AddAfterActionId, "Add node to the right", "mdi-arrow-expand-right", new ContextShortcutDefinition("Tab")),
-            new(AddBelowActionId, "Add node below", "mdi-arrow-expand-down", new ContextShortcutDefinition("Enter")),
-        ];
-
-        return [new ContextActionGroupDefinition(edits), new ContextActionGroupDefinition(additions)];
-    }
-
-    /// <summary>What empty canvas offers: the add, and the completion of a relation gesture.</summary>
-    private static IReadOnlyList<ContextActionGroupDefinition> ForPlacement() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(AddElementActionId, "Add node here", "mdi-plus"),
-        ]),
-    ];
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForRelation() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(RelabelActionId, "Relabel…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new ContextActionDefinition(DisconnectActionId, "Remove dependency", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-        ]),
-    ];
 
     private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
         ValueTask.FromResult(groups);

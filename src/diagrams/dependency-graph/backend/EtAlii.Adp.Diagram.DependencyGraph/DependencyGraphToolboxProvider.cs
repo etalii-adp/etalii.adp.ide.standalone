@@ -7,8 +7,14 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// same command.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>Derived from the DISL definition</b> (<see cref="DependencyGraphDefinition.Toolbox"/>): its toolbox
+/// group's one tool, its id and drop from its <c>x-dependencies</c> block.
+/// </para>
+/// <para>
 /// The timeline offered two, an element and a Moment. A moment is a point in time and there are
 /// none here, so the entry is deleted rather than renamed into something this type does not have.
+/// </para>
 /// </remarks>
 public sealed class DependencyGraphToolboxProvider : IDiagramToolboxProvider
 {
@@ -16,13 +22,5 @@ public sealed class DependencyGraphToolboxProvider : IDiagramToolboxProvider
     public DiagramOrigin Origin => Diagram.DependencyGraph.Origin;
 
     /// <inheritdoc />
-    public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
-    [
-        new(
-            "dependencies.toolbox.node",
-            "Node",
-            "mdi-rectangle-outline",
-            "Something other things can depend on. Drop it on the canvas where it belongs.",
-            DependencyGraphContextActionProvider.AddElementActionId),
-    ];
+    public IReadOnlyList<ToolboxItemDefinition> Items => DependencyGraphDefinition.Toolbox;
 }
