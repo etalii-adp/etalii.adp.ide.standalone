@@ -10,9 +10,16 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// those values is edited.
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>The rows are derived from the DISL definition</b> (<see cref="MindmapDefinition.Rows"/>): its
+/// form's items, their labels, values, editors, read-only reasons and groups, and the row ids of its
+/// <c>x-mindmap</c> block. What an edit does stays here.
+/// </para>
+/// <para>
 /// The same commands the context actions use, reached a shorter way: the grid's Text row and
 /// "Rename…" are one edit and one undo entry. Nothing here writes to the document - every
 /// change goes through the project's history like every other edit.
+/// </para>
 /// </remarks>
 public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
 {
@@ -49,36 +56,16 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
             return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
         }
 
-        var properties = new List<ContextPropertyDefinition>
-        {
-            new(TextPropertyId, "Text", node.Text),
-            new(NotesPropertyId, "Notes", node.Notes, ContextPropertyEditor.Text),
-            new(LinkPropertyId, "Link", node.Link ?? ""),
-        };
-
-        // Shown, and deliberately not editable here. Folding is per-connection view state: it
-        // writes nothing and lands on no history (Requirements 9.4, 9.6), so a grid that
-        // promises every edit is one undo away must not offer it. Worth showing all the same -
-        // a reader looking at a node with hidden children wants to know that is why.
-        if (node.HasChildren)
-        {
-            properties.Add(new ContextPropertyDefinition(
-                FoldedPropertyId,
-                "Collapsed",
-                node.Folded ? "Yes" : "No",
-                ContextPropertyEditor.Line,
-                "Collapsing is a view setting rather than part of the document, so it is not undoable. Collapse from the canvas or the context menu.",
-                "View"));
-        }
-
-        properties.Add(new ContextPropertyDefinition(
-            IdentifierPropertyId,
-            "Identifier",
-            node.Id,
-            ContextPropertyEditor.Line,
-            "Freeplane gives every node its identifier and other files may link to it, so it is not ours to change.",
-            "Model"));
-
+        // Derived from the DISL definition's form: Text, Notes and Link editable; Collapsed (only for
+        // a node with children) and Identifier shown with the reason they are not. Collapsed is
+        // deliberately not editable here: folding is per-connection view state that writes nothing
+        // and lands on no history (Requirements 9.4, 9.6), so a grid that promises every edit is one
+        // undo away must not offer it. Worth showing all the same - a reader looking at a node with
+        // hidden children wants to know that is why.
+        var model = MindmapDefinition.ModelOf(_documents.GetOrLoad(target.ResolvedFullPath));
+        IReadOnlyList<ContextPropertyDefinition> properties = MindmapDefinition.ElementOf(model, node.Id) is { } element
+            ? MindmapDefinition.Rows(element)
+            : [];
         return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>(properties);
     }
 

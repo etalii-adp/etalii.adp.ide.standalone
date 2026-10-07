@@ -9,6 +9,8 @@
       compile and test with this module absent (mindmap-diagram Requirement 13.4).
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <!-- The body is read through FBL: the binding below, whose reader is the module's persistence plugin. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
     <!-- What is derived from the bundled DISL definition. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
@@ -27,6 +29,11 @@
       module's api folder; core protos are never edited from here.
     -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The FBL binding of the .mm body, loaded once by MindmapDefinition. -->
+    <EmbeddedResource Include="mindmap.fbl" />
   </ItemGroup>
 
   <ItemGroup>
