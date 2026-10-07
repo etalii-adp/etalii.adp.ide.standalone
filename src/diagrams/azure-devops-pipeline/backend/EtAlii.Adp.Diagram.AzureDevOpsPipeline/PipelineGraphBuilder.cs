@@ -120,7 +120,7 @@ public static partial class PipelineGraphBuilder
     /// </remarks>
     public static PipelineEdgeCondition Classify(string condition)
     {
-        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: Classify is public and the non-nullable annotation is not enforced at runtime; the parser itself never passes null (PipelineParser.Scalar yields "" for an absent condition), so the coalesce only makes a null from an outside caller read as no condition, OnSuccess, like the empty string.
         var trimmed = (condition ?? string.Empty).Trim();
         if (trimmed.Length == 0)
         {

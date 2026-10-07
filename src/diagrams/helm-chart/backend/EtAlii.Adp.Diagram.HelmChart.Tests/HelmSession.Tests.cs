@@ -209,8 +209,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         session.Changed += (_, e) =>
         {
             deltas = e.Deltas;
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: This works.
+            // ReSharper disable once AccessToDisposedClosure - Reason: the test reads `pushed` with pushed.Wait(WaitLimit, ...) before the scope ends, and a change raised after that, in the moment between the usings disposing `pushed` and then `session`, only reaches this Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
             pushed.Set();
         };
 
@@ -241,8 +240,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         session.Changed += (_, e) =>
         {
             deltas = e.Deltas;
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: This works.
+            // ReSharper disable once AccessToDisposedClosure - Reason: the test reads `pushed` with pushed.Wait(WaitLimit, ...) before the scope ends, and a change raised after that, in the moment between the usings disposing `pushed` and then `session`, only reaches this Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
             pushed.Set();
         };
 

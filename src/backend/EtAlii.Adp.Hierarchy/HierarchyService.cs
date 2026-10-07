@@ -119,8 +119,7 @@ public sealed class HierarchyService(IProjectStore projectStore, IHierarchyModel
 
         async Task RecoverAsync()
         {
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: This works.
+            // ReSharper disable once AccessToDisposedClosure - Reason: RecoverAsync is reached only through HandleRootLost, whose two callers are shut down in the finally above before the using disposes recoveryCts: CancelAsync ends WatchRootPresenceAsync, and _hierarchyModelStore.Remove disposes the root watcher; a recovery already running holds only the token, so that cancel ends it through the OperationCanceledException WaitForRootRecoveryAsync catches.
             await WaitForRootRecoveryAsync(rootPath, model, recoveryCts.Token);
             Interlocked.Exchange(ref rootLost, 0);
         }

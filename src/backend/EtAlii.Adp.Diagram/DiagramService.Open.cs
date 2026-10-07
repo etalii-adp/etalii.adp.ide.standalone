@@ -145,8 +145,7 @@ public sealed partial class DiagramService
         var registersViewport = openedSession is not EditorSessionAdapter;
         if (registersViewport)
         {
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: probably a false negative. The _viewport.Remove is called in the finally below.
+            // ReSharper disable once AccessToDisposedClosure - Reason: the registry calls this viewport callback only while it is registered, and the finally below deregisters it with _viewports.Remove before the await using disposes `session` at the end of PumpAsync.
             _viewports.Register(watchId, bodyPath, session, viewport => Apply(session, viewport, channel));
         }
 

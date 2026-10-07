@@ -111,8 +111,7 @@ public class AdpFileWriterSpeaksAfterLateConfigurationTests : IDisposable
         using var entered = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            // ReSharper disable AccessToDisposedClosure
-            // Reason: Used in a test case which is acceptable.
+            // ReSharper disable AccessToDisposedClosure - Reason: FileHolders runs this query on its own task; the test sees `entered` set through entered.Wait, then releases `answer` and polls until the query's late "pid 4242" answer is logged - which happens only after answer.Wait has returned - all before the usings dispose the two events.
             entered.Set();
             answer.Wait(Patience);
             // ReSharper restore AccessToDisposedClosure

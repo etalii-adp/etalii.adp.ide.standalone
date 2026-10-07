@@ -143,8 +143,7 @@ public class FdgRulesTests
     [Fact]
     public void NoRelation_AdmitsAComment()
     {
-        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        // Reason: Used in a test case which is acceptable.
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local - Reason: Assert.All hands each relation to this lambda, and the Assert calls it makes are the test's own checks rather than preconditions, so a parameter used only in them is the point of the test.
         Assert.All(FdgRelations.All, relation =>
         {
             Assert.DoesNotContain(FdgElementTypes.Comment, relation.Sources);

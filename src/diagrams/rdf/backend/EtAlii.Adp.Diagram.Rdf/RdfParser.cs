@@ -442,8 +442,7 @@ public sealed class RdfParser
 
     private void Advance() => _current = _tokenizer.Next();
 
-    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-    // Reason: This works.
+    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local - Reason: checking is this method's whole job: `kind` and `expectation` say which token the grammar requires next and how to name it in the RdfParseException a malformed document gets, so a parameter used only in that check is its purpose, not a leftover precondition.
     private void Expect(RdfTokenKind kind, string expectation)
     {
         if (_current.Kind != kind)
