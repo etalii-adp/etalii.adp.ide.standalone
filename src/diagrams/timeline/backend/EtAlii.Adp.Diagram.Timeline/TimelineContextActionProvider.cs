@@ -104,48 +104,12 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             return Result([]);
         }
 
-        var model = _documents.GetOrLoad(target.ResolvedFullPath).Model;
-
-        // Arrange is about the whole diagram, so it is offered wherever the reader is: on empty
-        // canvas, on an element and on a relation alike, which keeps it in the ribbon too.
-        var arrange = new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(
-                ArrangeActionId, "Arrange diagram", "mdi-sitemap-outline", null,
-                model.Elements.Count > 0, "There is nothing to arrange until this timeline has an element."),
-        ]);
-
-        var element = TimelineEdits.ElementOf(model, target.ElementId);
-        if (element is not null)
-        {
-            return Result([.. ForElement(element), arrange]);
-        }
-
-        var relation = TimelineEdits.ConnectionOf(model, target.ElementId);
-        if (relation is not null)
-        {
-            return Result([.. ForRelation(), arrange]);
-        }
-
-        if (TimelineNewPlacement.TryParse(target.ElementId, out _, out _))
-        {
-            // A placement discovers what can happen at empty canvas, because executing an action
-            // by id only finds actions its target discovers - a drop resolves through this list.
-            return Result([.. ForPlacement(), arrange]);
-        }
-
-        if (TimelineRelationGesture.TryParse(target.ElementId, out _, out _))
-        {
-            // A finished relation gesture discovers its one action, for the same reason: the
-            // canvas executes it by id against this target.
-            return Result(
-            [
-                new ContextActionGroupDefinition(
-                    [new ContextActionDefinition(ConnectActionId, "Relate", "mdi-ray-start-arrow")]),
-            ]);
-        }
-
-        return Result([]);
+        // Derived from the definition (TimelineDefinition.Menus): an element's and a relation's
+        // menus, empty canvas at a placement - which a drop resolves its add through, because
+        // executing an action by id only finds actions its target discovers - and a finished
+        // relation gesture's one action, which the canvas executes by id against that target.
+        // Arrange is offered wherever the reader is, which keeps it in the ribbon too.
+        return Result(TimelineDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />
@@ -167,7 +131,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // nothing is asked and the element appears where it was dropped.
                 var begin = TimelineScale.ToTime(placedSeconds, TimelinePrecision.Date);
                 return await DispatchAsync(target, NewElementAt(
-                    target.ResolvedFullPath, begin, placedRow, period: actionId == AddElementActionId), cancellationToken);
+                    model, target.ResolvedFullPath, begin, placedRow, period: actionId == AddElementActionId), cancellationToken);
             }
 
             case AddAfterActionId when element is not null:
@@ -280,21 +244,19 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // an action that answers Completed without dispatching has done nothing at all.
                 // That trap has now been walked into three times in this module; every action
                 // that needs no input dispatches in this method.
-                var going = TimelineWriter.ConnectionsTouching(model, element.Id).Count;
-                if (going == 0)
+                // Whether it asks, and what, is the definition's deletion policy.
+                if (TimelineDefinition.RemoveConfirmation(model, target.ElementId) is not { } confirmation)
                 {
                     return await DispatchAsync(target,
                         new RemoveTimelineElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
                 }
 
                 return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                    "Remove",
+                    confirmation.Title,
                     "mdi-delete-outline",
-                    going == 1
-                        ? "Removing this element also removes the 1 relation attached to it."
-                        : $"Removing this element also removes the {going} relations attached to it.",
-                    "Remove",
-                    Danger: true));
+                    confirmation.Message,
+                    confirmation.ConfirmLabel,
+                    Danger: confirmation.Danger));
             }
 
             case ArrangeActionId:
@@ -369,13 +331,6 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             : new ContextExecutionFailed(result.Error);
     }
 
-    /// <summary>A freshly added element: born a week long, or a moment, at the given placement.</summary>
-    /// <remarks>
-    /// The ids are generated here, once, where the gesture happens - so the command instance the
-    /// history holds carries them, and a redo re-creates under the ids it had. A week rather
-    /// than zero length, because a zero-length element renders as an unreachable sliver and a
-    /// week gives the adorners something to grab.
-    /// </remarks>
     /// <summary>A freshly added element grown from another: created and related in one command.</summary>
     private static AddConnectedTimelineElementCommand NewRelatedElementAt(string body, string fromElementId, DateTimeOffset begin, int row) =>
         new(
@@ -387,13 +342,21 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
             row);
 
-    private static AddTimelineElementCommand NewElementAt(string body, DateTimeOffset begin, int row, bool period) =>
-        new(
+    /// <summary>
+    /// A freshly added element, a period or a moment, at the given placement: the definition's
+    /// <c>addElementHere</c> or <c>addMomentHere</c>, its begin the date of <paramref name="begin"/>.
+    /// </summary>
+    /// <remarks>
+    /// The id is generated here, once, where the gesture happens - so the command instance the
+    /// history holds carries it, and a redo re-creates under the id it had.
+    /// </remarks>
+    private static AddTimelineElementCommand NewElementAt(TimelineModel model, string body, DateTimeOffset begin, int row, bool period) =>
+        TimelineDefinition.Addition(
+            model,
             body,
+            period ? "addElementHere" : "addMomentHere",
             ShortGuid.NewShortGuid().ToString(),
-            period ? "New element" : "New moment",
             TimelineScale.ToText(begin, TimelinePrecision.Date),
-            period ? TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date) : null,
             row);
 
     private ICommand? CommandFor(ContextTarget target, string actionId, string value)
@@ -432,57 +395,10 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             return null;
         }
 
-        var anchor = TimelineEdits.ElementOf(_documents.GetOrLoad(body).Model, anchorElementId);
-        return NewElementAt(body, begin, anchor?.Row ?? 0, period);
+        var model = _documents.GetOrLoad(body).Model;
+        var anchor = TimelineEdits.ElementOf(model, anchorElementId);
+        return NewElementAt(model, body, begin, anchor?.Row ?? 0, period);
     }
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForElement(TimelineElement element)
-    {
-        List<ContextActionDefinition> edits =
-        [
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-        ];
-
-        // For an element with an end, the end can be removed; for a moment, granted - the
-        // gesture that is not there (no right adorner) is replaced by the action that is
-        // (Requirement 7.5).
-        edits.Add(element.IsPeriod
-            ? new ContextActionDefinition(RemoveEndActionId, "Remove its end", "mdi-ray-start")
-            : new ContextActionDefinition(GiveEndActionId, "Give it an end…", "mdi-ray-start-end"));
-
-        edits.Add(new ContextActionDefinition(
-            RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
-
-        // The additions, as their own group so the menu separates changing this element from
-        // adding the next - the mindmap's Insert/Enter pattern, on this type's two axes: after
-        // in time, below in rows.
-        List<ContextActionDefinition> additions =
-        [
-            new(AddAfterActionId, "Add element after", "mdi-arrow-expand-right", new ContextShortcutDefinition("Tab")),
-            new(AddBelowActionId, "Add element below", "mdi-arrow-expand-down", new ContextShortcutDefinition("Enter")),
-        ];
-
-        return [new ContextActionGroupDefinition(edits), new ContextActionGroupDefinition(additions)];
-    }
-
-    /// <summary>What empty canvas offers: the two adds, and the completion of a relation gesture.</summary>
-    private static IReadOnlyList<ContextActionGroupDefinition> ForPlacement() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(AddElementActionId, "Add element here", "mdi-plus"),
-            new ContextActionDefinition(AddMomentActionId, "Add moment here", "mdi-rhombus-medium"),
-        ]),
-    ];
-
-    private static IReadOnlyList<ContextActionGroupDefinition> ForRelation() =>
-    [
-        new ContextActionGroupDefinition(
-        [
-            new ContextActionDefinition(RelabelActionId, "Relabel…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new ContextActionDefinition(DisconnectActionId, "Remove relation", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
-        ]),
-    ];
 
     private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Result(IReadOnlyList<ContextActionGroupDefinition> groups) =>
         ValueTask.FromResult(groups);

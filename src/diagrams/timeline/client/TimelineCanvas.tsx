@@ -19,13 +19,13 @@ import { placementId, relationId } from "@client/canvas/gestureIds";
  * The vertical distance between adjacent rows, in the module's own y units. Mirrors
  * `TimelineRows.Height` in the backend and must stay equal to it.
  */
-const ROW_HEIGHT = 60;
+export const ROW_HEIGHT = 60;
 
 /** How tall an element's box is drawn, leaving a gutter between rows. */
-const ELEMENT_HEIGHT = 36;
+export const ELEMENT_HEIGHT = 36;
 
 /** A moment's marker radius. */
-const MOMENT_RADIUS = 9;
+export const MOMENT_RADIUS = 9;
 
 const DAY = 86400;
 
@@ -186,8 +186,13 @@ const DRAG_HINT: LabelDeclaration = {
  * What a timeline allows, stated once: periods that drag and resize, moments that drag,
  * either connecting to either from its begin or end anchor, with one bezier relation whose
  * empty release is itself a gesture - the create-and-relate the notation offers.
+ *
+ * Stated here rather than compiled from `definition/timeline.dis`: the span shape, the named
+ * begin and end anchors, the loop-back route, the drag hint and the payload-driven day snap are
+ * not in what `compileNotation` reads. `timelineDefinition.test.ts` holds it to what the bundled
+ * specification states.
  */
-const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+export const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
   elementTypes: [
     {
       id: "period",
