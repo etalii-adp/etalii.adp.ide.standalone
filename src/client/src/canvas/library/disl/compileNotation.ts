@@ -1,5 +1,5 @@
 import type { ActionDeclaration, ActionInvocation } from "../definition/actions";
-import type { Binding } from "../definition/binding";
+import type { Binding, Condition } from "../definition/binding";
 import type { CalendarStep, RulerDeclaration, RulerRung } from "../definition/chrome";
 import type {
   AnchorSet,
@@ -74,6 +74,8 @@ export interface NotationBindings {
   labelEditorBox?: (type: string, label: DislLabel) => { top: number; height: number } | undefined;
   /** A relation's class. */
   relationClassName?: (relation: string) => string | undefined;
+  /** A relation's line's own class, where the stylesheet paints the line rather than the whole relation. */
+  relationLineClassName?: (relation: string) => string | undefined;
   /** An endpoint's anchor rule, where the module states one. */
   endpointAnchors?: (relation: string, end: "source" | "target") => EndpointConstraint["anchors"] | undefined;
   /** What each custom shape of the specification is drawn as. */
@@ -84,6 +86,12 @@ export interface NotationBindings {
   legendSwatchClass?: (enumName: string, value: string) => string;
   /** Library declarations the specification states only under a module's `x-` key, which DISL has no construct for. */
   extras?: (spec: DislDocument) => Partial<DiagramDefinition>;
+  /**
+   * An action as the module dispatches it, given the compiled declaration and the shortcut its menu
+   * entry writes (as a `KeyboardEvent.key`): where a module's backend resolves an action by its key
+   * (`backendKey`), or a second key invokes it, which DISL's one `shortcut` per entry cannot say.
+   */
+  action?: (action: ActionDeclaration, entry: { shortcut?: string }) => ActionDeclaration;
 }
 
 export interface CompileOptions {
@@ -108,6 +116,14 @@ const RUNG_STEPS: Readonly<Record<string, { calendar: CalendarStep; count?: numb
   century: { calendar: "decade", count: 10 },
   millennium: { calendar: "decade", count: 100 },
 };
+
+/** DISL's key names (§7.3) that are not their `KeyboardEvent.key`. */
+const KEY_VALUES: Readonly<Record<string, string>> = { Space: " " };
+
+/** A shortcut as the library matches it: the key a DISL entry names, as `KeyboardEvent.key` spells it. */
+function keyOf(shortcut: string): string {
+  return KEY_VALUES[shortcut] ?? shortcut;
+}
 
 /** The compass positions as fractions of the bounds. */
 const COMPASS: Readonly<Record<CompassPosition, readonly [number, number]>> = {
@@ -361,13 +377,23 @@ class Compiler {
       declaration.placement = "before";
     } else if (isObject(position)) {
       const [ax, ay] = position.anchor as readonly [number, number];
-      const anchorTo = ax !== 0.5 ? undefined : ay === 0 ? "top" : ay === 0.5 ? "centre" : ay === 1 ? "bottom" : undefined;
-      if (anchorTo === undefined) {
-        fail(`${where} anchors at ${JSON.stringify(position.anchor)}; the library anchors a label at the top, centre or bottom middle.`);
+      const anchorTo = ay === 0 ? "top" : ay === 0.5 ? "centre" : ay === 1 ? "bottom" : undefined;
+      // A label anchored at the left or right edge is the library's aligned line: its end at the edge,
+      // inset by the offset's distance inward, which is what DISL's `align` at that anchor draws.
+      const edge = ax === 0 ? "start" : ax === 1 ? "end" : undefined;
+      if (anchorTo === undefined || (ax !== 0.5 && edge === undefined)) {
+        fail(`${where} anchors at ${JSON.stringify(position.anchor)}; the library anchors a label at the top, centre or bottom of the middle or of an edge.`);
+      }
+      if (edge !== undefined && position.align !== edge) {
+        fail(`${where} anchors at its ${edge === "start" ? "left" : "right"} edge ${position.align === undefined ? "with no align" : `aligned "${position.align}"`}; the library aligns such a line "${edge}".`);
       }
       declaration.anchorTo = anchorTo;
       const offset = position.offset as readonly [number, number] | undefined;
-      if (offset !== undefined) {
+      if (edge !== undefined) {
+        declaration.align = edge;
+        declaration.insetX = edge === "start" ? (offset?.[0] ?? 0) : -(offset?.[0] ?? 0);
+        declaration.offset = { x: 0, y: offset?.[1] ?? 0 };
+      } else if (offset !== undefined) {
         declaration.offset = { x: offset[0], y: offset[1] };
       }
     } else if (position !== undefined && position !== "center") {
@@ -385,6 +411,10 @@ class Compiler {
     if (label.tooltip !== undefined) {
       declaration.tooltip = this.binding(label.tooltip, `${where} tooltip`);
     }
+    const when = this.labelVisibility(label.visible, where);
+    if (when !== undefined) {
+      declaration.when = when;
+    }
 
     const className = this.bindings.labelClassName?.(type, label);
     if (className !== undefined) {
@@ -396,6 +426,26 @@ class Compiler {
     }
 
     return declaration as unknown as LabelDeclaration;
+  }
+
+  /**
+   * A label's `visible` as the library's `when`: a text the label binds being non-empty
+   * (`<term> != ''`, the term a payload path as {@link celBinding} reads it). Any other condition is
+   * refused, naming it; a label without one, or visible `true`, is always drawn.
+   */
+  private labelVisibility(visible: DislLabel["visible"], where: string): Condition | undefined {
+    if (visible === undefined || visible === true) {
+      return undefined;
+    }
+
+    const expression = typeof visible === "string" ? visible : isObject(visible) && typeof visible.cel === "string" ? visible.cel : undefined;
+    const term = expression === undefined ? null : /^(.+?)\s*!=\s*''$/.exec(expression.trim());
+    const binding = term === null ? undefined : this.celBinding(term[1]!.trim(), `${where} visible`);
+    if (binding === undefined || !("path" in binding)) {
+      return fail(`${where} is visible when ${JSON.stringify(visible)}; the library draws a label only when a payload text is non-empty.`);
+    }
+
+    return { path: binding.path, is: "non-empty" };
   }
 
   private accessibility(node: DislNodeNotation, where: string): NonNullable<ElementTypeDefinition["accessibility"]> {
@@ -501,6 +551,7 @@ class Compiler {
     const source = edge.sourceMarker ?? "none";
     const ends = [edge.anchoring?.source, edge.anchoring?.target];
     const className = this.bindings.relationClassName?.(name);
+    const lineClassName = this.bindings.relationLineClassName?.(name);
 
     // Only a type that may hold children can be the parent end of a relation derived from containment.
     const derivedFromParent = isObject(relation.derived) && relation.derived.source === "item.parent";
@@ -520,6 +571,8 @@ class Compiler {
       route: libraryRouteOf(routing),
       style: { ...(source !== "none" ? { startMarker: libraryMarkerOf(source) } : {}), endMarker: libraryMarkerOf(target) },
       ...(className !== undefined ? { className } : {}),
+      ...(lineClassName !== undefined ? { lineClassName } : {}),
+      ...(edge.selectable === false ? { selectable: false } : {}),
       ...(ends.some((end) => end?.movable === true) ? { movableEnds: true } : {}),
       ...(ends.some((end) => end?.mode === "part") ? { hideWhenAttachmentHidden: true } : {}),
       endpoints: {
@@ -553,7 +606,7 @@ class Compiler {
    * first, then those only a shortcut invokes, each in menu order.
    */
   private actions(): ActionDeclaration[] {
-    const found: { id: string; kind: "element" | "connection"; types: Set<string>; keys: string[]; gestures: ("activate" | "delete")[]; rank: number }[] = [];
+    const found: { id: string; kind: "element" | "connection"; types: Set<string>; keys: string[]; gestures: ("activate" | "delete")[]; rank: number; shortcut?: string }[] = [];
     for (const menu of this.spec.toolbox?.contextMenus ?? []) {
       const targets = this.menuTargets(menu);
       if (targets === null) {
@@ -563,7 +616,7 @@ class Compiler {
       for (const tool of menu.tools) {
         const activates = tool.kind === (targets.kind === "element" ? this.doubleClickOf(targets.types) : undefined);
         const deletes = tool.kind === "delete";
-        const keys = tool.shortcut !== undefined && !(deletes && tool.shortcut === "Delete") ? [tool.shortcut] : [];
+        const keys = tool.shortcut !== undefined && !(deletes && tool.shortcut === "Delete") ? [keyOf(tool.shortcut)] : [];
         if (!activates && !deletes && keys.length === 0) {
           continue;
         }
@@ -575,6 +628,9 @@ class Compiler {
           if (action === undefined) {
             action = { id, kind: targets.kind, types: new Set(), keys: [], gestures: [], rank: activates ? 0 : deletes ? 1 : 2 };
             found.push(action);
+          }
+          if (action.shortcut === undefined && tool.shortcut !== undefined) {
+            action.shortcut = keyOf(tool.shortcut);
           }
           (targets.kind === "element" ? this.concreteTypes(forType) : [forType]).forEach((type) => action!.types.add(type));
           keys.filter((each) => !action!.keys.includes(each)).forEach((each) => action!.keys.push(each));
@@ -595,7 +651,7 @@ class Compiler {
         ...action.gestures.map((gesture): ActionInvocation => ({ kind: "gesture", gesture })),
       ];
       const narrowed = action.kind === "element" && [...allNodes].some((type) => !action.types.has(type));
-      return {
+      const declaration: ActionDeclaration = {
         id: action.id,
         invokedBy,
         appliesTo: [
@@ -604,6 +660,7 @@ class Compiler {
             : { kind: "connection" },
         ],
       };
+      return this.bindings.action?.(declaration, action.shortcut !== undefined ? { shortcut: action.shortcut } : {}) ?? declaration;
     });
   }
 

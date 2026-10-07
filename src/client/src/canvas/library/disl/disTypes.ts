@@ -164,7 +164,7 @@ export type DislShapeRef = string | { type: string; params?: Readonly<Record<str
 export interface DislLabel extends Extensions {
   id: string;
   text: Bindable<string>;
-  position?: string | { anchor: readonly [number, number]; offset?: readonly [number, number] };
+  position?: string | { anchor: readonly [number, number]; offset?: readonly [number, number]; align?: "start" | "center" | "end" };
   distance?: number;
   editable?: boolean | "inline" | "multiline";
   wrap?: "none" | "word";
@@ -174,6 +174,8 @@ export interface DislLabel extends Extensions {
   tooltip?: Bindable<string>;
   /** The text the inline editor opens on, when not the label's own text (DISL 0.3). */
   editText?: Bindable<string>;
+  /** Whether the label is drawn: a literal, or CEL in the element context (DISL §6.11). */
+  visible?: boolean | string | { cel: string };
 }
 
 export interface DislSize {
@@ -233,6 +235,8 @@ export interface DislEdgeNotation extends Extensions {
   variants?: readonly unknown[];
   deletable?: boolean;
   reconnectable?: boolean;
+  /** Whether a press on the edge selects it (DISL §6.10); `false` makes a press on it a press on the background. */
+  selectable?: boolean;
   /** How a new connection is drawn (DISL 0.3 §6.10): the pointer button, where it starts and the modifier keys held. */
   connect?: { pointer?: { button?: "primary" | "secondary" | "middle"; start?: "anchor" | "body"; modifiers?: readonly ("Alt" | "Shift" | "Ctrl" | "Meta")[] } };
 }
