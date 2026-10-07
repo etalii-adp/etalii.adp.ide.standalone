@@ -51,7 +51,7 @@ public class ExamplesTests
     {
         // Arrange and act: 3 files at the time of writing. The count moving down unexpectedly
         // is what this guards - a vanished example silently shrinks the theories below.
-        Assert.True(EveryExampleFile().Count() >= 3, "the examples walk lost files");
+        Assert.True(EveryExampleFile().Count >= 3, "the examples walk lost files");
     }
 
     [Theory]

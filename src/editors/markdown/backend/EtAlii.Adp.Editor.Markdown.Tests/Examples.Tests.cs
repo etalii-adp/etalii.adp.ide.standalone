@@ -44,7 +44,7 @@ public class ExamplesTests
     public void TheWalk_FindsTheTrackedExampleSet()
     {
         // Arrange and act: 2 files at the time of writing; shrinking unexpectedly is the bug.
-        Assert.True(EveryExampleFile().Count() >= 2, "the examples walk lost files");
+        Assert.True(EveryExampleFile().Count >= 2, "the examples walk lost files");
     }
 
     [Theory]
