@@ -139,7 +139,7 @@
         "color.edge.project": "#64748b",
         "color.edge.package": "#e2e8f0",
         "color.warning": "#b45309",
-        "font.body": "system-ui, sans-serif"
+        "font.body": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
       },
       "modes": {
         "dark": {
@@ -156,7 +156,7 @@
       },
       "defaultMode": "light",
       "followSystem": true,
-      "doc": "The project, package and label colours are the module's own. The edge and warning colours are the host's muted text, border and warning colours, copied here with their current values."
+      "doc": "The project, package and label colours are the module's own. The edge and warning colours and the font are the host's muted text, border and warning colours and the font its page is set in, copied here with their current values."
     },
     "styles": {
       "node": { "cornerRadius": 6, "font": { "family": { "token": "font.body" } } },

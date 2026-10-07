@@ -133,7 +133,7 @@ Both reference kinds use one custom route (`dependencyRoute` in the canvas). The
 
 ## Notation details beyond the `.dis`
 
-- Colours are the module's own tokens, both themes declared (`dotnet-dependency-graph.css`); the edge colours and the conflict colour are the host's `--color-text-muted`, `--color-border` and `--color-warning`, copied into the `.dis` as tokens with their current light and dark values. The canvas names classes and never colours, and the backend never sends one.
+- Colours are the module's own tokens, both themes declared (`dotnet-dependency-graph.css`); the edge colours and the conflict colour are the host's `--color-text-muted`, `--color-border` and `--color-warning`, and the font is the one the host sets on its page body, which the canvas text inherits, copied into the `.dis` as tokens with their current light and dark values. The canvas names classes and never colours, and the backend never sends one.
 - The subtitle is 0.75 rem (12 px at the default size), offset 14 below the label's centre line, shown only when non-empty: target frameworks for a project, versions for a package.
 - Project and package labels truncate rather than wrap.
 - A version conflict replaces the package's dashed outline with a solid 2.5-wide outline in the warning colour.
