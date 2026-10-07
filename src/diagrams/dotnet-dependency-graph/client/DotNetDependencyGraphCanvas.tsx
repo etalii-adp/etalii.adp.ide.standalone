@@ -1,23 +1,20 @@
 import { useMemo, useState } from "react";
 
-import {
-  facingAnchorsBetween,
-  forwardBezierPath,
-  horizontalBezierPath,
-  sideAnchorOf,
-  type ConnectorBox,
-} from "@client/canvas/connectors";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import type { CustomRouteRef, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import { DependencyElementKind } from "@client/generated/dotnet-dependency-graph_pb";
+import disText from "../definition/dotnet-dependency-graph.dis?raw";
+import { DOTNET_BINDINGS } from "./dotnetBindings";
 import { useDotNetDependencyGraphStream } from "./useDotNetDependencyGraphStream";
 import {
   endsOf,
@@ -30,128 +27,19 @@ import {
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 56;
 
-/** A node's box in connector terms - centre-anchored, which is how the span is positioned. */
-const boxOf = (bounds: ShapeBounds): ConnectorBox => ({
-  x: bounds.x + bounds.width / 2,
-  y: bounds.y + bounds.height / 2,
-  width: bounds.width,
-  height: bounds.height,
-});
+const SPEC = parseDisl(disText);
+
+/** The action a box's activate gesture invokes: the definition's `revealProjectFile`, by its `x-dotnet` wire id. */
+const ACTIVATE = (SPEC["x-dotnet"] as { actions: { revealProjectFile: string } }).actions.revealProjectFile;
 
 /**
- * The connector, curved between facing side anchors.
- *
- * <b>This follows from the edge attachment rather than being a separate choice.</b> Side
- * anchors with straight lines draw a connector that leaves horizontally and then cuts diagonally
- * across the canvas - a half-match that would look worse than either whole. The authored graph
- * pairs the two, and so does this.
+ * What this diagram allows, compiled from the bundled DISL specification
+ * (`definition/dotnet-dependency-graph.dis`) with what the library cannot read from it in
+ * `dotnetBindings.ts`: boxes that drag into the layout block and select, edges that only render.
+ * Nothing is deletable and no relation can be drawn - the graph's shape belongs to the solution,
+ * and this canvas's one edit is the drag.
  */
-const dependencyRoute: CustomRouteRef = {
-  customRoute: "dotnet-dependency-bezier",
-  path: (from, to, _waypoints, ends) => {
-    if (!ends) {
-      return horizontalBezierPath(from, to);
-    }
-
-    const fromBox = boxOf(ends.source);
-    const toBox = boxOf(ends.target);
-    // A dependency pointing back the way it came needs the long way round, or the curve
-    // doubles back through its own source.
-    const loopsBack = ends.target.x < ends.source.x + ends.source.width;
-    const [a, b] = loopsBack
-      ? [sideAnchorOf(fromBox, "right"), sideAnchorOf(toBox, "left")]
-      : facingAnchorsBetween(fromBox, toBox);
-    return loopsBack ? forwardBezierPath(a, b) : horizontalBezierPath(a, b);
-  },
-};
-
-/**
- * What this diagram allows, stated once: boxes that drag into the layout block and select,
- * edges that only render. Nothing is deletable and no relation can be drawn - the graph's
- * shape belongs to the solution, and this canvas's one edit is the drag.
- */
-const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes: [
-    {
-      id: "node",
-      // The same shared span the renderer wrapped, and the same slot contract underneath: a
-      // body rect and a label text carrying this module's classes, which is what its test
-      // pins and what makes the two dependency graphs one drawing with different colours.
-      shape: "span",
-      classNames: [
-        { className: "dotnet-dependency-element canvas-element", on: "element" },
-        { className: { template: "dotnet-dependency-element-{payload.kindClass}" }, on: "element" },
-        // Collapsing LOUDLY: a package the solution's projects disagree about is marked on the
-        // element, which Requirement 3.5 asks for as against the silent collapse it forbids.
-        { className: "dotnet-dependency-conflict", on: "element", when: { path: "payload.hasVersionConflict", is: "true" } },
-        { className: "dotnet-dependency-node canvas-node", on: "shape" },
-      ],
-      labels: [
-        {
-          text: { path: "payload.name" },
-          placement: "inside",
-          truncate: true,
-          className: "dotnet-dependency-node-label canvas-node-label",
-        },
-        {
-          // The one thing this graph shows that the authored one has no equivalent of: a
-          // project's target frameworks, a package's versions - below the label's centre line.
-          text: { path: "payload.subtitle" },
-          offset: { x: 0, y: 14 },
-          when: { path: "payload.subtitle", is: "non-empty" },
-          className: "dotnet-dependency-node-subtitle",
-        },
-      ],
-      tooltip: {
-        parts: [
-          { template: "Project {payload.name}", when: { path: "payload.kindClass", equals: "project" } },
-          { template: "Package {payload.name}", when: { path: "payload.kindClass", equals: "package" } },
-          { template: "({payload.subtitle})", when: { path: "payload.hasVersions", is: "true" } },
-          { template: "- referenced at more than one version", when: { path: "payload.hasVersionConflict", is: "true" } },
-        ],
-        join: " ",
-      },
-      accessibility: { role: "button", focusable: true, label: { path: "payload.title" } },
-      actions: [
-        // What `onDoubleClick` did on the rendered element. The module still decides what it
-        // means. The right-click beside it pushed a context-menu selection by hand - selection
-        // glue, now the library's shared menu (centralized-selection Requirement 1.3).
-        { id: "dotnet-dependency.activate", invokedBy: [{ kind: "gesture", gesture: "activate" }], appliesTo: [{ kind: "element" }] },
-      ],
-      anchors: { kind: "edge", edgeSides: "horizontal" },
-      sizing: "model",
-      deletable: false,
-    },
-  ],
-  relationTypes: [
-    {
-      id: "project-reference",
-      route: dependencyRoute,
-      style: { endMarker: "arrow" },
-      className: "dotnet-dependency-edge dotnet-dependency-edge-project",
-      lineClassName: "dotnet-dependency-edge-line",
-      endpoints: {
-        source: { elementTypes: ["node"], anchors: [] },
-        target: { elementTypes: ["node"], anchors: "edge" },
-        allowSelf: false,
-      },
-    },
-    {
-      id: "package-reference",
-      route: dependencyRoute,
-      style: { endMarker: "arrow" },
-      className: "dotnet-dependency-edge dotnet-dependency-edge-package",
-      lineClassName: "dotnet-dependency-edge-line",
-      endpoints: {
-        source: { elementTypes: ["node"], anchors: [] },
-        target: { elementTypes: ["node"], anchors: "edge" },
-        allowSelf: false,
-      },
-    },
-  ],
-  layout: { modes: ["manual"] },
-  dragging: "enabled",
-});
+export const DOTNET_DEPENDENCY_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(SPEC, DOTNET_BINDINGS));
 
 /**
  * Draws a solution's projects, the packages they consume, and every reference between them -
@@ -198,18 +86,13 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: ToolCo
     const elements: DiagramModelElement[] = nodes.map((node) => {
       const isPackage = node.payload.kind === DependencyElementKind.PACKAGE;
       const versions = node.payload.versions.join(", ");
-      const subtitle = isPackage ? versions : node.payload.targetFrameworks.join(", ");
-      const kindClass = isPackage ? "package" : "project";
-      const title = isPackage
-        ? `Package ${node.payload.name}${versions ? ` (${versions})` : ""}${node.payload.hasVersionConflict ? " - referenced at more than one version" : ""}`
-        : `Project ${node.payload.name}`;
 
-      // The payload the DECLARATION reads. Composing it here rather than in a renderer is the
-      // point of the migration: what a subtitle is made of is this module's knowledge, and
-      // where it is drawn is not.
+      // The payload the DEFINITION reads, composed here because the library has no CEL: the
+      // second line is the specification's `self.versions.join(', ')` or
+      // `self.targetFrameworks.join(', ')`, and the title its `title(self)` (`dotnetBindings.ts`).
       const element: DiagramModelElement = {
         id: node.id,
-        type: "node",
+        type: isPackage ? "package" : "project",
         x: node.x,
         y: node.y,
         width: NODE_WIDTH,
@@ -217,11 +100,11 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: ToolCo
         label: node.payload.name,
         payload: {
           name: node.payload.name,
-          kindClass,
-          subtitle,
-          hasVersions: isPackage && versions.length > 0,
+          subtitle: isPackage ? versions : node.payload.targetFrameworks.join(", "),
           hasVersionConflict: node.payload.hasVersionConflict,
-          title,
+          title: isPackage
+            ? `Package ${node.payload.name}${versions ? ` (${versions})` : ""}${node.payload.hasVersionConflict ? " - referenced at more than one version" : ""}`
+            : `Project ${node.payload.name}`,
         },
       };
       return element;
@@ -265,7 +148,7 @@ export function DotNetDependencyGraphCanvas({ projectId, entryId, path }: ToolCo
         return;
       }
 
-      if (actionId === "dotnet-dependency.activate") {
+      if (actionId === ACTIVATE) {
         const node = nodes.find((candidate) => candidate.id === targetId);
         if (node !== undefined) {
           activate(node);
