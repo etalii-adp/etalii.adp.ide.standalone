@@ -405,7 +405,7 @@ public class HierarchyModelTests : IDisposable
                 return;
             }
 
-        // Act.
+            // Act.
             var model = new HierarchyModel(_root);
             var children = model.ListChildren(null);
 
@@ -479,7 +479,7 @@ public class HierarchyModelTests : IDisposable
                 return;
             }
 
-        // Assert.
+            // Assert.
             Assert.False(model.TryResolvePath(entryId, out _, out _));
         }
         finally

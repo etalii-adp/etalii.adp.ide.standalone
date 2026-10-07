@@ -392,7 +392,7 @@ public class HistoryStackTests
                 overlapDetected = true;
             }
 
-        // Arrange, continued.
+            // Arrange, continued.
             await Task.Delay(5, TestContext.Current.CancellationToken);
             Interlocked.Decrement(ref inFlight);
         };
