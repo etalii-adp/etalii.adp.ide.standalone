@@ -294,6 +294,34 @@
       "file": "src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/comments-everywhere.dsl",
       "observed": "offset 200: The braces of the body do not balance on this line.",
       "reason": "FBL section 4.7 opens a block only when a statement's last non-whitespace character is '{', so 'model { // trailing a brace is legal' opens none and the matching '}' leaves the braces unbalanced, which makes the body unreadable. Structurizr accepts a comment after the brace, and the module reads this fixture. Candidate follow-up for etalii.adp: let FBL section 4.7 ignore a trailing comment matching the binding's comment expression before looking for '{'."
+    },
+    {
+      "property": "cross-check",
+      "binding": "timeline",
+      "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/dangling.tml",
+      "observed": "Connection: the binding lacks 4 (bothgone, fromnowhere, noends, tonowhere)",
+      "reason": "The fixture is one of the timeline module's findings corpus, written to hold dangling connection ends on purpose. FBL section 5.4 resolves a relation's source and target to elements and reads no relation whose end names no element, while the module reads every connection and reports the dangling end as a finding. Candidate follow-up for etalii.adp: let a relation rule read an entry whose end does not resolve, so a host can report it."
+    },
+    {
+      "property": "cross-check",
+      "binding": "timeline",
+      "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/combined.tml",
+      "observed": "Connection: the binding lacks 2 (beta, c1)",
+      "reason": "The fixture is one of the timeline module's findings corpus, written to hold every finding at once. Its connections c1 and beta each name an element that does not exist; FBL section 5.4 reads no relation whose end names no element, while the module reads every connection and reports the dangling end as a finding. Candidate follow-up for etalii.adp: let a relation rule read an entry whose end does not resolve, so a host can report it."
+    },
+    {
+      "property": "cross-check",
+      "binding": "timeline",
+      "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/identity.tml",
+      "observed": "Connection: the binding lacks 1 (twice) | Moment: the binding lacks 1 (first)",
+      "reason": "The fixture is one of the timeline module's findings corpus, written to hold repeated ids on purpose. FBL gives a stored id to one holder only, so a later entry repeating it is read under its place, and the module's id check reads the id as written to report the repetition. Candidate follow-up for etalii.adp: let a reading keep a repeated stored id beside the place it falls back to."
+    },
+    {
+      "property": "unreadable",
+      "binding": "timeline",
+      "file": "src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/findings/unparseable.tml",
+      "observed": "offset 51: The body is not well-formed YAML: While scanning a plain scalar value, found invalid mapping.",
+      "reason": "The fixture is one of the timeline module's findings corpus, written not to be YAML on purpose, so the module's not-a-timeline finding has a file to report on. FBL refuses to read the body, which is the right answer for it."
     }
   ]
 }
