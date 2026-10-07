@@ -41,7 +41,7 @@ public class NamespaceProvidersTests
 
     private static readonly Regex DeclaredNamespace = new(@"^namespace ([\w.]+)", RegexOptions.Multiline | RegexOptions.Compiled);
 
-    private static readonly Regex Suppressed = new(@"ReSharper disable( once)? CheckNamespace", RegexOptions.Compiled);
+    private static readonly Regex Suppressed = new("ReSharper disable( once)? CheckNamespace", RegexOptions.Compiled);
 
     [Fact]
     public void EveryBackendNamespaceFollowsItsFoldersMinusTheDeclaredSkips()

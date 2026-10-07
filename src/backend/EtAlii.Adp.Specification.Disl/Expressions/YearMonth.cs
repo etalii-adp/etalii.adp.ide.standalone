@@ -86,6 +86,6 @@ internal static partial class YearMonth
         return text.ToString();
     }
 
-    [GeneratedRegex(@"^(?<year>-?[0-9]{4,6})-(?<month>[0-9]{2})$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex("^(?<year>-?[0-9]{4,6})-(?<month>[0-9]{2})$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex JsonForm();
 }

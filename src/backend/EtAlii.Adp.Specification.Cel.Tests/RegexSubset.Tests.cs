@@ -9,12 +9,12 @@ public class RegexSubsetTests
     [InlineData(@"(a)\1", "backreference")]
     [InlineData(@"(?<n>a)\k<n>", "named backreference")]
     [InlineData(@"\p{L}", "Unicode property")]
-    [InlineData(@"(?<=a)b", "Lookbehind")]
-    [InlineData(@"a(?=b)", "Lookahead")]
-    [InlineData(@"(?>a)", "Atomic")]
-    [InlineData(@"(?i)a", "Inline flags")]
-    [InlineData(@"a++", "Possessive")]
-    [InlineData(@"[a", "not closed")]
+    [InlineData("(?<=a)b", "Lookbehind")]
+    [InlineData("a(?=b)", "Lookahead")]
+    [InlineData("(?>a)", "Atomic")]
+    [InlineData("(?i)a", "Inline flags")]
+    [InlineData("a++", "Possessive")]
+    [InlineData("[a", "not closed")]
     public void AConstructOutsideTheSubsetIsRejectedByName(string expression, string named)
     {
         // Act.
@@ -28,7 +28,7 @@ public class RegexSubsetTests
     [Theory]
     [InlineData(@"^(?<name>[A-Za-z_]\w*)\s*->\s*""(?<label>[^""]*)""$")]
     [InlineData(@"^\d{4}-\d{2}-\d{2}$")]
-    [InlineData(@"^(?:a|b)*?c$")]
+    [InlineData("^(?:a|b)*?c$")]
     public void AnExpressionInTheSubsetIsAccepted(string expression)
     {
         // Act and assert.

@@ -22,7 +22,7 @@ internal static partial class YamlScalars
     [GeneratedRegex(@"^[-+]?(\.inf|\.Inf|\.INF)$|^(\.nan|\.NaN|\.NAN)$", RegexOptions.CultureInvariant)]
     private static partial Regex Special();
 
-    [GeneratedRegex(@"^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]?([Tt ]|$)", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]?([Tt ]|$)", RegexOptions.CultureInvariant)]
     private static partial Regex Timestamp();
 
     [GeneratedRegex(@"^[-+]?([0-9][0-9_]*)?\.?[0-9_]*([eE][-+]?[0-9]+)?$|^0b[01_]+$|^[-+]?0[0-7_]+$|^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+(\.[0-9_]*)?$", RegexOptions.CultureInvariant)]

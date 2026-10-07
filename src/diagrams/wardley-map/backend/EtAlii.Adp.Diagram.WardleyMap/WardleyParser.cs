@@ -654,7 +654,7 @@ public static partial class WardleyParser
     [GeneratedRegex(@"\(\s*(?<name>[A-Za-z]+)\s*\)")]
     private static partial Regex DecoratorExpression();
 
-    [GeneratedRegex(@"(?<![A-Za-z])inertia(?![A-Za-z])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex("(?<![A-Za-z])inertia(?![A-Za-z])", RegexOptions.IgnoreCase)]
     private static partial Regex InertiaExpression();
 
     [GeneratedRegex(@"label\s*\[\s*(?<values>-?[\d.]+\s*,\s*-?[\d.]+)\s*\]", RegexOptions.IgnoreCase)]

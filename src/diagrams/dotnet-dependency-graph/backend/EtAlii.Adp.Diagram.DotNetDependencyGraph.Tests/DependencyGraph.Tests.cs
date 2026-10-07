@@ -162,7 +162,7 @@ public class DependencyGraphTests
         var solution = new SolutionReading([alpha, beta], []);
         var readings = new Dictionary<string, ProjectReading>
         {
-            [alpha.AbsolutePath] = Reading(projects: [new ProjectReferenceReading(@"Beta.csproj", beta.AbsolutePath)]),
+            [alpha.AbsolutePath] = Reading(projects: [new ProjectReferenceReading("Beta.csproj", beta.AbsolutePath)]),
             [beta.AbsolutePath] = Reading(),
         };
 

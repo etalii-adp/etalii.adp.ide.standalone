@@ -257,7 +257,7 @@ public partial class ArchitecturePagesTests
     {
         var text = Read(page);
         var lines = text.Split('\n').Length;
-        var diagrams = Regex.Matches(text, @"^```mermaid", RegexOptions.Multiline).Count;
+        var diagrams = Regex.Matches(text, "^```mermaid", RegexOptions.Multiline).Count;
 
         Assert.True(lines <= LineLimit, $"{page} is {lines} lines, over the limit of {LineLimit}. Link another document rather than growing this one.");
         Assert.True(diagrams <= DiagramLimit, $"{page} has {diagrams} mermaid diagrams, over the limit of {DiagramLimit}.");
