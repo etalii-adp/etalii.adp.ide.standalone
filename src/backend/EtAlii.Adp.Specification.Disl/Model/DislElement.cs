@@ -92,6 +92,13 @@ public sealed class DislElement : ICelObject
     /// <summary>The 1-based line the reader found the element on, when it was read.</summary>
     public int? Line { get; internal init; }
 
+    /// <summary>
+    /// What <c>self.view</c> reads (§12.2): the viewer's state of this element, such as <c>collapsed</c>
+    /// (§11.6), which a host that holds viewer state binds before deriving a menu or a label; null,
+    /// and no <c>view</c> member, for a headless model.
+    /// </summary>
+    public CelMap? View { get; set; }
+
     /// <summary>Whether the element's type is <paramref name="type"/> or one of its subtypes (§2.7).</summary>
     public bool IsA(string type) => Type.Linearisation.Contains(type);
 
@@ -197,6 +204,7 @@ public sealed class DislElement : ICelObject
             "ports" when !Type.IsRelation => new List<object?>(),
             "source" when Type.IsRelation => Source,
             "target" when Type.IsRelation => Target,
+            "view" when View is not null => View,
             _ => Missing,
         };
     }

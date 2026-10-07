@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import { elementSourceOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import { compileNotation } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
 import type { DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
@@ -10,7 +12,9 @@ import { useContextConnection } from "@client/shell/context/ContextConnectionPro
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
+import { MINDMAP_BINDINGS } from "./mindmapBindings";
 import { useMindmapStream } from "./useMindmapStream";
+import disText from "../definition/mindmap.dis?raw";
 
 /** The diagram file this canvas shows: its project id, and the project-relative path of its `.adp`. */
 export interface MindmapCanvasProps {
@@ -70,113 +74,18 @@ function isInSubtree(model: MindmapModel, candidateId: string, rootId: string): 
 }
 
 /**
- * What a mindmap allows, stated once: nodes that drag onto one another to re-parent, edit
- * their text in place and speak the structural keys; branches drawn between facing sides; the
- * backend's own layout passed through untouched.
+ * What a mind map allows, compiled from its bundled DISL specification (`definition/mindmap.dis`) with
+ * the module's {@link MINDMAP_BINDINGS}: nodes that drag onto one another to re-parent, edit their text
+ * in place and speak the structural keys; branches drawn between facing sides; the backend's own
+ * layout passed through untouched. `mindmapCompiledDefinition.test.ts` holds it to the definition this
+ * canvas stated by hand before.
  *
- * **Manual layout, deliberately, and the tree mode stays unexercised here** - a recorded
- * deviation from this task's original text. The mindmap backend computes the arrangement and
- * streams positions, and the library's own design (diagram-library, Requirement 8.3) says
- * exactly what to do with that: where the backend places elements today, the library uses
- * manual/external and leaves it untouched. Wiring the client-side tree algorithm against a
- * backend-arranged diagram would run a second layout to fight the wire's.
+ * **Manual layout, deliberately.** The mind map backend computes the arrangement and streams
+ * positions, and the library's own design (diagram-library, Requirement 8.3) says where the backend
+ * places elements the library uses manual/external and leaves it untouched; the specification's
+ * `mindmapLayout` is a host layout, which compiles to exactly that.
  */
-function definitionOf(): DiagramDefinition {
-  return assertValidDiagramDefinition({
-    elementTypes: [
-      {
-        id: "node",
-        // The shared centered box the renderer wrapped. What it added - three classes, a line
-        // of indicator glyphs, and the drag preview - is a declaration now.
-        shape: "centered-box",
-        classNames: [
-          { className: "mindmap-node", on: "element" },
-          { className: "mindmap-node-dragging", on: "element", when: { path: "state.dragging", is: "true" } },
-          // The box's own class, so the stylesheet reaches the box and nothing else the library
-          // draws in the node's group. `.mindmap-node rect` reached the library's selection ring
-          // too and painted an opaque box over the label (59f1ed3a; client-centralization
-          // Requirement 3.2).
-          { className: "mindmap-node-box" },
-        ],
-        labels: [
-          {
-            text: { path: "payload.text" },
-            editable: true,
-            className: "mindmap-node-label",
-          },
-          {
-            // The corner glyphs: notes, a link, a folded branch. Joined by the fold rather than
-            // drawn one at a time, because the notation shows them as one line.
-            text: { path: "payload.indicators" },
-            when: { path: "payload.indicators", is: "non-empty" },
-            anchorTo: "top",
-            offset: { x: 0, y: 12 },
-            align: "end",
-            insetX: 4,
-            className: "mindmap-node-label mindmap-node-indicators",
-          },
-        ],
-        // A branch leaves a node SIDEWAYS at mid-height, whatever the angle - the difference
-        // between a tree and a graph, and what `facingSidePoint` did in the renderer.
-        anchors: { kind: "edge", edgeSides: "horizontal" },
-        sizing: "model",
-      },
-    ],
-    relationTypes: [
-      {
-        id: "branch",
-        route: "cubic-bezier",
-        style: { endMarker: "none" },
-        lineClassName: "mindmap-edge",
-        // A branch is a node's link to its parent, not a thing a reader picks: a press on it is
-        // a press on the background, as it has always been here. A decision about the notation,
-        // recorded in this module's readme - making branches selectable is a separate question
-        // for the user, not a side effect (centralized-selection Requirement 2.4).
-        selectable: false,
-        endpoints: {
-          source: { elementTypes: ["node"] },
-          target: { elementTypes: ["node"], anchors: "edge" },
-          allowSelf: false,
-        },
-      },
-    ],
-    // WHAT A MIND MAP OFFERS, AND WHAT INVOKES IT. Five keys were a hand-written list in this
-    // canvas - the longest of the four spellings the tree carried - and the delete was a
-    // keystroke it built to describe a gesture the library had already handed it.
-    //
-    // TAB AND INSERT ARE ONE ACTION WITH TWO KEYS, which is what an alias always meant: Tab is
-    // the XMind convention for "add child" and the backend knows that action as Insert. Two
-    // invocations of one declared id says it directly, where the alias said it sideways.
-    actions: [
-      {
-        id: "add-child",
-        // Insert, not Tab, even when Tab fired it: the backend knows this action as Insert, and
-        // sending the key that was pressed would put an unknown keystroke on the wire (5.3).
-        backendKey: "Insert",
-        invokedBy: [
-          { kind: "shortcut", key: "Insert" },
-          { kind: "shortcut", key: "Tab" },
-        ],
-        appliesTo: [{ kind: "element" }],
-      },
-      { id: "add-sibling", backendKey: "Enter", invokedBy: [{ kind: "shortcut", key: "Enter" }], appliesTo: [{ kind: "element" }] },
-      { id: "rename", backendKey: "F2", invokedBy: [{ kind: "shortcut", key: "F2" }], appliesTo: [{ kind: "element" }] },
-      { id: "fold", backendKey: " ", invokedBy: [{ kind: "shortcut", key: " " }], appliesTo: [{ kind: "element" }] },
-      { id: "delete", backendKey: "Delete", invokedBy: [{ kind: "gesture", gesture: "delete" }], appliesTo: [{ kind: "element" }] },
-    ],
-    layout: { modes: ["manual"] },
-    dragging: "enabled",
-    // THE DRAG PREVIEW, declared. The library computes the candidate parent per frame - it is
-    // the only thing that knows where the drag is - from the parent link this names; what a
-    // drop MEANS is still answered in `onElementMoved` below.
-    dropTarget: {
-      parentPath: "payload.parentId",
-      group: { className: "mindmap-drag-preview", data: { testid: "mindmap-drag-preview" } },
-      ring: { className: "mindmap-node-drop-target-ring", data: { testid: "mindmap-drop-ring" } },
-      preview: { className: "mindmap-edge mindmap-edge-preview" },
-    },
-  });
-}
+export const MINDMAP_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(parseDisl(disText), MINDMAP_BINDINGS));
 
 /**
  * Renders a mindmap through the diagram library. It holds no document state of its own beyond
@@ -190,7 +99,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const toolboxItems = useToolboxItems(projectId, path);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  const definition = useMemo(() => definitionOf(), [model]);
+  const definition = MINDMAP_DEFINITION;
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const elements = [...model.elements.values()].map((element): NodeElement => {

@@ -78,6 +78,7 @@ A diagram type is `src/diagrams/<type>/` with up to five parts:
 - `backend/` — its projects, `EtAlii.Adp.Diagram.<Type>` and `.Tests`
 - `api/` — its own `.proto`, when it has wire messages of its own
 - `client/` — its canvas and registration
+- `definition/` — its DISL definition (`<type>.dis`, its prose and `provenance.json`), bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh`, when the type is specified in DISL; the backend embeds it and the client compiles its notation
 - `examples/` — documents a reader can open
 - `definition/` — its DISL definition, bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh` with a `provenance.json` beside it and embedded in the backend project, when the type derives its palette, context menus and property rows from one
 
