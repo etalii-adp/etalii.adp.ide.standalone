@@ -372,7 +372,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
             All = [new Editor.EditorDefinition("plain", "Plain Text", IsFallback: true)],
         });
         var resolver = new HierarchyContextSourceResolver(
-            _store, new DiagramFileRouter(new TestDiagramDefinitionCatalog([Mindmap])), editors);
+            _store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)), editors);
 
         // Act and assert: the diagram family answered NotADiagram, so the editor family names it.
         Assert.Equal("editor/plain", await DiagramMimeOfAsync(resolver, "notes.txt"));

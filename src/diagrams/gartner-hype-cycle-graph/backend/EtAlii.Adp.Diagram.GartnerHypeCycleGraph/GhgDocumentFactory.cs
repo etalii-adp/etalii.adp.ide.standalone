@@ -55,10 +55,8 @@ public sealed class GhgDocumentFactory : IDiagramDocumentFactory
 
         return string.Join(
             lineEnding,
-            [
-                $"gartner-hypecycle-graph: {GhgModel.CurrentVersion}",
-                "trends: []",
-                "influences: []",
-            ]) + lineEnding;
+            $"gartner-hypecycle-graph: {GhgModel.CurrentVersion}",
+            "trends: []",
+            "influences: []") + lineEnding;
     }
 }

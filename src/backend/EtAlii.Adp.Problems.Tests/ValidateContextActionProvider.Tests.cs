@@ -24,7 +24,7 @@ public class ValidateContextActionProviderTests : IDisposable
         var scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         _root = IoPath.Combine(scratch, "project");
         Directory.CreateDirectory(_root);
-        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition]));
+        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition));
         var validators = new DiagramValidators([]);
         _store = new ProblemStore(IoPath.Combine(scratch, "appdata"), router, validators, writeDelay: TimeSpan.FromMinutes(5));
         var projectValidator = new ProjectValidator(router, validators);

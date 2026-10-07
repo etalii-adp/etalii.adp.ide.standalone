@@ -30,7 +30,7 @@ public class ProblemMaintenanceTests : IDisposable
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition, FolderDefinition]));
+        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition, FolderDefinition));
         var projectValidator = new ProjectValidator(router, new DiagramValidators([_validator, _folderValidator]));
         _maintenance = new ProblemMaintenance(_store, projectValidator, router, SettleDelay);
     }

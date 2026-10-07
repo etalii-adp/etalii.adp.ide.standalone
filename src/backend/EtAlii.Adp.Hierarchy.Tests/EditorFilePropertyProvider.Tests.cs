@@ -21,7 +21,7 @@ public class EditorFilePropertyProviderTests : IDisposable
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        _provider = new EditorFilePropertyProvider(new DiagramFileRouter(new TestDiagramDefinitionCatalog([Mindmap])));
+        _provider = new EditorFilePropertyProvider(new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)));
     }
 
     public void Dispose()

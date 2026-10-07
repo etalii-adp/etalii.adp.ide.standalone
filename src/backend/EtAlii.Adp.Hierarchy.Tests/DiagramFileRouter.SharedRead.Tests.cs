@@ -41,7 +41,7 @@ public class DiagramFileRouterSharedReadTests : IDisposable
 
         // Act.
         var routed = Assert.IsType<DiagramRouted>(
-            new DiagramFileRouter(new TestDiagramDefinitionCatalog([Mindmap])).Route(adp, _root));
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)).Route(adp, _root));
 
         // Assert: routed by its first line, body resolved through its header - both read
         // through the held-open handle.

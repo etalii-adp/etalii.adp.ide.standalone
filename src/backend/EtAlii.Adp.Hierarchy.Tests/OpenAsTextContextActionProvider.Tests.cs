@@ -43,7 +43,7 @@ public class OpenAsTextContextActionProviderTests : IDisposable
 
     private OpenAsTextContextActionProvider Provider(params EditorDefinition[] editors) =>
         new(
-            new DiagramFileRouter(new TestDiagramDefinitionCatalog([Mindmap])),
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)),
             new EditorResolver(new StubEditorCatalog(editors)));
 
     private ContextTarget FileTarget(string fileName, string content = "root\n")

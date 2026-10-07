@@ -110,7 +110,7 @@ public class ProblemStoreFlushKeepsTheLastWriteTests : IDisposable
 
     private ProblemStore Store() =>
         new(_appData,
-            new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition])),
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition)),
             new DiagramValidators([]),
             // Long enough that the real timer never fires during the test: the interleaving is
             // driven through the seam, so nothing here depends on how fast the machine is.

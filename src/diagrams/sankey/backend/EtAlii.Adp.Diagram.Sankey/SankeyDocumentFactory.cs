@@ -34,10 +34,8 @@ public sealed class SankeyDocumentFactory : IDiagramDocumentFactory
 
         return string.Join(
             lineEnding,
-            [
-                $"{SankeyParser.HeaderKey}: {SankeyModel.CurrentVersion}",
-                $"{SankeyParser.NodesKey}: []",
-                $"{SankeyParser.FlowsKey}: []",
-            ]) + lineEnding;
+            $"{SankeyParser.HeaderKey}: {SankeyModel.CurrentVersion}",
+            $"{SankeyParser.NodesKey}: []",
+            $"{SankeyParser.FlowsKey}: []") + lineEnding;
     }
 }
