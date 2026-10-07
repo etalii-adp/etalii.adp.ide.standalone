@@ -9,6 +9,8 @@
       compile and test with this module absent (mindmap-diagram Requirement 13.4).
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <!-- What is derived from the bundled DISL definition. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Disl\EtAlii.Adp.Specification.Disl.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +27,12 @@
       module's api folder; core protos are never edited from here.
     -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DISL definition bundled from etalii-adp/etalii.adp (src/diagrams/tools/bundle-disl.sh), and its provenance. -->
+    <EmbeddedResource Include="..\..\definition\mindmap.dis" LogicalName="mindmap.dis" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="mindmap.provenance.json" />
   </ItemGroup>
 
   <ItemGroup>
