@@ -36,7 +36,7 @@ public class AdpFileWriterTests : IDisposable
         // must not be the tool CLAUDE.md's line-endings section warns about. It once wrote LF
         // here while the layout writer wrote CRLF, leaving mixed endings inside one file.
         var bytes = File.ReadAllBytes(created.FullPath);
-        Assert.Equal(Encoding.UTF8.GetBytes("freeplane/mindmap\r\n"), bytes);
+        Assert.Equal("freeplane/mindmap\r\n"u8.ToArray(), bytes);
     }
 
     [Fact]

@@ -114,7 +114,7 @@ public class MindmapFreeplanePluginTests
     public void AChange_IsRefused_BecauseTheCommandsEditTheXmlInPlace()
     {
         // Arrange.
-        var body = PluginBody.Open(Encoding.UTF8.GetBytes("<map version=\"freeplane 1.12.15\"><node TEXT=\"root\" ID=\"ID_1\"/></map>"), MindmapDefinition.Binding, _plugin, "map.mm");
+        var body = PluginBody.Open("<map version=\"freeplane 1.12.15\"><node TEXT=\"root\" ID=\"ID_1\"/></map>"u8.ToArray(), MindmapDefinition.Binding, _plugin, "map.mm");
 
         // Act.
         var result = body.Plan(new ModelChange.Remove("ID_1"));

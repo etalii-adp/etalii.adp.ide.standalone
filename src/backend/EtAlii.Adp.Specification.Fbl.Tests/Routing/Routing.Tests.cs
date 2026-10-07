@@ -44,11 +44,11 @@ public class RoutingTests
     {
         // Arrange.
         var marker = new Marker(null, null, "causal-loop", null, 0);
-        var body = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Encoding.UTF8.GetBytes("causal-loop 1\n")).ToArray();
+        var body = new byte[] { 0xEF, 0xBB, 0xBF }.Concat("causal-loop 1\n"u8.ToArray()).ToArray();
 
         // Act and assert.
         Assert.True(MarkerEvaluator.Matches(marker, body));
-        Assert.False(MarkerEvaluator.Matches(marker, Encoding.UTF8.GetBytes("# causal-loop\n")));
+        Assert.False(MarkerEvaluator.Matches(marker, "# causal-loop\n"u8.ToArray()));
     }
 
     [Fact]
