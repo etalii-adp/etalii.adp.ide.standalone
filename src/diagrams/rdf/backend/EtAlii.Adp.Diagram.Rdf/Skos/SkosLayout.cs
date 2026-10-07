@@ -255,13 +255,13 @@ public static class SkosLayout
                 {
                     work.Push((node, child + 1));
                     var target = children[child];
-                    if (!index.ContainsKey(target))
+                    if (!index.TryGetValue(target, out var targetIndex))
                     {
                         work.Push((target, 0));
                     }
                     else if (onStack.Contains(target))
                     {
-                        low[node] = Math.Min(low[node], index[target]);
+                        low[node] = Math.Min(low[node], targetIndex);
                     }
                 }
                 else

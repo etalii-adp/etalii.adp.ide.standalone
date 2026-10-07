@@ -121,14 +121,14 @@ internal static class OwlClassHierarchy
                         continue; // a superclass with no own subclass entry cannot be in a cycle
                     }
 
-                    if (!indexOf.ContainsKey(parent))
+                    if (!indexOf.TryGetValue(parent, out var parentIndex))
                     {
                         Connect(parent);
                         lowOf[node] = Math.Min(lowOf[node], lowOf[parent]);
                     }
                     else if (onStack.Contains(parent))
                     {
-                        lowOf[node] = Math.Min(lowOf[node], indexOf[parent]);
+                        lowOf[node] = Math.Min(lowOf[node], parentIndex);
                     }
                 }
             }
