@@ -263,72 +263,72 @@
     "shapes": {
       "topicBox": {
         "label": "Topic box",
-        "doc": "A rectangle with corners rounded by 6, or by half the shorter side when that is less, as an SVG `rect` with `rx` 6 draws it. The node's position is its centre (`placement.anchor`).",
+        "doc": "A rectangle with corners rounded by 6, as an SVG `rect` with `rx` 6 draws it: each radius is at most half its side, so a box narrower or lower than 12 has elliptical corners. The node's position is its centre (`placement.anchor`).",
         "path": {
           "segments": [
             {
               "op": "M",
-              "x": "min(6.0, min(w / 2.0, h / 2.0))",
+              "x": "min(6.0, w / 2.0)",
               "y": 0
             },
             {
               "op": "L",
-              "x": "w - min(6.0, min(w / 2.0, h / 2.0))",
+              "x": "w - min(6.0, w / 2.0)",
               "y": 0
             },
             {
               "op": "A",
-              "rx": "min(6.0, min(w / 2.0, h / 2.0))",
-              "ry": "min(6.0, min(w / 2.0, h / 2.0))",
+              "rx": "min(6.0, w / 2.0)",
+              "ry": "min(6.0, h / 2.0)",
               "rotation": 0,
               "largeArc": false,
               "sweep": true,
               "x": "w",
-              "y": "min(6.0, min(w / 2.0, h / 2.0))"
+              "y": "min(6.0, h / 2.0)"
             },
             {
               "op": "L",
               "x": "w",
-              "y": "h - min(6.0, min(w / 2.0, h / 2.0))"
+              "y": "h - min(6.0, h / 2.0)"
             },
             {
               "op": "A",
-              "rx": "min(6.0, min(w / 2.0, h / 2.0))",
-              "ry": "min(6.0, min(w / 2.0, h / 2.0))",
+              "rx": "min(6.0, w / 2.0)",
+              "ry": "min(6.0, h / 2.0)",
               "rotation": 0,
               "largeArc": false,
               "sweep": true,
-              "x": "w - min(6.0, min(w / 2.0, h / 2.0))",
+              "x": "w - min(6.0, w / 2.0)",
               "y": "h"
             },
             {
               "op": "L",
-              "x": "min(6.0, min(w / 2.0, h / 2.0))",
+              "x": "min(6.0, w / 2.0)",
               "y": "h"
             },
             {
               "op": "A",
-              "rx": "min(6.0, min(w / 2.0, h / 2.0))",
-              "ry": "min(6.0, min(w / 2.0, h / 2.0))",
+              "rx": "min(6.0, w / 2.0)",
+              "ry": "min(6.0, h / 2.0)",
               "rotation": 0,
               "largeArc": false,
               "sweep": true,
               "x": 0,
-              "y": "h - min(6.0, min(w / 2.0, h / 2.0))"
+              "y": "h - min(6.0, h / 2.0)"
             },
             {
               "op": "L",
               "x": 0,
-              "y": "min(6.0, min(w / 2.0, h / 2.0))"
+              "y": "min(6.0, h / 2.0)"
             },
             {
               "op": "A",
-              "rx": "min(6.0, min(w / 2.0, h / 2.0))",
-              "ry": "min(6.0, min(w / 2.0, h / 2.0))",
+              "rx": "min(6.0, w / 2.0)",
+              "ry": "min(6.0, h / 2.0)",
               "rotation": 0,
               "largeArc": false,
               "sweep": true,
-              "x": "min(6.0, min(w / 2.0, h / 2.0))",
+              "x": "min(6.0, w / 2.0)",
               "y": 0
             },
             {
