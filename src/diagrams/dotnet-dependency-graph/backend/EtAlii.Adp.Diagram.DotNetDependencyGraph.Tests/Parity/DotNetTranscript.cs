@@ -265,12 +265,12 @@ internal static partial class DotNetTranscript
                 Project("tests/App.Tests/App.Tests.csproj", ["net472", "net9.0"], "9.0"),
             ],
             [
-                new PackageNode("package:Described", "Described", ["1.0.0"], false, "A package with a description.\nOver two lines.", 1, false),
-                new PackageNode("package:EmptyDescription", "EmptyDescription", ["2.0.0"], false, "", 1, false),
-                new PackageNode("package:Undescribed", "Undescribed", ["3.0.0"], false, null, 1, false),
-                new PackageNode("package:TwoVersions", "TwoVersions", ["1.0.0", "1.1.0"], true, null, 2, false),
-                new PackageNode("package:KnownAndUnknown", "KnownAndUnknown", ["4.0.0"], true, null, 2, false),
-                new PackageNode("package:Unknowable", "Unknowable", [], false, null, 1, false),
+                new PackageNode("package:Described", "Described", ["1.0.0"], false, "A package with a description.\nOver two lines.", 1),
+                new PackageNode("package:EmptyDescription", "EmptyDescription", ["2.0.0"], false, "", 1),
+                new PackageNode("package:Undescribed", "Undescribed", ["3.0.0"], false, null, 1),
+                new PackageNode("package:TwoVersions", "TwoVersions", ["1.0.0", "1.1.0"], true, null, 2),
+                new PackageNode("package:KnownAndUnknown", "KnownAndUnknown", ["4.0.0"], true, null, 2),
+                new PackageNode("package:Unknowable", "Unknowable", [], false, null, 1),
             ],
             [
                 new DependsOnEdge("depends:project:src/App/App.csproj->project:src/Lib/Lib.csproj", "project:src/App/App.csproj", "project:src/Lib/Lib.csproj", DependsOnKind.Project),
@@ -287,7 +287,7 @@ internal static partial class DotNetTranscript
             many,
             [
                 new PackageNode("package:xunit.v3", "xunit.v3", ["3.0.0"], false, "The test framework.", 7, true),
-                new PackageNode("package:Serilog", "Serilog", ["4.4.0"], false, null, 1, false),
+                new PackageNode("package:Serilog", "Serilog", ["4.4.0"], false, null, 1),
             ],
             [
                 .. many.Select(project => new DependsOnEdge($"depends:{project.Id}->package:xunit.v3", project.Id, "package:xunit.v3", DependsOnKind.Package)),

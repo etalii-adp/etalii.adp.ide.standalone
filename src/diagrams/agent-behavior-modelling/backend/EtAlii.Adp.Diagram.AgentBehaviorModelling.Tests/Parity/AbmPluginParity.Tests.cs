@@ -202,7 +202,7 @@ public class AbmPluginParityTests
             }
         }
 
-        yield return ("add gone", new ModelChange.Add("Do", null, new Dictionary<string, object?>(), "9.9", null), (_, _) => AbmEdit.Refused("That node is no longer in this behavior model."));
+        yield return ("add gone", new ModelChange.Add("Do", null, new Dictionary<string, object?>(), "9.9"), (_, _) => AbmEdit.Refused("That node is no longer in this behavior model."));
         yield return ("remove gone", new ModelChange.Remove("9.9"), (_, _) => AbmEdit.Refused("That node is no longer in this behavior model."));
     }
 
