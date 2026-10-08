@@ -22,7 +22,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
     /// can hold the poll at exactly that point while the watch closes around it. Settable for
     /// guards only; production never sets it.
     /// </summary>
-    internal Func<Task>? RootFoundMissing { get; set; }
+    internal Func<Task>? RootFoundMissing { get; init; }
 
     public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
     {
