@@ -326,28 +326,6 @@ public static class CausalLoopWriter
 
     // ---- links -----------------------------------------------------------------------------
 
-    /// <summary>States a causal link between two declared variables.</summary>
-    public static string AddLink(
-        CausalLoopDocument document, CausalLoopModel model, string from, string to, CausalLoopPolarity polarity)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(model);
-
-        if (!model.Declares(from) || !model.Declares(to))
-        {
-            return NoSuchVariable;
-        }
-
-        if (Find(model, from, to) is not null)
-        {
-            return "That link is already stated in this diagram.";
-        }
-
-        var link = new CausalLoopLink(from, to, polarity, false, false, null, "", new LineRange(0, 0));
-        document.Insert(AfterLast(document, model.Links.Select(l => l.Lines)), [LinkStatement(link)]);
-        return "";
-    }
-
     /// <summary>Changes what a link asserts.</summary>
     public static string SetLinkPolarity(
         CausalLoopDocument document, CausalLoopModel model, string from, string to, CausalLoopPolarity polarity) =>
