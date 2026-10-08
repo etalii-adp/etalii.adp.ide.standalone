@@ -78,7 +78,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
 
 ## Pull request 3 - the discovered classes
 
-- [ ] 7. Mark the classes the catalog discovers by reflection
+- [x] 7. Mark the classes the catalog discovers by reflection
   - Files: `src/Directory.Build.props`, the 66 `Diagram.cs` and 2 `Editor.cs` files under `src/diagrams/` and `src/editors/`, `.spec-workflow/steering/tech.md` (*Declaring a diagram definition*), `docs/creating-a-diagram-module.md`, `docs/creating-an-editor-module.md`
   - Reference `JetBrains.Annotations` once in `src/Directory.Build.props` with `PrivateAssets="all"`, and remove the now redundant reference from `EtAlii.Adp.Backend.Service.csproj`
   - Add `[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]` to every discovered class, the ones that report nothing today included
