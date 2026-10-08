@@ -26,7 +26,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram.Tests;
 /// </remarks>
 public class ExamplesTests
 {
-    private static string ExamplesRoot
+    internal static string ExamplesRoot
     {
         get
         {

@@ -44,7 +44,11 @@ public class CausalLoopContextPropertiesTests : IDisposable
         _path = IoPath.Combine(_root, "feedback.cld");
         File.WriteAllText(_path, Corpus);
 
-        _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddCausalLoop().BuildServiceProvider();
+        // One store for the grid and for the commands it dispatches, as in the running service:
+        // with two, the grid would go on reading a document the commands had already changed.
+        _provider = new ServiceCollection()
+            .AddSingleton<ICausalLoopDocumentStore>(_store)
+            .AddCommands().AddHierarchyCommandHandlers().AddCausalLoop().BuildServiceProvider();
         _properties = new CausalLoopContextPropertyProvider(
             _provider.GetRequiredService<IHistoryStackStore>(), _store);
     }
@@ -322,6 +326,131 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Assert.
         // "Unknown" is not "none": a parity that cannot be counted is not a count of zero.
         Assert.Equal(CausalLoopContextPropertyProvider.Undecidable, computed.Value);
+    }
+
+    // ---- a loop's membership ----------------------------------------------------------------
+
+    /// <summary>The cycle the on-call example's R3 claims, as the grid shows it.</summary>
+    private const string TooBusyToStopBeingBusy = "onCallLoad → automation → toil";
+
+    /// <summary>The cycle R2 claims there, left unclaimed by <see cref="UseTheOnCallExampleWithoutR2"/>.</summary>
+    private const string FewerHandsHeavierRota = "onCallLoad → fatigue → attrition → teamSize";
+
+    /// <summary>The cycle R1 claims there, which R1 keeps claiming throughout.</summary>
+    private const string TiredHandsMakeMoreWork = "incidents → onCallLoad → fatigue → mistakes";
+
+    /// <summary>
+    /// The shipped on-call example, with its loop R2 withdrawn through the history, so the cycle R2
+    /// claimed is formed by the arrows and claimed by nobody: the situation of an author who
+    /// claimed the wrong loop and wants R3 to run through the other one. Every one of its three
+    /// cycles passes through <c>onCallLoad</c>, so each runs through R3's variables.
+    /// </summary>
+    private async Task<IHistoryStack> UseTheOnCallExampleWithoutR2()
+    {
+        var example = IoPath.Combine(ExamplesTests.ExamplesRoot, "on-call", "on-call.cld");
+        await File.WriteAllTextAsync(
+            _path,
+            await File.ReadAllTextAsync(example, TestContext.Current.CancellationToken),
+            TestContext.Current.CancellationToken);
+        _store.Reload(_path);
+
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var removed = await history.ExecuteAsync(new RemoveLoopCommand(_path, "R2"), TestContext.Current.CancellationToken);
+        Assert.True(removed.IsSuccess, removed.Error);
+        return history;
+    }
+
+    /// <summary>
+    /// Requirement 4.3, ruled by Peter on 2026-10-08: the membership is chosen among the cycles the
+    /// arrows form through the loop's variables. The current one is the selected value, and a cycle
+    /// another loop already claims is not offered, because two claims of one cycle say nothing the
+    /// first did not.
+    /// </summary>
+    [Fact]
+    public async Task ALoopsMembership_IsAChoiceAmongTheUnclaimedCyclesThroughItsVariables()
+    {
+        // Arrange.
+        await UseTheOnCallExampleWithoutR2();
+
+        // Act.
+        var row = Row(await Describe("loop:R3"), CausalLoopContextPropertyProvider.LoopVariablesProperty);
+
+        // Assert.
+        Assert.True(row.IsEditable, row.ReadOnlyReason);
+        Assert.Equal(ContextPropertyEditor.Choice, row.Editor);
+        Assert.Equal(TooBusyToStopBeingBusy, row.Value);
+        Assert.Equal([TooBusyToStopBeingBusy, FewerHandsHeavierRota], row.Choices);
+        Assert.DoesNotContain(TiredHandsMakeMoreWork, row.Choices);
+    }
+
+    /// <summary>
+    /// The chosen cycle reaches the document as a <see cref="SetLoopMembershipCommand"/> through
+    /// the project's history: the loop's line, and only that line, now names the other cycle.
+    /// </summary>
+    [Fact]
+    public async Task ChoosingAnotherCycle_SetsTheLoopsMembership_AndOneUndoRestoresIt()
+    {
+        // Arrange.
+        var history = await UseTheOnCallExampleWithoutR2();
+        var before = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
+
+        // Act.
+        var result = await _properties.SetAsync(
+            Target("loop:R3"),
+            CausalLoopContextPropertyProvider.LoopVariablesProperty,
+            FewerHandsHeavierRota,
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+
+        var after = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
+        Assert.Equal(
+            before.Replace(
+                "loop R3 \"Too busy to stop being busy\" onCallLoad automation toil",
+                "loop R3 \"Too busy to stop being busy\" onCallLoad fatigue attrition teamSize",
+                StringComparison.Ordinal),
+            after);
+        Assert.Equal(
+            ["onCallLoad", "fatigue", "attrition", "teamSize"],
+            Assert.Single(_store.GetOrLoad(_path).Model.Loops, loop => loop.Identifier == "R3").Variables);
+
+        // The undo puts the bytes back, and what it hands back to redo is the command the grid
+        // dispatched - which is how this test knows which command that was.
+        var undone = await history.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
+
+        var dispatched = Assert.IsType<SetLoopMembershipCommand>(undone.Inverse);
+        Assert.Equal("R3", dispatched.Identifier);
+        Assert.Equal(["onCallLoad", "fatigue", "attrition", "teamSize"], dispatched.Variables);
+    }
+
+    /// <summary>
+    /// A value the row did not offer - here the cycle R1 already claims - is refused before any
+    /// command is made, so nothing is written and nothing lands on the undo stack.
+    /// </summary>
+    [Fact]
+    public async Task ACycleTheRowDidNotOffer_IsRefusedBeforeAnythingIsWritten()
+    {
+        // Arrange.
+        var history = await UseTheOnCallExampleWithoutR2();
+        var before = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
+
+        // Act.
+        var result = await _properties.SetAsync(
+            Target("loop:R3"),
+            CausalLoopContextPropertyProvider.LoopVariablesProperty,
+            TiredHandsMakeMoreWork,
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.False(result.IsSuccess);
+        Assert.Contains(TiredHandsMakeMoreWork, result.Error, StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
+
+        // The only entry left is the arrangement's own removal of R2.
+        Assert.Equal(1, history.Availability.UndoCount);
     }
 
     // ---- the seam -----------------------------------------------------------------------------

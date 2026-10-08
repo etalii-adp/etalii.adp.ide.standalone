@@ -351,4 +351,79 @@ public class CausalLoopCommandsTests : IDisposable
         Assert.Contains("'nowhere'", result.Error, StringComparison.Ordinal);
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
+
+    // ---- a loop's membership, on the shipped on-call example --------------------------------
+
+    private const string R3AsShipped = "loop R3 \"Too busy to stop being busy\" onCallLoad automation toil";
+
+    private const string R3OnTheRota = "loop R3 \"Too busy to stop being busy\" onCallLoad fatigue attrition teamSize";
+
+    private static string OnCallExample() =>
+        File.ReadAllText(IoPath.Combine(ExamplesTests.ExamplesRoot, "on-call", "on-call.cld"));
+
+    /// <summary>
+    /// Requirement 4.3. The writer restates the loop's line with the new cycle and leaves every
+    /// other byte of a real document - its comments, blank lines and the other loops - alone.
+    /// </summary>
+    [Fact]
+    public void SettingALoopsMembership_RewritesItsLineAndLeavesEveryOtherByte()
+    {
+        // Arrange.
+        var text = OnCallExample();
+        Assert.Contains(R3AsShipped, text, StringComparison.Ordinal);
+        var document = CausalLoopDocument.Parse(text);
+        var model = CausalLoopParser.Parse(document).Model;
+
+        // Act.
+        var refusal = CausalLoopWriter.SetLoopMembership(
+            document, model, "R3", ["onCallLoad", "fatigue", "attrition", "teamSize"]);
+
+        // Assert.
+        Assert.Equal("", refusal);
+        Assert.Equal(text.Replace(R3AsShipped, R3OnTheRota, StringComparison.Ordinal), document.Text);
+    }
+
+    [Fact]
+    public void AMembershipThroughAnUndeclaredVariable_IsRefusedNamingIt_AndNothingIsWritten()
+    {
+        // Arrange.
+        var text = OnCallExample();
+        var document = CausalLoopDocument.Parse(text);
+        var model = CausalLoopParser.Parse(document).Model;
+
+        // Act.
+        var refusal = CausalLoopWriter.SetLoopMembership(document, model, "R3", ["onCallLoad", "nowhere"]);
+
+        // Assert.
+        Assert.Contains("'nowhere'", refusal, StringComparison.Ordinal);
+        Assert.Equal(text, document.Text);
+    }
+
+    /// <summary>The command lands the writer's line through the store, and its inverse puts the bytes back.</summary>
+    [Fact]
+    public async Task SettingALoopsMembership_IsOneUndoAway()
+    {
+        // Arrange.
+        var text = OnCallExample();
+        await File.WriteAllTextAsync(_path, text, TestContext.Current.CancellationToken);
+        _store.Reload(_path);
+        var command = new SetLoopMembershipCommand(_path, "R3", ["onCallLoad", "fatigue", "attrition", "teamSize"]);
+
+        // Act.
+        var result = await new SetLoopMembershipCommandHandler(_store).ExecuteAsync(command, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            text.Replace(R3AsShipped, R3OnTheRota, StringComparison.Ordinal),
+            await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
+
+        var restore = Assert.IsType<RestoreDocumentCommand<ICausalLoopDocumentStore>>(result.Inverse);
+        var undone = await new RestoreDocumentCommandHandler<ICausalLoopDocumentStore>(_store)
+            .ExecuteAsync(restore, TestContext.Current.CancellationToken);
+
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal(text, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
+        Assert.Same(command, undone.Inverse);
+    }
 }

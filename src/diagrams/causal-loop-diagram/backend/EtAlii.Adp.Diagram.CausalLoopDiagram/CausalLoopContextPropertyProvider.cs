@@ -29,6 +29,15 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// clearest case: they are the link's identity, so changing one would be making a different
 /// link, and the row says that rather than presenting a box that silently does nothing.
 /// </para>
+/// <para>
+/// <b>A loop's membership is a choice among the cycles the arrows form</b> (Requirement 4.3,
+/// ruled by Peter on 2026-10-08). The row offers the loop's current cycle and every other
+/// elementary cycle <see cref="CycleFinder"/> finds through at least one of its variables, except
+/// those another loop already claims - a second claim of one cycle says nothing the first does
+/// not. A cycle is offered as its variables joined by arrows, in the order it runs, so the value
+/// a reader picks is the path itself. Typing is not offered: a membership that is not a cycle is
+/// one the validator would report straight back.
+/// </para>
 /// </remarks>
 public sealed class CausalLoopContextPropertyProvider(
     IHistoryStackStore historyStacks, ICausalLoopDocumentStore documents) : IContextPropertyProvider
@@ -70,7 +79,7 @@ public sealed class CausalLoopContextPropertyProvider(
     public const string LoopStatedProperty = "causal-loop.loop-stated";
 
     /// <summary>The cycle the loop runs through.</summary>
-    private const string LoopVariablesProperty = "causal-loop.loop-variables";
+    public const string LoopVariablesProperty = "causal-loop.loop-variables";
 
     private const string IdentityGroup = "Identity";
     private const string CausalityGroup = "Causality";
@@ -82,8 +91,8 @@ public sealed class CausalLoopContextPropertyProvider(
     private const string ComputedFromTheArrows =
         "Counted from the polarity of the links around the cycle. Change an arrow to change this.";
 
-    private const string MembershipOnTheDiagram =
-        "The cycle a loop claims is edited on the canvas, where the path can be seen.";
+    /// <summary>How a cycle is written in the "Runs through" row: its variables, in order.</summary>
+    private const string CycleSeparator = " → ";
 
     /// <summary>The value shown where the arithmetic cannot be taken.</summary>
     internal const string Undecidable = "undecidable";
@@ -177,8 +186,9 @@ public sealed class CausalLoopContextPropertyProvider(
             }
 
             rows.Add(new ContextPropertyDefinition(
-                LoopVariablesProperty, "Runs through", string.Join(" → ", loop.Variables),
-                ReadOnlyReason: MembershipOnTheDiagram, Group: FeedbackGroup));
+                LoopVariablesProperty, "Runs through", CycleText(loop.Variables),
+                ContextPropertyEditor.Choice, Group: FeedbackGroup,
+                Candidates: [.. MembershipChoices(model, loop).Select(choice => choice.Text)]));
 
             return Rows(rows);
         }
@@ -210,6 +220,21 @@ public sealed class CausalLoopContextPropertyProvider(
         if (propertyId == LinkPolarityProperty && ParsePolarity(value) is null)
         {
             return ContextPropertyResult.Failure($"'{value}' is not a polarity a link can state.");
+        }
+
+        if (propertyId == LoopVariablesProperty && LoopOf(entry.Model, target.ElementId) is { } chosenFor)
+        {
+            if (CycleChosen(entry.Model, chosenFor, value) is null)
+            {
+                return ContextPropertyResult.Failure(
+                    $"'{value}' is not a cycle this loop can run through: choose one the arrows form through its variables that no other loop claims.");
+            }
+
+            // Choosing what is already there changes nothing, so it lands nothing on the undo stack.
+            if (value == CycleText(chosenFor.Variables))
+            {
+                return ContextPropertyResult.Success;
+            }
         }
 
         // The identifier is written as one word on the statement line, so it cannot hold
@@ -269,6 +294,8 @@ public sealed class CausalLoopContextPropertyProvider(
                 // The identifier is the claim, so setting it is how an author accepts the
                 // arithmetic - or insists on their own reading.
                 LoopIdentifierProperty => new SetLoopIdentifierCommand(body, loop.Identifier, value),
+                LoopVariablesProperty when CycleChosen(model, loop, value) is { } cycle =>
+                    new SetLoopMembershipCommand(body, loop.Identifier, cycle),
                 _ => null,
             };
         }
@@ -290,6 +317,43 @@ public sealed class CausalLoopContextPropertyProvider(
         CausalLoopSelection.LoopOf(elementId) is { } identifier
             ? model.Loops.FirstOrDefault(loop => loop.Identifier == identifier)
             : null;
+
+    /// <summary>The cycle a "Runs through" value names, or null where the row did not offer it.</summary>
+    private static IReadOnlyList<string>? CycleChosen(CausalLoopModel model, CausalLoopLoop loop, string value) =>
+        MembershipChoices(model, loop).FirstOrDefault(choice => choice.Text == value).Cycle;
+
+    /// <summary>
+    /// What a loop may run through, each with the text the row shows for it: the loop's own cycle
+    /// first, as the author wrote it, then each elementary cycle through any of its variables that
+    /// no loop claims yet, in the cycle finder's stable order.
+    /// </summary>
+    /// <remarks>
+    /// The current membership is offered even where the arrows no longer close it, so the row's
+    /// value is always one of its choices; the validator reports that case separately. A found
+    /// cycle that is the loop's own, entered at another variable, is the same loop and is not
+    /// offered twice.
+    /// </remarks>
+    private static List<(string Text, IReadOnlyList<string> Cycle)> MembershipChoices(CausalLoopModel model, CausalLoopLoop loop)
+    {
+        List<(string Text, IReadOnlyList<string> Cycle)> choices = [(CycleText(loop.Variables), loop.Variables)];
+
+        var claimed = model.Loops
+            .Select(other => CycleFinder.CanonicalSignature(other.Variables))
+            .ToHashSet(StringComparer.Ordinal);
+        var members = loop.Variables.ToHashSet(StringComparer.Ordinal);
+
+        foreach (var cycle in CycleFinder.Find(model).Cycles)
+        {
+            if (cycle.Any(members.Contains) && !claimed.Contains(CycleFinder.CanonicalSignature(cycle)))
+            {
+                choices.Add((CycleText(cycle), cycle));
+            }
+        }
+
+        return choices;
+    }
+
+    private static string CycleText(IReadOnlyList<string> variables) => string.Join(CycleSeparator, variables);
 
     /// <summary>The weight as the grid shows it: empty where none was written.</summary>
     /// <remarks>
