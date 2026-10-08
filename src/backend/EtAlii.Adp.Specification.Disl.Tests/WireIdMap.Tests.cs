@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Specification.Disl.Tests;
 /// <summary>The host's wire ids, read from a definition's <c>x-&lt;prefix&gt;</c> block.</summary>
 public class WireIdMapTests
 {
-    private static readonly Dictionary<string, object?> NoBindings = [];
+    private static readonly IReadOnlyDictionary<string, object?> NoBindings = new Dictionary<string, object?>();
 
     [Fact]
     public void ATool_HasItsPaletteIdAndItsDrop()
