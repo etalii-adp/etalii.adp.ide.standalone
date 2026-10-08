@@ -342,6 +342,8 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     public override void Insert(Plan plan, InsertRequest request)
     {
         var insert = request.Rule.Insert!;
+        // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
+        if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
         var container = insert.Container is null ? null : Container(insert.Container, request.Parent?.Entry, CapturesOf(plan));
         if (container is null || container.Value.Kind == ValueKind.Scalar)
         {

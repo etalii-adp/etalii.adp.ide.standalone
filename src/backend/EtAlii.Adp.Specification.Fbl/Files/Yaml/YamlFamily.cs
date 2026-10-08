@@ -283,6 +283,8 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     {
         var rule = request.Rule;
         var insert = rule.Insert!;
+        // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
+        if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
         var parent = request.Parent?.Entry ?? EndParent(request);
         var captures = request.Parent?.Candidate.Captures ?? (parent is null ? null : plan.Reading.ElementOf(parent)?.Candidate.Captures) ?? CapturesOf(plan);
         var selector = insert.Container ?? ContainerOf(rule.At);
