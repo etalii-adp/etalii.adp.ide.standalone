@@ -142,7 +142,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             ]);
         }
 
-        if (RdfNewPlacement.TryParse(target.ElementId, out _, out _))
+        if (RdfNewPlacement.IsPlacement(target.ElementId))
         {
             var placementActions = new List<ContextActionDefinition>
             {
@@ -285,7 +285,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
                         "A blank node's identity does not survive a reparse, so relations to it cannot land in the file. Name it with an IRI first.");
                 }
 
-                if (RdfNewPlacement.TryParse(from, out _, out _) || RdfNewPlacement.TryParse(to, out _, out _))
+                if (RdfNewPlacement.IsPlacement(from) || RdfNewPlacement.IsPlacement(to))
                 {
                     return new ContextExecutionFailed("Drop the relation on a resource; a statement needs both of its ends.");
                 }

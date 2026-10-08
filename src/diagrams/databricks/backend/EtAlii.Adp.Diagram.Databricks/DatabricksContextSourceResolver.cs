@@ -61,7 +61,7 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
         // A placement or a finished relation gesture names the element about to exist - it
         // resolves like any element, to a target the action provider reads the gesture back out
         // of; it lives for one ExecuteAction and is never selected, tracked or written anywhere.
-        if (DatabricksNewPlacement.TryParse(elementId, out _, out _) ||
+        if (DatabricksNewPlacement.IsPlacement(elementId) ||
             DatabricksRelationGesture.TryParse(elementId, out _, out _))
         {
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(

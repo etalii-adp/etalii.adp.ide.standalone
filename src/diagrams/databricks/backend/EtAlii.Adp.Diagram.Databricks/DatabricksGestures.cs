@@ -19,9 +19,12 @@ public static class DatabricksNewPlacement
     /// <summary>The id for a placement, as the canvas writes it.</summary>
     public static string IdFor(double x, double y) => GestureIds.Placement(x, y);
 
-    /// <summary>Whether <paramref name="elementId"/> is a placement id, and what it carries.</summary>
-    public static bool TryParse(string? elementId, out double x, out double y) =>
-        GestureIds.TryParsePlacement(elementId, out x, out y);
+    /// <summary>
+    /// Whether <paramref name="elementId"/> is a well-formed placement id. Where it points is not
+    /// read here: the authored drop position is the client's follow-up layout write.
+    /// </summary>
+    public static bool IsPlacement(string? elementId) =>
+        GestureIds.TryParsePlacement(elementId, out _, out _);
 }
 
 /// <summary>

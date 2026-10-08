@@ -183,7 +183,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             ]);
         }
 
-        if (DatabricksNewPlacement.TryParse(target.ElementId, out _, out _))
+        if (DatabricksNewPlacement.IsPlacement(target.ElementId))
         {
             // Empty canvas discovers what can be dropped or added there, because executing an
             // action by id only finds actions its target discovers.
@@ -278,7 +278,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
                 // The whole gesture in one call. This family creates tasks by drop, not by
                 // relation-to-empty-space, so either end being a placement is a polite refusal
                 // rather than a create-and-connect.
-                if (DatabricksNewPlacement.TryParse(from, out _, out _) || DatabricksNewPlacement.TryParse(to, out _, out _))
+                if (DatabricksNewPlacement.IsPlacement(from) || DatabricksNewPlacement.IsPlacement(to))
                 {
                     return new ContextExecutionFailed("Drop the dependency on a task; a dependency needs both of its ends.");
                 }
@@ -290,7 +290,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             }
 
             case var _ when actionId.StartsWith(AddTaskActionPrefix, StringComparison.Ordinal)
-                && DatabricksNewPlacement.TryParse(target.ElementId, out _, out _):
+                && DatabricksNewPlacement.IsPlacement(target.ElementId):
             {
                 // The gesture already said everything an add needs - so nothing is asked, and
                 // the task appears with a fresh key. The authored drop position is the client's
