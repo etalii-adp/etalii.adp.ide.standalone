@@ -236,7 +236,7 @@ public static class OperationInterpreter
         try
         {
             var node = diagram.AddNode(type, ids.Next(type), attributes);
-            var (source, target) = newEnd == "target" ? (existing, node) : (node, existing);
+            (DislElement source, DislElement target) = newEnd == "target" ? (existing, node) : (node, existing);
             var relation = diagram.AddRelation(relationType, ids.Next(relationType), source, target);
             return new DislTransaction(
                 [

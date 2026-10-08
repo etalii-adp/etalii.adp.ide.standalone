@@ -137,7 +137,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // row down, from the same begin - each RELATED to the one it grew from, in one
                 // command. Where it lands and what it is are the definition's addAfter and
                 // addBelow, run on the selected element, so nothing is asked.
-                var (grown, refusal) = TimelineDefinition.Grown(
+                (AddConnectedTimelineElementCommand? grown, string refusal) = TimelineDefinition.Grown(
                     model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addAfter" : "addBelow", element.Id);
                 return grown is null
                     ? new ContextExecutionFailed(refusal)
@@ -241,7 +241,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // The definition's removeEnd: the end unset and the period made a moment. A moment,
                 // which it is not for, has no end to remove; that stays the one recorded step that
                 // changes nothing it always was, rather than a refusal.
-                var (removal, refusal) = TimelineDefinition.EndChange(model, target.ResolvedFullPath, "removeEnd", element.Id, null);
+                (SetTimelineEndCommand? removal, string refusal) = TimelineDefinition.EndChange(model, target.ResolvedFullPath, "removeEnd", element.Id, null);
                 return refusal.Length > 0
                     ? new ContextExecutionFailed(refusal)
                     : await DispatchAsync(target, removal ?? new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
@@ -266,7 +266,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         {
             // Validated as typed, so the dialog can refuse before the commit does - by running the
             // definition's giveEnd, whose refusals the handler applies again (Requirement 3.4).
-            var (_, refusal) = TimelineDefinition.EndChange(
+            (_, string refusal) = TimelineDefinition.EndChange(
                 _documents.GetOrLoad(target.ResolvedFullPath).Model, target.ResolvedFullPath, "giveEnd", target.ElementId, value);
             if (refusal.Length > 0)
             {
@@ -317,7 +317,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         ContextTarget target, TimelineModel model, string elementId, string newEnd, double seconds, int row, CancellationToken cancellationToken)
     {
         var begin = TimelineScale.ToText(TimelineScale.ToTime(seconds, TimelinePrecision.Date), TimelinePrecision.Date);
-        var (related, refusal) = TimelineDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, begin, row);
+        (AddConnectedTimelineElementCommand? related, string refusal) = TimelineDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, begin, row);
         return related is null
             ? new ContextExecutionFailed(refusal)
             : await DispatchAsync(target, related, cancellationToken);

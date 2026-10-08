@@ -55,7 +55,7 @@ internal static class DependencyGraphFindings
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        var (diagram, lines) = Build(model);
+        (DislDiagram diagram, List<int> lines) = Build(model);
         var findings = ConstraintEvaluator.Evaluate(
             DependencyGraphDefinition.Specification,
             diagram,

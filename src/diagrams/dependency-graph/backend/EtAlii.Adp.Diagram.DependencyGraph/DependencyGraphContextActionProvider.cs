@@ -130,7 +130,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 // The gesture already said everything an add needs - where it landed - so
                 // nothing is asked and the node appears where it was dropped, as the definition's
                 // addNodeHere places and labels it.
-                var (added, refusal) = DependencyGraphDefinition.NodeHere(model, target.ResolvedFullPath, placedX, placedRow);
+                (AddDependencyGraphElementCommand? added, string refusal) = DependencyGraphDefinition.NodeHere(model, target.ResolvedFullPath, placedX, placedRow);
                 return added is null
                     ? new ContextExecutionFailed(refusal)
                     : await DispatchAsync(target, added, cancellationToken);
@@ -144,7 +144,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 // node added from another is a thing that node needs. Where it lands, what it is
                 // called and the dependency are the definition's addRight and addBelow, run on the
                 // selected node, so nothing is asked.
-                var (grown, refusal) = DependencyGraphDefinition.Grown(
+                (AddConnectedDependencyGraphElementCommand? grown, string refusal) = DependencyGraphDefinition.Grown(
                     model, target.ResolvedFullPath, actionId == AddAfterActionId ? "addRight" : "addBelow", element.Id);
                 return grown is null
                     ? new ContextExecutionFailed(refusal)
@@ -307,7 +307,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
     private async ValueTask<ContextExecutionResult> RelateHereAsync(
         ContextTarget target, DependencyGraphModel model, string elementId, string newEnd, double x, int row, CancellationToken cancellationToken)
     {
-        var (related, refusal) = DependencyGraphDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, x, row);
+        (AddConnectedDependencyGraphElementCommand? related, string refusal) = DependencyGraphDefinition.RelatedHere(model, target.ResolvedFullPath, elementId, newEnd, x, row);
         return related is null
             ? new ContextExecutionFailed(refusal)
             : await DispatchAsync(target, related, cancellationToken);

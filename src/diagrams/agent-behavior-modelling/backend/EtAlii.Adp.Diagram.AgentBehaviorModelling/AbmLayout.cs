@@ -107,7 +107,7 @@ public static class AbmLayout
         var outlines = new Dictionary<string, List<(double Left, double Right)>>(StringComparer.Ordinal);
         foreach (var node in model.Nodes.Reverse())
         {
-            var (placed, outline) = Pack(node.ChildIds.Select(id => outlines[id]).ToList(), HorizontalGap);
+            (List<double> placed, List<(double Left, double Right)> outline) = Pack(node.ChildIds.Select(id => outlines[id]).ToList(), HorizontalGap);
             if (placed.Count == 0)
             {
                 outlines[node.Id] = [(0, NodeWidth)];
@@ -126,7 +126,7 @@ public static class AbmLayout
 
         // The roots side by side, packed the same way with a wider gap between whole trees.
         var roots = model.Roots;
-        var (rootLefts, _) = Pack(roots.Select(root => outlines[root.Id]).ToList(), HorizontalGap * 2);
+        (List<double> rootLefts, _) = Pack(roots.Select(root => outlines[root.Id]).ToList(), HorizontalGap * 2);
         var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
         for (var index = 0; index < roots.Count; index++)
         {

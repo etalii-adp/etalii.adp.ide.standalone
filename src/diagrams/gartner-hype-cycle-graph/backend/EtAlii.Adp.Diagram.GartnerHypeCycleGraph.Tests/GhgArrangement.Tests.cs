@@ -28,7 +28,7 @@ public class GhgArrangementTests
         {
             foreach (var b in trends.Where(b => string.CompareOrdinal(a.Id, b.Id) < 0 && rows[a.Id] == rows[b.Id]))
             {
-                var (first, second) = a.Start <= b.Start ? (a, b) : (b, a);
+                (GhgTrend first, GhgTrend second) = a.Start <= b.Start ? (a, b) : (b, a);
                 var clear = GhgScale.XOf(second.Start!.Value, model.TimeUnit) - GhgScale.XOf(first.Stop!.Value, model.TimeUnit);
                 Assert.True(clear >= TextMetric.WidthOf(second.Name, 12), $"{example}: {first.Name} and {second.Name} meet on row {rows[a.Id]}.");
             }

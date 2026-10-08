@@ -23,7 +23,7 @@ internal static partial class YearMonth
     /// <summary><c>ym.year()</c>: floored, so month index −1 is December of year −1.</summary>
     public static long YearOf(long index)
     {
-        var (quotient, remainder) = Math.DivRem(index, 12);
+        (long quotient, long remainder) = Math.DivRem(index, 12);
         return remainder < 0 ? quotient - 1 : quotient;
     }
 
