@@ -70,6 +70,42 @@ public sealed class HierarchyModel
     }
 
     /// <summary>
+    /// Announces a rename a command is about to perform, before it touches the disk, so the
+    /// watcher's echo is recognised even when it outruns the command: the watcher thread can
+    /// see the move before <see cref="ApplyLocalRename"/> runs, and on Linux an unrecognised
+    /// echo lands as a Remove+Create that discards the entry's id and never raises the Renamed
+    /// (seen as an intermittent CI failure of UndoRedoFlowTests). Withdrawn with
+    /// <see cref="WithdrawLocalRename"/> when the move does not happen.
+    /// </summary>
+    public void ExpectLocalRename(string oldPath, string newPath)
+    {
+        ArgumentNullException.ThrowIfNull(oldPath);
+        ArgumentNullException.ThrowIfNull(newPath);
+
+        lock (_gate)
+        {
+            _appliedRenames.Add((IoPath.GetFullPath(oldPath), IoPath.GetFullPath(newPath), DateTime.UtcNow.Ticks));
+        }
+    }
+
+    /// <summary>
+    /// Forgets a rename announced by <see cref="ExpectLocalRename"/> that did not take place, so
+    /// a genuine delete of the old path is not mistaken for its echo.
+    /// </summary>
+    public void WithdrawLocalRename(string oldPath, string newPath)
+    {
+        ArgumentNullException.ThrowIfNull(oldPath);
+        ArgumentNullException.ThrowIfNull(newPath);
+
+        var old = IoPath.GetFullPath(oldPath);
+        var fresh = IoPath.GetFullPath(newPath);
+        lock (_gate)
+        {
+            _appliedRenames.RemoveAll(r => PathEquals(r.OldPath, old) && PathEquals(r.NewPath, fresh));
+        }
+    }
+
+    /// <summary>
     /// Whether a watcher event is the echo of a rename this model already applied directly. A
     /// Renamed matches the pair; a Delete matches the old half; a Create matches the new half
     /// (the two halves the Linux watcher splits a move into). Expired records are pruned here.

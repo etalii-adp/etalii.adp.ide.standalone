@@ -118,6 +118,55 @@ public class HierarchyModelTests : IDisposable
     }
 
     [Fact]
+    public void ExpectLocalRename_SuppressesTheLinuxWatcherEcho_EvenWhenItArrivesBeforeTheRenameIsApplied()
+    {
+        // Arrange: the watcher thread wins the race against the command - it sees the move as a
+        // Delete and a Create before ApplyLocalRename runs. Announced beforehand, the echo is
+        // still recognised; unannounced, it landed as Remove+Create and the Renamed never came
+        // (the intermittent UndoRedoFlowTests failure on Linux CI).
+        var oldPath = CreateFile(segments: "original.txt");
+        var newPath = IoPath.Combine(_root, "renamed.txt");
+        var model = new HierarchyModel(_root);
+        var originalId = model.ListChildren(null).Single().Id;
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act.
+        model.ExpectLocalRename(oldPath, newPath);
+        File.Move(oldPath, newPath);
+        model.OnWatcherEvent(WatcherChangeTypes.Deleted, oldPath, null);
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, newPath);
+        model.ApplyLocalRename(oldPath, newPath);
+
+        // Assert: one Renamed with the same id; no Removed, no Created.
+        var renamed = Assert.IsType<HierarchyEntryRenamed>(Assert.Single(changes));
+        Assert.Equal(originalId, renamed.EntryId);
+        Assert.Equal("renamed.txt", renamed.NewName);
+    }
+
+    [Fact]
+    public void WithdrawLocalRename_LetsAGenuineDeleteOfTheOldPathThrough()
+    {
+        // Arrange: a rename was announced but never happened; the file is then really deleted.
+        var oldPath = CreateFile(segments: "original.txt");
+        var newPath = IoPath.Combine(_root, "renamed.txt");
+        var model = new HierarchyModel(_root);
+        var originalId = model.ListChildren(null).Single().Id;
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act.
+        model.ExpectLocalRename(oldPath, newPath);
+        model.WithdrawLocalRename(oldPath, newPath);
+        File.Delete(oldPath);
+        model.OnWatcherEvent(WatcherChangeTypes.Deleted, oldPath, null);
+
+        // Assert.
+        var removed = Assert.IsType<HierarchyEntryRemoved>(Assert.Single(changes));
+        Assert.Equal(originalId, removed.EntryId);
+    }
+
+    [Fact]
     public void OnWatcherEvent_Created_UnderAListedParent_RaisesCreatedWithParentIdNameAndKind()
     {
         // Arrange.

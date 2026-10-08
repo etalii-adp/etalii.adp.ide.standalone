@@ -27,4 +27,15 @@ public interface IHierarchyModelStore
     /// Called for forward, undo and redo alike, because all three run through the rename handler.
     /// </summary>
     void NotifyRenamed(string oldPath, string newPath);
+
+    /// <summary>
+    /// Announces a rename a command is about to perform, before the move, to every model that
+    /// contains the entry, so the watcher's echo is suppressed even when the watcher sees the
+    /// move before <see cref="NotifyRenamed"/> is called. Followed by <see cref="NotifyRenamed"/>
+    /// when the move happened, or by <see cref="WithdrawRename"/> when it did not.
+    /// </summary>
+    void ExpectRename(string oldPath, string newPath);
+
+    /// <summary>Forgets a rename announced by <see cref="ExpectRename"/> that did not take place.</summary>
+    void WithdrawRename(string oldPath, string newPath);
 }

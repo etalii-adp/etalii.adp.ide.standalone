@@ -91,6 +91,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         using var hierarchyCall = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await WaitUntilTheWatchIsLiveAsync(hierarchyCall.ResponseStream, cts.Token);
 
         // Act and assert, step by step.
         // Rename original.txt -> renamed.txt through the context action, then let the first
@@ -397,6 +398,27 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         }
 
         throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
+    }
+
+    /// <summary>
+    /// Returns once the hierarchy watch reports a change, so nothing the test does next can
+    /// happen before the server has subscribed. The call returns before the server has run it,
+    /// and a rename made in that gap is never reported: on a loaded CI runner the gap outlasted
+    /// the rename's own startup grace, and the test waited out its timeout on a Renamed that
+    /// could not come. A probe file is created until one is seen, because one created before the
+    /// watcher exists is seen by nothing.
+    /// </summary>
+    private async Task WaitUntilTheWatchIsLiveAsync(IAsyncStreamReader<HierarchyMessage> stream, CancellationToken cancellationToken)
+    {
+        var created = ReadUntilChangeAsync(stream, HierarchyChange.ChangeOneofCase.Created, cancellationToken);
+        var probe = 0;
+        while (!created.IsCompleted)
+        {
+            await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, $"watch-probe-{probe++}.txt"), "", cancellationToken);
+            await Task.WhenAny(created, Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken));
+        }
+
+        await created;
     }
 
     private static ContextAction UndoOf(ContextProjectActions actions) =>

@@ -327,6 +327,93 @@ public class RenameEntryCommandHandlerTests : IDisposable
         Assert.True(File.Exists(path));
     }
 
+    // ---- telling the hierarchy models ---------------------------------------------------
+
+    [Fact]
+    public async Task ExecuteAsync_WhenTheWatcherSeesTheMoveFirst_TheModelStillRaisesOneRenamedWithTheSameId()
+    {
+        // Arrange: a store whose watcher echo, Linux-shaped as Delete+Create, reaches the model
+        // after the move but before the handler tells the store - the order the watcher thread
+        // sometimes wins on a loaded CI runner.
+        var path = CreateFile("original.txt");
+        var store = new WatcherWinsTheRaceStore();
+        var model = store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
+        var originalId = model.ListChildren(null).Single().Id;
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), store);
+
+        // Act.
+        var result = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        var renamed = Assert.IsType<HierarchyEntryRenamed>(Assert.Single(changes));
+        Assert.Equal(originalId, renamed.EntryId);
+        Assert.Equal("renamed.txt", renamed.NewName);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ARefusedRename_LeavesNoExpectationBehind()
+    {
+        // Arrange: a rename refused after it was announced - a registration's subject portion
+        // may not change - must not leave the old path's later, genuine delete looking like the
+        // echo of a move.
+        var path = CreateFile("test.first.adp");
+        var store = new HierarchyModelStore();
+        var model = store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
+        var originalId = model.ListChildren(null).Single().Id;
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), store);
+        var refused = await handler.ExecuteAsync(new RenameEntryCommand(path, "prod.first.adp"), TestContext.Current.CancellationToken);
+        Assert.False(refused.IsSuccess);
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act.
+        File.Delete(path);
+        model.OnWatcherEvent(WatcherChangeTypes.Deleted, path, null);
+
+        // Assert.
+        var removed = Assert.IsType<HierarchyEntryRemoved>(Assert.Single(changes));
+        Assert.Equal(originalId, removed.EntryId);
+    }
+
+    /// <summary>
+    /// A real store whose models first receive the watcher's Linux-shaped echo of a move and only
+    /// then the handler's notification - the watcher thread winning the race.
+    /// </summary>
+    private sealed class WatcherWinsTheRaceStore : IHierarchyModelStore
+    {
+        private readonly HierarchyModelStore _inner = new();
+        private readonly List<HierarchyModel> _models = [];
+
+        public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath)
+        {
+            var model = _inner.GetOrCreate(watchId, rootPath);
+            _models.Add(model);
+            return model;
+        }
+
+        public void AttachWatcher(ShortGuid watchId, RootFolderWatcher watcher) => _inner.AttachWatcher(watchId, watcher);
+
+        public void Remove(ShortGuid watchId) => _inner.Remove(watchId);
+
+        public void ExpectRename(string oldPath, string newPath) => _inner.ExpectRename(oldPath, newPath);
+
+        public void WithdrawRename(string oldPath, string newPath) => _inner.WithdrawRename(oldPath, newPath);
+
+        public void NotifyRenamed(string oldPath, string newPath)
+        {
+            foreach (var model in _models)
+            {
+                model.OnWatcherEvent(WatcherChangeTypes.Deleted, oldPath, null);
+                model.OnWatcherEvent(WatcherChangeTypes.Created, null, newPath);
+            }
+
+            _inner.NotifyRenamed(oldPath, newPath);
+        }
+    }
+
     // ---- through the history stack ------------------------------------------------------
 
     private (HistoryStack Stack, IDisposable Scope) CreateHistory()
