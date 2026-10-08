@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/knowledge-designer/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-08T22:47:23.810Z",
       "trigger": "initial",
+      "approvalId": "approval_1791499643490_kfwwys6ol",
+      "approvalTitle": "Knowledge designer: tasks (33 tasks; 1-5 in etalii.adp first; 88 of 88 criteria claimed)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-08T23:03:29.443Z",
+      "trigger": "approved",
       "approvalId": "approval_1791499643490_kfwwys6ol",
       "approvalTitle": "Knowledge designer: tasks (33 tasks; 1-5 in etalii.adp first; 88 of 88 criteria claimed)"
     }
