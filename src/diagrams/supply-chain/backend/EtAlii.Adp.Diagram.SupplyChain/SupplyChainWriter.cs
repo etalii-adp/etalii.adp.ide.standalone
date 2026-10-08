@@ -48,7 +48,7 @@ public static class SupplyChainWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Text(value ?? ""));
+            LineSplice.SetKey(document, range, key, Text(value));
         }
 
         return SupplyChainEdit.Applied;

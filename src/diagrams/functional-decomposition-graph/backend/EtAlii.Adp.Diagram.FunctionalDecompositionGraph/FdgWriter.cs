@@ -117,7 +117,7 @@ public static class FdgWriter
         List<string> lines =
         [
             $"{indent}text: |-",
-            .. (text ?? "").Split('\n').Select(line => $"{indent}  {line.TrimEnd('\r')}")
+            .. text.Split('\n').Select(line => $"{indent}  {line.TrimEnd('\r')}")
         ];
 
         ReplaceKeyBlock(document, element.Range, "text", lines);
@@ -234,7 +234,7 @@ public static class FdgWriter
         if (element.IsComment)
         {
             lines.Add($"{keyIndent}text: |-");
-            lines.AddRange((element.Text ?? "").Split('\n').Select(line => $"{keyIndent}  {line.TrimEnd('\r')}"));
+            lines.AddRange(element.Text.Split('\n').Select(line => $"{keyIndent}  {line.TrimEnd('\r')}"));
         }
         else
         {

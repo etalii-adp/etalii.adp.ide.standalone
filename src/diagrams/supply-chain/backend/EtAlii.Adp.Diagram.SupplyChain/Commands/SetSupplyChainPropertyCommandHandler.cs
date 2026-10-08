@@ -12,7 +12,7 @@ public sealed class SetSupplyChainPropertyCommandHandler(ISupplyChainDocumentSto
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var value = (command.Value ?? "").Trim();
+        var value = command.Value.Trim();
         double? number = null;
         if (SupplyChainKeys.Numbers.Contains(command.Key, StringComparer.Ordinal) && value.Length > 0)
         {
