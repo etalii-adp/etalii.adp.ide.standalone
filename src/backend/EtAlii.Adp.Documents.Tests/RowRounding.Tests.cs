@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using JetBrains.Annotations;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -84,5 +85,6 @@ public class RowRoundingTests
 
     private sealed record RowRoundingFixture(string Reason, IReadOnlyList<RowCase> Cases);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its RowRoundingFixture.
     private sealed record RowCase(double Y, double RowHeight, int Row, string Why);
 }

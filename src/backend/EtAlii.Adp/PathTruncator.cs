@@ -16,7 +16,7 @@ namespace EtAlii.Adp;
 /// </summary>
 public static class PathTruncator
 {
-    public const int DefaultMaxLength = 40;
+    private const int DefaultMaxLength = 40;
     private const string Ellipsis = "...";
 
     public static string Truncate(IReadOnlyList<string> segments, int maxLength = DefaultMaxLength)

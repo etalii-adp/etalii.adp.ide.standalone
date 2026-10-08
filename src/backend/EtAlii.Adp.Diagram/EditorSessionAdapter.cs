@@ -21,7 +21,7 @@ namespace EtAlii.Adp.Diagram;
 internal sealed class EditorSessionAdapter : IDiagramSession
 {
     /// <summary>The one element a text file is.</summary>
-    internal const string ContentElementId = "content";
+    private const string ContentElementId = "content";
 
     private readonly IEditorSession _session;
     private readonly string _editorId;

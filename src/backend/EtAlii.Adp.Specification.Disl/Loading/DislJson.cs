@@ -44,7 +44,7 @@ internal static class DislJson
             : [];
 
     /// <summary>One reference token of a JSON Pointer (RFC 6901): <c>~</c> and <c>/</c> escaped.</summary>
-    public static string Token(string name) => name.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal);
+    private static string Token(string name) => name.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal);
 
     public static string Pointer(string parent, string name) => parent + "/" + Token(name);
 

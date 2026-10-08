@@ -34,7 +34,7 @@ public sealed class SelfWriteGuard
     }
 
     /// <summary>With the read supplied, so a test can count or refuse it.</summary>
-    internal SelfWriteGuard(Func<string, string> read)
+    private SelfWriteGuard(Func<string, string> read)
     {
         ArgumentNullException.ThrowIfNull(read);
         _read = read;

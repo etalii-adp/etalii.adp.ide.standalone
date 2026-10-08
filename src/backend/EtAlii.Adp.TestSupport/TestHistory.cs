@@ -23,7 +23,7 @@ public static class TestHistory
     /// reaches the stack it asserts on through <see cref="IHistoryStackStore.Get"/> with the
     /// same root path it put on its targets, so the two see the same history.
     /// </summary>
-    public static IHistoryStackStore CreateStore(params DiagramDefinition[] definitions) =>
+    private static IHistoryStackStore CreateStore(params DiagramDefinition[] definitions) =>
         Services(definitions).GetRequiredService<IHistoryStackStore>();
 
     /// <summary>

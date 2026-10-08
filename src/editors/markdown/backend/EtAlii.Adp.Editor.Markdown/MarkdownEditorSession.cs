@@ -156,7 +156,7 @@ public sealed class MarkdownEditorSession : IEditorSession
     /// Reads until it succeeds or runs out of attempts - <c>PlainEditorSession.ReadWithRetry</c>,
     /// copied rather than shared because the two modules reference nothing of each other's.
     /// </summary>
-    internal static TextFileBufferOpenResult ReadWithRetry(
+    private static TextFileBufferOpenResult ReadWithRetry(
         Func<TextFileBufferOpenResult> read,
         int attempts,
         TimeSpan between)

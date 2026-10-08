@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram;
+using JetBrains.Annotations;
 
 // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -24,6 +25,7 @@ internal sealed record CachedProblem(
     /// <remarks>
     /// Nullable with a default so a cache file written before this existed still deserializes.
     /// </remarks>
+    [UsedImplicitly] // Written and read by System.Text.Json in the problem cache file (ProblemStore, ProblemCacheFile); private, it would not round-trip.
     public string? FilePath { get; init; }
 
     public static CachedProblem From(StoredProblem stored) => new(

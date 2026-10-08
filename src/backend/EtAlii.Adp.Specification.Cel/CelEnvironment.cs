@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Specification.Cel;
 public sealed class CelEnvironment
 {
     /// <summary>The steps one evaluation may take unless an environment says otherwise.</summary>
-    public const long DefaultBudget = 100_000;
+    private const long DefaultBudget = 100_000;
 
     private readonly List<string> _variables = [];
     private readonly Dictionary<(string Name, CelCallStyle Style), CelFunction> _functions = [];

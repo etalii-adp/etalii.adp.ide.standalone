@@ -18,7 +18,7 @@ public sealed class FakeAssembly : Assembly
     {
     }
 
-    public FakeAssembly(string name, Func<Type[]> getTypes)
+    private FakeAssembly(string name, Func<Type[]> getTypes)
     {
         _name = name;
         _getTypes = getTypes;

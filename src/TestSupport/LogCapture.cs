@@ -107,7 +107,7 @@ public sealed class LogCapture : IDisposable
         return capture;
     }
 
-    public IReadOnlyList<LogEvent> Events
+    private IReadOnlyList<LogEvent> Events
     {
         get
         {

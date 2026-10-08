@@ -132,7 +132,7 @@ public sealed class DislElement : ICelObject
     public IReadOnlyList<DislElement> Outgoing => Diagram.OutgoingOf(this);
 
     /// <summary>The value of the type's label attribute (§4.6), as text; empty when it has none.</summary>
-    public string Label() => Type.LabelAttribute is { } name && ValueOf(name) is { } value ? value as string ?? value.ToString() ?? "" : "";
+    private string Label() => Type.LabelAttribute is { } name && ValueOf(name) is { } value ? value as string ?? value.ToString() ?? "" : "";
 
     /// <summary>
     /// Makes this node a <paramref name="type"/> in place (a <c>retype</c> action, §9.4): the attributes both

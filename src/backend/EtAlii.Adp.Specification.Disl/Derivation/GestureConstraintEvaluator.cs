@@ -54,7 +54,7 @@ public static class GestureConstraintEvaluator
         }, env);
 
     /// <summary>The refusals of a gesture of <paramref name="kind"/> on <paramref name="self"/>, its own variables in <paramref name="gesture"/>.</summary>
-    public static IReadOnlyList<DislFinding> Refusals(DislSpecification specification, string kind, DislElement? self, IReadOnlyDictionary<string, object?> gesture, DislEnv? env = null)
+    private static IReadOnlyList<DislFinding> Refusals(DislSpecification specification, string kind, DislElement? self, IReadOnlyDictionary<string, object?> gesture, DislEnv? env = null)
     {
         ArgumentNullException.ThrowIfNull(specification);
         ArgumentNullException.ThrowIfNull(kind);

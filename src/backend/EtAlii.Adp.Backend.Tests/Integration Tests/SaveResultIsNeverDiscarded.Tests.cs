@@ -87,7 +87,7 @@ public partial class SaveResultIsNeverDiscardedTests
     /// that is written here rather than found in the tree - which is the only way to see this guard
     /// fail on demand.
     /// </summary>
-    internal static IReadOnlyList<string> Offences(string relativePath, IReadOnlyList<string> lines)
+    private static IReadOnlyList<string> Offences(string relativePath, IReadOnlyList<string> lines)
     {
         var found = new List<string>();
         for (var i = 0; i < lines.Count; i++)

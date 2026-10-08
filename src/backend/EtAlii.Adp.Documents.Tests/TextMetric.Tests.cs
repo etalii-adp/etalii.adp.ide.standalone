@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JetBrains.Annotations;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -108,5 +109,6 @@ public class TextMetricTests
 
     private sealed record TextMetricFixture(string Reason, double AverageAdvance, double DefaultFontSize, double Tolerance, IReadOnlyList<TextCase> Cases);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its TextMetricFixture.
     private sealed record TextCase(string Text, double FontSize, double Width, string Why);
 }

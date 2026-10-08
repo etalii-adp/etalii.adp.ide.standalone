@@ -48,7 +48,7 @@ public sealed class DislSpecification
     /// <summary>The <c>&lt;vendor&gt;/&lt;type&gt;</c> origin of the tool type, or null.</summary>
     public string? Origin => DislJson.String(Language, "origin");
 
-    public JsonElement Language => Root.GetProperty("language");
+    private JsonElement Language => Root.GetProperty("language");
 
     /// <summary>The top-level <c>x-</c> properties, unread and unchanged.</summary>
     public IReadOnlyDictionary<string, JsonElement> Extensions => DislJson.Extensions(Root);
@@ -63,10 +63,10 @@ public sealed class DislSpecification
     public IReadOnlyList<DislExpression> Expressions { get; }
 
     /// <summary>The top-level id rule (§11.5).</summary>
-    public DislIdRule Ids { get; }
+    private DislIdRule Ids { get; }
 
     /// <summary>The per-type id rules (§11.5.2), by type name.</summary>
-    public IReadOnlyDictionary<string, DislIdRule> IdTypes { get; }
+    private IReadOnlyDictionary<string, DislIdRule> IdTypes { get; }
 
     /// <summary>The per-evaluation cost limit (§2.5): <c>language.limits.celCost</c>, one million by default.</summary>
     public long CostLimit => _functions.Budget;

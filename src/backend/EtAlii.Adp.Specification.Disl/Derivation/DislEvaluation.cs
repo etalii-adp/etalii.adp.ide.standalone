@@ -36,7 +36,7 @@ internal static class DislEvaluation
     /// The value of <paramref name="source"/> compiled in <paramref name="context"/>, for an expression the
     /// loader does not walk; a variable beyond the context's (an option's <c>item</c>) is declared as bound.
     /// </summary>
-    public static object? Of(DislSpecification specification, string context, string source, IReadOnlyDictionary<string, object?> variables)
+    private static object? Of(DislSpecification specification, string context, string source, IReadOnlyDictionary<string, object?> variables)
     {
         var programs = Compiled.GetValue(specification, _ => new ConcurrentDictionary<(string, string, string), CelProgram>());
         var declared = DislContexts.VariablesOf(context);

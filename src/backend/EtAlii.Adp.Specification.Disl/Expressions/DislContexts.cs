@@ -35,18 +35,18 @@ public static class DislContexts
     public const string Budget = "budget";
     public const string Connection = "connection";
     public const string Simulation = "simulation";
-    public const string Template = "template";
+    private const string Template = "template";
     public const string Migration = "migration";
     public const string Retype = "retype";
     public const string LabelParse = "labelParse";
     public const string DataTypeDisplay = "dataTypeDisplay";
-    public const string GestureConnect = "gesture:connect";
-    public const string GestureContainment = "gesture:containment";
-    public const string GestureCreate = "gesture:create";
+    private const string GestureConnect = "gesture:connect";
+    private const string GestureContainment = "gesture:containment";
+    private const string GestureCreate = "gesture:create";
     public const string GestureDelete = "gesture:delete";
     public const string GesturePlacement = "gesture:placement";
     public const string GestureChange = "gesture:change";
-    public const string GestureReorder = "gesture:reorder";
+    private const string GestureReorder = "gesture:reorder";
 
     private static readonly string[] Shaped = ["w", "h", "p", "self", "env"];
 

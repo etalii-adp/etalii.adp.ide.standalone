@@ -33,7 +33,7 @@ public static class PermanentRefusal
     public const StatusCode NotDeployed = StatusCode.Unimplemented;
 
     /// <summary>Every permanent refusal, in the order declared above.</summary>
-    public static readonly IReadOnlyList<StatusCode> All = [CannotOpen, NotDeployed];
+    private static readonly IReadOnlyList<StatusCode> All = [CannotOpen, NotDeployed];
 
     /// <summary>Whether a stream that ended with <paramref name="code"/> will be refused again when re-opened.</summary>
     public static bool IsPermanent(StatusCode code) => All.Contains(code);

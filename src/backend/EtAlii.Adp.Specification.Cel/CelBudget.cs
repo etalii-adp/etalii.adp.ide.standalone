@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Specification.Cel;
 /// </summary>
 public sealed class CelBudget(long limit)
 {
-    public long Limit { get; } = limit;
+    private long Limit { get; } = limit;
 
     public long Used { get; private set; }
 

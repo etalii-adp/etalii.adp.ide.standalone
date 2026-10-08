@@ -20,7 +20,7 @@ namespace EtAlii.Adp.Diagram;
 /// warning in the log - never the application's startup.
 /// </para>
 /// </remarks>
-public sealed class DiagramDefinitionDiscovery
+public static class DiagramDefinitionDiscovery
 {
     /// <summary>Only assemblies whose simple name starts with this are ever inspected.</summary>
     public const string AssemblyPrefix = ApplicationAssemblies.AssemblyPrefix;
@@ -28,7 +28,7 @@ public sealed class DiagramDefinitionDiscovery
     private const string CandidateTypeName = "Diagram";
     private const string DefinitionsPropertyName = "Definitions";
 
-    private static readonly ILogger _logger = Log.ForContext<DiagramDefinitionDiscovery>();
+    private static readonly ILogger _logger = Log.ForContext(typeof(DiagramDefinitionDiscovery));
 
     /// <summary>
     /// Scans exactly the given assemblies and returns the definitions found, ordered by

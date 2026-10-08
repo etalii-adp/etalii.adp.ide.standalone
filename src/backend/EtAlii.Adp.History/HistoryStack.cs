@@ -56,7 +56,7 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
     }
 
     /// <summary>The most changes the undo side will hold before the oldest starts falling off.</summary>
-    public int Capacity { get; }
+    private int Capacity { get; }
 
     public bool CanUndo => UndoCount > 0;
 

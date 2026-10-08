@@ -50,7 +50,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
     public Dictionary<DislElement, DislElement>? Before { get; set; }
 
     /// <summary>Why the transaction was refused, or null while it stands.</summary>
-    public string? Refusal { get; private set; }
+    private string? Refusal { get; set; }
 
     /// <summary>The transaction so far.</summary>
     public DislTransaction Transaction => Refusal is { } refusal ? DislTransaction.Refused(refusal) : new DislTransaction([.. _changes], [.. _host], null);

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using JetBrains.Annotations;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -178,15 +179,21 @@ public class GestureIdsTests
 
     private sealed record GestureFixture(string Reason, PlacementCases Placements, CaseSet<RelationCase> Relations);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its GestureFixture.
     private sealed record PlacementCases(CaseSet<PointCase> Xy, CaseSet<RowCase> Row);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its GestureFixture.
     private sealed record CaseSet<TValid>(IReadOnlyList<TValid> Valid, IReadOnlyList<InvalidCase> Invalid);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its GestureFixture.
     private sealed record PointCase(string Id, double X, double Y);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its GestureFixture.
     private sealed record RowCase(string Id, double X, int Row);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its GestureFixture.
     private sealed record RelationCase(string Id, string From, string To);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its GestureFixture.
     private sealed record InvalidCase(string Id, string Why);
 }

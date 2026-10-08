@@ -160,7 +160,7 @@ public static class AdpFileWriter
         Save(path, content, ReplaceDestination);
 
     /// <summary><see cref="Save(string, byte[])"/> with the replace handed in, for guards.</summary>
-    internal static void Save(string path, byte[] content, Action<string, string> replace)
+    private static void Save(string path, byte[] content, Action<string, string> replace)
     {
         ArgumentNullException.ThrowIfNull(content);
         SaveCore(path, null, content, replace);

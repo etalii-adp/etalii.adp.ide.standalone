@@ -319,6 +319,6 @@ public class DocumentLifecycleTests : IDisposable
 
     private sealed class Note(string text)
     {
-        public string Text { get; set; } = text;
+        public string Text { get; } = text;
     }
 }
