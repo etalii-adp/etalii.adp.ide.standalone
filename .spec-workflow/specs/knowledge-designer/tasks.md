@@ -67,7 +67,7 @@
 
 ## What this host gains for the designer family
 
-- [ ] 6. `EtAlii.Adp.Designer`: the definition, the catalog and registration
+- [-] 6. `EtAlii.Adp.Designer`: the definition, the catalog and registration
   - File: `src/backend/EtAlii.Adp.Designer/` (new project: `_Model/DesignerDefinition.cs`, `DesignerFormat.cs`, `IDesignerDefinitionCatalog.cs`, `DesignerDefinitionCatalog.cs`, `HostApplicationBuilder.AddDesignerDefinitions.cs`), `src/backend/EtAlii.Adp.Designer.Tests/` (new), `src/backend/EtAlii.Adp/_Model/DesignerDefinition.cs` (removed), `src/backend/EtAlii.Adp/DesignerDefinitionDiscovery.cs`, `src/backend/EtAlii.Adp.Backend.Service/Program.cs`, `src/backend/EtAlii.Adp.slnx`
   - Widen `DesignerDefinition` to `Origin`, `Title`, `Description`, `Icon`, `Formats` (a label and an extension each) and `Build`. Register what discovery finds instead of discarding it, invoking each definition's `Build`.
   - Guard: a definition from a test assembly is found, registered in the catalog and its `Build` invoked; two definitions with one origin keep the ordinal-smaller assembly's, as the other families do.
