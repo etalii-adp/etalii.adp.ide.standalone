@@ -38,7 +38,7 @@ internal sealed record TimelineDislModel(DislDiagram Diagram, IReadOnlyDictionar
 internal static class TimelineDisl
 {
     /// <summary>The host attribute holding the id an element or relation is written with, empty for none.</summary>
-    public const string WrittenId = "writtenId";
+    private const string WrittenId = "writtenId";
 
     /// <summary>The host attribute holding a relation's <c>from</c> as written.</summary>
     public const string WrittenFrom = "writtenFrom";

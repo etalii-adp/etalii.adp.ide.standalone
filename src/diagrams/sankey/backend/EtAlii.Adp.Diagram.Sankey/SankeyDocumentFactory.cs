@@ -28,7 +28,7 @@ public sealed class SankeyDocumentFactory : IDiagramDocumentFactory
     }
 
     /// <summary>The document text, with the ending the caller asks for.</summary>
-    public static string EmptyDocument(string lineEnding)
+    private static string EmptyDocument(string lineEnding)
     {
         ArgumentException.ThrowIfNullOrEmpty(lineEnding);
 

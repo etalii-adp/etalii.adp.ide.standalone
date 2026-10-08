@@ -32,7 +32,7 @@ public static class SankeyArrangement
     /// The node ids of each column, top to bottom, as the arrangement orders them - one list per
     /// column of <see cref="SankeyLayout.ColumnOrder"/>.
     /// </summary>
-    public static IReadOnlyList<IReadOnlyList<string>> ColumnsOf(SankeyModel model)
+    private static IReadOnlyList<IReadOnlyList<string>> ColumnsOf(SankeyModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
 

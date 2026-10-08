@@ -28,7 +28,7 @@ public sealed class C4ContextActionProvider : IContextActionProvider
     /// view permits, and they were dangling until now - a palette whose entries named actions
     /// nothing implemented.
     /// </summary>
-    public static string AddActionIdFor(C4ElementKind kind) => $"c4.add-{kind.ToString().ToLowerInvariant()}";
+    private static string AddActionIdFor(C4ElementKind kind) => $"c4.add-{kind.ToString().ToLowerInvariant()}";
 
     /// <summary>The kinds the toolbox can currently add; the rest live in a deployment environment.</summary>
     private static readonly C4ElementKind[] AddableKinds =

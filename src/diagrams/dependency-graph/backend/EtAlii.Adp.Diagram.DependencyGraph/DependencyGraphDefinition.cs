@@ -60,7 +60,7 @@ internal static class DependencyGraphDefinition
     public static DislSpecification Specification => Loaded.Value.Specification;
 
     /// <summary>The wire ids of <c>x-dependencies</c>.</summary>
-    public static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => LoadedIds.Value;
 
     /// <summary>The palette.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;

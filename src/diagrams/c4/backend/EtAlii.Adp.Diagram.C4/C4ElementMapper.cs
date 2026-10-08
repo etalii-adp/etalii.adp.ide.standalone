@@ -17,7 +17,7 @@ public sealed class C4ElementMapper
     public const string ViewType = "c4/model+view";
 
     /// <summary>The id of the synthetic element carrying the view's title and legend.</summary>
-    public const string ViewElementId = "c4:view";
+    private const string ViewElementId = "c4:view";
 
     private readonly C4Metrics _metrics;
     private readonly C4LayoutSidecar _sidecar;
@@ -93,7 +93,7 @@ public sealed class C4ElementMapper
     /// connection with an element-id location, so the canvas reads them from there. A second
     /// copy here would be a second thing to keep in step, and the two would drift apart.
     /// </remarks>
-    public DiagramElement ViewElement(C4Workspace workspace, C4View view)
+    private DiagramElement ViewElement(C4Workspace workspace, C4View view)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
@@ -160,7 +160,7 @@ public sealed class C4ElementMapper
     /// document that overrides the palette gets a legend that tells the truth about it
     /// (Requirements 4.9, 9.8).
     /// </summary>
-    public static IReadOnlyList<C4LegendEntry> LegendFor(C4Workspace workspace, C4View view)
+    private static IReadOnlyList<C4LegendEntry> LegendFor(C4Workspace workspace, C4View view)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);

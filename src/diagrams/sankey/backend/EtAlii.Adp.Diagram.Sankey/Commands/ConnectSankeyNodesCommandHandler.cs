@@ -40,7 +40,7 @@ public sealed class ConnectSankeyNodesCommandHandler(ISankeyDocumentStore docume
     }
 
     /// <summary>What flows into a node and has not flowed out again, or 1 when nothing is left over.</summary>
-    internal static double Remainder(SankeyModel model, string id)
+    private static double Remainder(SankeyModel model, string id)
     {
         var inflow = model.Flows.Where(flow => flow.To == id).Sum(flow => Math.Max(0, flow.Value ?? 0));
         var outflow = model.Flows.Where(flow => flow.From == id).Sum(flow => Math.Max(0, flow.Value ?? 0));

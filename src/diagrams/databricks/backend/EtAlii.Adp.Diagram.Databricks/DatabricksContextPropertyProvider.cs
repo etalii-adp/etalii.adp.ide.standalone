@@ -24,16 +24,16 @@ public sealed class DatabricksContextPropertyProvider : IContextPropertyProvider
     public const string TaskTypeProperty = "databricks.task-type";
 
     /// <summary>A task's principal source, read-only in the grid.</summary>
-    public const string TaskSourceProperty = "databricks.task-source";
+    private const string TaskSourceProperty = "databricks.task-source";
 
     /// <summary>A task's run_if, editable; empty means the default ALL_SUCCESS.</summary>
     public const string RunIfProperty = "databricks.run-if";
 
     /// <summary>A task's cluster binding, editable; empty means serverless.</summary>
-    public const string ClusterProperty = "databricks.cluster";
+    private const string ClusterProperty = "databricks.cluster";
 
     /// <summary>The bundle's name, editable.</summary>
-    public const string BundleNameProperty = "databricks.bundle-name";
+    private const string BundleNameProperty = "databricks.bundle-name";
 
     /// <summary>A pipeline scalar, editable: <c>databricks.pipeline:{key}</c>.</summary>
     public const string PipelineScalarPrefix = "databricks.pipeline:";

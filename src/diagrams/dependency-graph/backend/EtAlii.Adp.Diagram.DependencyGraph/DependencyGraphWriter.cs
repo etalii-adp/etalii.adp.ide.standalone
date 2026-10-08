@@ -22,7 +22,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 public static class DependencyGraphWriter
 {
     /// <summary>The document's section key for the directed depends-on edges.</summary>
-    internal const string RelationsSection = "relations:";
+    private const string RelationsSection = "relations:";
 
     private const string ElementsSection = "elements:";
 

@@ -42,7 +42,7 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
     public const string EvolveNamePropertyId = "wardley.evolve-name";
     public const string InertiaPropertyId = "wardley.inertia";
     public const string DecoratorsPropertyId = "wardley.decorators";
-    public const string UrlPropertyId = "wardley.url";
+    private const string UrlPropertyId = "wardley.url";
 
     public const string LinkSourcePropertyId = "wardley.link.source";
     public const string LinkTargetPropertyId = "wardley.link.target";

@@ -55,10 +55,10 @@ public sealed class DependencyGraphElementMapper
     }
 
     /// <summary>The drawn width of a node, in the module's own x units - what the canvas gives it.</summary>
-    public const double NodeWidth = 160d;
+    private const double NodeWidth = 160d;
 
     /// <summary>The drawn height of a node, in the module's own y units.</summary>
-    public const double NodeHeight = 36d;
+    private const double NodeHeight = 36d;
 
     /// <summary>
     /// The elements of <paramref name="model"/> a viewport can see: every node whose box it

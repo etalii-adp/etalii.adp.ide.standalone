@@ -134,13 +134,13 @@ public sealed class HelmGraph
         return new HelmGraph(nodes, edges, resolution);
     }
 
-    internal static string ValuesId(ValuesFile values) => $"values:{values.RelativePath}";
+    private static string ValuesId(ValuesFile values) => $"values:{values.RelativePath}";
 
-    internal static string TemplateId(TemplateFile template) => $"tpl:{template.RelativePath}";
+    private static string TemplateId(TemplateFile template) => $"tpl:{template.RelativePath}";
 
     internal static string DependencyId(DependencyDeclaration dependency) => $"dep:{dependency.EffectiveName}";
 
-    internal static string VendoredId(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
+    private static string VendoredId(VendoredEntry entry) => $"{(entry.Sealed ? "tgz" : "sub")}:{entry.RelativePath}";
 
     private static string FileName(string relativePath)
     {

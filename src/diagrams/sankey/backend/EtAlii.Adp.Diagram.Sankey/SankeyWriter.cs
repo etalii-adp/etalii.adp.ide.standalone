@@ -33,8 +33,8 @@ public readonly record struct SankeyEdit(string? Refusal)
 /// </remarks>
 public static class SankeyWriter
 {
-    internal const string NodesSection = SankeyParser.NodesKey + ":";
-    internal const string FlowsSection = SankeyParser.FlowsKey + ":";
+    private const string NodesSection = SankeyParser.NodesKey + ":";
+    private const string FlowsSection = SankeyParser.FlowsKey + ":";
 
     /// <summary>Writes a text key, removing it instead when <paramref name="removeWhenEmpty"/> and the value is blank.</summary>
     public static SankeyEdit SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
@@ -248,7 +248,7 @@ public static class SankeyWriter
     /// like <c>{value} TWh</c>, <c>[EU]</c>, <c>yes</c> or <c>12</c> would read back as a mapping,
     /// a list, a boolean or a number, so those are quoted here as well.
     /// </remarks>
-    internal static string Text(string value)
+    private static string Text(string value)
     {
         var quoted = LineSplice.Quote(value);
         if (quoted.StartsWith('"'))

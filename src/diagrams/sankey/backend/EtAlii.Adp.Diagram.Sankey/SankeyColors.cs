@@ -20,14 +20,14 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public static partial class SankeyColors
 {
     /// <summary>What a node that states no colour is drawn in.</summary>
-    public const string Default = "grey";
+    private const string Default = "grey";
 
     /// <summary>The palette, in the order the property grid offers it.</summary>
     public static readonly IReadOnlyList<string> Palette =
         ["grey", "slate", "purple", "blue", "teal", "green", "lime", "yellow", "orange", "red", "pink", "brown"];
 
     /// <summary>Whether the text is a palette word.</summary>
-    public static bool IsPaletteWord(string color) => Palette.Contains(color, StringComparer.Ordinal);
+    private static bool IsPaletteWord(string color) => Palette.Contains(color, StringComparer.Ordinal);
 
     /// <summary>Whether the text is a colour written outright: <c>#rgb</c> or <c>#rrggbb</c>.</summary>
     public static bool IsHex(string color) => color is { Length: > 0 } && HexPattern().IsMatch(color);

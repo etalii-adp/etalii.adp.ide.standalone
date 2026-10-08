@@ -20,12 +20,12 @@ public static class C4Theme
 {
     public const string PersonBackground = "#08427b";
     public const string SoftwareSystemBackground = "#1168bd";
-    public const string ContainerBackground = "#438dd5";
+    private const string ContainerBackground = "#438dd5";
     public const string ComponentBackground = "#85bbf0";
     public const string ExternalBackground = "#999999";
-    public const string DeploymentNodeBackground = "#ffffff";
+    private const string DeploymentNodeBackground = "#ffffff";
 
-    public const string LightText = "#ffffff";
+    private const string LightText = "#ffffff";
     public const string DarkText = "#000000";
 
     /// <summary>The default style for an element, before any document override.</summary>
