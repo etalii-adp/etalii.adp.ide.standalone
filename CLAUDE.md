@@ -148,7 +148,7 @@ That one line stops the `commands` folder being required to appear in the namesp
 
 **Add the entry to the `.DotSettings` beside the `.csproj` that owns the folder**, keeping the file's existing shape - BOM, tab indentation, and the closing `</wpf:ResourceDictionary>` on the last entry's line.
 
-**Check the result with JetBrains' own command-line inspector rather than by eye** - `dotnet tool install -g JetBrains.ReSharper.GlobalTools`, then `jb inspectcode`. It is not installed in this repository and is not one of the four gates; `dotnet format` does not see these warnings at all, which is exactly why they accumulate unnoticed.
+**Check the result with JetBrains' own command-line inspector rather than by eye** - `bash .github/tools/inspect/inspect.sh`, which runs JetBrains InspectCode at the version `.config/dotnet-tools.json` pins (`dotnet tool restore` once first) and exits non-zero on any finding. The solution has none, and the `inspection` job of the Build workflow runs the script on every pull request and fails on a new one; that is a check on the runner, not one of the four gates. `dotnet format` does not see these warnings at all, which is exactly why they accumulated unnoticed.
 
 ## Line endings
 

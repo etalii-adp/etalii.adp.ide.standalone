@@ -83,4 +83,4 @@
 
 - **Ordinary unit and integration tests.** A guard asserts a property of the tree or of a whole type; a test asserts the behaviour of one subject. The line is not sharp, and a row here is a judgement rather than a fact.
 - **`dotnet format` and the analyzers**, which are configured rather than written: `src/.editorconfig` raises `IDE0001`/`IDE0002` to warnings, and `src/Directory.Build.props` makes `xUnit1031` and `xUnit1051` errors. **A warning nothing fails on is a finding nobody reads**, so a rule that matters is raised rather than left printing.
-- **JetBrains InspectCode**, which is authoritative for this team and is not one of the four gates.
+- **JetBrains InspectCode**, which is authoritative for this team: the script `.github/tools/inspect/inspect.sh` runs it, and the `inspection` job of the Build workflow fails a pull request on any finding at Suggestion severity or above. It is a check on the runner, not one of the four gates.
