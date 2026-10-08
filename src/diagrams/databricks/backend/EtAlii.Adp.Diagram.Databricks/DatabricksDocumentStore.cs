@@ -67,9 +67,6 @@ public sealed class DatabricksDocumentStore : IDatabricksDocumentStore
     }
 
     /// <inheritdoc />
-    public void Forget(string path) => _lifecycle.Forget(path);
-
-    /// <inheritdoc />
     public void Reload(string path)
     {
         if (_lifecycle.Reload(path))

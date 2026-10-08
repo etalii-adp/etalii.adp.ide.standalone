@@ -94,6 +94,9 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         return warning.Length == 0 ? DocumentSaveResult.Ok : DocumentSaveResult.WithWarning(warning);
     }
 
+    /// <summary>
+    /// Tells every session on this document to re-deliver, without changing the document.
+    /// </summary>
     public void Touch(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);

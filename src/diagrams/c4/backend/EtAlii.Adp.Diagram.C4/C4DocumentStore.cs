@@ -93,6 +93,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, _lifecycle.GetOrLoad(path).Workspace));
     }
 
+    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     public void Forget(string path) => _lifecycle.Forget(path);
 
     /// <summary>

@@ -64,11 +64,6 @@ public interface IWardleyDocumentStore
     /// </remarks>
     DocumentSaveResult Save(string path, WardleyDocument document);
 
-    /// <summary>
-    /// Tells every session on this document to re-deliver, without changing the document.
-    /// </summary>
-    void Touch(string path);
-
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
 

@@ -16,7 +16,4 @@ public enum PipelineTemplateSlot
 
     /// <summary>A template contributing steps, referenced from a <c>steps</c> list.</summary>
     Steps,
-
-    /// <summary>A template contributing variables.</summary>
-    Variables,
 }

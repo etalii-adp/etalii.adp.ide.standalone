@@ -36,16 +36,4 @@ public sealed class PipelineConnectionView
         _expanded[stageId] = 0;
         return true;
     }
-
-    /// <summary>Sets it outright, and answers whether anything changed.</summary>
-    public bool Set(string stageId, bool expanded)
-    {
-        if (expanded == IsExpanded(stageId))
-        {
-            return false;
-        }
-
-        Toggle(stageId);
-        return true;
-    }
 }

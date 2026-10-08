@@ -18,9 +18,6 @@ public interface ISankeyDocumentStore : IReloadableDocumentStore
     /// <remarks><b>A document that could not be read is refused, never written.</b></remarks>
     DocumentSaveResult Save(string path, LineDocument document);
 
-    /// <summary>Drops a loaded document, so the next open reads the file afresh.</summary>
-    void Forget(string path);
-
     /// <summary>The body was deleted: the document ends as a new, empty one.</summary>
     void BodyDeleted(string path);
 

@@ -47,14 +47,6 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
     public static string DecoratorActionIdFor(WardleyDecorator decorator) =>
         $"wardley.toggle-{decorator.ToString().ToLowerInvariant()}";
 
-    /// <summary>The add action for one statement kind, which the toolbox names for its drops.</summary>
-    public static string AddActionIdFor(WardleyElementKind kind) => kind switch
-    {
-        WardleyElementKind.Anchor => AddAnchorActionId,
-        WardleyElementKind.Submap => AddSubmapActionId,
-        _ => AddComponentActionId,
-    };
-
     private const string Gone = "That element is no longer on this map.";
 
     private readonly IHistoryStackStore _historyStacks;

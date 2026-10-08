@@ -33,9 +33,6 @@ public static class DatabricksNewPlacement
 /// </summary>
 public static class DatabricksRelationGesture
 {
-    /// <summary>The id for a finished gesture from one element to another.</summary>
-    public static string IdFor(string fromElementId, string target) => GestureIds.Relation(fromElementId, target);
-
     /// <summary>Whether <paramref name="elementId"/> is a relation gesture, and what it carries.</summary>
     public static bool TryParse(string? elementId, out string from, out string to) =>
         GestureIds.TryParseRelation(elementId, out from, out to);
