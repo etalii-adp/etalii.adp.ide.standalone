@@ -27,6 +27,10 @@
          lives - no project carries a Version property of its own (github-build-pipeline
          Requirement 2.2). -->
     <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
+    <!-- [UsedImplicitly] on the Diagram and Editor classes that discovery finds by reflection, so
+         Rider does not report them as unused. The attributes are conditional, so no compiled
+         assembly carries them. -->
+    <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

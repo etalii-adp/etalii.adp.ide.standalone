@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 
@@ -19,6 +20,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 /// files that already carry a Behavior heading.
 /// </para>
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static partial class Diagram
 {
     /// <summary>The body of a behavior model is a Markdown file.</summary>

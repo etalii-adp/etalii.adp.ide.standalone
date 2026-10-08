@@ -1,8 +1,10 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.SupplyChain;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `etalii/supply-chain`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The body of a supply chain diagram lives in a `.supply` file, ADP's own schema.</summary>

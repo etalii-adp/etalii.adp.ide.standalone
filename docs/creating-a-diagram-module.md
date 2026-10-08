@@ -30,6 +30,30 @@ The module's identity is one static class, `Diagram`, in the backend project —
 - **The document extension** — `DocumentExtension = ".tml"`. A diagram's body lives in a sibling file named by this extension, beside the `.adp` that registers it. A type that owns its extension outright (no other tool writes `.tml`) also routes a *bare* body file to itself, with no `.adp` needed. A format with a second serialization may declare it as `AlternateExtension` (the RDF family's `.nt` beside `.ttl`): the alternate routes and is claimed like the primary, but derives no registration sibling — a registered body carrying it names itself with an explicit `body:` header, which Add writes anyway.
 - **The named definition** — a `public static DiagramDefinition Timeline { get; }` property carrying title, description, icon, extension and the `Build` delegate. Named, so the module's own registrations and tests write `Diagram.Timeline.Origin` rather than indexing into an array — tech.md's [Declaring a diagram definition](../.spec-workflow/steering/tech.md#declaring-a-diagram-definition) defines the two permitted shapes (stub and implemented) and when a module moves between them.
 - **`Definitions`** — the array startup discovery reads: `[Timeline]`.
+- **`[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]`** on the class. Nothing in the solution calls `Diagram` by name, because discovery finds it by reflection, so without the attribute Rider reports the class and its members as unused. `JetBrains.Annotations` is referenced for every project in `src/Directory.Build.props`; the module adds only `using JetBrains.Annotations;`.
+
+The stub a new catalog entry starts from:
+
+```csharp
+using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
+
+namespace EtAlii.Adp.Diagram.Foo;
+
+/// <summary>This diagram type's identity, cataloged in docs/tools.md as `vendor/foo`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
+public static class Diagram
+{
+    public static DiagramDefinition[] Definitions { get; } =
+    [
+        new(
+            new DiagramOrigin("vendor", "foo"),
+            "Foo diagram",
+            "What a foo diagram is for.",
+            Icon: "mdi-shape-outline"),
+    ];
+}
+```
 
 **Why adding a module edits no core file:** at startup, `DiagramDefinitionDiscovery` ([`src/backend/EtAlii.Adp.Diagram/DiagramDefinitionDiscovery.cs`](../src/backend/EtAlii.Adp.Diagram/DiagramDefinitionDiscovery.cs)) scans the application's assemblies for `Diagram.Definitions` arrays, and `Program.cs` hands every found definition to `AddDiagramDefinitions`, which invokes each definition's `Build` delegate. Timeline's delegate is one line — `builder => builder.Services.AddTimeline()` — and that is the entire hookup. The host names no module; deleting the folder removes the type.
 

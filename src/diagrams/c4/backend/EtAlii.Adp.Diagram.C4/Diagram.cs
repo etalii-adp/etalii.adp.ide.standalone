@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
@@ -12,6 +13,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// seven types meant seven classes and seven projects to hold them. Discovery now reads a
 /// <c>Definitions</c> array and the reason is gone.
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>

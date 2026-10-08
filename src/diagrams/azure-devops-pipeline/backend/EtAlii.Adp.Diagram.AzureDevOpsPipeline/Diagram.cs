@@ -1,7 +1,9 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `azure-devops/pipeline`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>

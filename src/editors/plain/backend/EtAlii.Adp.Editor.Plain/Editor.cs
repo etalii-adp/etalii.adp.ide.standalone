@@ -1,8 +1,10 @@
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Editor.Plain;
 
 /// <summary>This editor's identity: the fallback, claiming nothing by construction.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Editor
 {
     /// <summary>

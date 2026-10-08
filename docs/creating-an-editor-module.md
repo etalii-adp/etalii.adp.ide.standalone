@@ -24,6 +24,31 @@ An editor's identity is a static `Editor` class — markdown's is [`Editor.cs`](
 - **`IsDefaultForSharedExtension`** — the opt-in tie-breaker for the one *legitimate* shared-extension case: when a raw editor and a format-aware one deliberately share an extension, exactly one declares itself the default and the other stays reachable through "Open with…". Neither shipped editor needs it.
 - **`Build`** — registers the module's services; markdown's is a single line adding its `IEditorSessionFactory`.
 
+The class carries `[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]`. Discovery finds it by reflection and nothing calls it by name, so without the attribute Rider reports it as unused. `JetBrains.Annotations` is referenced for every project in `src/Directory.Build.props`, so the module adds only the `using`:
+
+```csharp
+using JetBrains.Annotations;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace EtAlii.Adp.Editor.Foo;
+
+/// <summary>This editor's identity: Foo, by extension.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
+public static class Editor
+{
+    public static EditorDefinition Foo { get; } = new(
+        "foo",
+        "Foo",
+        "What a foo file is, and why it is worth its own editor.",
+        Icon: "mdi-file-document-outline",
+        Extensions: [".foo"],
+        FileNames: [],
+        Build: builder => builder.Services.AddSingleton<IEditorSessionFactory, FooEditorSessionFactory>());
+
+    public static EditorDefinition[] Definitions { get; } = [Foo];
+}
+```
+
 A definition carries no rendering details — no theme, no keymap, no engine options. Those belong to the module's own client code; the definition is what core needs to route.
 
 ## The plain fallback
@@ -51,7 +76,7 @@ Markdown's client is real and registered — [`register.ts`](../src/editors/mark
 For a new editor `foo`:
 
 1. `src/editors/foo/backend/EtAlii.Adp.Editor.Foo` (+ `.Tests`, `<OutputType>Exe</OutputType>`), both added to `EtAlii.Adp.slnx`.
-2. `Editor.cs` with the definition: id, title, description, icon, claims, `Build` registering your `IEditorSessionFactory`.
+2. `Editor.cs` with the definition: id, title, description, icon, claims, `Build` registering your `IEditorSessionFactory`, and `[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]` on the class.
 3. The session, on `TextFileBuffer`, with tests pinning round-trip shape (copy plain's fixtures approach).
 4. `client/register.ts` matching `editor/foo`, and the panel it mounts.
 5. `examples/` with files the editor is for — seeded into `src/examples/editors/foo/` so the editor appears in the combined showcase project; the two copies are not held in sync afterwards.

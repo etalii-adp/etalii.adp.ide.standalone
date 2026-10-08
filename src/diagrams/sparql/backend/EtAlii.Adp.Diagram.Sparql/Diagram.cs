@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Sparql;
 
 /// <summary>
@@ -11,6 +12,7 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// everywhere, so a bare query file routes here on sight; no alternate extension and no shared
 /// stance, because nothing else claims it.
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The query: what a <c>.rq</c> file asks, drawn as the joins it is made of.</summary>

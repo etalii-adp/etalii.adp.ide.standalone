@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.EmptyArray;
 
 /// <summary>
@@ -6,6 +7,7 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.EmptyArray;
 /// shape only because it could not be expressed; worth a warning rather than a shrug, since
 /// a module that ships no types is almost certainly a mistake rather than a choice.
 /// </summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } = [];

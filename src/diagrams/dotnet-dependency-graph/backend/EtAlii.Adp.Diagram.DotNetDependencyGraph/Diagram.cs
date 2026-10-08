@@ -1,4 +1,5 @@
 ﻿using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 
 /// <summary>
@@ -28,6 +29,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
 /// the one Requirement 2.3's "never inferred" asks for.
 /// </para>
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The classic solution serialization; the one most repositories still carry.</summary>

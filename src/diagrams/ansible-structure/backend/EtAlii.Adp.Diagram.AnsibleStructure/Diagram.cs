@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `ansible/structure`.</summary>
@@ -17,6 +18,7 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// alongside an extension would be a contradiction, and discovery refuses that pairing.
 /// </para>
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>

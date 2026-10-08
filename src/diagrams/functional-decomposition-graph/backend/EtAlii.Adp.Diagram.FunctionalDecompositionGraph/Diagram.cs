@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 
@@ -9,6 +10,7 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 /// read. So the catalog test names this origin explicitly rather than trusting the generic
 /// every-module comparison, which a module declaring nothing passes.
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The body of a functional decomposition graph lives in an `.fdg` file, ADP's own schema.</summary>
