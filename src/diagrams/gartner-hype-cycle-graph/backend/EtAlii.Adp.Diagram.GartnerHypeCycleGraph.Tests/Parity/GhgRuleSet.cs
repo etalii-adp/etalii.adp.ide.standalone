@@ -57,7 +57,7 @@ internal static class GhgRuleSet
     /// The ids naming a trigger and no trend: an id shared with a trend is the trend's, and the
     /// sharing is <c>ghg.duplicate-id</c>'s to report.
     /// </summary>
-    public static HashSet<string> TriggerIds(GhgModel model)
+    private static HashSet<string> TriggerIds(GhgModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
 

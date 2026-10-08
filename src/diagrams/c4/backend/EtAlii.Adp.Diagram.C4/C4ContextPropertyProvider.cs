@@ -27,7 +27,7 @@ public sealed class C4ContextPropertyProvider : IContextPropertyProvider
     public const string NamePropertyId = "c4.name";
     public const string DescriptionPropertyId = "c4.description";
     public const string TechnologyPropertyId = "c4.technology";
-    public const string TagsPropertyId = "c4.tags";
+    private const string TagsPropertyId = "c4.tags";
     public const string KindPropertyId = "c4.kind";
     public const string IdentifierPropertyId = "c4.identifier";
 

@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 internal static class ShaclSelection
 {
     /// <summary>The id prefix every drawn shapes edge carries.</summary>
-    public const string EdgePrefix = "shacl-edge:";
+    private const string EdgePrefix = "shacl-edge:";
 
     /// <summary>
     /// The drawn shapes edge an id names, as "from → to", or null - the projection is the authority,

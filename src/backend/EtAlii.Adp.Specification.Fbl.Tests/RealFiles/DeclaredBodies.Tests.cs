@@ -164,7 +164,7 @@ public class DeclaredBodiesTests
     /// order with an attribute that is present, writable, a string, and neither its key, a reference
     /// nor a mapped value, whose change would mean something else than an edit of text.
     /// </summary>
-    internal static (ReadElement Element, string Attribute, string Value)? FirstWritable(BodyReading reading)
+    private static (ReadElement Element, string Attribute, string Value)? FirstWritable(BodyReading reading)
     {
         foreach (var element in reading.Elements.Where(e => e is { IsRelation: false, Rule.ReadOnly: null }))
         {
@@ -181,7 +181,7 @@ public class DeclaredBodiesTests
     }
 
     /// <summary>Every byte outside the splices is unchanged: the bytes between splices match, in order, before and after.</summary>
-    internal static void AssertOnlySplicesChanged(byte[] before, byte[] after, IReadOnlyList<Splice> splices, string file)
+    private static void AssertOnlySplicesChanged(byte[] before, byte[] after, IReadOnlyList<Splice> splices, string file)
     {
         var position = 0;
         var shift = 0;

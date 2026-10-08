@@ -40,9 +40,6 @@ public sealed class FdgDocumentFactory : IDiagramDocumentFactory
         return EmptyDocument("\r\n");
     }
 
-    /// <summary>The document text, with the platform's line ending.</summary>
-    public static string EmptyDocument() => EmptyDocument(Environment.NewLine);
-
     /// <summary>The document text, with the ending the caller asks for.</summary>
     /// <remarks>
     /// The ending is a parameter because a new document created beside existing ones should match

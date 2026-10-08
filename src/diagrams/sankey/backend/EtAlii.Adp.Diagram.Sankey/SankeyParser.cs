@@ -24,8 +24,8 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public static class SankeyParser
 {
     internal const string HeaderKey = "sankey";
-    internal const string FormatKey = "format";
-    internal const string FlowColorKey = "flow-color";
+    private const string FormatKey = "format";
+    private const string FlowColorKey = "flow-color";
     internal const string ThicknessKey = "thickness";
     internal const string NodesKey = "nodes";
     internal const string FlowsKey = "flows";

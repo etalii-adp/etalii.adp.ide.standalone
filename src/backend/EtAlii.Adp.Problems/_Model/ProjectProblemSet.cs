@@ -26,5 +26,5 @@ public sealed record ProjectProblemSet(
     /// without an info count has none, which is exactly true of every producer that predates
     /// the level.
     /// </summary>
-    public int InfoCount { get; init; } = InfoCount;
+    public int InfoCount { get; } = InfoCount;
 }

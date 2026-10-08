@@ -239,7 +239,7 @@ public static partial class AbmParser
     }
 
     /// <summary>Removes up to <paramref name="columns"/> columns of leading whitespace.</summary>
-    public static string DedentText(string text, int columns)
+    private static string DedentText(string text, int columns)
     {
         var column = 0;
         var index = 0;

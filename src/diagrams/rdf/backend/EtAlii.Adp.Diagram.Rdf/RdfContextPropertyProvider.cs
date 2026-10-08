@@ -26,7 +26,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
     public const string CommentProperty = "rdf.comment";
 
     /// <summary>An edge's predicate, read-only.</summary>
-    public const string PredicateProperty = "rdf.predicate";
+    private const string PredicateProperty = "rdf.predicate";
 
     private const string IdentityGroup = "Identity";
     private const string DocumentationGroup = "Documentation";

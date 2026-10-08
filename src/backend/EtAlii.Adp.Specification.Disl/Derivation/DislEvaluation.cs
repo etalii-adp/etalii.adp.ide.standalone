@@ -26,17 +26,11 @@ internal static class DislEvaluation
 
     private static readonly CelProgram Text = CelEnvironment.Standard().DeclareVariable("v").Compile("string(v)");
 
-    /// <summary>The value of the expression compiled at <paramref name="pointer"/>, or a <see cref="CelError"/>.</summary>
-    public static object? At(DislSpecification specification, string pointer, IReadOnlyDictionary<string, object?> variables) =>
-        specification.ExpressionAt(pointer) is { } expression
-            ? expression.Program.Evaluate(variables)
-            : new CelError($"No expression was compiled at {pointer}.");
-
     /// <summary>
     /// The value of <paramref name="source"/> compiled in <paramref name="context"/>, for an expression the
     /// loader does not walk; a variable beyond the context's (an option's <c>item</c>) is declared as bound.
     /// </summary>
-    public static object? Of(DislSpecification specification, string context, string source, IReadOnlyDictionary<string, object?> variables)
+    private static object? Of(DislSpecification specification, string context, string source, IReadOnlyDictionary<string, object?> variables)
     {
         var programs = Compiled.GetValue(specification, _ => new ConcurrentDictionary<(string, string, string), CelProgram>());
         var declared = DislContexts.VariablesOf(context);

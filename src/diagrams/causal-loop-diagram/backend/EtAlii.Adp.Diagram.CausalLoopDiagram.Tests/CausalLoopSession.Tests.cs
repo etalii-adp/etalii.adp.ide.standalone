@@ -373,8 +373,6 @@ public class CausalLoopSessionTests : IDisposable
 
         public DocumentSaveResult Save(string path, CausalLoopDocumentEntry entry) => inner.Save(path, entry);
 
-        public void Forget(string path) => inner.Forget(path);
-
         public void Reload(string path) => inner.Reload(path);
 
         public void BodyDeleted(string path) => inner.BodyDeleted(path);

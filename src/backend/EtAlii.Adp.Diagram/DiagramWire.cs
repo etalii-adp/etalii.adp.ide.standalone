@@ -20,7 +20,7 @@ public static class DiagramWire
         _ => throw new ArgumentOutOfRangeException(nameof(delta)),
     };
 
-    public static Element ToProto(DiagramElement element) => new()
+    private static Element ToProto(DiagramElement element) => new()
     {
         Id = new ElementId { Value = element.Id },
         Position = new Point2D { X = element.X, Y = element.Y },

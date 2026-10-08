@@ -89,6 +89,10 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         return DocumentSaveResult.Ok;
     }
 
+    /// <summary>
+    /// Tells every session on this document to re-deliver, without changing the document - for a
+    /// change to how it is drawn rather than to what it says.
+    /// </summary>
     public void Touch(string rootPath, string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
@@ -96,6 +100,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         Changed?.Invoke(this, new PipelineDocumentChangedEventArgs(path, GetOrLoad(rootPath, path).Model));
     }
 
+    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     public void Forget(string path) => _lifecycle.Forget(path);
 
     public void Reload(string rootPath, string path)

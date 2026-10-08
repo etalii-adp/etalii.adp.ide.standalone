@@ -50,13 +50,6 @@ public sealed class FdgValidator : IDiagramValidator
         return FdgRuleSet.Breaches(FdgParser.Parse(document));
     }
 
-    /// <summary>Everything wrong with a model already parsed.</summary>
-    /// <remarks>
-    /// Offered beside the text overload because a session holds the model already, and parsing a
-    /// second time to validate would read the same document twice per change.
-    /// </remarks>
-    public static IReadOnlyList<FdgBreach> Validate(FdgModel model) => FdgRuleSet.Breaches(model);
-
     /// <summary>One breach as the panel reads it.</summary>
     /// <remarks>
     /// <para>

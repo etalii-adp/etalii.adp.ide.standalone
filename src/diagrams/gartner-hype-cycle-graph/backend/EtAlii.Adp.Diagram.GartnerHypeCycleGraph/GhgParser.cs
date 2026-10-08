@@ -33,7 +33,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </remarks>
 public static class GhgParser
 {
-    internal const string HeaderKey = "gartner-hypecycle-graph";
+    private const string HeaderKey = "gartner-hypecycle-graph";
     private const string UnitKey = "unit";
 
     /// <summary>The library's findings the module's rules already report under their own ids.</summary>

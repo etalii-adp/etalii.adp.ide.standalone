@@ -38,13 +38,6 @@ public static class FdgConnectionTypes
     /// <summary>The five, in the order the design lists them.</summary>
     public static readonly IReadOnlyList<string> All = [UiChild, OwnsAction, OwnsData, OwnsFunction, Shows];
 
-    /// <summary>
-    /// The four that own, which is what a cycle is made of. <b><c>shows</c> is deliberately not
-    /// among them</b>: a Shows loop is a navigation round trip and is not reported
-    /// (Requirement 5's ruling, and the thing task 10's cycle rule is seen to fail against).
-    /// </summary>
-    public static readonly IReadOnlyList<string> Ownership = [UiChild, OwnsAction, OwnsData, OwnsFunction];
-
     /// <summary>Whether the text names one of the five.</summary>
     public static bool IsKnown(string type) => All.Contains(type, StringComparer.Ordinal);
 }

@@ -20,7 +20,7 @@ public static class Glob
         return Regex.IsMatch(path.Replace('\\', '/'), ToRegex(glob), options, TimeSpan.FromSeconds(1));
     }
 
-    public static string ToRegex(string glob)
+    private static string ToRegex(string glob)
     {
         var builder = new StringBuilder("^");
         for (var i = 0; i < glob.Length; i++)

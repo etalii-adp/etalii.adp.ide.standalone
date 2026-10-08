@@ -174,7 +174,7 @@ internal static class DislInheritance
     /// The attributes an object declares itself, in order; each name checked against the reserved names
     /// and each type resolved when <paramref name="diagnostics"/> is given.
     /// </summary>
-    internal static OrderedDictionary<string, DislAttribute> Attributes(JsonElement owner, string declaredBy, string pointer, TypeNames known, List<DislDiagnostic>? diagnostics)
+    private static OrderedDictionary<string, DislAttribute> Attributes(JsonElement owner, string declaredBy, string pointer, TypeNames known, List<DislDiagnostic>? diagnostics)
     {
         var attributes = new OrderedDictionary<string, DislAttribute>(StringComparer.Ordinal);
         foreach (var member in DislJson.Members(owner, "attributes"))

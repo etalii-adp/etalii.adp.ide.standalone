@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Display;
@@ -51,6 +52,7 @@ public sealed class LogCapture : IDisposable
     /// now collects only its own test's events whether or not its class joins - and a new
     /// class need not name it. Kept only because existing classes do.
     /// </summary>
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; named in [Collection] by Editor, Diagram, Databricks, Timeline and EtAlii.Adp tests, not by every project.
     public const string Collection = "Serilog pipeline";
 
     /// <summary>Renders a message the way the host's console sink does, so what a test asserts on is what an operator reads.</summary>
@@ -96,6 +98,7 @@ public sealed class LogCapture : IDisposable
     /// Starts collecting the running test's events; dispose to stop. Any number may be open at
     /// once, and each sees only its own test.
     /// </summary>
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; called by the tests that assert on a log, which not every project has.
     public static LogCapture Start()
     {
         var capture = new LogCapture(CurrentTest());
@@ -107,7 +110,7 @@ public sealed class LogCapture : IDisposable
         return capture;
     }
 
-    public IReadOnlyList<LogEvent> Events
+    private IReadOnlyList<LogEvent> Events
     {
         get
         {
@@ -118,10 +121,13 @@ public sealed class LogCapture : IDisposable
         }
     }
 
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; read by DatabricksDocumentStore.MissingBody.Tests, not by every project.
     public IEnumerable<string> Errors => Rendered(LogEventLevel.Error);
 
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; read by the Documents, Diagram, Editor, Timeline, Databricks and EtAlii.Adp tests, not by every project.
     public IEnumerable<string> Warnings => Rendered(LogEventLevel.Warning);
 
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; read by the Editor, Diagram and Documents tests, not by every project.
     public IEnumerable<string> Informations => Rendered(LogEventLevel.Information);
 
     public void Dispose()

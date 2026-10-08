@@ -22,9 +22,9 @@ public sealed class PluginBody : SplicedFile
         _last = ReadNow();
     }
 
-    public FblBinding Binding { get; }
+    private FblBinding Binding { get; }
 
-    public string FileName { get; }
+    private string FileName { get; }
 
     public FblModel Model => new(_last.Elements, _last.Findings, _last.Unreadable);
 

@@ -7,13 +7,13 @@ namespace EtAlii.Adp.Diagram.FunctionalDecompositionGraph;
 public sealed class AddFdgElementCommandHandler(IFdgDocumentStore documents) : ICommandHandler<AddFdgElementCommand>
 {
     /// <summary>A new element's width, for the four named types.</summary>
-    public const double DefaultWidth = 160;
+    private const double DefaultWidth = 160;
 
     /// <summary>A new Comment's width.</summary>
-    public const double CommentWidth = 240;
+    private const double CommentWidth = 240;
 
     /// <summary>A new Comment's height; the other four share <see cref="FdgGeometry.SharedHeight"/>.</summary>
-    public const double CommentHeight = 96;
+    private const double CommentHeight = 96;
 
     /// <inheritdoc />
     public Task<CommandResult> ExecuteAsync(AddFdgElementCommand command, CancellationToken cancellationToken = default)

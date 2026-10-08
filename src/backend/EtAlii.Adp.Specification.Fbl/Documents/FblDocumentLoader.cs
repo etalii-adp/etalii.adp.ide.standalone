@@ -6,7 +6,6 @@ namespace EtAlii.Adp.Specification.Fbl.Documents;
 
 public enum ProblemSeverity
 {
-    Info,
     Warning,
     Error,
 }
@@ -25,7 +24,7 @@ public sealed record LoadProblem(string Pointer, ProblemSeverity Severity, strin
 /// </summary>
 public static class FblDocumentLoader
 {
-    public const int SupportedMajor = 0;
+    private const int SupportedMajor = 0;
 
     public static IReadOnlyList<LoadProblem> Load(string path, out FblDocument? document) =>
         Load(ReadShared(path), path, out document);
@@ -303,7 +302,7 @@ internal static class BindingReader
         };
     }
 
-    public static Family? ParseFamily(string? name) => name switch
+    private static Family? ParseFamily(string? name) => name switch
     {
         "yaml" => Family.Yaml,
         "json" => Family.Json,
@@ -416,7 +415,7 @@ internal static class BindingReader
         };
     }
 
-    public static Slot ReadSlot(JsonElement json) => new()
+    private static Slot ReadSlot(JsonElement json) => new()
     {
         Key = Str(json, "key"),
         XmlAttribute = Str(json, "attribute"),
@@ -526,10 +525,10 @@ internal static class BindingReader
     private static string? LocalizedValue(JsonElement value) =>
         value.TryGetProperty("en", out var en) ? en.GetString() : value.EnumerateObject().Select(p => p.Value.GetString()).FirstOrDefault();
 
-    internal static string? Str(JsonElement json, string name) =>
+    private static string? Str(JsonElement json, string name) =>
         json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
-    internal static bool Bool(JsonElement json, string name) =>
+    private static bool Bool(JsonElement json, string name) =>
         json.ValueKind == JsonValueKind.Object && json.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
 
     private static IReadOnlyList<string> Strings(JsonElement json, string name) =>

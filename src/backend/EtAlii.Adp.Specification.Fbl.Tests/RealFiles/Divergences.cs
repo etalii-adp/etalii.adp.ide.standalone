@@ -21,7 +21,7 @@ internal static class Divergences
 
     public static IReadOnlyList<Divergence> All => _all.Value;
 
-    public static string FilePath => Path.Combine(Repository.Root, "src", "backend", "EtAlii.Adp.Specification.Fbl.Tests", "RealFiles", "divergences.json");
+    private static string FilePath => Path.Combine(Repository.Root, "src", "backend", "EtAlii.Adp.Specification.Fbl.Tests", "RealFiles", "divergences.json");
 
     /// <summary>
     /// Checks one property on one file: <paramref name="observed"/> is null when the binding and the

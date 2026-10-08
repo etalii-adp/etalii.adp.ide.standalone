@@ -138,7 +138,7 @@ public static class DislLoader
 
     internal static DislDiagnostic Error(string pointer, string message) => new(pointer, DislSeverity.Error, message);
 
-    internal static DislDiagnostic Warning(string pointer, string message) => new(pointer, DislSeverity.Warning, message);
+    private static DislDiagnostic Warning(string pointer, string message) => new(pointer, DislSeverity.Warning, message);
 
     /// <summary>Every object's keys are unique (§2.1); a repeated key is reported at its second occurrence.</summary>
     private static void DuplicateKeys(JsonElement element, string pointer, List<DislDiagnostic> diagnostics)

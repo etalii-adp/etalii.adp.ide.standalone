@@ -29,13 +29,13 @@
 public static class DotNetDependencyGraphLayout
 {
     /// <summary>Horizontal distance between two layers.</summary>
-    public const double LayerWidth = 320;
+    private const double LayerWidth = 320;
 
     /// <summary>Vertical distance between two boxes in one layer.</summary>
-    public const double RowHeight = 90;
+    private const double RowHeight = 90;
 
     /// <summary>How far the package band sits beyond the last project layer.</summary>
-    public const double PackageBandGap = 200;
+    private const double PackageBandGap = 200;
 
     /// <summary>
     /// How many boxes a single layer stacks before it wraps into a second column beside itself.
@@ -64,7 +64,7 @@ public static class DotNetDependencyGraphLayout
     public const int LayerWrapAt = 12;
 
     /// <summary>How far a wrapped column sits from the one before it, inside one layer.</summary>
-    public const double WrapColumnWidth = 260;
+    private const double WrapColumnWidth = 260;
 
     /// <summary>Computes a position for every node of <paramref name="graph"/>.</summary>
     public static IReadOnlyDictionary<string, (double X, double Y)> Compute(DependencyGraphModel graph)

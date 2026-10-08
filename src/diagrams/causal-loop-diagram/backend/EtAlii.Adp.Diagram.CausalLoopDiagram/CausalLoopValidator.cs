@@ -42,7 +42,7 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
     public const string LoopIsNotACycleRuleId = "causal-loop.loop-is-not-a-cycle";
 
     /// <summary>The cycle search stopped at its bound before finishing.</summary>
-    public const string CycleBoundRuleId = "causal-loop.cycle-bound-reached";
+    private const string CycleBoundRuleId = "causal-loop.cycle-bound-reached";
 
     /// <inheritdoc />
     public DiagramOrigin Origin { get; } = origin;

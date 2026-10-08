@@ -14,7 +14,7 @@ public class EditorSessionAdapterTests
 {
     private sealed class FakeEditorSession : IEditorSession
     {
-        public string Content { get; set; } = "hello";
+        public string Content { get; init; } = "hello";
         public bool Disposed { get; private set; }
 
         public event EventHandler<EditorContentChangedEventArgs>? Changed;

@@ -33,7 +33,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 public static class CausalLoopParser
 {
     /// <summary>The header a <c>.cld</c> document opens with.</summary>
-    public const string Header = "causal-loop";
+    private const string Header = "causal-loop";
 
     /// <summary>Reads the document, collecting what it states and what it could not read.</summary>
     public static CausalLoopParseResult Parse(CausalLoopDocument document)

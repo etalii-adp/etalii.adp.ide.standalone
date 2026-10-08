@@ -42,13 +42,13 @@ namespace EtAlii.Adp.Documents;
 public static class GestureIds
 {
     /// <summary>What every new-placement id starts with.</summary>
-    public const string PlacementPrefix = "new:";
+    private const string PlacementPrefix = "new:";
 
     /// <summary>What every relation id starts with.</summary>
-    public const string RelationPrefix = "rel:";
+    private const string RelationPrefix = "rel:";
 
     /// <summary>What separates a relation id's source from its target.</summary>
-    public const string RelationSeparator = "->";
+    private const string RelationSeparator = "->";
 
     private const char PlacementSeparator = ',';
 

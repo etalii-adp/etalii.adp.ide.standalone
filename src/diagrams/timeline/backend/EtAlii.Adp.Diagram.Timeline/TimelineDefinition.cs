@@ -60,13 +60,13 @@ internal static class TimelineDefinition
     public static IReadOnlyList<DislDiagnostic> Diagnostics => Loaded.Value.Diagnostics;
 
     /// <summary>The wire ids of <c>x-timeline</c>.</summary>
-    public static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => LoadedIds.Value;
 
     /// <summary>The palette.</summary>
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>What <c>env</c> reads: editable, in the one viewpoint a timeline has.</summary>
-    public static DislEnv Env { get; } = new();
+    private static DislEnv Env { get; } = new();
 
     /// <summary>The context menu of <paramref name="elementId"/> in <paramref name="model"/>: an element, a relation, a placement, a relation gesture; none for anything else.</summary>
     public static IReadOnlyList<ContextActionGroupDefinition> Menus(TimelineModel model, string elementId)

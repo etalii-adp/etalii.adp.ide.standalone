@@ -26,8 +26,6 @@ public abstract class SplicedFile
 
     public bool CanUndo => _history.CanUndo;
 
-    public bool CanRedo => _history.CanRedo;
-
     /// <summary>Applies an edit planned against the current bytes, records it, and reads the file again.</summary>
     public void Apply(Edit edit)
     {

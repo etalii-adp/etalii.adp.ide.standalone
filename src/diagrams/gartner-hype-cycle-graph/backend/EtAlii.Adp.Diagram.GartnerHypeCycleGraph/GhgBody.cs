@@ -54,7 +54,7 @@ public sealed class GhgBody
     }
 
     /// <summary>The binding every <c>.ghg</c> body is read and written with.</summary>
-    public static FblBinding Binding => LoadedBinding.Value;
+    private static FblBinding Binding => LoadedBinding.Value;
 
     /// <summary>The body's text after every change made to it.</summary>
     public string Text => Encoding.UTF8.GetString(_body.Bytes);
@@ -155,7 +155,7 @@ public sealed class GhgBody
     /// The element of <paramref name="type"/> the module knows by <paramref name="id"/> and
     /// <paramref name="range"/>: by its stored id when only one entry has it, else by the line it starts on.
     /// </summary>
-    internal FblElement? Find(string type, string id, LineRange range)
+    private FblElement? Find(string type, string id, LineRange range)
     {
         var typed = Model.Elements.Where(element => element.Type == type).ToList();
         var byId = typed.Where(element => GhgParser.Text(element.Attributes.GetValueOrDefault("storedId")) == id).ToList();

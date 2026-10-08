@@ -54,7 +54,7 @@ internal static class AbmDefinition
     public static DislSpecification Specification => Loaded.Value.Specification;
 
     /// <summary>The wire ids of <c>x-abm</c>.</summary>
-    public static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => LoadedIds.Value;
 
     /// <summary>The kind of each node type: <c>Do</c> is <c>action</c>.</summary>
     public static IReadOnlyDictionary<string, string> KindOfType => LoadedKindOfType.Value;

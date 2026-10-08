@@ -33,7 +33,7 @@ internal static class TimelineTimes
         .Add("writtenEnd", arguments => WrittenEnd(arguments[0], Text(arguments[1])));
 
     /// <summary>The instant <paramref name="text"/> names, read as the parser reads a time: trimmed, at face value, offset zero; null when it will not read.</summary>
-    public static DateTimeOffset? Read(string text) => TimelineInstants.Parse(text.Trim());
+    private static DateTimeOffset? Read(string text) => TimelineInstants.Parse(text.Trim());
 
     private static DateTimeOffset Readable(object? argument) =>
         Read(Text(argument)) ?? throw new CelException($"'{Text(argument)}' is not a time this timeline can read.");

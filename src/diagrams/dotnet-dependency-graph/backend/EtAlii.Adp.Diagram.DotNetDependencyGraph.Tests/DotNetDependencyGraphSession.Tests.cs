@@ -29,15 +29,15 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     private sealed class DirectHistoryStack : IHistoryStack
     {
         /// <summary>Every command this stack was asked to run, so a test can name what was dispatched.</summary>
-        public List<ICommand> Executed { get; } = [];
+        private List<ICommand> Executed { get; } = [];
 
         public bool CanUndo => false;
 
-        public bool CanRedo => false;
+        private bool CanRedo => false;
 
-        public int UndoCount => 0;
+        private int UndoCount => 0;
 
-        public int RedoCount => 0;
+        private int RedoCount => 0;
 
         public HistoryAvailability Availability => new(CanUndo, CanRedo, UndoCount, RedoCount);
 
@@ -71,10 +71,6 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
 
         public Task<CommandResult> RedoAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(CommandResult.Success());
-
-        public void Clear()
-        {
-        }
     }
 
     private string Write(string relativePath, string content)

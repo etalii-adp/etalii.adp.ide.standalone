@@ -1,4 +1,3 @@
-using System.Globalization;
 using EtAlii.Adp.Specification.Fbl.Text;
 
 namespace EtAlii.Adp.Specification.Fbl.Registration;
@@ -11,9 +10,9 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 public sealed class RegistrationDocument
 {
     /// <summary>The headers FBL itself defines (FBL §8.1); a binding declares others.</summary>
-    public static readonly IReadOnlyList<string> FblHeaders = ["body", "view", "resource"];
+    private static readonly IReadOnlyList<string> FblHeaders = ["body", "view", "resource"];
 
-    internal RegistrationDocument(BodyText text)
+    private RegistrationDocument(BodyText text)
     {
         Text = text;
     }
@@ -21,38 +20,27 @@ public sealed class RegistrationDocument
     internal BodyText Text { get; }
 
     /// <summary>The origin of the tool type (FBL §8.1, line 1).</summary>
-    public string Origin { get; internal set; } = "";
+    public string Origin { get; private set; } = "";
 
-    public IReadOnlyList<RegistrationHeader> Headers { get; internal set; } = [];
+    public IReadOnlyList<RegistrationHeader> Headers { get; private set; } = [];
 
-    public RegistrationBlock? Layout { get; internal set; }
+    public RegistrationBlock? Layout { get; private set; }
 
-    public RegistrationBlock? Identities { get; internal set; }
+    public RegistrationBlock? Identities { get; private set; }
 
     /// <summary>Where a new block goes: the end of the header region's last line.</summary>
-    public int AfterHeaders { get; internal set; }
+    public int AfterHeaders { get; private set; }
 
     /// <summary>Content after the blocks that FBL does not read, kept byte for byte.</summary>
     public Span Unbound { get; internal set; }
 
-    public string? Header(string key) => Headers.FirstOrDefault(h => h.Key == key)?.Value;
+    private string? Header(string key) => Headers.FirstOrDefault(h => h.Key == key)?.Value;
 
     public string? Body => Header("body");
 
     public string? View => Header("view");
 
     public string? Resource => Header("resource");
-
-    /// <summary>The positions of the layout block by id; an entry whose value is not two numbers is left out.</summary>
-    public IReadOnlyDictionary<string, (double X, double Y)> Positions()
-    {
-        var positions = new Dictionary<string, (double, double)>(StringComparer.Ordinal);
-        foreach (var entry in Layout?.Entries ?? [])
-        {
-            if (entry.Position is { } position) positions[entry.Key] = position;
-        }
-        return positions;
-    }
 
     /// <summary>The identities block as natural key to id (FBL §8.6).</summary>
     public IReadOnlyDictionary<string, string> IdentityMap() =>
@@ -175,18 +163,4 @@ public sealed record RegistrationHeader(string Key, string Value, Span Line);
 public sealed record RegistrationBlock(string Name, Span NameLine, Span Span, IReadOnlyList<RegistrationEntry> Entries);
 
 /// <summary>One <c>key: value</c> entry of a block, the key being everything before the line's last <c>": "</c>.</summary>
-public sealed record RegistrationEntry(string Key, string Value, Span KeySpan, Span ValueSpan, Span Line, int Indent)
-{
-    /// <summary>A layout entry's <c>x y</c>, null when the value is not two numbers.</summary>
-    public (double X, double Y)? Position
-    {
-        get
-        {
-            var parts = Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length != 2) return null;
-            if (!double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var x)) return null;
-            if (!double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var y)) return null;
-            return (x, y);
-        }
-    }
-}
+public sealed record RegistrationEntry(string Key, string Value, Span KeySpan, Span ValueSpan, Span Line, int Indent);

@@ -58,6 +58,7 @@ public sealed class HelmChartStore : IHelmChartStore, IDisposable
         return Watched(folder).Chart;
     }
 
+    /// <summary>The project for <paramref name="folder"/> if one is loaded, without loading one.</summary>
     public HelmChart? Get(string folder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);

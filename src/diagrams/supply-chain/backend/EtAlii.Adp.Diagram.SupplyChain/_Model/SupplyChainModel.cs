@@ -119,7 +119,7 @@ public static class SupplyChainNodeTypes
     public static readonly IReadOnlyList<string> All = [Source, Processor, Producer, Integrator, Hub, Outlet, Consumer];
 
     /// <summary>The words this module wrote before the stages were named as roles, and the stage each reads as.</summary>
-    public static readonly IReadOnlyDictionary<string, string> Legacy = new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, string> Legacy = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["raw-material"] = Source,
         ["supplier"] = Processor,

@@ -32,7 +32,7 @@ public sealed class GhgValidator : IDiagramValidator
         [.. Findings(document).Select(finding => new GhgBreach(finding.Code, finding.Message, finding.ElementIds, Math.Max(0, (finding.Line ?? 1) - 1)))];
 
     /// <summary>The definition's findings for <paramref name="document"/>.</summary>
-    public static IReadOnlyList<DislFinding> Findings(GhgBody document)
+    private static IReadOnlyList<DislFinding> Findings(GhgBody document)
     {
         ArgumentNullException.ThrowIfNull(document);
         var options = new DislConstraintOptions(

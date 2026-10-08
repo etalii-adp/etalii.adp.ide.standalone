@@ -26,9 +26,6 @@ public interface IFdgDocumentStore : IReloadableDocumentStore
     /// </remarks>
     DocumentSaveResult Save(string path, LineDocument document);
 
-    /// <summary>Drops a loaded document, so the next open reads the file afresh.</summary>
-    void Forget(string path);
-
     /// <summary>
     /// The body was deleted: the watcher's evidence, not a read that failed. So the document ends
     /// as a new, empty one, rather than the last one kept alive.

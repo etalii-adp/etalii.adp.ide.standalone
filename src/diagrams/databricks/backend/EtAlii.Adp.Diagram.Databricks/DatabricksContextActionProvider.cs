@@ -41,7 +41,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
     public const string DisconnectActionPrefix = "databricks.disconnect:";
 
     /// <summary>Remove a selected dependency edge.</summary>
-    public const string RemoveEdgeActionId = "databricks.remove-edge";
+    private const string RemoveEdgeActionId = "databricks.remove-edge";
 
     /// <summary>The relation gesture, whole in one call.</summary>
     public const string ConnectActionId = "databricks.connect";

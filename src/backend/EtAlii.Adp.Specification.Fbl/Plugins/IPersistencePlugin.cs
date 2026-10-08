@@ -1,3 +1,5 @@
+using JetBrains.Annotations;
+
 namespace EtAlii.Adp.Specification.Fbl.Plugins;
 
 /// <summary>
@@ -20,5 +22,6 @@ public interface IPersistencePlugin
     byte[] Template(PluginTemplateRequest request);
 
     /// <summary><c>watch</c>: the paths a folder subject's reading depends on beyond its file rules.</summary>
-    IReadOnlyList<string> Watch(PluginReadResult last);
+    [PublicAPI] // FBL §11.2 names watch as an operation of the persistence plugin contract; no host calls it yet.
+    IReadOnlyList<string> Watch([UsedImplicitly] PluginReadResult last); // last: FBL §11.2's input to watch, the plugin's last read result.
 }

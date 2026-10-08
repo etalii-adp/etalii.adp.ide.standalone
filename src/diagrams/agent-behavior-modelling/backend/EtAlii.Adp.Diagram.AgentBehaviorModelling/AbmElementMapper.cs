@@ -67,7 +67,7 @@ public sealed class AbmElementMapper
     public const string ChildType = Prefix + "child";
 
     /// <summary>The library type a node kind is drawn as.</summary>
-    public static string ElementTypeOf(string kind) => Prefix + kind;
+    private static string ElementTypeOf(string kind) => Prefix + kind;
 
     /// <summary>The id of the connection that ends at <paramref name="childId"/>.</summary>
     public static string ConnectionIdOf(string childId) => ChildIdPrefix + childId;

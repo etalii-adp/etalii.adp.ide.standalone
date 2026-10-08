@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Specification.Fbl.Routing;
 public static class Router
 {
     /// <summary>The part of a body <c>suggest</c> looks at (FBL §12.1).</summary>
-    public const int SuggestBytes = 64 * 1024;
+    private const int SuggestBytes = 64 * 1024;
 
     /// <summary>
     /// The bindings a bare file routes to (FBL §12.3): those whose <c>names</c> match the file name or
@@ -37,13 +37,6 @@ public static class Router
             candidates.Add(binding);
         }
         return candidates;
-    }
-
-    /// <summary>Whether the binding's <c>suggest</c> matches the body's first 64 KiB (FBL §12.3).</summary>
-    public static bool Suggests(FblBinding binding, byte[] bytes)
-    {
-        ArgumentNullException.ThrowIfNull(binding);
-        return Contains(bytes, binding.Claims.Suggest);
     }
 
     /// <summary>

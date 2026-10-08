@@ -49,10 +49,10 @@ internal static class MindmapDefinition
     ]);
 
     /// <summary>The definition.</summary>
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    private static DislSpecification Specification => Loaded.Value.Specification;
 
     /// <summary>The wire ids of <c>x-mindmap</c>.</summary>
-    public static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => LoadedIds.Value;
 
     /// <summary>The binding every mind map body is read with.</summary>
     public static FblBinding Binding => LoadedBinding.Value;
@@ -61,7 +61,7 @@ internal static class MindmapDefinition
     public static IReadOnlyList<ToolboxItemDefinition> Toolbox => LoadedToolbox.Value;
 
     /// <summary>What <c>env</c> reads: editable, always, as the module's menus and rows have always been.</summary>
-    public static DislEnv Env { get; } = new();
+    private static DislEnv Env { get; } = new();
 
     /// <summary>
     /// The DISL model of <paramref name="document"/> as the store holds it, each node's
@@ -149,7 +149,7 @@ internal static class MindmapDefinition
     }
 
     /// <summary>The <c>ID</c> the file writes for <paramref name="element"/>; empty for a node it gives none.</summary>
-    public static string WrittenId(DislElement element) =>
+    private static string WrittenId(DislElement element) =>
         element.HostAttributes.GetValueOrDefault(MindmapFreeplanePlugin.StoredIdAttribute) as string ?? "";
 
     private static ContextActionDefinition Action(DerivedMenuEntry entry) => new(

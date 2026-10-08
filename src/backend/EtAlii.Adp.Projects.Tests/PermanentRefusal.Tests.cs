@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Grpc.Core;
+using JetBrains.Annotations;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -158,5 +159,6 @@ public partial class PermanentRefusalTests
 
     private sealed record StatusFixture(string Reason, IReadOnlyList<StatusCase> Statuses);
 
+    [UsedImplicitly] // Instantiated by System.Text.Json deserializing its StatusFixture.
     private sealed record StatusCase(int Code, string Name, bool Permanent);
 }

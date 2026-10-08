@@ -11,8 +11,6 @@ internal static class CelValues
 
     public static long AsInt(object? value) => value is long l ? l : throw new CelException("An int was expected.");
 
-    public static bool AsBool(object? value) => value is bool b ? b : throw new CelException("A bool was expected.");
-
     public static double AsDouble(object? value) => value switch
     {
         long l => l,

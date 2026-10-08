@@ -8,7 +8,7 @@ internal sealed class HostObject(string type, IReadOnlyDictionary<string, object
 {
     public static readonly object Absent = new();
 
-    public string Type { get; } = type;
+    private string Type { get; } = type;
 
     public bool TryGetMember(string name, out object? value)
     {

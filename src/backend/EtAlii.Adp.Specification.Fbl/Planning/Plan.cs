@@ -9,8 +9,6 @@ internal sealed class Plan(BodyReading reading)
 
     public BodyReading Reading { get; } = reading;
 
-    public IReadOnlyList<Splice> Splices => _splices;
-
     public bool Snapshot { get; set; }
 
     public void Add(SpliceOperation operation, int start, int end, string text)

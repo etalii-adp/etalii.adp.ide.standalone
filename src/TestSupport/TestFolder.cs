@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp;
@@ -29,16 +30,17 @@ namespace EtAlii.Adp;
 /// survives that, and {@link Failures} lets a test assert the report rather than trusting it.
 /// </para>
 /// </remarks>
+[UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; a test project that deletes no scratch folder compiles it unused.
 internal static class TestFolder
 {
     /// <summary>
     /// The environment variable a gate sets to collect this run's reports in a directory of its
     /// own. Unset, a local run still reports to one file under %TEMP%.
     /// </summary>
-    internal const string DirectoryVariable = "ADP_UNDELETED_FOLDERS_DIR";
+    private const string DirectoryVariable = "ADP_UNDELETED_FOLDERS_DIR";
 
     /// <summary>Where a given-up deletion is recorded, so a green run still leaves evidence.</summary>
-    internal static string ReportPath =>
+    private static string ReportPath =>
         ReportFileFor(Environment.GetEnvironmentVariable(DirectoryVariable), Environment.ProcessId);
 
     /// <summary>
@@ -48,6 +50,7 @@ internal static class TestFolder
     /// its own process, so the process id keeps them apart. Unset or blank, the one %TEMP% file a
     /// local run has always used.
     /// </summary>
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; EtAlii.Adp.Tests' TestFolder.Report.Tests calls it, the other projects do not.
     internal static string ReportFileFor(string? directory, int processId) =>
         string.IsNullOrWhiteSpace(directory)
             ? IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.undeleted-test-folders.log")
@@ -59,8 +62,10 @@ internal static class TestFolder
     /// Every folder this assembly's tests could not delete, newest last. Assertable, which is
     /// what makes the report a behaviour rather than a hope.
     /// </summary>
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; EtAlii.Adp.Tests' TestFolder.Tests asserts on it, the other projects do not.
     internal static IReadOnlyCollection<string> Failures => _failures;
 
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; called by every test project with a scratch folder, not by all of them.
     public static void TryDelete(string path, [CallerFilePath] string? caller = null) =>
         TryDelete(path, Directory.Exists, caller);
 
@@ -79,6 +84,7 @@ internal static class TestFolder
     /// Found by Architect 1 counting report lines against leftover folders across three gates.
     /// </para>
     /// </summary>
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; EtAlii.Adp.Tests' TestFolder.Tests drives this seam, the other projects do not.
     internal static void TryDelete(string path, Func<string, bool> exists, string? caller, string? reportTarget = null)
     {
         Exception? last = null;
@@ -145,6 +151,7 @@ internal static class TestFolder
     /// test classes from losing each other's lines. A write refused for a reason the lock cannot
     /// prevent - a full disk, a scanner holding the file - is still swallowed, and still rare.
     /// </remarks>
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; EtAlii.Adp.Tests' TestFolder.Report.Tests calls it, the other projects do not.
     internal static void Append(string target, string line)
     {
         lock (_reportGate)

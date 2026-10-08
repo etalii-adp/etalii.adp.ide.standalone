@@ -41,7 +41,7 @@ public sealed class SparqlElementMapper
     /// The drawn query: regions first so a frame is behind its contents, then nodes, edges,
     /// annotations, the header band, and the banner when the bound cut (Requirement 7.5).
     /// </summary>
-    public IReadOnlyList<DiagramElement> Elements(SparqlProjectionResult projection, SparqlLayoutResult layout)
+    private IReadOnlyList<DiagramElement> Elements(SparqlProjectionResult projection, SparqlLayoutResult layout)
     {
         ArgumentNullException.ThrowIfNull(projection);
         ArgumentNullException.ThrowIfNull(layout);

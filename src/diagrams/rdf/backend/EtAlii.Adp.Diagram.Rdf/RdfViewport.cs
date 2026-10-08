@@ -22,7 +22,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 internal static class RdfViewport
 {
     /// <summary>Whether the cell at <paramref name="position" /> overlaps <paramref name="viewport" />.</summary>
-    public static bool Admits(DiagramViewport viewport, RegistrationPosition position, double width, double height) =>
+    private static bool Admits(DiagramViewport viewport, RegistrationPosition position, double width, double height) =>
         position.X + width >= viewport.MinX
         && position.X <= viewport.MaxX
         && position.Y + height >= viewport.MinY

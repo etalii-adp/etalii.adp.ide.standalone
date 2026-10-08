@@ -36,22 +36,6 @@ public partial class ArchitecturePagesTests
     private const string ArchitecturePage = "docs/architecture.md";
     private const string StructurePage = "docs/solution-structure.md";
 
-    /// <summary>The pages, which carry every kind of assertion here.</summary>
-    private static readonly string[] Pages = [ArchitecturePage, StructurePage];
-
-    /// <summary>
-    /// The files a claim can travel into. Paths and project names are asserted here too, so a stale
-    /// project name in a steering file reddens exactly as one on a page does - counts are not.
-    /// </summary>
-    private static readonly string[] AgentFiles =
-    [
-        "CLAUDE.md",
-        ".spec-workflow/steering/structure.md",
-        ".spec-workflow/steering/tech.md",
-        ".spec-workflow/steering/product.md",
-        ".spec-workflow/steering/roles.md",
-    ];
-
     /// <summary>At most, per page (Requirement 7.2).</summary>
     private const int LineLimit = 150;
 

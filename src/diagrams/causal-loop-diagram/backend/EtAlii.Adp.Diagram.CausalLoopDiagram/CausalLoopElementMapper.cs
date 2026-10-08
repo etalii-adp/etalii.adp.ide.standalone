@@ -42,7 +42,7 @@ public sealed class CausalLoopElementMapper
         $"type.googleapis.com/{Wire.CausalLoopLoopPayload.Descriptor.FullName}";
 
     /// <summary>The element id a variable is addressed by.</summary>
-    public static string ElementIdOf(CausalLoopVariable variable)
+    private static string ElementIdOf(CausalLoopVariable variable)
     {
         ArgumentNullException.ThrowIfNull(variable);
         return $"variable:{variable.Id}";

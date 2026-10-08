@@ -54,7 +54,7 @@ internal sealed class AnsibleWatchedFolder : IDisposable
     public AnsibleProject Project { get; set; }
 
     /// <summary>How many sessions are holding this folder open. The watcher outlives the count reaching zero by nothing.</summary>
-    public int Claims { get; private set; }
+    private int Claims { get; set; }
 
     public void Claim()
     {

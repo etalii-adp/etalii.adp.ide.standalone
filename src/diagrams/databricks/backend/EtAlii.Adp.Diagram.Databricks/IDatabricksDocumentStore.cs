@@ -44,9 +44,6 @@ public interface IDatabricksDocumentStore : IReloadableDocumentStore
     /// </remarks>
     DocumentSaveResult Save(string path, DatabricksDocumentEntry entry);
 
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
-    void Forget(string path);
-
     /// <summary>
     /// The watcher saw the body deleted: the document becomes what a first open of a missing body
     /// shows, and the sessions are told (R2.5). The one call that clears a document a reload kept.

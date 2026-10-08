@@ -33,13 +33,13 @@ public sealed class FdgContextActionProvider : IContextActionProvider
     public const string RenameActionId = "fdg.rename";
 
     /// <summary>Rename a connection in place.</summary>
-    public const string RenameConnectionActionId = "fdg.rename-connection";
+    private const string RenameConnectionActionId = "fdg.rename-connection";
 
     /// <summary>Remove an element and every connection to or from it, confirming when there are any.</summary>
     public const string RemoveActionId = "fdg.remove";
 
     /// <summary>Remove a connection.</summary>
-    public const string DisconnectActionId = "fdg.disconnect";
+    private const string DisconnectActionId = "fdg.disconnect";
 
     private const string AddPrefix = "fdg.add.";
     private const string ConnectPrefix = "fdg.connect.";
@@ -59,7 +59,7 @@ public sealed class FdgContextActionProvider : IContextActionProvider
     public static string AddActionId(string elementType) => AddPrefix + elementType;
 
     /// <summary>The connect action for one relation.</summary>
-    public static string ConnectActionId(string relation) => ConnectPrefix + relation;
+    private static string ConnectActionId(string relation) => ConnectPrefix + relation;
 
     /// <inheritdoc />
     public ContextScope Scope => ContextScope.DiagramElement;

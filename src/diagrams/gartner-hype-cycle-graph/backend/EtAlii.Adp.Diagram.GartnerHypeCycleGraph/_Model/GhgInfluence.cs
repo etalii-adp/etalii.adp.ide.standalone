@@ -48,7 +48,7 @@ public sealed record GhgEnd(string Phase, string Edge, double? At)
         At is >= 0 and <= 1;
 
     /// <summary>The <c>at</c> as the document writes it: two decimals, invariant culture.</summary>
-    public static string FormatAt(double at) => Math.Round(at, 2).ToString("0.0#", CultureInfo.InvariantCulture);
+    private static string FormatAt(double at) => Math.Round(at, 2).ToString("0.0#", CultureInfo.InvariantCulture);
 
     /// <summary>The end as the property grid and a gesture write it: <c>phase/edge/at</c>.</summary>
     public override string ToString() => $"{Phase}/{Edge}/{(At is { } at ? FormatAt(at) : "")}";

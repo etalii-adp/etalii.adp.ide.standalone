@@ -54,7 +54,7 @@ public sealed class AddGhgInfluenceCommandHandler(IGhgDocumentStore documents) :
     /// when it may. The same checks the canvas's relation type declares - a trend or trigger as the
     /// source, only a trend as the target - so a request the canvas would not offer is refused here too.
     /// </summary>
-    public static string? RefusalFor(GhgModel model, string from, string to)
+    private static string? RefusalFor(GhgModel model, string from, string to)
     {
         ArgumentNullException.ThrowIfNull(model);
 

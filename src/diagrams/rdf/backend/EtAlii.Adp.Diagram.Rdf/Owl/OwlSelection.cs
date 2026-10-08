@@ -30,7 +30,7 @@ internal static class OwlSelection
     }
 
     /// <summary>Whether the id names an expression node - selectable, describable, edit-refused.</summary>
-    public static bool IsExpression(string? elementId) =>
+    private static bool IsExpression(string? elementId) =>
         elementId is not null && elementId.StartsWith("expr:", StringComparison.Ordinal);
 
     /// <summary>

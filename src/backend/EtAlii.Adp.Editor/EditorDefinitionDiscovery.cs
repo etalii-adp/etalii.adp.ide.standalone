@@ -16,12 +16,12 @@ namespace EtAlii.Adp.Editor;
 /// that declares its definition wrongly costs exactly its own entries and a warning in the
 /// log - never the application's startup.
 /// </remarks>
-public sealed class EditorDefinitionDiscovery
+public static class EditorDefinitionDiscovery
 {
     private const string CandidateTypeName = "Editor";
     private const string DefinitionsPropertyName = "Definitions";
 
-    private static readonly ILogger _logger = Log.ForContext<EditorDefinitionDiscovery>();
+    private static readonly ILogger _logger = Log.ForContext(typeof(EditorDefinitionDiscovery));
 
     /// <summary>Scans the application's own assemblies, found by the shared walk.</summary>
     public static IReadOnlyList<EditorDefinition> Discover()

@@ -42,15 +42,6 @@ public interface IPipelineDocumentStore
     DocumentSaveResult Save(string rootPath, string path, PipelineDocumentEntry entry);
 
     /// <summary>
-    /// Tells every session on this document to re-deliver, without changing the document - for a
-    /// change to how it is drawn rather than to what it says.
-    /// </summary>
-    void Touch(string rootPath, string path);
-
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
-    void Forget(string path);
-
-    /// <summary>
     /// Re-reads a document something outside changed, and tells the sessions on it. Templates are
     /// forgotten too: the edit may well have been to one of them. A no-op while the store's own
     /// save of that path is in flight: its own write on disk is not an external change, and must

@@ -31,7 +31,7 @@ public static class CausalLoopWriter
     public const string NoSuchLoop = "No loop of that identifier is in this diagram, so there is nothing to change.";
 
     /// <summary>A name that would collide with one already stated.</summary>
-    public const string AlreadyDeclared = "A variable of that name is already declared in this diagram.";
+    private const string AlreadyDeclared = "A variable of that name is already declared in this diagram.";
 
     /// <summary>A name the format cannot round-trip.</summary>
     public const string UnusableName = "A name needs at least one character and no whitespace, because a statement is read as words on one line.";
@@ -325,28 +325,6 @@ public static class CausalLoopWriter
     }
 
     // ---- links -----------------------------------------------------------------------------
-
-    /// <summary>States a causal link between two declared variables.</summary>
-    public static string AddLink(
-        CausalLoopDocument document, CausalLoopModel model, string from, string to, CausalLoopPolarity polarity)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(model);
-
-        if (!model.Declares(from) || !model.Declares(to))
-        {
-            return NoSuchVariable;
-        }
-
-        if (Find(model, from, to) is not null)
-        {
-            return "That link is already stated in this diagram.";
-        }
-
-        var link = new CausalLoopLink(from, to, polarity, false, false, null, "", new LineRange(0, 0));
-        document.Insert(AfterLast(document, model.Links.Select(l => l.Lines)), [LinkStatement(link)]);
-        return "";
-    }
 
     /// <summary>Changes what a link asserts.</summary>
     public static string SetLinkPolarity(

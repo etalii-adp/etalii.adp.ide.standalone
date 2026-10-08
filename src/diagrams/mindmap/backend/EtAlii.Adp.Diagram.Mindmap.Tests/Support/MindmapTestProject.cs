@@ -40,7 +40,7 @@ internal sealed class MindmapTestProject : IDisposable
 
     public string Root { get; }
 
-    public string AdpPath { get; }
+    private string AdpPath { get; }
 
     public string BodyPath { get; }
 
@@ -48,7 +48,7 @@ internal sealed class MindmapTestProject : IDisposable
 
     public IHistoryStack History => _services.GetRequiredService<IHistoryStackStore>().Get(Root);
 
-    public IMindmapDocumentStore Documents => _services.GetRequiredService<IMindmapDocumentStore>();
+    private IMindmapDocumentStore Documents => _services.GetRequiredService<IMindmapDocumentStore>();
 
     public MindmapViewState Views => _services.GetRequiredService<MindmapViewState>();
 

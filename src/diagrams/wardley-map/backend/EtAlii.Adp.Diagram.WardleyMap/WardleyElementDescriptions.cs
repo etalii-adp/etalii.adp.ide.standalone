@@ -32,7 +32,7 @@ public static class WardleyElementDescriptions
     }
 
     /// <summary>The element one identity entry names, or null when it is gone.</summary>
-    public static WardleyElementDescription? Of(WardleyMap map, WardleyIdentityEntry entry)
+    private static WardleyElementDescription? Of(WardleyMap map, WardleyIdentityEntry entry)
     {
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(entry);

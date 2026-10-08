@@ -33,7 +33,7 @@ public sealed class CausalLoopDocument
     public IReadOnlyList<CausalLoopLine> Lines => _lines;
 
     /// <summary>The ending a newly inserted line takes: whichever the document uses most, CRLF where it has none.</summary>
-    public string DominantEnding { get; }
+    private string DominantEnding { get; }
 
     /// <summary>Reads text into lines, preserving each line's own ending.</summary>
     public static CausalLoopDocument Parse(string text)

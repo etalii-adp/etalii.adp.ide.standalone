@@ -40,7 +40,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests.Parity;
 internal static class DependencyGraphTranscript
 {
     /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    public const string FileName = "dependency-graph.transcript.json";
+    private const string FileName = "dependency-graph.transcript.json";
 
     private const string TestProject = "EtAlii.Adp.Diagram.DependencyGraph.Tests";
     private const string Unknown = "parity:unknown";
@@ -48,7 +48,7 @@ internal static class DependencyGraphTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(DependencyGraphReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/dependency-graph</c>.</summary>
-    public static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = FindModuleFolder();
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -56,7 +56,7 @@ internal static class DependencyGraphTranscript
     private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, then the inline documents, in the order they are recorded.</summary>
-    public static IReadOnlyList<(string Name, Func<CancellationToken, Task<byte[]>> Read)> Corpus()
+    private static IReadOnlyList<(string Name, Func<CancellationToken, Task<byte[]>> Read)> Corpus()
     {
         static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
             paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);

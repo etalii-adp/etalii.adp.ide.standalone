@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Sankey;
 public static class SankeyFormat
 {
     /// <summary>The placeholder a format writes the number in.</summary>
-    public const string Placeholder = "{value}";
+    private const string Placeholder = "{value}";
 
     /// <summary>The number alone - what a document that states no format draws.</summary>
     public const string Plain = Placeholder;
@@ -32,5 +32,5 @@ public static class SankeyFormat
     }
 
     /// <summary>A number as a reader reads it: thousands grouped, at most two decimals, none when whole.</summary>
-    public static string Number(double value) => value.ToString("#,0.##", CultureInfo.InvariantCulture);
+    private static string Number(double value) => value.ToString("#,0.##", CultureInfo.InvariantCulture);
 }

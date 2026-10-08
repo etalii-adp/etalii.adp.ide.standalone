@@ -22,7 +22,7 @@ internal static class RdfSelection
         "The diagram shows only the first part of this file under the drawn-element budget, so edits through it are withheld - an edit through a partial view could touch what the view does not show. Edit the file as text instead.";
 
     /// <summary>Whether a path could be one of this family's bodies at all - a cheap first gate.</summary>
-    public static bool CouldBeFamilyFile(string path) =>
+    private static bool CouldBeFamilyFile(string path) =>
         IoPath.GetExtension(path).ToLowerInvariant() is ".ttl" or ".nt";
 
     /// <summary>

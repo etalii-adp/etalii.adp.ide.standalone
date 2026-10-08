@@ -36,9 +36,6 @@ public interface ITimelineDocumentStore
     /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
     DocumentSaveResult Save(string path, TimelineDocumentEntry entry);
 
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
-    void Forget(string path);
-
     /// <summary>
     /// Re-reads a document something outside changed, and tells the sessions on it. A no-op
     /// while the store's own save of that path is in flight, and afterwards while the file still

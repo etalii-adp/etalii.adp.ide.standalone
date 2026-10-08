@@ -30,7 +30,7 @@ public static class CycleFinder
     /// thousand distinct feedback loops has already defeated its reader - while bounding the
     /// exponential case that a dense graph produces.
     /// </remarks>
-    public const int DefaultBound = 1000;
+    private const int DefaultBound = 1000;
 
     /// <summary>Enumerates the elementary cycles of the model's link graph, in a stable order.</summary>
     public static CycleFinderResult Find(CausalLoopModel model, int bound = DefaultBound)

@@ -47,5 +47,4 @@ internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContex
 
     public void PushTransient(ShortGuid watchId, ContextSelectionRecord record) => throw new NotSupportedException();
 
-    public void UpdateFromTrack(ShortGuid watchId, int levelIndex, IReadOnlyList<string>? newRelativePath) => throw new NotSupportedException();
 }

@@ -46,10 +46,10 @@ internal static class TranscriptText
     public static string Decode(byte[] bytes) => _strictUtf8.GetString(bytes);
 
     /// <summary>The bytes of a (masked) text, for hashing.</summary>
-    public static byte[] Encode(string text) => _strictUtf8.GetBytes(text);
+    private static byte[] Encode(string text) => _strictUtf8.GetBytes(text);
 
     /// <summary>A number as the transcript writes it: shortest round-trip, invariant.</summary>
-    public static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
+    private static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
     /// <summary>A menu as lines: one per action, prefixed by its group's number, children indented below it.</summary>
     public static IReadOnlyList<string> MenuLines(IReadOnlyList<ContextActionGroupDefinition> groups)
@@ -123,32 +123,6 @@ internal static class TranscriptText
         return $"{row.Id} | {row.Label} | {JsonSerializer.Serialize(row.Value, StringOptions)} | {row.Editor} | {editable} | group {row.Group}{candidates}";
     }
 
-    /// <summary>
-    /// How the read-only rows relate to the readable ones, when one sentence says it exactly: "same",
-    /// or every editable row made read-only for one reason. Null when the rows must be listed.
-    /// </summary>
-    public static string? ReadOnlyVariant(IReadOnlyList<string> rows, IReadOnlyList<string> readOnlyRows)
-    {
-        if (rows.SequenceEqual(readOnlyRows, StringComparer.Ordinal))
-        {
-            return "same";
-        }
-
-        const string editable = " | editable | ";
-        var reason = readOnlyRows.Zip(rows)
-            .Where(pair => pair.Second.Contains(editable, StringComparison.Ordinal))
-            .Select(pair => pair.First[(pair.First.IndexOf(" | read-only (", StringComparison.Ordinal) + 3)..])
-            .Select(rest => rest[..(rest.IndexOf(") | group ", StringComparison.Ordinal) + 1)])
-            .FirstOrDefault();
-        if (reason is null || rows.Count != readOnlyRows.Count)
-        {
-            return null;
-        }
-
-        var expected = rows.Select(row => row.Replace(editable, $" | {reason} | ", StringComparison.Ordinal));
-        return expected.SequenceEqual(readOnlyRows, StringComparer.Ordinal) ? $"same, every editable row {reason}" : null;
-    }
-
     /// <summary>A string as a JSON literal, so a value's newlines and quotes stay on its line.</summary>
     public static JsonSerializerOptions StringOptions { get; } = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -206,7 +180,7 @@ internal static class TranscriptText
     }
 
     /// <summary>The most hunk text a step writes before it is summarised instead.</summary>
-    public const int MaxHunkText = 4096;
+    private const int MaxHunkText = 4096;
 
     /// <summary>A text's lines, each with its own line ending, so joining them gives the text back exactly.</summary>
     private static List<string> Lines(string text)

@@ -35,7 +35,7 @@ public static class DislModelBuilder
     public const string DerivedId = "std.derivedId";
 
     /// <summary>Items of a derived relation type whose ends its declaration does not allow (§4.11.3).</summary>
-    public const string DerivedEnds = "std.derivedEnds";
+    private const string DerivedEnds = "std.derivedEnds";
 
     /// <summary>A derived type whose <c>from</c> or per-item expressions failed (§4.11.5).</summary>
     public const string DerivedFailed = "std.derivedFailed";

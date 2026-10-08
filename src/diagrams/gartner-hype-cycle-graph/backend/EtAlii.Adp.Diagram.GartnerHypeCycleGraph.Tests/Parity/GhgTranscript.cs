@@ -41,17 +41,17 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests.Parity;
 internal static class GhgTranscript
 {
     /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    public const string FileName = "ghg.transcript.json";
+    private const string FileName = "ghg.transcript.json";
 
     /// <summary>A document with more elements than this has its property rows sampled rather than listed for every element.</summary>
-    public const int FullRowsUpTo = 40;
+    private const int FullRowsUpTo = 40;
 
     /// <summary>
     /// A document with more elements than this skips the Arrange step of its edit sequence: arranging
     /// technology-trends' 518 entries takes about a minute, which a test run cannot spend on every
     /// gate. Every other document of the corpus is arranged.
     /// </summary>
-    public const int ArrangeUpTo = 200;
+    private const int ArrangeUpTo = 200;
 
     private const string TestProject = "EtAlii.Adp.Diagram.GartnerHypeCycleGraph.Tests";
     private const string Unknown = "parity:unknown";

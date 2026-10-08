@@ -18,7 +18,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 
     public override string FamilyName => "yaml";
 
-    public override IReadOnlyList<Span> Leaves => _leaves;
+    protected override IReadOnlyList<Span> Leaves => _leaves;
 
     public override void Parse()
     {
@@ -67,7 +67,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     }
 
     /// <summary>Between leaves there is only whitespace, comments, indicators, anchors, tags and document markers.</summary>
-    public override bool IsTrivia(Span gap)
+    protected override bool IsTrivia(Span gap)
     {
         var bytes = Text.Bytes;
         for (var i = gap.Start; i < gap.End; i++)
@@ -473,7 +473,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             {
                 var first = container.Value.Entries[0];
                 var firstStart = (first.LineSpan ?? first.Own).Start;
-                var head = new Span(containerLine.Start, firstStart);
+                var head = containerLine with { End = firstStart };
                 if (!plan.Touches(head)) plan.Add(SpliceOperation.RemoveContainer, head, "");
             }
         }
@@ -491,6 +491,6 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         if (removed.Any(other => other.Entry is TreeEntry entry && (entry.LineSpan ?? entry.Own).End == span.Start)) return span;
         var start = span.Start - 1;
         if (start > 0 && Text.Bytes[start - 1] == (byte)'\r') start--;
-        return new Span(start, span.End);
+        return span with { Start = start };
     }
 }

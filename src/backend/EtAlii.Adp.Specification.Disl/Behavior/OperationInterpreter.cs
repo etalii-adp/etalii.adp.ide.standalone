@@ -250,7 +250,7 @@ public static class OperationInterpreter
     /// <summary>
     /// Whether operation <paramref name="operationId"/> is for <paramref name="self"/> (null for the diagram):
     /// its <c>for</c> names the element's type or one it inherits from, or the diagram, the selection, or nothing.
-    /// Unlike <see cref="Unavailable(DislSpecification, string, DislDiagram, DislElement?, DislEnv?)"/> it asks
+    /// Unlike the availability check a run makes, it asks
     /// nothing about the operation's state, so a host can tell an entry that is not offered here from one
     /// that is refused now.
     /// </summary>
@@ -264,22 +264,6 @@ public static class OperationInterpreter
         }
         var targets = DislJson.Strings(operation, "for");
         return targets.Count == 0 || targets.Contains("diagram") || targets.Contains("selection") || self is not null && targets.Any(self.IsA);
-    }
-
-    /// <summary>Why operation <paramref name="operationId"/> cannot run on <paramref name="self"/> now, or null when it can.</summary>
-    public static string? Unavailable(DislSpecification specification, string operationId, DislDiagram diagram, DislElement? self, DislEnv? env = null)
-    {
-        ArgumentNullException.ThrowIfNull(specification);
-        ArgumentNullException.ThrowIfNull(diagram);
-        if (!specification.Root.TryGetProperty("behavior", out var behavior) || !behavior.TryGetProperty("operations", out var operations)
-            || !operations.TryGetProperty(operationId, out var operation))
-        {
-            return $"There is no operation '{operationId}'.";
-        }
-        var variables = Variables(DislContexts.Operation, diagram, env);
-        variables["self"] = self;
-        variables["selection"] = self is null ? new List<object?>() : [self];
-        return Unavailable(specification, operation, DislJson.Pointer("/behavior/operations", operationId), diagram, self is null ? null : self.IsA, variables, operationId);
     }
 
     internal static Dictionary<string, object?> Variables(string context, DislDiagram diagram, DislEnv? env)

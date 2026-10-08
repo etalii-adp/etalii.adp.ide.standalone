@@ -54,7 +54,7 @@ public sealed class SupplyChainElementMapper
     public const string FlowType = Prefix + "flow";
 
     /// <summary>The library type a stage is drawn as.</summary>
-    public static string NodeTypeOf(string stage) => Prefix + stage;
+    private static string NodeTypeOf(string stage) => Prefix + stage;
 
     /// <summary>Everything drawable, unculled, with no trace - what a selection is looked up in.</summary>
     public IReadOnlyList<DiagramElement> All(SupplyChainModel model) =>

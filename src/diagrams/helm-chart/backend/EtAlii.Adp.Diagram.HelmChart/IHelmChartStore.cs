@@ -21,9 +21,6 @@ public interface IHelmChartStore
     /// <summary>The project for <paramref name="folder"/>, reading and watching it if this is the first ask.</summary>
     HelmChart GetOrLoad(string folder);
 
-    /// <summary>The project for <paramref name="folder"/> if one is loaded, without loading one.</summary>
-    HelmChart? Get(string folder);
-
     /// <summary>
     /// <see cref="GetOrLoad"/>, and a claim on the folder's lifetime. Every call must be matched
     /// by a <see cref="Release"/>.

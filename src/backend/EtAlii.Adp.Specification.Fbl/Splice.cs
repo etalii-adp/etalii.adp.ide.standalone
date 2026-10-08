@@ -19,7 +19,7 @@ public enum SpliceOperation
 /// <summary>The replacement of the bytes <see cref="Start"/> to <see cref="End"/> with <see cref="Text"/>.</summary>
 public sealed record Splice(SpliceOperation Operation, int Start, int End, string Text)
 {
-    public static string NameOf(SpliceOperation operation) => operation switch
+    private static string NameOf(SpliceOperation operation) => operation switch
     {
         SpliceOperation.ReplaceValue => "replace-value",
         SpliceOperation.InsertKey => "insert-key",

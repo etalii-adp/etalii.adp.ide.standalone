@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>
@@ -66,7 +64,4 @@ public static class WardleyDecorators
 
     /// <summary>The five, listed for an error message.</summary>
     public static string Vocabulary => string.Join(", ", All.Select(Spell));
-
-    /// <summary>A number as the DSL writes it, without a trailing zero.</summary>
-    internal static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }

@@ -30,7 +30,7 @@ public static class ShaclActions
     public const string AddTargetClassActionId = "shacl.add-target-class";
 
     /// <summary>Declare a node target on a shape.</summary>
-    public const string AddTargetNodeActionId = "shacl.add-target-node";
+    private const string AddTargetNodeActionId = "shacl.add-target-node";
 
     /// <summary>Add a property row to a shape (Requirement 5.4).</summary>
     public const string AddPropertyRowActionId = "shacl.add-property-row";
@@ -39,7 +39,7 @@ public static class ShaclActions
     public const string DeactivateActionId = "shacl.deactivate";
 
     /// <inheritdoc cref="DeactivateActionId" />
-    public const string ReactivateActionId = "shacl.reactivate";
+    private const string ReactivateActionId = "shacl.reactivate";
 
     /// <summary>Remove a shape and the blank subtrees only it reaches (Requirement 5.6).</summary>
     public const string RemoveShapeActionId = "shacl.remove-shape";

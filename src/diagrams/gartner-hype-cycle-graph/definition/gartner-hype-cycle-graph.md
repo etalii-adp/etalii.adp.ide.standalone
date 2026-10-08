@@ -80,7 +80,7 @@ Setting a boundary, from a handle or from the grid, pins it and clamps every sto
 
 - **A changed phase count keeps the stored boundaries** (`GhgWriter.SetPhases`, Requirement 3.4). A boundary beyond the new last visible phase stays in the file, is not drawn and is not a neighbour for spreading.
 - **A span shorter than its phases is refused**: a trend showing N phases must be at least N months long. The specification states this as change and placement constraints; the exact refusal text is in [Refusals and confirmations](#refusals-and-confirmations).
-- **Per-segment tooltips.** Hovering a phase shows its full Gartner name: "Peak of Inflated Expectations", "Trough of Disillusionment", "Slope of Enlightenment", "Plateau of Productivity" (`GhgPhases.GartnerNames`, Requirement 4.4). The specification declares each on its part, as DISL 0.3's part `tooltip`. The trend itself has no tooltip of its own.
+- **Per-segment tooltips.** Hovering a phase shows its full Gartner name: "Peak of Inflated Expectations", "Trough of Disillusionment", "Slope of Enlightenment", "Plateau of Productivity" (Requirement 4.4). The specification declares each on its part, as DISL 0.3's part `tooltip`. The trend itself has no tooltip of its own.
 - **Phase titles** in the grid and in influence lists are Peak, Trough, Slope and Plateau (the `Phase` enum labels).
 - **Even phases** forgets all three stored boundaries. It is listed only while one is stored; asked for otherwise it is refused with "This trend's phases are already even."
 

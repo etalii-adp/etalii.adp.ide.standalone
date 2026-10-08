@@ -93,7 +93,7 @@ internal sealed class ReadElement
 
     public ReadElement? TargetElement { get; set; }
 
-    public int Line { get; set; }
+    public int Line { get; init; }
 
     public bool IsRelation => Rule.IsRelation;
 
@@ -111,9 +111,9 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
     public BodyText Text { get; } = text;
 
-    public FblBinding Binding { get; } = binding;
+    protected FblBinding Binding { get; } = binding;
 
-    public FblOptions Options { get; } = options;
+    private FblOptions Options { get; } = options;
 
     /// <summary>Where and why the body is unreadable (FBL §7.5), or null.</summary>
     public (int Offset, string Message)? Unreadable { get; protected set; }
@@ -133,10 +133,10 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// Every byte outside them is trivia (FBL §4.1): the invariant every reader is held to, checked
     /// with <see cref="IsTrivia"/> on each gap.
     /// </summary>
-    public abstract IReadOnlyList<Span> Leaves { get; }
+    protected abstract IReadOnlyList<Span> Leaves { get; }
 
     /// <summary>Whether the bytes of <paramref name="gap"/> are trivia of this family: whitespace, line endings, punctuation.</summary>
-    public abstract bool IsTrivia(Span gap);
+    protected abstract bool IsTrivia(Span gap);
 
     /// <summary>The gaps between leaves that are not trivia: empty when the reading accounts for every byte.</summary>
     public IReadOnlyList<Span> Unaccounted()
@@ -210,9 +210,9 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
     // ---- shared helpers ----
 
-    public string NewlineAt(int offset) => Text.NewlineAt(offset, Binding.Text.Newline);
+    protected string NewlineAt(int offset) => Text.NewlineAt(offset, Binding.Text.Newline);
 
-    public BoundedRegex Regex(string expression, bool caseInsensitive)
+    protected BoundedRegex Regex(string expression, bool caseInsensitive)
     {
         var key = (caseInsensitive ? "i:" : "s:") + expression;
         if (!_regexes.TryGetValue(key, out var regex))
@@ -223,7 +223,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         return regex;
     }
 
-    public SourceLocation Locate(Span span)
+    protected SourceLocation Locate(Span span)
     {
         (int line, int column) = Text.Position(span.Start);
         return new SourceLocation(Options.FileName, line, column, Text.CodePoints(span.Start, span.End));
@@ -233,15 +233,15 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
         Findings.Add(new Finding(code, severity, message, span is { } s ? Locate(s) : null));
 
     /// <summary>The indentation one step deeper than <paramref name="indent"/>, by FBL §6.3's step.</summary>
-    public string Indentation(int columns) => new(IndentCharacter, columns);
+    protected string Indentation(int columns) => new(IndentCharacter, columns);
 
-    public virtual char IndentCharacter => Binding.Text.Indent == 0 ? '\t' : ' ';
+    private char IndentCharacter => Binding.Text.Indent == 0 ? '\t' : ' ';
 
     /// <summary>
     /// The indentation step (FBL §6.3): the difference between the indentation of the first parent
     /// and child pair in document order, else the binding's <c>text.indent</c>.
     /// </summary>
-    public virtual int Step
+    protected virtual int Step
     {
         get
         {
@@ -257,7 +257,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     }
 
     /// <summary>The bytes of the line holding <paramref name="offset"/> before it, when they are all whitespace.</summary>
-    public bool OnlyWhitespaceBefore(int offset)
+    protected bool OnlyWhitespaceBefore(int offset)
     {
         var line = Text.Lines[Text.LineIndexAt(offset)];
         for (var i = Math.Max(line.Start, Text.BomLength); i < offset; i++)
@@ -268,7 +268,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     }
 
     /// <summary>Whether only whitespace (and a comment, when <paramref name="comment"/> is given) follows <paramref name="offset"/> on its line.</summary>
-    public bool OnlyTriviaAfter(int offset, byte? comment = null)
+    protected bool OnlyTriviaAfter(int offset, byte? comment = null)
     {
         var line = Text.Lines[Text.LineIndexAt(offset)];
         for (var i = offset; i < line.ContentEnd; i++)

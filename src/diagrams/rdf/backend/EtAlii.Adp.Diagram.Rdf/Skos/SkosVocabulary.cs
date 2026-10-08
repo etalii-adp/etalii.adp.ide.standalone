@@ -27,11 +27,11 @@ public static class SkosVocabulary
     public const string Member = Skos + "member";
     public const string MemberList = Skos + "memberList";
 
-    public const string ExactMatch = Skos + "exactMatch";
-    public const string CloseMatch = Skos + "closeMatch";
-    public const string BroadMatch = Skos + "broadMatch";
-    public const string NarrowMatch = Skos + "narrowMatch";
-    public const string RelatedMatch = Skos + "relatedMatch";
+    private const string ExactMatch = Skos + "exactMatch";
+    private const string CloseMatch = Skos + "closeMatch";
+    private const string BroadMatch = Skos + "broadMatch";
+    private const string NarrowMatch = Skos + "narrowMatch";
+    private const string RelatedMatch = Skos + "relatedMatch";
 
     /// <summary>The documentation properties the property grid edits, in the grid's own order.</summary>
     public static readonly IReadOnlyList<string> Documentation =

@@ -14,7 +14,7 @@ public sealed class CelProgram
 
     public string Source { get; }
 
-    internal CelNode Root { get; }
+    private CelNode Root { get; }
 
     /// <summary>Evaluates with <paramref name="variables"/>; a value of <see cref="CelError"/> when evaluation fails.</summary>
     public object? Evaluate(IReadOnlyDictionary<string, object?> variables) => Evaluate(variables, new CelBudget(_budget));

@@ -216,7 +216,7 @@ public static class DiagramFilePair
     /// rather than produced.
     /// </para>
     /// </remarks>
-    internal static (string Path, string? AmbiguousWith, bool SubjectIsShared) ResolveSibling(string adpPath, string extension)
+    private static (string Path, string? AmbiguousWith, bool SubjectIsShared) ResolveSibling(string adpPath, string extension)
     {
         ArgumentNullException.ThrowIfNull(adpPath);
         ArgumentNullException.ThrowIfNull(extension);

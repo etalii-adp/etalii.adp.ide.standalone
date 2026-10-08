@@ -174,7 +174,7 @@ internal static class HandWrittenGhgEdits
     }
 
     /// <summary>Removes one note. A note takes part in no relation, so nothing else goes with it.</summary>
-    public static GhgEdit RemoveNote(GhgBody body, GhgNote note)
+    private static GhgEdit RemoveNote(GhgBody body, GhgNote note)
     {
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(note);

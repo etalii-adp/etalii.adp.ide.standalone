@@ -39,7 +39,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.Parity;
 internal static class AbmTranscript
 {
     /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    public const string FileName = "abm.transcript.json";
+    private const string FileName = "abm.transcript.json";
 
     private const string TestProject = "EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests";
     private const string Unknown = "parity:unknown";
@@ -47,7 +47,7 @@ internal static class AbmTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(AgentBehaviorModellingReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/agent-behavior-modelling</c>.</summary>
-    public static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = FindModuleFolder();
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -55,7 +55,7 @@ internal static class AbmTranscript
     private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    public static IReadOnlyList<string> Files()
+    private static IReadOnlyList<string> Files()
     {
         static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
             paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
@@ -393,7 +393,7 @@ internal static class AbmTranscript
 
         public string Registration => Path.ChangeExtension(Body, DiagramFileName.Extension);
 
-        public AbmDocumentStore Store { get; } = new();
+        private AbmDocumentStore Store { get; } = new();
 
         public HistoryStackStore History { get; }
 

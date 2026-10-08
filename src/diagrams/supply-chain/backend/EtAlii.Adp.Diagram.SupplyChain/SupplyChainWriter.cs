@@ -33,9 +33,9 @@ public readonly record struct SupplyChainEdit(string? Refusal)
 /// </remarks>
 public static class SupplyChainWriter
 {
-    internal const string GroupsSection = SupplyChainParser.GroupsKey + ":";
-    internal const string NodesSection = SupplyChainParser.NodesKey + ":";
-    internal const string FlowsSection = SupplyChainParser.FlowsKey + ":";
+    private const string GroupsSection = SupplyChainParser.GroupsKey + ":";
+    private const string NodesSection = SupplyChainParser.NodesKey + ":";
+    private const string FlowsSection = SupplyChainParser.FlowsKey + ":";
 
     /// <summary>Writes a text key, removing it instead when <paramref name="removeWhenEmpty"/> and the value is blank.</summary>
     public static SupplyChainEdit SetText(LineDocument document, LineRange range, string key, string value, bool removeWhenEmpty)
@@ -297,7 +297,7 @@ public static class SupplyChainWriter
     /// like <c>[EU]</c>, <c>yes</c> or <c>12</c> would read back as a list, a boolean or a number,
     /// so those are quoted here as well.
     /// </remarks>
-    internal static string Text(string value)
+    private static string Text(string value)
     {
         var quoted = LineSplice.Quote(value);
         if (quoted.StartsWith('"'))
@@ -318,5 +318,5 @@ public static class SupplyChainWriter
     }
 
     /// <summary>A number the way the document reads it: invariant culture, no trailing zeros.</summary>
-    internal static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+    private static string Number(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 }

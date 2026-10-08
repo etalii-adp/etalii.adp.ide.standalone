@@ -31,9 +31,6 @@ public interface ICausalLoopDocumentStore : IReloadableDocumentStore
     /// <returns><see cref="DocumentSaveResult.Ok"/> when it was written, or a failure whose <see cref="DocumentSaveResult.Error"/> says why it was not (backend-centralization R3.1).</returns>
     DocumentSaveResult Save(string path, CausalLoopDocumentEntry entry);
 
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
-    void Forget(string path);
-
     /// <summary>
     /// The body was deleted - the watcher's evidence, not a read that failed - so the diagram
     /// stops being drawn. A reload that cannot read keeps the last good document; this does not.

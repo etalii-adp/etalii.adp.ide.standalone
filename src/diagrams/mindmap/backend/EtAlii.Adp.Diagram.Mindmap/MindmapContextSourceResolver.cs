@@ -143,7 +143,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         });
     }
 
-    internal static string[] PathOf(MindmapNode node)
+    private static string[] PathOf(MindmapNode node)
     {
         var segments = new List<string>();
         for (var current = node; current is not null; current = current.Parent)

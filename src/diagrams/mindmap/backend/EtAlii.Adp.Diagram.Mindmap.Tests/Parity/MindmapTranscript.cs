@@ -36,7 +36,7 @@ namespace EtAlii.Adp.Diagram.Mindmap.Tests.Parity;
 internal static partial class MindmapTranscript
 {
     /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    public const string FileName = "mindmap.transcript.json";
+    private const string FileName = "mindmap.transcript.json";
 
     private const string TestProject = "EtAlii.Adp.Diagram.Mindmap.Tests";
     private const string Unknown = "parity:unknown";
@@ -44,7 +44,7 @@ internal static partial class MindmapTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(MindmapReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/mindmap</c>.</summary>
-    public static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = FindModuleFolder();
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -52,7 +52,7 @@ internal static partial class MindmapTranscript
     private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    public static IReadOnlyList<string> Files()
+    private static IReadOnlyList<string> Files()
     {
         static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
             paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
@@ -394,7 +394,7 @@ internal static partial class MindmapTranscript
 
         public IHistoryStack History => _services.GetRequiredService<IHistoryStackStore>().Get(Folder);
 
-        public IMindmapDocumentStore Documents => _services.GetRequiredService<IMindmapDocumentStore>();
+        private IMindmapDocumentStore Documents => _services.GetRequiredService<IMindmapDocumentStore>();
 
         public MindmapViewState Views => _services.GetRequiredService<MindmapViewState>();
 

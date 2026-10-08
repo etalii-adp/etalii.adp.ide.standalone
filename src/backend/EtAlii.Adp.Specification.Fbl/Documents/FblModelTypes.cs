@@ -58,10 +58,6 @@ public sealed class FblBinding
 
     /// <summary>Elements before relations, in binding order: the order rules are offered an entry (FBL §5.1).</summary>
     public IEnumerable<Rule> AllRules => Elements.Concat(Relations);
-
-    public Rule? FindRule(string name) => AllRules.FirstOrDefault(r => r.Name == name);
-
-    public BlockRule? FindBlock(string name) => Blocks.FirstOrDefault(b => b.Name == name);
 }
 
 public sealed class Claims

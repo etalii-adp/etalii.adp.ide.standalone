@@ -42,7 +42,7 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests.Parity;
 internal static class TimelineTranscript
 {
     /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    public const string FileName = "timeline.transcript.json";
+    private const string FileName = "timeline.transcript.json";
 
     private const string TestProject = "EtAlii.Adp.Diagram.Timeline.Tests";
     private const string Unknown = "parity:unknown";
@@ -53,7 +53,7 @@ internal static class TimelineTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromFiles(TimelineReflection.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/timeline</c>.</summary>
-    public static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = FindModuleFolder();
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -61,7 +61,7 @@ internal static class TimelineTranscript
     private static string SourceFolder => Path.GetFullPath(Path.Combine(ModuleFolder, "..", ".."));
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    public static IReadOnlyList<string> Corpus()
+    private static IReadOnlyList<string> Corpus()
     {
         static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
             paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
@@ -404,7 +404,7 @@ internal static class TimelineTranscript
 
         public string Body { get; }
 
-        public TimelineDocumentStore Store { get; } = new();
+        private TimelineDocumentStore Store { get; } = new();
 
         public HistoryStackStore History { get; }
 

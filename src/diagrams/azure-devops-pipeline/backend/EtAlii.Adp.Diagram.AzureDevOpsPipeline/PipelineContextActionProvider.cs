@@ -56,7 +56,7 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
     public const string ClearDependenciesActionId = "azure-pipeline.clear-dependencies";
 
     /// <summary>Shows a stage's jobs, or hides them again.</summary>
-    public const string ToggleStageActionId = "azure-pipeline.toggle-stage";
+    private const string ToggleStageActionId = "azure-pipeline.toggle-stage";
 
     /// <summary>Opens or closes a job, showing or hiding its steps (Requirement 8.2).</summary>
     public const string ToggleJobActionId = "azure-pipeline.toggle-job";

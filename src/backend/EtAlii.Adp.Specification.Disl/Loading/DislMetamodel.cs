@@ -20,16 +20,10 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
     {
         "string", "text", "int", "number", "bool", "date", "datetime", "yearMonth", "time", "duration", "color", "uri", "expression", "json", "binary",
     };
-
-    /// <summary>The extension properties (<c>x-</c>) of the declaration, unread and unchanged.</summary>
-    public IReadOnlyDictionary<string, JsonElement> Extensions => DislJson.Extensions(Json);
 }
 
 /// <summary>One value of an enumeration (DISL §4.5): its key, which CEL sees, and its stored form, which is written.</summary>
-public sealed record DislEnumValue(string Key, string Stored, string? Label, JsonElement Json)
-{
-    public IReadOnlyDictionary<string, JsonElement> Extensions => DislJson.Extensions(Json);
-}
+public sealed record DislEnumValue(string Key, string Stored, string? Label, JsonElement Json);
 
 /// <summary>An enumeration (DISL §4.5), its values in declaration order, which is the display order.</summary>
 public sealed record DislEnum(string Name, IReadOnlyList<DislEnumValue> Values, bool Extensible, bool Ordered, JsonElement Json)

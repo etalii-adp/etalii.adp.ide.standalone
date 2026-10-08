@@ -16,7 +16,7 @@ public class SelfOrganizingLayoutTests
     /// Set on the child process of the two-process determinism test; names the file it writes its
     /// positions to. Absent in an ordinary run, which is what skips the emitter.
     /// </summary>
-    internal const string EmitToVariable = "ETALII_ADP_CAUSAL_LOOP_LAYOUT_OUT";
+    private const string EmitToVariable = "ETALII_ADP_CAUSAL_LOOP_LAYOUT_OUT";
 
     /// <summary>The line ending this module's documents use, named so a fixture never spells it.</summary>
     private const string Newline = "\r\n";

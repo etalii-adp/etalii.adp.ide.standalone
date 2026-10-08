@@ -22,7 +22,7 @@ public sealed record DislFinding(string Code, string ConstraintId, string Severi
 public sealed record DislReaderFinding(string BuiltIn, IReadOnlyDictionary<string, object?> Detail, int? Line)
 {
     public const string Unparseable = "std.unparseable";
-    public const string UnreadableEntry = "std.unreadableEntry";
+    private const string UnreadableEntry = "std.unreadableEntry";
 
     /// <summary>An entry the reader could not make an element of, for <paramref name="reason"/>.</summary>
     public static DislReaderFinding Unreadable(string reason, int? line) => new(UnreadableEntry, new Dictionary<string, object?> { ["reason"] = reason }, line);

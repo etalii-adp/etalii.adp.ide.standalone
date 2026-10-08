@@ -20,7 +20,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 public static class SkosRegistrationLanguage
 {
     /// <summary>The header key item 10 claims for this reading.</summary>
-    public const string Key = "language";
+    private const string Key = "language";
 
     /// <summary>Core's own header-region limit, matched so the two scans agree on the region.</summary>
     private const int HeaderScanLimit = 8;

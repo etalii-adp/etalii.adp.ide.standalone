@@ -33,7 +33,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling;
 public sealed class AbmMarkdownPlugin : IPersistencePlugin
 {
     /// <summary>The plugin's id, as the binding's <c>reader.plugin</c> names it.</summary>
-    public const string PluginId = "net.etalii.adp.etalii.abmMarkdown";
+    private const string PluginId = "net.etalii.adp.etalii.abmMarkdown";
 
     /// <inheritdoc />
     public string Id => PluginId;
@@ -83,7 +83,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
     public IReadOnlyList<string> Watch(PluginReadResult last) => [];
 
     /// <summary>The kind of a node type, or null for a type that is not one of the eleven.</summary>
-    internal static string? KindOf(string type) => AbmDefinition.KindOfType.GetValueOrDefault(type);
+    private static string? KindOf(string type) => AbmDefinition.KindOfType.GetValueOrDefault(type);
 
     /// <summary>The change made on <paramref name="document"/>, as the module's commands make it.</summary>
     private static AbmEdit Apply(LineDocument document, AbmModel model, ModelChange change)
@@ -204,7 +204,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
     /// The one splice that turns <paramref name="before"/> into <paramref name="after"/>: the bytes between
     /// their common start and their common end, widened to whole characters. Null when nothing differs.
     /// </summary>
-    internal static Splice? Difference(byte[] before, byte[] after, SpliceOperation operation)
+    private static Splice? Difference(byte[] before, byte[] after, SpliceOperation operation)
     {
         var prefix = 0;
         var limit = Math.Min(before.Length, after.Length);
@@ -273,7 +273,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
     };
 
     /// <summary>The byte offset each line starts at: 0, then after every line feed.</summary>
-    internal static int[] LineStarts(byte[] bytes)
+    private static int[] LineStarts(byte[] bytes)
     {
         List<int> starts = [0];
         for (var index = 0; index < bytes.Length; index++)

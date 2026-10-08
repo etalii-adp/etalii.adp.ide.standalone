@@ -49,9 +49,6 @@ public interface IC4DocumentStore
     /// </summary>
     void Touch(string path);
 
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
-    void Forget(string path);
-
     /// <summary>
     /// Re-reads a document an external tool changed, and tells the sessions on it. A no-op
     /// while the store's own save of that path is in flight: its own write on disk is not an

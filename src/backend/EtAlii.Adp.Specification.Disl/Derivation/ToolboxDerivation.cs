@@ -84,7 +84,7 @@ public static class ToolboxDerivation
     }
 
     /// <summary>A <c>doc</c> (§2.4) as one text: a string, or an object's summary.</summary>
-    internal static string Doc(JsonElement owner) =>
+    private static string Doc(JsonElement owner) =>
         owner.TryGetProperty("doc", out var doc)
             ? doc.ValueKind == JsonValueKind.String ? doc.GetString()! : DislJson.String(doc, "summary") ?? ""
             : "";

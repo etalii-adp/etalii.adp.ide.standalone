@@ -25,9 +25,9 @@ public sealed class OpenBody : SplicedFile
         Reading = body.Reading;
     }
 
-    public FblBinding Binding { get; }
+    private FblBinding Binding { get; }
 
-    public FblOptions Options { get; }
+    private FblOptions Options { get; }
 
     public FblModel Model => Reading.ToModel();
 

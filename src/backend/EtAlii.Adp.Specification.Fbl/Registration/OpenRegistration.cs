@@ -32,7 +32,7 @@ public sealed class OpenRegistration : SplicedFile
 
     public static OpenRegistration Open(byte[] bytes) => new(bytes ?? throw new ArgumentNullException(nameof(bytes)));
 
-    public PlanResult Plan(ModelChange change)
+    private PlanResult Plan(ModelChange change)
     {
         switch (change)
         {
@@ -147,5 +147,5 @@ public sealed class OpenRegistration : SplicedFile
     }
 
     /// <summary>Ordinal order of ids: byte order of their UTF-8 encoding (FBL §8.3).</summary>
-    public static int CompareUtf8(string a, string b) => Encoding.UTF8.GetBytes(a).AsSpan().SequenceCompareTo(Encoding.UTF8.GetBytes(b));
+    private static int CompareUtf8(string a, string b) => Encoding.UTF8.GetBytes(a).AsSpan().SequenceCompareTo(Encoding.UTF8.GetBytes(b));
 }

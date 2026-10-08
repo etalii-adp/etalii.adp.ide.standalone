@@ -43,10 +43,10 @@ internal static class DotNetDefinition
     private static readonly DislEnv Env = new(ReadOnly: true);
 
     /// <summary>The definition.</summary>
-    public static DislSpecification Specification => Loaded.Value.Specification;
+    private static DislSpecification Specification => Loaded.Value.Specification;
 
     /// <summary>The wire ids of <c>x-dotnet</c>.</summary>
-    public static WireIdMap Ids => LoadedIds.Value;
+    private static WireIdMap Ids => LoadedIds.Value;
 
     /// <summary>Why nothing here can be written: the definition's <c>std.readOnly</c>.</summary>
     public static string Refusal => LoadedRefusal.Value;
@@ -62,7 +62,7 @@ internal static class DotNetDefinition
     }
 
     /// <summary><paramref name="graph"/> as the definition's model: a node per project and package, a relation per reference.</summary>
-    public static DislDiagram ModelOf(DependencyGraphModel graph)
+    private static DislDiagram ModelOf(DependencyGraphModel graph)
     {
         ArgumentNullException.ThrowIfNull(graph);
         return Models.GetValue(graph, Build);
