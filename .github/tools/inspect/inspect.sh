@@ -71,18 +71,9 @@ if [ -n "$BUILD" ]; then
   fi
 fi
 
-# The one exclusion, Broken.csproj, is malformed on purpose (tech.md, "JetBrains Rider warnings",
-# says why). It is excluded twice, and saying so is the point: the file mask in
-# src/backend/EtAlii.Adp.sln.DotSettings is what Rider honours, and was measured removing exactly
-# these four errors on Windows; on the Linux runner that mask - and two other forms of the same
-# setting - left all four in place while a severity entry in the same file did bind. So the
-# inspector is also told by path. Same file, same reason; nothing else is excluded here.
-EXCLUDE='**/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/Fixtures/cpm/Broken.csproj'
-
 echo "inspect.sh: inspecting with SDK $SDK_VERSION ($TOOLSET)"
 (cd "$ROOT" && dotnet jb inspectcode "$SOLUTION" \
   --no-build \
-  --exclude="$EXCLUDE" \
   --dotnetcoresdk="$SDK_VERSION" \
   --toolset-path="$TOOLSET" \
   --severity=SUGGESTION \

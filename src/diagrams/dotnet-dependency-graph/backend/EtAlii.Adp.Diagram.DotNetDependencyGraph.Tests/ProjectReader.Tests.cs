@@ -146,15 +146,28 @@ public class ProjectReaderTests
         // Omit, report, continue: one bad project file costs the graph that project, never the
         // diagram (the design's error scenario 3).
 
+        // The malformed project is written here rather than checked in: a broken .csproj in the
+        // repository is reported as an error by every IDE that opens the solution.
+
         // Arrange.
+        var folder = Directory.CreateTempSubdirectory("ddg-broken-").FullName;
+        var path = Path.Combine(folder, "Broken.csproj");
+        File.WriteAllText(path, "<Project><broken");
         var reader = new ProjectReader();
 
-        // Act.
-        var reading = reader.Read(FixturePath("Broken.csproj"));
+        try
+        {
+            // Act.
+            var reading = reader.Read(path);
 
-        // Assert.
-        Assert.Single(reading.Failures);
-        Assert.Empty(reading.PackageReferences);
-        Assert.Empty(reading.ProjectReferences);
+            // Assert.
+            Assert.Single(reading.Failures);
+            Assert.Empty(reading.PackageReferences);
+            Assert.Empty(reading.ProjectReferences);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 }
