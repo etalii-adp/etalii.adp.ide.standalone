@@ -23,7 +23,7 @@ public class ConstraintEvaluationTests
     private static DislElement Node(DislDiagram diagram, string type, string id, int line, IReadOnlyDictionary<string, object?>? attributes = null) =>
         diagram.Add(new DislElement(diagram, diagram.Specification.Metamodel.TypeOf(type)!, id, attributes) { Line = line });
 
-    private static DislElement Relation(DislDiagram diagram, string id, DislElement? source, DislElement? target, int line, string? sourceId = null, string? targetId = null) =>
+    private static void Relation(DislDiagram diagram, string id, DislElement? source, DislElement? target, int line, string? sourceId = null, string? targetId = null) =>
         diagram.Add(new DislElement(diagram, diagram.Specification.Metamodel.TypeOf("Link")!, id, null)
         {
             Line = line, Source = source, Target = target, SourceId = sourceId ?? source?.Id, TargetId = targetId ?? target?.Id,
