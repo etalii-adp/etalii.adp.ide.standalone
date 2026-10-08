@@ -1,8 +1,10 @@
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Editor.Markdown;
 
 /// <summary>This editor's identity: Markdown, by extension.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Editor
 {
     /// <summary>

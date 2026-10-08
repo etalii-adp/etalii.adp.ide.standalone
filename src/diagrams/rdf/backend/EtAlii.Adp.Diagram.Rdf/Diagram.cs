@@ -1,5 +1,6 @@
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -14,6 +15,7 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// carries <c>.nt</c>. An alternate derives no registration sibling, so a registered
 /// <c>.nt</c> names its body with an explicit <c>body:</c> header, which Add writes anyway.
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The data graph: what an RDF file states, read straight from its own serialization.</summary>

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>
@@ -12,6 +13,7 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// belong to the whole world, so none of these types ever claims a bare file on sight - a file
 /// becomes one of these diagrams when the user registers it (Requirement 1.2).
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The bundle: what a databricks.yml deploys, where, and with what overrides.</summary>

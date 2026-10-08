@@ -1,8 +1,10 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.Sankey;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `etalii/sankey`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The body of a Sankey diagram lives in a `.skv` file, ADP's own schema.</summary>

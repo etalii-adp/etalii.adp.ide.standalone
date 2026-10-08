@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.HelmChart;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `helm/chart`.</summary>
@@ -17,6 +18,7 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// and discovery refuses that pairing.
 /// </para>
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>

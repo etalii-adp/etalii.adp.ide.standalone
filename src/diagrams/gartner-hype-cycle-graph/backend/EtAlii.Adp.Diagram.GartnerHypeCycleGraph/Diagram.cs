@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
@@ -9,6 +10,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// explicitly rather than trusting the generic every-module comparison, which a module declaring
 /// nothing passes.
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The body of a hype cycle graph lives in a `.ghg` file, ADP's own schema (Requirement 2.1).</summary>

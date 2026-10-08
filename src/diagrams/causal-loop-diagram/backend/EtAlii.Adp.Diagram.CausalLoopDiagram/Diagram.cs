@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 
 /// <summary>
@@ -27,6 +28,7 @@ namespace EtAlii.Adp.Diagram.CausalLoopDiagram;
 /// <see cref="DiagramDefinition.SharedExtension"/> false, which is the default.
 /// </para>
 /// </remarks>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>The body extension, in one place so nothing has to spell it twice.</summary>

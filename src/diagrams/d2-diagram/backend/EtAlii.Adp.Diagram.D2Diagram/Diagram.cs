@@ -1,7 +1,9 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.D2Diagram;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `d2/diagram`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

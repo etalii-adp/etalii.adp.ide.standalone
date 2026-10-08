@@ -1,7 +1,9 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlTiming;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `uml/timing`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

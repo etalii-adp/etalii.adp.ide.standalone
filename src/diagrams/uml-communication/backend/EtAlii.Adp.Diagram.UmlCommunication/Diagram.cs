@@ -1,7 +1,9 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.UmlCommunication;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `uml/communication`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

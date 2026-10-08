@@ -1,7 +1,9 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>This diagram type's identity, cataloged in docs/tools.md as `generic/timeline`.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     /// <summary>
