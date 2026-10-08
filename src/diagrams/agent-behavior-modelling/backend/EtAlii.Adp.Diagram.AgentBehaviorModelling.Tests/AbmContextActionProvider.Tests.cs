@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
@@ -6,7 +7,7 @@ namespace EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests;
 
 public class AbmContextActionProviderTests
 {
-    private static readonly Dictionary<string, RegistrationPosition> NoneStored = new(StringComparer.Ordinal);
+    private static readonly IReadOnlyDictionary<string, RegistrationPosition> NoneStored = ImmutableDictionary<string, RegistrationPosition>.Empty;
 
     private static readonly AbmModel Model = AbmParser.Parse(LineDocument.Parse(
         "## Behavior\n- **Do in order:** A\n  - **Do:** B\n  - **Do in order:** C\n    - **Do:** D\n"));
