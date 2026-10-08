@@ -125,7 +125,7 @@ jobs:
         run: dotnet tool restore
 
       - name: Inspect
-        run: bash .github/tools/inspect/inspect.sh --report
+        run: bash .github/tools/inspect/inspect.sh
 
   # Flags a retired use of the ADP vocabulary (etalii.adp spec 002, FR-017). The runner and its list of retired
   # patterns and allowances live in etalii.adp and are read from its develop branch, so every repository is checked
