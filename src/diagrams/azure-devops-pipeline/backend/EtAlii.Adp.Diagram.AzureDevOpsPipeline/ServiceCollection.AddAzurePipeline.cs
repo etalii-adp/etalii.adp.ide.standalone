@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Diagram.AzureDevOpsPipeline;
 /// </remarks>
 public static class ServiceCollectionAddAzurePipelineExtension
 {
-    public static IServiceCollection AddAzurePipeline(this IServiceCollection services)
+    public static void AddAzurePipeline(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -72,7 +72,5 @@ public static class ServiceCollectionAddAzurePipelineExtension
         services.AddSingleton<ICommandHandler<RemovePipelineElementCommand>, RemovePipelineElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RestorePipelineLinesCommand>, RestorePipelineLinesCommandHandler>();
         services.AddSingleton<ICommandHandler<MovePipelineStepCommand>, MovePipelineStepCommandHandler>();
-
-        return services;
     }
 }

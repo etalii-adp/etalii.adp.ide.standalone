@@ -130,8 +130,7 @@ public sealed class PipelineWriter
     /// blank line each would otherwise accumulate a run of them wherever a stage was removed, and
     /// that is a diff the user did not ask for even though every line of it is whitespace.
     /// </remarks>
-    /// <returns>Whether the document changed.</returns>
-    public bool RemoveElement(PipelineEditTarget element)
+    public void RemoveElement(PipelineEditTarget element)
     {
         Guard(element);
 
@@ -142,7 +141,6 @@ public sealed class PipelineWriter
         }
 
         _document.Remove(new LineRange(element.Lines.Start, end));
-        return true;
     }
 
     /// <summary>

@@ -13,7 +13,7 @@ public static class ServiceCollectionAddSankeyExtension
     /// store, the mapper, the session factory, the reload seam, the selection resolver, the
     /// toolbox, action and property providers, one handler per command, and the validator.
     /// </summary>
-    public static IServiceCollection AddSankey(this IServiceCollection services)
+    public static void AddSankey(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -42,7 +42,5 @@ public static class ServiceCollectionAddSankeyExtension
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<ISankeyDocumentStore>>, RestoreDocumentCommandHandler<ISankeyDocumentStore>>();
 
         services.AddSingleton<IDiagramValidator, SankeyValidator>();
-
-        return services;
     }
 }

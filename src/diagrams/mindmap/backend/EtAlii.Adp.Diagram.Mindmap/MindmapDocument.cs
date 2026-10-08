@@ -164,11 +164,7 @@ public sealed class MindmapDocument
     }
 
     /// <summary>Puts a subtree removed by <see cref="Remove"/> back under <paramref name="parent"/> at <paramref name="index"/>.</summary>
-    public MindmapNode Restore(XElement subtree, MindmapNode parent, int index)
-    {
-        InsertAt(parent.Element, subtree, index);
-        return new MindmapNode(subtree);
-    }
+    public void Restore(XElement subtree, MindmapNode parent, int index) => InsertAt(parent.Element, subtree, index);
 
     /// <summary>
     /// Parses one subtree serialized by <see cref="FreeplaneXmlWriter.ToText"/>, under the same

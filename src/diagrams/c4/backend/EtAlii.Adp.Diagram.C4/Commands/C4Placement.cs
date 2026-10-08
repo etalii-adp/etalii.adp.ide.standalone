@@ -124,9 +124,10 @@ internal static class C4Placement
     /// The other half of the surgery above. Undoing an add that gave a container its first
     /// braces has to take the braces away too - leaving <c>container "Web" … { }</c> behind
     /// would mean undo did not restore what was there, which is the one thing undo is for.
-    /// Refuses if anything at all is left inside, so a concurrent edit is never swallowed.
+    /// Leaves the block as it is if anything at all is left inside, so a concurrent edit is never
+    /// swallowed: an empty block parses and round-trips, so nobody has to be told it stayed.
     /// </remarks>
-    public static bool TryCollapseEmptyBlock(C4Document document, C4Element parent)
+    public static void CollapseEmptyBlock(C4Document document, C4Element parent)
     {
         var open = document.CodeLines
             .Where(line => line.Number == parent.Line && line.Code.EndsWith('{'))
@@ -134,13 +135,13 @@ internal static class C4Placement
             .FirstOrDefault();
         if (open is not { } declaration)
         {
-            return false;
+            return;
         }
 
         var close = EndOfBlock(document, line => line.Number == parent.Line);
         if (close is null)
         {
-            return false;
+            return;
         }
 
         // Any text at all, not just code. `IsBlank` is true for a line carrying only a comment,
@@ -152,12 +153,11 @@ internal static class C4Placement
             .Any(line => line.Number > declaration.Number && line.Number < close.Value && line.Text.Trim().Length > 0);
         if (hasContent)
         {
-            return false;
+            return;
         }
 
         document.RemoveLines(declaration.Number + 1, close.Value);
         document.ReplaceLine(declaration.Number, declaration.Text.TrimEnd().TrimEnd('{').TrimEnd());
-        return true;
     }
 
     /// <summary>

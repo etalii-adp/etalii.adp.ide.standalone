@@ -15,7 +15,7 @@ public static class ServiceCollectionAddShaclExtension
     /// <summary>The shapes reading's origin, as docs/tools.md writes it.</summary>
     public static readonly DiagramOrigin ShaclOrigin = new("w3c", "shacl");
 
-    public static IServiceCollection AddShacl(this IServiceCollection services)
+    public static void AddShacl(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -50,7 +50,5 @@ public static class ServiceCollectionAddShaclExtension
         services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
             ShaclOrigin,
             provider.GetRequiredService<IRdfDocumentStore>()));
-
-        return services;
     }
 }

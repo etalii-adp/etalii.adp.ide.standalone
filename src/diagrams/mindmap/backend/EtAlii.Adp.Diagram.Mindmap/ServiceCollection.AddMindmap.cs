@@ -19,7 +19,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </remarks>
 public static class ServiceCollectionAddMindmapExtension
 {
-    public static IServiceCollection AddMindmap(this IServiceCollection services, IConfiguration configuration)
+    public static void AddMindmap(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
@@ -43,7 +43,5 @@ public static class ServiceCollectionAddMindmapExtension
         // The reload seam: an external write to a map reaches the store, and through it every
         // open session (modular-text-editors Requirement 5.3).
         services.AddSingleton<IDiagramDocumentReloader, MindmapDocumentReloader>();
-
-        return services;
     }
 }

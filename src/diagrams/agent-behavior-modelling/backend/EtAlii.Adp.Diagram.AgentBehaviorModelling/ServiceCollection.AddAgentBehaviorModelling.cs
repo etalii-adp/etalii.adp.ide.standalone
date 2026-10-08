@@ -17,7 +17,7 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
     /// A drag is among them: <see cref="ArrangeAbmNodeCommand"/> writes the registration's
     /// <c>layout:</c> block, and the Markdown too when the drop changed the order.
     /// </remarks>
-    public static IServiceCollection AddAgentBehaviorModelling(this IServiceCollection services)
+    public static void AddAgentBehaviorModelling(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -55,7 +55,5 @@ public static class ServiceCollectionAddAgentBehaviorModellingExtension
         services.AddSingleton<ICommandHandler<RestoreAbmRegistrationCommand>, RestoreAbmRegistrationCommandHandler>();
 
         services.AddSingleton<IDiagramValidator, AbmValidator>();
-
-        return services;
     }
 }

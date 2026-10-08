@@ -106,7 +106,7 @@ public class C4LayoutSidecarTests : IDisposable
         _sidecar.Write(_bodyPath, "other", "b", new C4SidecarPosition(20, 20));
 
         // Arrange, continued.
-        _sidecar.Clear(_bodyPath, "all");
+        Assert.Equal("", _sidecar.Clear(_bodyPath, "all"));
 
         // Arrange, continued.
         Assert.Empty(_sidecar.Read(_bodyPath, "all"));

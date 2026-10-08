@@ -105,7 +105,7 @@ internal sealed class RemoveC4ElementCommandHandler(IC4DocumentStore documents) 
             // The braces the add opened come off again. Without this, undoing an add would
             // leave `container "Web" … { }` behind - not what was there before, which is the
             // one thing undo has to deliver.
-            C4Placement.TryCollapseEmptyBlock(document, parent);
+            C4Placement.CollapseEmptyBlock(document, parent);
         }
 
         var saved = documents.Save(command.BodyPath, document);
