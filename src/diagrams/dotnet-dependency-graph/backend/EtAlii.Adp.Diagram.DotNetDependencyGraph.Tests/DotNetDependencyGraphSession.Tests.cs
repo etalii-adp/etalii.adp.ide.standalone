@@ -28,9 +28,6 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     /// </remarks>
     private sealed class DirectHistoryStack : IHistoryStack
     {
-        /// <summary>Every command this stack was asked to run, so a test can name what was dispatched.</summary>
-        private List<ICommand> Executed { get; } = [];
-
         public bool CanUndo => false;
 
         private bool CanRedo => false;
@@ -45,8 +42,6 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
 
         public Task<CommandResult> ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
         {
-            Executed.Add(command);
-
             if (command is SetRegistrationLayoutCommand layout)
             {
                 RegistrationLayout.SetPosition(layout.AdpPath, layout.ElementId, new RegistrationPosition(layout.X, layout.Y));
