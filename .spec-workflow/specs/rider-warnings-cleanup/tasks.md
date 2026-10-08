@@ -111,7 +111,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
 
 ## Pull request 5 - unread data and possible defects
 
-- [ ] 10. Decide everything written and never read (Kind C)
+- [x] 10. Decide everything written and never read (Kind C)
   - Files: every C# file the script lists for `NotAccessedPositionalProperty.Global`, `UnusedAutoPropertyAccessor.Global`, `CollectionNeverQueried.Local`, `CollectionNeverUpdated.Local`, `NotAccessedVariable`, `RedundantAssignment`, `UnusedVariable`, `UnusedMethodReturnValue.Global` and `OutParameterValueIsAlwaysDiscarded.Global`, and the parser tests beside them
   - Ask the design's three questions in order: read by something that is not C# in this solution (mark, name the reader); populated by a parser and asserted nowhere (add the assertion to the parser's existing test, or remove the field and its parsing when no fixture contains the construct); otherwise dead (remove)
   - `EtAlii.Adp.Specification.Fbl` holds the most; take it first and alone
@@ -120,7 +120,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer who writes parser tests | Task: Resolve every written-but-never-read finding by the design's three ordered questions, preferring a real test assertion over an annotation | Restrictions: an added assertion must be seen to fail when the parser's handling of that field is broken; do not hand-write a toy fixture to justify keeping a field; do not touch a fixture marked `-text`; no inspection switched off; a removed field's parsing is removed with it | _Leverage: `src/backend/EtAlii.Adp.Specification.Fbl.Tests`, the modules' `Fixtures` folders | _Requirements: 1.2, 1.3, 1.4 | Success: these inspections report zero; each new assertion was observed failing first; the pull request description lists what was asserted, what was marked and what was removed | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 11. Settle the inconsistently synchronized field
+- [x] 11. Settle the inconsistently synchronized field
   - Files: `src/backend/EtAlii.Adp.Diagram/DiagramDocumentReloadBridge.cs`, its test file
   - Establish which reads outside `_watcherLock` can race a write
   - A race: fix it, with a test seen to fail before the fix. No race: state the reason at the field and suppress the reads with it
@@ -129,7 +129,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer experienced in concurrency | Task: Decide whether the unsynchronized reads in `DiagramDocumentReloadBridge` are a defect, and fix or document accordingly | Restrictions: state the verdict and its reasoning in the implementation log either way; a concurrency test that passes against the unfixed code is deleted, not kept; do not widen the lock without saying what it now serializes; pass `TestContext.Current.CancellationToken` in tests | _Leverage: `src/backend/EtAlii.Adp.Diagram/DiagramDocumentReloadBridge.cs` | _Requirements: 1.5 | Success: `InconsistentlySynchronizedField` reports zero; if a defect was fixed, its test was observed failing first; the four gates exit zero | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 12. Settle the possible loss of fraction
+- [x] 12. Settle the possible loss of fraction
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/Skos/SkosLayout.cs`, `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/SkosLayout.Tests.cs`
   - Decide from what the layout draws whether integer division is intended
   - Intended: suppress with the reason. Not intended: fix, with a test seen to fail first
@@ -138,7 +138,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 1.6_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer working on diagram layout | Task: Decide whether the integer divisions in `SkosLayout` and its test are intended, and suppress with a reason or fix accordingly | Restrictions: state the verdict in the implementation log; the test must not simply repeat the production expression; if positions change, check the SKOS examples still draw as the screenshots show and retake any that became misleading | _Leverage: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/Skos/SkosLayout.cs` | _Requirements: 1.6 | Success: `PossibleLossOfFraction` reports zero without an unexplained suppression; the four gates exit zero | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 13. Trace the six null-coalescing warnings and close out the warnings
+- [x] 13. Trace the six null-coalescing warnings and close out the warnings
   - Files: `FdgWriter.cs`, `SankeyWriter.cs`, `SetSankeyPropertyCommandHandler.cs`, `SupplyChainWriter.cs`, `SetSupplyChainPropertyCommandHandler.cs`, and the types whose annotations they rely on
   - Trace each left operand to where its value comes from
   - Annotation right: remove the dead `??`. A null can arrive: correct the annotation at its source, with a test that passes a null
