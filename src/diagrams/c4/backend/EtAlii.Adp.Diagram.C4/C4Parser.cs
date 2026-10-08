@@ -217,7 +217,6 @@ public static class C4Parser
                 return;
 
             case "deploymentenvironment":
-                state.Environment = arguments.Length > 0 ? arguments[0] : "";
                 state.Push(opensBlock ? C4ParseScope.Model : C4ParseScope.Unknown);
                 return;
 
