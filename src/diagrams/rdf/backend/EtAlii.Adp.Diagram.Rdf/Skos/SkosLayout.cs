@@ -75,8 +75,9 @@ public static class SkosLayout
         var collectionColumns = ColumnsFor(collections.Count);
         for (var index = 0; index < collections.Count; index++)
         {
-            positions[collections[index].Id] = new RegistrationPosition(
-                index % collectionColumns * ColumnWidth, y + (index / collectionColumns * RowHeight));
+            // A grid filled row by row: the whole row and column of the index, never a fraction.
+            (int row, int column) = Math.DivRem(index, collectionColumns);
+            positions[collections[index].Id] = new RegistrationPosition(column * ColumnWidth, y + (row * RowHeight));
         }
 
         return new SkosLayoutResult(positions, cycles);

@@ -139,7 +139,7 @@ public class SkosLayoutTests
         var rows = children.Select(id => result.Positions[id].Y).Distinct().Count();
         Assert.True(rows > 1, $"The forty narrower concepts sit on {rows} row(s).");
         var width = children.Max(id => result.Positions[id].X) - children.Min(id => result.Positions[id].X);
-        Assert.True(width < 40 * 240 / 2, $"The narrower layer is {width} wide.");
+        Assert.True(width < 40 * 240 / 2d, $"The narrower layer is {width} wide.");
 
         // Assert: in reading order, every narrower concept of a comes before every one of b.
         var reading = children
