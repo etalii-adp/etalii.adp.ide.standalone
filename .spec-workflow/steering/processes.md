@@ -659,7 +659,7 @@ requirements document mixes options into numbered prose, say so in the diff's ow
 
 **And the second pass finds a class the first cannot: a criterion met by a SUBSTITUTE rather than by the thing
 it names.** `backend-project-decomposition` 6.3 requires `jb inspectcode` "run and shown clean"; the tool
-cannot evaluate this SDK's projects at all, so a committed guard - `NamespaceProviders.Tests` - was ruled the
+could not then evaluate this SDK's projects at all, so a committed guard - `NamespaceProviders.Tests` - was ruled the
 substitute, and that test's own docstring records the ruling. The criterion is satisfied and the named
 instrument was never run. **Re-reading the documents would never surface that, because both documents are
 telling the truth** - only tracing the criterion to a file and a string does, which is the whole reason the
@@ -973,9 +973,9 @@ Work a feature through these layers in order, finishing each — including its t
 Conventions that are only written down drift. Two tools check them and they see different things — run both, because passing one says nothing about the other.
 
 - **`dotnet format style --verify-no-changes --severity info`**, from `src/backend/` against `EtAlii.Adp.slnx`, is the fast check: the Roslyn analyzers and the rules in `src/.editorconfig`, and nothing else. It may always be run without asking first.
-- **JetBrains InspectCode is the thorough one, and authoritative for this team.** Development is mostly done in Rider, so the inspections a developer actually sees are ReSharper's — a far larger set than the Roslyn analyzers, covering design and structure rules `dotnet format` has no opinion about. InspectCode runs that same engine headlessly, honouring the repository's `.DotSettings` files and `src/.editorconfig`, so its verdict is the one Rider gives rather than a second standard. Install once with `dotnet tool install -g JetBrains.ReSharper.GlobalTools`, then invoke as `jb inspectcode`. Run it over the whole backend before a piece of work is considered finished — after the tests pass and the format check is clean, not instead of them. If it refuses the `.slnx` file, point it at the projects rather than adding a second solution file to keep a tool happy.
+- **JetBrains InspectCode is the thorough one, and authoritative for this team.** Development is mostly done in Rider, so the inspections a developer actually sees are ReSharper's — a far larger set than the Roslyn analyzers, covering design and structure rules `dotnet format` has no opinion about. InspectCode runs that same engine headlessly, honouring the repository's `.DotSettings` files and `src/.editorconfig`, so its verdict is the one Rider gives rather than a second standard. Run it as `bash .github/tools/inspect/inspect.sh`, the one committed way, after `dotnet tool restore` once for the version `.config/dotnet-tools.json` pins. The script builds the solution (`--no-build` skips that when this checkout is already built), names the SDK and its MSBuild to the inspector explicitly, and inspects the whole of `src/backend/EtAlii.Adp.slnx`. **It exits 0 when the run could see the code and found nothing at Suggestion severity or above, 1 when it found something, and 2 when it could not see the code** — a missing report, compiler errors among the results, or fewer files inspected than git tracks — which is neither clean nor dirty. `--report` lists the findings without failing on them, while a blind run still exits 2. The report and the inspector's log land in `.inspect/` at the repository root, which is git-ignored. Run it before a piece of work is considered finished — after the tests pass and the format check is clean, not instead of them.
 - **Treat an InspectCode finding as an `.editorconfig` finding is treated**: fix it, or decide deliberately that the rule does not fit and record that decision where the rule lives — in the `.DotSettings` file, with a note saying why. Silently ignoring findings turns the tool into noise, which is how a codebase ends up with a check nobody runs. **A finding left reported is the one option that is not available**, because a gate that always prints something is a gate nobody reads.
-- **Expect a backlog on the first full run, and do not treat it as a gate on unrelated work.** What matters is that code being written now is clean and that any backlog shrinks, not that an unrelated change is blocked by something it did not cause.
+- **The solution is clean, and the runner keeps it so.** The `rider-warnings-cleanup` specification left zero findings at Suggestion severity or above, and the `inspection` job of `.github/workflows/build.yml` runs the script on every pull request into `develop` and every push to it, and fails on any finding. **That is a check on the runner, not a fifth local gate: the four gates a branch passes before it is pushed stay four.** A finding the job reports was added by the change it fails, and is fixed or ruled on exactly as the bullet above says.
 
 **A warning nothing fails on is a finding nobody reads.** On 2026-09-22 the user cleaned up three
 classes by hand, in three commits, three minutes apart, on code agents had written that week - and
@@ -1731,10 +1731,15 @@ relayed: there is **no `.config/dotnet-tools.json`**, so *not installed in this 
 repo-local tool, **while the tool is installed globally** (`jetbrains.resharper.globaltools 2026.2.2`). **Both
 readings are available and only one sends the reader to the tool - that ambiguity is the defect rather than a
 falsehood**, and the sentence sits directly after an install command, which pushes the reader toward *absent*.
+*(Since `rider-warnings-cleanup` the tool is repo-local, pinned in `.config/dotnet-tools.json` and run by
+`.github/tools/inspect/inspect.sh`, and that sentence is gone from CLAUDE.md.)*
 
-**The limit, stated so nobody reads this as a proposal: `jb inspectcode` is NOT a missing fifth gate.** A run
-takes minutes and needs per-machine toolset flags. It answers a question `dotnet format` cannot, and that is all
-it is for. *(Developer 1's limit, offered with the finding.)*
+**The limit, stated so nobody reads this as a proposal: the inspection is NOT a missing fifth local gate.** A run
+takes minutes. It answers a question `dotnet format` cannot, and since `rider-warnings-cleanup` it is enforced where
+those minutes cost nobody's attention: `.github/tools/inspect/inspect.sh` names the toolset itself, and the
+`inspection` job of the Build workflow runs it on every pull request and fails on any finding - a check on the
+runner, while the four local gates stay four. *(Developer 1's limit, offered with the finding; the job came with
+that specification.)*
 
 **Proof of presence is always one line** - `fetch('/favicon.ico')`, `innerWidth > 0`, *did anything else witness
 this event*, an assertion that the set being filtered is non-empty - **and it is never written by someone reading

@@ -150,7 +150,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
 
 ## Pull request 6 - the rule enforced
 
-- [ ] 14. Make the inspection job fail on a finding
+- [x] 14. Make the inspection job fail on a finding
   - File: `.github/workflows/build.yml`
   - First confirm `inspect.sh` exits zero on the current tip of `develop`, on the runner as well as locally; a finding that arrived since task 13 is corrected first
   - Drop `--report` from the `inspection` job
@@ -160,7 +160,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 5.1, 5.2_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CI engineer | Task: Switch the `inspection` job from report mode to enforcing, after proving `develop` is clean, and prove on GitHub that it refuses a planted finding | Restrictions: do not enforce while `develop` reports anything; the throwaway pull request is never merged and its branch is deleted; do not add the check to the local gates | _Leverage: `.github/workflows/build.yml` | _Requirements: 5.1, 5.2 | Success: the job is green on this pull request and red on the throwaway one, both run links in the implementation log | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 15. Bring the documents in line
+- [x] 15. Bring the documents in line
   - Files: `.spec-workflow/steering/processes.md`, `.spec-workflow/steering/tech.md`, `CLAUDE.md`, `docs/guards.md`
   - processes.md, *Checking that the conventions are actually followed*: replace the bullet that says to expect a backlog, and the install-by-hand instruction, with the script and the job; and where it says `jb inspectcode` is not a missing fifth gate, say what is now true, a check on the runner and still not a local gate
   - tech.md, *JetBrains Rider warnings*: remove the sentence about warnings that existed when the rule was made, and point at the script
