@@ -106,7 +106,7 @@ public class BundledDefinitionExpressionsTests
     /// <summary>The DISL §12.4 functions and §12.2 methods the two definitions call, which the DISL runtime will register.</summary>
     private static IEnumerable<CelFunction> DislLibraryStubs()
     {
-        static object? Stub(CelCall _) => throw new CelException("A stub.");
+        static object Stub(CelCall _) => throw new CelException("A stub.");
         yield return CelFunction.Method("isA", 1, 1);
         yield return CelFunction.Method("outgoingOf", 1, 1);
         yield return CelFunction.Method("incomingOf", 1, 1);
