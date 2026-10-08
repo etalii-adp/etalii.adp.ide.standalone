@@ -39,13 +39,6 @@ public static class Router
         return candidates;
     }
 
-    /// <summary>Whether the binding's <c>suggest</c> matches the body's first 64 KiB (FBL §12.3).</summary>
-    public static bool Suggests(FblBinding binding, byte[] bytes)
-    {
-        ArgumentNullException.ThrowIfNull(binding);
-        return Contains(bytes, binding.Claims.Suggest);
-    }
-
     /// <summary>
     /// The readings a binding offers for a body (FBL §9.4): each origin in <c>claims.origins</c> order,
     /// those whose reading's <c>suggest</c> matches the body first.

@@ -6,7 +6,6 @@ namespace EtAlii.Adp.Specification.Fbl.Documents;
 
 public enum ProblemSeverity
 {
-    Info,
     Warning,
     Error,
 }

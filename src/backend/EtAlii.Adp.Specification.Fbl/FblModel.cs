@@ -21,12 +21,6 @@ public sealed record FblElement(
 /// <summary>What reading a body gives: its elements and relations in document order, and its findings.</summary>
 public sealed record FblModel(IReadOnlyList<FblElement> Elements, IReadOnlyList<Finding> Findings, bool Unreadable)
 {
-    public static FblModel Empty { get; } = new([], [], false);
-
-    public IEnumerable<FblElement> Nodes => Elements.Where(e => !e.IsRelation);
-
-    public IEnumerable<FblElement> Relations => Elements.Where(e => e.IsRelation);
-
     public FblElement? Find(string id) => Elements.FirstOrDefault(e => e.Id == id);
 
     /// <summary>The views a blocks body defines (FBL §4.7), in document order.</summary>

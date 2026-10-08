@@ -70,9 +70,6 @@ internal sealed class TreeEntry : Entry
 
     /// <summary>json: the offset of the comma after this entry, or -1.</summary>
     public int Separator { get; set; } = -1;
-
-    /// <summary>yaml: the column of the <c>-</c> of an item.</summary>
-    public bool IsItem => !IsRoot && KeySpan is null;
 }
 
 /// <summary>What yaml and json share: selectors, CEL values and reading keys (FBL §4.2, §4.1.4, §5.2).</summary>

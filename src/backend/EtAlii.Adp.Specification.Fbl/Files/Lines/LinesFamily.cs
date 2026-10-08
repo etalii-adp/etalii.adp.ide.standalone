@@ -60,8 +60,6 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         return true;
     }
 
-    public IReadOnlyList<Statement> Statements => _statements;
-
     public override void Parse()
     {
         BoundedRegex? comment = Binding.Comment is null ? null : Regex(Binding.Comment, false);

@@ -53,8 +53,6 @@ internal sealed class BodyReading
     /// <summary>Elements and relations in document order; relations whose ends name nothing are not among them.</summary>
     public List<ReadElement> Elements { get; } = [];
 
-    public IReadOnlyList<Finding> Findings => _findings;
-
     /// <summary>The views the body's view blocks define (FBL §4.7), in document order.</summary>
     private List<FblView> Views { get; } = [];
 
