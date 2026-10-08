@@ -267,7 +267,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
     {
         int number => number,
         long number when number is >= int.MinValue and <= int.MaxValue => (int)number,
-        double number when number == Math.Truncate(number) && number is >= int.MinValue and <= int.MaxValue => (int)number,
+        double number when double.IsInteger(number) && number is >= int.MinValue and <= int.MaxValue => (int)number,
         string text when int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) => number,
         _ => null,
     };
