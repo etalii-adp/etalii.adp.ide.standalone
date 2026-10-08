@@ -192,7 +192,7 @@ internal sealed class YamlParser(BodyText text)
                 _line = line;
                 member = ParseInline(line, q, column);
             }
-            var entry = new TreeEntry { Name = key.Name, KeySpan = key.Span, Value = member, Own = new Span(key.Span.Start, End(member, key.Colon + 1)), Indent = column };
+            var entry = new TreeEntry { Name = key.Name, KeySpan = key.Span, Value = member, Own = key.Span with { End = End(member, key.Colon + 1) }, Indent = column };
             if (key.Name == "<<" && member.Merged.Count > 0) value.Merged.AddRange(member.Merged);
             if (names.Add(key.Name)) value.Entries.Add(entry);
             else Duplicates.Add((key.Name, key.Span));

@@ -90,7 +90,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
                 var opener = stack.Pop();
                 opener.LastLine = index;
                 opener.LineSpan = new Span(opener.LineSpan!.Value.Start, line.End);
-                opener.Own = new Span(opener.Own.Start, first + 1);
+                opener.Own = opener.Own with { End = first + 1 };
                 continue;
             }
             var statement = new Statement
@@ -455,7 +455,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
         var span = statement.FirstLineSpan;
         var end = span.End - 1;
         while (end > span.Start && Text.Bytes[end - 1] is (byte)' ' or (byte)'\t') end--;
-        return new Span(span.Start, end);
+        return span with { End = end };
     }
 
     private string? Placeholder(Rule rule, string name, IReadOnlyDictionary<string, object?> values, string? id, string? source, string? target)
@@ -474,7 +474,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
     {
         var start = span.Start;
         while (start > 0 && Text.Bytes[start - 1] is (byte)' ' or (byte)'\t') start--;
-        return new Span(start, span.End);
+        return span with { Start = start };
     }
 
     /// <summary>A removed value takes its quotes and the whitespace before it with it (FBL §6.1 <c>remove-key</c>).</summary>

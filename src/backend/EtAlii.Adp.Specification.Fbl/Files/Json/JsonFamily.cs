@@ -404,10 +404,10 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         if (isLast && index > 0)
         {
             var previous = siblings[index - 1];
-            return new Span(previous.Separator, entry.Own.End);
+            return entry.Own with { Start = previous.Separator };
         }
         if (entry.LineSpan is { } line) return line;
-        if (!isLast) return new Span(entry.Own.Start, siblings[index + 1].Own.Start);
+        if (!isLast) return entry.Own with { End = siblings[index + 1].Own.Start };
         return entry.Own;
     }
 

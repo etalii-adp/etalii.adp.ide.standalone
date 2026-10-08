@@ -325,7 +325,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         }
         var element = stack.Pop();
         element.EndTag = new Span(start, close + 1);
-        element.Own = new Span(element.StartTag.Start, close + 1);
+        element.Own = element.StartTag with { End = close + 1 };
         _leaves.Add(element.EndTag.Value);
         return close + 1;
     }
@@ -664,8 +664,8 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     private void RemoveChild(Plan plan, XmlElement parent, XmlElement child)
     {
         var line = Text.LineIndexAt(child.Own.Start);
-        var span = child.LineSpan is not null && line > 0 ? new Span(Text.Lines[line - 1].ContentEnd, child.Own.End) : child.Own;
-        if (span.Start < parent.ContentStart) span = new Span(parent.ContentStart, span.End);
+        var span = child.LineSpan is not null && line > 0 ? child.Own with { Start = Text.Lines[line - 1].ContentEnd } : child.Own;
+        if (span.Start < parent.ContentStart) span = span with { Start = parent.ContentStart };
         var closes = parent.EndTag is { } end
             && IsWhitespace(new Span(parent.ContentStart, span.Start))
             && IsWhitespace(new Span(span.End, end.Start));
