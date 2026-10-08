@@ -90,7 +90,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
 
 ## Pull request 4 - narrowing and unused code
 
-- [ ] 8. Narrow what can be narrowed (Kind B)
+- [x] 8. Narrow what can be narrowed (Kind B)
   - Files: every C# file the script lists for `MemberCanBePrivate.*`, `MemberCanBeProtected.Global`, `AutoPropertyCanBeMadeGetOnly.*`, `PropertyCanBeMadeInitOnly.*`, `ClassNeverInstantiated.*` and `VirtualMemberNeverOverridden.Global`
   - For each finding, first ask what the compiler cannot see: a serializer, configuration binding, the dependency-injection container, reflection
   - Narrow where nothing unseen uses it; mark `[UsedImplicitly]` naming the user where something does
@@ -99,7 +99,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 2.2, 2.4_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Correct every Kind B finding by narrowing, or by marking an implicit use where narrowing would break something the compiler cannot see | Restrictions: `ClassNeverInstantiated` on a class the container constructs is marked, never deleted or made static; a `[UsedImplicitly]` names what uses the member in a comment on the same line; no inspection is switched off; run all four gates, not a scoped subset, before calling the task done | _Leverage: `inspect.sh --report` output, the modules' `ServiceCollection.Add*.cs` | _Requirements: 2.2, 2.4 | Success: each Kind B inspection reports zero; the four gates exit zero; the pull request description lists what was narrowed and what was marked | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 9. Decide every remaining unused type, member and parameter (Kind D)
+- [x] 9. Decide every remaining unused type, member and parameter (Kind D)
   - Files: every C# file the script lists for `UnusedType.Global`, `UnusedMember.*`, `UnusedMemberInSuper.Global` and `UnusedParameter.Global` after task 7
   - For each, search the solution for the name as a string as well as a symbol: reflection, `nameof`, registration by convention, the `.proto` files, the client
   - Found: mark `[UsedImplicitly]` and name the user. Not found: remove it, and whatever existed only to serve it
