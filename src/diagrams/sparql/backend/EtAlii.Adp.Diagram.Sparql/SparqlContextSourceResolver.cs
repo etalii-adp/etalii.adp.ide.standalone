@@ -64,7 +64,6 @@ public sealed class SparqlContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             [text],
             ContextScope.DiagramElement,

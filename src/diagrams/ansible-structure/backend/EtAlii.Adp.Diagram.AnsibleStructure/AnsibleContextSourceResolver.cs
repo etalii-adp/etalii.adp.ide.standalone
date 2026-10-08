@@ -76,7 +76,7 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
             }
 
             return Resolve(
-                watchId, rootPath, source, id, clientPath, folder, elementId,
+                watchId, rootPath, id, clientPath, folder, elementId,
                 Segments(edge.Directive.DeclaredIn),
                 new ContextLevelDetail
                 {
@@ -89,7 +89,7 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
         }
 
         return Resolve(
-            watchId, rootPath, source, id, clientPath, folder, elementId,
+            watchId, rootPath, id, clientPath, folder, elementId,
             Segments(node.RelativePath),
             new ContextLevelDetail
             {
@@ -180,7 +180,6 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
     private ValueTask<ContextLevelResolution> Resolve(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         string folder,
@@ -195,7 +194,6 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.DiagramElement,

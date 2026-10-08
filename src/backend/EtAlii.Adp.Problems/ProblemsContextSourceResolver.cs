@@ -33,7 +33,7 @@ public sealed class ProblemsContextSourceResolver : IContextSourceResolver
         }
 
         var target = new ContextTarget(ContextScope.ProblemsPanel, rootPath, IsContainer: false, SourceId: default, RootPath: rootPath, WatchId: watchId);
-        var level = new ContextResolvedLevel(source, id, [], ContextScope.ProblemsPanel, target, new ContextLevelDetail(), this);
+        var level = new ContextResolvedLevel(id, [], ContextScope.ProblemsPanel, target, new ContextLevelDetail(), this);
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
     }
 

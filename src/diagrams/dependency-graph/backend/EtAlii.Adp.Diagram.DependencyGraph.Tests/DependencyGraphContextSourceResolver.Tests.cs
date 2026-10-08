@@ -65,7 +65,6 @@ public class DependencyGraphContextSourceResolverTests : IDisposable
 
     private static ContextResolvedLevel FileLevel(string path) =>
         new(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,

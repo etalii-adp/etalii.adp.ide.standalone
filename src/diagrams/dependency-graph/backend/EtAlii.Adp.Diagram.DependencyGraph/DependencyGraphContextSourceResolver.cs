@@ -79,7 +79,6 @@ public sealed class DependencyGraphContextSourceResolver : IContextSourceResolve
             DependencyGraphRelationGesture.TryParse(elementId, out _, out _))
         {
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 ["New node"],
                 ContextScope.DiagramElement,
@@ -136,7 +135,6 @@ public sealed class DependencyGraphContextSourceResolver : IContextSourceResolve
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

@@ -41,7 +41,6 @@ public sealed class FdgContextSourceResolverTests : IDisposable
     {
         var resolver = new FdgContextSourceResolver(new DiagramFileRouter(new FdgOnlyCatalog()), _store, new FdgElementMapper());
         var file = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(Body)],
             ContextScope.Hierarchy,

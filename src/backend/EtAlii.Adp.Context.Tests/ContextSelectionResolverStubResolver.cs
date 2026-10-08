@@ -41,7 +41,7 @@ internal sealed class ContextSelectionResolverStubResolver : IContextSourceResol
 
         var path = clientPath.Count == 0 && _fillPath is not null ? _fillPath : clientPath;
         var level = new ContextResolvedLevel(
-            source, id, path, ContextScope.Hierarchy,
+            id, path, ContextScope.Hierarchy,
             new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([rootPath, .. path]), false, (ShortGuid)id.EntryId),
             new ContextLevelDetail(), this);
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));

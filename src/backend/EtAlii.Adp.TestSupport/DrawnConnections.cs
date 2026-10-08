@@ -248,7 +248,6 @@ public static class DrawnConnections
         {
             // The file level a canvas press is resolved inside: the file the tab was opened at.
             var fileLevel = new ContextResolvedLevel(
-                ContextSelectionSource.Explorer,
                 new ContextSource(),
                 [IoPath.GetFileName(parentPath)],
                 ContextScope.Hierarchy,

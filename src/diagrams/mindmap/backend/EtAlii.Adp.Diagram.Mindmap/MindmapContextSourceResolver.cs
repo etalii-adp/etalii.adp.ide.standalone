@@ -88,7 +88,6 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         };
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.DiagramElement,

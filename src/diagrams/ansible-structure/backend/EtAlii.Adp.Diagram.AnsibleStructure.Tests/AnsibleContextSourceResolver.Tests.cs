@@ -192,7 +192,6 @@ public class AnsibleContextSourceResolverTests : IDisposable
     private async Task<ContextLevelResolution> Resolve(string elementId, IReadOnlyList<string>? clientPath = null, string? registration = null)
     {
         var parent = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer,
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
             ContextScope.Hierarchy,

@@ -60,7 +60,6 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
             RdfRelationGesture.TryParse(elementId, out _, out _))
         {
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 ["New element"],
                 ContextScope.DiagramElement,
@@ -91,7 +90,6 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             [text],
             ContextScope.DiagramElement,

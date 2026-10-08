@@ -81,7 +81,6 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
         };
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.Hierarchy,

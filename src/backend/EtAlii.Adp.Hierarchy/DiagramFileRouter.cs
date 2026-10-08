@@ -129,7 +129,7 @@ public sealed class DiagramFileRouter
         var extension = IoPath.GetExtension(bodyPath);
         if (extension.Length == 0)
         {
-            return new NotADiagram(bodyPath);
+            return new NotADiagram();
         }
 
         // The registration file wins where it exists; this path is only for a body dropped
@@ -156,7 +156,7 @@ public sealed class DiagramFileRouter
                 "Not routing {Path}: {Extension} is shared, so it opens only through an .adp registration",
                 bodyPath,
                 extension);
-            return new NotADiagram(bodyPath);
+            return new NotADiagram();
         }
 
         // A type that calls the extension shared never claims a bare body - that is what the
@@ -170,7 +170,7 @@ public sealed class DiagramFileRouter
         switch (claimants.Length)
         {
             case 0:
-                return new NotADiagram(bodyPath);
+                return new NotADiagram();
 
             case 1:
                 return new DiagramRouted(claimants[0], RegistrationPath: null, bodyPath);

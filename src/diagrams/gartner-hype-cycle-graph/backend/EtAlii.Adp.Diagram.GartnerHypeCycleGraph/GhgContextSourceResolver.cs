@@ -81,7 +81,6 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New element" : "New influence";
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 [proposed],
                 ContextScope.DiagramElement,
@@ -136,7 +135,6 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

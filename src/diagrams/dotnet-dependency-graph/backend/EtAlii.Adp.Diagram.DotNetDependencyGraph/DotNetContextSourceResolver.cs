@@ -68,7 +68,7 @@ public sealed class DotNetContextSourceResolver : IContextSourceResolver
         if (project is not null)
         {
             return Resolve(
-                watchId, rootPath, source, id, clientPath, solutionPath, elementId,
+                watchId, rootPath, id, clientPath, solutionPath, elementId,
                 Segments(project.RelativePath),
                 new ContextLevelDetail { Element = new ElementDetail { Text = project.Name, HasChildren = false } });
         }
@@ -79,7 +79,7 @@ public sealed class DotNetContextSourceResolver : IContextSourceResolver
             // A package is not a file in this workspace, so its path is its own id rather than
             // a location - the honest answer, and one no consumer will try to reveal on disk.
             return Resolve(
-                watchId, rootPath, source, id, clientPath, solutionPath, elementId,
+                watchId, rootPath, id, clientPath, solutionPath, elementId,
                 [package.PackageId],
                 new ContextLevelDetail { Element = new ElementDetail { Text = package.PackageId, HasChildren = false } });
         }
@@ -88,7 +88,7 @@ public sealed class DotNetContextSourceResolver : IContextSourceResolver
         if (edge is not null)
         {
             return Resolve(
-                watchId, rootPath, source, id, clientPath, solutionPath, elementId,
+                watchId, rootPath, id, clientPath, solutionPath, elementId,
                 [edge.Id],
                 new ContextLevelDetail { Element = new ElementDetail { Text = LabelOf(edge), HasChildren = false } });
         }
@@ -111,7 +111,6 @@ public sealed class DotNetContextSourceResolver : IContextSourceResolver
     private ValueTask<ContextLevelResolution> Resolve(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         string solutionPath,
@@ -126,7 +125,6 @@ public sealed class DotNetContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.DiagramElement,

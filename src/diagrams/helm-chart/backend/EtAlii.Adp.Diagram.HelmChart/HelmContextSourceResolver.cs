@@ -70,7 +70,7 @@ public sealed class HelmContextSourceResolver : IContextSourceResolver
             return Rejected("Unknown element.");
         }
 
-        return Resolve(watchId, rootPath, source, id, clientPath, folder, elementId, located.Path, located.Text);
+        return Resolve(watchId, rootPath, id, clientPath, folder, elementId, located.Path, located.Text);
     }
 
     /// <summary>Nothing nests inside a chart node; a subchart's own files are its own diagram's business.</summary>
@@ -175,7 +175,6 @@ public sealed class HelmContextSourceResolver : IContextSourceResolver
     private ValueTask<ContextLevelResolution> Resolve(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         string folder,
@@ -190,7 +189,6 @@ public sealed class HelmContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.DiagramElement,

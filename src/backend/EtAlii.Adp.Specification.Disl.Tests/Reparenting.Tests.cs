@@ -112,7 +112,7 @@ public class ReparentingTests
     public void AReparent_IsWrittenAsAMove_ToItsParentAndIndex()
     {
         // Act.
-        var change = DislWrite.ToFbl(Specification, new DislChange.Reparent("q1", "p", "children", "p1", null, 1));
+        var change = DislWrite.ToFbl(Specification, new DislChange.Reparent("q1", "p", 1));
 
         // Assert.
         Assert.Equal(new ModelChange.Move("q1", "p", 1), change);

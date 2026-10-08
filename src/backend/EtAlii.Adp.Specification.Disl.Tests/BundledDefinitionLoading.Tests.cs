@@ -81,6 +81,23 @@ public class BundledDefinitionLoadingTests
         }
     }
 
+    /// <summary>The hype cycle graph's enumerations and user functions, as the definition declares them.</summary>
+    [Fact]
+    public void TheHypeCycleGraphsEnumerationsAndFunctions_AreReadAsDeclared()
+    {
+        // Act.
+        var specification = BundledDefinition.Load(Resources.Assembly, Resources.HypeCycle).Specification;
+
+        // Assert.
+        var phase = specification.Metamodel.Enums["Phase"];
+        Assert.Equal("Phase", phase.Name);
+        Assert.True(phase.Ordered);
+        Assert.False(specification.Metamodel.Enums["Edge"].Ordered);
+        var unitMonths = Assert.Single(specification.Functions, function => function.Name == "unitMonths");
+        Assert.Equal("int", unitMonths.Returns);
+        Assert.Equal([("u", "string")], unitMonths.Parameters.Select(parameter => (parameter.Name, parameter.Type)));
+    }
+
     [Theory]
     [InlineData(Resources.HypeCycle, "definitions/diagrams/gartner-hype-cycle-graph.dis")]
     [InlineData(Resources.BehaviorModel, "definitions/diagrams/agent-behavior-modelling.dis")]

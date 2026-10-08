@@ -319,7 +319,6 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         string? registration = null)
     {
         var parent = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer,
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
             ContextScope.Hierarchy,

@@ -80,7 +80,6 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             found.Path,
             ContextScope.DiagramElement,

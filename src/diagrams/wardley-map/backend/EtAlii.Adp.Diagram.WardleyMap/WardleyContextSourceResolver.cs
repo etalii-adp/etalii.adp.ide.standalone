@@ -119,7 +119,6 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             description.Path,
             ContextScope.DiagramElement,

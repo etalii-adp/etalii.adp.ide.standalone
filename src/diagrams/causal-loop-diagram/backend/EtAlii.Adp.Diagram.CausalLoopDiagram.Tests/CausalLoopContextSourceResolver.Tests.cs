@@ -78,7 +78,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
 
     private static ContextResolvedLevel FileLevel(string path) =>
         new(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,
@@ -331,7 +330,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         // Arrange.
         var registration = WritePair();
         var elementLevel = new ContextResolvedLevel(
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource(),
             ["Population"],
             ContextScope.DiagramElement,

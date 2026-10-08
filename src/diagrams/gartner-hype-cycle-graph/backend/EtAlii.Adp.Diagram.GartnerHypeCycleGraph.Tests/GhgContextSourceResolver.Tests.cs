@@ -41,7 +41,6 @@ public sealed class GhgContextSourceResolverTests : IDisposable
     {
         var resolver = new GhgContextSourceResolver(new DiagramFileRouter(new GhgOnlyCatalog()), _store, new GhgElementMapper());
         var file = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(Body)],
             ContextScope.Hierarchy,

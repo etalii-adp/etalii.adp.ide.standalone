@@ -94,7 +94,7 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
         // selected, tracked or written anywhere.
         if (CausalLoopSelection.IsPlacement(elementId))
         {
-            return Resolved(source, id, ["This diagram"], bodyPath, rootPath, watchId, elementId, routed, "This diagram", null, this);
+            return Resolved(id, ["This diagram"], bodyPath, rootPath, watchId, elementId, routed, "This diagram", null, this);
         }
 
         // A relation gesture carries the two ends of a link the user drew, the same one-call,
@@ -102,7 +102,7 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
         // action reads the ends back out of; it names nothing and is never selected or stored.
         if (CausalLoopSelection.RelationOf(elementId) is not null)
         {
-            return Resolved(source, id, ["New link"], bodyPath, rootPath, watchId, elementId, routed, "New link", null, this);
+            return Resolved(id, ["New link"], bodyPath, rootPath, watchId, elementId, routed, "New link", null, this);
         }
 
         var model = _documents.GetOrLoad(bodyPath).Model;
@@ -122,7 +122,7 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
         // The same payload the canvas already has, taken from the mapper rather than assembled
         // here, so the selection and the stream can never describe one element two ways.
         var element = _mapper.Elements(model, CausalLoopLayout.Compute(model)).FirstOrDefault(candidate => candidate.Id == elementId);
-        return Resolved(source, id, [text], bodyPath, rootPath, watchId, elementId, routed, text, element, this);
+        return Resolved(id, [text], bodyPath, rootPath, watchId, elementId, routed, text, element, this);
     }
 
     /// <summary>Nothing nests inside a variable, a link or a loop for selection purposes.</summary>
@@ -188,7 +188,6 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
     }
 
     private static ValueTask<ContextLevelResolution> Resolved(
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> path,
         string bodyPath,
@@ -216,7 +215,6 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
         }
 
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

@@ -79,7 +79,6 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
             TimelineRelationGesture.TryParse(elementId, out _, out _))
         {
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 ["New element"],
                 ContextScope.DiagramElement,
@@ -136,7 +135,6 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

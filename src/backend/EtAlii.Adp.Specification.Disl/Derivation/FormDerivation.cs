@@ -10,12 +10,11 @@ namespace EtAlii.Adp.Specification.Disl;
 /// <param name="ReadOnlyReason">Why it cannot be edited; empty when it can.</param>
 /// <param name="Group">The title of the section (or group, or tab) it is in; empty outside one.</param>
 /// <param name="Candidates">What the value may be chosen from: a tags or select item's <c>options</c>, a slider's mark labels; null for none.</param>
-/// <param name="Attribute">The attribute it edits, or null for a computed item.</param>
 /// <param name="Retypes">
 /// Whether the row changes the element's type: an item of kind <c>type</c> (DISL 0.3 §7.5), whose
 /// <c>options</c> are the types it can become and whose <c>optionLabel</c> names each.
 /// </param>
-public sealed record DerivedRow(string Id, string Label, string Value, string? Widget, string ReadOnlyReason, string Group, IReadOnlyList<string>? Candidates, string? Attribute, bool Retypes = false);
+public sealed record DerivedRow(string Id, string Label, string Value, string? Widget, string ReadOnlyReason, string Group, IReadOnlyList<string>? Candidates, bool Retypes = false);
 
 /// <summary>
 /// The property rows of an element (DISL §7.5): the items of the first form <c>for</c> its type whose
@@ -158,9 +157,9 @@ public static class FormDerivation
             var key = DislJson.String(item, "id") ?? attribute ?? label;
             if (kind == "type")
             {
-                return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(item, pointer, variables), attribute, Retypes: true);
+                return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(item, pointer, variables), Retypes: true);
             }
-            return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Candidates(item, pointer, variables), attribute);
+            return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Candidates(item, pointer, variables));
         }
 
         /// <summary>The types a type item offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>

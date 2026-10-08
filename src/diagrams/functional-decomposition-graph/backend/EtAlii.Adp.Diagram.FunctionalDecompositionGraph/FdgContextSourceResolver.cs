@@ -83,7 +83,6 @@ public sealed class FdgContextSourceResolver : IContextSourceResolver
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New element" : "New connection";
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 [proposed],
                 ContextScope.DiagramElement,
@@ -138,7 +137,6 @@ public sealed class FdgContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

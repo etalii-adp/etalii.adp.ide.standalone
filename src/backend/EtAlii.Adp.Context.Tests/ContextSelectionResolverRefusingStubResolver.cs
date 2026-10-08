@@ -44,7 +44,6 @@ internal sealed class ContextSelectionResolverRefusingStubResolver : IContextSou
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             clientPath,
             ContextScope.DiagramElement,

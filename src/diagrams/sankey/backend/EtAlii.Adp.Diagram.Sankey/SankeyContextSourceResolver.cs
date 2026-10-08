@@ -81,7 +81,7 @@ public sealed class SankeyContextSourceResolver : IContextSourceResolver
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New node" : "New flow";
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source, id, [proposed], ContextScope.DiagramElement, Target(),
+                id, [proposed], ContextScope.DiagramElement, Target(),
                 new ContextLevelDetail { Element = new ElementDetail { Text = proposed } },
                 this)));
         }
@@ -107,7 +107,7 @@ public sealed class SankeyContextSourceResolver : IContextSourceResolver
         }
 
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(
-            new ContextResolvedLevel(source, id, path, ContextScope.DiagramElement, Target(), detail, this)));
+            new ContextResolvedLevel(id, path, ContextScope.DiagramElement, Target(), detail, this)));
     }
 
     /// <inheritdoc />
