@@ -23,7 +23,7 @@ namespace EtAlii.Adp.Diagram.SupplyChain;
 public sealed class SupplyChainContextActionProvider : IContextActionProvider
 {
     /// <summary>Rename a node or a group in place, or a flow's product.</summary>
-    public const string RenameActionId = "supply-chain.rename";
+    private const string RenameActionId = "supply-chain.rename";
 
     /// <summary>Add one step to a node's quantity or a flow's volume.</summary>
     public const string IncreaseActionId = "supply-chain.increase";

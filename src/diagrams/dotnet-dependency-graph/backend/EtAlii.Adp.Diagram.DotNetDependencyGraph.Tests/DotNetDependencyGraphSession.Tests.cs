@@ -29,7 +29,7 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
     private sealed class DirectHistoryStack : IHistoryStack
     {
         /// <summary>Every command this stack was asked to run, so a test can name what was dispatched.</summary>
-        public List<ICommand> Executed { get; } = [];
+        private List<ICommand> Executed { get; } = [];
 
         public bool CanUndo => false;
 

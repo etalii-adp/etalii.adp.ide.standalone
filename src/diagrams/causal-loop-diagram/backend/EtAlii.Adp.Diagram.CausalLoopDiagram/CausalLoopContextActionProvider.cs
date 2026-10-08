@@ -70,7 +70,7 @@ public sealed class CausalLoopContextActionProvider(
     public const string AddLoopActionId = "causal-loop.add-loop";
 
     /// <summary>Rename a loop, without touching what it runs through.</summary>
-    public const string RenameLoopActionId = "causal-loop.rename-loop";
+    private const string RenameLoopActionId = "causal-loop.rename-loop";
 
     /// <summary>Withdraw a loop's claim. Its links survive.</summary>
     public const string RemoveLoopActionId = "causal-loop.remove-loop";
@@ -220,7 +220,7 @@ public sealed class CausalLoopContextActionProvider(
     }
 
     /// <summary>The command one action-and-value pair dispatches, or null when it is not ours.</summary>
-    internal ICommand? CommandFor(ContextTarget target, string actionId, string value)
+    private ICommand? CommandFor(ContextTarget target, string actionId, string value)
     {
         var body = target.ResolvedFullPath;
         var entry = documents.GetOrLoad(body);

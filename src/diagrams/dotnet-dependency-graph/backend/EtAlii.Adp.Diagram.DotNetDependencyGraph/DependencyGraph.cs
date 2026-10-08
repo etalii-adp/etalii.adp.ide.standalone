@@ -87,7 +87,7 @@ public sealed class DependencyGraph
     /// that size. This floor is what keeps a rule measured on 104 projects from misfiring on
     /// four, and it is why the shipped four-project example hides nothing at all.
     /// </remarks>
-    public const int AmbientFloor = 5;
+    private const int AmbientFloor = 5;
 
     // WHY THIS RULE IS ABOUT PACKAGES, AND MUST STAY ABOUT PACKAGES.
     //
@@ -262,13 +262,13 @@ public sealed class DependencyGraph
     }
 
     /// <summary>A project's element id: its path relative to the solution.</summary>
-    public static string IdOfProject(string relativePath) => $"project:{relativePath}";
+    private static string IdOfProject(string relativePath) => $"project:{relativePath}";
 
     /// <summary>
     /// A package's element id: <b>the package id, and never the version</b>. The whole of the
     /// design decision this module's guarding test exists to pin.
     /// </summary>
-    public static string IdOfPackage(string packageId) => $"package:{packageId}";
+    private static string IdOfPackage(string packageId) => $"package:{packageId}";
 
     /// <summary>An edge's id, from its two ends, so a redrawn graph names the same edge.</summary>
     private static string IdOfEdge(string fromId, string toId) => $"depends:{fromId}->{toId}";

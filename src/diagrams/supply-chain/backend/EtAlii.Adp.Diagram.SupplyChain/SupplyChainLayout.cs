@@ -42,10 +42,10 @@ public sealed class SupplyChainLayout
     public const double LayerPitch = SupplyChainGeometry.NodeWidth + 128;
 
     /// <summary>The vertical distance between the tops of two nodes stacked in one band.</summary>
-    public const double RowPitch = SupplyChainGeometry.NodeHeight + 28;
+    private const double RowPitch = SupplyChainGeometry.NodeHeight + 28;
 
     /// <summary>The clear space between two bands that share a layer.</summary>
-    public const double BandGap = 32;
+    private const double BandGap = 32;
 
     private static readonly ConditionalWeakTable<SupplyChainModel, SupplyChainLayout> Cache = new();
 
@@ -194,7 +194,7 @@ public sealed class SupplyChainLayout
     /// and one covering the last two can sit side by side rather than one above the other.
     /// </para>
     /// </remarks>
-    internal static Dictionary<string, (double X, double Y)> Arrange(
+    private static Dictionary<string, (double X, double Y)> Arrange(
         IReadOnlyList<SupplyChainNode> nodes,
         IReadOnlyList<SupplyChainFlow> flows,
         Func<SupplyChainNode, string?> groupOf,

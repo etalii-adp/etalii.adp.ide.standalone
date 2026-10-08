@@ -42,8 +42,8 @@ public readonly record struct FdgEdit(string? Refusal)
 /// </remarks>
 public static class FdgWriter
 {
-    internal const string ElementsSection = "elements:";
-    internal const string ConnectionsSection = "connections:";
+    private const string ElementsSection = "elements:";
+    private const string ConnectionsSection = "connections:";
 
     /// <summary>Rewrites an element's name. A Comment has none, and says so.</summary>
     public static FdgEdit SetName(LineDocument document, FdgElement element, string name)

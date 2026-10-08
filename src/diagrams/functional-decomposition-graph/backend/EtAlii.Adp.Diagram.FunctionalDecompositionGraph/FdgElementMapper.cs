@@ -95,7 +95,7 @@ public sealed class FdgElementMapper
     }
 
     /// <summary>The library type an FDG element type is drawn as.</summary>
-    public static string ElementTypeOf(string elementType) => Prefix + elementType;
+    private static string ElementTypeOf(string elementType) => Prefix + elementType;
 
     /// <summary>The library type an FDG relation is drawn as.</summary>
     public static string ConnectionTypeOf(string relation) => Prefix + relation;

@@ -43,7 +43,7 @@ namespace EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.Parity;
 internal static partial class DotNetTranscript
 {
     /// <summary>The checked-in file's name, in this project's <c>Parity</c> folder.</summary>
-    public const string FileName = "dotnet.transcript.json";
+    private const string FileName = "dotnet.transcript.json";
 
     private const string TestProject = "EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests";
     private const string Unknown = "parity:unknown";
@@ -51,7 +51,7 @@ internal static partial class DotNetTranscript
     private static readonly TypeRegistry _payloadTypes = TypeRegistry.FromMessages(DependencyElementPayload.Descriptor);
 
     /// <summary>The module's folder, <c>src/diagrams/dotnet-dependency-graph</c>.</summary>
-    public static string ModuleFolder { get; } = FindModuleFolder();
+    private static string ModuleFolder { get; } = FindModuleFolder();
 
     /// <summary>The checked-in transcript.</summary>
     public static string CheckedInPath => Path.Combine(ModuleFolder, "backend", TestProject, "Parity", FileName);
@@ -61,7 +61,7 @@ internal static partial class DotNetTranscript
     private static string FixtureCache => Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures", "cache");
 
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
-    public static IReadOnlyList<string> Corpus()
+    private static IReadOnlyList<string> Corpus()
     {
         static IEnumerable<string> Solutions(string folder) =>
             Directory.Exists(folder)

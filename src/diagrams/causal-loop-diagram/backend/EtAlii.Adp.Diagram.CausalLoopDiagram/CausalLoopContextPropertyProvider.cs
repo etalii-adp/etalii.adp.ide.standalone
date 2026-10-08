@@ -43,7 +43,7 @@ public sealed class CausalLoopContextPropertyProvider(
     public const string LinkFromProperty = "causal-loop.link-from";
 
     /// <summary>The effect end of a link.</summary>
-    public const string LinkToProperty = "causal-loop.link-to";
+    private const string LinkToProperty = "causal-loop.link-to";
 
     /// <summary>What the link asserts about the direction of the effect.</summary>
     public const string LinkPolarityProperty = "causal-loop.link-polarity";
@@ -55,13 +55,13 @@ public sealed class CausalLoopContextPropertyProvider(
     public const string LinkWeightProperty = "causal-loop.link-weight";
 
     /// <summary>An optional note on the link.</summary>
-    public const string LinkLabelProperty = "causal-loop.link-label";
+    private const string LinkLabelProperty = "causal-loop.link-label";
 
     /// <summary>A loop's identifier, as written.</summary>
     public const string LoopIdentifierProperty = "causal-loop.loop-identifier";
 
     /// <summary>A loop's descriptive name.</summary>
-    public const string LoopNameProperty = "causal-loop.loop-name";
+    private const string LoopNameProperty = "causal-loop.loop-name";
 
     /// <summary>What the arrows around the cycle say. Never editable: it is arithmetic.</summary>
     public const string LoopComputedProperty = "causal-loop.loop-computed";
@@ -70,7 +70,7 @@ public sealed class CausalLoopContextPropertyProvider(
     public const string LoopStatedProperty = "causal-loop.loop-stated";
 
     /// <summary>The cycle the loop runs through.</summary>
-    public const string LoopVariablesProperty = "causal-loop.loop-variables";
+    private const string LoopVariablesProperty = "causal-loop.loop-variables";
 
     private const string IdentityGroup = "Identity";
     private const string CausalityGroup = "Causality";

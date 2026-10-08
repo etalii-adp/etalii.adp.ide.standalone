@@ -40,7 +40,7 @@ public sealed class AbmBody
     }
 
     /// <summary>The binding every behavior model body is read and written with.</summary>
-    public static FblBinding Binding => LoadedBinding.Value;
+    private static FblBinding Binding => LoadedBinding.Value;
 
     /// <summary>The body's text after every change made to it.</summary>
     public string Text => Encoding.UTF8.GetString(_body.Bytes);

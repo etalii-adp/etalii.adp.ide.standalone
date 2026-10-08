@@ -58,13 +58,13 @@ public static class SelfOrganizingLayout
     /// cannot arise (Requirement 6.4). The family constant, named here rather than reached for
     /// across a module boundary.
     /// </summary>
-    public const int DefaultBudget = 1000;
+    private const int DefaultBudget = 1000;
 
     /// <summary>
     /// How many stimuli are presented. Fixed — not a convergence test, which would make the
     /// stopping point depend on the arithmetic's own history rather than on the document.
     /// </summary>
-    public const int Iterations = 2000;
+    private const int Iterations = 2000;
 
     /// <summary>The learning rate at the first iteration and at the last.</summary>
     private const double InitialRate = 0.9;
@@ -89,7 +89,7 @@ public static class SelfOrganizingLayout
     /// an unbounded loop on a document it cannot satisfy would spin instead of refusing, and
     /// Requirement 6.7 wants the refusal.
     /// </summary>
-    public const int SeparationRounds = 200;
+    private const int SeparationRounds = 200;
 
     /// <summary>
     /// The golden angle, in radians. Successive multiples of it never repeat a direction, which

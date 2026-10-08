@@ -36,7 +36,7 @@ internal static class TranscriptText
     };
 
     /// <summary>A string as a JSON literal, so a value's newlines and quotes stay on its line.</summary>
-    public static JsonSerializerOptions StringOptions { get; } = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static JsonSerializerOptions StringOptions { get; } = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     // Fields at their default are left out, as the wire leaves them out: the bytes cannot tell them apart.
     private static readonly JsonFormatter _payloadJson = new(JsonFormatter.Settings.Default);
@@ -45,7 +45,7 @@ internal static class TranscriptText
     public static string Sha256(ReadOnlySpan<byte> bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
 
     /// <summary>A number as the transcript writes it: shortest round-trip, invariant.</summary>
-    public static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
+    private static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
     /// <summary>A text as a JSON string literal.</summary>
     public static string Quoted(string? value) => value is null ? "null" : JsonSerializer.Serialize(value, StringOptions);
