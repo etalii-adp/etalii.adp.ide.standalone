@@ -192,7 +192,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
-    public void UpdateFromTrack(ShortGuid watchId, int levelIndex, IReadOnlyList<string>? newRelativePath)
+    private void UpdateFromTrack(ShortGuid watchId, int levelIndex, IReadOnlyList<string>? newRelativePath)
     {
         if (newRelativePath is null)
         {

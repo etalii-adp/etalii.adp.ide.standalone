@@ -235,7 +235,7 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
     /// <summary>The indentation one step deeper than <paramref name="indent"/>, by FBL §6.3's step.</summary>
     protected string Indentation(int columns) => new(IndentCharacter, columns);
 
-    protected char IndentCharacter => Binding.Text.Indent == 0 ? '\t' : ' ';
+    private char IndentCharacter => Binding.Text.Indent == 0 ? '\t' : ' ';
 
     /// <summary>
     /// The indentation step (FBL §6.3): the difference between the indentation of the first parent

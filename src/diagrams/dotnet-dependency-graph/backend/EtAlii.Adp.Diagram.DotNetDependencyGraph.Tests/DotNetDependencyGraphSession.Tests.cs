@@ -33,11 +33,11 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
 
         public bool CanUndo => false;
 
-        public bool CanRedo => false;
+        private bool CanRedo => false;
 
-        public int UndoCount => 0;
+        private int UndoCount => 0;
 
-        public int RedoCount => 0;
+        private int RedoCount => 0;
 
         public HistoryAvailability Availability => new(CanUndo, CanRedo, UndoCount, RedoCount);
 
