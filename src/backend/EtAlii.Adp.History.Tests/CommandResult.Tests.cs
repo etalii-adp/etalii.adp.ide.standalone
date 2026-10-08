@@ -21,7 +21,7 @@ public class CommandResultTests
     public void Success_WithAnInverse_CarriesThatInverse()
     {
         // Arrange.
-        var inverse = new CommandResultSampleCommand("back");
+        var inverse = new CommandResultSampleCommand();
 
         // Act.
         var result = CommandResult.Success(inverse);

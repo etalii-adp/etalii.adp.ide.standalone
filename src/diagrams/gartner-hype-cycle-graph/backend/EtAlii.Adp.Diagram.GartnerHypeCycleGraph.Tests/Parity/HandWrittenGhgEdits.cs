@@ -109,7 +109,6 @@ internal static class HandWrittenGhgEdits
     public static string? RemoveConfirmation(GhgModel model, string id)
     {
         var trend = GhgEdits.TrendOf(model, id);
-        var trigger = GhgEdits.TriggerOf(model, id);
         var note = GhgEdits.NoteOf(model, id);
         var what = trend is not null ? "trend" : "trigger";
         var going = note is not null ? 0 : model.Influences.Count(influence => influence.From == id || influence.To == id);

@@ -26,7 +26,7 @@ public class ContextSelectionStoreTests : IDisposable
         var chain = new ContextSelection { Source = ContextSelectionSource.Explorer, Id = id, Path = new Path() };
         chain.Path.Segments.AddRange(path);
         var level = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer, id, path, ContextScope.Hierarchy,
+            id, path, ContextScope.Hierarchy,
             new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([Root, .. path]), false, (ShortGuid)id.EntryId),
             new ContextLevelDetail { Entry = new EntryDetail { Kind = EntryKind.File, Available = true } },
             resolver);
@@ -279,12 +279,12 @@ public class ContextSelectionStoreTests : IDisposable
         fileChain.Child = elementChain;
 
         var fileLevel = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer, fileId, ["plan.cld"], ContextScope.Hierarchy,
+            fileId, ["plan.cld"], ContextScope.Hierarchy,
             new ContextTarget(ContextScope.Hierarchy, bodyPath, false, (ShortGuid)fileId.EntryId),
             new ContextLevelDetail { Entry = new EntryDetail { Kind = EntryKind.File, Available = true } },
             fileResolver);
         var elementLevel = new ContextResolvedLevel(
-            ContextSelectionSource.DiagramCanvas, elementId, ["Incidents"], ContextScope.DiagramElement,
+            elementId, ["Incidents"], ContextScope.DiagramElement,
             new ContextTarget(ContextScope.DiagramElement, bodyPath, false, default, Root, watchId, "variable:incidents"),
             new ContextLevelDetail { Element = new ElementDetail { Text = "Incidents" } },
             elementResolver);

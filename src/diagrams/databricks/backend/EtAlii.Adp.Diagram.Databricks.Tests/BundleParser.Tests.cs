@@ -27,12 +27,16 @@ public class BundleParserTests
         Assert.Equal("lakehouse-nightly", bundle.Name);
         var include = Assert.Single(bundle.Includes);
         Assert.Equal("resources/*.yml", include.Glob);
+        Assert.Equal(new LineRange(5, 5), include.Lines);
         Assert.Equal(2, bundle.Variables.Count);
         Assert.Equal("catalog", bundle.Variables[0].Name);
         Assert.Equal("lakehouse_dev", bundle.Variables[0].Default);
         Assert.Equal("The Unity Catalog written to.", bundle.Variables[0].Description);
         Assert.Equal("warehouse_id", bundle.Variables[1].Name);
         Assert.Equal("4b9b953939869799", bundle.Variables[1].Default);
+        // Zero-based: each variable's key and its body.
+        Assert.Equal(new LineRange(8, 10), bundle.Variables[0].Lines);
+        Assert.Equal(new LineRange(11, 12), bundle.Variables[1].Lines);
     }
 
     [Fact]
@@ -63,6 +67,9 @@ public class BundleParserTests
         Assert.Contains(bundle.UnknownNodes, node => node.Path == "sync");
         Assert.Contains(bundle.UnknownNodes, node => node.Path == "resources.experiments");
         Assert.Equal(2, bundle.UnknownNodes.Count);
+        // Zero-based: each key and the whole of its body, so it can be drawn where it is written.
+        Assert.Equal(new LineRange(14, 16), bundle.UnknownNodes.Single(node => node.Path == "sync").Lines);
+        Assert.Equal(new LineRange(25, 27), bundle.UnknownNodes.Single(node => node.Path == "resources.experiments").Lines);
     }
 
     [Fact]

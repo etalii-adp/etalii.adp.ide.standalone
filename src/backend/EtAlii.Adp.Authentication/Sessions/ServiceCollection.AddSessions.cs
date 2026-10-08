@@ -20,7 +20,7 @@ namespace EtAlii.Adp.Authentication;
 /// </remarks>
 public static class ServiceCollectionAddSessionsExtension
 {
-    public static IServiceCollection AddSessions(this IServiceCollection services, IConfiguration configuration)
+    public static void AddSessions(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
@@ -28,7 +28,5 @@ public static class ServiceCollectionAddSessionsExtension
         services.Configure<LocalAuthenticatorOptions>(configuration.GetSection(LocalAuthenticatorOptions.SectionName));
         services.AddSingleton<IAuthenticator, LocalAuthenticator>();
         services.AddSingleton<ISessionStore, InMemorySessionStore>();
-
-        return services;
     }
 }

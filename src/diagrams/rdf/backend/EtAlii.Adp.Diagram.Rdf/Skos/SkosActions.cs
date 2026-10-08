@@ -45,7 +45,7 @@ public static class SkosActions
             ];
         }
 
-        if (RdfNewPlacement.TryParse(target.ElementId, out _, out _) && SkosSelection.HasScheme(entry))
+        if (RdfNewPlacement.IsPlacement(target.ElementId) && SkosSelection.HasScheme(entry))
         {
             return
             [

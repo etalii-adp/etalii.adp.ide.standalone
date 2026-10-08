@@ -25,6 +25,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
     private static readonly ILogger _logger = Log.ForContext<DiagramDocumentReloadBridge>();
 
     private readonly IReadOnlyDictionary<DiagramOrigin, IDiagramDocumentReloader> _reloaders;
+
+    // The three maps are concurrent dictionaries, so each single read or write of one is atomic
+    // without the lock, and the watcher callbacks read them from the watcher's thread without it.
+    // _watcherLock serializes only the compound steps on a watcher - check, create, replace,
+    // dispose - so that two Opens never build two FileSystemWatchers for one root.
     private readonly ConcurrentDictionary<string, TrackedDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _registrations = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, RootFolderWatcher> _watchers = new(StringComparer.OrdinalIgnoreCase);
@@ -55,9 +60,11 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
             return;
         }
 
+        // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _watcherLock serializes creating and disposing watchers, not the tracked set.
         _documents[bodyPath] = new TrackedDocument(rootPath, bodyPath, reloader);
         if (registrationPath is { Length: > 0 })
         {
+            // ReSharper disable once InconsistentlySynchronizedField - Reason: one atomic ConcurrentDictionary write; _watcherLock serializes creating and disposing watchers, not the tracked set.
             _registrations[registrationPath] = bodyPath;
         }
 
@@ -66,6 +73,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
 
     private void EnsureWatching(string rootPath)
     {
+        // ReSharper disable once InconsistentlySynchronizedField - Reason: an atomic ConcurrentDictionary read as a fast path; a miss is decided again under _watcherLock below, and a hit orders before any concurrent replace or dispose exactly as a locked read would.
         if (_watchers.ContainsKey(rootPath))
         {
             return;

@@ -51,7 +51,6 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -81,7 +80,6 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New element" : "New influence";
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 [proposed],
                 ContextScope.DiagramElement,
@@ -136,7 +134,6 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

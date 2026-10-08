@@ -65,7 +65,6 @@ public class DependencyGraphContextSourceResolverTests : IDisposable
 
     private static ContextResolvedLevel FileLevel(string path) =>
         new(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,
@@ -82,7 +81,6 @@ public class DependencyGraphContextSourceResolverTests : IDisposable
         return await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             id,
             clientPath ?? [],
             parent,

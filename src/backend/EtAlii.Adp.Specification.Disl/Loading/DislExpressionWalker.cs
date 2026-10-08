@@ -248,7 +248,7 @@ internal static partial class DislExpressionWalker
                 return key switch
                 {
                     "target" or "location" or "subject" => ruleFrame.As(Mode.Expression),
-                    "fixes" => ruleFrame.As(Mode.Literal),
+                    // Every other key is literal, fixes included: a fix's when and actions are found by their own keys.
                     _ => ruleFrame.As(Mode.Literal),
                 };
             }

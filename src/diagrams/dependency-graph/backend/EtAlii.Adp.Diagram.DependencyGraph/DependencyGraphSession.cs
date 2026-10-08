@@ -132,7 +132,7 @@ public sealed class DependencyGraphSession : IDiagramSession
 
         (double movedX, int row) = DependencyGraphElementMapper.Placement(x, y);
         var result = await _history.ExecuteAsync(
-            new SetDependencyGraphPlacementCommand(_bodyPath, elementId, movedX, row, "Moved"),
+            new SetDependencyGraphPlacementCommand(_bodyPath, elementId, movedX, row),
             cancellationToken);
 
         return result.IsSuccess ? "" : result.Error;

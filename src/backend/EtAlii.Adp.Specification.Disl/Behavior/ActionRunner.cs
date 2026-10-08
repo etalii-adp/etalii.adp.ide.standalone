@@ -141,7 +141,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                 {
                     return Refuse(e.Message);
                 }
-                _changes.Add(new DislChange.Reparent(element.Id, newParent?.Id, slot as string, (after as DislElement)?.Id, (before as DislElement)?.Id, index));
+                _changes.Add(new DislChange.Reparent(element.Id, newParent?.Id, index));
                 return true;
             }
             case "let":
@@ -182,8 +182,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
             }
             case "layout":
             {
-                if (!Member(body, bodyAt, "scope", variables, null, out var scope)) return false;
-                _host.Add(new HostAction.Layout(DislJson.String(body, "algorithm") ?? "", scope));
+                _host.Add(new HostAction.Layout(DislJson.String(body, "algorithm") ?? ""));
                 return true;
             }
             case "plugin":

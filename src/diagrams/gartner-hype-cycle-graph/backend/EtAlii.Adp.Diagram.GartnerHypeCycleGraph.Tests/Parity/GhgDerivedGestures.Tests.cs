@@ -52,7 +52,7 @@ public class GhgDerivedGesturesTests
         var diagram = GhgBody.Parse(text).Disl.Diagram;
         var unique = UniqueIds(model);
         List<string> mismatches = [];
-        var compared = 0;
+        List<string> compared = [];
 
         foreach (var trend in Sampled(model.Trends, trend => !trend.HasSpan).Where(trend => unique.Contains(trend.Id)))
         {
@@ -118,7 +118,7 @@ public class GhgDerivedGesturesTests
             await RenameAsync(note.Id, self, "text");
         }
 
-        Assert.True(mismatches.Count == 0, $"{path}: {mismatches.Count} of {compared} differ\n{string.Join("\n", mismatches)}");
+        Assert.True(mismatches.Count == 0, $"{path}: {mismatches.Count} of {compared.Count} differ\n{string.Join("\n", mismatches)}");
         return;
 
         async Task RenameAsync(string id, DislElement self, string attribute)
@@ -132,7 +132,7 @@ public class GhgDerivedGesturesTests
 
         void Compare(string gesture, CommandResult handled, IReadOnlyList<DislFinding> derived)
         {
-            compared++;
+            compared.Add(gesture);
             var expected = handled.IsSuccess ? "allowed" : $"refused: {handled.Error}";
             var actual = derived.Count == 0 ? "allowed" : $"refused: {derived[0].Message}";
             if (!string.Equals(expected, actual, StringComparison.Ordinal))

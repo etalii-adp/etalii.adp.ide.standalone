@@ -30,7 +30,6 @@ public readonly record struct C4Box(double X, double Y, double Width, double Hei
 /// bracketed type-and-technology line, and the description (c4-diagrams Requirement 4.1).
 /// </remarks>
 public sealed record C4Metrics(
-    string FontFamily = "system-ui, sans-serif",
     double FontSize = 14,
     double LineHeight = 1.4,
     double HorizontalPadding = 12,

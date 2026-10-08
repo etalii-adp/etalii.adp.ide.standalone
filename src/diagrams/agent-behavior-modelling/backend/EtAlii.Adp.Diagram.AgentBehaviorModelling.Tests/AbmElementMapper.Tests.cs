@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using Xunit;
@@ -9,7 +10,7 @@ public class AbmElementMapperTests
     private static readonly AbmModel Model = AbmParser.Parse(LineDocument.Parse(
         "## Behavior\n- **Try in order:** A\n  - **Check:** B\n    Notes the canvas never gets.\n  - **Retry up to 2 times:** C\n    - **Do:** D\n"));
 
-    private static readonly Dictionary<string, RegistrationPosition> NoneStored = new(StringComparer.Ordinal);
+    private static readonly IReadOnlyDictionary<string, RegistrationPosition> NoneStored = ImmutableDictionary<string, RegistrationPosition>.Empty;
 
     [Fact]
     public void EveryNode_AndALineToEveryChild()

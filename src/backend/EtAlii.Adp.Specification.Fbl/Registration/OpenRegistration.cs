@@ -129,8 +129,12 @@ public sealed class OpenRegistration : SplicedFile
         return Ordered(splices);
     }
 
+    /// <summary>
+    /// The splices in body order. At one offset an insertion goes before a removal that starts there,
+    /// as when a new entry follows the last kept one and a stale entry comes next (FBL §8.5, §8.6).
+    /// </summary>
     private static List<Splice> Ordered(List<Splice> splices) =>
-        splices.Select((s, i) => (s, i)).OrderBy(p => p.s.Start).ThenBy(p => p.i).Select(p => p.s).ToList();
+        splices.Select((s, i) => (s, i)).OrderBy(p => p.s.Start).ThenBy(p => p.s.End).ThenBy(p => p.i).Select(p => p.s).ToList();
 
     private static List<Span> Numbers(Text.BodyText text, Span value)
     {

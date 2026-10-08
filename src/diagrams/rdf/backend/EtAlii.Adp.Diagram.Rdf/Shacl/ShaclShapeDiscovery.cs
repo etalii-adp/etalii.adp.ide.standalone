@@ -75,7 +75,6 @@ public static class ShaclShapeDiscovery
                     entry.Value.Term,
                     entry.Key,
                     entry.Value.Index,
-                    model.Triples[entry.Value.Index].Span,
                     IsPropertyShape: pathSubjects.Contains(entry.Key),
                     ImplicitClassTarget: entry.Value.Term is IriTerm && classSubjects.Contains(entry.Key))),
         ];

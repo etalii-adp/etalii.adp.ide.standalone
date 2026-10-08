@@ -5,14 +5,11 @@ public sealed class CelProgram
 {
     private readonly long _budget;
 
-    internal CelProgram(string source, CelNode root, long budget)
+    internal CelProgram(CelNode root, long budget)
     {
-        Source = source;
         Root = root;
         _budget = budget;
     }
-
-    public string Source { get; }
 
     private CelNode Root { get; }
 

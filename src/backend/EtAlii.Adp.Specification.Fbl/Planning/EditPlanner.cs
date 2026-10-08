@@ -165,7 +165,7 @@ internal static class EditPlanner
                 if (binding.Reference is not { } reference || !reference.To.Contains(renamed.Rule.Name)) continue;
                 if (other == renamed && name == renamed.KeyAttribute) continue;
                 if (!other.Slots.TryGetValue(name, out var read) || !read.Present) continue;
-                if (read.Words is { Count: > 1 } words || (read.Words is { Count: 1 } && other.Attributes.GetValueOrDefault(name) is List<object?>))
+                if (read.Words is { Count: > 1 } ||(read.Words is { Count: 1 } && other.Attributes.GetValueOrDefault(name) is List<object?>))
                 {
                     foreach (var word in read.Words!)
                     {

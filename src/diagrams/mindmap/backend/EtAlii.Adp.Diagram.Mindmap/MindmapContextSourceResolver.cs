@@ -7,7 +7,8 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// <summary>
 /// Makes a mindmap node selectable: resolves an <c>element_id</c> against the map named by
 /// the enclosing selection level, verifies the node really is in that map, and fills in the
-/// detail a consumer shows (Requirements 10.2, 10.4, 10.6). Registering this is the whole of
+/// detail a consumer shows (Requirements 10.2, 10.4, 10.6), unfolding the branches that hide
+/// it (Requirement 10.5). Registering this is the whole of
 /// it; the context service itself is untouched.
 /// </summary>
 public sealed class MindmapContextSourceResolver : IContextSourceResolver
@@ -31,7 +32,6 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -75,7 +75,16 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
             return Rejected("The path does not match the node.");
         }
 
+        // A selection expands its collapsed ancestors so the node is actually visible
+        // (Requirement 10.5; DISL's revealExpands, true by default). Each goes through the fold
+        // toggle, outermost first, so the session holding this connection's stream pushes the
+        // ungroup delta that brings the hidden node to the client.
         var view = _views.For(watchId, bodyPath!, document);
+        foreach (var ancestor in view.FoldedAncestorsOf(node))
+        {
+            _views.Toggle(watchId, bodyPath!, document, ancestor.Id);
+        }
+
         var detail = new ContextLevelDetail
         {
             Element = new ElementDetail
@@ -88,7 +97,6 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         };
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.DiagramElement,

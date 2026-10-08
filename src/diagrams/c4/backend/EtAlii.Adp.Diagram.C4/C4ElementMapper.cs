@@ -274,7 +274,7 @@ public sealed class C4ElementMapper
                     layout.Boxes.TryGetValue(interaction.DestinationId, out var to))
                 {
                     yield return (
-                        new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", [], interaction.Line),
+                        new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", interaction.Line),
                         from,
                         to,
                         interaction.Order);

@@ -62,7 +62,6 @@ internal sealed class MindmapTestProject : IDisposable
 
     /// <summary>The resolved hierarchy level for the registration file - what a node selection nests under.</summary>
     public ContextResolvedLevel FileLevel() => new(
-        ContextSelectionSource.Explorer,
         new ContextSource { EntryId = ShortGuid.NewShortGuid() },
         ["docs", "architecture.adp"],
         ContextScope.Hierarchy,

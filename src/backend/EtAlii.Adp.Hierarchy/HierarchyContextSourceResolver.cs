@@ -37,7 +37,6 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -81,7 +80,6 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
         };
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.Hierarchy,

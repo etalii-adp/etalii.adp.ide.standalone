@@ -30,7 +30,7 @@ internal sealed class ContextSelectionResolverStubResolver : IContextSourceResol
     public bool CanResolve(ContextSource source) => _canResolve && source.SourceCase == ContextSource.SourceOneofCase.EntryId;
 
     public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId, string rootPath, ContextSelectionSource source, ContextSource id,
+        ShortGuid watchId, string rootPath, ContextSource id,
         IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken)
     {
         ParentsSeen.Add(parent);
@@ -41,7 +41,7 @@ internal sealed class ContextSelectionResolverStubResolver : IContextSourceResol
 
         var path = clientPath.Count == 0 && _fillPath is not null ? _fillPath : clientPath;
         var level = new ContextResolvedLevel(
-            source, id, path, ContextScope.Hierarchy,
+            id, path, ContextScope.Hierarchy,
             new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([rootPath, .. path]), false, (ShortGuid)id.EntryId),
             new ContextLevelDetail(), this);
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));

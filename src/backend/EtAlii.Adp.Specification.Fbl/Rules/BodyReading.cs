@@ -385,7 +385,7 @@ internal sealed class BodyReading
                 Key = over.Key, XmlAttribute = over.XmlAttribute, Text = over.Text, Child = over.Child, Group = over.Group,
                 Capture = over.Capture, Word = over.Word, HtmlParagraphs = attribute.HtmlParagraphs,
             });
-            if (overriding.Present) return overriding with { Node = new OverrideNode(overriding.Node, over) };
+            if (overriding.Present) return overriding with { Node = new OverrideNode(overriding.Node) };
         }
         return Family.Read(candidate, slot);
     }
@@ -569,4 +569,4 @@ internal sealed class BodyReading
 }
 
 /// <summary>A value read from an attribute's <c>override</c> slot, which writing removes (FBL §5.2).</summary>
-internal sealed record OverrideNode(object? Node, Slot Slot);
+internal sealed record OverrideNode(object? Node);

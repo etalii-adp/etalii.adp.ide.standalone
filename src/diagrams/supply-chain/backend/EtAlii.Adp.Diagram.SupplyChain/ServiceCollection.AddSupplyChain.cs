@@ -14,7 +14,7 @@ public static class ServiceCollectionAddSupplyChainExtension
     /// reload seam, the selection resolver, the toolbox, action and property providers, one handler
     /// per command, and the validator.
     /// </summary>
-    public static IServiceCollection AddSupplyChain(this IServiceCollection services)
+    public static void AddSupplyChain(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -49,7 +49,5 @@ public static class ServiceCollectionAddSupplyChainExtension
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<ISupplyChainDocumentStore>>, RestoreDocumentCommandHandler<ISupplyChainDocumentStore>>();
 
         services.AddSingleton<IDiagramValidator, SupplyChainValidator>();
-
-        return services;
     }
 }

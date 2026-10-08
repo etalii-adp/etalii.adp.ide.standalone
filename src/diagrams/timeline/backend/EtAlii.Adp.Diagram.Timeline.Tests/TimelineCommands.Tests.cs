@@ -195,7 +195,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(new SetTimelinePlacementCommand(path, "aaa", "2026-03-01", "2026-02-01", 0, "Edited"), TestContext.Current.CancellationToken);
+        var result = await History.ExecuteAsync(new SetTimelinePlacementCommand(path, "aaa", "2026-03-01", "2026-02-01", 0), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -210,7 +210,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(new SetTimelinePlacementCommand(path, "bbb", "2026-05-01T09:00:00", "2026-05-02T09:00:00", 2, "Moved"), TestContext.Current.CancellationToken);
+        var result = await History.ExecuteAsync(new SetTimelinePlacementCommand(path, "bbb", "2026-05-01T09:00:00", "2026-05-02T09:00:00", 2), TestContext.Current.CancellationToken);
 
         // Assert.
         // The end is ignored rather than written: giving a moment an end is the context menu's

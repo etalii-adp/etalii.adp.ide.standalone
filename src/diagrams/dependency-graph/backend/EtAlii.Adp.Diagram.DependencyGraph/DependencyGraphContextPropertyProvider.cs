@@ -122,9 +122,9 @@ public sealed class DependencyGraphContextPropertyProvider : IContextPropertyPro
         {
             LabelProperty => new RenameDependencyGraphElementCommand(body, id, value),
             XProperty when ParseNumber(propertyId, value) is { } x =>
-                new SetDependencyGraphPlacementCommand(body, id, x, element.Row, "Edited"),
+                new SetDependencyGraphPlacementCommand(body, id, x, element.Row),
             RowProperty when ParseNumber(propertyId, value) is { } row =>
-                new SetDependencyGraphPlacementCommand(body, id, element.X, (int)row, "Edited"),
+                new SetDependencyGraphPlacementCommand(body, id, element.X, (int)row),
             _ => null,
         };
     }

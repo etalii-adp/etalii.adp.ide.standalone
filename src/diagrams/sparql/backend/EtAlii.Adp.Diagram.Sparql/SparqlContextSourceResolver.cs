@@ -29,7 +29,6 @@ public sealed class SparqlContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -64,7 +63,6 @@ public sealed class SparqlContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             [text],
             ContextScope.DiagramElement,

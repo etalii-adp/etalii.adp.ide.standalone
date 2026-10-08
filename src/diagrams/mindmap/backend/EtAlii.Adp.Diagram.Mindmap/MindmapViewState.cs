@@ -32,11 +32,10 @@ public sealed class MindmapViewState
     /// toggle is allowed to take: state and notification stay together, so a session cannot
     /// miss a fold the way it would if callers toggled the view directly.
     /// </summary>
-    public bool Toggle(ShortGuid watchId, string bodyPath, MindmapDocument document, string nodeId)
+    public void Toggle(ShortGuid watchId, string bodyPath, MindmapDocument document, string nodeId)
     {
         var nowFolded = For(watchId, bodyPath, document).Toggle(nodeId);
         FoldToggled?.Invoke(this, new MindmapFoldToggledEventArgs(watchId, bodyPath, nodeId, nowFolded));
-        return nowFolded;
     }
 
     /// <summary>The view if the connection has one on this map; null otherwise, and nothing is created.</summary>

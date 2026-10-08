@@ -11,8 +11,6 @@ internal sealed class C4ParseState
 
     public string WorkspaceName { get; set; } = "";
 
-    public string? Environment { get; set; }
-
     public List<C4Element> Elements { get; } = [];
 
     public List<C4Relationship> Relationships { get; } = [];

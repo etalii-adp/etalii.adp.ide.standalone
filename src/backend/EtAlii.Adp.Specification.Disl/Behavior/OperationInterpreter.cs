@@ -107,13 +107,18 @@ public static class OperationInterpreter
         return Actions(specification, operation, pointer, diagram, ids, variables);
     }
 
-    /// <summary>The operation's <c>plugin</c> handed back whole, or its actions run.</summary>
+    /// <summary>
+    /// The operation's <c>plugin</c> handed back whole, its <c>args</c> as written (a PluginCall's
+    /// arguments are values validated against the plugin's declaration, not expressions), or its actions run.
+    /// </summary>
     private static DislTransaction Actions(DislSpecification specification, JsonElement operation, string pointer, DislDiagram diagram, IIdSource ids, Dictionary<string, object?> variables)
     {
         if (operation.TryGetProperty("plugin", out var plugin))
         {
             var name = plugin.ValueKind == JsonValueKind.String ? plugin.GetString()! : DislJson.String(plugin, "name") ?? "";
-            return new DislTransaction([], [new HostAction.Plugin(name, new Dictionary<string, object?>())], null);
+            var arguments = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach (var argument in DislJson.Members(plugin, "args")) arguments[argument.Name] = DislValues.Json(argument.Value);
+            return new DislTransaction([], [new HostAction.Plugin(name, arguments)], null);
         }
 
         var runner = new ActionRunner(specification, diagram, ids, DislContexts.Operation);

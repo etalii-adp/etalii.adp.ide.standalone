@@ -14,7 +14,7 @@ internal sealed class ContextSelectionStoreStubResolver : IContextSourceResolver
     public bool CanResolve(ContextSource source) => true;
 
     public ValueTask<ContextLevelResolution> ResolveAsync(
-        ShortGuid watchId, string rootPath, ContextSelectionSource source, ContextSource id,
+        ShortGuid watchId, string rootPath, ContextSource id,
         IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 

@@ -12,7 +12,7 @@ public sealed class SetSankeyPropertyCommandHandler(ISankeyDocumentStore documen
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var value = (command.Value ?? "").Trim();
+        var value = command.Value.Trim();
         double? number = null;
         if (command.Key is SankeyKeys.Value or SankeyKeys.Step && value.Length > 0)
         {

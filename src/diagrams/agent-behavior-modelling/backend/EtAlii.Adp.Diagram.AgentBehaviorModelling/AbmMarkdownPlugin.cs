@@ -102,7 +102,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
                         "label" => AbmWriter.SetLabel(document, node, Text(value)),
                         "notes" => AbmWriter.SetNotes(document, node, Text(value)),
                         "attempts" when node.Kind != AbmNodeKinds.Retry => AbmEdit.Refused("Only a Retry has attempts."),
-                        "attempts" when Number(value) is not { } attempts => AbmEdit.Refused("A Retry's attempts are a whole number."),
+                        "attempts" when Number(value) is null => AbmEdit.Refused("A Retry's attempts are a whole number."),
                         "attempts" => AbmWriter.SetKind(document, node, AbmNodeKinds.Retry, Number(value)!.Value),
                         _ => AbmEdit.Refused($"A behavior model node has no `{name}` to write."),
                     };
@@ -267,7 +267,7 @@ public sealed class AbmMarkdownPlugin : IPersistencePlugin
     {
         int number => number,
         long number when number is >= int.MinValue and <= int.MaxValue => (int)number,
-        double number when number == Math.Truncate(number) && number is >= int.MinValue and <= int.MaxValue => (int)number,
+        double number when double.IsInteger(number) && number is >= int.MinValue and <= int.MaxValue => (int)number,
         string text when int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) => number,
         _ => null,
     };

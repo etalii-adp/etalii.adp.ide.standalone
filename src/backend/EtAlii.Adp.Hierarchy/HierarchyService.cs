@@ -17,6 +17,13 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
 
+    /// <summary>
+    /// Awaited by the presence poll between finding the root gone and announcing it, so a guard
+    /// can hold the poll at exactly that point while the watch closes around it. Settable for
+    /// guards only; production never sets it.
+    /// </summary>
+    internal Func<Task>? RootFoundMissing { get; init; }
+
     public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
     {
         _projectStore = projectStore;
@@ -80,6 +87,13 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
 
         using var recoveryCts = new CancellationTokenSource();
 
+        // Read once, here, and never through the source again. CancelAsync in the finally asks the
+        // presence poll to stop but does not wait for it, so a poll already past its delay can still
+        // announce an outage after the using has disposed the source - and the source's Token
+        // throws once disposed, faulting a recovery nobody awaits. The token itself outlives the
+        // dispose and is cancelled before it, so a late recovery gives up at its first wait instead.
+        var recoveryToken = recoveryCts.Token;
+
         // One notification per outage, whichever detector saw it first. On Windows the
         // watcher's own Error event reports the root's deletion almost instantly; on Linux,
         // inotify never reports the watched directory's own deletion at all - the watch just
@@ -91,7 +105,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
 
         var watcher = CreateWatcher(rootPath, model, HandleRootLost);
         _hierarchyModelStore.AttachWatcher(watchId, watcher);
-        _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryCts.Token);
+        _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryToken);
         // Information: a watch is a long-lived resource with a file system watcher behind it,
         // so its open and close are the pair to look for when one is suspected of leaking.
         _logger.Information(
@@ -125,8 +139,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
 
         async Task RecoverAsync()
         {
-            // ReSharper disable once AccessToDisposedClosure - Reason: RecoverAsync is reached only through HandleRootLost, whose two callers are shut down in the finally above before the using disposes recoveryCts: CancelAsync ends WatchRootPresenceAsync, and _hierarchyModelStore.Remove disposes the root watcher; a recovery already running holds only the token, so that cancel ends it through the OperationCanceledException WaitForRootRecoveryAsync catches.
-            await WaitForRootRecoveryAsync(rootPath, model, recoveryCts.Token);
+            await WaitForRootRecoveryAsync(rootPath, model, recoveryToken);
             Interlocked.Exchange(ref rootLost, 0);
         }
 
@@ -172,7 +185,7 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
     /// deletion through its Error event; Linux's inotify-based watcher does not - it simply
     /// goes quiet - so without this poll a deleted root was never announced there at all.
     /// </summary>
-    private static async Task WatchRootPresenceAsync(string rootPath, Action<string> onRootLost, CancellationToken cancellationToken)
+    private async Task WatchRootPresenceAsync(string rootPath, Action<string> onRootLost, CancellationToken cancellationToken)
     {
         try
         {
@@ -181,6 +194,11 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
                 await Task.Delay(RootRecoveryPollInterval, cancellationToken);
                 if (!Directory.Exists(rootPath))
                 {
+                    if (RootFoundMissing is { } rootFoundMissing)
+                    {
+                        await rootFoundMissing();
+                    }
+
                     onRootLost("The project's root folder is no longer accessible.");
                 }
             }

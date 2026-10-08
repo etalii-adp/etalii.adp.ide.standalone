@@ -50,7 +50,6 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -119,7 +118,6 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             description.Path,
             ContextScope.DiagramElement,

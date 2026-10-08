@@ -207,7 +207,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Act.
         var result = await History.ExecuteAsync(
-            new SetDependencyGraphPlacementCommand(path, "aaa", 812.5, 6, "Moved"), TestContext.Current.CancellationToken);
+            new SetDependencyGraphPlacementCommand(path, "aaa", 812.5, 6), TestContext.Current.CancellationToken);
         var moved = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "aaa");
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
@@ -229,7 +229,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Act.
         var result = await History.ExecuteAsync(
-            new SetDependencyGraphPlacementCommand(path, "ghost", 100, 0, "Moved"), TestContext.Current.CancellationToken);
+            new SetDependencyGraphPlacementCommand(path, "ghost", 100, 0), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);

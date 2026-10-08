@@ -198,7 +198,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
     {
         // Act. An unverifiable selection is never recorded.
         var resolution = await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root, ContextSelectionSource.DiagramCanvas,
+            ShortGuid.NewShortGuid(), _root,
             new ContextSource { ElementId = new ElementId { Value = "whatever" } },
             [], parent: null, TestContext.Current.CancellationToken);
 
@@ -319,7 +319,6 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         string? registration = null)
     {
         var parent = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer,
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
             ContextScope.Hierarchy,
@@ -328,7 +327,7 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
             null!);
 
         return await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root, ContextSelectionSource.DiagramCanvas,
+            ShortGuid.NewShortGuid(), _root,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [], parent, TestContext.Current.CancellationToken);
     }

@@ -33,9 +33,9 @@ public abstract record DislMenuTarget(DislDiagram Diagram)
 
     internal sealed record OnElement(DislElement Self) : DislMenuTarget(Self.Diagram);
 
-    internal sealed record OnCanvas(DislDiagram Self) : DislMenuTarget(Self);
+    internal sealed record OnCanvas(DislDiagram Diagram) : DislMenuTarget(Diagram);
 
-    internal sealed record OnConnection(DislDiagram On, DislElement? Source, DislElement? Target, string? RelationType) : DislMenuTarget(On);
+    internal sealed record OnConnection(DislDiagram Diagram, DislElement? Source, DislElement? Target, string? RelationType) : DislMenuTarget(Diagram);
 }
 
 /// <summary>A keyboard shortcut as a specification writes it (<c>Alt+Up</c>), and its parts.</summary>

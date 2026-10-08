@@ -80,7 +80,6 @@ public class PipelineContextSourceResolverTests : IDisposable
     /// <summary>The file level a pipeline element is selected inside.</summary>
     private static ContextResolvedLevel FileLevel(string path) =>
         new(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,
@@ -104,7 +103,6 @@ public class PipelineContextSourceResolverTests : IDisposable
         return await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             id,
             clientPath ?? [],
             parent,

@@ -23,10 +23,10 @@ public sealed record DislAttribute(string Name, string Type, bool Many, JsonElem
 }
 
 /// <summary>One value of an enumeration (DISL §4.5): its key, which CEL sees, and its stored form, which is written.</summary>
-public sealed record DislEnumValue(string Key, string Stored, string? Label, JsonElement Json);
+public sealed record DislEnumValue(string Key, string Stored, string? Label);
 
 /// <summary>An enumeration (DISL §4.5), its values in declaration order, which is the display order.</summary>
-public sealed record DislEnum(string Name, IReadOnlyList<DislEnumValue> Values, bool Extensible, bool Ordered, JsonElement Json)
+public sealed record DislEnum(string Name, IReadOnlyList<DislEnumValue> Values, bool Ordered)
 {
     /// <summary>The value whose key is <paramref name="key"/>, or null.</summary>
     public DislEnumValue? ValueOf(string key) => Values.FirstOrDefault(value => value.Key == key);
@@ -109,7 +109,7 @@ public sealed record DislFunctionDeclaration(
 /// <summary>An id rule (DISL §11.5): how ids are made, for every type or for one.</summary>
 /// <param name="Strategy">The strategy, <c>uuid-v7</c> when none is declared.</param>
 /// <param name="Expression">The CEL of the <c>cel</c> and <c>derived</c> strategies; null for the others.</param>
-public sealed record DislIdRule(string Strategy, string? Expression, JsonElement Json);
+public sealed record DislIdRule(string Strategy, string? Expression);
 
 /// <summary>A compiled expression of the specification: where it is, the context it was compiled in (§12.3), and its program.</summary>
 public sealed record DislExpression(string Pointer, string Context, CelProgram Program);

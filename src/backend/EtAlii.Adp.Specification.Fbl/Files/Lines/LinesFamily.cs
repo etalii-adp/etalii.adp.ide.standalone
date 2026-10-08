@@ -16,8 +16,6 @@ internal sealed class Statement : Entry
 {
     public required int FirstLine { get; init; }
 
-    public int LastLine { get; set; }
-
     /// <summary>The statement's first line from its first non-whitespace byte, as the rules' <c>line</c> expressions see it.</summary>
     public required string Content { get; init; }
 
@@ -88,7 +86,6 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
                     return;
                 }
                 var opener = stack.Pop();
-                opener.LastLine = index;
                 opener.LineSpan = new Span(opener.LineSpan!.Value.Start, line.End);
                 opener.Own = opener.Own with { End = first + 1 };
                 continue;
@@ -96,7 +93,6 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
             var statement = new Statement
             {
                 FirstLine = index,
-                LastLine = index,
                 Content = content,
                 Offsets = ByteOffsets(content, first),
                 Own = new Span(first, first + Encoding.UTF8.GetByteCount(trimmed)),

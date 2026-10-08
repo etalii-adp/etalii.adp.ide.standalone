@@ -30,7 +30,6 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -56,11 +55,10 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
         // A placement or a finished relation gesture names the element about to exist - it
         // resolves like any element, to a target the action provider reads the gesture back out
         // of; it lives for one ExecuteAction and is never selected, tracked or written anywhere.
-        if (RdfNewPlacement.TryParse(elementId, out _, out _) ||
+        if (RdfNewPlacement.IsPlacement(elementId) ||
             RdfRelationGesture.TryParse(elementId, out _, out _))
         {
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 ["New element"],
                 ContextScope.DiagramElement,
@@ -91,7 +89,6 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             [text],
             ContextScope.DiagramElement,

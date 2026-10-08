@@ -1,11 +1,10 @@
 namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 
-/// <summary>One breach, named by rule and by the entries involved.</summary>
+/// <summary>One breach, named by rule and by the line it is on.</summary>
 /// <param name="RuleId">The rule broken, one of <see cref="GhgRuleIds"/>.</param>
 /// <param name="Message">What is wrong, in a sentence meant for the Errors and Warnings panel.</param>
-/// <param name="Entries">The ids involved, so the panel can point at them rather than at a line.</param>
 /// <param name="Line">The zero-based line to point at.</param>
-public sealed record GhgBreach(string RuleId, string Message, IReadOnlyList<string> Entries, int Line);
+public sealed record GhgBreach(string RuleId, string Message, int Line);
 
 /// <summary>The rule ids the design's table names, stated once.</summary>
 public static class GhgRuleIds

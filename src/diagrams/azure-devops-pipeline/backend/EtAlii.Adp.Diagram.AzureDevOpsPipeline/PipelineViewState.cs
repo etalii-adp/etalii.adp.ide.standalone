@@ -45,11 +45,10 @@ public sealed class PipelineViewState
     }
 
     /// <summary>Opens a closed stage or job, or closes an open one, and announces it.</summary>
-    public bool Toggle(ShortGuid watchId, string bodyPath, string elementId)
+    public void Toggle(ShortGuid watchId, string bodyPath, string elementId)
     {
         var expanded = For(watchId, bodyPath).Toggle(elementId);
         ElementExpanded?.Invoke(this, new PipelineElementExpandedEventArgs(watchId, bodyPath, elementId, expanded));
-        return expanded;
     }
 
     /// <summary>Forgets what a connection had open, when its session goes away.</summary>

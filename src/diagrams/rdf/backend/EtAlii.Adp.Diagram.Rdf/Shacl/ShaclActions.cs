@@ -61,7 +61,7 @@ public static class ShaclActions
             return [];
         }
 
-        if (RdfNewPlacement.TryParse(target.ElementId, out _, out _))
+        if (RdfNewPlacement.IsPlacement(target.ElementId))
         {
             return
             [

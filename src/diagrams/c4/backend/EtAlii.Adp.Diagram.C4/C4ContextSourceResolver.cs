@@ -34,7 +34,6 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -65,7 +64,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             var relationship = RelationshipDrawnAs(workspace, elementId);
             return relationship is null
                 ? Rejected("Unknown element.")
-                : Resolve(watchId, rootPath, source, id, bodyPath, elementId, RelationshipDetail(workspace, relationship), [], routed.Definition.Origin);
+                : Resolve(watchId, rootPath, id, bodyPath, elementId, RelationshipDetail(workspace, relationship), [], routed.Definition.Origin);
         }
 
         // The path is the element's chain of names from the top of the model, relative to the
@@ -88,7 +87,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             },
         };
 
-        return Resolve(watchId, rootPath, source, id, bodyPath, elementId, detail, relativePath, routed.Definition.Origin);
+        return Resolve(watchId, rootPath, id, bodyPath, elementId, detail, relativePath, routed.Definition.Origin);
     }
 
     /// <summary>Nothing nests inside an element for selection purposes.</summary>
@@ -179,7 +178,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
                 string.Equals(candidate.DestinationId, to, StringComparison.OrdinalIgnoreCase));
         return interaction is null
             ? null
-            : new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", [], interaction.Line);
+            : new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", interaction.Line);
     }
 
     /// <summary>
@@ -228,7 +227,6 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
     private ValueTask<ContextLevelResolution> Resolve(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         string bodyPath,
         string elementId,
@@ -237,7 +235,6 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         DiagramOrigin origin)
     {
         var level = new ContextResolvedLevel(
-            source,
             id,
             relativePath,
             ContextScope.DiagramElement,

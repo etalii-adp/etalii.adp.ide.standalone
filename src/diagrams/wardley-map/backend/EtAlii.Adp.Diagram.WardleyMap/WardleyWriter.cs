@@ -132,29 +132,25 @@ public static partial class WardleyWriter
     /// beside related ones: the DSL is order-independent, and inserting into the middle of
     /// someone's file rearranges a layout they chose.
     /// </summary>
-    /// <returns>The 1-based line the statement landed on.</returns>
-    public static uint Append(WardleyDocument document, string statement)
+    public static void Append(WardleyDocument document, string statement)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrWhiteSpace(statement);
 
-        var number = (uint)document.Lines.Count + 1;
-        document.InsertLine(number, statement);
-        return number;
+        document.InsertLine((uint)document.Lines.Count + 1, statement);
     }
 
-    /// <summary>Removes one statement by line.</summary>
-    public static bool RemoveLine(WardleyDocument document, uint number)
+    /// <summary>Removes one statement by line; a line the document does not have is left alone.</summary>
+    public static void RemoveLine(WardleyDocument document, uint number)
     {
         ArgumentNullException.ThrowIfNull(document);
 
         if (number < 1 || number > document.Lines.Count)
         {
-            return false;
+            return;
         }
 
         document.RemoveLines(number, number);
-        return true;
     }
 
     /// <summary>

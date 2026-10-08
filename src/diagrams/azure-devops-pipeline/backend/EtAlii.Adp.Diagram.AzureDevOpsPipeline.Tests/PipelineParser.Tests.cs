@@ -194,6 +194,9 @@ public class PipelineParserTests
         Assert.Equal("staging", staging.Environment);
         Assert.Equal(PipelineStrategyKind.RunOnce, staging.Strategy.Kind);
         Assert.True(staging.Strategy.IsDeployment);
+
+        // Zero-based: the strategy's body, from `runOnce:` to the last line of the last step it runs.
+        Assert.Equal(new LineRange(52, 58), staging.Strategy.Lines);
     }
 
     [Fact]

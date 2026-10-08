@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 public static class ServiceCollectionAddTimelineExtension
 {
     /// <summary>Adds the timeline diagram module's seams.</summary>
-    public static IServiceCollection AddTimeline(this IServiceCollection services)
+    public static void AddTimeline(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -59,7 +59,5 @@ public static class ServiceCollectionAddTimelineExtension
 
         // The rules' join to the Errors and Warnings panel.
         services.AddSingleton<IDiagramValidator, TimelineValidator>();
-
-        return services;
     }
 }

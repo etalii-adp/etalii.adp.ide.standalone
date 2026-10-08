@@ -4,6 +4,7 @@ using EtAlii.Adp.Specification.Fbl.History;
 using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
 using EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
+using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Reading;
@@ -16,7 +17,7 @@ public class ReadingTests
     private static FblBinding Inline(string elements, string extra = "")
     {
         var json = $$"""{ "fbl": "0.1", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}}{{extra}} } } }""";
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), null, out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.Empty(problems);
         return document!.Bindings["t"];
     }
@@ -194,5 +195,43 @@ public class ReadingTests
         // Assert.
         Assert.Equal(FindingCodes.StaleViewData, Assert.Single(stale).Code);
         Assert.Equal("generic/timeline\r\nlayout:\r\n  a: 5 6\r\n", Encoding.UTF8.GetString(registration.Bytes));
+    }
+
+    [Fact]
+    public void ABlockThatNamesAViewIsReadAsThatViewWithItsBlockAndPlace()
+    {
+        // Arrange: the Structurizr workspace of the vendored structurizr-open-block fixture.
+        var binding = RealFileCorpus.Binding("structurizr.fbl", "workspace");
+        var bytes = File.ReadAllBytes(Path.Combine(Repository.Conformance, "fixtures", "structurizr-open-block", "shop.dsl"));
+        var text = Encoding.UTF8.GetString(bytes);
+        var start = text.IndexOf("container shop \"containers\" {", StringComparison.Ordinal);
+        var end = text.IndexOf('}', text.IndexOf("autoLayout lr", start, StringComparison.Ordinal)) + 1;
+
+        // Act.
+        var model = OpenBody.Open(bytes, binding, new FblOptions { FileName = "shop.dsl" }).Model;
+
+        // Assert: the view block on line 9, from its first byte to the brace that closes it.
+        var view = Assert.Single(model.Views);
+        Assert.Equal("containers", view.Name);
+        Assert.Equal("view", view.Block);
+        Assert.Equal(9, view.Line);
+        Assert.Equal(new Span(start, end), view.Span);
+    }
+
+    [Fact]
+    public void AnIdStrategyIsAskedWithTheTypeAndLineOfEveryEntryWithoutAStoredId()
+    {
+        // Arrange: the causal loop diagram of the vendored causal-loop-rename fixture, whose links and loop store no id.
+        var binding = RealFileCorpus.Binding("causal-loop-diagram.fbl", "cld");
+        var bytes = File.ReadAllBytes(Path.Combine(Repository.Conformance, "fixtures", "causal-loop-rename", "growth.cld"));
+        var requests = new List<IdRequest>();
+
+        // Act.
+        _ = OpenBody.Open(bytes, binding, new FblOptions { FileName = "growth.cld", DeriveId = request => { requests.Add(request); return null; } }).Model;
+
+        // Assert: the two links on lines 7 and 8 and the loop on line 10.
+        Assert.Equal(
+            ["CausalLink@7", "CausalLink@8", "Loop@10"],
+            requests.Select(r => $"{r.Type}@{r.Line}").Order(StringComparer.Ordinal));
     }
 }

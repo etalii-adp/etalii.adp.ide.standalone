@@ -27,7 +27,7 @@ public abstract record DislChange
     /// Where among the new parent's children it went, counted before the move with the node itself
     /// included; negative for last.
     /// </param>
-    public sealed record Reparent(string ElementId, string? ParentId, string? Slot, string? After, string? Before, int Index = -1) : DislChange;
+    public sealed record Reparent(string ElementId, string? ParentId, int Index = -1) : DislChange;
 
     /// <summary>
     /// A node's type changed to <paramref name="Type"/> (<c>behavior.retype</c>, §9.5), with the values its
@@ -42,8 +42,8 @@ public abstract record DislChange
 /// </summary>
 public abstract record HostAction
 {
-    /// <summary><c>layout</c>: run <paramref name="Algorithm"/> (section 10) over <paramref name="Scope"/>, or the diagram.</summary>
-    public sealed record Layout(string Algorithm, object? Scope) : HostAction;
+    /// <summary><c>layout</c>: run <paramref name="Algorithm"/> (section 10) over the diagram.</summary>
+    public sealed record Layout(string Algorithm) : HostAction;
 
     /// <summary><c>plugin</c>: the plugin action <paramref name="Name"/> with its evaluated arguments.</summary>
     public sealed record Plugin(string Name, IReadOnlyDictionary<string, object?> Arguments) : HostAction;

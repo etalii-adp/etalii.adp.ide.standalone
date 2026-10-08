@@ -44,7 +44,6 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -79,7 +78,6 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
             TimelineRelationGesture.TryParse(elementId, out _, out _))
         {
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 ["New element"],
                 ContextScope.DiagramElement,
@@ -136,7 +134,6 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

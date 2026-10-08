@@ -47,7 +47,7 @@ public static class SankeyWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Text(value ?? ""));
+            LineSplice.SetKey(document, range, key, Text(value));
         }
 
         return SankeyEdit.Applied;

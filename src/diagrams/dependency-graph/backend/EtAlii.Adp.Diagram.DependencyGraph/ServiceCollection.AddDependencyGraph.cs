@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 public static class ServiceCollectionAddDependencyGraphExtension
 {
     /// <summary>Adds the dependency graph diagram module's seams.</summary>
-    public static IServiceCollection AddDependencyGraph(this IServiceCollection services)
+    public static void AddDependencyGraph(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -55,7 +55,5 @@ public static class ServiceCollectionAddDependencyGraphExtension
 
         // The rules' join to the Errors and Warnings panel.
         services.AddSingleton<IDiagramValidator, DependencyGraphValidator>();
-
-        return services;
     }
 }

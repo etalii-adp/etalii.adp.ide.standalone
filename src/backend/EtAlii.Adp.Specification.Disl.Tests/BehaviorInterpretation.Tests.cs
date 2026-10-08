@@ -131,7 +131,7 @@ public class BehaviorInterpretationTests
         Assert.Null(DeletionPolicy.Confirmation(Specification, a));
 
         diagram.AddRelation("Link", "ba", b, a);
-        Assert.Equal(new DislConfirmation("Remove box", "Remove A and 2 links?", "Remove", null, false, 2), DeletionPolicy.Confirmation(Specification, a));
+        Assert.Equal(new DislConfirmation("Remove box", "Remove A and 2 links?", "Remove", false, 2), DeletionPolicy.Confirmation(Specification, a));
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public class BehaviorInterpretationTests
 
         Assert.Equal("Crate n title=N made=2001-02 size=L", $"{add.Type} {add.Id} {Values(add.Attributes)}");
         Assert.Equal("-0001-12", DislWrite.StoredForm(Specification, "Box", "made", -1L));
-        Assert.Equal(new ModelChange.Move("n", null, -1), DislWrite.ToFbl(Specification, new DislChange.Reparent("n", null, null, null, null)));
+        Assert.Equal(new ModelChange.Move("n", null, -1), DislWrite.ToFbl(Specification, new DislChange.Reparent("n", null)));
     }
 
     [Fact]
@@ -151,5 +151,67 @@ public class BehaviorInterpretationTests
         var specification = Specifications.Loaded(Specifications.With(""" "persistence": { "ids": { "strategy": "uuid-v4", "encoding": "base36" } } """));
 
         Assert.Matches("^[0-9a-z]{25}$", DislIds.Of(specification).Next("Thing"));
+    }
+
+    /// <summary>A bundled definition's <c>create</c> with an <c>at</c> hands the host the point it was asked at, placement being the host's.</summary>
+    [Fact]
+    public void TheHypeCycleGraphsAddTrendHere_HandsBackTheClickedPoint()
+    {
+        // Arrange.
+        var diagram = new DislDiagram(Derivations.HypeCycle);
+        var position = new Dictionary<string, object?> { ["x"] = 1900.0 * 12, ["y"] = 3.0 };
+
+        // Act.
+        var transaction = OperationInterpreter.Run(Derivations.HypeCycle, "addTrendHere", diagram, null, DislIds.Fixed("t"), new DislInvocation(position));
+
+        // Assert.
+        var create = Assert.IsType<DislChange.Create>(Assert.Single(transaction.Changes));
+        var at = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(create.At);
+        Assert.Equal(1900.0 * 12, at["x"]);
+        Assert.Equal(3.0, at["y"]);
+    }
+
+    /// <summary>A bundled definition's <c>editLabel</c> that names a label hands that name to the host.</summary>
+    [Fact]
+    public void TheBehaviorModelsAddChild_OpensTheEditorOnTheLabelItNames()
+    {
+        // Arrange.
+        var diagram = Derivations.BehaviorDiagram();
+        var invocation = new DislInvocation(Parameters: new Dictionary<string, object?> { ["kind"] = "Check" });
+
+        // Act.
+        var transaction = OperationInterpreter.Run(Derivations.BehaviorModel, "addChild", diagram, Derivations.Element(diagram, "1"), DislIds.Fixed("n"), invocation);
+
+        // Assert.
+        var edit = Assert.IsType<HostAction.EditLabel>(transaction.HostActions[^1]);
+        Assert.Equal("n", edit.ElementId);
+        Assert.Equal("label", edit.Label);
+    }
+
+    /// <summary>A bundled definition's operation that a plugin carries out is handed back whole, naming the plugin.</summary>
+    [Fact]
+    public void TheBehaviorModelsArrange_HandsBackThePluginItNames()
+    {
+        // Act.
+        var transaction = OperationInterpreter.Run(Derivations.BehaviorModel, "arrange", Derivations.BehaviorDiagram(), null, DislIds.Fixed());
+
+        // Assert.
+        var plugin = Assert.IsType<HostAction.Plugin>(Assert.Single(transaction.HostActions));
+        Assert.Equal("net.etalii.adp.etalii.abmArrange", plugin.Name);
+    }
+
+    /// <summary>A bundled definition's deletion confirmation carries the count it was asked from.</summary>
+    [Fact]
+    public void TheHypeCycleGraphsTrendRemoval_IsConfirmedWithItsInfluenceCount()
+    {
+        // Arrange: the steam engine has two influences in and one out.
+        var diagram = Derivations.HypeCycleDiagram();
+
+        // Act.
+        var confirmation = DeletionPolicy.Confirmation(Derivations.HypeCycle, Derivations.Element(diagram, "steam"));
+
+        // Assert.
+        Assert.NotNull(confirmation);
+        Assert.Equal(3L, confirmation.Count);
     }
 }

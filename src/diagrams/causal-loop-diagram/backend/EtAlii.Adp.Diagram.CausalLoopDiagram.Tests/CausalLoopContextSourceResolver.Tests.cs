@@ -78,7 +78,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
 
     private static ContextResolvedLevel FileLevel(string path) =>
         new(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,
@@ -93,7 +92,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [],
             parent,
@@ -306,7 +304,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         var resolution = await resolver.ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = "variable:population" } },
             [],
             FileLevel(other),
@@ -331,7 +328,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         // Arrange.
         var registration = WritePair();
         var elementLevel = new ContextResolvedLevel(
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource(),
             ["Population"],
             ContextScope.DiagramElement,

@@ -27,7 +27,7 @@ public static class FblDocumentLoader
     private const int SupportedMajor = 0;
 
     public static IReadOnlyList<LoadProblem> Load(string path, out FblDocument? document) =>
-        Load(ReadShared(path), path, out document);
+        Load(ReadShared(path), out document);
 
     /// <summary>Reads at the sharing the repository's own reader uses, so a concurrent save is never refused.</summary>
     private static byte[] ReadShared(string path)
@@ -38,7 +38,7 @@ public static class FblDocumentLoader
         return buffer.ToArray();
     }
 
-    public static IReadOnlyList<LoadProblem> Load(byte[] json, string? path, out FblDocument? document)
+    public static IReadOnlyList<LoadProblem> Load(byte[] json, out FblDocument? document)
     {
         var problems = new List<LoadProblem>();
         document = null;
@@ -108,7 +108,7 @@ public static class FblDocumentLoader
             }
 
             if (problems.Any(p => p.Severity == ProblemSeverity.Error)) return problems;
-            document = new FblDocument { Version = version, Path = path, Bindings = result };
+            document = new FblDocument { Version = version, Bindings = result };
             return problems;
         }
     }
@@ -223,7 +223,7 @@ internal static class BindingReader
         PluginReader? plugin = null;
         if (reader.ValueKind == JsonValueKind.Object)
         {
-            plugin = new PluginReader(Str(reader, "plugin") ?? "", Str(reader, "version"), reader.TryGetProperty("args", out var a) ? a.Clone() : null);
+            plugin = new PluginReader(Str(reader, "plugin") ?? "", Str(reader, "version"));
         }
         else if (reader.ValueKind != JsonValueKind.String || reader.GetString() != "declared")
         {
@@ -296,9 +296,8 @@ internal static class BindingReader
             RecogniseAll = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "all") : [],
             RecogniseAny = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "any") : [],
             RecogniseNone = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "none") : [],
-            Files = Array(json, "files").Select(f => new FileRule(Str(f, "name"), Str(f, "glob") ?? "", ParseFamily(Str(f, "family")), Bool(f, "readOnly"))).ToList(),
+            Files = Array(json, "files").Select(f => new FileRule(Str(f, "name"), Str(f, "glob") ?? "", ParseFamily(Str(f, "family")))).ToList(),
             Ignore = Strings(json, "ignore"),
-            Settle = json.TryGetProperty("settle", out var s) && s.TryGetInt32(out var ms) ? ms : 400,
         };
     }
 
@@ -325,7 +324,6 @@ internal static class BindingReader
             Newline = Str(t, "newline") switch { "crlf" => "\r\n", "cr" => "\r", _ => "\n" },
             Indent = indent,
             SequenceFlush = Str(t, "sequenceIndent") == "flush",
-            FinalNewline = !t.TryGetProperty("finalNewline", out var f) || f.ValueKind != JsonValueKind.False,
             Quote = Str(t, "quote") ?? "double",
         };
     }
@@ -351,18 +349,9 @@ internal static class BindingReader
         InsertSettings? insert = null;
         if (json.TryGetProperty("insert", out var ins))
         {
-            string place;
-            string? before = null;
+            // {before: key} is recognised so every family can refuse it; no family places by it yet.
             var pl = ins.GetProperty("place");
-            if (pl.ValueKind == JsonValueKind.Object)
-            {
-                place = "before";
-                before = Str(pl, "before");
-            }
-            else
-            {
-                place = pl.GetString() ?? "end";
-            }
+            var place = pl.ValueKind == JsonValueKind.Object ? "before" : pl.GetString() ?? "end";
             CreateContainer? create = null;
             if (ins.TryGetProperty("create", out var c))
             {
@@ -377,7 +366,6 @@ internal static class BindingReader
             insert = new InsertSettings
             {
                 Place = place,
-                PlaceBefore = before,
                 Container = Str(ins, "container"),
                 Create = create,
                 Keys = Strings(ins, "keys"),
@@ -445,7 +433,7 @@ internal static class BindingReader
         CreateChild? create = null;
         if (json.TryGetProperty("create", out var c))
         {
-            var place = c.TryGetProperty("place", out var pl) ? pl : default;
+            var pl = c.TryGetProperty("place", out var place) ? place : default;
             create = pl.ValueKind == JsonValueKind.Object
                 ? new CreateChild(Str(c, "emit") ?? "", "before", Str(pl, "before"))
                 : new CreateChild(Str(c, "emit") ?? "", pl.ValueKind == JsonValueKind.String ? pl.GetString()! : "last", null);
@@ -493,7 +481,6 @@ internal static class BindingReader
             CreateOnFirstPlacement = Bool(r, "createOnFirstPlacement"),
             ResourceCapture = r.TryGetProperty("resource", out var res) ? Str(res, "capture") : null,
             LegacyLayout = Str(r, "legacyLayout"),
-            LegacyIdentities = Str(r, "legacyIdentities"),
         };
     }
 

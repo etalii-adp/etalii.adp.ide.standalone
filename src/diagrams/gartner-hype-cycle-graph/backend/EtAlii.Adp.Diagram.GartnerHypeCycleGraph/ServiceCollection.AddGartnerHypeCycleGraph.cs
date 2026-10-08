@@ -13,7 +13,7 @@ public static class ServiceCollectionAddGartnerHypeCycleGraphExtension
     /// to be edited: the store, the mapper, the session factory, the reload seam, the validator, the
     /// selection resolver, the toolbox, action and property providers, and one handler per command.
     /// </summary>
-    public static IServiceCollection AddGartnerHypeCycleGraph(this IServiceCollection services)
+    public static void AddGartnerHypeCycleGraph(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -63,7 +63,5 @@ public static class ServiceCollectionAddGartnerHypeCycleGraphExtension
         services.AddSingleton<ICommandHandler<SetGhgAttachmentCommand>, SetGhgAttachmentCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveGhgInfluenceCommand>, RemoveGhgInfluenceCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IGhgDocumentStore>>, RestoreDocumentCommandHandler<IGhgDocumentStore>>();
-
-        return services;
     }
 }

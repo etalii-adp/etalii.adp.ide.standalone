@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace EtAlii.Adp.Specification.Disl;
 
 /// <summary>A confirmation to ask before a transaction (DISL §9.5), its texts evaluated.</summary>
-public sealed record DislConfirmation(string Title, string Message, string ConfirmLabel, string? CancelLabel, bool Danger, long? Count);
+public sealed record DislConfirmation(string Title, string Message, string ConfirmLabel, bool Danger, long? Count);
 
 /// <summary>
 /// What deleting an element takes with it, and whether to ask first (DISL §9.5): the type's
@@ -46,7 +46,7 @@ public static class DeletionPolicy
         if (confirm.ValueKind != JsonValueKind.Object || confirm.TryGetProperty("cel", out _) || !confirm.TryGetProperty("message", out var message))
         {
             // A plain Message: asked every time (§9.5).
-            return new DislConfirmation("Delete", DislEvaluation.Message(specification, confirm, at, DislContexts.GestureDelete, variables, ""), "Delete", null, true, null);
+            return new DislConfirmation("Delete", DislEvaluation.Message(specification, confirm, at, DislContexts.GestureDelete, variables, ""), "Delete", true, null);
         }
 
         long? count = null;
@@ -64,7 +64,6 @@ public static class DeletionPolicy
             Text(confirm, "title", "Delete"),
             DislEvaluation.Message(specification, message, DislJson.Pointer(at, "message"), DislContexts.GestureDelete, variables, ""),
             Text(confirm, "confirmLabel", "Delete"),
-            confirm.TryGetProperty("cancelLabel", out _) ? Text(confirm, "cancelLabel", "Cancel") : null,
             !confirm.TryGetProperty("danger", out var danger) || danger.ValueKind != JsonValueKind.False,
             count);
 

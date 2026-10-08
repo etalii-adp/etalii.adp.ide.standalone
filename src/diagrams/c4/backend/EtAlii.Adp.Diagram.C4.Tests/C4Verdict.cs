@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// they make a stale baseline detectable rather than merely possible.
 /// </para>
 /// </remarks>
-public sealed record C4Verdict(string Fixture, string CliVersion, IReadOnlyList<C4VerdictFinding> Findings)
+public sealed record C4Verdict(string CliVersion, IReadOnlyList<C4VerdictFinding> Findings)
 {
     /// <summary>How to regenerate a verdict, named in every failure so nobody has to go looking.</summary>
     public const string RegenerationHint =
@@ -44,7 +44,7 @@ public sealed record C4Verdict(string Fixture, string CliVersion, IReadOnlyList<
                 path);
         }
 
-        return ReadFile(path, fixture);
+        return ReadFile(path);
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public sealed record C4Verdict(string Fixture, string CliVersion, IReadOnlyList<
     /// without moving the process's current directory - which is shared by every test running
     /// beside it, and moving it made two unrelated fixture tests fail at random.
     /// </remarks>
-    internal static C4Verdict ReadFile(string path, string fixture)
+    internal static C4Verdict ReadFile(string path)
     {
         var lines = File.ReadAllLines(path);
         var version = ReadCliVersion(lines, path);
@@ -75,7 +75,7 @@ public sealed record C4Verdict(string Fixture, string CliVersion, IReadOnlyList<
             findings.Add(ParseFinding(line, path, index + 1));
         }
 
-        return new C4Verdict(fixture, version, findings);
+        return new C4Verdict(version, findings);
     }
 
     /// <summary>The distinct Structurizr rule ids this verdict reports.</summary>

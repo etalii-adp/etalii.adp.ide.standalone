@@ -57,7 +57,6 @@ public sealed record C4Relationship(
     string DestinationId,
     string Description,
     string Technology,
-    IReadOnlyList<string> Tags,
     uint Line)
 {
     /// <summary>A stable id for the wire: relationships have no DSL identifier of their own.</summary>

@@ -44,7 +44,6 @@ public sealed class AbmContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -74,7 +73,6 @@ public sealed class AbmContextSourceResolver : IContextSourceResolver
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New node" : "New parent line";
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source,
                 id,
                 [proposed],
                 ContextScope.DiagramElement,
@@ -129,7 +127,6 @@ public sealed class AbmContextSourceResolver : IContextSourceResolver
         }
 
         var level = new ContextResolvedLevel(
-            source,
             id,
             path,
             ContextScope.DiagramElement,

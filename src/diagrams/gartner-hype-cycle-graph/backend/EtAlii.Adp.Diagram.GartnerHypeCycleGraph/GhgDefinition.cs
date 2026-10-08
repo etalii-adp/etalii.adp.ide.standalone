@@ -91,7 +91,7 @@ internal static class GhgDefinition
         ArgumentNullException.ThrowIfNull(diagram);
         foreach (var type in (string[])["Trend", "Trigger", "Note"])
         {
-            if (diagram.NodesOfType(type).FirstOrDefault(node => WrittenId(node) == id) is { } node) return node;
+            if (diagram.NodesOfType(type).FirstOrDefault(candidate => WrittenId(candidate) == id) is { } node) return node;
         }
 
         return diagram.RelationsOfType("Influence").FirstOrDefault(relation => WrittenId(relation) == id);

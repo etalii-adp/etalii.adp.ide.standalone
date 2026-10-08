@@ -338,7 +338,7 @@ public sealed class GhgBody
         using var stream = assembly.GetManifestResourceStream(name)!;
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
-        var problems = FblDocumentLoader.Load(buffer.ToArray(), name, out var document);
+        var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
         if (document is null)
         {
             throw new InvalidOperationException($"The hype cycle graph's FBL binding does not load: {string.Join("; ", problems)}");

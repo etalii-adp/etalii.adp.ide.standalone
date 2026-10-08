@@ -81,7 +81,7 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
         // Re-parsed from the document being written, so the model and the bytes cannot disagree; the
         // lifecycle caches exactly this entry, whether or not the write lands.
         var parsed = CausalLoopParser.Parse(entry.Document);
-        var result = _lifecycle.Save(path, entry with { Model = parsed.Model, Problems = parsed.Problems });
+        var result = _lifecycle.Save(path, entry with { Model = parsed.Model });
         return result;
     }
 
@@ -111,7 +111,7 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
         _ = path;
         var document = CausalLoopDocument.Parse(text);
         var parsed = CausalLoopParser.Parse(document);
-        return new CausalLoopDocumentEntry(document, parsed.Model, parsed.Problems, "");
+        return new CausalLoopDocumentEntry(document, parsed.Model, "");
     }
 
     private static string Serialize(CausalLoopDocumentEntry entry) => entry.Document.Text;

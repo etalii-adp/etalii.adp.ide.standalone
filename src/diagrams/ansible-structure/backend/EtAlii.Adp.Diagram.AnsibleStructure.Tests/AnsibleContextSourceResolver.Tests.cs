@@ -101,7 +101,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // Act.
         // An unverifiable selection is never recorded.
         var resolution = await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root, ContextSelectionSource.DiagramCanvas,
+            ShortGuid.NewShortGuid(), _root,
             new ContextSource { ElementId = new ElementId { Value = "role:nginx" } },
             [], parent: null, TestContext.Current.CancellationToken);
 
@@ -192,7 +192,6 @@ public class AnsibleContextSourceResolverTests : IDisposable
     private async Task<ContextLevelResolution> Resolve(string elementId, IReadOnlyList<string>? clientPath = null, string? registration = null)
     {
         var parent = new ContextResolvedLevel(
-            ContextSelectionSource.Explorer,
             new ContextSource { EntryId = ShortGuid.NewShortGuid() },
             [],
             ContextScope.Hierarchy,
@@ -201,7 +200,7 @@ public class AnsibleContextSourceResolverTests : IDisposable
             null!);
 
         return await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root, ContextSelectionSource.DiagramCanvas,
+            ShortGuid.NewShortGuid(), _root,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [], parent, TestContext.Current.CancellationToken);
     }

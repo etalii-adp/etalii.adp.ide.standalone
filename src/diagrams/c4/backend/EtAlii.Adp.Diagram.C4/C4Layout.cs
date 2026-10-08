@@ -242,7 +242,6 @@ public static class C4LayoutEngine
             .ToArray();
 
         var padding = metrics.BoundaryPadding;
-        var labelHeight = metrics.FontSize * metrics.LineHeight;
         var boxes = new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase);
         var boundaries = new List<C4Boundary>();
 
@@ -264,7 +263,7 @@ public static class C4LayoutEngine
                 (Dictionary<string, C4Box> childBoxes, List<C4Boundary> childBoundaries, double width, double height) = Arrange(children);
                 inner[sibling.Id] = (childBoxes, childBoundaries);
                 var labelWidth = TextMetric.WidthOf(BoundaryLabelOf(sibling), metrics.FontSize) + 2 * metrics.HorizontalPadding;
-                sizes[sibling.Id] = new C4Box(0, 0, Math.Round(Math.Max(width + 2 * padding, labelWidth), 2), Math.Round(height + 2 * padding + labelHeight, 2));
+                sizes[sibling.Id] = new C4Box(0, 0, Math.Round(Math.Max(width + 2 * padding, labelWidth), 2), Math.Round(height + 2 * padding + metrics.FontSize * metrics.LineHeight, 2));
             }
 
             // Rank the siblings along the relationships between them, each end standing in for

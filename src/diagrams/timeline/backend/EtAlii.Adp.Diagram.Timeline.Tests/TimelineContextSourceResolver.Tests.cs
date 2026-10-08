@@ -66,7 +66,6 @@ public class TimelineContextSourceResolverTests : IDisposable
 
     private static ContextResolvedLevel FileLevel(string path) =>
         new(
-            ContextSelectionSource.Explorer,
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,
@@ -83,7 +82,6 @@ public class TimelineContextSourceResolverTests : IDisposable
         return await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             id,
             clientPath ?? [],
             parent,

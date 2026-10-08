@@ -217,7 +217,6 @@ public static class C4Parser
                 return;
 
             case "deploymentenvironment":
-                state.Environment = arguments.Length > 0 ? arguments[0] : "";
                 state.Push(opensBlock ? C4ParseScope.Model : C4ParseScope.Unknown);
                 return;
 
@@ -236,7 +235,6 @@ public static class C4Parser
                 DestinationId: body[2],
                 Description: body.Length > 3 ? body[3] : "",
                 Technology: body.Length > 4 ? body[4] : "",
-                Tags: body.Length > 5 ? [body[5]] : [],
                 Line: number));
             if (opensBlock)
             {
@@ -254,7 +252,6 @@ public static class C4Parser
                 arguments[0],
                 arguments.Length > 1 ? arguments[1] : "",
                 arguments.Length > 2 ? arguments[2] : "",
-                [],
                 number));
             return;
         }

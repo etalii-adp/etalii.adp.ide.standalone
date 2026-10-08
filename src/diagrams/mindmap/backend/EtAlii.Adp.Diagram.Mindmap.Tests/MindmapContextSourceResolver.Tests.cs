@@ -15,7 +15,6 @@ public class MindmapContextSourceResolverTests : IDisposable
         _project.Resolver.ResolveAsync(
             _project.WatchId,
             _project.Root,
-            ContextSelectionSource.DiagramCanvas,
             MindmapTestProject.Element(nodeId),
             clientPath ?? [],
             parent ?? _project.FileLevel(),
@@ -63,6 +62,29 @@ public class MindmapContextSourceResolverTests : IDisposable
     }
 
     [Fact]
+    public async Task Resolve_ANodeUnderFoldedBranches_UnfoldsEachThroughTheFoldToggle()
+    {
+        // Arrange.
+        // Requirement 10.5 and DISL's revealExpands default: a selection expands its collapsed
+        // ancestors. Hierarchy is folded in the file; fold RootFolderWatcher under it too, so
+        // the selected leaf sits under two folds.
+        var document = _project.Document;
+        _project.Views.Toggle(_project.WatchId, _project.BodyPath, document, "ID_88117427");
+        var toggled = new List<(string NodeId, bool Folded)>();
+        _project.Views.FoldToggled += (_, args) => toggled.Add((args.NodeId, args.Folded));
+
+        // Act.
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117428")).Level;
+
+        // Assert.
+        // Outermost first, each through the toggle so the session pushes its ungroup delta.
+        Assert.Equal([("ID_88117425", false), ("ID_88117427", false)], toggled);
+        var view = _project.Views.For(_project.WatchId, _project.BodyPath, document);
+        Assert.Empty(view.FoldedAncestorsOf(document.Find("ID_88117428")!));
+        Assert.False(level.Detail.Element.Folded);
+    }
+
+    [Fact]
     public async Task Resolve_AnUnknownNode_IsRejected()
     {
         // Arrange, act and assert.
@@ -75,7 +97,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Arrange and act.
         // Requirement 10.4: a node is only ever verified against the diagram it nests under.
         var resolution = await _project.Resolver.ResolveAsync(
-            _project.WatchId, _project.Root, ContextSelectionSource.DiagramCanvas,
+            _project.WatchId, _project.Root,
             MindmapTestProject.Element("ID_88117420"), [], parent: null, TestContext.Current.CancellationToken);
 
         // Assert.

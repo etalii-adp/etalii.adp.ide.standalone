@@ -64,9 +64,9 @@ internal static class DislInheritance
         foreach (var member in DislJson.Members(metamodel, "enums"))
         {
             var values = DislJson.Members(member.Value, "values")
-                .Select(value => new DislEnumValue(value.Name, DislJson.String(value.Value, "value") ?? value.Name, DislJson.String(value.Value, "label"), value.Value))
+                .Select(value => new DislEnumValue(value.Name, DislJson.String(value.Value, "value") ?? value.Name, DislJson.String(value.Value, "label")))
                 .ToList();
-            enums[member.Name] = new DislEnum(member.Name, values, DislJson.Bool(member.Value, "extensible"), DislJson.Bool(member.Value, "ordered"), member.Value);
+            enums[member.Name] = new DislEnum(member.Name, values, DislJson.Bool(member.Value, "ordered"));
         }
         return enums;
     }

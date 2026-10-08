@@ -187,7 +187,7 @@ public class ContextSelectionResolverTests
 
         // Act.
         var result = await resolver.ResolveLevelAsync(
-            WatchId, Root, ContextSelectionSource.Ribbon, EntryId(), [], null, TestContext.Current.CancellationToken);
+            WatchId, Root, EntryId(), [], null, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.IsType<RejectedContextLevel>(result);
@@ -215,7 +215,6 @@ public class ContextSelectionResolverTests
         var result = await resolver.ResolveLevelAsync(
             WatchId,
             Root,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = "pipeline-stage" } },
             [],
             null,
@@ -241,7 +240,6 @@ public class ContextSelectionResolverTests
         await resolver.ResolveLevelAsync(
             WatchId,
             Root,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = "shared-id" } },
             [],
             null,
@@ -266,7 +264,6 @@ public class ContextSelectionResolverTests
         var result = await resolver.ResolveLevelAsync(
             WatchId,
             Root,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = "belongs-to-nobody" } },
             [],
             null,

@@ -62,14 +62,14 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     {
         try
         {
-            return new SparqlDocumentEntry(text, SparqlParser.Parse(text), "", 0);
+            return new SparqlDocumentEntry(SparqlParser.Parse(text), "", 0);
         }
         catch (SparqlParseException exception)
         {
             // A file that does not parse is an ordinary state for a file somebody is editing:
             // it opens as unavailable naming file, line and reason (Requirement 1.3).
             _logger.Debug(exception, "{Path} does not parse at line {Line}", path, exception.Line);
-            return new SparqlDocumentEntry(text, SparqlQueryModel.Empty, exception.Message, exception.Line);
+            return new SparqlDocumentEntry(SparqlQueryModel.Empty, exception.Message, exception.Line);
         }
     }
 
@@ -85,6 +85,6 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
             // missing body is a state to name, not one to repair.
             ? $"{name} does not exist. Queries are authored in a text editor; this diagram draws an existing .rq file."
             : $"{name} could not be read: {reason}";
-        return new SparqlDocumentEntry("", SparqlQueryModel.Empty, error, 0);
+        return new SparqlDocumentEntry(SparqlQueryModel.Empty, error, 0);
     }
 }

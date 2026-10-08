@@ -37,7 +37,7 @@ public class GhgDerivedOperationsTests
         var text = Edited().Single(document => document.Path == path).Text;
         var model = GhgParser.Parse(text);
         List<string> mismatches = [];
-        var compared = 0;
+        List<string> compared = [];
 
         foreach ((double x, double y) in Points)
         {
@@ -73,7 +73,7 @@ public class GhgDerivedOperationsTests
         {
             await Compare($"remove {id}", store => new RemoveGhgElementCommandHandler(store), new RemoveGhgElementCommand(Body, id), (document, read) => HandWrittenGhgEdits.Remove(document, read, id));
 
-            compared++;
+            compared.Add($"confirm removing {id}");
             var expected = HandWrittenGhgEdits.RemoveConfirmation(model, id);
             var element = GhgDefinition.ElementOf(GhgBody.Parse(text).Disl.Diagram, id);
             var actual = element is null ? null : DeletionPolicy.Confirmation(GhgDefinition.Specification, element) is { } confirmation
@@ -82,13 +82,13 @@ public class GhgDerivedOperationsTests
             if (!string.Equals(expected, actual, StringComparison.Ordinal)) mismatches.Add($"confirm removing {id}\n  hand-written {expected ?? "none"}\n  definition   {actual ?? "none"}");
         }
 
-        Assert.True(mismatches.Count == 0, $"{path}: {mismatches.Count} of {compared} differ\n{string.Join("\n", mismatches)}");
+        Assert.True(mismatches.Count == 0, $"{path}: {mismatches.Count} of {compared.Count} differ\n{string.Join("\n", mismatches)}");
         return;
 
         async Task Compare<TCommand>(string edit, Func<Store, ICommandHandler<TCommand>> handler, TCommand command, Func<GhgBody, GhgModel, GhgEdit> handWritten)
             where TCommand : ICommand
         {
-            compared++;
+            compared.Add(edit);
             var store = new Store(text);
             var result = await handler(store).ExecuteAsync(command, TestContext.Current.CancellationToken);
             var actual = result.IsSuccess ? store.Saved ?? "(nothing saved)" : $"refused: {result.Error}";

@@ -48,7 +48,7 @@ public static class SupplyChainWriter
         }
         else
         {
-            LineSplice.SetKey(document, range, key, Text(value ?? ""));
+            LineSplice.SetKey(document, range, key, Text(value));
         }
 
         return SupplyChainEdit.Applied;
@@ -110,7 +110,7 @@ public static class SupplyChainWriter
     }
 
     /// <summary>Places a group's own frame - what it is drawn at while it has no members.</summary>
-    public static SupplyChainEdit PlaceGroup(LineDocument document, SupplyChainGroup group, double x, double y)
+    public static void PlaceGroup(LineDocument document, SupplyChainGroup group, double x, double y)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(group);
@@ -119,7 +119,6 @@ public static class SupplyChainWriter
         var grows = LineSplice.FindKey(document, group.Range, "y") < 0 ? 1 : 0;
         LineSplice.SetKey(document, group.Range, "y", Number(Math.Round(y)));
         LineSplice.SetKey(document, ExtendedBy(group.Range, grows), "x", Number(Math.Round(x)));
-        return SupplyChainEdit.Applied;
     }
 
     /// <summary>Removes a node and every flow to or from it, bottom-up.</summary>

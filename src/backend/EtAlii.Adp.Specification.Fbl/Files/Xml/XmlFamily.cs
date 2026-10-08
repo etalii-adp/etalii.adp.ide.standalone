@@ -81,7 +81,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
                 var start = position;
                 position = Skip(position, "]]>", "CDATA section");
                 var content = Text.Text(start + 9, position - 3);
-                stack.Peek().Content.Add(new XmlTextRun(new Span(start, position), content));
+                stack.Peek().Content.Add(new XmlTextRun(content));
             }
             else if (StartsWith(position, "<!"))
             {
@@ -171,12 +171,12 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         var span = new Span(position, end);
         if (IsWhitespace(span))
         {
-            parent?.Content.Add(new XmlTextRun(span, Text.Text(span)));
+            parent?.Content.Add(new XmlTextRun(Text.Text(span)));
             return end;
         }
         if (parent is null) throw new XmlError(position, "Text must be inside the document element.");
         _leaves.Add(span);
-        parent.Content.Add(new XmlTextRun(span, Decode(span, parent)));
+        parent.Content.Add(new XmlTextRun(Decode(span, parent)));
         return end;
     }
 
@@ -682,6 +682,8 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     public override void Insert(Plan plan, InsertRequest request)
     {
         var insert = request.Rule.Insert!;
+        // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
+        if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
         var parent = request.Parent?.Entry as XmlElement
             ?? (insert.Container is { } container && _root is not null ? Selector.Match(Selector.Start(container, _root, null), container, AttributeEquals).FirstOrDefault().Entry as XmlElement : null)
             ?? _document;

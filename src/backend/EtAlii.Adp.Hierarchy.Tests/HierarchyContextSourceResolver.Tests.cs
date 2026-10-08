@@ -61,7 +61,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     private static ContextSource Source(ShortGuid id) => new() { EntryId = id };
 
     private ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid id, IReadOnlyList<string>? clientPath = null, ContextResolvedLevel? parent = null) =>
-        _resolver.ResolveAsync(_watchId, _root, ContextSelectionSource.Explorer, Source(id), clientPath ?? [], parent, TestContext.Current.CancellationToken);
+        _resolver.ResolveAsync(_watchId, _root, Source(id), clientPath ?? [], parent, TestContext.Current.CancellationToken);
 
     [Fact]
     public async Task ResolveAsync_NestedFile_YieldsProjectRelativeSegmentsAndDetail()
@@ -300,7 +300,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)
     {
         var result = await resolver.ResolveAsync(
-            _watchId, _root, ContextSelectionSource.Explorer, Source(IdOf(segments)), [], null, TestContext.Current.CancellationToken);
+            _watchId, _root, Source(IdOf(segments)), [], null, TestContext.Current.CancellationToken);
         return Assert.IsType<ResolvedContextLevel>(result).Level.Detail.Entry.DiagramMimeType;
     }
 

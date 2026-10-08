@@ -31,9 +31,6 @@ public sealed class RegistrationDocument
     /// <summary>Where a new block goes: the end of the header region's last line.</summary>
     public int AfterHeaders { get; private set; }
 
-    /// <summary>Content after the blocks that FBL does not read, kept byte for byte.</summary>
-    public Span Unbound { get; internal set; }
-
     private string? Header(string key) => Headers.FirstOrDefault(h => h.Key == key)?.Value;
 
     public string? Body => Header("body");
@@ -117,8 +114,6 @@ public sealed class RegistrationDocument
             if (name == "layout") document.Layout = block;
             else document.Identities = block;
         }
-        var unboundStart = index < lines.Count ? lines[index].Start : text.Length;
-        document.Unbound = new Span(unboundStart, text.Length);
         return document;
     }
 

@@ -45,7 +45,7 @@ internal static class GhgRuleSet
             .. BadAttachments(model, triggerIds),
             .. DanglingReferences(model, trendIds, triggerIds),
             .. DuplicateIds(model),
-            .. model.Problems.Select(problem => new GhgBreach(GhgRuleIds.UnreadableEntry, problem.Message, [], problem.Line)),
+            .. model.Problems.Select(problem => new GhgBreach(GhgRuleIds.UnreadableEntry, problem.Message, problem.Line)),
             .. InfluencesIntoTriggers(model, triggerIds),
             .. TriggerDates(model),
             .. NotePositions(model),
@@ -85,7 +85,6 @@ internal static class GhgRuleSet
             .Select(group => new GhgBreach(
                 GhgRuleIds.DuplicateInfluence,
                 $"`{group.Key.From}` influences `{group.Key.To}` {group.Count()} times; a trend influences another once in each direction.",
-                [.. group.Select(influence => influence.Id)],
                 group.Skip(1).First().Range.Start));
 
     private static IEnumerable<GhgBreach> SelfInfluences(GhgModel model) =>
@@ -94,7 +93,6 @@ internal static class GhgRuleSet
             .Select(influence => new GhgBreach(
                 GhgRuleIds.SelfInfluence,
                 $"`{influence.Id}` has `{influence.From}` influence itself; a trend cannot.",
-                [influence.Id, influence.From],
                 influence.Range.Start));
 
     private static IEnumerable<GhgBreach> Spans(GhgModel model) =>
@@ -103,7 +101,6 @@ internal static class GhgRuleSet
             .Select(trend => new GhgBreach(
                 GhgRuleIds.StopBeforeStart,
                 $"`{trend.Id}` stops at {GhgScale.FormatMonth(trend.Stop!.Value)}, not after it starts at {GhgScale.FormatMonth(trend.Start!.Value)}; a trend is at least a month long.",
-                [trend.Id],
                 trend.Range.Start));
 
     private static IEnumerable<GhgBreach> PhaseCounts(GhgModel model) =>
@@ -112,7 +109,6 @@ internal static class GhgRuleSet
             .Select(trend => new GhgBreach(
                 GhgRuleIds.PhaseCount,
                 $"`{trend.Id}` shows {trend.Phases} phases; a trend shows 1 to {GhgPhases.Count}.",
-                [trend.Id],
                 trend.Range.Start));
 
     /// <summary>Stored boundaries must lie strictly inside the span, and strictly in phase order.</summary>
@@ -133,7 +129,6 @@ internal static class GhgRuleSet
                     yield return new GhgBreach(
                         GhgRuleIds.BoundaryOrder,
                         $"`{trend.Id}`'s `{GhgPhases.BoundaryKeys[index]}: {GhgScale.FormatMonth(boundary)}` is out of order or outside {GhgScale.FormatMonth(trend.Start.Value)} to {GhgScale.FormatMonth(trend.Stop!.Value)}.",
-                        [trend.Id],
                         trend.Range.Start);
                     break;
                 }
@@ -158,7 +153,6 @@ internal static class GhgRuleSet
                     yield return new GhgBreach(
                         GhgRuleIds.BadAttachment,
                         $"`{influence.Id}`'s {side} end ({end}) does not name a phase, a top or bottom edge, and an `at` from 0 to 1.",
-                        [influence.Id],
                         influence.Range.Start);
                 }
             }
@@ -179,7 +173,6 @@ internal static class GhgRuleSet
                 yield return new GhgBreach(
                     GhgRuleIds.DanglingReference,
                     $"`{influence.Id}` comes from `{influence.From}`, which is not a trend or a trigger in this document.",
-                    [influence.Id, influence.From],
                     influence.Range.Start);
             }
 
@@ -188,7 +181,6 @@ internal static class GhgRuleSet
                 yield return new GhgBreach(
                     GhgRuleIds.DanglingReference,
                     $"`{influence.Id}` names `{influence.To}`, which is not a trend in this document.",
-                    [influence.Id, influence.To],
                     influence.Range.Start);
             }
         }
@@ -201,7 +193,6 @@ internal static class GhgRuleSet
             .Select(influence => new GhgBreach(
                 GhgRuleIds.InfluenceIntoTrigger,
                 $"`{influence.Id}` ends at the trigger `{influence.To}`; an influence cannot end at a trigger.",
-                [influence.Id, influence.To],
                 influence.Range.Start));
 
     private static IEnumerable<GhgBreach> TriggerDates(GhgModel model) =>
@@ -210,7 +201,6 @@ internal static class GhgRuleSet
             .Select(trigger => new GhgBreach(
                 GhgRuleIds.TriggerDate,
                 $"`{trigger.Id}` has no `date` written as YYYY-MM; a trigger cannot be drawn without one.",
-                [trigger.Id],
                 trigger.Range.Start));
 
     private static IEnumerable<GhgBreach> NotePositions(GhgModel model) =>
@@ -219,7 +209,6 @@ internal static class GhgRuleSet
             .Select(note => new GhgBreach(
                 GhgRuleIds.NotePosition,
                 $"`{note.Id}` needs an `at` written as YYYY-MM and a `width` and `height` that are positive numbers; it cannot be drawn without them.",
-                [note.Id],
                 note.Range.Start));
 
     private static IEnumerable<GhgBreach> DuplicateIds(GhgModel model) =>
@@ -233,6 +222,5 @@ internal static class GhgRuleSet
             .Select(group => new GhgBreach(
                 GhgRuleIds.DuplicateId,
                 $"`{group.Key}` is declared {group.Count()} times; an id names one entry.",
-                [group.Key],
                 group.Last().Start));
 }

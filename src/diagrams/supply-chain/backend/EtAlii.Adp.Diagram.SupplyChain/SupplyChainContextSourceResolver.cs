@@ -53,7 +53,6 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -91,7 +90,7 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New node" : "New flow";
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
-                source, id, [proposed], ContextScope.DiagramElement, Target(),
+                id, [proposed], ContextScope.DiagramElement, Target(),
                 new ContextLevelDetail { Element = new ElementDetail { Text = proposed } },
                 this)));
         }
@@ -117,7 +116,7 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
         }
 
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(
-            new ContextResolvedLevel(source, id, path, ContextScope.DiagramElement, Target(), detail, this)));
+            new ContextResolvedLevel(id, path, ContextScope.DiagramElement, Target(), detail, this)));
     }
 
     /// <inheritdoc />

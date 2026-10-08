@@ -15,12 +15,10 @@ namespace EtAlii.Adp.Context;
 /// </remarks>
 public static class ServiceCollectionAddHistoryActionsExtension
 {
-    public static IServiceCollection AddHistoryActions(this IServiceCollection services)
+    public static void AddHistoryActions(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IContextActionProvider, HistoryContextActionProvider>();
-
-        return services;
     }
 }

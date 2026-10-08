@@ -13,7 +13,7 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
     /// edited: the store, the mapper, the session factory, the reload seam, the selection resolver,
     /// the toolbox, action and property providers, one handler per command, and the validator.
     /// </summary>
-    public static IServiceCollection AddFunctionalDecompositionGraph(this IServiceCollection services)
+    public static void AddFunctionalDecompositionGraph(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -57,7 +57,5 @@ public static class ServiceCollectionAddFunctionalDecompositionGraphExtension
         // The rules' join to the Errors and Warnings panel (Requirement 5.5): a document edited
         // outside ADP into a broken state still opens, and its breaches are listed there.
         services.AddSingleton<IDiagramValidator, FdgValidator>();
-
-        return services;
     }
 }

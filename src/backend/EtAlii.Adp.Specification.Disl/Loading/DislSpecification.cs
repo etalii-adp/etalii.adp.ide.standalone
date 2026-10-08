@@ -88,7 +88,7 @@ public sealed class DislSpecification
     }
 
     private static DislIdRule IdRuleOf(JsonElement json) =>
-        new(DislJson.String(json, "strategy") ?? "uuid-v7", DislJson.String(json, "expression"), json);
+        new(DislJson.String(json, "strategy") ?? "uuid-v7", DislJson.String(json, "expression"));
 }
 
 /// <summary>The metamodel of a specification (DISL §4), inheritance flattened.</summary>

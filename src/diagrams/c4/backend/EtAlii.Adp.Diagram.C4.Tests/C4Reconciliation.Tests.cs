@@ -120,6 +120,12 @@ public class C4ReconciliationTests
         Assert.Equal(26, verdict.Findings.Count);
         Assert.Contains("model.deploymentnode.description", verdict.RuleIds);
         Assert.Contains("model.relationship.technology", verdict.RuleIds);
+
+        // Each line's other two columns, trimmed: the level, and the message a failure quotes.
+        var first = verdict.Findings[0];
+        Assert.Equal("ERROR", first.Level);
+        Assert.Equal("workspace.scope", first.RuleId);
+        Assert.StartsWith("This workspace has no defined scope.", first.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -138,7 +144,7 @@ public class C4ReconciliationTests
             File.WriteAllText(path, "this file has no header and no pipes");
 
             // Act and assert, step by step.
-            var problem = Assert.Throws<FormatException>(() => C4Verdict.ReadFile(path, "corrupt.dsl"));
+            var problem = Assert.Throws<FormatException>(() => C4Verdict.ReadFile(path));
             Assert.Contains("header", problem.Message, StringComparison.Ordinal);
             Assert.Contains("structurizr inspect", problem.Message, StringComparison.Ordinal);
         }

@@ -15,7 +15,7 @@ public static class ServiceCollectionAddSkosExtension
     /// <summary>The scheme reading's origin, as docs/tools.md writes it.</summary>
     public static readonly DiagramOrigin SkosOrigin = new("w3c", "skos");
 
-    public static IServiceCollection AddSkos(this IServiceCollection services)
+    public static void AddSkos(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -35,7 +35,5 @@ public static class ServiceCollectionAddSkosExtension
         services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
             SkosOrigin,
             provider.GetRequiredService<IRdfDocumentStore>()));
-
-        return services;
     }
 }

@@ -274,6 +274,8 @@ public class C4ParserTests
 
         // Assert.
         Assert.Equal(["Person", "External"], workspace.Styles.Select(style => style.Tag));
+        // The 1-based lines of their `element "..." {` declarations.
+        Assert.Equal([21u, 26u], workspace.Styles.Select(style => style.Line));
     }
 
     [Fact]
