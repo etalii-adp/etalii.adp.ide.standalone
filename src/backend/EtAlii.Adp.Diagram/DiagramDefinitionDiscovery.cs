@@ -22,9 +22,6 @@ namespace EtAlii.Adp.Diagram;
 /// </remarks>
 public static class DiagramDefinitionDiscovery
 {
-    /// <summary>Only assemblies whose simple name starts with this are ever inspected.</summary>
-    public const string AssemblyPrefix = ApplicationAssemblies.AssemblyPrefix;
-
     private const string CandidateTypeName = "Diagram";
     private const string DefinitionsPropertyName = "Definitions";
 

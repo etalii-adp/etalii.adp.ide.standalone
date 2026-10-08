@@ -12,11 +12,4 @@ public sealed record ProjectRecord
         Name = name;
         Path = path;
     }
-
-    public void Deconstruct(out ShortGuid id, out string name, out PathRecord path)
-    {
-        id = Id;
-        name = Name;
-        path = Path;
-    }
 }

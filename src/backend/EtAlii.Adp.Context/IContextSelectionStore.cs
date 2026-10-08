@@ -93,10 +93,4 @@ public interface IContextSelectionStore
 
     /// <summary>Pushes a selection without making it current (a preview).</summary>
     void PushTransient(ShortGuid watchId, ContextSelectionRecord record);
-
-    /// <summary>
-    /// A tracked level moved (new relative path) or vanished (null): rewrite or clear the
-    /// current selection and push the result.
-    /// </summary>
-    void UpdateFromTrack(ShortGuid watchId, int levelIndex, IReadOnlyList<string>? newRelativePath);
 }

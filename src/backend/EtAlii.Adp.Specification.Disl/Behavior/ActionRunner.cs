@@ -41,8 +41,6 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
 
     public IReadOnlyList<DislChange> Changes => _changes;
 
-    public IReadOnlyList<HostAction> HostActions => _host;
-
     /// <summary>
     /// When set, each element as it was before the first <c>set</c> or <c>unset</c> on it, which a
     /// change's further hooks read as <c>old</c> (<see cref="HookRunner"/>).
@@ -69,9 +67,6 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
         }
         return true;
     }
-
-    /// <summary>Records <paramref name="change"/> as made: for a change the host made itself before the actions ran.</summary>
-    public void Record(DislChange change) => _changes.Add(change);
 
     public bool Refuse(string reason)
     {

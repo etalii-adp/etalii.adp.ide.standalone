@@ -43,11 +43,6 @@ public sealed class DislSpecification
 
     public string LanguageId => DislJson.String(Language, "id") ?? "";
 
-    public string LanguageVersion => DislJson.String(Language, "version") ?? "";
-
-    /// <summary>The <c>&lt;vendor&gt;/&lt;type&gt;</c> origin of the tool type, or null.</summary>
-    public string? Origin => DislJson.String(Language, "origin");
-
     private JsonElement Language => Root.GetProperty("language");
 
     /// <summary>The top-level <c>x-</c> properties, unread and unchanged.</summary>

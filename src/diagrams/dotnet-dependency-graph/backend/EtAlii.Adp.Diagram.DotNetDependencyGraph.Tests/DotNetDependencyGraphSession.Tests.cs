@@ -71,10 +71,6 @@ public sealed class DotNetDependencyGraphSessionTests : IDisposable
 
         public Task<CommandResult> RedoAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(CommandResult.Success());
-
-        public void Clear()
-        {
-        }
     }
 
     private string Write(string relativePath, string content)

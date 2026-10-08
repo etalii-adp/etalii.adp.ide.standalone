@@ -33,10 +33,6 @@ public sealed class CelEnvironment
     /// <summary>The cost one evaluation may spend.</summary>
     public long Budget { get; set; } = DefaultBudget;
 
-    public IEnumerable<CelFunction> Functions => _functions.Values;
-
-    public IEnumerable<CelMacro> Macros => _macros.Values;
-
     /// <summary>
     /// The CEL standard environment: the core functions and conversions, the strings, math, lists and
     /// optional libraries, and the macros <c>all</c>, <c>exists</c>, <c>exists_one</c>, <c>filter</c>,

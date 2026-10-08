@@ -30,6 +30,7 @@ namespace EtAlii.Adp;
 /// survives that, and {@link Failures} lets a test assert the report rather than trusting it.
 /// </para>
 /// </remarks>
+[UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; a test project that deletes no scratch folder compiles it unused.
 internal static class TestFolder
 {
     /// <summary>
@@ -61,8 +62,10 @@ internal static class TestFolder
     /// Every folder this assembly's tests could not delete, newest last. Assertable, which is
     /// what makes the report a behaviour rather than a hope.
     /// </summary>
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; EtAlii.Adp.Tests' TestFolder.Tests asserts on it, the other projects do not.
     internal static IReadOnlyCollection<string> Failures => _failures;
 
+    [UsedImplicitly] // Compiled into every test project by src/Directory.Build.targets; called by every test project with a scratch folder, not by all of them.
     public static void TryDelete(string path, [CallerFilePath] string? caller = null) =>
         TryDelete(path, Directory.Exists, caller);
 
