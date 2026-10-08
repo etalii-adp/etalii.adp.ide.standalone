@@ -336,6 +336,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var entryId = await EntryIdOfAsync(session, "original.txt");
 
         using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await HierarchyWatchProbe.WaitUntilLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
         _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
@@ -363,6 +364,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var entryId = await EntryIdOfAsync(session, "doomed.txt");
 
         using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await HierarchyWatchProbe.WaitUntilLiveAsync(hierarchyCall.ResponseStream, _projectFolder, cts.Token);
         _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);

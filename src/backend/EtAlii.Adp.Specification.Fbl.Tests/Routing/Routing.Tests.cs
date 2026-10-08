@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Routing;
@@ -131,7 +132,7 @@ public class RoutingTests
         folder.Write("README.md", "# chart\n");
         using var outside = new TemporaryFolder();
         outside.Write("secret.yaml", "x: 1\n");
-        Directory.CreateSymbolicLink(Path.Combine(folder.Path, "templates", "linked"), outside.Path);
+        folder.Link("templates/linked", outside.Path);
 
         // Act.
         var recognised = FolderSubject.Recognise(chart, folder.Path);
@@ -154,6 +155,8 @@ internal sealed class TemporaryFolder : IDisposable
         Directory.CreateDirectory(Path);
     }
 
+    private readonly List<string> _junctions = [];
+
     public string Path { get; }
 
     public string Write(string relative, string text)
@@ -164,8 +167,46 @@ internal sealed class TemporaryFolder : IDisposable
         return full;
     }
 
+    /// <summary>
+    /// Makes <paramref name="relative"/> a link to the folder <paramref name="target"/>. A symbolic
+    /// link where the machine allows one; Windows refuses that without Developer Mode or elevation,
+    /// and there a junction stands in - a reparse point all the same, which is what the code under
+    /// test looks for, and one any account may create.
+    /// </summary>
+    public void Link(string relative, string target)
+    {
+        var full = System.IO.Path.Combine(Path, relative.Replace('/', System.IO.Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full)!);
+        try
+        {
+            Directory.CreateSymbolicLink(full, target);
+        }
+        catch (Exception exception) when (OperatingSystem.IsWindows() && exception is IOException or UnauthorizedAccessException)
+        {
+            using var mklink = Process.Start(new ProcessStartInfo("cmd.exe")
+            {
+                ArgumentList = { "/c", "mklink", "/J", full, target },
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            })!;
+            mklink.WaitForExit();
+            _junctions.Add(full);
+        }
+
+        Assert.True(new DirectoryInfo(full).Attributes.HasFlag(FileAttributes.ReparsePoint), $"'{full}' could not be made a link.");
+    }
+
     public void Dispose()
     {
+        // The junctions first and one at a time: a recursive delete takes a junction for a mounted
+        // volume and is refused. A symbolic link needs no such care, and goes with the folder.
+        foreach (var junction in _junctions)
+        {
+            Directory.Delete(junction);
+        }
+
         if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true);
     }
 }
