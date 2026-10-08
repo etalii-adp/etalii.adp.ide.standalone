@@ -155,7 +155,7 @@ internal sealed class TemporaryFolder : IDisposable
         Directory.CreateDirectory(Path);
     }
 
-    private readonly List<string> _links = [];
+    private readonly List<string> _junctions = [];
 
     public string Path { get; }
 
@@ -192,19 +192,19 @@ internal sealed class TemporaryFolder : IDisposable
                 RedirectStandardError = true,
             })!;
             mklink.WaitForExit();
+            _junctions.Add(full);
         }
 
         Assert.True(new DirectoryInfo(full).Attributes.HasFlag(FileAttributes.ReparsePoint), $"'{full}' could not be made a link.");
-        _links.Add(full);
     }
 
     public void Dispose()
     {
-        // The links first and one at a time: a recursive delete takes a junction for a mounted
-        // volume and is refused.
-        foreach (var link in _links)
+        // The junctions first and one at a time: a recursive delete takes a junction for a mounted
+        // volume and is refused. A symbolic link needs no such care, and goes with the folder.
+        foreach (var junction in _junctions)
         {
-            Directory.Delete(link);
+            Directory.Delete(junction);
         }
 
         if (Directory.Exists(Path)) Directory.Delete(Path, recursive: true);

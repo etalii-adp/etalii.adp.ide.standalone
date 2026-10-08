@@ -23,8 +23,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 internal static class HierarchyWatchProbe
 {
-    /// <summary>What every probe file's name starts with, for a test that must look past them.</summary>
-    public const string Prefix = "watch-probe-";
+    /// <summary>What every probe file's name starts with.</summary>
+    private const string Prefix = "watch-probe-";
 
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromMilliseconds(100);
 
@@ -73,7 +73,7 @@ internal static class HierarchyWatchProbe
     }
 
     /// <summary>Whether <paramref name="message"/> reports the creation of a probe file.</summary>
-    public static bool IsProbe(HierarchyMessage message) =>
+    private static bool IsProbe(HierarchyMessage message) =>
         message.MessageCase == HierarchyMessage.MessageOneofCase.Change
         && message.Change.ChangeCase == HierarchyChange.ChangeOneofCase.Created
         && message.Change.Created.Entry.Name.StartsWith(Prefix, StringComparison.Ordinal);
