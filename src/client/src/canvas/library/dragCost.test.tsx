@@ -24,11 +24,14 @@ const FRAMES = 30;
  * The ratio's tolerance. Disciplined, the large model's per-frame cost is the small one's -
  * one dragged-element render plus subscription checks - so the honest ratio sits near 1.
  * With per-element cost restored it tracks the model sizes (an order of magnitude apart
- * below), so 4 leaves generous room for jsdom's timer noise while a regression still blows
- * straight through it. Never an absolute millisecond budget - that flakes on slower
+ * below), so the tolerance leaves generous room for jsdom's timer noise while a regression
+ * still blows straight through it. It was 4 until 2026-10-08, when Peter ruled it raised to
+ * 8: the honest ratio read 4.2, 4.5 and 4.01 on shared CI runners after merges (the develop
+ * runs after #131 and #136), with nothing wrong. The sabotage reading of 17.91 is still more
+ * than twice the new tolerance. Never an absolute millisecond budget - that flakes on slower
  * machines (Requirement 3.2).
  */
-const RATIO_TOLERANCE = 4;
+const RATIO_TOLERANCE = 8;
 const SMALL = 10;
 /** Sized with the survey's slow readings: the rdf family routinely draws hundreds. */
 const LARGE = 500;
@@ -162,7 +165,7 @@ describe("drag cost", () => {
     // The estimator matters, and two wrong ones were measured before this one:
     // - the whole-window minimum (the first shipped version) inflates under parallel-gate
     //   contention, because the scheduler preempts inside every thirty-frame window - it
-    //   read 4.345 against the tolerance of 4 on 2026-09-06 with nothing actually wrong,
+    //   read 4.345 against the then tolerance of 4 on 2026-09-06 with nothing actually wrong,
     //   green 3-of-3 in isolation;
     // - the per-frame minimum is worse in the opposite direction: pointermove is a
     //   continuous-priority event, so React may flush a frame's render after the handler
@@ -171,8 +174,11 @@ describe("drag cost", () => {
     //   guard over broken code, caught only because the sabotage was re-run.
     // The median dodges both: contention spikes are outliers above it, deferred flushes
     // outliers below it, and 29 of 30 sabotaged frames carry the O(elements) render so
-    // the sabotage stays loud - re-verified at 17.91 against the tolerance of 4 after
-    // this change, on 2026-09-06.
+    // the sabotage stays loud - re-verified at 17.91 against the then tolerance of 4 after
+    // this change, on 2026-09-06, and still more than twice the tolerance of 8 it was raised
+    // to on 2026-10-08 by Peter's ruling, after CI runners read the honest ratio at 4.2, 4.5
+    // and 4.01. Re-run against the new tolerance that day, the sabotage read 24.32
+    // (reposition) and 21.35 (pan) - still a failing guard over broken code.
     const perFrame = (count: number, gesture: "reposition" | "pan"): number => {
       const samples: number[] = [];
       for (let repetition = 0; repetition < 3; repetition++) {
