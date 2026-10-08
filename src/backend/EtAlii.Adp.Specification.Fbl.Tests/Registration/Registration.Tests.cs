@@ -42,6 +42,42 @@ public class RegistrationTests
 
         // Assert.
         Assert.True(location.IsMissing);
+        var finding = Assert.Single(location.Findings);
+        Assert.Equal(FindingCodes.MissingBody, finding.Code);
+        Assert.Equal(FindingSeverity.Error, finding.Severity);
+        Assert.Equal(("plan.adp", 2, 1), (finding.Location!.File, finding.Location.Line, finding.Location.Column));
+    }
+
+    [Fact]
+    public void AMissingSiblingBodyIsReportedOnTheOriginLine()
+    {
+        // Arrange.
+        using var folder = new TemporaryFolder();
+        var registration = folder.Write("plan.adp", "generic/timeline\n");
+
+        // Act.
+        var location = BodyLocator.Locate(registration, RegistrationDocument.Read(File.ReadAllBytes(registration)), _timeline, folder.Path);
+
+        // Assert.
+        Assert.True(location.IsMissing);
+        var finding = Assert.Single(location.Findings);
+        Assert.Equal(FindingCodes.MissingBody, finding.Code);
+        Assert.Equal(1, finding.Location!.Line);
+    }
+
+    [Fact]
+    public void AnExistingBodyHasNoFinding()
+    {
+        // Arrange.
+        using var folder = new TemporaryFolder();
+        var registration = folder.Write("plan.adp", "generic/timeline\n");
+        folder.Write("plan.tml", "elements: []\n");
+
+        // Act.
+        var location = BodyLocator.Locate(registration, RegistrationDocument.Read(File.ReadAllBytes(registration)), _timeline, folder.Path);
+
+        // Assert.
+        Assert.Empty(location.Findings);
     }
 
     [Theory]

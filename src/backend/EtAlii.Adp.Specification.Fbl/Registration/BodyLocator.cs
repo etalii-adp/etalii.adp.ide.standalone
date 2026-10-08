@@ -7,6 +7,9 @@ public sealed record BodyLocation(string? Path, bool Exists, string? Refusal)
 {
     /// <summary>A missing body opens empty with <c>fbl.missing-body</c>, and nothing is written until the registration names a file.</summary>
     public bool IsMissing => Refusal is null && !Exists;
+
+    /// <summary>What locating found: <c>fbl.missing-body</c> when the body is missing (FBL §7.4, §8.2), else nothing.</summary>
+    public IReadOnlyList<Finding> Findings { get; init; } = [];
 }
 
 /// <summary>
@@ -44,7 +47,21 @@ public static class BodyLocator
         if (!Within(root, candidate)) return new BodyLocation(null, false, "The registration's body is outside the workspace, so it is not opened without the user's consent.");
         if (ThroughReparsePoint(root, candidate)) return new BodyLocation(null, false, "The registration's body is reached through a link, which is not followed without the user's consent.");
         var exists = binding.Body.IsFolder ? Directory.Exists(candidate) : File.Exists(candidate);
-        return new BodyLocation(candidate, exists, null);
+        return new BodyLocation(candidate, exists, null) { Findings = exists ? [] : [MissingBody(registrationFull, registration, candidate)] };
+    }
+
+    /// <summary>
+    /// The <c>fbl.missing-body</c> error (FBL §7.4, §8.2), on the registration's <c>body</c> header,
+    /// or on its origin line when the body is the derived sibling.
+    /// </summary>
+    private static Finding MissingBody(string registrationFull, RegistrationDocument registration, string candidate)
+    {
+        var text = registration.Text;
+        var span = registration.Headers.FirstOrDefault(h => h.Key == "body")?.Line ?? new Span(text.BomLength, text.Lines[0].End);
+        (int line, int column) = text.Position(span.Start);
+        return new Finding(FindingCodes.MissingBody, FindingSeverity.Error,
+            $"The body '{Path.GetFileName(candidate)}' does not exist, so the document opens empty and nothing is written until the registration names a file.",
+            new SourceLocation(Path.GetFileName(registrationFull), line, column, text.CodePoints(span.Start, span.End)));
     }
 
     private static bool Within(string root, string path)
