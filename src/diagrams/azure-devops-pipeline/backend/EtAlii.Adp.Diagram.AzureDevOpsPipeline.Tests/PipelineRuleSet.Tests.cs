@@ -402,13 +402,11 @@ public class PipelineRuleSetTests
 
         // Assert.
         Assert.NotEmpty(problems);
-        Assert.All(problems, problem =>
+        foreach (var problem in problems)
         {
-            ArgumentNullException.ThrowIfNull(problem);
-
             Assert.StartsWith("azure-pipeline.", problem.RuleId, StringComparison.Ordinal);
             Assert.NotEmpty(problem.Message);
-        });
+        }
     }
 
     [Fact]

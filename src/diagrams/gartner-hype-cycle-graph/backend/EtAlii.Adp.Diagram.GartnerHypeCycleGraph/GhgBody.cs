@@ -220,7 +220,7 @@ public sealed class GhgBody
             return;
         }
 
-        foreach (var (change, _) in batch)
+        foreach ((ModelChange change, _) in batch)
         {
             Change(change);
         }
