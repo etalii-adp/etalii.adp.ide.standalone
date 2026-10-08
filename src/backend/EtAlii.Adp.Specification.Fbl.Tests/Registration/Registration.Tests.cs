@@ -200,4 +200,38 @@ public class RegistrationTests
         Assert.Equal("layout", roadmap.Layout!.Name);
         Assert.Null(roadmap.Identities);
     }
+
+    [Fact]
+    public void AnEphemeralElementsPositionIsNotStored()
+    {
+        // Arrange: a vendored registration with a layout block, and a reading that marks one id ephemeral.
+        var bytes = File.ReadAllBytes(Path.Combine(Repository.Conformance, "registrations", "roadmap.adp"));
+        var registration = OpenRegistration.Open(bytes);
+        registration.IsEphemeral = id => id == "discovery";
+
+        // Act.
+        var ephemeral = registration.Change(new ModelChange.Place("discovery", 130, 70));
+
+        // Assert: refused and nothing written, while another id is still placed.
+        Assert.Contains("'discovery'", Assert.IsType<PlanResult.Refused>(ephemeral).Reason);
+        Assert.Equal(bytes, registration.Bytes);
+        Assert.IsType<PlanResult.Planned>(registration.Change(new ModelChange.Place("launch", 650, 120)));
+        Assert.Equal("generic/timeline\r\nbody: roadmap.tml\r\nlayout:\r\n  discovery: 120 60\r\n  launch: 650 120\r\n", Encoding.UTF8.GetString(registration.Bytes));
+    }
+
+    [Fact]
+    public void AnIdentityTheReadingNoLongerHasIsRemovedAtTheNextStore()
+    {
+        // Arrange: a vendored registration with two identities, of which the reading still knows one.
+        var registration = OpenRegistration.Open(File.ReadAllBytes(Path.Combine(Repository.Conformance, "registrations", "growth.adp")));
+        registration.KnownKeys = new HashSet<string>(["component Customer", "component Tea"], StringComparer.Ordinal);
+
+        // Act.
+        var result = registration.Change(new ModelChange.Identify("component Tea", "t1"));
+
+        // Assert: the stale "component Web shop" entry goes in the same edit (FBL §8.6).
+        Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal("wardley/map\r\nbody: growth.owm\r\nidentities:\r\n  component Customer: 3k2m9x0q1v7b8n4c5d6f7g8h9\r\n  component Tea: t1\r\n", Encoding.UTF8.GetString(registration.Bytes));
+        Assert.False(registration.Document.IdentityMap().ContainsKey("component Web shop"));
+    }
 }
