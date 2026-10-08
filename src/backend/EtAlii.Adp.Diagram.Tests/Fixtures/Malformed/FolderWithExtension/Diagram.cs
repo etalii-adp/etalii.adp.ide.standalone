@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.FolderWithExtension;
 
 /// <summary>
@@ -8,6 +9,7 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.FolderWithExtension;
 /// depending on whether routing or validation was asking. The good one must survive; only the
 /// contradiction costs an entry.
 /// </summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =

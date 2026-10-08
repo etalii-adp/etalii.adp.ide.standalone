@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Xunit;
 
 namespace EtAlii.Adp.Tests;
@@ -46,6 +47,7 @@ public class DesignerDefinitionDiscoveryTests
 }
 
 /// <summary>What a designer module would declare - the shape discovery looks for.</summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 internal static class Designer
 {
     public static DesignerDefinition[] Definitions { get; } = [new("fixture/form", "Fixture form")];

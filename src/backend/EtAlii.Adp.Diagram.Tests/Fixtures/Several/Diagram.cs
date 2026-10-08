@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using JetBrains.Annotations;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Several;
 
 /// <summary>
@@ -6,6 +7,7 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Several;
 /// seven notations over one engine, which used to mean seven assemblies declaring one
 /// definition each.
 /// </summary>
+[UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 public static class Diagram
 {
     public static DiagramDefinition[] Definitions { get; } =
