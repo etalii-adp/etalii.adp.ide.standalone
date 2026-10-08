@@ -13,9 +13,9 @@ public sealed class MindmapNode
     internal const string ElementName = "node";
     internal const string IdAttribute = "ID";
     internal const string TextAttribute = "TEXT";
-    internal const string LinkAttribute = "LINK";
-    internal const string FoldedAttribute = "FOLDED";
-    internal const string PositionAttribute = "POSITION";
+    private const string LinkAttribute = "LINK";
+    private const string FoldedAttribute = "FOLDED";
+    private const string PositionAttribute = "POSITION";
     private const string RichContentElement = "richcontent";
     private const string RichContentTypeAttribute = "TYPE";
     private const string NoteType = "NOTE";

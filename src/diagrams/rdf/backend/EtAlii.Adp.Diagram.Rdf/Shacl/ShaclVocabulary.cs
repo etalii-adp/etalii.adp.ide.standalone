@@ -35,7 +35,7 @@ public static class ShaclVocabulary
     public const string HasValue = Namespace + "hasValue";
     public const string In = Namespace + "in";
     public const string Closed = Namespace + "closed";
-    public const string IgnoredProperties = Namespace + "ignoredProperties";
+    private const string IgnoredProperties = Namespace + "ignoredProperties";
     public const string Sparql = Namespace + "sparql";
     public const string Select = Namespace + "select";
 
@@ -46,8 +46,8 @@ public static class ShaclVocabulary
     public const string Description = Namespace + "description";
 
     public const string Violation = Namespace + "Violation";
-    public const string Warning = Namespace + "Warning";
-    public const string Info = Namespace + "Info";
+    private const string Warning = Namespace + "Warning";
+    private const string Info = Namespace + "Info";
 
     public const string InversePath = Namespace + "inversePath";
     public const string AlternativePath = Namespace + "alternativePath";

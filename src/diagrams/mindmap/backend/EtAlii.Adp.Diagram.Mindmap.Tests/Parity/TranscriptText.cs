@@ -49,7 +49,7 @@ internal static class TranscriptText
     public static byte[] Encode(string text) => _strictUtf8.GetBytes(text);
 
     /// <summary>A number as the transcript writes it: shortest round-trip, invariant.</summary>
-    public static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
+    private static string Number(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
     /// <summary>A menu as lines: one per action, prefixed by its group's number, children indented below it.</summary>
     public static IReadOnlyList<string> MenuLines(IReadOnlyList<ContextActionGroupDefinition> groups)
@@ -206,7 +206,7 @@ internal static class TranscriptText
     }
 
     /// <summary>The most hunk text a step writes before it is summarised instead.</summary>
-    public const int MaxHunkText = 4096;
+    private const int MaxHunkText = 4096;
 
     /// <summary>A text's lines, each with its own line ending, so joining them gives the text back exactly.</summary>
     private static List<string> Lines(string text)

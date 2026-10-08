@@ -83,7 +83,7 @@ internal static class SkosSelection
     }
 
     /// <summary>Every asserted triple stating the hierarchy pair, in either direction. For the canonical id, <paramref name="narrowerIri"/> is the id's first IRI.</summary>
-    public static IReadOnlyList<RdfTriple> HierarchyTriplesBetween(RdfDocumentEntry entry, string narrowerIri, string broaderIri) =>
+    private static IReadOnlyList<RdfTriple> HierarchyTriplesBetween(RdfDocumentEntry entry, string narrowerIri, string broaderIri) =>
         entry.Model.Triples
             .Where(t =>
                 (Matches(t, narrowerIri, SkosVocabulary.Broader, broaderIri))
@@ -91,7 +91,7 @@ internal static class SkosSelection
             .ToList();
 
     /// <summary>Every asserted triple stating the related pair, in either direction.</summary>
-    public static IReadOnlyList<RdfTriple> RelatedTriplesBetween(RdfDocumentEntry entry, string aIri, string bIri) =>
+    private static IReadOnlyList<RdfTriple> RelatedTriplesBetween(RdfDocumentEntry entry, string aIri, string bIri) =>
         entry.Model.Triples
             .Where(t =>
                 Matches(t, aIri, SkosVocabulary.Related, bIri)

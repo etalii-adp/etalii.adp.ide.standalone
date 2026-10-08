@@ -24,7 +24,7 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 public static class GhgGestures
 {
     /// <summary>What separates a trend id from the attachment its gesture end carries.</summary>
-    public const char AttachmentSeparator = '@';
+    private const char AttachmentSeparator = '@';
 
     /// <summary>A relation id carrying both attachments.</summary>
     public static string Relation(string from, GhgEnd fromEnd, string to, GhgEnd toEnd)

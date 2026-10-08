@@ -36,7 +36,7 @@ public sealed class MindmapFreeplanePlugin : IPersistencePlugin
     public const string PluginId = "net.etalii.adp.freeplane.mm";
 
     /// <summary>The binding's element type, which <c>persistence.typeMap</c> maps to the metamodel's.</summary>
-    public const string NodeType = "Node";
+    private const string NodeType = "Node";
 
     /// <summary>The attribute holding the <c>ID</c> the file writes, which the model keeps beside the metamodel's.</summary>
     public const string StoredIdAttribute = "storedId";

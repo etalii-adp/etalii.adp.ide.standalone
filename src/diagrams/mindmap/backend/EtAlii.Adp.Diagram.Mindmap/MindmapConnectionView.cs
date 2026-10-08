@@ -17,7 +17,7 @@ public sealed class MindmapConnectionView
 
     public bool IsFolded(MindmapNode node) => IsFolded(node.Id);
 
-    public void SetFolded(string nodeId, bool folded)
+    private void SetFolded(string nodeId, bool folded)
     {
         if (folded)
         {

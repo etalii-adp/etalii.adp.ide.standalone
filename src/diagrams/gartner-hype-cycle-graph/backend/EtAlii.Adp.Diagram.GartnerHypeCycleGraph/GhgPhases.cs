@@ -83,7 +83,7 @@ public static class GhgPhases
     }
 
     /// <summary>The drawn inner boundaries of a span, as <see cref="BoundariesOf(GhgTrend)"/> computes them.</summary>
-    public static IReadOnlyList<int> BoundariesOf(int start, int stop, int phases, IReadOnlyList<int?> dragged)
+    private static IReadOnlyList<int> BoundariesOf(int start, int stop, int phases, IReadOnlyList<int?> dragged)
     {
         ArgumentNullException.ThrowIfNull(dragged);
 

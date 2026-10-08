@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 public sealed class MindmapDocumentFactory : IDiagramDocumentFactory
 {
     /// <summary>The version a map written by ADP declares; the newest Freeplane format the parser was written against.</summary>
-    internal const string FormatVersion = "freeplane 1.11.5";
+    private const string FormatVersion = "freeplane 1.11.5";
 
     public DiagramOrigin Origin => Diagram.Mindmap.Origin;
 

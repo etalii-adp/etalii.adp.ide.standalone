@@ -25,13 +25,13 @@ public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
     public const string VariableDefinitionProperty = "sparql.variable.definition";
 
     /// <summary>A concrete term's display form.</summary>
-    public const string TermDisplayProperty = "sparql.term.display";
+    private const string TermDisplayProperty = "sparql.term.display";
 
     /// <summary>A concrete term's full IRI, or a literal exactly as written.</summary>
-    public const string TermFullProperty = "sparql.term.full";
+    private const string TermFullProperty = "sparql.term.full";
 
     /// <summary>A literal's datatype or language annotation.</summary>
-    public const string TermAnnotationProperty = "sparql.term.annotation";
+    private const string TermAnnotationProperty = "sparql.term.annotation";
 
     /// <summary>A region's construct kind.</summary>
     public const string RegionKindProperty = "sparql.region.kind";
@@ -40,10 +40,10 @@ public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
     public const string RegionLabelProperty = "sparql.region.label";
 
     /// <summary>An edge's predicate or property path, as written.</summary>
-    public const string EdgeLabelProperty = "sparql.edge.label";
+    private const string EdgeLabelProperty = "sparql.edge.label";
 
     /// <summary>An annotation's text, as written.</summary>
-    public const string AnnotationTextProperty = "sparql.annotation.text";
+    private const string AnnotationTextProperty = "sparql.annotation.text";
 
     /// <summary>The query's form.</summary>
     public const string QueryFormProperty = "sparql.query.form";
@@ -52,7 +52,7 @@ public sealed class SparqlContextPropertyProvider : IContextPropertyProvider
     public const string QueryModifiersProperty = "sparql.query.modifiers";
 
     /// <summary>A subquery's whole text, which is what a collapsed node has to offer.</summary>
-    public const string SubQueryTextProperty = "sparql.subquery.text";
+    private const string SubQueryTextProperty = "sparql.subquery.text";
 
     private const string IdentityGroup = "Identity";
     private const string StructureGroup = "Structure";

@@ -190,7 +190,7 @@ public static class SkosActions
     /// declared prefix - plus the label slugged the document-factory way. A file with no prefix
     /// at all is asked for one rather than guessed at.
     /// </summary>
-    internal static (string? Iri, string Error) MintIri(RdfDocumentEntry entry, string label)
+    private static (string? Iri, string Error) MintIri(RdfDocumentEntry entry, string label)
     {
         var subjectPrefix = entry.Model.Triples
             .Select(t => t.Subject)
