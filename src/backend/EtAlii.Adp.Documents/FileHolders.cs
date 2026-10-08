@@ -207,7 +207,7 @@ public static class FileHolders
             // Asked twice on purpose: the first call says how many entries there are, the second
             // fills a buffer of exactly that size. ERROR_MORE_DATA from the first is the ordinary
             // path, not a failure.
-            var listed = RmGetList(session, out var needed, ref count, null, out var reasons);
+            var listed = RmGetList(session, out var needed, ref count, null, out _);
             if (listed != ErrorMoreData && listed != 0)
             {
                 return $"holders could not be determined: RmGetList returned {listed}";
@@ -220,7 +220,7 @@ public static class FileHolders
 
             var processes = new RmProcessInfo[needed];
             count = needed;
-            listed = RmGetList(session, out needed, ref count, processes, out reasons);
+            listed = RmGetList(session, out needed, ref count, processes, out _);
             if (listed != 0)
             {
                 return $"holders could not be determined: RmGetList returned {listed}";
