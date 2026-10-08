@@ -152,10 +152,12 @@ public class RegistrationTests
         var sidecar = LegacySidecar.Open(Encoding.UTF8.GetBytes(original));
 
         // Act.
-        sidecar.Change(s => s.PlanPlace("systemContext", "a", 41.25, 60));
-        sidecar.Change(s => s.PlanPlace("SystemContext", "b", 10, 20.0004));
+        var moved = sidecar.Change(s => s.PlanPlace("systemContext", "a", 41.25, 60));
+        var added = sidecar.Change(s => s.PlanPlace("SystemContext", "b", 10, 20.0004));
 
         // Assert: numbers replaced in place, a new member written as the file writes them.
+        Assert.IsType<PlanResult.Planned>(moved);
+        Assert.IsType<PlanResult.Planned>(added);
         Assert.Equal("{\n  \"SystemContext\": {\n    \"a\": {\n      \"x\": 41.25,\n      \"y\": 60\n    },\n    \"b\": {\n      \"x\": 10,\n      \"y\": 20\n    }\n  }\n}\n", Encoding.UTF8.GetString(sidecar.Bytes));
         Assert.Equal((10d, 20d), sidecar.Positions("SystemContext")["b"]);
         Assert.IsType<UndoResult.Done>(sidecar.Undo());
@@ -170,11 +172,27 @@ public class RegistrationTests
         var sidecar = LegacySidecar.Open("{\r\n  \"Tea\": \"c1\"\r\n}\r\n"u8.ToArray());
 
         // Act.
-        sidecar.Change(s => s.PlanIdentify("Cup", "c2"));
+        var result = sidecar.Change(s => s.PlanIdentify("Cup", "c2"));
 
         // Assert.
+        Assert.IsType<PlanResult.Planned>(result);
         Assert.Equal("{\r\n  \"Tea\": \"c1\",\r\n  \"Cup\": \"c2\"\r\n}\r\n", Encoding.UTF8.GetString(sidecar.Bytes));
         Assert.Equal("c2", sidecar.Identities()["Cup"]);
+    }
+
+    [Fact]
+    public void AnUnreadableSidecarRefusesAChangeAndIsNotWritten()
+    {
+        // Arrange.
+        var original = "[ \"not an object\" ]\n";
+        var sidecar = LegacySidecar.Open(Encoding.UTF8.GetBytes(original));
+
+        // Act.
+        var result = sidecar.Change(s => s.PlanPlace("SystemContext", "a", 1, 2));
+
+        // Assert: the refusal is the sentence a host shows (FBL §8.7).
+        Assert.Equal("The layout file could not be read, so it is not written.", Assert.IsType<PlanResult.Refused>(result).Reason);
+        Assert.Equal(original, Encoding.UTF8.GetString(sidecar.Bytes));
     }
 
     [Fact]
