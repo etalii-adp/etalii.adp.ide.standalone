@@ -179,7 +179,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
                 string.Equals(candidate.DestinationId, to, StringComparison.OrdinalIgnoreCase));
         return interaction is null
             ? null
-            : new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", [], interaction.Line);
+            : new C4Relationship(interaction.SourceId, interaction.DestinationId, interaction.Description, "", interaction.Line);
     }
 
     /// <summary>

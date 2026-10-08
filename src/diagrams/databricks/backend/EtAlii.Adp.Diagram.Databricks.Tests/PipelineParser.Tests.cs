@@ -57,6 +57,8 @@ public class PipelineParserTests
         var notification = Assert.Single(pipeline.Notifications);
         Assert.Equal("data-eng@example.com", Assert.Single(notification.Recipients));
         Assert.Equal("on-update-failure", Assert.Single(notification.Alerts));
+        // Zero-based: from the notification's opening brace to its last entry.
+        Assert.Equal(new LineRange(14, 16), notification.Lines);
     }
 
     [Fact]
@@ -70,6 +72,7 @@ public class PipelineParserTests
         // never written (Requirement 2.4).
         var unknown = Assert.Single(pipeline.UnknownNodes);
         Assert.Equal("edition", unknown.Key);
+        Assert.Equal(new LineRange(19, 19), unknown.Lines);
     }
 
     [Fact]

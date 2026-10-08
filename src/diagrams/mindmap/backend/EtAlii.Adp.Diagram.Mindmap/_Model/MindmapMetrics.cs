@@ -8,7 +8,6 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// at the size the backend computed from them rather than re-measuring (Requirement 5.7).
 /// The text's own width is the shared <see cref="TextMetric"/>; the padding and minimum around it are this module's.
 /// </summary>
-/// <param name="FontFamily">What the canvas renders node text in; carried so client and backend name the same face.</param>
 /// <param name="FontSize">In canvas units (CSS pixels).</param>
 /// <param name="LineHeight">As a fraction of <paramref name="FontSize"/>.</param>
 /// <param name="HorizontalPadding">Inside the node box, each side.</param>
@@ -22,7 +21,6 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// air. Configurable through appsettings.json's <c>Mindmap:MinimumGapRatio</c>.
 /// </param>
 public sealed record MindmapMetrics(
-    string FontFamily = "system-ui, sans-serif",
     double FontSize = 14,
     double LineHeight = 1.4,
     double HorizontalPadding = 10,

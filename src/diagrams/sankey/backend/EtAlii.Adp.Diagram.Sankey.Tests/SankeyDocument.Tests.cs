@@ -41,6 +41,7 @@ public sealed class SankeyDocumentTests
         Assert.Empty(model.Problems);
         Assert.Equal(1, model.Version);
         Assert.Equal("{value} t", model.Settings.Format);
+        Assert.Equal(2, model.Settings.FormatLine); // zero-based: `format:` is the third line
         Assert.Equal(SankeySettings.FromTarget, model.Settings.FlowColor);
         Assert.Equal(1, model.Settings.Thickness);
         Assert.Equal(["a", "b", "m", "x", "y"], model.Nodes.Select(node => node.Id));
@@ -70,6 +71,9 @@ public sealed class SankeyDocumentTests
         Assert.Null(model.Nodes[1].Column);
         Assert.Null(Assert.Single(model.Flows).Value);
         Assert.Equal(SankeySettings.Default.Thickness, model.Settings.Thickness);
+        // A value refused is still a key written: the default is kept, and the key's line recorded.
+        Assert.Equal(SankeySettings.FromTarget, model.Settings.FlowColor);
+        Assert.Equal(2, model.Settings.FlowColorLine); // zero-based: `flow-color: sideways` is the third line
     }
 
     [Fact]

@@ -33,6 +33,8 @@ public class JobParserTests
         Assert.Equal("15.4.x-scala2.12", cluster.SparkVersion);
         Assert.Equal("Standard_DS3_v2", cluster.NodeType);
         Assert.Equal(2, cluster.Workers);
+        // Zero-based: the list item and its new_cluster body.
+        Assert.Equal(new LineRange(5, 9), cluster.Lines);
     }
 
     [Fact]

@@ -96,17 +96,12 @@ public sealed class DependencyGraphDocumentStore : IDependencyGraphDocumentStore
     {
         try
         {
-            return new DependencyGraphDocumentEntry(document, DependencyGraphParser.Parse(document), "", 0);
+            return new DependencyGraphDocumentEntry(document, DependencyGraphParser.Parse(document), "");
         }
         catch (YamlException exception)
         {
-            var line = (int)exception.Start.Line;
-            _logger.Debug(exception, "{Path} does not parse at line {Line}", path, line);
-            return new DependencyGraphDocumentEntry(
-                document,
-                DependencyGraphModel.Empty,
-                exception.Message,
-                Math.Max(line, 1));
+            _logger.Debug(exception, "{Path} does not parse at line {Line}", path, exception.Start.Line);
+            return new DependencyGraphDocumentEntry(document, DependencyGraphModel.Empty, exception.Message);
         }
     }
 }

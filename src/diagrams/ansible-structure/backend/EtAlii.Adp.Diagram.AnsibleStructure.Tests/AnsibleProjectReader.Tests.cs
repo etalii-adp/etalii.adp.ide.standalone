@@ -24,6 +24,10 @@ public class AnsibleProjectReaderTests
         var project = Read("infrastructure");
 
         // Assert.
+        // The folder it was read from, made absolute: the relative path the reader was given is
+        // not where the project is once anything changes the current directory.
+        Assert.True(IoPath.IsPathFullyQualified(project.FolderPath), project.FolderPath);
+        Assert.Equal("infrastructure", IoPath.GetFileName(project.FolderPath));
         Assert.Equal(["dbservers.yml", "site.yml", "webservers.yml"], project.Playbooks.Select(p => p.Name).Order(StringComparer.Ordinal));
         Assert.Equal(["common", "nginx", "postgres"], project.Roles.Select(r => r.Name));
         Assert.Equal(["production", "staging"], project.Inventories.Select(i => i.Name));

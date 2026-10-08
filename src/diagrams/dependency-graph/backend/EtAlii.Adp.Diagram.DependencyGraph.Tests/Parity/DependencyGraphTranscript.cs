@@ -420,7 +420,7 @@ internal static class DependencyGraphTranscript
             remove => inner.Changed -= value;
         }
 
-        public DependencyGraphDocumentEntry GetOrLoad(string path) => inner.GetOrLoad(path) with { Error = "parity: read-only", ErrorLine = 1 };
+        public DependencyGraphDocumentEntry GetOrLoad(string path) => inner.GetOrLoad(path) with { Error = "parity: read-only" };
 
         public DocumentSaveResult Save(string path, DependencyGraphDocumentEntry entry) => inner.Save(path, entry);
 

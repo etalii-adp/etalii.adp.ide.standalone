@@ -23,6 +23,7 @@ public class SparqlParserTests
         // Assert.
         // The prologue, in order, and the base.
         Assert.Equal(["foaf", "ex"], model.Prefixes.Select(p => p.Prefix));
+        Assert.Equal(["http://xmlns.com/foaf/0.1/", "http://example.org/"], model.Prefixes.Select(p => p.Iri));
         Assert.Equal("http://example.org/base/", model.BaseIri);
 
         // The form and its frame.

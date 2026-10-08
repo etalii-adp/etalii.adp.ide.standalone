@@ -29,7 +29,7 @@ public sealed class GhgValidator : IDiagramValidator
 {
     /// <summary>Everything wrong with the document, reading problems and rule breaches together.</summary>
     public static IReadOnlyList<GhgBreach> Validate(GhgBody document) =>
-        [.. Findings(document).Select(finding => new GhgBreach(finding.Code, finding.Message, finding.ElementIds, Math.Max(0, (finding.Line ?? 1) - 1)))];
+        [.. Findings(document).Select(finding => new GhgBreach(finding.Code, finding.Message, Math.Max(0, (finding.Line ?? 1) - 1)))];
 
     /// <summary>The definition's findings for <paramref name="document"/>.</summary>
     private static IReadOnlyList<DislFinding> Findings(GhgBody document)

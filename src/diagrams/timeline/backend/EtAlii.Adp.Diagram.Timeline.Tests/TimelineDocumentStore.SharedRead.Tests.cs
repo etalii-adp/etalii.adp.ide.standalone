@@ -41,4 +41,19 @@ public class TimelineDocumentStoreSharedReadTests : IDisposable
         Assert.True(entry.IsUsable);
         Assert.Equal(text, entry.Document.Text);
     }
+
+    [Fact]
+    public void GetOrLoad_ADocumentThatIsNotYaml_CarriesTheReasonAndTheLineItStoppedAt()
+    {
+        // Arrange: the corpus's one document that is not YAML, whose fourth line maps a key twice.
+        var path = IoPath.Combine(_workspace, "unparseable.tml");
+        File.Copy(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "findings", "unparseable.tml"), path);
+
+        // Act.
+        var entry = new TimelineDocumentStore().GetOrLoad(path);
+
+        // Assert.
+        Assert.False(entry.IsUsable);
+        Assert.Equal(4, entry.ErrorLine);
+    }
 }
