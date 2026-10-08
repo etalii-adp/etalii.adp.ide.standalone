@@ -15,13 +15,13 @@ public class LoadingTests
         $$"""{ "claims": {{claims}}, "body": { "kind": "file", "family": "yaml" }, "reader": {{reader}}, "elements": {{elements}}{{extra}} }""";
 
     private static IReadOnlyList<LoadProblem> Load(string binding, string version = "0.1") =>
-        FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "{{version}}", "bindings": { "t": {{binding}} } }"""), null, out _);
+        FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "{{version}}", "bindings": { "t": {{binding}} } }"""), out _);
 
     [Fact]
     public void AValidDocumentLoadsWithoutAProblem()
     {
         // Act.
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.1", "bindings": { "t": {{Binding()}} } }"""), null, out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.1", "bindings": { "t": {{Binding()}} } }"""), out var document);
 
         // Assert: the baseline every refusal below departs from by one change.
         Assert.Empty(problems);
@@ -56,7 +56,7 @@ public class LoadingTests
     public void ANewerMinorVersionLoadsWithAWarning()
     {
         // Act.
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.2", "bindings": { "t": {{Binding()}} } }"""), null, out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes($$"""{ "fbl": "0.2", "bindings": { "t": {{Binding()}} } }"""), out var document);
 
         // Assert.
         Assert.NotNull(document);
@@ -150,5 +150,32 @@ public class LoadingTests
             [Family.Yaml, Family.Yaml, Family.Json, Family.Lines, null, Family.Yaml, null, Family.Yaml, Family.Yaml],
             chart.Body.Files.Select(f => f.Family));
         Assert.Equal("^0.1.0", chart.Plugin!.Version);
+    }
+
+    [Fact]
+    public void VendoredBindingsLoadTheirTitleClaimsRulesAndRegistrationSettings()
+    {
+        // Act.
+        var helm = Vendored("helm-chart.fbl", out var helmVersion)["chart"];
+        var structurizr = Vendored("structurizr.fbl", out _)["workspace"];
+        var turtle = Vendored("w3c-turtle.fbl", out _)["turtle"];
+        var timeline = Vendored("timeline.fbl", out _)["timeline"];
+
+        // Assert: each value as the vendored document declares it.
+        Assert.Equal("0.1", helmVersion);
+        Assert.Equal("Helm chart", helm.Title);
+        Assert.Equal(["apiVersion:"], helm.Claims.Suggest);
+        Assert.Equal(["person", "softwareSystem", "container"], structurizr.AllRules.Where(r => r.Opens).Select(r => r.Name));
+        Assert.Equal(["language"], turtle.Registration.Headers);
+        Assert.True(helm.Registration.CreateOnFirstPlacement);
+        Assert.False(timeline.Registration.CreateOnFirstPlacement);
+    }
+
+    private static IReadOnlyDictionary<string, FblBinding> Vendored(string file, out string version)
+    {
+        var problems = FblDocumentLoader.Load(Path.Combine(Repository.Conformance, file), out var document);
+        Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+        version = document!.Version;
+        return document.Bindings;
     }
 }

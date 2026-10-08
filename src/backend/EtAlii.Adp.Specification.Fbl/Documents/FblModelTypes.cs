@@ -7,8 +7,6 @@ public sealed class FblDocument
 {
     public required string Version { get; init; }
 
-    public string? Path { get; init; }
-
     public required IReadOnlyDictionary<string, FblBinding> Bindings { get; init; }
 }
 
@@ -102,8 +100,6 @@ public sealed class BodySettings
     public IReadOnlyList<FileRule> Files { get; init; } = [];
 
     public IReadOnlyList<string> Ignore { get; init; } = [];
-
-    public int Settle { get; init; } = 400;
 }
 
 public sealed record FileRule(string? Name, string Glob, Family? Family);
@@ -118,8 +114,6 @@ public sealed class TextDefaults
     public int Indent { get; init; } = 2;
 
     public bool SequenceFlush { get; init; }
-
-    public bool FinalNewline { get; init; } = true;
 
     public string Quote { get; init; } = "double";
 }
@@ -286,8 +280,6 @@ public sealed class RegistrationSettings
     public string? ResourceCapture { get; init; }
 
     public string? LegacyLayout { get; init; }
-
-    public string? LegacyIdentities { get; init; }
 }
 
 public sealed record TemplateSettings(string Text, IReadOnlyDictionary<string, string> ByOrigin);

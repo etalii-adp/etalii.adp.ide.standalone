@@ -17,7 +17,7 @@ public class ReadingTests
     private static FblBinding Inline(string elements, string extra = "")
     {
         var json = $$"""{ "fbl": "0.1", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}}{{extra}} } } }""";
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), null, out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.Empty(problems);
         return document!.Bindings["t"];
     }

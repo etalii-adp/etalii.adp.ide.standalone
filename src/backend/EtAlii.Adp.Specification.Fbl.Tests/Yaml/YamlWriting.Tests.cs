@@ -35,7 +35,7 @@ public class YamlWritingTests
     private static FblBinding Load(string elements)
     {
         var json = $$"""{ "fbl": "0.1", "bindings": { "t": { "claims": { "extensions": [".t"] }, "body": { "kind": "file", "family": "yaml" }, "reader": "declared", "elements": {{elements}} } } }""";
-        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), null, out var document);
+        var problems = FblDocumentLoader.Load(Encoding.UTF8.GetBytes(json), out var document);
         Assert.Empty(problems);
         return document!.Bindings["t"];
     }
