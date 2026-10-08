@@ -24,7 +24,7 @@
   - _Leverage: `specifications/fbl/FBL-specification.md` sections 5.1 to 5.7 and 6.2, `specifications/fbl/databricks-job.fbl`, `.github/scripts/validate-examples.py`_
   - _Requirements: 1.4_
 
-- [ ] 2. Measure a ten-thousand-row file in this host's FBL runtime
+- [-] 2. Measure a ten-thousand-row file in this host's FBL runtime
   - File (this repository): `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Measurements/LargeTable.Tests.cs` (new), a generated fixture written to a `TestFolder`, never committed
   - Generate a knowledge file of ten thousand rows and eight properties in the shape of task 1, in YAML, JSON and XML. Through `OpenBody` with the draft binding, measure: opening it, setting one cell, adding one row, and removing one property. Record file size, lines and each time in this task's implementation log, with the machine it ran on.
   - Judge against the Performance requirement ("shown at once", "without a perceptible pause"). If it does not hold: report the measurements to the Scrum master for the user as a selection between making the runtime incremental, batching, and L1's other option. Nothing from task 17 on starts until this is answered.
