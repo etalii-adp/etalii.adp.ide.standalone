@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/knowledge-designer/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-08T16:44:54.758Z",
       "trigger": "initial",
+      "approvalId": "approval_1791477894604_7g4d99b9u",
+      "approvalTitle": "Knowledge designer: design (file shape, FBL bindings, DESL 0.1, host seams; approving accepts language decisions L1-L5 at their defaults)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-08T17:28:37.650Z",
+      "trigger": "approved",
       "approvalId": "approval_1791477894604_7g4d99b9u",
       "approvalTitle": "Knowledge designer: design (file shape, FBL bindings, DESL 0.1, host seams; approving accepts language decisions L1-L5 at their defaults)"
     }
