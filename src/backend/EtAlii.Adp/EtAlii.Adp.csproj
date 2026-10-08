@@ -8,10 +8,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- ToolDefinitionScan is internal: the two definition families consume it, and nobody
+    <!-- ToolDefinitionScan is internal: the three definition families consume it, and nobody
          else grows a dependency on the scan's shape. -->
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram" />
     <InternalsVisibleTo Include="EtAlii.Adp.Editor" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Designer" />
   </ItemGroup>
 
 </Project>

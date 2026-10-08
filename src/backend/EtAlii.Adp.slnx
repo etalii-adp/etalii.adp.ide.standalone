@@ -1,4 +1,4 @@
-﻿<Solution>
+<Solution>
   <Folder Name="/_Globals/">
     <File Path="../../.gitignore" />
     <File Path="../../CLAUDE.md" />
@@ -15,6 +15,8 @@
   <Project Path="EtAlii.Adp.Documents/EtAlii.Adp.Documents.csproj" />
   <Project Path="EtAlii.Adp.Documents.Tests/EtAlii.Adp.Documents.Tests.csproj" />
   <Project Path="EtAlii.Adp.Editor/EtAlii.Adp.Editor.csproj" />
+  <Project Path="EtAlii.Adp.Designer/EtAlii.Adp.Designer.csproj" />
+  <Project Path="EtAlii.Adp.Designer.Tests/EtAlii.Adp.Designer.Tests.csproj" />
   <Project Path="EtAlii.Adp.Editor.Tests/EtAlii.Adp.Editor.Tests.csproj" />
   <Folder Name="/editors/">
     <Project Path="../editors/plain/backend/EtAlii.Adp.Editor.Plain/EtAlii.Adp.Editor.Plain.csproj" />
