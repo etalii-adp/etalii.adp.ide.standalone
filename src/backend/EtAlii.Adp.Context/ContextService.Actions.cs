@@ -312,14 +312,14 @@ public sealed partial class ContextService
             if (source.DiagramEntryId is { } diagramEntryId)
             {
                 var diagramResolution = await _selectionResolver.ResolveLevelAsync(
-                    watchId, rootPath, ContextSelectionSource.Unspecified, new ContextSource { EntryId = diagramEntryId }, [], null, context.CancellationToken);
+                    watchId, rootPath, new ContextSource { EntryId = diagramEntryId }, [], null, context.CancellationToken);
                 if (diagramResolution is not ResolvedContextLevel diagram)
                 {
                     return null;
                 }
 
                 var inDiagram = await _selectionResolver.ResolveLevelAsync(
-                    watchId, rootPath, ContextSelectionSource.Unspecified, source, [], diagram.Level, context.CancellationToken);
+                    watchId, rootPath, source, [], diagram.Level, context.CancellationToken);
                 return inDiagram is ResolvedContextLevel resolvedInDiagram ? resolvedInDiagram.Level.Target : null;
             }
 
@@ -344,12 +344,12 @@ public sealed partial class ContextService
             }
 
             var elementResolution = await _selectionResolver.ResolveLevelAsync(
-                watchId, rootPath, ContextSelectionSource.Unspecified, source, [], fileLevel, context.CancellationToken);
+                watchId, rootPath, source, [], fileLevel, context.CancellationToken);
             return elementResolution is ResolvedContextLevel resolvedElement ? resolvedElement.Level.Target : null;
         }
 
         var resolution = await _selectionResolver.ResolveLevelAsync(
-            watchId, rootPath, ContextSelectionSource.Unspecified, source, [], null, context.CancellationToken);
+            watchId, rootPath, source, [], null, context.CancellationToken);
 
         return resolution is ResolvedContextLevel resolved ? resolved.Level.Target : null;
     }

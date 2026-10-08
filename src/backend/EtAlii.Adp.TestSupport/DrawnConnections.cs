@@ -259,7 +259,6 @@ public static class DrawnConnections
                 var resolution = await claimant.ResolveAsync(
                     ShortGuid.NewShortGuid(),
                     workspace,
-                    ContextSelectionSource.DiagramCanvas,
                     id,
                     [],
                     fileLevel,

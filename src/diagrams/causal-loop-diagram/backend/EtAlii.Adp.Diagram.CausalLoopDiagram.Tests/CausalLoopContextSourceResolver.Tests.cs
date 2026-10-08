@@ -92,7 +92,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [],
             parent,
@@ -305,7 +304,6 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         var resolution = await resolver.ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = "variable:population" } },
             [],
             FileLevel(other),

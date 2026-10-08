@@ -50,7 +50,7 @@ public sealed class ContextSelectionResolver
             }
 
             var resolution = await ResolveLevelAsync(
-                watchId, rootPath, current.Source, current.Id, current.Path?.Segments ?? [], parent, cancellationToken);
+                watchId, rootPath, current.Id, current.Path?.Segments ?? [], parent, cancellationToken);
             if (resolution is not ResolvedContextLevel resolved)
             {
                 return new RejectedChain(((RejectedContextLevel)resolution).Reason);
@@ -103,7 +103,6 @@ public sealed class ContextSelectionResolver
     public ValueTask<ContextLevelResolution> ResolveLevelAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource? id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -122,7 +121,7 @@ public sealed class ContextSelectionResolver
             return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
         }
 
-        return ResolveThroughAnyAsync(claimants, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+        return ResolveThroughAnyAsync(claimants, watchId, rootPath, id, clientPath, parent, cancellationToken);
     }
 
     /// <summary>
@@ -156,7 +155,6 @@ public sealed class ContextSelectionResolver
         IReadOnlyList<IContextSourceResolver> claimants,
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
@@ -166,7 +164,7 @@ public sealed class ContextSelectionResolver
         foreach (var claimant in claimants)
         {
             var resolution = await ResolveThroughAsync(
-                claimant, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+                claimant, watchId, rootPath, id, clientPath, parent, cancellationToken);
             if (resolution is ResolvedContextLevel)
             {
                 return resolution;
@@ -182,13 +180,12 @@ public sealed class ContextSelectionResolver
         IContextSourceResolver resolver,
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,
         CancellationToken cancellationToken)
     {
-        var resolution = await resolver.ResolveAsync(watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+        var resolution = await resolver.ResolveAsync(watchId, rootPath, id, clientPath, parent, cancellationToken);
 
         // A resolver may word its own reason for logging; the caller only ever sees the generic one.
         return resolution is RejectedContextLevel

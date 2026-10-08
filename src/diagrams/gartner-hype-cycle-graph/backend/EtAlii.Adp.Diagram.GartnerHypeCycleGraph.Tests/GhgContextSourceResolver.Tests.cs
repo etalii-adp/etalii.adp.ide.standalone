@@ -51,7 +51,6 @@ public sealed class GhgContextSourceResolverTests : IDisposable
         return await resolver.ResolveAsync(
             ShortGuid.NewShortGuid(),
             _folder,
-            ContextSelectionSource.DiagramCanvas,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             [],
             file,

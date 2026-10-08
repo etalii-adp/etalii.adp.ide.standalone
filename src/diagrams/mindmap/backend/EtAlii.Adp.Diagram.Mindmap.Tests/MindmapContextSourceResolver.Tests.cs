@@ -15,7 +15,6 @@ public class MindmapContextSourceResolverTests : IDisposable
         _project.Resolver.ResolveAsync(
             _project.WatchId,
             _project.Root,
-            ContextSelectionSource.DiagramCanvas,
             MindmapTestProject.Element(nodeId),
             clientPath ?? [],
             parent ?? _project.FileLevel(),
@@ -98,7 +97,7 @@ public class MindmapContextSourceResolverTests : IDisposable
         // Arrange and act.
         // Requirement 10.4: a node is only ever verified against the diagram it nests under.
         var resolution = await _project.Resolver.ResolveAsync(
-            _project.WatchId, _project.Root, ContextSelectionSource.DiagramCanvas,
+            _project.WatchId, _project.Root,
             MindmapTestProject.Element("ID_88117420"), [], parent: null, TestContext.Current.CancellationToken);
 
         // Assert.

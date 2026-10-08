@@ -7,7 +7,7 @@ internal sealed class MindmapTestProjectNullResolver : IContextSourceResolver
 {
     public bool CanResolve(ContextSource source) => false;
 
-    public ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid watchId, string rootPath, ContextSelectionSource source, ContextSource id, IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken) =>
+    public ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid watchId, string rootPath, ContextSource id, IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
     public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.Contained;

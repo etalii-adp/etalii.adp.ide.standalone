@@ -103,7 +103,6 @@ public class PipelineContextSourceResolverTests : IDisposable
         return await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             id,
             clientPath ?? [],
             parent,

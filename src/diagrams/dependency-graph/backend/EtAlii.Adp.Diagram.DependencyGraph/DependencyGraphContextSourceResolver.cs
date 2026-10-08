@@ -44,7 +44,6 @@ public sealed class DependencyGraphContextSourceResolver : IContextSourceResolve
     public ValueTask<ContextLevelResolution> ResolveAsync(
         ShortGuid watchId,
         string rootPath,
-        ContextSelectionSource source,
         ContextSource id,
         IReadOnlyList<string> clientPath,
         ContextResolvedLevel? parent,

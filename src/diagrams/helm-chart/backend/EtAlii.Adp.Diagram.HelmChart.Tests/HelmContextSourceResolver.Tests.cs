@@ -115,7 +115,7 @@ public class HelmContextSourceResolverTests : IDisposable
         // Act.
         // An unverifiable selection is never recorded.
         var resolution = await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root, ContextSelectionSource.DiagramCanvas,
+            ShortGuid.NewShortGuid(), _root,
             new ContextSource { ElementId = new ElementId { Value = "chart" } },
             [], parent: null, TestContext.Current.CancellationToken);
 
@@ -201,7 +201,7 @@ public class HelmContextSourceResolverTests : IDisposable
             null!);
 
         return await _resolver.ResolveAsync(
-            ShortGuid.NewShortGuid(), _root, ContextSelectionSource.DiagramCanvas,
+            ShortGuid.NewShortGuid(), _root,
             new ContextSource { ElementId = new ElementId { Value = elementId } },
             clientPath ?? [], parent, TestContext.Current.CancellationToken);
     }

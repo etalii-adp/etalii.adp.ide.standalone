@@ -82,7 +82,6 @@ public class TimelineContextSourceResolverTests : IDisposable
         return await Resolver().ResolveAsync(
             ShortGuid.NewShortGuid(),
             _workspace,
-            ContextSelectionSource.DiagramCanvas,
             id,
             clientPath ?? [],
             parent,
