@@ -37,7 +37,6 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             entry.Writer = writer;
             entry.RootPath = rootPath;
             entry.RootActions = rootActions;
-            entry.ProjectActions = projectActions;
             // The baseline: the selection (or the root's actions when nothing is selected), the
             // project's own actions, and the project's problems, so a connection is fully
             // current the moment it registers.
@@ -59,7 +58,6 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
                     continue;
                 }
 
-                entry.ProjectActions = actions;
                 entry.Writer.TryWrite(message);
             }
         }

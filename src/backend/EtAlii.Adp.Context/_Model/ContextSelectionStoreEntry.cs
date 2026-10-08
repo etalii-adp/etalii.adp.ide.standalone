@@ -20,7 +20,4 @@ internal sealed class ContextSelectionStoreEntry
 
     /// <summary>The project this connection belongs to; a project-actions push reaches only matching entries.</summary>
     public string RootPath { get; set; } = "";
-
-    /// <summary>The project actions last sent, held so a re-registration re-sends them.</summary>
-    public IReadOnlyList<ContextActionGroupDefinition>? ProjectActions { get; set; }
 }

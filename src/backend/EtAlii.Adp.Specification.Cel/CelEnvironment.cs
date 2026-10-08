@@ -99,7 +99,7 @@ public sealed class CelEnvironment
         var node = parser.ParseExpression();
         parser.ExpectEnd();
         if (!AllowsUndeclaredVariables) CheckVariables(node, []);
-        return new CelProgram(expression, node, Budget);
+        return new CelProgram(node, Budget);
     }
 
     private void CheckVariables(CelNode node, HashSet<string> bound)

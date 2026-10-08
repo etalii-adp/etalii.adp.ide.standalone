@@ -98,6 +98,18 @@ public class BundledDefinitionLoadingTests
         Assert.Equal([("u", "string")], unitMonths.Parameters.Select(parameter => (parameter.Name, parameter.Type)));
     }
 
+    /// <summary>The behavior model's containment: a composite holds any behavior node, a leaf holds nothing.</summary>
+    [Fact]
+    public void TheBehaviorModelsChildTypes_AreReadAlongTheLinearisation()
+    {
+        // Act.
+        var metamodel = BundledDefinition.Load(Resources.Assembly, Resources.BehaviorModel).Specification.Metamodel;
+
+        // Assert.
+        Assert.Equal(["BehaviorNode"], metamodel.TypeOf("Sequence")!.ChildTypes);
+        Assert.Empty(metamodel.TypeOf("Check")!.ChildTypes);
+    }
+
     [Theory]
     [InlineData(Resources.HypeCycle, "definitions/diagrams/gartner-hype-cycle-graph.dis")]
     [InlineData(Resources.BehaviorModel, "definitions/diagrams/agent-behavior-modelling.dis")]
