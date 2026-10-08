@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/knowledge-designer/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-08T15:01:46.444Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791471705398_ey4d7nh64",
+      "approvalTitle": "Knowledge designer: requirements (first designer; five open questions Q1-Q5 inside)"
+    }
+  ]
+}
