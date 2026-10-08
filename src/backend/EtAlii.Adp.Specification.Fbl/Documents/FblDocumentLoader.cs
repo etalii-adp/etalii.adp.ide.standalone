@@ -445,7 +445,7 @@ internal static class BindingReader
         CreateChild? create = null;
         if (json.TryGetProperty("create", out var c))
         {
-            var place = c.TryGetProperty("place", out var pl) ? pl : default;
+            var pl = c.TryGetProperty("place", out var place) ? place : default;
             create = pl.ValueKind == JsonValueKind.Object
                 ? new CreateChild(Str(c, "emit") ?? "", "before", Str(pl, "before"))
                 : new CreateChild(Str(c, "emit") ?? "", pl.ValueKind == JsonValueKind.String ? pl.GetString()! : "last", null);
