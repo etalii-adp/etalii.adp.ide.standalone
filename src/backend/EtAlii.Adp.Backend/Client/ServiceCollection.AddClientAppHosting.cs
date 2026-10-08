@@ -12,14 +12,13 @@ public static class ServiceCollectionAddClientAppHostingExtensions
     /// proxy uses. The options binding lives here rather than in the host, so the area is
     /// registered by one call like every other.
     /// </summary>
-    public static IServiceCollection AddClientAppHosting(this IServiceCollection services, IConfiguration configuration)
+    public static void AddClientAppHosting(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.Configure<ClientAppOptions>(configuration.GetSection(ClientAppOptions.SectionName));
         services.AddHttpClient(ClientDevServerProxy.HttpClientName);
-        return services;
     }
 
     /// <summary>
@@ -27,7 +26,7 @@ public static class ServiceCollectionAddClientAppHostingExtensions
     /// that either proxies to the Vite dev server or serves the client's static build, per
     /// tech.md's Development tools section / decision log item 5.
     /// </summary>
-    public static WebApplication MapClientApp(this WebApplication app)
+    public static void MapClientApp(this WebApplication app)
     {
         var options = app.Services.GetRequiredService<IOptions<ClientAppOptions>>().Value;
 
@@ -45,7 +44,5 @@ public static class ServiceCollectionAddClientAppHostingExtensions
             app.UseStaticFiles();
             app.MapFallbackToFile("index.html");
         }
-
-        return app;
     }
 }

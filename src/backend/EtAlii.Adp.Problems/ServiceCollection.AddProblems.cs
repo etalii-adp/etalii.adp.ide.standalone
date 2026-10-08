@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Problems;
 /// </remarks>
 public static class ServiceCollectionAddProblemsExtension
 {
-    public static IServiceCollection AddProblems(this IServiceCollection services, string appDataRoot)
+    public static void AddProblems(this IServiceCollection services, string appDataRoot)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(appDataRoot);
@@ -48,7 +48,5 @@ public static class ServiceCollectionAddProblemsExtension
         // The watch seam Context consumes - see ContextWatchHooks; registered here
         // because the implementation is this area's, however Context-shaped the interface.
         services.AddSingleton<IContextWatchHooks, ContextWatchHooks>();
-
-        return services;
     }
 }

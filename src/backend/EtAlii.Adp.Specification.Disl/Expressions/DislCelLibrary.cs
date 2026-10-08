@@ -32,7 +32,7 @@ public static class DislCelLibrary
     ];
 
     /// <summary>Adds the library to <paramref name="environment"/>; <paramref name="enums"/> finds the enumerations <c>enumLabel</c> reads.</summary>
-    public static CelEnvironment Register(CelEnvironment environment, Func<string, DislEnum?> enums)
+    public static void Register(CelEnvironment environment, Func<string, DislEnum?> enums)
     {
         ArgumentNullException.ThrowIfNull(environment);
         ArgumentNullException.ThrowIfNull(enums);
@@ -52,7 +52,6 @@ public static class DislCelLibrary
             YearMonth.Parse(Text(arguments[0])) is { } index ? CelOptional.Of(index) : CelOptional.None));
         environment.AddFunction(CelFunction.Receiver("year", 0, arguments => YearMonth.YearOf(Int(arguments[0]))));
         environment.AddFunction(CelFunction.Receiver("month", 0, arguments => YearMonth.MonthOf(Int(arguments[0]))));
-        return environment;
     }
 
     /// <summary>The label of an enumeration's value (§4.5): its declared label, else its key; a value the enumeration lacks, as an extensible one may hold, is its own label.</summary>
