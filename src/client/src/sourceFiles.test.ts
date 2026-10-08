@@ -149,5 +149,7 @@ describe("sourceFiles", () => {
         + "enters bin, obj or node_modules, and a module's backend build output is nine in ten of the entries a "
         + `walk of the module folders would otherwise visit: ${unlisted.join(", ")}`,
     ).toEqual([]);
-  }, 3_000);
+    // Room, not a budget: this takes 150 ms alone and passed three seconds on Windows when the
+    // whole backend suite ran beside it. What it guards is the list above, not how long it took.
+  }, 30_000);
 });

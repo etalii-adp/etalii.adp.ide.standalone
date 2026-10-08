@@ -86,14 +86,29 @@ public static class CausalLoopLayout
             var centerY = radius * Math.Sin(angle);
 
             boxes[variable.Id] = new CausalLoopBox(
-                centerX - (widths[variable.Id] / 2),
-                centerY - (height / 2),
+                Settled(centerX - (widths[variable.Id] / 2)),
+                Settled(centerY - (height / 2)),
                 widths[variable.Id],
                 height);
         }
 
         return boxes;
     }
+
+    /// <summary>
+    /// A coordinate with the platform taken out of it: rounded to a millionth of a pixel, and
+    /// never a negative zero.
+    /// </summary>
+    /// <remarks>
+    /// The cosine and sine above come from the operating system's own math library, and Windows and
+    /// Linux disagree about them in the last bit. Unrounded, the same document opened on the two
+    /// gave positions that differed by one unit in the last place - invisible on a canvas, and
+    /// enough to make the exported example model a different file on each. Rounding itself is plain
+    /// IEEE arithmetic, so what comes out is the same everywhere. The added zero turns the negative
+    /// zero that rounding a tiny negative leaves behind into the ordinary one, which the wire
+    /// format would otherwise carry as a value of its own.
+    /// </remarks>
+    private static double Settled(double value) => Math.Round(value, 6) + 0.0;
 
     /// <summary>
     /// The order variables are placed around the ring: a walk of the link graph rather than the

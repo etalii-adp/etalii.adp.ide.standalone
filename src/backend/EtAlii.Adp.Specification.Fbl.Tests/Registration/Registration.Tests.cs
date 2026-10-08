@@ -104,7 +104,7 @@ public class RegistrationTests
         using var folder = new TemporaryFolder();
         using var outside = new TemporaryFolder();
         outside.Write("plan.tml", "elements: []\n");
-        Directory.CreateSymbolicLink(Path.Combine(folder.Path, "linked"), outside.Path);
+        folder.Link("linked", outside.Path);
         var registration = folder.Write("plan.adp", "generic/timeline\nbody: linked/plan.tml\n");
 
         // Act.

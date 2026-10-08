@@ -28,13 +28,6 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
-    // Grpc.Net.Client's server-streaming call doesn't actually invoke the server
-    // method until the first read - so every test below must start reading (call
-    // MoveNext, don't await yet) *before* it mutates the filesystem, then give the
-    // server this long to run up to the point where its FileSystemWatcher is
-    // actually attached, before triggering the change the test asserts on.
-    private static readonly TimeSpan WatcherStartupGrace = TimeSpan.FromMilliseconds(500);
-
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;
     private readonly string _projectFolder;
@@ -101,23 +94,34 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         return response.Added.Id;
     }
 
-    private static async Task<HierarchyChange> AwaitTriggeredChangeAsync(
-        AsyncServerStreamingCall<HierarchyMessage> call, CancellationTokenSource cts, Action triggerChange)
+    /// <summary>
+    /// Triggers a change once the watch is really running, and returns the first change of the
+    /// wanted kind. The watch is proven live with probe files first (see
+    /// <see cref="HierarchyWatchProbe"/>), which is why this reads until the wanted kind rather
+    /// than taking the next message: what the probes leave behind may be reported in between.
+    /// </summary>
+    private async Task<HierarchyChange> AwaitTriggeredChangeAsync(
+        AsyncServerStreamingCall<HierarchyMessage> call, CancellationTokenSource cts, HierarchyChange.ChangeOneofCase wanted, Action triggerChange)
     {
-        var pendingMoveNext = call.ResponseStream.MoveNext(cts.Token);
-        await Task.Delay(WatcherStartupGrace, TestContext.Current.CancellationToken);
+        await HierarchyWatchProbe.WaitUntilLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         triggerChange();
 
-        var moved = await pendingMoveNext;
-        Assert.True(moved, "Expected a HierarchyChange message but the stream ended or timed out.");
-        return ChangeOf(call.ResponseStream.Current);
+        return await ReadUntilChangeAsync(call.ResponseStream, change => change.ChangeCase == wanted, cts.Token);
     }
 
-    /// <summary>Unwraps the stream's HierarchyMessage envelope, which also carries context prompts.</summary>
-    private static HierarchyChange ChangeOf(HierarchyMessage message)
+    private static async Task<HierarchyChange> ReadUntilChangeAsync(
+        IAsyncStreamReader<HierarchyMessage> stream, Func<HierarchyChange, bool> wanted, CancellationToken cancellationToken)
     {
-        Assert.Equal(HierarchyMessage.MessageOneofCase.Change, message.MessageCase);
-        return message.Change;
+        while (await stream.MoveNext(cancellationToken))
+        {
+            var message = stream.Current;
+            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && wanted(message.Change))
+            {
+                return message.Change;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before the expected change arrived.");
     }
 
     [Fact]
@@ -182,16 +186,15 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         using var ctsB = CreateMessageTimeout();
 
         // Arrange, continued.
-        var pendingA = callA.ResponseStream.MoveNext(ctsA.Token);
-        var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
-        await Task.Delay(WatcherStartupGrace, TestContext.Current.CancellationToken);
-        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "new.txt"), "", TestContext.Current.CancellationToken);
+        // Both watches share the folder, so each also reports the other's probes: the read below
+        // looks for the one file the test itself creates.
+        await HierarchyWatchProbe.WaitUntilLiveAsync(callA.ResponseStream, _projectFolder, ctsA.Token);
+        await HierarchyWatchProbe.WaitUntilLiveAsync(callB.ResponseStream, _projectFolder, ctsB.Token);
 
         // Act.
-        Assert.True(await pendingA, "Expected a HierarchyChange message on connection A but the stream ended or timed out.");
-        Assert.True(await pendingB, "Expected a HierarchyChange message on connection B but the stream ended or timed out.");
-        var changeA = ChangeOf(callA.ResponseStream.Current);
-        var changeB = ChangeOf(callB.ResponseStream.Current);
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "new.txt"), "", TestContext.Current.CancellationToken);
+        var changeA = await ReadUntilChangeAsync(callA.ResponseStream, IsTheNewFile, ctsA.Token);
+        var changeB = await ReadUntilChangeAsync(callB.ResponseStream, IsTheNewFile, ctsB.Token);
 
         // Assert.
         Assert.Equal(HierarchyChange.ChangeOneofCase.Created, changeA.ChangeCase);
@@ -199,6 +202,9 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         Assert.Equal("new.txt", changeA.Created.Entry.Name);
         Assert.Equal("new.txt", changeB.Created.Entry.Name);
         Assert.NotEqual((ShortGuid)changeA.Created.Entry.Id, (ShortGuid)changeB.Created.Entry.Id);
+
+        static bool IsTheNewFile(HierarchyChange change) =>
+            change.ChangeCase == HierarchyChange.ChangeOneofCase.Created && change.Created.Entry.Name == "new.txt";
     }
 
     [Fact]
@@ -225,7 +231,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         using var cts = CreateMessageTimeout();
 
         // Act.
-        var change = await AwaitTriggeredChangeAsync(call, cts, () =>
+        var change = await AwaitTriggeredChangeAsync(call, cts, HierarchyChange.ChangeOneofCase.Renamed, () =>
             File.Move(originalPath, IoPath.Combine(_projectFolder, "renamed.txt")));
 
         // Assert.
@@ -249,7 +255,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
 
-        var change = await AwaitTriggeredChangeAsync(call, cts, () =>
+        var change = await AwaitTriggeredChangeAsync(call, cts, HierarchyChange.ChangeOneofCase.RootUnavailable, () =>
             Directory.Delete(_projectFolder, recursive: true));
 
         // Act and assert, step by step.
