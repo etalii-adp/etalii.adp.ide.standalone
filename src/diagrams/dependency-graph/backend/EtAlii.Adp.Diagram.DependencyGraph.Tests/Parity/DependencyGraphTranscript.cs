@@ -300,7 +300,7 @@ internal static class DependencyGraphTranscript
             if (other is not null)
             {
                 await script.ExecuteAsync(GestureIds.Relation(node, other), DependencyGraphContextActionProvider.ConnectActionId);
-                await script.CommandAsync($"move {other} to (300, 4)", new SetDependencyGraphPlacementCommand(session.Body, other, 300, 4, "Moved"));
+                await script.CommandAsync($"move {other} to (300, 4)", new SetDependencyGraphPlacementCommand(session.Body, other, 300, 4));
             }
         }
 

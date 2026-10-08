@@ -130,10 +130,10 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
         return propertyId switch
         {
             LabelProperty => new RenameTimelineElementCommand(body, id, value),
-            BeginProperty => new SetTimelinePlacementCommand(body, id, value, element.End?.Text, element.Row, "Edited"),
+            BeginProperty => new SetTimelinePlacementCommand(body, id, value, element.End?.Text, element.Row),
             EndProperty when element.End is not null => new SetTimelineEndCommand(body, id, value),
             RowProperty when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var row) =>
-                new SetTimelinePlacementCommand(body, id, element.Begin.Text, element.End?.Text, row, "Edited"),
+                new SetTimelinePlacementCommand(body, id, element.Begin.Text, element.End?.Text, row),
             _ => null,
         };
     }

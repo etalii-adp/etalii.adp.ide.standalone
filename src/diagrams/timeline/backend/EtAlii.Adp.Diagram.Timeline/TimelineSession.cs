@@ -134,7 +134,7 @@ public sealed class TimelineSession : IDiagramSession
 
         (string begin, string? end, int row) = TimelineElementMapper.Placement(element, x, y);
         var result = await _history.ExecuteAsync(
-            new SetTimelinePlacementCommand(_bodyPath, elementId, begin, end, row, "Moved"),
+            new SetTimelinePlacementCommand(_bodyPath, elementId, begin, end, row),
             cancellationToken);
 
         return result.IsSuccess ? "" : result.Error;
