@@ -402,8 +402,6 @@ public class PipelineRuleSetTests
 
         // Assert.
         Assert.NotEmpty(problems);
-        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-        // Reason: Done in a test, absolutely fine.
         Assert.All(problems, problem =>
         {
             ArgumentNullException.ThrowIfNull(problem);

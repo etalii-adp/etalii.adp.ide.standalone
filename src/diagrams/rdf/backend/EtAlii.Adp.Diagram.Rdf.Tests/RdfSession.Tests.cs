@@ -75,7 +75,7 @@ public class RdfSessionTests : IDisposable
         var elements = ElementsOf(session);
 
         // Assert.
-        Assert.Contains(elements, element => element.Id == "res:http://example.org/alice" && element.Type == RdfElementMapper.ResourceType);
+        Assert.Contains(elements, element => element is { Id: "res:http://example.org/alice", Type: RdfElementMapper.ResourceType });
         Assert.Contains(elements, element => element.Type == RdfElementMapper.EdgeType);
         // Nothing truncated in a small file, so no banner.
         Assert.DoesNotContain(elements, element => element.Type == RdfElementMapper.TruncationType);
@@ -175,7 +175,7 @@ public class RdfSessionTests : IDisposable
 
         // Assert.
         var resent = seen.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id);
-        Assert.DoesNotContain(resent, id => culled.Contains(id));
+        Assert.DoesNotContain(resent, culled.Contains);
     }
 
     [Fact]

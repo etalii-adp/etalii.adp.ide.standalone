@@ -605,7 +605,7 @@ public sealed class WardleyCommandsTests : IDisposable
         // An external editor with the file open looks exactly like this to us.
         Write("component Alpha [0.5, 0.5]\n");
         var id = IdOf("Alpha");
-        using var holder = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var holder = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.
         var result = await Execute(new MoveWardleyElementCommand(_path, id, 0.8d, 0.2d));
@@ -627,7 +627,7 @@ public sealed class WardleyCommandsTests : IDisposable
         await Execute(new AddWardleyElementCommand(_path, "component", "Beta", 0.8d, 0.2d));
         var sidecarPath = WardleyIdentities.PathFor(_path);
         Assert.True(File.Exists(sidecarPath), $"expected a sidecar at {sidecarPath}");
-        using var holder = new FileStream(sidecarPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var holder = new FileStream(sidecarPath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.
         var result = await Execute(new AddWardleyElementCommand(_path, "component", "Gamma", 0.3d, 0.7d));

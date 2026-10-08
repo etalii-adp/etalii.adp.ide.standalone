@@ -58,8 +58,8 @@ public sealed class SupplyChainProvidersTests : IDisposable
         var group = await _properties.DescribeAsync(Target("north"), TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Contains(flow, row => row.Id == SupplyChainContextPropertyProvider.VolumeProperty && row.Value == "6");
-        Assert.Contains(flow, row => row.Id == SupplyChainContextPropertyProvider.ProductProperty && row.Value == "Ore");
+        Assert.Contains(flow, row => row is { Id: SupplyChainContextPropertyProvider.VolumeProperty, Value: "6" });
+        Assert.Contains(flow, row => row is { Id: SupplyChainContextPropertyProvider.ProductProperty, Value: "Ore" });
         Assert.Equal([SupplyChainContextPropertyProvider.NameProperty, SupplyChainContextPropertyProvider.DescriptionProperty], group.Select(row => row.Id));
     }
 
@@ -148,7 +148,7 @@ public sealed class SupplyChainProvidersTests : IDisposable
         Assert.IsType<ContextExecutionCompleted>(connected);
         var model = Parse();
         Assert.Contains(model.Nodes, node => node.Type == SupplyChainNodeTypes.Consumer);
-        Assert.Contains(model.Flows, flow => flow.From == "mine" && flow.To == "shop");
+        Assert.Contains(model.Flows, flow => flow is { From: "mine", To: "shop" });
     }
 
     [Fact]

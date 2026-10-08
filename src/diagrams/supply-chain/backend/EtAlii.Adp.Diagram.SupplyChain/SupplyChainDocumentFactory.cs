@@ -34,11 +34,9 @@ public sealed class SupplyChainDocumentFactory : IDiagramDocumentFactory
 
         return string.Join(
             lineEnding,
-            [
-                $"{SupplyChainParser.HeaderKey}: {SupplyChainModel.CurrentVersion}",
-                $"{SupplyChainParser.GroupsKey}: []",
-                $"{SupplyChainParser.NodesKey}: []",
-                $"{SupplyChainParser.FlowsKey}: []",
-            ]) + lineEnding;
+            $"{SupplyChainParser.HeaderKey}: {SupplyChainModel.CurrentVersion}",
+            $"{SupplyChainParser.GroupsKey}: []",
+            $"{SupplyChainParser.NodesKey}: []",
+            $"{SupplyChainParser.FlowsKey}: []") + lineEnding;
     }
 }

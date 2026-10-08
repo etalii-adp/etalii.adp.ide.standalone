@@ -99,12 +99,11 @@ internal sealed class SetPipelineDependenciesCommandHandler(IPipelineDocumentSto
         var saved = documents.Save(command.RootPath, command.BodyPath, entry);
         return Task.FromResult(saved.Failed
             ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(new SetPipelineDependenciesCommand(
-                command.RootPath,
-                command.BodyPath,
-                command.ElementId,
-                previous,
-                wasDeclared)));
+            : CommandResult.Success(command with
+            {
+                DependsOn = previous,
+                Declared = wasDeclared,
+            }));
     }
 
     /// <summary>The first name that matches nothing, or empty when they all do.</summary>

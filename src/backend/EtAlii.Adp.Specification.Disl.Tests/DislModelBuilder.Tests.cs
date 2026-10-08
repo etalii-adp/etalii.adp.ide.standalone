@@ -194,7 +194,7 @@ public class DislModelBuilderTests
             ["std.derivedEnds: 1 item(s) of Up were dropped: their source is not one its declaration allows.",
              "std.derivedEnds: 2 item(s) of Up were dropped: their target is not one its declaration allows."],
             findings.Select(finding => finding.ToString()).Order(StringComparer.Ordinal));
-        Assert.All(diagram.Relations, relation => Assert.True(relation.IsDerived && relation.Sources.Count == 1 && !relation.IdIsStored));
+        Assert.All(diagram.Relations, relation => Assert.True(relation is { IsDerived: true, Sources.Count: 1, IdIsStored: false }));
     }
 
     [Fact]

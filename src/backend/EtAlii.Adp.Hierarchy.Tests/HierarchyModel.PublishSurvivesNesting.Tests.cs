@@ -16,7 +16,7 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
     private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private readonly string _root;
-    private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog([Mindmap]);
+    private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap);
     private readonly List<string> _events = [];
 
     public HierarchyModelPublishSurvivesNestingTests()

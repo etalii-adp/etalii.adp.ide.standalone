@@ -1,6 +1,5 @@
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
-// ReSharper disable once InvalidXmlDocComment
 /// <summary>
 /// The evolution axis: four stages, three boundaries, and the reading of a maturity value
 /// against them (Requirement 8.2).

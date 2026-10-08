@@ -105,9 +105,9 @@ public static class AbmLayout
         // backwards meets every child before its parent.
         var offsets = new Dictionary<string, double>(StringComparer.Ordinal);
         var outlines = new Dictionary<string, List<(double Left, double Right)>>(StringComparer.Ordinal);
-        foreach (var node in Enumerable.Reverse(model.Nodes))
+        foreach (var node in model.Nodes.Reverse())
         {
-            (var placed, var outline) = Pack(node.ChildIds.Select(id => outlines[id]).ToList(), HorizontalGap);
+            var (placed, outline) = Pack(node.ChildIds.Select(id => outlines[id]).ToList(), HorizontalGap);
             if (placed.Count == 0)
             {
                 outlines[node.Id] = [(0, NodeWidth)];
@@ -126,7 +126,7 @@ public static class AbmLayout
 
         // The roots side by side, packed the same way with a wider gap between whole trees.
         var roots = model.Roots;
-        (var rootLefts, _) = Pack(roots.Select(root => outlines[root.Id]).ToList(), HorizontalGap * 2);
+        var (rootLefts, _) = Pack(roots.Select(root => outlines[root.Id]).ToList(), HorizontalGap * 2);
         var positions = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
         for (var index = 0; index < roots.Count; index++)
         {

@@ -178,7 +178,7 @@ public class ProblemStoreTests : IDisposable
         // Arrange.
         using var store = Store();
         var raised = new List<string>();
-        store.Changed += rootPath => raised.Add(rootPath);
+        store.Changed += raised.Add;
 
         // Act.
         store.Replace(_root, [Problem("a.adp")]);
@@ -203,7 +203,7 @@ public class ProblemStoreTests : IDisposable
         CreatePair("flow");
         var validator = new ProblemStoreReportingValidator(Mindmap);
         using var store = Store(validator);
-        var catalog = new TestDiagramDefinitionCatalog([MindmapDefinition]);
+        var catalog = new TestDiagramDefinitionCatalog(MindmapDefinition);
         var projectValidator = new ProjectValidator(new DiagramFileRouter(catalog), new DiagramValidators([validator]));
 
         var outcome = await projectValidator.ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken);
@@ -389,7 +389,7 @@ public class ProblemStoreTests : IDisposable
         var cachePath = CacheFileFor(_root);
         var store = new ProblemStore(
             _appData,
-            new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition])),
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition)),
             new DiagramValidators([]),
             writeDelay: TimeSpan.FromMilliseconds(50),
             maxReported: 1000);
@@ -659,7 +659,7 @@ public class ProblemStoreTests : IDisposable
 
     private ProblemStore Store(IDiagramValidator? validator = null, int maxReported = 1000)
     {
-        var catalog = new TestDiagramDefinitionCatalog([MindmapDefinition]);
+        var catalog = new TestDiagramDefinitionCatalog(MindmapDefinition);
         return new ProblemStore(
             _appData,
             new DiagramFileRouter(catalog),

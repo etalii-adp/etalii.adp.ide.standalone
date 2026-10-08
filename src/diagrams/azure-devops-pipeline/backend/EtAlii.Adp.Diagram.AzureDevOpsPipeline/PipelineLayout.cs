@@ -156,7 +156,7 @@ public static class PipelineLayout
             }));
         }
 
-        return new PipelineArrangement(placements, stages.Size);
+        return stages with { Placements = placements };
     }
 
     /// <summary>

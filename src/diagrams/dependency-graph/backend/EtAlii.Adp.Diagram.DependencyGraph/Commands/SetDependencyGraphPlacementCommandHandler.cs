@@ -43,12 +43,11 @@ public sealed class SetDependencyGraphPlacementCommandHandler : ICommandHandler<
             return Task.FromResult(CommandResult.Failure("That node is no longer in this graph."));
         }
 
-        var inverse = new SetDependencyGraphPlacementCommand(
-            command.BodyPath,
-            command.ElementId,
-            element.X,
-            element.Row,
-            command.Description);
+        var inverse = command with
+        {
+            X = element.X,
+            Row = element.Row,
+        };
 
         // Each edit is a one-for-one line replace within the node's range, so the ranges the
         // parser recorded stay valid between them and no re-parse is needed mid-command.

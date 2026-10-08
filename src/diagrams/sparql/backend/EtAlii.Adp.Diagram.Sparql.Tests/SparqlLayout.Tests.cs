@@ -125,7 +125,7 @@ public class SparqlLayoutTests
         var layout = SparqlLayout.Compute(projection, new Dictionary<string, RegistrationPosition>
         {
             ["var:c"] = authored,
-            [outer.Id] = new RegistrationPosition(900, 700),
+            [outer.Id] = new(900, 700),
         });
 
         // Assert.
@@ -144,7 +144,7 @@ public class SparqlLayoutTests
         // ordinals are not stable identities (Requirement 5.4).
         var layout = SparqlLayout.Compute(projection, new Dictionary<string, RegistrationPosition>
         {
-            ["anon:0"] = new RegistrationPosition(999, 999),
+            ["anon:0"] = new(999, 999),
         });
 
         // Assert.

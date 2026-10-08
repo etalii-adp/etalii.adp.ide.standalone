@@ -113,7 +113,7 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
 
         // Opening a stage is how its jobs are ever seen, so it goes first among what can be done
         // to one - and only where there is something inside to show (Requirement 8.2).
-        if (location.Kind == PipelineElementLocationKind.Stage && location.Stage.Jobs.Count > 0)
+        if (location is { Kind: PipelineElementLocationKind.Stage, Stage.Jobs.Count: > 0 })
         {
             var open = _views.For(target.WatchId, target.ResolvedFullPath).IsExpanded(location.Stage.Id);
             edits.Insert(0, new ContextActionDefinition(

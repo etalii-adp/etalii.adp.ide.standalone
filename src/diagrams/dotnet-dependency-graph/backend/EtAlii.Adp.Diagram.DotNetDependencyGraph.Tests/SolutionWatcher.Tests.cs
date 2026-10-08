@@ -94,8 +94,7 @@ public sealed class SolutionWatcherTests : IDisposable
         var watched = Write("Solution.slnx", "<Solution />");
         using var watcher = new SolutionWatcher([watched], Brisk);
         using var stale = new ManualResetEventSlim();
-        // ReSharper disable once AccessToDisposedClosure
-        // Reason: We are running a unit test here.
+        // ReSharper disable once AccessToDisposedClosure - Reason: the handler only calls stale.Set(); the test reads it with stale.Wait(Patience, ...) before the scope ends, and a settle raised after that, in the moment between the usings disposing `stale` and then `watcher`, only reaches that Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
         watcher.Stale += (_, _) => stale.Set();
 
         // Act.
@@ -117,8 +116,7 @@ public sealed class SolutionWatcherTests : IDisposable
         var unrelated = Path.Combine(_root, "build.log");
         using var watcher = new SolutionWatcher([watched], Brisk);
         using var stale = new ManualResetEventSlim();
-        // ReSharper disable once AccessToDisposedClosure
-        // Reason: We are running a unit test here.
+        // ReSharper disable once AccessToDisposedClosure - Reason: the handler only calls stale.Set(); the test reads it with stale.Wait(500 ms, ...) before the scope ends, and a settle raised after that, in the moment between the usings disposing `stale` and then `watcher`, only reaches that Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
         watcher.Stale += (_, _) => stale.Set();
 
         // Act. Written into the SAME directory the watcher is watching, which is the point:
@@ -153,10 +151,9 @@ public sealed class SolutionWatcherTests : IDisposable
         using var reported = new ManualResetEventSlim();
         watcher.Stale += (_, _) =>
         {
-            // ReSharper disable once AccessToModifiedClosure
-            // Reason: We are running a unit test here.
+            // ReSharper disable once AccessToModifiedClosure - Reason: the handler must increment the test's own `reports`, not a copy, because the number of reports the watcher raised is what the test reads back with Volatile.Read after the burst; Interlocked keeps the settle-timer writes safe.
             Interlocked.Increment(ref reports);
-            // ReSharper disable once AccessToDisposedClosure
+            // ReSharper disable once AccessToDisposedClosure - Reason: the handler only calls reported.Set(); the test reads it with reported.Wait(Patience, ...) before the scope ends, and a settle raised after that, in the moment between the usings disposing `reported` and then `watcher`, only reaches that Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
             reported.Set();
         };
 
@@ -199,8 +196,7 @@ public sealed class SolutionWatcherTests : IDisposable
         var watched = Write("Solution.slnx", "<Solution />");
         var watcher = new SolutionWatcher([watched], Brisk);
         using var stale = new ManualResetEventSlim();
-        // ReSharper disable once AccessToDisposedClosure
-        // Reason: We are running a unit test here.
+        // ReSharper disable once AccessToDisposedClosure - Reason: the test disposes `watcher` itself before the write, and a disposed SolutionWatcher raises nothing (Settle checks _disposed under its lock), so this handler cannot run once the using has disposed `stale`.
         watcher.Stale += (_, _) => stale.Set();
 
         // THE CONTROL, established BEFORE the stimulus. A disposed watcher's silence is only
@@ -210,8 +206,7 @@ public sealed class SolutionWatcherTests : IDisposable
         // below says nothing about disposal.
         using var live = new SolutionWatcher([watched], Brisk);
         using var liveHeard = new ManualResetEventSlim();
-        // ReSharper disable once AccessToDisposedClosure
-        // Reason: We are running a unit test here.
+        // ReSharper disable once AccessToDisposedClosure - Reason: the handler only calls liveHeard.Set(); the test reads it with liveHeard.Wait(Patience, ...) before the scope ends, and a settle raised after that, in the moment between the usings disposing `liveHeard` and then `live`, only reaches that Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
         live.Stale += (_, _) => liveHeard.Set();
 
         watcher.Dispose();

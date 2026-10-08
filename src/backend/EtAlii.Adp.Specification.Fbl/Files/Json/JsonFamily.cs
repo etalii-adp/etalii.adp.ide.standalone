@@ -305,12 +305,12 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         foreach (var change in changes)
         {
             var read = change.Read;
-            if (change.IsEmpty && change.Binding.Empty == "remove")
+            if (change is { IsEmpty: true, Binding.Empty: "remove" })
             {
                 if (read.Node is TreeEntry member) plan.Add(SpliceOperation.RemoveKey, RemovalSpan(member), "");
                 continue;
             }
-            if (read.Present && read.Span is { } span)
+            if (read is { Present: true, Span: { } span })
             {
                 var written = Format(read, change.Binding, change.Value);
                 if (written != Text.Text(span)) plan.Add(SpliceOperation.ReplaceValue, span, written);

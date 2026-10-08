@@ -122,7 +122,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     public void TheWalk_FindsTheTrackedExampleSet()
     {
         // Arrange and act.
-        var found = EveryExampleRegistration().Count();
+        var found = EveryExampleRegistration().Count;
 
         // Assert: 39 tracked registrations at the time of writing. This count moving is fine -
         // it moving DOWN unexpectedly is what this fact is here to catch, since a vanished
@@ -293,7 +293,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
             .ToList();
 
         var bySubject = registrations
-            .Select(name => DiagramRegistrationName.TryParse(name))
+            .Select(DiagramRegistrationName.TryParse)
             .Where(parsed => parsed is not null && !parsed.IsFolderScoped)
             .GroupBy(parsed => parsed!.SubjectBase, StringComparer.OrdinalIgnoreCase);
 

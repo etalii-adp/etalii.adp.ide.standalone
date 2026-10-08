@@ -63,8 +63,8 @@ public class ExamplesTests
 
         // And the ADP-authored override stack is present and recognized.
         Assert.Equal(3, chart.Values.Count);
-        Assert.Contains(chart.Values, values => values.RelativePath == "values-dev.yaml" && !values.IsDefault);
-        Assert.Contains(chart.Values, values => values.RelativePath == "values-prod.yaml" && !values.IsDefault);
+        Assert.Contains(chart.Values, values => values is { RelativePath: "values-dev.yaml", IsDefault: false });
+        Assert.Contains(chart.Values, values => values is { RelativePath: "values-prod.yaml", IsDefault: false });
     }
 
     /// <summary>The module's own examples folder, found by walking up from the test binary.</summary>

@@ -77,7 +77,7 @@ public class C4SharedReadTests : IDisposable
         await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var adp = IoPath.Combine(_root, "containers.adp");
         await File.WriteAllTextAsync(adp, "c4/container\nbody: model.dsl\nview: containers\n", TestContext.Current.CancellationToken);
-        using var editor = new FileStream(adp, FileMode.Open, FileAccess.Write, FileShare.Read);
+        await using var editor = new FileStream(adp, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.
         await using var session = (C4Session)new C4SessionFactory(new DiagramOrigin("c4", "container"), _documents, _mapper, _historyStacks)

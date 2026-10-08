@@ -47,6 +47,6 @@ internal sealed class MoveNodeCommandHandler(IMindmapDocumentStore documents)
 
         return Task.FromResult(saved.Failed
             ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(new MoveNodeCommand(command.BodyPath, command.NodeId, previousParent.Id, previousIndex)));
+            : CommandResult.Success(command with { NewParentId = previousParent.Id, Index = previousIndex }));
     }
 }

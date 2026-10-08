@@ -212,7 +212,7 @@ public sealed class FdgProvidersTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(allowed);
-        Assert.Contains(Parse().Connections, connection => connection.From == "tick-step" && connection.To == "step-list");
+        Assert.Contains(Parse().Connections, connection => connection is { From: "tick-step", To: "step-list" });
         Assert.Contains("cardinality check", Assert.IsType<ContextExecutionFailed>(refused).Message, StringComparison.Ordinal);
     }
 

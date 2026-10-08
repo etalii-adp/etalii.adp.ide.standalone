@@ -102,15 +102,13 @@ public class HostLoggerLifecycleTests : IDisposable
         await Task.WhenAll(
             Task.Run(() =>
             {
-                // ReSharper disable once AccessToDisposedClosure
-                // Reason: both tasks are awaited before the barrier is disposed.
+                // ReSharper disable once AccessToDisposedClosure - Reason: both tasks are awaited by the Task.WhenAll they are passed to before the using disposes the barrier.
                 together.SignalAndWait(Settle);
                 a.Dispose();
             }, TestContext.Current.CancellationToken),
             Task.Run(() =>
             {
-                // ReSharper disable once AccessToDisposedClosure
-                // Reason: both tasks are awaited before the barrier is disposed.
+                // ReSharper disable once AccessToDisposedClosure - Reason: both tasks are awaited by the Task.WhenAll they are passed to before the using disposes the barrier.
                 together.SignalAndWait(Settle);
                 b.Dispose();
             }, TestContext.Current.CancellationToken));

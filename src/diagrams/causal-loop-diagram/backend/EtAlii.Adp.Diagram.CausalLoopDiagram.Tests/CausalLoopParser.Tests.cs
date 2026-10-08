@@ -80,7 +80,7 @@ public class CausalLoopParserTests
                 "link population -> births +",
                 "link population -> births + flipped",
                 StringComparison.Ordinal)).Model.Links,
-            candidate => candidate.From == "population" && candidate.To == "births");
+            candidate => candidate is { From: "population", To: "births" });
 
         // Assert.
         Assert.False(silent.Flipped);

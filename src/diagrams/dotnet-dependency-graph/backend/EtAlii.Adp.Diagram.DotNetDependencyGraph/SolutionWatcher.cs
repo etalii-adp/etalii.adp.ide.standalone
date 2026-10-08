@@ -49,7 +49,7 @@ public sealed class SolutionWatcher : IDisposable
         _settleDelay = settleDelay ?? DefaultSettleDelay;
 
         foreach (var directory in _files
-            .Select(file => IoPath.GetDirectoryName(file))
+            .Select(IoPath.GetDirectoryName)
             .Where(directory => !string.IsNullOrEmpty(directory) && Directory.Exists(directory))
             .Select(directory => directory!)
             .Distinct(StringComparer.OrdinalIgnoreCase))

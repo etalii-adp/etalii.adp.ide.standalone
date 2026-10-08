@@ -357,7 +357,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             RenameActionId when isElement => new RenameTimelineElementCommand(body, id, value),
             RemoveActionId when isElement => new RemoveTimelineElementCommand(body, id),
             GiveEndActionId when isElement => TimelineDefinition.EndChange(model, body, "giveEnd", id, value).Command,
-            RemoveEndActionId when isElement => TimelineDefinition.EndChange(model, body, "removeEnd", id, null) is var (removal, refusal) && refusal.Length == 0
+            RemoveEndActionId when isElement => TimelineDefinition.EndChange(model, body, "removeEnd", id, null) is (var removal, { Length: 0 })
                 ? removal ?? new SetTimelineEndCommand(body, id, null)
                 : null,
             DisconnectActionId when isRelation => new DisconnectTimelineConnectionCommand(body, id),

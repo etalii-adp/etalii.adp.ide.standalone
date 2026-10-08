@@ -198,7 +198,7 @@ public static class SupplyChainWriter
             keys.Add(("unit", Text(node.Unit)));
         }
 
-        if (node.X is { } x && node.Y is { } y)
+        if (node is { X: { } x, Y: { } y })
         {
             keys.Add(("x", Number(Math.Round(x))));
             keys.Add(("y", Number(Math.Round(y))));
@@ -215,7 +215,7 @@ public static class SupplyChainWriter
         ArgumentNullException.ThrowIfNull(group);
 
         List<(string Key, string Value)> keys = [("name", Text(group.Name))];
-        if (group.X is { } x && group.Y is { } y)
+        if (group is { X: { } x, Y: { } y })
         {
             keys.Add(("x", Number(Math.Round(x))));
             keys.Add(("y", Number(Math.Round(y))));
@@ -272,8 +272,7 @@ public static class SupplyChainWriter
         }
 
         (string itemIndent, string dashGap, string keyIndent) = LineSplice.IndentOf(document, ranges);
-        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}"];
-        lines.AddRange(keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}"));
+        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
 
         document.Insert(at, lines);
         return SupplyChainEdit.Applied;

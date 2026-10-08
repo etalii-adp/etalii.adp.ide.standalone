@@ -48,8 +48,7 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
         RdfModel model;
         try
         {
-            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
-            // Reason: Can still be null if the document is empty.
+            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract - Reason: IDiagramValidator.ValidateAsync is a public module seam and the record's non-nullable Document is a compile-time annotation the runtime does not enforce, so a caller that passes null (null!, or code built without nullable checks) gets an empty document here rather than a NullReferenceException; ProjectValidator, the one caller in this repository, always passes the text it read, so an empty file arrives as "", not null.
             model = RdfParser.Parse(LineDocument.Parse(request.Document ?? ""));
         }
         catch (RdfParseException exception)
@@ -74,8 +73,7 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
         var supers = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var triple in model.Triples)
         {
-            if (triple.Predicate.Iri == OwlVocabulary.SubClassOf
-                && triple.Subject is IriTerm child && triple.Object is IriTerm parent)
+            if (triple is { Predicate.Iri: OwlVocabulary.SubClassOf, Subject: IriTerm child, Object: IriTerm parent })
             {
                 Adjacency(child.Iri).Add(parent.Iri);
                 _ = Adjacency(parent.Iri);

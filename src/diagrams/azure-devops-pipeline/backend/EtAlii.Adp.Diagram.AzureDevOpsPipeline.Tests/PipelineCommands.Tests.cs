@@ -85,7 +85,7 @@ public class PipelineCommandsTests : IDisposable
             new MovePipelineStepCommand(_workspace, path, stepId, toIndex));
 
     /// <summary>Runs whatever a command reported as its inverse, whichever kind it is.</summary>
-    // ReSharper disable once UnusedMethodReturnValue.Local
+    // ReSharper disable once UnusedMethodReturnValue.Local - Reason: the body is a switch expression over the inverse's kind, and a switch expression must yield a value, so it returns each handler's CommandResult; the callers await it only for its effect on the store.
     private async Task<CommandResult> UndoAsync(ICommand inverse) => inverse switch
     {
         RenamePipelineElementCommand rename => await new RenamePipelineElementCommandHandler(_store).ExecuteAsync(rename),

@@ -206,7 +206,7 @@ public sealed class GhgProvidersTests : IDisposable
     public async Task ADocumentThatCouldNotBeRead_OffersNoActionAndNoWritableRow()
     {
         var store = new GhgDocumentStore();
-        using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
+        await using (new FileStream(Body, FileMode.Open, FileAccess.Read, FileShare.None))
         {
             Assert.False(store.GetOrLoad(Body).IsUsable);
         }
@@ -270,7 +270,7 @@ public sealed class GhgProvidersTests : IDisposable
             Target(GestureIds.Relation("steam-engine", "railways")), GhgContextActionProvider.ConnectActionId, TestContext.Current.CancellationToken);
 
         Assert.IsType<ContextExecutionCompleted>(allowed);
-        var drawn = Assert.Single(Parse().Influences, influence => influence.From == "railways" && influence.To == "coal");
+        var drawn = Assert.Single(Parse().Influences, influence => influence is { From: "railways", To: "coal" });
         Assert.Equal((new GhgEnd("plateau", "bottom", 0.3), new GhgEnd("slope", "top", 0.6)), (drawn.FromEnd, drawn.ToEnd));
         Assert.Contains("already influences", Assert.IsType<ContextExecutionFailed>(refused).Message, StringComparison.Ordinal);
     }

@@ -310,7 +310,7 @@ public sealed class PipelineWriter
     {
         var first = _document.Lines[element.Lines.Start];
         var text = first.Text.AsSpan(first.Indent());
-        return text.StartsWith("- ") || text.SequenceEqual("-") ? first.Indent() + 2 : first.Indent();
+        return text.StartsWith("- ") || text is "-" ? first.Indent() + 2 : first.Indent();
     }
 
     /// <summary>

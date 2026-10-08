@@ -705,7 +705,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
     private string ArrowId(string path)
     {
         var model = _store.GetOrLoad(_workspace, path).Model;
-        return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge.FromId == "Build" && edge.ToId == "Test"));
+        return PipelineElementMapper.EdgeId(PipelineGraphBuilder.OfStages(model).Edges.Single(edge => edge is { FromId: "Build", ToId: "Test" }));
     }
 
     [Fact]

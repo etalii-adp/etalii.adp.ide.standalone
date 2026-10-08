@@ -68,7 +68,7 @@ public sealed class AddAbmNodeCommandHandler(IAbmDocumentStore documents) : ICom
 
             var diagram = document.Disl.Diagram;
             var invocation = new DislInvocation(Parameters: new Dictionary<string, object?>(StringComparer.Ordinal) { ["kind"] = AbmEdits.TypeOf(command.Kind) });
-            if (parent is not null && command.Index < 0 && command.Label.Length == 0)
+            if (parent is not null && command is { Index: < 0, Label.Length: 0 })
             {
                 return AbmDefinition.Apply(document, OperationInterpreter.Run(
                     AbmDefinition.Specification, "addChild", diagram, AbmDefinition.ElementOf(diagram, parent.Id), AbmDefinition.NewIds, invocation, AbmDefinition.Env));
@@ -141,7 +141,7 @@ public sealed class SetAbmNodeKindCommandHandler(IAbmDocumentStore documents) : 
                     AbmDefinition.Specification, AbmDefinition.ElementOf(document.Disl.Diagram, node.Id)!, AbmEdits.TypeOf(command.Kind), AbmDefinition.Env))
                 : document.Change(new ModelChange.Retype(node.Id, AbmEdits.TypeOf(command.Kind), new Dictionary<string, object?>(StringComparer.Ordinal)
                 {
-                    ["attempts"] = command.Kind == AbmNodeKinds.Retry && command.RetryCount < 1 ? Math.Max(node.RetryCount, AbmNodeKinds.DefaultRetryCount) : command.RetryCount,
+                    ["attempts"] = command is { Kind: AbmNodeKinds.Retry, RetryCount: < 1 } ? Math.Max(node.RetryCount, AbmNodeKinds.DefaultRetryCount) : command.RetryCount,
                 })));
     }
 }

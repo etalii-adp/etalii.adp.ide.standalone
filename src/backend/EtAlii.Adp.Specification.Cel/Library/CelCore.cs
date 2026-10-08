@@ -50,7 +50,7 @@ public static class CelCore
     private static long Int(object? value) => value switch
     {
         long l => l,
-        double d when double.IsFinite(d) && d > long.MinValue && d < long.MaxValue => (long)d,
+        double d when double.IsFinite(d) && d is > long.MinValue and < long.MaxValue => (long)d,
         string s when long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) => v,
         _ => throw new CelException("int() cannot convert this value."),
     };

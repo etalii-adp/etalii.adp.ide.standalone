@@ -362,7 +362,7 @@ public static partial class WardleyWriter
     private static partial Regex LinkPartsExpression();
 
     /// <summary>The bare `inertia` word, which is not a parenthesised decorator.</summary>
-    [GeneratedRegex(@"(?<![A-Za-z])inertia(?![A-Za-z])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex("(?<![A-Za-z])inertia(?![A-Za-z])", RegexOptions.IgnoreCase)]
     private static partial Regex InertiaWordExpression();
 
     /// <summary>Any parenthesised decorator, for finding where the last one ends.</summary>

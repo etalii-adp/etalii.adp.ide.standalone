@@ -211,7 +211,7 @@ internal static class DislInheritance
         var declaring = relation.Linearisation.Select(name => all[name].Json).FirstOrDefault(json => json.TryGetProperty(side, out _));
         if (declaring.ValueKind != JsonValueKind.Object)
         {
-            if (!relation.Abstract && relation.Derived is null) diagnostics.Add(DislLoader.Error(pointer, $"The relation type '{relation.Name}' has no {side} end (DISL §4.9)."));
+            if (relation is { Abstract: false, Derived: null }) diagnostics.Add(DislLoader.Error(pointer, $"The relation type '{relation.Name}' has no {side} end (DISL §4.9)."));
             return new DislRelationEnd([], [], false);
         }
         var end = declaring.GetProperty(side);

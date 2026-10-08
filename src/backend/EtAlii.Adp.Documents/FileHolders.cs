@@ -139,7 +139,7 @@ public static class FileHolders
             // The query itself threw inside the budget - including whatever the platform throws
             // when the Restart Manager is absent. The save's own failure is the news; this is a
             // footnote to it.
-            var reason = exception is AggregateException aggregate && aggregate.InnerException is { } inner ? inner : exception;
+            var reason = exception is AggregateException { InnerException: { } inner } ? inner : exception;
             return $"holders could not be determined: {reason.GetType().Name} {reason.Message}";
         }
 

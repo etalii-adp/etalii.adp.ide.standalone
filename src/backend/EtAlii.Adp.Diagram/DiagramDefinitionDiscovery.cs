@@ -72,7 +72,7 @@ public sealed class DiagramDefinitionDiscovery
                     // as two different things depending on which question was asked. One bad
                     // entry costs the module only that entry
                     // (ansible-structure-diagram Requirement 2.1).
-                    if (definition.HasFolderSubject && definition.HasDocumentSibling)
+                    if (definition is { HasFolderSubject: true, HasDocumentSibling: true })
                     {
                         LogMalformed(
                             hit.DeclaringType,

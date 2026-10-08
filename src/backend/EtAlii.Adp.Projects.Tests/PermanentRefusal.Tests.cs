@@ -153,7 +153,7 @@ public partial class PermanentRefusalTests
     [GeneratedRegex(@"new\s+Status\s*\(\s*PermanentRefusal\.\w+")]
     private static partial Regex NamedStatus();
 
-    [GeneratedRegex(@"(?<=[a-z])([A-Z])")]
+    [GeneratedRegex("(?<=[a-z])([A-Z])")]
     private static partial Regex UpperBoundary();
 
     private sealed record StatusFixture(string Reason, IReadOnlyList<StatusCase> Statuses);

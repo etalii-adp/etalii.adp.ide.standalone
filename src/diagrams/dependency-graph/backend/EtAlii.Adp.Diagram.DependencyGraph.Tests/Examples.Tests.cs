@@ -68,7 +68,7 @@ public class ExamplesTests
         // Two files at the time of writing - one registration and one body. The count moving
         // down unexpectedly is what this guards: a vanished example silently shrinks the
         // theories below rather than failing them.
-        Assert.True(EveryExampleFile().Count() >= 2, "the examples walk lost files");
+        Assert.True(EveryExampleFile().Count >= 2, "the examples walk lost files");
         Assert.NotEmpty(EveryExampleGraph());
     }
 

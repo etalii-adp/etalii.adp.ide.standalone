@@ -17,7 +17,7 @@ public class HierarchyModelPublishKeepsIdentityTests : IDisposable
     private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private readonly string _root;
-    private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog([Mindmap]);
+    private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap);
 
     public HierarchyModelPublishKeepsIdentityTests()
     {

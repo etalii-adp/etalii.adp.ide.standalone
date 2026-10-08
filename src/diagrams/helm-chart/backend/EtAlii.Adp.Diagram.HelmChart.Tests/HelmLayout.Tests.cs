@@ -24,7 +24,7 @@ public class HelmLayoutTests
 
         // Assert.
         Assert.All(graph.Nodes, node => Assert.True(boxes.ContainsKey(node.Id), $"No box for {node.Id}"));
-        Assert.All(boxes.Values, box => Assert.True(box.Width > 0 && box.Height > 0));
+        Assert.All(boxes.Values, box => Assert.True(box is { Width: > 0, Height: > 0 }));
     }
 
     [Fact]

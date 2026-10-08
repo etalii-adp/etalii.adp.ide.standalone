@@ -48,7 +48,7 @@ public sealed class SetTimelineEndCommandHandler : ICommandHandler<SetTimelineEn
             }
         }
 
-        var inverse = new SetTimelineEndCommand(command.BodyPath, command.ElementId, element.End?.Text);
+        var inverse = command with { End = element.End?.Text };
         TimelineWriter.SetEnd(entry.Document, element, command.End);
 
         var saved = _documents.Save(command.BodyPath, entry);

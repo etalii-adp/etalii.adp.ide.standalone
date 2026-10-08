@@ -197,12 +197,12 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
             .ToList();
 
         // Act.
-        var unchecked_ = folders.Where(folder => Modules.All(module => module.ExamplesFolder != folder)).ToList();
+        var unclaimed = folders.Where(folder => Modules.All(module => module.ExamplesFolder != folder)).ToList();
 
         // Assert.
         Assert.True(folders.Count >= 16, $"walked only {folders.Count} example folders: {string.Join(", ", folders)}");
         Assert.Contains("timeline", folders);
-        Assert.True(unchecked_.Count == 0, "example folders no module entry checks: " + string.Join(", ", unchecked_));
+        Assert.True(unclaimed.Count == 0, "example folders no module entry checks: " + string.Join(", ", unclaimed));
     }
 
     [Fact]

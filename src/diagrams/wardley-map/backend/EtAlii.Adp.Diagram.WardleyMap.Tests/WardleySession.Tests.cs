@@ -206,7 +206,7 @@ public sealed class WardleySessionTests : IDisposable
     /// <summary>The id of the component in the bottom-right of the map, found by its position.</summary>
     private string IdOfFarCorner(string path) =>
         Visible(path, DiagramViewport.Unbounded)
-            .Single(element => element.Type == WardleyElementTypes.Element && element.X > 0.5d)
+            .Single(element => element is { Type: WardleyElementTypes.Element, X: > 0.5d })
             .Id;
 
     private static IReadOnlyList<string> RemovedBy(IReadOnlyList<DiagramDelta> deltas) =>

@@ -142,7 +142,7 @@ internal static class AbmDefinition
         entry.Available,
         // Arrange carries its sentence even while it is available, as the hand-written menu did; the
         // client shows a reason only for an unavailable action.
-        entry.Available && entry.Operation is "arrange" or "arrangeFromNode" ? LoadedArrangeReason.Value : entry.UnavailableReason);
+        entry is { Available: true, Operation: "arrange" or "arrangeFromNode" } ? LoadedArrangeReason.Value : entry.UnavailableReason);
 
     /// <summary>
     /// A row as the grid draws it: a retype row is the Choice editor with the kinds it can become, a

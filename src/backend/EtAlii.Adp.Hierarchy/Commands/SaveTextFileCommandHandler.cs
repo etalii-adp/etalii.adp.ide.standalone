@@ -44,6 +44,6 @@ public sealed class SaveTextFileCommandHandler : ICommandHandler<SaveTextFileCom
             return CommandResult.Failure(error);
         }
 
-        return CommandResult.Success(new SaveTextFileCommand(command.FullPath, previousContent));
+        return CommandResult.Success(command with { Content = previousContent });
     }
 }

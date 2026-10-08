@@ -45,8 +45,7 @@ public class HelmRuleSetTests
         var problems = HelmRuleSet.Judge(Read("broken"));
 
         // Assert.
-        Assert.Contains(problems, problem => problem.RuleId == HelmRules.MissingVersion
-                                             && problem.Severity == DiagramProblemSeverity.Error);
+        Assert.Contains(problems, problem => problem is { RuleId: HelmRules.MissingVersion, Severity: DiagramProblemSeverity.Error });
         var unreadable = Assert.Single(problems, problem => problem.RuleId == HelmRules.UnreadableYaml);
         var location = Assert.IsType<DiagramProblemFileLocation>(unreadable.Location);
         Assert.Equal("values.yaml", location.RelativePath);

@@ -231,7 +231,7 @@ public static class SparqlLayout
             }
             else
             {
-                var frame = new SparqlRect(x, y, item.Size.Width, item.Size.Height);
+                var frame = item.Size with { X = x, Y = y };
                 regionBounds[item.Id] = frame;
                 PlaceItems(
                     ItemsOf(item.Region.ScopePath, nodesByScope, regionsByParentPath, projection),

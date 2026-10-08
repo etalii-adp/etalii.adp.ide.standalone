@@ -16,7 +16,7 @@ public sealed class BodyText
     public BodyText(byte[] bytes)
     {
         Bytes = bytes;
-        BomLength = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        BomLength = bytes is [0xEF, 0xBB, 0xBF, ..] ? 3 : 0;
         try
         {
             _ = _strict.GetCharCount(bytes, BomLength, bytes.Length - BomLength);

@@ -225,7 +225,7 @@ public static class DislModelBuilder
                 {
                     if (Evaluate(specification, DislJson.Pointer(pointer, "id"), item) is not string written)
                     {
-                        failures.Add($"the id of an item is not a string");
+                        failures.Add("the id of an item is not a string");
                         continue;
                     }
                     id = written;
@@ -283,7 +283,7 @@ public static class DislModelBuilder
     }
 
     private static bool Allows(DislRelationEnd? end, object? value) =>
-        value is DislElement element && !element.Type.IsRelation
+        value is DislElement { Type.IsRelation: false } element
         && (end is null || end.Types.Count == 0 || end.Types.Any(element.IsA))
         && (end is null || !end.Exclude.Any(element.IsA));
 

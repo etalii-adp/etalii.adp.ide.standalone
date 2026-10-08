@@ -357,7 +357,7 @@ public class CausalLoopContextActionsTests : IDisposable
             "Newborns", "", TestContext.Current.CancellationToken);
         _store.Reload(_path);
         var model = _store.GetOrLoad(_path).Model;
-        Assert.Contains(model.Variables, variable => variable.Id == "births" && variable.Display == "Newborns");
+        Assert.Contains(model.Variables, variable => variable is { Id: "births", Display: "Newborns" });
         Assert.Contains(model.Links, link => link.From == "births" || link.To == "births");
     }
 
@@ -383,7 +383,7 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.IsType<ContextExecutionCompleted>(result);
         _store.Reload(freshPath);
         var model = _store.GetOrLoad(freshPath).Model;
-        Assert.Contains(model.Links, link => link.From == "b" && link.To == "a");
+        Assert.Contains(model.Links, link => link is { From: "b", To: "a" });
         // And the reverse link closes a loop, which the same edit claimed.
         Assert.Single(model.Loops);
     }

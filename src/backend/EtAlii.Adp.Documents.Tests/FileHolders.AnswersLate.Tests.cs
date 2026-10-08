@@ -72,8 +72,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var answer = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: Used in a test case which is acceptable.
+            // ReSharper disable once AccessToDisposedClosure - Reason: FileHolders runs this query on its own task, and EventuallyAsync waits for its late answer line - logged only after answer.Wait has returned - before the using disposes `answer`.
             answer.Wait(Patience);
             return "pid 4242 someone.exe";
         };
@@ -122,8 +121,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var entered = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            // ReSharper disable AccessToDisposedClosure
-            // Reason: Used in a test case which is acceptable.
+            // ReSharper disable AccessToDisposedClosure - Reason: the test observes entered.Set() through entered.Wait before the scope ends, and stuck.Set() as its last statement releases stuck.Wait; if the query is still leaving that wait when the using disposes `stuck`, it does so on FileHolders' own task, whose fault AnswerLater logs rather than throws, after every assertion has run.
             entered.Set();
             stuck.Wait(Patience);
             // ReSharper restore AccessToDisposedClosure
@@ -159,8 +157,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var refuse = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: Used in a test case which is acceptable.
+            // ReSharper disable once AccessToDisposedClosure - Reason: FileHolders runs this query on its own task, and EventuallyAsync waits for the late "could not be determined" line - logged only after the query has left refuse.Wait and thrown - before the using disposes `refuse`.
             refuse.Wait(Patience);
             throw new InvalidOperationException("the Restart Manager refused");
         };
@@ -185,8 +182,7 @@ public class FileHoldersAnswersLateTests : IDisposable
         using var stuck = new ManualResetEventSlim(false);
         FileHolders.Query = _ =>
         {
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: Used in a test case which is acceptable.
+            // ReSharper disable once AccessToDisposedClosure - Reason: this closure CAN outlive the scope - Describe returns after its 100ms budget with the query still running on FileHolders' own task - and that is harmless: stuck.Set() releases it before the using disposes `stuck`, and a Wait reached only after the dispose throws ObjectDisposedException on that background task, which AnswerLater logs as a late warning rather than throwing into the test.
             stuck.Wait(Patience);
             return "never";
         };

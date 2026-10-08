@@ -393,7 +393,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         try
         {
             var cache = JsonSerializer.Deserialize<ProblemCacheFile>(File.ReadAllText(cachePath));
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract - Reason: JsonSerializer does not honour the record's non-nullable annotations, so a cache file of another shape - or one holding "Problems": null - deserialises with Problems null, and this check turns that into an ignored cache rather than a NullReferenceException.
             if (cache is null || cache.Version != CacheFormatVersion || cache.Problems is null)
             {
                 _logger.Warning("Ignoring the problem cache at {CachePath}: not this format", cachePath);

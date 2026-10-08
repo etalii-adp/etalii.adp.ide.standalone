@@ -344,7 +344,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
             // Placement gestures never reach here; they complete in ExecuteAsync.
             AddElementActionId => NewElementAt(
                 body,
-                element is null ? 0d : element.X + XStep,
+                element?.X + XStep ?? 0d,
                 element?.Row ?? 0,
                 value),
             _ => null,

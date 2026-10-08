@@ -2,7 +2,7 @@
 // same way the diagram family's discovery fixtures do. The types are data for reflection
 // tests, not code anyone calls.
 
-// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedMember.Global - Reason: every Definitions member in this file is read only by reflection - EditorDefinitionDiscovery looks it up by name (DefinitionsPropertyName) on the fixture types EditorDefinitionDiscovery.Tests hands it - so no code names these members directly.
 #pragma warning disable CA1052 // "static holder" - NotStatic is deliberately not static
 
 namespace EtAlii.Adp.Editor.Tests.Fixtures.Valid

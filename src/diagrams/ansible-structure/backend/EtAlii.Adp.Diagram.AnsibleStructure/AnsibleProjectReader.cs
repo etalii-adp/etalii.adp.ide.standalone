@@ -516,9 +516,8 @@ public sealed class AnsibleProjectReader
 
                 sectionIsChildren = suffix == "children";
                 section = name;
-                if (!hostCounts.ContainsKey(name))
+                if (hostCounts.TryAdd(name, 0))
                 {
-                    hostCounts[name] = 0;
                     order.Add(name);
                 }
                 continue;
@@ -547,7 +546,7 @@ public sealed class AnsibleProjectReader
         // which keeps this a summary rather than a graph traversal.
         foreach ((string group, List<string> children) in childrenOf)
         {
-            hostCounts[group] += children.Sum(child => hostCounts.GetValueOrDefault(child));
+            hostCounts[group] += children.Sum(hostCounts.GetValueOrDefault);
         }
 
         return order.Select(name => new AnsibleInventoryGroup(name, hostCounts[name])).ToArray();

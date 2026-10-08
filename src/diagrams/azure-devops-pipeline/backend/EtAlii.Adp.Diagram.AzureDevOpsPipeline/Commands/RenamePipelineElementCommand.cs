@@ -57,7 +57,7 @@ internal sealed class RenamePipelineElementCommandHandler(IPipelineDocumentStore
         var saved = documents.Save(command.RootPath, command.BodyPath, entry);
         return Task.FromResult(saved.Failed
             ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(new RenamePipelineElementCommand(command.RootPath, command.BodyPath, command.ElementId, previous)));
+            : CommandResult.Success(command with { DisplayName = previous }));
     }
 
     private static string DisplayNameOf(PipelineElementLocation location) => location.Kind switch

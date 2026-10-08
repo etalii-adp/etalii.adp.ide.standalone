@@ -346,7 +346,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         {
             foreach (var entry in _entries)
             {
-                if (entry.Parent is XmlElement { IsRoot: false } parent && entry.LineSpan is not null && parent.LineSpan is not null && entry.Indent >= parent.Indent)
+                if (entry is { Parent: XmlElement { IsRoot: false, LineSpan: not null } parent, LineSpan: not null } && entry.Indent >= parent.Indent)
                 {
                     return entry.Indent - parent.Indent;
                 }
@@ -555,7 +555,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
                 plan.Add(SpliceOperation.InsertKey, offset, offset, $" {name}=\"{Format(read, binding, change.Value)}\"");
                 continue;
             }
-            if (binding.Text && binding.Create is { } create)
+            if (binding is { Text: true, Create: { } create })
             {
                 var content = Format(read with { Node = new XmlTextNode(owner, null, binding.HtmlParagraphs) }, binding, change.Value);
                 CreateChild(plan, owner, create, NewText.Render(create.Emit, placeholder => placeholder == "value" ? content : null));

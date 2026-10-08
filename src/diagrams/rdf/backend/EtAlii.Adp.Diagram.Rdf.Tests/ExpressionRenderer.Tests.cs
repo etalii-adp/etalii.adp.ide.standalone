@@ -23,7 +23,7 @@ public class ExpressionRendererTests
     {
         var model = RdfParser.Parse(LineDocument.Parse(Prelude + body));
         var root = model.Triples
-            .Single(t => t.Subject is IriTerm { Iri: "http://example.org/t#A" } && t.Predicate.Iri == OwlVocabulary.SubClassOf)
+            .Single(t => t is { Subject: IriTerm { Iri: "http://example.org/t#A" }, Predicate.Iri: OwlVocabulary.SubClassOf })
             .Object;
         return ExpressionRenderer.Render(root, model, maxDepth);
     }

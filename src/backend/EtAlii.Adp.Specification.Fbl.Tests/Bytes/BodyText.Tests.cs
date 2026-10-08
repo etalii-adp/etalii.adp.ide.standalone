@@ -11,7 +11,7 @@ public class BodyTextTests
     public void AColumnCountsCodePointsNotBytesOrUtf16Units()
     {
         // Arrange: an emoji is four bytes and two UTF-16 units, but one code point.
-        var text = new BodyText(Encoding.UTF8.GetBytes("a😀b: x\n"));
+        var text = new BodyText("a😀b: x\n"u8.ToArray());
 
         // Act.
         var position = text.Position(Encoding.UTF8.GetByteCount("a😀b"));

@@ -165,7 +165,7 @@ public sealed class HelmElementMapper
                 payload.Template = new Wire.HelmTemplateFacts
                 {
                     Role = RoleOf(template.Role),
-                    KindsUndetermined = template.Role == TemplateRole.Manifest && template.Facts.Kinds.Count == 0,
+                    KindsUndetermined = template is { Role: TemplateRole.Manifest, Facts.Kinds.Count: 0 },
                 };
                 payload.Template.Kinds.AddRange(template.Facts.Kinds);
                 payload.Template.Defines.AddRange(template.Facts.Defines);

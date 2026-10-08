@@ -227,7 +227,7 @@ public class C4CommandsTests : IDisposable
         Assert.SkipUnless(OperatingSystem.IsWindows(), "A handle's sharing mode denies a replace or delete only on Windows.");
         // Arrange: a holder sharing Read only, which denies the replace a publish performs -
         // what an external editor with the file open looks like from here.
-        using var holder = new FileStream(_bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var holder = new FileStream(_bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.
         var result = await _history.ExecuteAsync(
@@ -252,7 +252,7 @@ public class C4CommandsTests : IDisposable
             TestContext.Current.CancellationToken);
         var sidecarPath = IoPath.Combine(_root, IoPath.GetFileNameWithoutExtension(_bodyPath) + ".layout.json");
         Assert.True(File.Exists(sidecarPath), $"expected a sidecar at {sidecarPath}");
-        using var holder = new FileStream(sidecarPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var holder = new FileStream(sidecarPath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         // Act.
         var result = await _history.ExecuteAsync(

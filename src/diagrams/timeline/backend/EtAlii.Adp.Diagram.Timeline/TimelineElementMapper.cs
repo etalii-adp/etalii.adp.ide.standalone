@@ -147,7 +147,7 @@ public sealed class TimelineElementMapper
         var begin = TimelineScale.ToTime(x, precision);
 
         string? end = null;
-        if (element is { IsPeriod: true, End.IsReadable: true } && element.Begin.IsReadable)
+        if (element is { IsPeriod: true, End.IsReadable: true, Begin.IsReadable: true })
         {
             var duration = element.End!.Value!.Value - element.Begin.Value!.Value;
             end = TimelineScale.ToText(begin + duration, element.End.Precision);

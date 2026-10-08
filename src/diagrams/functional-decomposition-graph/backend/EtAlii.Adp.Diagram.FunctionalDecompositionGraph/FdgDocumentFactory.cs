@@ -55,10 +55,8 @@ public sealed class FdgDocumentFactory : IDiagramDocumentFactory
 
         return string.Join(
             lineEnding,
-            [
-                $"functional-decomposition-graph: {FdgModel.CurrentVersion}",
-                "elements: []",
-                "connections: []",
-            ]) + lineEnding;
+            $"functional-decomposition-graph: {FdgModel.CurrentVersion}",
+            "elements: []",
+            "connections: []") + lineEnding;
     }
 }

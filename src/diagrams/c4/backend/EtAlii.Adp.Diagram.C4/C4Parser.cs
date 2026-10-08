@@ -165,7 +165,7 @@ public static class C4Parser
 
         // `identifier = keyword ...` - the identifier is the model's own handle on the element.
         string? identifier = null;
-        if (body.Length >= 3 && body[1] == "=")
+        if (body is [_, "=", _, ..])
         {
             identifier = body[0];
             body = body[2..];
@@ -229,7 +229,7 @@ public static class C4Parser
         }
 
         // `a -> b "description" "technology"`
-        if (body.Length >= 3 && body[1] == "->")
+        if (body is [_, "->", _, ..])
         {
             state.Relationships.Add(new C4Relationship(
                 SourceId: body[0],
@@ -403,7 +403,7 @@ public static class C4Parser
         }
 
         // A dynamic view's body is its ordered interactions: `source -> destination "description"`.
-        if (body.Length >= 3 && body[1] == "->")
+        if (body is [_, "->", _, ..])
         {
             var order = (view.Interactions.Count + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
             state.Views[viewIndex] = view with

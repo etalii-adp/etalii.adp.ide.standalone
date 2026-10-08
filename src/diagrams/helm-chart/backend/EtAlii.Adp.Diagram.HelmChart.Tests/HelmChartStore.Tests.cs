@@ -64,8 +64,7 @@ public class HelmChartStoreTests : IDisposable
         store.Changed += (_, e) =>
         {
             announced = e.Chart;
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: This works.
+            // ReSharper disable once AccessToDisposedClosure - Reason: the test reads `settled` with settled.Wait(WaitLimit, ...) before the scope ends, and a change raised after that, in the moment between the usings disposing `settled` and then `store`, only reaches this Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
             settled.Set();
         };
 
@@ -91,11 +90,9 @@ public class HelmChartStoreTests : IDisposable
         using var settled = new ManualResetEventSlim();
         store.Changed += (_, _) =>
         {
-            // ReSharper disable once AccessToModifiedClosure
-            // Reason: This works.
+            // ReSharper disable once AccessToModifiedClosure - Reason: the handler must increment the test's own `changes`, not a copy, because the number of re-reads the store announced is what the test reads back with Volatile.Read once the trailing timers have fired.
             Interlocked.Increment(ref changes);
-            // ReSharper disable once AccessToDisposedClosure
-            // Reason: This works.
+            // ReSharper disable once AccessToDisposedClosure - Reason: the test reads `settled` with settled.Wait(WaitLimit, ...) before the scope ends, and a change raised after that, in the moment between the usings disposing `settled` and then `store`, only reaches this Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
             settled.Set();
         };
 

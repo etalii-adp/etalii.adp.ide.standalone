@@ -295,11 +295,11 @@ public class MindmapLayoutTests
                     Assert.Single(side.Select(box => Math.Round(side.Key ? box.X : box.Right, 6)).Distinct());
                 }
 
-        // Act.
+                // Act.
                 continue;
             }
 
-        // Assert.
+            // Assert.
             Assert.Single(nearEdges);
         }
 

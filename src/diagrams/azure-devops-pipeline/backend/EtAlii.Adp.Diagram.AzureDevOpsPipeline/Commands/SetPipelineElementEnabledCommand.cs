@@ -55,11 +55,7 @@ internal sealed class SetPipelineElementEnabledCommandHandler(IPipelineDocumentS
         var saved = documents.Save(command.RootPath, command.BodyPath, entry);
         return Task.FromResult(saved.Failed
             ? CommandResult.Failure(saved.Error)
-            : CommandResult.Success(new SetPipelineElementEnabledCommand(
-                command.RootPath,
-                command.BodyPath,
-                command.ElementId,
-                wasEnabled)));
+            : CommandResult.Success(command with { Enabled = wasEnabled }));
     }
 
     private static PipelineExecution ExecutionOf(PipelineElementLocation location) => location.Kind switch

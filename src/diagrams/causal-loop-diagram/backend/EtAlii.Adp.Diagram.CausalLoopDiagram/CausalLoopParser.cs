@@ -65,7 +65,7 @@ public static class CausalLoopParser
                 case Header:
                     break;
 
-                case "variable" when tokens.Count >= 2 && tokens[1].Length == 0:
+                case "variable" when tokens is [_, { Length: 0 }, ..]:
                     // AN EMPTY ID IS A PROBLEM, NOT A VARIABLE. Declared, it could be linked to, and
                     // the link was written as 'link a ->  +' - which re-reads as a link to a
                     // variable named "+", silently.

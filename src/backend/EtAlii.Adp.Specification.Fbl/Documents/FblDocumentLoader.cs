@@ -631,7 +631,7 @@ internal static class BindingChecker
         {
             problems.Add(new LoadProblem(pointer, ProblemSeverity.Error, "A binding read by a plugin has no rules; its model is what the plugin reads."));
         }
-        if (binding.Claims.Shared && binding.Claims.Marker is null && !binding.Claims.RegistrationOnly)
+        if (binding.Claims is { Shared: true, Marker: null, RegistrationOnly: false })
         {
             problems.Add(new LoadProblem(pointer + "/claims", ProblemSeverity.Error, "A shared claim has a marker or is registrationOnly."));
         }

@@ -198,18 +198,18 @@ internal static partial class DislExpressionWalker
         private static Frame Metamodel(Frame frame, string key, JsonElement value, IReadOnlyList<string> path)
         {
             // An attribute's derived expression is an Expression in the element context; its CEL default is the create context's.
-            if (key == "derived" && path.Count >= 2 && path[^2] == "attributes") return frame.In(DislContexts.Element).As(Mode.Expression);
-            if (key == "default" && path.Count >= 2 && path[^2] == "attributes") return frame.In(DislContexts.Create).As(Mode.Literal);
+            if (key == "derived" && path is [.., "attributes", _]) return frame.In(DislContexts.Element).As(Mode.Expression);
+            if (key == "default" && path is [.., "attributes", _]) return frame.In(DislContexts.Create).As(Mode.Literal);
             if (key == "display") return frame.In(DislContexts.DataTypeDisplay).As(Mode.Literal);
 
             // A derived type (§4.11): from is the derive context, every other expression the deriveItem context.
-            if (key == "derived" && path.Count >= 2 && path[^2] is "types" or "relations")
+            if (key == "derived" && path is [.., "types" or "relations", _])
             {
                 return value.ValueKind == JsonValueKind.String
                     ? frame.In(DislContexts.Derive).As(Mode.Expression)
                     : frame.In(DislContexts.DeriveItem).As(Mode.Literal);
             }
-            if (path.Count >= 1 && path[^1] == "derived")
+            if (path is [.., "derived"])
             {
                 return key switch
                 {
@@ -239,7 +239,7 @@ internal static partial class DislExpressionWalker
 
         private static Frame Constraints(Frame frame, string key, JsonElement owner, IReadOnlyList<string> path)
         {
-            if (path is ["constraints", "rules"] || (path.Count == 2 && path[1] == "rules"))
+            if (path is ["constraints", "rules"] or [_, "rules"])
             {
                 // A rule's own properties: its context follows its kind (§8.4), item and index bound with forEach.
                 var context = DislContexts.OfConstraintKind(DislJson.String(owner, "kind"));
@@ -252,7 +252,7 @@ internal static partial class DislExpressionWalker
                     _ => ruleFrame.As(Mode.Literal),
                 };
             }
-            if (path.Count == 3 && path[1] == "builtIn")
+            if (path is [_, "builtIn", _])
             {
                 return key switch
                 {
@@ -267,7 +267,7 @@ internal static partial class DislExpressionWalker
 
         private static Frame Toolbox(Frame frame, string key, JsonElement owner, IReadOnlyList<string> path)
         {
-            if (path.Count >= 2 && path[1] == "contextMenus")
+            if (path is [_, "contextMenus", ..])
             {
                 if (path.Count == 2)
                 {
@@ -337,7 +337,7 @@ internal static partial class DislExpressionWalker
             if (path.Contains("shapes") || path.Contains("markers"))
             {
                 // A handle (§6.8): its position is geometry, its visibility the element's, its snap a snap rule, its write the handleWrite context.
-                if (path[^1] == "handles" || (path.Count >= 2 && path[^2] == "handles"))
+                if (path[^1] == "handles" || path is [.., "handles", _])
                 {
                     return key switch
                     {
@@ -375,8 +375,8 @@ internal static partial class DislExpressionWalker
                 if (action.ValueKind != JsonValueKind.Object) continue;
                 foreach (var property in action.EnumerateObject())
                 {
-                    if (property.Name == "as" && property.Value.ValueKind == JsonValueKind.String) yield return property.Value.GetString()!;
-                    if (property.Name == "let" && property.Value.ValueKind == JsonValueKind.Object)
+                    if (property is { Name: "as", Value.ValueKind: JsonValueKind.String }) yield return property.Value.GetString()!;
+                    if (property is { Name: "let", Value.ValueKind: JsonValueKind.Object })
                     {
                         foreach (var bound in property.Value.EnumerateObject()) yield return bound.Name;
                     }

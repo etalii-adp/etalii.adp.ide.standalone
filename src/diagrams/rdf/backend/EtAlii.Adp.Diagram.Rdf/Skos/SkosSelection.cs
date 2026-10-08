@@ -31,12 +31,12 @@ internal static class SkosSelection
     /// <summary>Whether the file asserts any concept scheme - what makes the concept toolbox entry apply.</summary>
     public static bool HasScheme(RdfDocumentEntry entry) =>
         entry.Model.Triples.Any(t =>
-            t.Predicate.Iri == RdfVocabulary.Type && t.Object is IriTerm o && o.Iri == SkosVocabulary.ConceptScheme);
+            t is { Predicate.Iri: RdfVocabulary.Type, Object: IriTerm { Iri: SkosVocabulary.ConceptScheme } });
 
     /// <summary>The first asserted scheme IRI, document order - where a dropped concept is filed.</summary>
     public static string? FirstScheme(RdfDocumentEntry entry) =>
         entry.Model.Triples
-            .Where(t => t.Predicate.Iri == RdfVocabulary.Type && t.Object is IriTerm o && o.Iri == SkosVocabulary.ConceptScheme)
+            .Where(t => t is { Predicate.Iri: RdfVocabulary.Type, Object: IriTerm { Iri: SkosVocabulary.ConceptScheme } })
             .Select(t => t.Subject)
             .OfType<IriTerm>()
             .Select(s => s.Iri)

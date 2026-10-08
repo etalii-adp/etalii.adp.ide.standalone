@@ -33,7 +33,7 @@ public sealed class RelabelDependencyGraphRelationCommandHandler : ICommandHandl
             return Task.FromResult(CommandResult.Failure("That dependency is no longer in this graph."));
         }
 
-        var inverse = new RelabelDependencyGraphRelationCommand(command.BodyPath, command.RelationId, relation.Label);
+        var inverse = command with { Label = relation.Label };
         DependencyGraphWriter.SetRelationLabel(entry.Document, relation, command.Label);
 
         var saved = _documents.Save(command.BodyPath, entry);

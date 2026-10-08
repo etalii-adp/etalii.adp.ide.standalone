@@ -12,7 +12,6 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// </remarks>
 internal sealed class AnsibleNodeSubscription(Action unsubscribe) : IDisposable
 {
-    private readonly Action _unsubscribe = unsubscribe;
     private bool _disposed;
 
     public void Dispose()
@@ -22,6 +21,6 @@ internal sealed class AnsibleNodeSubscription(Action unsubscribe) : IDisposable
             return;
         }
         _disposed = true;
-        _unsubscribe();
+        unsubscribe();
     }
 }

@@ -202,10 +202,10 @@ public class SkosActionsTests : IDisposable
         var rows = await _properties.DescribeAsync(Target(body, Tea), TestContext.Current.CancellationToken);
 
         // Assert: the skos grid, not the family's.
-        Assert.Contains(rows, row => row.Id == "skos.label:prefLabel:en" && row.Value == "Tea" && row.ReadOnlyReason.Length == 0);
-        Assert.Contains(rows, row => row.Id == "skos.label:prefLabel:nl" && row.Value == "Thee");
-        Assert.Contains(rows, row => row.Id == "skos.doc:definition" && row.Value == "An infusion.");
-        Assert.Contains(rows, row => row.Id == "skos.schemes" && row.ReadOnlyReason.Length > 0);
+        Assert.Contains(rows, row => row is { Id: "skos.label:prefLabel:en", Value: "Tea", ReadOnlyReason.Length: 0 });
+        Assert.Contains(rows, row => row is { Id: "skos.label:prefLabel:nl", Value: "Thee" });
+        Assert.Contains(rows, row => row is { Id: "skos.doc:definition", Value: "An infusion." });
+        Assert.Contains(rows, row => row is { Id: "skos.schemes", ReadOnlyReason.Length: > 0 });
         Assert.Contains(rows, row => row.Id.StartsWith("skos.mapping:", StringComparison.Ordinal) && row.ReadOnlyReason.Length > 0);
 
         // Act, continued: edit the Dutch label; only that literal's lexical token changes.

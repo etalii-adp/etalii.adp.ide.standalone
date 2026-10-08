@@ -36,8 +36,7 @@ public class SolutionWatcherObligationsTests : IDisposable
         var watched = Write("Solution.slnx", "<Solution />");
         using var watcher = new SolutionWatcher([watched], Brisk);
         using var stale = new ManualResetEventSlim();
-        // ReSharper disable once AccessToDisposedClosure
-        // Reason: We are running a unit test here.
+        // ReSharper disable once AccessToDisposedClosure - Reason: the handler only calls stale.Set(); the test reads it with stale.Wait(Patience, ...) before the scope ends, and a settle raised after that, in the moment between the usings disposing `stale` and then `watcher`, only reaches that Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
         watcher.Stale += (_, _) => stale.Set();
 
         File.Delete(watched);
@@ -51,8 +50,7 @@ public class SolutionWatcherObligationsTests : IDisposable
         var watched = Write("Solution.slnx", "<Solution />");
         using var watcher = new SolutionWatcher([watched], Brisk);
         using var stale = new ManualResetEventSlim();
-        // ReSharper disable once AccessToDisposedClosure
-        // Reason: We are running a unit test here.
+        // ReSharper disable once AccessToDisposedClosure - Reason: the handler only calls stale.Set(); the test reads it with stale.Wait(Patience, ...) before the scope ends, and a settle raised after that, in the moment between the usings disposing `stale` and then `watcher`, only reaches that Set, and a Set on a disposed ManualResetEventSlim is a no-op rather than a throw (measured on .NET 10).
         watcher.Stale += (_, _) => stale.Set();
 
         // Lose the change: nothing is watching while it happens, so no event can carry it.

@@ -35,19 +35,21 @@ internal static class GhgRuleSet
             .ToHashSet(StringComparer.Ordinal);
         var triggerIds = TriggerIds(model);
 
-        List<GhgBreach> breaches = [];
-        breaches.AddRange(DuplicateInfluences(model));
-        breaches.AddRange(SelfInfluences(model));
-        breaches.AddRange(Spans(model));
-        breaches.AddRange(PhaseCounts(model));
-        breaches.AddRange(BoundaryOrders(model));
-        breaches.AddRange(BadAttachments(model, triggerIds));
-        breaches.AddRange(DanglingReferences(model, trendIds, triggerIds));
-        breaches.AddRange(DuplicateIds(model));
-        breaches.AddRange(model.Problems.Select(problem => new GhgBreach(GhgRuleIds.UnreadableEntry, problem.Message, [], problem.Line)));
-        breaches.AddRange(InfluencesIntoTriggers(model, triggerIds));
-        breaches.AddRange(TriggerDates(model));
-        breaches.AddRange(NotePositions(model));
+        List<GhgBreach> breaches =
+        [
+            .. DuplicateInfluences(model),
+            .. SelfInfluences(model),
+            .. Spans(model),
+            .. PhaseCounts(model),
+            .. BoundaryOrders(model),
+            .. BadAttachments(model, triggerIds),
+            .. DanglingReferences(model, trendIds, triggerIds),
+            .. DuplicateIds(model),
+            .. model.Problems.Select(problem => new GhgBreach(GhgRuleIds.UnreadableEntry, problem.Message, [], problem.Line)),
+            .. InfluencesIntoTriggers(model, triggerIds),
+            .. TriggerDates(model),
+            .. NotePositions(model),
+        ];
         return breaches;
     }
 

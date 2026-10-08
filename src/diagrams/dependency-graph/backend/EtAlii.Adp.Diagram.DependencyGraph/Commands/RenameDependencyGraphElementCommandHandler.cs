@@ -33,7 +33,7 @@ public sealed class RenameDependencyGraphElementCommandHandler : ICommandHandler
             return Task.FromResult(CommandResult.Failure("That node is no longer in this graph."));
         }
 
-        var inverse = new RenameDependencyGraphElementCommand(command.BodyPath, command.ElementId, element.Label);
+        var inverse = command with { Label = element.Label };
         DependencyGraphWriter.SetLabel(entry.Document, element, command.Label);
 
         var saved = _documents.Save(command.BodyPath, entry);

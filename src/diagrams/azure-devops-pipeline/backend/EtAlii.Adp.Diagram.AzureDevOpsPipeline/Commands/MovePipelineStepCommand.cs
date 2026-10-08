@@ -83,11 +83,11 @@ internal sealed class MovePipelineStepCommandHandler(IPipelineDocumentStore docu
 
         // Undo moves it back to where it was. Ids are positional, so the step that is now at
         // `to` is the one to send home - which is the same step, under its new id.
-        return Task.FromResult(CommandResult.Success(new MovePipelineStepCommand(
-            command.RootPath,
-            command.BodyPath,
-            $"{job.Id}/step-{to}",
-            from)));
+        return Task.FromResult(CommandResult.Success(command with
+        {
+            StepId = $"{job.Id}/step-{to}",
+            ToIndex = from,
+        }));
     }
 
     /// <summary>The line the job's first step sits on, which is where the front of the list is.</summary>

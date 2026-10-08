@@ -15,8 +15,8 @@ public class ContextActionResolverTests
 
     /// <summary>A diagram element target resolved through one reading of a multiply-registered file.</summary>
     private static ContextTarget TargetOf(DiagramOrigin origin) =>
-        new(ContextScope.DiagramElement, @"C:/root/vocabulary.ttl", IsContainer: false, ShortGuid.NewShortGuid(),
-            RootPath: @"C:/root", WatchId: default, ElementId: "res:http://example.org/Thing", Origin: origin);
+        new(ContextScope.DiagramElement, "C:/root/vocabulary.ttl", IsContainer: false, ShortGuid.NewShortGuid(),
+            RootPath: "C:/root", WatchId: default, ElementId: "res:http://example.org/Thing", Origin: origin);
 
     [Fact]
     public async Task DiscoverAsync_ConsultsOnlyProvidersWhoseScopeMatches()

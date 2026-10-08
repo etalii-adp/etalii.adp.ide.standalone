@@ -227,8 +227,7 @@ public static class SankeyWriter
 
     private static List<string> Entry(string itemIndent, string dashGap, string keyIndent, string id, IReadOnlyList<(string Key, string Value)> keys)
     {
-        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}"];
-        lines.AddRange(keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}"));
+        List<string> lines = [$"{itemIndent}-{dashGap}id: {Text(id)}", .. keys.Select(entry => $"{keyIndent}{entry.Key}: {entry.Value}")];
         return lines;
     }
 

@@ -21,7 +21,7 @@ public class StartupRevalidationTests : IDisposable
     {
         _scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_scratch);
-        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition]));
+        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition));
         _projectValidator = new ProjectValidator(router, new DiagramValidators([_validator]));
     }
 

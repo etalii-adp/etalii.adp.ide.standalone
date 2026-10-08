@@ -126,7 +126,7 @@ public sealed class TextFileBuffer
             return TextFileBufferOpenResult.Refused($"'{Path.GetFileName(path)}' could not be read: {exception.Message}");
         }
 
-        var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+        var hasBom = bytes is [0xEF, 0xBB, 0xBF, ..];
         var body = hasBom ? bytes.AsSpan(3) : bytes.AsSpan();
 
         if (LooksBinary(body))
@@ -264,7 +264,7 @@ public sealed class TextFileBuffer
                 return true;
             }
 
-            if (value < 0x09 || (value > 0x0D && value < 0x20))
+            if (value is < 0x09 or (> 0x0D and < 0x20))
             {
                 suspicious++;
             }

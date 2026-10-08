@@ -451,7 +451,7 @@ public sealed class CausalLoopContextActionProvider(
         for (var number = 1; number < 1000; number++)
         {
             var candidate = string.Create(CultureInfo.InvariantCulture, $"R{number}");
-            if (!model.Loops.Any(loop => loop.Identifier == candidate))
+            if (model.Loops.All(loop => loop.Identifier != candidate))
             {
                 return candidate;
             }

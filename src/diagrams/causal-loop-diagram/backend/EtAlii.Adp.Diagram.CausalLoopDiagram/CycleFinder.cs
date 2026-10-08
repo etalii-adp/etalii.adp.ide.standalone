@@ -62,7 +62,7 @@ public static class CycleFinder
         // document's own ordering - is that one, over the subgraph of vertices at or after it.
         // Restricting the subgraph is what stops each cycle being found once per member.
         for (var start = 0; start < order.Count && !truncated; start++)
-            {
+        {
             var root = order[start];
             var allowed = order.Skip(start).ToHashSet(StringComparer.Ordinal);
             var blocked = new HashSet<string>(StringComparer.Ordinal);

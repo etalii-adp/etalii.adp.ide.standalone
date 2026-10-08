@@ -147,7 +147,7 @@ internal static class GhgDefinition
         entry.Available,
         // Arrange carries its sentence even while it is available, as the hand-written menu did; the
         // client shows a reason only for an unavailable action.
-        entry.Available && entry.Operation == "arrange" ? LoadedArrangeReason.Value : entry.UnavailableReason);
+        entry is { Available: true, Operation: "arrange" } ? LoadedArrangeReason.Value : entry.UnavailableReason);
 
     /// <summary>
     /// A row as the grid draws it: a <c>textarea</c> is the Text editor, <c>tags</c> and <c>slider</c> their

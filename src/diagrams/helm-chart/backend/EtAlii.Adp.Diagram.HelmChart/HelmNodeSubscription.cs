@@ -11,7 +11,6 @@ namespace EtAlii.Adp.Diagram.HelmChart;
 /// </remarks>
 internal sealed class HelmNodeSubscription(Action unsubscribe) : IDisposable
 {
-    private readonly Action _unsubscribe = unsubscribe;
     private bool _disposed;
 
     public void Dispose()
@@ -21,6 +20,6 @@ internal sealed class HelmNodeSubscription(Action unsubscribe) : IDisposable
             return;
         }
         _disposed = true;
-        _unsubscribe();
+        unsubscribe();
     }
 }

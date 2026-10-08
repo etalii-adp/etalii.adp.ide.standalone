@@ -435,16 +435,15 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
             new(RenameTaskActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
             new(SetRunIfActionId, "Set run if…", "mdi-filter-outline"),
             new(AssignClusterActionId, "Assign cluster…", "mdi-server"),
+
+            // One disconnect per upstream edge, so the menu names what each one severs.
+            .. task.DependsOn.Select(dependency => new ContextActionDefinition(
+                $"{DisconnectActionPrefix}{dependency.TaskKey}",
+                $"Disconnect from '{dependency.TaskKey}'",
+                "mdi-vector-polyline-remove")),
+
+            new(RemoveTaskActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")),
         ];
-
-        // One disconnect per upstream edge, so the menu names what each one severs.
-        edits.AddRange(task.DependsOn.Select(dependency => new ContextActionDefinition(
-            $"{DisconnectActionPrefix}{dependency.TaskKey}",
-            $"Disconnect from '{dependency.TaskKey}'",
-            "mdi-vector-polyline-remove")));
-
-        edits.Add(new ContextActionDefinition(
-            RemoveTaskActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
 
         return
         [

@@ -103,9 +103,7 @@ public class OwlProvidersTests : IDisposable
         Assert.IsType<ContextExecutionCompleted>(execution);
         var model = RdfParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
         Assert.Contains(model.Triples, t =>
-            t.Subject is IriTerm { Iri: $"{Ns}Topping" }
-            && t.Predicate.Iri == OwlVocabulary.SubClassOf
-            && t.Object is IriTerm { Iri: $"{Ns}Pizza" });
+            t is { Subject: IriTerm { Iri: $"{Ns}Topping" }, Predicate.Iri: OwlVocabulary.SubClassOf, Object: IriTerm { Iri: $"{Ns}Pizza" } });
 
         // And the gesture is one undo away, byte for byte.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
@@ -152,9 +150,7 @@ public class OwlProvidersTests : IDisposable
         Assert.Equal("", commit.Error);
         var model = RdfParser.Parse(LineDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
         Assert.Contains(model.Triples, t =>
-            t.Subject is IriTerm { Iri: $"{Ns}Dessert" }
-            && t.Predicate.Iri == RdfVocabulary.Type
-            && t.Object is IriTerm { Iri: OwlVocabulary.Class });
+            t is { Subject: IriTerm { Iri: $"{Ns}Dessert" }, Predicate.Iri: RdfVocabulary.Type, Object: IriTerm { Iri: OwlVocabulary.Class } });
         await _history.UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
@@ -210,9 +206,8 @@ public class OwlProvidersTests : IDisposable
 
         // Assert: the named superclass and the expression axiom, the latter in Manchester form
         // with the boundary as its read-only reason (Requirement 7.2).
-        Assert.Contains(rows, r => r.Label == "Subclass of" && r.Value == ":Pizza");
-        Assert.Contains(rows, r => r.Label == "Subclass of" && r.Value == "∃ :hasTopping.:Topping"
-            && r.ReadOnlyReason == OwlSelection.ExpressionRefusal);
+        Assert.Contains(rows, r => r is { Label: "Subclass of", Value: ":Pizza" });
+        Assert.Contains(rows, r => r is { Label: "Subclass of", Value: "∃ :hasTopping.:Topping", ReadOnlyReason: OwlSelection.ExpressionRefusal });
     }
 
     [Fact]
@@ -226,9 +221,9 @@ public class OwlProvidersTests : IDisposable
         var rows = await _properties.DescribeAsync(Target(body, edgeId), TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Contains(rows, r => r.Label == "Domain" && r.Value == ":Pizza");
-        Assert.Contains(rows, r => r.Label == "Range" && r.Value == ":Topping");
-        Assert.Contains(rows, r => r.Label == "Characteristic" && r.Value == "functional");
+        Assert.Contains(rows, r => r is { Label: "Domain", Value: ":Pizza" });
+        Assert.Contains(rows, r => r is { Label: "Range", Value: ":Topping" });
+        Assert.Contains(rows, r => r is { Label: "Characteristic", Value: "functional" });
     }
 
     [Fact]

@@ -77,7 +77,7 @@ public class CausalLoopDocumentStoreFailedReloadTests : IDisposable
         store.BodyDeleted(path);
 
         var after = store.GetOrLoad(path);
-        Assert.False(after.IsUsable && after.Model.Variables.Count > 0, "The deleted diagram is still held as if it existed.");
+        Assert.False(after is { IsUsable: true, Model.Variables.Count: > 0 }, "The deleted diagram is still held as if it existed.");
     }
 
     [Fact]
