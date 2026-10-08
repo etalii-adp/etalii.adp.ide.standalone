@@ -116,11 +116,11 @@ public sealed class DislDiagram : ICelObject
     {
         if (element.Diagram != this || element.Type.IsRelation) throw new ArgumentException("Only a node of this diagram can move.", nameof(element));
         if (parent is not null && (parent.Diagram != this || parent.Type.IsRelation)) throw new ArgumentException("A node moves beneath a node of its own diagram.", nameof(parent));
-        if (parent is not null && (parent == element || parent.Ancestors().Contains(element))) throw new InvalidOperationException("A node cannot move beneath itself.");
+        if (parent is not null && (ReferenceEquals(parent, element) || parent.Ancestors().Contains(element))) throw new InvalidOperationException("A node cannot move beneath itself.");
 
         var siblings = SiblingsUnder(parent);
         var at = index < 0 || index > siblings.Count ? siblings.Count : index;
-        var current = element.Parent == parent ? siblings.IndexOf(element) : -1;
+        var current = ReferenceEquals(element.Parent, parent) ? siblings.IndexOf(element) : -1;
         if (current >= 0 && current < at) at--;
 
         var subtree = element.Descendants().Prepend(element).ToHashSet();
@@ -131,7 +131,7 @@ public sealed class DislDiagram : ICelObject
         element.Slot = parent is null ? null : slot;
         parent?.InsertChild(at, element);
 
-        var after = SiblingsUnder(parent).Where(sibling => sibling != element).ElementAtOrDefault(at - 1);
+        var after = SiblingsUnder(parent).Where(sibling => !ReferenceEquals(sibling, element)).ElementAtOrDefault(at - 1);
         var position = after is not null
             ? after.Descendants().Prepend(after).Max(_nodes.IndexOf) + 1
             : parent is not null
