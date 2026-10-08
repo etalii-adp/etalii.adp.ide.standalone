@@ -58,7 +58,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
 
 ## Pull request 2 - what cannot change behaviour
 
-- [ ] 5. Correct the restatement suggestions (Kind A)
+- [x] 5. Correct the restatement suggestions (Kind A)
   - Files: every C# file the script lists for the inspections the design names under Kind A
   - One commit per inspection, each corrected as Rider's quick-fix corrects it
   - Keep a `readonly` field where a constructor being converted to a primary constructor assigned one that is read more than once
@@ -68,7 +68,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 2.2, 6.1_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Correct every finding of the Kind A inspections named in the design, one inspection per commit | Restrictions: no behavioural change; never nest a type, move a type out of `_Model` or change a namespace; do not touch a file marked `-text` in `.gitattributes`; do not switch any inspection off; anything that turns out able to change behaviour is left for pull request 4 or 5 and listed in the implementation log | _Leverage: `inspect.sh --report` output, `src/.editorconfig` | _Requirements: 2.2, 6.1 | Success: each Kind A inspection reports zero; the pull request description gives the count per inspection before and after from the script's own output; the four gates exit zero | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 6. Give every existing in-place suppression its reason
+- [x] 6. Give every existing in-place suppression its reason
   - Files: the C# files carrying `// ReSharper disable` comments, 41 at the measured commit
   - For each comment without one, add `- Reason: <why>` on the same line, or remove the comment when the inspection no longer fires without it
   - Purpose: a suppression can be told from an oversight
