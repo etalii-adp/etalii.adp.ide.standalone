@@ -28,15 +28,6 @@ public static class GhgPhases
     /// <summary>The phases as a reader names them, in order.</summary>
     public static readonly IReadOnlyList<string> Titles = ["Peak", "Trough", "Slope", "Plateau"];
 
-    /// <summary>The phases' full Gartner names, the canvas's tooltips (Requirement 4.4).</summary>
-    public static readonly IReadOnlyList<string> GartnerNames =
-    [
-        "Peak of Inflated Expectations",
-        "Trough of Disillusionment",
-        "Slope of Enlightenment",
-        "Plateau of Productivity",
-    ];
-
     /// <summary>
     /// The document key of each inner boundary: the end of the phase it closes. There are three, one
     /// fewer than the phases.

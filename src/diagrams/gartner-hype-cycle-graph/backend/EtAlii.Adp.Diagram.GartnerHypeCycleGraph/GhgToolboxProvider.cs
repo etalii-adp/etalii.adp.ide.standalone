@@ -18,15 +18,6 @@ namespace EtAlii.Adp.Diagram.GartnerHypeCycleGraph;
 /// </remarks>
 public sealed class GhgToolboxProvider : IDiagramToolboxProvider
 {
-    /// <summary>The Trend item's id.</summary>
-    public const string TrendItemId = "ghg.toolbox.trend";
-
-    /// <summary>The Trigger item's id.</summary>
-    public const string TriggerItemId = "ghg.toolbox.trigger";
-
-    /// <summary>The Note item's id.</summary>
-    public const string NoteItemId = "ghg.toolbox.note";
-
     /// <inheritdoc />
     public DiagramOrigin Origin => Diagram.HypeCycleGraph.Origin;
 

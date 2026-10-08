@@ -16,7 +16,6 @@ public static class OwlVocabulary
     public const string RdfsLiteral = "http://www.w3.org/2000/01/rdf-schema#Literal";
 
     public const string SubClassOf = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
-    public const string SubPropertyOf = "http://www.w3.org/2000/01/rdf-schema#subPropertyOf";
     public const string Domain = "http://www.w3.org/2000/01/rdf-schema#domain";
     public const string Range = "http://www.w3.org/2000/01/rdf-schema#range";
     public const string EquivalentClass = "http://www.w3.org/2002/07/owl#equivalentClass";
@@ -33,7 +32,6 @@ public static class OwlVocabulary
     public const string ReflexiveProperty = "http://www.w3.org/2002/07/owl#ReflexiveProperty";
     public const string IrreflexiveProperty = "http://www.w3.org/2002/07/owl#IrreflexiveProperty";
 
-    public const string Restriction = "http://www.w3.org/2002/07/owl#Restriction";
     public const string OnProperty = "http://www.w3.org/2002/07/owl#onProperty";
     public const string SomeValuesFrom = "http://www.w3.org/2002/07/owl#someValuesFrom";
     public const string AllValuesFrom = "http://www.w3.org/2002/07/owl#allValuesFrom";
@@ -54,9 +52,6 @@ public static class OwlVocabulary
 
     public const string Deprecated = "http://www.w3.org/2002/07/owl#deprecated";
     public const string Imports = "http://www.w3.org/2002/07/owl#imports";
-    public const string VersionInfo = "http://www.w3.org/2002/07/owl#versionInfo";
-    public const string SeeAlso = "http://www.w3.org/2000/01/rdf-schema#seeAlso";
-    public const string IsDefinedBy = "http://www.w3.org/2000/01/rdf-schema#isDefinedBy";
 
     public const string XsdNamespace = "http://www.w3.org/2001/XMLSchema#";
 

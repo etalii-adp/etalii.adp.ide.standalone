@@ -14,9 +14,6 @@ public interface ISparqlDocumentStore
     /// </summary>
     SparqlDocumentEntry GetOrLoad(string path);
 
-    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
-    void Forget(string path);
-
     /// <summary>
     /// Re-reads a document something outside changed, and tells the sessions on it. A reload that
     /// cannot read keeps the last good query and tells nobody.

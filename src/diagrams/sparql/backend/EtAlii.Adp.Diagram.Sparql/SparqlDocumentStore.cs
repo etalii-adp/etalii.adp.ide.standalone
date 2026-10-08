@@ -37,7 +37,7 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
     /// <inheritdoc />
     public SparqlDocumentEntry GetOrLoad(string path) => _lifecycle.GetOrLoad(path);
 
-    /// <inheritdoc />
+    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     public void Forget(string path) => _lifecycle.Forget(path);
 
     /// <inheritdoc />

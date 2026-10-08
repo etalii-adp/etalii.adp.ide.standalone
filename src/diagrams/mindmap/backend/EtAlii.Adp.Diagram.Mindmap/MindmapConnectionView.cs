@@ -10,9 +10,6 @@ public sealed class MindmapConnectionView
     {
     }
 
-    /// <summary>The last reported viewport, or null before the first report - in which case everything is in view.</summary>
-    public MindmapViewport? Viewport { get; set; }
-
     public bool IsFolded(string nodeId) => _folded.ContainsKey(nodeId);
 
     public bool IsFolded(MindmapNode node) => IsFolded(node.Id);

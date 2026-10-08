@@ -105,9 +105,6 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         return result;
     }
 
-    /// <summary>Drops a loaded document, so the next ask re-reads the file - after an external edit, or when its last viewer left.</summary>
-    public void Release(string bodyPath) => _lifecycle.Forget(bodyPath);
-
     /// <summary>Re-reads a map changed on disk outside ADP and announces it (Requirement 11.8).</summary>
     public void Reload(string bodyPath)
     {

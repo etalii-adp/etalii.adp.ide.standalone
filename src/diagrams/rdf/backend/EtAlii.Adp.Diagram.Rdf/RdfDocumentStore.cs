@@ -65,7 +65,7 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
         return DocumentSaveResult.Ok;
     }
 
-    /// <inheritdoc />
+    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     public void Forget(string path) => _lifecycle.Forget(path);
 
     /// <inheritdoc />

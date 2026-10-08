@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>
 /// What one connection sees of one map that is not the map itself: which branches it has
-/// folded, and the viewport it last reported. Held per <c>(watchId, bodyPath)</c> and never
+/// folded. Held per <c>(watchId, bodyPath)</c> and never
 /// written to the <c>.mm</c> file, so two viewers fold independently and a fold leaves
 /// nothing on the history (Requirements 9.4, 9.6).
 /// </summary>
@@ -43,26 +43,10 @@ public sealed class MindmapViewState
     public MindmapConnectionView? Find(ShortGuid watchId, string bodyPath) =>
         _views.TryGetValue((watchId, bodyPath.ToUpperInvariant()), out var view) ? view : null;
 
-    /// <summary>Drops everything a connection held, when its stream ends.</summary>
-    public void Forget(ShortGuid watchId)
-    {
-        foreach (var key in _views.Keys.Where(key => key.WatchId == watchId).ToArray())
-        {
-            _views.TryRemove(key, out _);
-        }
-    }
-
     /// <summary>Drops one connection's view of one map, when it closes that diagram.</summary>
     public void Forget(ShortGuid watchId, string bodyPath) =>
         _views.TryRemove((watchId, bodyPath.ToUpperInvariant()), out _);
 
-}
-
-/// <summary>A connection's reported viewport: the visible rectangle in canvas units (Requirement 11.5).</summary>
-public readonly record struct MindmapViewport(double MinX, double MinY, double MaxX, double MaxY)
-{
-    public bool Intersects(MindmapBox box) =>
-        box.Right >= MinX && box.X <= MaxX && box.Bottom >= MinY && box.Y <= MaxY;
 }
 
 /// <summary>One connection collapsed or expanded one branch.</summary>
