@@ -25,7 +25,6 @@ public class DislElementTests
     private readonly DislElement _outer;
     private readonly DislElement _inner;
     private readonly DislElement _circle;
-    private readonly DislElement _twin;
     private readonly DislElement _strong;
     private readonly DislElement _weak;
 
@@ -34,9 +33,9 @@ public class DislElementTests
         _outer = _diagram.AddNode("Box", "outer", new Dictionary<string, object?> { ["name"] = "Outer", ["when"] = 24320L, ["buddy"] = "c" });
         _inner = _diagram.AddNode("Box", "inner", new Dictionary<string, object?> { ["size"] = 7L }, _outer);
         _circle = _diagram.AddNode("Circle", "c", new Dictionary<string, object?> { ["name"] = "Round", ["tags"] = new List<object?> { "a" } }, _inner);
-        _twin = _diagram.AddNode("Circle", "c", null, _outer);
+        var twin = _diagram.AddNode("Circle", "c", null, _outer);
         _strong = _diagram.AddRelation("Strong", "s", _outer, _circle);
-        _weak = _diagram.AddRelation("Weak", "w", _twin, _circle);
+        _weak = _diagram.AddRelation("Weak", "w", twin, _circle);
     }
 
     private object? Evaluate(string expression, DislElement? self = null) =>
