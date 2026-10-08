@@ -89,10 +89,11 @@ jobs:
   # for it. The script judges the run's health before its findings: a run that could not see the
   # code exits 2 and fails this job in every mode.
   #
-  # REPORT MODE, for now: `--report` lists every finding with its count per inspection and exits 0
-  # on findings, so the job exists - and shows whether this Linux runner reports what Windows does -
-  # before the tree is clean. It is not continue-on-error: a job allowed to fail is a job nobody
-  # reads. The specification's last pull request drops `--report`, once develop reports nothing.
+  # ENFORCING: the script exits 1 on any finding at Suggestion severity or above and lists each by
+  # file and line, so a pull request that adds one is refused. It ran in report mode until develop
+  # reported nothing (rider-warnings-cleanup pull requests 1 to 5); a throwaway pull request, #135,
+  # planted one suggestion and saw this job fail and name the line. It is not continue-on-error: a
+  # job allowed to fail is a job nobody reads.
   inspection:
     runs-on: ubuntu-latest
     permissions:
@@ -125,7 +126,7 @@ jobs:
         run: dotnet tool restore
 
       - name: Inspect
-        run: bash .github/tools/inspect/inspect.sh --report
+        run: bash .github/tools/inspect/inspect.sh
 
   # Flags a retired use of the ADP vocabulary (etalii.adp spec 002, FR-017). The runner and its list of retired
   # patterns and allowances live in etalii.adp and are read from its develop branch, so every repository is checked
