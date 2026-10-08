@@ -4,6 +4,7 @@ using EtAlii.Adp.Specification.Fbl.Planning;
 using EtAlii.Adp.Specification.Fbl.Registration;
 using EtAlii.Adp.Specification.Fbl.Tests.RealFiles;
 using EtAlii.Adp.Specification.Fbl.Tests.Routing;
+using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Registration;
@@ -148,5 +149,19 @@ public class RegistrationTests
 
         // Assert.
         Assert.Equal(Path.Combine(Path.GetFullPath("x"), "bottling-mes.layout.json"), path);
+    }
+
+    [Fact]
+    public void ABlockIsReadWithItsName()
+    {
+        // Act: two vendored registrations, one with an identities block and one with a layout block.
+        var growth = RegistrationDocument.Read(File.ReadAllBytes(Path.Combine(Repository.Conformance, "registrations", "growth.adp")));
+        var roadmap = RegistrationDocument.Read(File.ReadAllBytes(Path.Combine(Repository.Conformance, "registrations", "roadmap.adp")));
+
+        // Assert.
+        Assert.Equal("identities", growth.Identities!.Name);
+        Assert.Null(growth.Layout);
+        Assert.Equal("layout", roadmap.Layout!.Name);
+        Assert.Null(roadmap.Identities);
     }
 }

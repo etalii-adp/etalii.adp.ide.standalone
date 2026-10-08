@@ -50,7 +50,7 @@ public sealed class PluginBody : SplicedFile
         if (_last.Unreadable) return new PlanResult.Refused("The file could not be read, so it is never written.");
         if (Binding.ReadOnly is { } reason) return new PlanResult.Refused(reason.Length > 0 ? reason : "This file is read-only.");
         if (change is ModelChange.Save) return new PlanResult.Planned(new Edit([]));
-        var result = _plugin.Plan(new PluginPlanRequest([new PluginFile("", Bytes)], _last, change, Binding.Plugin!.Args));
+        var result = _plugin.Plan(new PluginPlanRequest([new PluginFile("", Bytes)], _last, change));
         return result switch
         {
             PluginPlanResult.Refused refused => new PlanResult.Refused(refused.Reason),
@@ -85,7 +85,7 @@ public sealed class PluginBody : SplicedFile
             var finding = new Finding(FindingCodes.PluginMissing, FindingSeverity.Warning, MissingReason, new SourceLocation(FileName, 1, 1, 0));
             return new PluginReadResult([], [finding], false);
         }
-        return _plugin.Read(new PluginReadRequest([new PluginFile("", Bytes)], Binding.Plugin!.Args));
+        return _plugin.Read(new PluginReadRequest([new PluginFile("", Bytes)]));
     }
 
     /// <summary>A plugin's splices in body order, as FBL §6.5 applies them; overlapping splices are the plugin's error.</summary>

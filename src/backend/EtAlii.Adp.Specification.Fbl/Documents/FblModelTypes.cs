@@ -106,9 +106,9 @@ public sealed class BodySettings
     public int Settle { get; init; } = 400;
 }
 
-public sealed record FileRule(string? Name, string Glob, Family? Family, bool ReadOnly);
+public sealed record FileRule(string? Name, string Glob, Family? Family);
 
-public sealed record PluginReader(string Plugin, string? Version, JsonElement? Args);
+public sealed record PluginReader(string Plugin, string? Version);
 
 public sealed class TextDefaults
 {

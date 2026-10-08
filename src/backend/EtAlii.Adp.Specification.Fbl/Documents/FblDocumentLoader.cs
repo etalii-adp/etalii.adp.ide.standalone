@@ -223,7 +223,7 @@ internal static class BindingReader
         PluginReader? plugin = null;
         if (reader.ValueKind == JsonValueKind.Object)
         {
-            plugin = new PluginReader(Str(reader, "plugin") ?? "", Str(reader, "version"), reader.TryGetProperty("args", out var a) ? a.Clone() : null);
+            plugin = new PluginReader(Str(reader, "plugin") ?? "", Str(reader, "version"));
         }
         else if (reader.ValueKind != JsonValueKind.String || reader.GetString() != "declared")
         {
@@ -296,7 +296,7 @@ internal static class BindingReader
             RecogniseAll = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "all") : [],
             RecogniseAny = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "any") : [],
             RecogniseNone = recognise.ValueKind == JsonValueKind.Object ? Strings(recognise, "none") : [],
-            Files = Array(json, "files").Select(f => new FileRule(Str(f, "name"), Str(f, "glob") ?? "", ParseFamily(Str(f, "family")), Bool(f, "readOnly"))).ToList(),
+            Files = Array(json, "files").Select(f => new FileRule(Str(f, "name"), Str(f, "glob") ?? "", ParseFamily(Str(f, "family")))).ToList(),
             Ignore = Strings(json, "ignore"),
             Settle = json.TryGetProperty("settle", out var s) && s.TryGetInt32(out var ms) ? ms : 400,
         };

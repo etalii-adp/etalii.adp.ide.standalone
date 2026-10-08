@@ -16,7 +16,7 @@ public class MindmapFreeplanePluginTests
     private readonly MindmapFreeplanePlugin _plugin = new();
 
     private PluginReadResult Read(string text) =>
-        _plugin.Read(new PluginReadRequest([new PluginFile("", Encoding.UTF8.GetBytes(text))], null));
+        _plugin.Read(new PluginReadRequest([new PluginFile("", Encoding.UTF8.GetBytes(text))]));
 
     [Fact]
     public void ANode_IsReadWithItsTextNotesLinkFoldAndSide_UnderItsParent()

@@ -130,10 +130,10 @@ public class AbmPluginParityTests
         // Arrange.
         var bytes = Encoding.UTF8.GetBytes(Forest);
         var plugin = new AbmMarkdownPlugin();
-        var last = plugin.Read(new PluginReadRequest([new PluginFile("", bytes)], null));
+        var last = plugin.Read(new PluginReadRequest([new PluginFile("", bytes)]));
 
         // Act.
-        var plan = plugin.Plan(new PluginPlanRequest([new PluginFile("", bytes)], last, new ModelChange.Move("2.2", null, 0), null));
+        var plan = plugin.Plan(new PluginPlanRequest([new PluginFile("", bytes)], last, new ModelChange.Move("2.2", null, 0)));
 
         // Assert.
         var planned = Assert.IsType<PluginPlanResult.Planned>(plan);

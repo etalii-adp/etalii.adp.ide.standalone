@@ -3,7 +3,7 @@ using EtAlii.Adp.Specification.Fbl.Documents;
 namespace EtAlii.Adp.Specification.Fbl.Registration;
 
 /// <summary>Where a registration's body is (FBL §8.2), or why it is not opened.</summary>
-public sealed record BodyLocation(string? Path, bool Exists, bool IsFolder, string? Refusal)
+public sealed record BodyLocation(string? Path, bool Exists, string? Refusal)
 {
     /// <summary>A missing body opens empty with <c>fbl.missing-body</c>, and nothing is written until the registration names a file.</summary>
     public bool IsMissing => Refusal is null && !Exists;
@@ -27,7 +27,7 @@ public static class BodyLocator
         string candidate;
         if (registration.Body is { } body)
         {
-            if (Path.IsPathRooted(body)) return new BodyLocation(null, false, false, "The registration's body is an absolute path, which is never followed.");
+            if (Path.IsPathRooted(body)) return new BodyLocation(null, false, "The registration's body is an absolute path, which is never followed.");
             candidate = Path.GetFullPath(Path.Combine(folder, body.Replace('/', Path.DirectorySeparatorChar)));
         }
         else if (binding.Body.IsFolder)
@@ -41,11 +41,10 @@ public static class BodyLocator
                 .Select(e => Path.Combine(folder, baseName + e))
                 .FirstOrDefault(File.Exists) ?? Path.Combine(folder, baseName + binding.Claims.Extensions.FirstOrDefault());
         }
-        if (!Within(root, candidate)) return new BodyLocation(null, false, false, "The registration's body is outside the workspace, so it is not opened without the user's consent.");
-        if (ThroughReparsePoint(root, candidate)) return new BodyLocation(null, false, false, "The registration's body is reached through a link, which is not followed without the user's consent.");
-        var isFolder = binding.Body.IsFolder;
-        var exists = isFolder ? Directory.Exists(candidate) : File.Exists(candidate);
-        return new BodyLocation(candidate, exists, isFolder, null);
+        if (!Within(root, candidate)) return new BodyLocation(null, false, "The registration's body is outside the workspace, so it is not opened without the user's consent.");
+        if (ThroughReparsePoint(root, candidate)) return new BodyLocation(null, false, "The registration's body is reached through a link, which is not followed without the user's consent.");
+        var exists = binding.Body.IsFolder ? Directory.Exists(candidate) : File.Exists(candidate);
+        return new BodyLocation(candidate, exists, null);
     }
 
     private static bool Within(string root, string path)

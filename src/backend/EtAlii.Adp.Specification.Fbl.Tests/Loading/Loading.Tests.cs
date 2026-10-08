@@ -1,6 +1,7 @@
 using System.Text;
 using EtAlii.Adp.Specification.Fbl.Documents;
 using EtAlii.Adp.Specification.Fbl.Tests.Routing;
+using EtAlii.Adp.Specification.Fbl.Tests.Support;
 using Xunit;
 
 namespace EtAlii.Adp.Specification.Fbl.Tests.Loading;
@@ -134,5 +135,20 @@ public class LoadingTests
         Assert.Equal("u", across.Name);
         Assert.Equal("t", within.Name);
         Assert.Throws<InvalidOperationException>(() => FblDocumentLoader.ResolveReference("#missing", document, out _));
+    }
+
+    [Fact]
+    public void AVendoredFolderBindingLoadsItsFileRulesAndItsPlugin()
+    {
+        // Act.
+        var problems = FblDocumentLoader.Load(Path.Combine(Repository.Conformance, "helm-chart.fbl"), out var document);
+
+        // Assert: the file rules' families and the plugin's version, as helm-chart.fbl declares them.
+        Assert.DoesNotContain(problems, p => p.Severity == ProblemSeverity.Error);
+        var chart = document!.Bindings["chart"];
+        Assert.Equal(
+            [Family.Yaml, Family.Yaml, Family.Json, Family.Lines, null, Family.Yaml, null, Family.Yaml, Family.Yaml],
+            chart.Body.Files.Select(f => f.Family));
+        Assert.Equal("^0.1.0", chart.Plugin!.Version);
     }
 }

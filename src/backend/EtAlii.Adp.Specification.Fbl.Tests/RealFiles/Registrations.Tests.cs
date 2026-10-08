@@ -165,7 +165,7 @@ public class RegistrationsTests
         // Act and assert.
         Assert.True(charts.Count >= RealFileCorpus.MinimumCharts, $"{charts.Count} chart folders were found; at least {RealFileCorpus.MinimumCharts} were there when this suite was written.");
         Assert.All(charts, folder => Assert.True(FolderSubject.Recognise(chart, folder), $"{folder} is not recognised as a chart."));
-        Assert.All(charts, folder => Assert.Contains(FolderSubject.Files(chart, folder), f => f.RelativePath == "Chart.yaml"));
+        Assert.All(charts, folder => Assert.Contains(FolderSubject.Files(chart, folder), f => f is { RelativePath: "Chart.yaml", Rule.Name: "chart" } && f.FullPath == Path.Combine(folder, "Chart.yaml")));
         Assert.True(rdf.Count >= RealFileCorpus.MinimumTurtle, $"{rdf.Count} Turtle and N-Triples files were found; at least {RealFileCorpus.MinimumTurtle} were there when this suite was written.");
         Assert.All(rdf, file =>
         {
