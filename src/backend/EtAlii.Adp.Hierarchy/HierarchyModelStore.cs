@@ -42,19 +42,36 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
 
     public void NotifyRenamed(string oldPath, string newPath)
     {
-        ArgumentNullException.ThrowIfNull(oldPath);
         ArgumentNullException.ThrowIfNull(newPath);
-        var old = Path.GetFullPath(oldPath);
 
         // Every model that contains the moved entry - a project may be watched on several
         // connections at once, each with its own private view, so each is told directly rather
         // than one relying on another connection's watcher. A model whose root does not contain
         // the entry simply skips it.
+        ForEachModelContaining(oldPath, model => model.ApplyLocalRename(oldPath, newPath));
+    }
+
+    public void ExpectRename(string oldPath, string newPath)
+    {
+        ArgumentNullException.ThrowIfNull(newPath);
+        ForEachModelContaining(oldPath, model => model.ExpectLocalRename(oldPath, newPath));
+    }
+
+    public void WithdrawRename(string oldPath, string newPath)
+    {
+        ArgumentNullException.ThrowIfNull(newPath);
+        ForEachModelContaining(oldPath, model => model.WithdrawLocalRename(oldPath, newPath));
+    }
+
+    private void ForEachModelContaining(string path, Action<HierarchyModel> action)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var fullPath = Path.GetFullPath(path);
         foreach (var entry in _entries.Values)
         {
-            if (Contains(entry.Model.RootPath, old))
+            if (Contains(entry.Model.RootPath, fullPath))
             {
-                entry.Model.ApplyLocalRename(oldPath, newPath);
+                action(entry.Model);
             }
         }
     }

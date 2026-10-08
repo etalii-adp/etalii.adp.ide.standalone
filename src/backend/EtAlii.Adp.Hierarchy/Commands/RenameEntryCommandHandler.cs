@@ -64,11 +64,12 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     /// shape (a cascade's secondary files, a case-only rename) is left to the watcher untouched.
     /// Runs for forward, undo and redo alike, since every one executes this handler.
     /// </summary>
-    private void NotifyMoved(string source, string target)
+    /// <returns>Whether the models were told.</returns>
+    private bool NotifyMoved(string source, string target)
     {
         if (_modelStore is null)
         {
-            return;
+            return false;
         }
 
         var sourceGone = !File.Exists(source) && !Directory.Exists(source);
@@ -76,7 +77,10 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         if (sourceGone && targetPresent)
         {
             _modelStore.NotifyRenamed(source, target);
+            return true;
         }
+
+        return false;
     }
 
     public Task<CommandResult> ExecuteAsync(
@@ -134,19 +138,43 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             return Task.FromResult(result);
         }
 
+        // Announced before the move rather than after it: the watcher thread can see the move
+        // before NotifyMoved runs, and on Linux an echo the models do not yet expect lands as a
+        // Remove+Create that loses the entry's id. A case-only rename is left to the watcher
+        // entirely, as NotifyMoved's disk guard leaves it, so it is not announced either.
+        var announced = _modelStore is not null && !isCaseOnlyRename;
+        if (announced)
+        {
+            _modelStore!.ExpectRename(sourcePath, targetPath);
+        }
+
+        var moved = Move(sourcePath, targetPath, originalName, command.NewName, isDirectory, isCaseOnlyRename);
+        var notified = moved.IsSuccess && NotifyMoved(sourcePath, targetPath);
+        if (announced && !notified)
+        {
+            _modelStore!.WithdrawRename(sourcePath, targetPath);
+        }
+
+        return Task.FromResult(moved);
+    }
+
+    /// <summary>The move itself, for every shape a rename takes; the models are told by the caller.</summary>
+    private CommandResult Move(string sourcePath, string targetPath, string originalName, string newName, bool isDirectory, bool isCaseOnlyRename)
+    {
+        var parentPath = IoPath.GetDirectoryName(sourcePath)!;
+
         // ---- adp-file-nesting Requirement 5.2: a qualified registration renames only its
         // qualifier. Changing the subject portion would silently re-point the diagram at a
         // different file, so that is refused with the way out named.
         if (!isDirectory && DiagramRegistrationName.TryParse(originalName) is { IsQualified: true } qualifiedSource)
         {
-            var parsedNew = DiagramRegistrationName.TryParse(command.NewName);
+            var parsedNew = DiagramRegistrationName.TryParse(newName);
             if (parsedNew is null || parsedNew.IsFolderScoped || !parsedNew.IsQualified ||
                 !string.Equals(parsedNew.SubjectBase, qualifiedSource.SubjectBase, StringComparison.Ordinal))
             {
-                var result = CommandResult.Failure(
+                return CommandResult.Failure(
                     $"Only this diagram's qualifier can change: '{qualifiedSource.SubjectBase}.<qualifier>.adp'. " +
                     $"To move every diagram with it, rename '{qualifiedSource.SubjectBase}' itself.");
-                return Task.FromResult(result);
             }
 
             try
@@ -156,13 +184,11 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
                 _logger.Warning(exception, "Could not rename {SourcePath} to {TargetPath}", sourcePath, targetPath);
-                var result = CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
-                return Task.FromResult(result);
+                return CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
             }
 
-            _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, command.NewName);
-            NotifyMoved(sourcePath, targetPath);
-            return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
+            _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, newName);
+            return CommandResult.Success(new RenameEntryCommand(targetPath, originalName));
         }
 
         // ---- adp-file-nesting Requirement 5.1: renaming a SUBJECT renames every registration
@@ -170,17 +196,12 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         // collision is a refusal rather than a half-renamed set (Requirement 5.3).
         if (!isDirectory && !DiagramFilePair.IsRegistrationFile(sourcePath))
         {
-            var setResult = RenameSubjectWithItsRegistrations(sourcePath, targetPath, originalName, command.NewName, isCaseOnlyRename);
+            // On success the caller tells the models of the subject's own move; the cascade's
+            // registration siblings still ride the watcher.
+            var setResult = RenameSubjectWithItsRegistrations(sourcePath, targetPath, originalName, newName, isCaseOnlyRename);
             if (setResult is not null)
             {
-                if (setResult.IsSuccess)
-                {
-                    // The subject's own move; the cascade's registration siblings still ride the
-                    // watcher (NotifyMoved's disk guard skips any that did not land here).
-                    NotifyMoved(sourcePath, targetPath);
-                }
-
-                return Task.FromResult(setResult);
+                return setResult;
             }
         }
 
@@ -194,8 +215,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         if (siblingTarget is not null && File.Exists(sibling) && !isCaseOnlyRename &&
             (File.Exists(siblingTarget) || Directory.Exists(siblingTarget)))
         {
-            var result = CommandResult.Failure($"'{IoPath.GetFileName(siblingTarget)}' already exists in this folder.");
-            return Task.FromResult(result);
+            return CommandResult.Failure($"'{IoPath.GetFileName(siblingTarget)}' already exists in this folder.");
         }
 
         // The classic pair rename stays exactly as it was (Requirement 11.1) - but only while
@@ -203,9 +223,8 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         // subject off would orphan them (Requirement 6.2's guarantee, in rename form).
         if (sibling is not null && File.Exists(sibling) && DiagramRegistrationSet.Over(parentPath, sibling, _catalog).Any(peer => !string.Equals(peer, sourcePath, StringComparison.OrdinalIgnoreCase)))
         {
-            var result = CommandResult.Failure(
+            return CommandResult.Failure(
                 $"Other diagrams also describe '{IoPath.GetFileName(sibling)}'. Rename '{IoPath.GetFileName(sibling)}' itself to move them all together.");
-            return Task.FromResult(result);
         }
 
         try
@@ -239,11 +258,10 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             // things the user can act on, so they are reported rather than thrown. Logged with
             // the exception, which the message handed to the user does not carry.
             _logger.Warning(exception, "Could not rename {SourcePath} to {TargetPath}", sourcePath, targetPath);
-            var result = CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
-            return Task.FromResult(result);
+            return CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
         }
 
-        _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, command.NewName);
+        _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, newName);
         if (siblingTarget is not null && File.Exists(siblingTarget))
         {
             _logger.Information("Renamed {SiblingPath} with its registration file", siblingTarget);
@@ -251,8 +269,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
         // The inverse re-derives the sibling from the renamed registration file, so it
         // restores both names without carrying either.
-        NotifyMoved(sourcePath, targetPath);
-        return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
+        return CommandResult.Success(new RenameEntryCommand(targetPath, originalName));
     }
 
     /// <returns>The reason the name is unusable, or <c>null</c> when it is fine.</returns>
