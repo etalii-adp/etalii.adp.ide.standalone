@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The user's request, 2026-10-08, verbatim:
+The user's request, 2026-10-08. It is verbatim except in two places, marked with square brackets, where it names a retired acronym that this repository's terminology check refuses; *Which languages apply* says what was written and how it is read.
 
 > add a spec workflow MCP specification to implement the idea of a "Knowledge Designer" tool:
 >
@@ -15,7 +15,7 @@ The user's request, 2026-10-08, verbatim:
 >
 > Make sure that the styling and functionalities represent how Notion has implement it. Grab screenshots and/or search the internet for understanding on how it functions.
 >
-> The implementation should follow a FBL and DIDL, so design those first. If the specification languages are not sufficient then let it know so that we can extend it.
+> The implementation should follow a FBL and [a retired language name], so design those first. If the specification languages are not sufficient then let it know so that we can extend it.
 >
 > Persist also all settings in the yaml/xml/json file. For example if columns (properties) are visible or hidden, what their type is, what the potential values can be and what the width of the column is. Also all filters, sortings, groupings and view related aspects.
 >
@@ -31,7 +31,7 @@ The user's request, 2026-10-08, verbatim:
 >
 > Also: Introduce a way to add (bidirectional) relation properties. My gut feeling is that this requires the selection of another database file using a file open dialog.
 >
-> Vital is that the DIDL and FBL files get defined correctly, as those will later also be used to implement the same tool in the other IDE's.
+> Vital is that the [retired language name] and FBL files get defined correctly, as those will later also be used to implement the same tool in the other IDE's.
 
 The idea is in the catalogue as `etalii/knowledge`, kind Designer, state Identified ([`docs/tools.md`](../../../docs/tools.md)). This document specifies it.
 
@@ -59,7 +59,7 @@ The idea is in the catalogue as `etalii/knowledge`, kind Designer, state Identif
 
 ## Which languages apply
 
-The request names **FBL and DIDL**. FBL is right as named. **DIDL is a retired name** (`docs/terminology.md` in etalii.adp, *Retired uses*), and this document reads it as "the file that specifies the tool type". For a designer that language is **DESL**, the Designer Specification Language (`.des`); DISL is its counterpart for diagrams and does not apply, since a knowledge file's rows are filled in rather than drawn as connected elements. Q1 asks whether that reading is right.
+The request names **FBL and a second language**. FBL is right as named. **The second is a retired name**: the acronym of an earlier draft of the diagram definition language, the one that differs from DISL only in its third letter being D (`docs/terminology.md` in etalii.adp, *Retired uses*), and this document reads the retired name as "the file that specifies the tool type". For a designer that language is **DESL**, the Designer Specification Language (`.des`); DISL is its counterpart for diagrams and does not apply, since a knowledge file's rows are filled in rather than drawn as connected elements. Q1 asks whether that reading is right.
 
 - **FBL** declares how the knowledge file is read and written: one binding per format. FBL has a `yaml`, a `json` and an `xml` family, and this host already implements all three (`EtAlii.Adp.Specification.Fbl`).
 - **DESL** specifies the designer type: its property types, what a view can set, its gestures and how it looks. **DESL is an empty placeholder today**: no construct, no schema, no example. The Knowledge designer is what gives it its first content.
@@ -119,7 +119,7 @@ Each is a selection. The option marked **(default)** is what this document is wr
 
 | # | Question | Options | Criteria affected |
 | --- | --- | --- | --- |
-| Q1 | "FBL and DIDL": which file specifies the tool type? | **DESL, in `knowledge.des` (default):** the designer language, as the terminology assigns it. It needs DESL's first constructs, which other designers then reuse. · **DISL, in `knowledge.dis`:** the diagram language, which has content and a runtime in this host today; a table would have to be expressed as elements without relations, and the catalogue row's kind comes into question. · **Prose only, in `knowledge.md`:** no specification file until a second designer shows what DESL should be. Fastest, and the other hosts get a description instead of a definition. · Other. | 1.1, 1.2, 10.5 |
+| Q1 | "FBL and [a retired language name]": which file specifies the tool type? | **DESL, in `knowledge.des` (default):** the designer language, as the terminology assigns it. It needs DESL's first constructs, which other designers then reuse. · **DISL, in `knowledge.dis`:** the diagram language, which has content and a runtime in this host today; a table would have to be expressed as elements without relations, and the catalogue row's kind comes into question. · **Prose only, in `knowledge.md`:** no specification file until a second designer shows what DESL should be. Fastest, and the other hosts get a description instead of a definition. · Other. | 1.1, 1.2, 10.5 |
 | Q2 | Does this host derive the designer from `knowledge.des`, or check a hand-written one against it? | **Hand-written and checked (default):** storage goes through the FBL bindings by the host's FBL runtime; the table itself is written by hand, and a guard fails when it differs from `knowledge.des`. Keeps the first designer small. · **Derived:** a DESL runtime in this host builds the designer from `knowledge.des`, as DISL-derived diagrams are built. The right end state, and a much larger first step. · Other. | 10.5 |
 | Q3 | Does a cell have an id of its own? | **No, a cell is its row's id and its property's id (default):** nothing extra is stored, and the pair is already unique. · **Yes, every cell stores a ShortGuid:** the request lists cells among the things with an id; it costs one id per value in the file and nothing yet refers to it. · Other. | 2.6 |
 | Q4 | How does a row name its values in the file: by property id or by property name? | **By property id (default):** renaming a property changes one place, and a name can never collide; a reader resolves ids through the property list in the same file. · **By property name:** a row reads on its own, which suits a person or a language model reading the raw file; renaming a property rewrites every row. · Other. | 2.6, 2.8, 3.3 |
@@ -129,7 +129,7 @@ Each is a selection. The option marked **(default)** is what this document is wr
 
 ## Alignment with Product Vision
 
-`product.md` describes specialized, task-tuned tools over plain text files the user owns. This designer brings the project's goals of clarity in textual data and of humans and agents working together to tabular knowledge: the file is plain text, diffable and usable without ADP, by a person or by a language model, and ADP is one way of working in it rather than its owner. It follows `structure.md`'s rule that a tool type is a module on the shared core: what a designer needs from the core is added once, for every designer (Requirement 10), and is named for what it does.
+`product.md` describes specialized, task-tuned tools over plain text files the user owns. This designer brings the project's goals of clarity in textual data and of humans and agents working together to tabular knowledge: the file is plain text, diffable and usable without ADP, by a person or by a language model, and ADP is one way of working in it rather than its owner. It follows `structure.md`'s rule that a tool type is a module on the shared core: what a designer needs from the core is added once, for any later designer (Requirement 10), and is named for what it does.
 
 ## Requirements
 
@@ -271,7 +271,7 @@ Each is a selection. The option marked **(default)** is what this document is wr
 5. WHEN a fixture's bytes are what a test compares THEN the fixture SHALL be exempt from line-ending conversion by a rule in `.gitattributes` that does not also exempt ordinary YAML, JSON and XML files in this repository.
 6. WHEN a view is tested at size THEN an example of at least ten thousand rows SHALL be used (Non-Functional Requirements, Performance).
 
-### Requirement 10 - What this host gains for every designer
+### Requirement 10 - What this host gains for the designer family
 
 **User Story:** As a maintainer, I want what the first designer needs from the core added once, so that the second designer is a module and nothing more.
 
