@@ -170,7 +170,7 @@ Sixteen tasks against the approved design, delivered as its six pull requests. *
   - _Requirements: 5.3, 5.4_
   - _Prompt: Implement the task for spec rider-warnings-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer who knows this repository's steering documents | Task: Update the four documents so each says how the inspection is run and that the runner enforces it, and none tells a reader to expect a backlog or to install the tool by hand | Restrictions: the four local gates stay four and the text must say so; keep worked incidents as history, change only what is stated as current; search each document for every mention rather than editing the ones remembered; `ArchitecturePages.Tests` and the documentation-link tests must stay green | _Leverage: `docs/guards.md`, `.spec-workflow/steering/processes.md` | _Requirements: 5.3, 5.4 | Success: a search of the four documents for `inspectcode` and `InspectCode` finds no instruction that contradicts the script or the job; the four gates exit zero | Instructions: mark this task in progress in tasks.md before starting, log the implementation with the log-implementation tool when done, then mark it complete_
 
-- [ ] 16. Write the closing record and trace the requirements
+- [x] 16. Write the closing record and trace the requirements
   - File: the implementation log of this task
   - List every inspection this specification switched off or downgraded, with the change, where it lives, the reason and the date of the user's answer; an empty list is stated as none
   - Open the solution in Rider with the committed settings and solution-wide analysis on, and record what the *Problems* list shows for C#
