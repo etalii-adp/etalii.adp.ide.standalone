@@ -76,4 +76,26 @@ public sealed partial class BundledDefinitionTests
 
         Assert.Empty(loaded.Diagnostics);
     }
+
+    /// <summary>
+    /// An operation a plugin carries out is handed back with the plugin's <c>args</c> as the definition
+    /// writes them (DISL §9.3, <c>plugin: {name, args}</c>), so the host knows which action it is asked for.
+    /// </summary>
+    [Fact]
+    public void TheRevealProjectFileOperation_HandsBackThePluginWithItsArguments()
+    {
+        // Arrange.
+        var specification = BundledDefinition.Load(_module, "dotnet-dependency-graph.dis").Specification;
+        var diagram = new DislDiagram(specification);
+        var project = diagram.AddNode("Project", "p", new Dictionary<string, object?> { ["name"] = "App", ["path"] = "src/App/App.csproj" });
+
+        // Act.
+        var transaction = OperationInterpreter.Run(specification, "revealProjectFile", diagram, project, DislIds.Fixed());
+
+        // Assert.
+        Assert.Null(transaction.Refusal);
+        var plugin = Assert.IsType<HostAction.Plugin>(Assert.Single(transaction.HostActions));
+        Assert.Equal("net.etalii.adp.dotnet.solution", plugin.Name);
+        Assert.Equal("revealProjectFile", Assert.Single(plugin.Arguments, a => a.Key == "action").Value);
+    }
 }
