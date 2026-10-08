@@ -349,18 +349,9 @@ internal static class BindingReader
         InsertSettings? insert = null;
         if (json.TryGetProperty("insert", out var ins))
         {
-            string place;
-            string? before = null;
+            // {before: key} is recognised so every family can refuse it; no family places by it yet.
             var pl = ins.GetProperty("place");
-            if (pl.ValueKind == JsonValueKind.Object)
-            {
-                place = "before";
-                before = Str(pl, "before");
-            }
-            else
-            {
-                place = pl.GetString() ?? "end";
-            }
+            var place = pl.ValueKind == JsonValueKind.Object ? "before" : pl.GetString() ?? "end";
             CreateContainer? create = null;
             if (ins.TryGetProperty("create", out var c))
             {
@@ -375,7 +366,6 @@ internal static class BindingReader
             insert = new InsertSettings
             {
                 Place = place,
-                PlaceBefore = before,
                 Container = Str(ins, "container"),
                 Create = create,
                 Keys = Strings(ins, "keys"),

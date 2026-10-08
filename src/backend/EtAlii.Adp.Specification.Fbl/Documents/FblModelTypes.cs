@@ -251,8 +251,6 @@ public sealed class InsertSettings
     /// <summary>"after-last", "end", "start", "last-child", "next-sibling", "end-of-document" or "before".</summary>
     public required string Place { get; init; }
 
-    public string? PlaceBefore { get; init; }
-
     public string? Container { get; init; }
 
     public CreateContainer? Create { get; init; }
