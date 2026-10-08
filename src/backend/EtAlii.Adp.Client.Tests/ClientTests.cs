@@ -119,6 +119,36 @@ public class ClientTests
     internal static string Describe(ClientTest test) =>
         $"{test.File} > {test.FullName}:{Environment.NewLine}{Indent(string.Join(Environment.NewLine, test.FailureMessages))}";
 
+    /// <summary>
+    /// vitest's own verdict on the run, not only its verdict per test. It exits non-zero when every
+    /// test passed but something failed outside them - an unhandled error or rejection caught after
+    /// its test ended, for one - and the cases above see none of that, because they are judged file
+    /// by file and test by test.
+    /// </summary>
+    [Fact]
+    public void TheRunExitsCleanly()
+    {
+        // Arrange.
+        var run = ClientTestRun.Result;
+        Assert.True(run.Failure is null, run.Failure);
+
+        // Act.
+        var problem = ExitProblem(run);
+
+        // Assert.
+        Assert.True(problem is null, problem);
+    }
+
+    /// <summary>
+    /// Why the run's exit code is not a clean one, carrying everything vitest printed; null when it
+    /// exited zero. Its own method so that <see cref="ClientTestRunFailureMessageTests"/> can show it
+    /// bites on a run that really failed.
+    /// </summary>
+    internal static string? ExitProblem(ClientRunResult run) =>
+        run.ExitCode == 0
+            ? null
+            : $"vitest exited with {run.ExitCode}: the run failed as a whole, which the cases per file and per test do not show when the failure is outside every test. It printed:{Environment.NewLine}{run.Output}";
+
     [Fact]
     public void TheDiscoveryReadsTheWholeTree()
     {

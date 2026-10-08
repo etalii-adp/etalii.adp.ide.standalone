@@ -49,4 +49,20 @@ public class ClientTestRunFailureMessageTests
         var output = ClientTests.Describe(test);
         Assert.True(output.Contains(message, StringComparison.Ordinal), $"\"{message}\" did not reach the .NET output, which was:{Environment.NewLine}{output}");
     }
+
+    [Fact]
+    public void AFailedRun_IsAnExitProblem_CarryingWhatVitestPrinted()
+    {
+        // Arrange.
+        var run = FailingRun.Value;
+        Assert.True(run.Failure is null, run.Failure);
+
+        // Act.
+        var problem = ClientTests.ExitProblem(run);
+
+        // Assert.
+        Assert.True(problem is not null, $"a run whose tests failed exited {run.ExitCode}, and was not reported as an exit problem.");
+        Assert.Contains($"exited with {run.ExitCode}", problem, StringComparison.Ordinal);
+        Assert.Contains(run.Output, problem, StringComparison.Ordinal);
+    }
 }
