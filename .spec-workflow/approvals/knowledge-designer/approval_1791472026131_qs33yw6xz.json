@@ -3,8 +3,10 @@
   "title": "Knowledge designer: requirements, revised to the full request (replaces the first card, which should be rejected; questions Q1-Q7 and FBL gaps G1-G6 inside)",
   "filePath": ".spec-workflow/specs/knowledge-designer/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-08T15:07:06.131Z",
   "category": "spec",
-  "categoryName": "knowledge-designer"
+  "categoryName": "knowledge-designer",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-08T16:34:41.629Z"
 }

@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/knowledge-designer/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,22 @@
       "trigger": "initial",
       "approvalId": "approval_1791471705398_ey4d7nh64",
       "approvalTitle": "Knowledge designer: requirements (first designer; five open questions Q1-Q5 inside)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-08T16:34:40.943Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791471705398_ey4d7nh64",
+      "approvalTitle": "Knowledge designer: requirements (first designer; five open questions Q1-Q5 inside)"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-10-08T16:34:41.626Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791472026131_qs33yw6xz",
+      "approvalTitle": "Knowledge designer: requirements, revised to the full request (replaces the first card, which should be rejected; questions Q1-Q7 and FBL gaps G1-G6 inside)"
     }
   ]
 }

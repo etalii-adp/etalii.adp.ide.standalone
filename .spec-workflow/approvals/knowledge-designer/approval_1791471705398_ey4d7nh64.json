@@ -3,8 +3,10 @@
   "title": "Knowledge designer: requirements (first designer; five open questions Q1-Q5 inside)",
   "filePath": ".spec-workflow/specs/knowledge-designer/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-08T15:01:45.398Z",
   "category": "spec",
-  "categoryName": "knowledge-designer"
+  "categoryName": "knowledge-designer",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-08T16:34:40.949Z"
 }
