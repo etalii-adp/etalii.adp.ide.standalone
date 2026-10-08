@@ -46,7 +46,7 @@ public static partial class TemplateWriter
     }
 
     /// <summary>The values of <c>{name}</c>, <c>{base}</c> and <c>{key}</c> for a new file.</summary>
-    public static IReadOnlyDictionary<string, string> Placeholders(string fileName)
+    private static IReadOnlyDictionary<string, string> Placeholders(string fileName)
     {
         var name = Path.GetFileName(fileName);
         var baseName = Path.GetFileNameWithoutExtension(name);

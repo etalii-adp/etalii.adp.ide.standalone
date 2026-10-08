@@ -23,7 +23,7 @@ internal sealed class YamlParser(BodyText text)
     public List<(string Name, Span Span)> Duplicates { get; } = [];
 
     /// <summary>Where the first document ends; everything after it is unbound (FBL §4.3).</summary>
-    public int DocumentEnd { get; private set; }
+    private int DocumentEnd { get; set; }
 
     public sealed class YamlError(int offset, string message) : Exception(message)
     {

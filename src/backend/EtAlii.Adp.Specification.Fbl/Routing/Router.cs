@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Specification.Fbl.Routing;
 public static class Router
 {
     /// <summary>The part of a body <c>suggest</c> looks at (FBL §12.1).</summary>
-    public const int SuggestBytes = 64 * 1024;
+    private const int SuggestBytes = 64 * 1024;
 
     /// <summary>
     /// The bindings a bare file routes to (FBL §12.3): those whose <c>names</c> match the file name or

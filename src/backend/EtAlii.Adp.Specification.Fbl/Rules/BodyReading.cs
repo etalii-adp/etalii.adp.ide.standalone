@@ -46,7 +46,7 @@ internal sealed class BodyReading
 
     public FblBinding Binding { get; }
 
-    public FblOptions Options { get; }
+    private FblOptions Options { get; }
 
     public FamilyReader Family { get; }
 
@@ -56,10 +56,10 @@ internal sealed class BodyReading
     public IReadOnlyList<Finding> Findings => _findings;
 
     /// <summary>The views the body's view blocks define (FBL §4.7), in document order.</summary>
-    public List<FblView> Views { get; } = [];
+    private List<FblView> Views { get; } = [];
 
     /// <summary>The values of the binding's resource capture (FBL §8.2) in document order: the resources the body holds.</summary>
-    public List<string> Resources { get; } = [];
+    private List<string> Resources { get; } = [];
 
     public (int Offset, string Message)? Unreadable { get; private set; }
 
@@ -69,7 +69,7 @@ internal sealed class BodyReading
 
     public ReadElement? Find(string id) => Elements.FirstOrDefault(e => e.Id == id);
 
-    public static FamilyReader CreateFamily(BodyText text, FblBinding binding, FblOptions options)
+    private static FamilyReader CreateFamily(BodyText text, FblBinding binding, FblOptions options)
     {
         var family = binding.Body.Family ?? throw new InvalidOperationException($"The binding '{binding.Name}' declares no family.");
         var extension = Path.GetExtension(options.FileName).ToLowerInvariant();
@@ -244,7 +244,7 @@ internal sealed class BodyReading
 
     private CelContext RuleContext => Family is LinesFamily ? CelContext.Lines : CelContext.Tree;
 
-    public object? Evaluate(string expression, Candidate candidate, out string? problem)
+    private object? Evaluate(string expression, Candidate candidate, out string? problem)
     {
         var program = Program(expression, RuleContext, out problem);
         if (program is null) return null;
@@ -532,7 +532,7 @@ internal sealed class BodyReading
 
     /// <summary>The first element, in document order, that <paramref name="reference"/> can name and whose key is <paramref name="key"/>.</summary>
     /// <remarks>Read once the elements are final, so each reference's keys are indexed on first use rather than searched per key.</remarks>
-    public ReadElement? ReferencedBy(ReferenceBinding reference, string key)
+    private ReadElement? ReferencedBy(ReferenceBinding reference, string key)
     {
         if (!_referenced.TryGetValue(reference, out var index))
         {

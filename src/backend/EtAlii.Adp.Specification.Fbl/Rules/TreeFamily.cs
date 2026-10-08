@@ -66,7 +66,7 @@ internal sealed class TreeEntry : Entry
     /// <summary>A member's key as written, quotes included.</summary>
     public Span? KeySpan { get; init; }
 
-    public required TreeValue Value { get; set; }
+    public required TreeValue Value { get; init; }
 
     /// <summary>json: the offset of the comma after this entry, or -1.</summary>
     public int Separator { get; set; } = -1;
@@ -167,7 +167,7 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
         return ReadMember(mapping, name);
     }
 
-    protected static SlotRead ReadMember(TreeValue mapping, string name)
+    private static SlotRead ReadMember(TreeValue mapping, string name)
     {
         if (mapping.Member(name) is { } member)
         {

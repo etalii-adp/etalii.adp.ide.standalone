@@ -11,9 +11,9 @@ namespace EtAlii.Adp.Specification.Fbl.Registration;
 public sealed class RegistrationDocument
 {
     /// <summary>The headers FBL itself defines (FBL §8.1); a binding declares others.</summary>
-    public static readonly IReadOnlyList<string> FblHeaders = ["body", "view", "resource"];
+    private static readonly IReadOnlyList<string> FblHeaders = ["body", "view", "resource"];
 
-    internal RegistrationDocument(BodyText text)
+    private RegistrationDocument(BodyText text)
     {
         Text = text;
     }
@@ -21,21 +21,21 @@ public sealed class RegistrationDocument
     internal BodyText Text { get; }
 
     /// <summary>The origin of the tool type (FBL §8.1, line 1).</summary>
-    public string Origin { get; internal set; } = "";
+    public string Origin { get; private set; } = "";
 
-    public IReadOnlyList<RegistrationHeader> Headers { get; internal set; } = [];
+    public IReadOnlyList<RegistrationHeader> Headers { get; private set; } = [];
 
-    public RegistrationBlock? Layout { get; internal set; }
+    public RegistrationBlock? Layout { get; private set; }
 
-    public RegistrationBlock? Identities { get; internal set; }
+    public RegistrationBlock? Identities { get; private set; }
 
     /// <summary>Where a new block goes: the end of the header region's last line.</summary>
-    public int AfterHeaders { get; internal set; }
+    public int AfterHeaders { get; private set; }
 
     /// <summary>Content after the blocks that FBL does not read, kept byte for byte.</summary>
     public Span Unbound { get; internal set; }
 
-    public string? Header(string key) => Headers.FirstOrDefault(h => h.Key == key)?.Value;
+    private string? Header(string key) => Headers.FirstOrDefault(h => h.Key == key)?.Value;
 
     public string? Body => Header("body");
 

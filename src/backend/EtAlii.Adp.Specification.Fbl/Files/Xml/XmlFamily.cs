@@ -26,9 +26,9 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
 
     public override IReadOnlyList<Entry> Entries => _entries;
 
-    public override IReadOnlyList<Span> Leaves => _leaves;
+    protected override IReadOnlyList<Span> Leaves => _leaves;
 
-    public override bool IsTrivia(Span gap) => IsWhitespace(gap);
+    protected override bool IsTrivia(Span gap) => IsWhitespace(gap);
 
     [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
     private static partial Regex Whitespace();
@@ -340,7 +340,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         return new Span(Text.Lines[first].Start, Text.Lines[last].End);
     }
 
-    public override int Step
+    protected override int Step
     {
         get
         {

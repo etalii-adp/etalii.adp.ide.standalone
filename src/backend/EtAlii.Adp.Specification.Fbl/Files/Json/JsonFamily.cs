@@ -18,9 +18,9 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
 
     public override string FamilyName => "json";
 
-    public override IReadOnlyList<Span> Leaves => _leaves;
+    protected override IReadOnlyList<Span> Leaves => _leaves;
 
-    public override bool IsTrivia(Span gap)
+    protected override bool IsTrivia(Span gap)
     {
         for (var i = gap.Start; i < gap.End; i++)
         {

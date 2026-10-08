@@ -48,10 +48,10 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
 
     public override IReadOnlyList<Entry> Entries => _entries;
 
-    public override IReadOnlyList<Span> Leaves => _leaves;
+    protected override IReadOnlyList<Span> Leaves => _leaves;
 
     /// <summary>Between statements and comments there are only whitespace, line endings and the closing <c>}</c> of blocks.</summary>
-    public override bool IsTrivia(Span gap)
+    protected override bool IsTrivia(Span gap)
     {
         for (var i = gap.Start; i < gap.End; i++)
         {
@@ -331,7 +331,7 @@ internal sealed class LinesFamily(BodyText text, FblBinding binding, FblOptions 
     /// The words of a group (FBL §4.6): runs of non-whitespace, where a run starting with <c>"</c>
     /// extends to the next <c>"</c> and includes both quotes.
     /// </summary>
-    public List<Word> Words(Group group)
+    private List<Word> Words(Group group)
     {
         var words = new List<Word>();
         var bytes = Text.Bytes;

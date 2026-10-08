@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Specification.Fbl.Routing;
 public static class MarkerEvaluator
 {
     /// <summary>The number of lines a pattern marker looks at when it names none (FBL §12.2).</summary>
-    public const int DefaultLines = 20;
+    private const int DefaultLines = 20;
 
     public static bool Matches(Marker marker, byte[] bytes, TimeSpan? regexTimeout = null)
     {

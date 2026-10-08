@@ -61,13 +61,13 @@ public sealed class FblOptions
     /// <summary>The body's file name, relative to the subject, for findings.</summary>
     public string FileName { get; init; } = "body";
 
-    public TimeSpan RegexTimeout { get; init; } = TimeSpan.FromMilliseconds(250);
+    public TimeSpan RegexTimeout { get; } = TimeSpan.FromMilliseconds(250);
 
     /// <summary>A body larger than this is unreadable rather than read in part (FBL §16).</summary>
-    public int MaxBodyBytes { get; init; } = 32 * 1024 * 1024;
+    public int MaxBodyBytes { get; } = 32 * 1024 * 1024;
 
     /// <summary>A body with more entries than this is unreadable rather than read in part (FBL §16).</summary>
-    public int MaxEntries { get; init; } = 500_000;
+    public int MaxEntries { get; } = 500_000;
 
     /// <summary>
     /// The DISL id strategy for rules that store no id: returns the derived id, or null to address the

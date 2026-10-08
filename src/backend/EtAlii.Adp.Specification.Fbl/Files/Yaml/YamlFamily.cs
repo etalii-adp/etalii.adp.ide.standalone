@@ -18,7 +18,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 
     public override string FamilyName => "yaml";
 
-    public override IReadOnlyList<Span> Leaves => _leaves;
+    protected override IReadOnlyList<Span> Leaves => _leaves;
 
     public override void Parse()
     {
@@ -67,7 +67,7 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     }
 
     /// <summary>Between leaves there is only whitespace, comments, indicators, anchors, tags and document markers.</summary>
-    public override bool IsTrivia(Span gap)
+    protected override bool IsTrivia(Span gap)
     {
         var bytes = Text.Bytes;
         for (var i = gap.Start; i < gap.End; i++)
