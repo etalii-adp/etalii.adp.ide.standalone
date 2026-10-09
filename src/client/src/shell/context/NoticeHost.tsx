@@ -30,6 +30,11 @@ export function NoticeHost() {
       {notices.map((notice) => (
         <div key={notice.id} className="notice">
           <span className="notice-text">{notice.text}</span>
+          {notice.copy !== undefined && (
+            <button type="button" className="notice-copy" onClick={() => void navigator.clipboard?.writeText(notice.copy ?? "")}>
+              Copy location
+            </button>
+          )}
           <button
             type="button"
             className="notice-dismiss"

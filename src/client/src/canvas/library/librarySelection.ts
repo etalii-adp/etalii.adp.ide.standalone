@@ -7,6 +7,7 @@ import type { DiagramDefinition } from "./definition/diagramDefinition";
 import { actionForMenuEntry, backendKeyOf, type ActionLookup } from "./definition/actions";
 import type { DiagramModel } from "./api/diagramModel";
 import { hasRow } from "./definition/compartments";
+import { openLink } from "@client/shell/links/openLink";
 import {
   dispatchDiagramEvent,
   type ActionInvoked,
@@ -142,7 +143,7 @@ export function useLibrarySelection(
   definition: DiagramDefinition,
   events: DiagramEventHandlers,
 ): LibrarySelection {
-  const { select, executeAction, executeShortcut } = useContextConnection();
+  const { select, executeAction, executeShortcut, revealPath } = useContextConnection();
   const { selection: pushed, actions } = useContextSelection();
 
   const selectionKey = innermostKey(pushed) ?? undefined;
@@ -223,6 +224,12 @@ export function useLibrarySelection(
     events: {
       ...events,
       onSelectionChanged: ({ selection: next }) => push(next.length > 0 ? next[0].id : null),
+      // A link is opened here, by the page's one rule for what may be opened, and the module
+      // hears of it afterwards. A relative link is relative to the document this canvas draws.
+      onLinkActivated: (activated) => {
+        openLink(activated.link, source.path, { revealPath });
+        dispatchDiagramEvent(events, activated);
+      },
       // The canvas raises every declared action through here, so this is the one place a declared
       // backend key is sent - a key, a gesture and a menu entry alike.
       onActionInvoked: invokeDeclared,

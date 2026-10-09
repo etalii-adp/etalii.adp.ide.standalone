@@ -240,6 +240,32 @@
   user-select: none;
 }
 
+/*
+ * A link symbol: a small chain that takes a press. Muted at rest so it does not compete with the
+ * text beside it, and the accent on hover and on keyboard focus, which is where it says it can
+ * be followed.
+ */
+.library-link {
+  cursor: pointer;
+}
+
+.library-link-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.library-link-glyph {
+  fill: none;
+  stroke: var(--color-text-muted, #5a6376);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.library-link:hover .library-link-glyph,
+.library-link:focus-visible .library-link-glyph {
+  stroke: var(--color-primary);
+}
+
 .canvas-node-label {
   fill: var(--color-text, #1c2333);
   font-size: 12px;

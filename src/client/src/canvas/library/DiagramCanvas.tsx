@@ -2079,6 +2079,7 @@ export function DiagramCanvasCore({
       rowSelected={(id) => isSelected("row", id)}
       rowPress={(id) => select({ kind: "row", id })}
       rowContextMenu={onItemContextMenu}
+      linkPress={(link, rowId) => raise({ kind: "link-activated", elementId: element.id, rowId, link })}
     />
   );
 
@@ -2487,6 +2488,7 @@ function LibraryElement({
   rowSelected,
   rowPress,
   rowContextMenu,
+  linkPress,
 }: {
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
@@ -2498,6 +2500,8 @@ function LibraryElement({
   rowPress: (id: string) => void;
   /** The shared menu was asked for on a row. */
   rowContextMenu: (id: string) => (event: React.MouseEvent) => void;
+  /** A link symbol was activated: the element's, or the row's whose id is given. */
+  linkPress: (link: string, rowId?: string) => void;
   dragValue: GestureValue<ElementDragOffset>;
   connectValue: GestureValue<ConnectPreview>;
   resizeValue: GestureValue<ResizeDragPreview>;
@@ -2603,7 +2607,21 @@ function LibraryElement({
         {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" }, highlight, movedBoundary ?? undefined)}
       </ShapeErrorBoundary>
       {type?.compartments !== undefined &&
-        declaredCompartments(type, bounds, sourceOf(resizing, groupState, bounds), { headingPress, rowSelected, rowPress, rowContextMenu })}
+        declaredCompartments(type, bounds, sourceOf(resizing, groupState, bounds), { headingPress, rowSelected, rowPress, rowContextMenu, linkPress })}
+      {type?.links?.map((declaration) => {
+        const link = valueAtPath(declaration.link, sourceOf(resizing));
+        return typeof link === "string" && link.length > 0 ? (
+          <LinkSymbol
+            key={`link-${declaration.id}`}
+            id={declaration.id}
+            x={bounds.x + bounds.width - declaration.at.right}
+            y={bounds.y + declaration.at.top}
+            link={link}
+            label={declaration.label}
+            onActivate={() => linkPress(link)}
+          />
+        ) : null;
+      })}
       {type?.anchors.kind === "along" && edgeStrips(type.anchors.edges, bounds, attachmentLayoutOf(resizing, type, bounds, movedBoundary ?? undefined)).map((strip) => (
         <rect
           key={`edge-${strip.edge}-${strip.region ?? "all"}`}
@@ -3106,6 +3124,64 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
 }
 
 
+/** The side of the square a link symbol is drawn and pressed in. */
+const LINK_SYMBOL_SIZE = 14;
+
+/**
+ * A link, drawn as a small chain and activated by a press, or by Enter or Space when focused.
+ *
+ * It says where it leads before it is followed - as a tooltip, and as its accessible name - and
+ * its press reaches nothing beneath it, so following a link neither selects nor drags the
+ * element or the row it sits on. What following MEANS is not decided here: the symbol raises the
+ * request and the page's one rule answers it.
+ */
+function LinkSymbol({
+  id,
+  x,
+  y,
+  link,
+  label,
+  onActivate,
+}: {
+  id: string;
+  x: number;
+  y: number;
+  link: string;
+  label?: string;
+  onActivate: () => void;
+}) {
+  const name = label === undefined ? `Open ${link}` : `Open the ${label}: ${link}`;
+  return (
+    <g
+      className="library-link"
+      data-link={id}
+      role="link"
+      tabIndex={0}
+      aria-label={name}
+      onPointerDown={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        onActivate();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          onActivate();
+        }
+      }}
+    >
+      <title>{name}</title>
+      <rect className="library-link-hit" x={x} y={y} width={LINK_SYMBOL_SIZE} height={LINK_SYMBOL_SIZE} />
+      <path
+        className="library-link-glyph"
+        d={`M${x + 5.5} ${y + 8.5} L${x + 8.5} ${y + 5.5} M${x + 6.2} ${y + 4.2} l1.3 -1.3 a2.4 2.4 0 0 1 3.4 3.4 l-1.3 1.3 M${x + 7.8} ${y + 9.8} l-1.3 1.3 a2.4 2.4 0 0 1 -3.4 -3.4 l1.3 -1.3`}
+      />
+    </g>
+  );
+}
+
 /**
  * The lists a type's `compartments` declare: one heading per group, its rows beneath it unless it
  * is folded.
@@ -3123,7 +3199,9 @@ function declaredCompartments(
     rowSelected,
     rowPress,
     rowContextMenu,
+    linkPress,
   }: {
+    linkPress: (link: string, rowId?: string) => void;
     headingPress: (heading: LaidOutHeading) => void;
     rowSelected: (id: string) => boolean;
     rowPress: (id: string) => void;
@@ -3216,6 +3294,15 @@ function declaredCompartments(
             {row.text !== row.fullText ? <title>{row.fullText}</title> : null}
             {row.text}
           </text>
+          {row.link !== undefined && (
+            <LinkSymbol
+              id={`${row.compartmentId}-${row.id ?? index}`}
+              x={row.box.x + row.box.width - LINK_SYMBOL_SIZE}
+              y={row.box.y + (row.box.height - LINK_SYMBOL_SIZE) / 2}
+              link={row.link}
+              onActivate={() => linkPress(row.link as string, row.id)}
+            />
+          )}
         </g>
         );
       })}

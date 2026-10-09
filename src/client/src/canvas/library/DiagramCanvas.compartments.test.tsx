@@ -26,12 +26,14 @@ const definition: DiagramDefinition = {
       shape: "box",
       anchors: { kind: "edge" },
       sizing: "model",
+      links: [{ id: "page", link: "payload.link", at: { right: 20, top: 6 }, label: "specification" }],
       compartments: [
         {
           id: "tasks",
           rows: "payload.tasks",
           rowId: "id",
           text: { path: "title" },
+          link: "link",
           groupBy: {
             path: "status",
             groups: [
@@ -68,10 +70,11 @@ function modelOf(collapsed: readonly string[]): DiagramModel {
         height: 40,
         label: "Knowledge designer",
         payload: {
+          link: "specs/knowledge/requirements.md",
           collapsed,
           tasks: [
             { id: "t1", title: "Trial the binding", status: "progressing" },
-            { id: "t2", title: "Table component", status: "progressing" },
+            { id: "t2", title: "Table component", status: "progressing", link: "https://example.org/pull/150" },
             { id: "t3", title: "Examples", status: "pending" },
           ],
         },
@@ -210,5 +213,56 @@ describe("a row inside an element", () => {
     expect(resolveSelection("t3", modelOf(["pending"]), definition)).toEqual([{ kind: "row", id: "t3" }]);
     expect(resolveSelection("s1", modelOf([]), definition)).toEqual([{ kind: "element", id: "s1" }]);
     expect(resolveSelection("nothing", modelOf([]), definition)).toEqual([]);
+  });
+});
+
+/**
+ * A link symbol (agent-activity-diagram Requirements 5.2 and 5.7): drawn only where there is a
+ * link, saying where it leads, and raising a request that selects and drags nothing.
+ */
+describe("a link symbol", () => {
+  const symbols = (container: HTMLElement) => [...container.querySelectorAll('[data-element-id="s1"] .library-link')];
+
+  it("is drawn on the element and on the one row that has a link, and nowhere else", () => {
+    const { container } = canvasOf([]);
+
+    expect(symbols(container).map((symbol) => symbol.getAttribute("data-link"))).toEqual(["tasks-t2", "page"]);
+    expect(container.querySelector('[data-row-id="t1"] .library-link')).toBeNull();
+  });
+
+  it("says where it leads before it is followed", () => {
+    const { container } = canvasOf([]);
+    const page = container.querySelector('[data-link="page"]')!;
+
+    expect(page.getAttribute("role")).toBe("link");
+    expect(page.getAttribute("aria-label")).toBe("Open the specification: specs/knowledge/requirements.md");
+    expect(page.querySelector("title")?.textContent).toBe("Open the specification: specs/knowledge/requirements.md");
+  });
+
+  it("raises the link when pressed, and neither selects nor moves what it sits on", () => {
+    // The planted defect this was seen to fail against: a symbol drawn for an element whose
+    // model has no link, which the first test of this group reports.
+    const onLinkActivated = vi.fn();
+    const onSelectionChanged = vi.fn();
+    const { container } = canvasOf([], { onLinkActivated, onSelectionChanged });
+    const rowLink = container.querySelector('[data-link="tasks-t2"]')!;
+
+    fireEvent(rowLink, pointer("pointerdown", { button: 0, clientX: 300, clientY: 210 }));
+    fireEvent(rowLink, pointer("pointerup", { clientX: 300, clientY: 210 }));
+    fireEvent.click(rowLink);
+
+    expect(onLinkActivated).toHaveBeenCalledExactlyOnceWith({ kind: "link-activated", elementId: "s1", rowId: "t2", link: "https://example.org/pull/150" });
+    expect(onSelectionChanged).not.toHaveBeenCalled();
+  });
+
+  it("is followed from the keyboard", () => {
+    const onLinkActivated = vi.fn();
+    const { container } = canvasOf([], { onLinkActivated });
+    const page = container.querySelector('[data-link="page"]')!;
+
+    expect(page.getAttribute("tabindex")).toBe("0");
+    fireEvent.keyDown(page, { key: "Enter" });
+
+    expect(onLinkActivated).toHaveBeenCalledExactlyOnceWith({ kind: "link-activated", elementId: "s1", rowId: undefined, link: "specs/knowledge/requirements.md" });
   });
 });

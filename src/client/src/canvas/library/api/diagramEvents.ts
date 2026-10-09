@@ -31,6 +31,7 @@ export type DiagramEvent =
   | ViewChanged
   | LayoutModeChanged
   | CompartmentToggled
+  | LinkActivated
   | ActionInvoked
   | ActionRefused;
 
@@ -255,6 +256,23 @@ export interface CompartmentToggled {
   key: string;
   /** What the user is asking for: `true` to fold the heading's rows away. */
   collapsed: boolean;
+}
+
+/**
+ * The user activated a link symbol, on an element or at the end of a row.
+ *
+ * <b>Where the canvas owns its selection, the library opens the link itself</b> - a web address in
+ * a new tab, a project path in the workspace tree, anything else shown and not followed - and the
+ * module hears this afterwards, to answer or ignore. A module never opens a link from a document
+ * by hand: what may be opened is one rule, kept in one place.
+ */
+export interface LinkActivated {
+  kind: "link-activated";
+  elementId: string;
+  /** The row the link belongs to, where it is a row's and not the element's. */
+  rowId?: string;
+  /** The link as the model holds it. */
+  link: string;
 }
 
 /** The user switched between the definition's allowed layout modes (Requirement 8.2). */

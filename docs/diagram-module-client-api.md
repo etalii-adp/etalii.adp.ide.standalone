@@ -203,7 +203,7 @@ classDiagram
 
 **Whether a module needs it.** Always — all 14 modules declare it (read at `5b44878d`), and it is the only member with no useful default.
 
-**Its shape.** An `ElementTypeDefinition` carries `id`, `shape`, `style`, `boundStyle`, `classNames`, `data`, `tooltip`, `label`, `labels`, `decorations`, `compartments` (see *Lists inside an element*), `actions`, `anchors`, `sizing`, `resize`, `segments`, `draggable`, `editOnDrop`, `deletable`, `selectable` and `beneathConnections`. A type whose shape is not one of the built-ins names a `CustomShapeRef` instead, which carries `customShape`, `render`, `edgePoint` and `anchors`; a renderer is handed `ShapeBounds` — `x`, `y`, `width`, `height`.
+**Its shape.** An `ElementTypeDefinition` carries `id`, `shape`, `style`, `boundStyle`, `classNames`, `data`, `tooltip`, `label`, `labels`, `decorations`, `compartments` (see *Lists inside an element*), `links` (see *Links*), `actions`, `anchors`, `sizing`, `resize`, `segments`, `draggable`, `editOnDrop`, `deletable`, `selectable` and `beneathConnections`. A type whose shape is not one of the built-ins names a `CustomShapeRef` instead, which carries `customShape`, `render`, `edgePoint` and `anchors`; a renderer is handed `ShapeBounds` — `x`, `y`, `width`, `height`.
 
 Source: [`src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition.test.tsx`](../src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition.test.tsx)
 
@@ -379,6 +379,20 @@ Source: [`src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition
 
 **Their members.** `CompartmentDeclaration` carries `id`, `rows`, `rowId`, `text`, `link`, `orderBy`, `groupBy`, `title`, `collapsed`, `top`, `headingHeight`, `rowHeight`, `bottom`, `insetX`, `rowIndent`; `CompartmentGroup` carries `value`, `title`.
 
+### Links
+
+**Declarations:** `LinkDeclaration`
+
+**What it is for.** A link an element or a row carries - a web page, a file - drawn as a small symbol the reader can follow.
+
+**Whether a module needs it.** Only a module whose document holds links.
+
+**Its shape.** An element type declares `links`, each with the path to the link and where its symbol sits, measured from the element's top-right corner; a compartment names a row's link with its own `link` path, and the symbol is drawn at the row's end. Nothing is drawn where the model has no link. A press, or Enter or Space when focused, raises `LinkActivated`; it selects nothing and drags nothing, and the symbol says where it leads as its tooltip and its accessible name.
+
+**A module does not open a link.** Where the canvas owns its selection the library opens it, by the page's one rule: an `http` or `https` address in a new tab that gets no handle on the page, a path inside the project in the workspace tree, relative to the document the canvas draws, and anything else shown in a notice with its location offered for copying and never followed. The module hears `LinkActivated` afterwards and usually ignores it.
+
+**Their members.** `LinkDeclaration` carries `id`, `link`, `at`, `label`.
+
 ### Actions, shortcuts and enablement
 
 **Declarations:** `ActionDeclaration`, `ActionInvocation`, `ActionTarget`, `DeclaredFlag`, `ElementGesture`
@@ -503,7 +517,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## Events, and how a module answers them
 
-**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`, `ElementPreviewed`, `ConnectionEndMoved`, `CompartmentToggled`
+**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`, `ElementPreviewed`, `ConnectionEndMoved`, `CompartmentToggled`, `LinkActivated`
 
 **What it is for.** **Every event is a request, never a report.** The canvas raises what a user did; the module decides what happens and sends it to the backend. Nothing is applied to the model by the library on its own.
 
@@ -551,7 +565,7 @@ sequenceDiagram
 
 **Their members.** `DiagramViewport` carries `x`, `y`, `width`, `height`; `SelectionChanged` carries `kind`, `selection`.
 
-**Their members.** `CompartmentToggled` carries `elementId`, `compartmentId`, `key`, `collapsed`; `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `ConnectionEndMoved` carries `connectionId`, `end`, `attachment`; `ElementPreviewed` carries `elementId`, `bounds`, `boundaries`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
+**Their members.** `CompartmentToggled` carries `elementId`, `compartmentId`, `key`, `collapsed`; `LinkActivated` carries `elementId`, `rowId`, `link`; `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `ConnectionEndMoved` carries `connectionId`, `end`, `attachment`; `ElementPreviewed` carries `elementId`, `bounds`, `boundaries`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
 
 ## Selection
 
