@@ -125,7 +125,9 @@ public sealed class SetAadAttributeCommandHandler(IAadDocumentStore documents) :
             // An enumeration is given by its label, its name or its stored word; a reference by the id it names.
             object? value = AadDefinition.EnumOf(attribute.Type) is { } choices
                 ? choices.Members.FirstOrDefault(member => member.Label == command.Value || member.Name == command.Value || member.Stored == command.Value)?.Name
-                : command.Value.Length == 0 ? null : command.Value;
+                : command.Value.Length == 0
+                    ? null
+                    : command.Value;
             if (value is null && AadDefinition.EnumOf(attribute.Type) is not null)
             {
                 return AadEdit.Refused($"'{command.Value}' is not one of the values this can have.");

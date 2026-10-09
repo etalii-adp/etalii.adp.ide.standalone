@@ -101,13 +101,21 @@ public class AgentActivityFlowTests : IClassFixture<WebApplicationFactory<Progra
         Assert.Equal("progressing", Payload(baseline, "s-activity").Tasks.Single().Status);
 
         // Act: an agent finishes its task and says so in the file, as it would from any program.
-        var pending = ReadAddAsync(call.ResponseStream, cts.Token);
         await File.WriteAllTextAsync(Body, Work.Replace("        status: progressing\r\n", "        status: finished\r\n", StringComparison.Ordinal), TestContext.Current.CancellationToken);
 
-        // Assert: the canvas is sent the specification again, its task finished, and nothing else.
-        var update = await pending;
-        Assert.Equal(["s-activity"], update.Select(element => element.Id.Value));
-        Assert.Equal("finished", Payload(update, "s-activity").Tasks.Single().Status);
+        // Assert: the canvas is sent the specification again, its task finished. Which other
+        // deltas a file system's watcher causes on the way differs by platform - one build server
+        // re-sent the project first - so the stream is read until the change itself arrives.
+        string? status = null;
+        while (status != "finished")
+        {
+            var update = await ReadAddAsync(call.ResponseStream, cts.Token);
+            Assert.True(update.Count > 0, "The stream ended, or the deadline passed, before the agent's change arrived.");
+            if (update.Any(element => element.Id.Value == "s-activity"))
+            {
+                status = Payload(update, "s-activity").Tasks.Single().Status;
+            }
+        }
     }
 
     [Fact]
