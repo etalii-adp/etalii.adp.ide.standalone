@@ -18,9 +18,16 @@ public static class DiagramFileName
     /// type segment (plus its subtype), and a number when that is already taken. Only the
     /// base name is returned - <see cref="WithExtension"/> adds the extension.
     /// </summary>
-    public static string Suggest(DiagramOrigin origin, string folder)
+    public static string Suggest(DiagramOrigin origin, string folder) =>
+        Suggest(origin.Subtype.Length == 0 ? origin.Type : $"{origin.Type}-{origin.Subtype}", folder);
+
+    /// <summary>
+    /// A free name in <paramref name="folder"/> starting from <paramref name="typeName"/>, for a tool
+    /// type whose origin is not a diagram's: the same sanitising and the same numbering.
+    /// </summary>
+    public static string Suggest(string typeName, string folder)
     {
-        var baseName = Sanitise(origin.Subtype.Length == 0 ? origin.Type : $"{origin.Type}-{origin.Subtype}");
+        var baseName = Sanitise(typeName);
 
         if (IsFree(folder, baseName))
         {

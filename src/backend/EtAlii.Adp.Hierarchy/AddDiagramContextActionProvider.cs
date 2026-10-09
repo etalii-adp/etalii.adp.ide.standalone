@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Documents.Wire;
 using EtAlii.Adp.History;
@@ -44,6 +45,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentFactories _documentFactories;
     private readonly DiagramFileRouter _router;
+    private readonly DesignerAddOptions? _designers;
 
     /// <param name="historyStacks">The history stacks where the create is sent; this provider writes nothing itself.</param>
     /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
@@ -61,11 +63,16 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     /// overwrites the first exactly where nobody is looking.
     /// </para>
     /// </param>
+    /// <param name="designers">
+    /// The designer family's entries of the same dialog, or null in a host without the family: a
+    /// designer type is offered where the diagram types are, not under an action of its own.
+    /// </param>
     public AddDiagramContextActionProvider(
         IHistoryStackStore historyStacks,
         DiagramDocumentFactories documentFactories,
         IDiagramDefinitionCatalog catalog,
-        DiagramFileRouter router)
+        DiagramFileRouter router,
+        DesignerAddOptions? designers = null)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documentFactories);
@@ -74,7 +81,11 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         _documentFactories = documentFactories;
         _definitions = catalog.All;
         _router = router;
+        _designers = designers;
     }
+
+    /// <summary>Whether a folder has anything to add: a diagram type, or a designer type with a format.</summary>
+    private bool HasTypes => _definitions.Count > 0 || _designers is { Any: true };
 
     public ContextScope Scope => ContextScope.Hierarchy;
 
@@ -89,7 +100,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // is impossible, but "this file is a diagram of a type I am about to name", which writes
         // the .adp beside it (add-diagram-action Requirement 4.3, revised).
         (bool available, string label, string reason) = target.IsContainer
-            ? (_definitions.Count > 0, "Add…", NoDiagramTypes)
+            ? (HasTypes, "Add…", NoDiagramTypes)
             : (RegistrableTypesFor(target).Count > 0, "Add as diagram…", NotRegistrable);
 
         if (!target.IsContainer && !available)
@@ -202,15 +213,16 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // the same question of the same folder, and the answer cannot change while one prompt
         // is being built.
         var registeredBy = ExistingFolderRegistration(target);
+        var options = DiagramOptionTree.Build(
+            _definitions,
+            definition => Annotate(definition, target, registeredBy));
 
         return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresChoice(
             new ContextChoiceRequest(
                 Title: "Add diagram",
                 Icon: "mdi-plus",
                 ConfirmLabel: "Add",
-                Options: DiagramOptionTree.Build(
-                    _definitions,
-                    definition => Annotate(definition, target, registeredBy)),
+                Options: _designers?.AddTo(options, target.ResolvedFullPath) ?? options,
                 EmptyMessage: NoDiagramTypes,
                 // The name field stays: a file-subject type still needs one, and serving both
                 // kinds from one dialog is the point. A folder-subject option replaces the
@@ -311,6 +323,10 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return await RegisterAsync(target, value, cancellationToken);
         }
 
+        if (_designers?.Resolve(value) is { } designer)
+        {
+            return await CreateDesignerDocumentAsync(target, designer.Definition, designer.Format, text, cancellationToken);
+        }
 
         var definition = _definitions.FirstOrDefault(candidate => candidate.Origin.Key == value);
         if (definition is null)
@@ -405,6 +421,35 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         return result.IsSuccess
             // The destination is the command's own, not something the handler had to report:
             // where the file lands follows from the folder and the name it was given.
+            ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
+            : ContextCommitResult.Failed(result.Error);
+    }
+
+    /// <summary>
+    /// Creates a designer's document in the chosen format: its body and the registration beside
+    /// it, through the same command a diagram with a body file is created by, so the two files
+    /// appear or neither does and one undo removes both.
+    /// </summary>
+    private async ValueTask<ContextCommitResult> CreateDesignerDocumentAsync(
+        ContextTarget target, DesignerDefinition definition, DesignerFormat format, string text, CancellationToken cancellationToken)
+    {
+        var validation = ValidateName(target, text);
+        if (!validation.Valid)
+        {
+            _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin, validation.Reason);
+            return ContextCommitResult.Failed(validation.Reason);
+        }
+
+        (CreateDiagramFileCommand? command, string error) = _designers!.Plan(definition, format, target.ResolvedFullPath, DiagramFileName.StripExtension(text));
+        if (command is null)
+        {
+            return ContextCommitResult.Failed(error);
+        }
+
+        _logger.Debug("Creating a {Origin} document named {FileName} in {Folder}", definition.Origin, command.SiblingFileName, target.ResolvedFullPath);
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+
+        return result.IsSuccess
             ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
             : ContextCommitResult.Failed(result.Error);
     }

@@ -3,6 +3,7 @@ using EtAlii.Adp.Designer;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Hierarchy;
 
@@ -31,6 +32,11 @@ public static class ServiceCollectionAddHierarchyExtension
         services.TryAddDesignerDefinitionCatalog();
         services.AddSingleton<DesignerFileRouter>();
 
+        // What a new designer document starts as, from the modules that registered a template,
+        // and the designer family's entries of the Add dialog built on it.
+        services.TryAddSingleton<DesignerDocumentTemplates>();
+        services.AddSingleton<DesignerAddOptions>();
+
         // Registered through IContextActionProvider so the resolver picks them up from
         // IEnumerable<IContextActionProvider>; likewise IContextSourceResolver. A later
         // module contributing its own is one line in its own extension and no change here.
@@ -45,7 +51,8 @@ public static class ServiceCollectionAddHierarchyExtension
                 provider.GetRequiredService<IHistoryStackStore>(),
                 provider.GetRequiredService<DiagramDocumentFactories>(),
                 provider.GetRequiredService<IDiagramDefinitionCatalog>(),
-                provider.GetRequiredService<DiagramFileRouter>())
+                provider.GetRequiredService<DiagramFileRouter>(),
+                provider.GetRequiredService<DesignerAddOptions>())
         );
 
         // The editor family's contributions to the hierarchy scope: "Open as text"/"Open

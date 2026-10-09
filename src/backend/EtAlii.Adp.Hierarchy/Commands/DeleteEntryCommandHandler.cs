@@ -32,11 +32,18 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
     private static readonly ILogger _logger = Log.ForContext<DeleteEntryCommandHandler>();
 
     private readonly IDiagramDefinitionCatalog _catalog;
+    private readonly DesignerFileRouter? _designerRouter;
 
-    public DeleteEntryCommandHandler(IDiagramDefinitionCatalog catalog)
+    /// <param name="catalog">The diagram types, for a registration's body file and a subject's registrations.</param>
+    /// <param name="designerRouter">
+    /// Which files are a designer's, or null in a host without the family. A designer's document
+    /// is two files as a diagram with a body file is, and neither is left behind by the other.
+    /// </param>
+    public DeleteEntryCommandHandler(IDiagramDefinitionCatalog catalog, DesignerFileRouter? designerRouter = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         _catalog = catalog;
+        _designerRouter = designerRouter;
     }
 
     public Task<CommandResult> ExecuteAsync(
@@ -60,7 +67,9 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
 
         // Resolved before the registration file goes: its first line is what names the
         // sibling, and once it is deleted there is nothing left to ask.
-        var sibling = isDirectory ? null : DiagramFilePair.SiblingOf(path, _catalog);
+        var designer = isDirectory ? null : _designerRouter?.Route(path) as DesignerRouted;
+        var isRegistration = DiagramFilePair.IsRegistrationFile(path);
+        var sibling = isDirectory ? null : DiagramFilePair.SiblingOf(path, _catalog) ?? (isRegistration ? designer?.BodyPath : null);
 
         // A SUBJECT's delete cascades to its registrations (adp-file-nesting Requirement 6.1):
         // a registration pointing at nothing serves nobody, and the confirmation dialog said
@@ -69,6 +78,11 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
         var cascade = !isDirectory && !DiagramFilePair.IsRegistrationFile(path)
             ? DiagramRegistrationSet.Over(IoPath.GetDirectoryName(path)!, path, _catalog).ToList()
             : [];
+        if (designer is not null && !isRegistration)
+        {
+            // The body of a designer's document: its registration names nothing once it is gone.
+            cascade.Add(designer.RegistrationPath);
+        }
         if (cascade.Count > 0)
         {
             _logger.Information("Deleting {Path} and the {Count} diagram registration(s) over it", path, cascade.Count);

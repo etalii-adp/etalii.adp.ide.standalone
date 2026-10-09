@@ -14,6 +14,11 @@ namespace EtAlii.Adp.Hierarchy;
 /// <param name="FirstLine">The single line to write - the chosen diagram type's MIME type.</param>
 /// <param name="SiblingFileName">The body file's name, or empty when the type keeps no sibling.</param>
 /// <param name="SiblingContent">The body file's complete initial content; ignored when there is no sibling.</param>
+/// <param name="NamesBody">
+/// Whether the registration names its body in a <c>body:</c> header after its first line. For a
+/// type whose body may have one of several extensions, where the registration's own name does
+/// not say which file beside it is the body.
+/// </param>
 /// <remarks>
 /// The command carries no diagram type of its own: what a diagram file starts as, and what
 /// its body starts as, is decided where the user chose it - the provider resolves the type's
@@ -26,7 +31,8 @@ public sealed record CreateDiagramFileCommand(
     string FileName,
     string FirstLine,
     string SiblingFileName = "",
-    string SiblingContent = "") : ICommand
+    string SiblingContent = "",
+    bool NamesBody = false) : ICommand
 {
     public bool HasSibling => SiblingFileName.Length > 0;
 }
@@ -56,7 +62,13 @@ public sealed class CreateDiagramFileCommandHandler : ICommandHandler<CreateDiag
             return Task.FromResult(CommandResult.Failure("The folder no longer exists."));
         }
 
-        var files = new List<(string FileName, string Content)> { (command.FileName, command.FirstLine + AdpFileWriter.NewLine) };
+        var registration = command.FirstLine + AdpFileWriter.NewLine;
+        if (command is { NamesBody: true, HasSibling: true })
+        {
+            registration += $"body: {command.SiblingFileName}{AdpFileWriter.NewLine}";
+        }
+
+        var files = new List<(string FileName, string Content)> { (command.FileName, registration) };
         if (command.HasSibling)
         {
             files.Add((command.SiblingFileName, command.SiblingContent));

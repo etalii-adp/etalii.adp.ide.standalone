@@ -81,6 +81,12 @@ public sealed class DesignerFileRouter
             return new DesignerRouted(definition, adpPath, SiblingOf(adpPath, definition));
         }
 
+        if (projectRoot is null && string.Equals(IoPath.GetFileName(named), named, StringComparison.Ordinal))
+        {
+            // A bare file name is beside the registration whatever the root is, so it needs none.
+            return new DesignerRouted(definition, adpPath, IoPath.Combine(IoPath.GetDirectoryName(adpPath) ?? "", named));
+        }
+
         if (projectRoot is null)
         {
             // The type is known; the body needs a root to resolve against, which the caller did not give.

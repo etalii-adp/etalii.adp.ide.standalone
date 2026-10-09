@@ -1,3 +1,4 @@
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.History;
@@ -34,6 +35,22 @@ public static class TestHistory
     public static IHistoryStack Create(string rootPath, out IHistoryStackStore store, params DiagramDefinition[] definitions)
     {
         store = CreateStore(definitions);
+        return store.Get(rootPath);
+    }
+
+    /// <summary>
+    /// The stack for a single project in a host that has designer types: the handlers are
+    /// then told which files are a designer's, as the real host tells them.
+    /// </summary>
+    public static IHistoryStack Create(string rootPath, out IHistoryStackStore store, IReadOnlyList<DesignerDefinition> designers)
+    {
+        store = new ServiceCollection()
+            .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog())
+            .AddSingleton<IDesignerDefinitionCatalog>(new DesignerDefinitionCatalog { All = designers })
+            .AddSingleton<DesignerFileRouter>()
+            .AddCommands().AddHierarchyCommandHandlers()
+            .BuildServiceProvider()
+            .GetRequiredService<IHistoryStackStore>();
         return store.Get(rootPath);
     }
 
