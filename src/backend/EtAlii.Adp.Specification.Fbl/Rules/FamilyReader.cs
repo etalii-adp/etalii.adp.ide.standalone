@@ -211,6 +211,24 @@ internal abstract class FamilyReader(BodyText text, FblBinding binding, FblOptio
 
     public abstract void Remove(Plan plan, ReadElement element, IReadOnlySet<ReadElement> removed);
 
+    /// <summary>
+    /// Moves <paramref name="element"/>'s entry among its siblings: a <c>remove-entry</c> where it
+    /// is and an <c>insert-entry</c> of the same bytes before <paramref name="before"/>'s entry,
+    /// or after <paramref name="last"/>'s when it goes last (FBL §5.5).
+    /// </summary>
+    /// <remarks>
+    /// This is the move of a family whose entries stand on lines of their own, where an entry's
+    /// line span is everything that belongs to it. A family that separates its entries, as json
+    /// does with commas, plans its own.
+    /// </remarks>
+    public virtual void Move(Plan plan, ReadElement element, ReadElement? before, ReadElement last)
+    {
+        var span = element.Entry.RemovalSpan;
+        var offset = before?.Entry.RemovalSpan.Start ?? last.Entry.RemovalSpan.End;
+        plan.Add(SpliceOperation.RemoveEntry, span, "");
+        plan.Add(SpliceOperation.InsertEntry, offset, offset, Text.Text(span));
+    }
+
     // ---- shared helpers ----
 
     protected string NewlineAt(int offset) => Text.NewlineAt(offset, Binding.Text.Newline);

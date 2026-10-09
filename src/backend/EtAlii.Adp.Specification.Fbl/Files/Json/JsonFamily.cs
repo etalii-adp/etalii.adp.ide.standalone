@@ -413,6 +413,34 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return entry.Own;
     }
 
+    /// <summary>
+    /// A move among siblings in json (FBL §5.5): the entry is removed with the one separator a
+    /// removal takes, and its own bytes are inserted with the separator its new place needs - after
+    /// it when another entry follows, before it when it becomes the last.
+    /// </summary>
+    public override void Move(Plan plan, ReadElement element, ReadElement? before, ReadElement last)
+    {
+        var entry = (TreeEntry)element.Entry;
+        var own = Text.Text(entry.Own);
+        plan.Add(SpliceOperation.RemoveEntry, RemovalSpan(entry), "");
+        if (before is not null)
+        {
+            var next = (TreeEntry)before.Entry;
+            if (next.LineSpan is { } line)
+            {
+                plan.Add(SpliceOperation.InsertEntry, line.Start, line.Start, Indentation(next.Indent) + own + "," + NewlineAt(line.Start));
+                return;
+            }
+            plan.Add(SpliceOperation.InsertEntry, next.Own.Start, next.Own.Start, own + ", ");
+            return;
+        }
+        var tail = (TreeEntry)last.Entry;
+        var inserted = tail.LineSpan is not null
+            ? "," + NewlineAt(tail.Own.End) + Indentation(tail.Indent) + own
+            : ", " + own;
+        plan.Add(SpliceOperation.InsertEntry, tail.Own.End, tail.Own.End, inserted);
+    }
+
     public override void Remove(Plan plan, ReadElement element, IReadOnlySet<ReadElement> removed)
     {
         var entry = (TreeEntry)element.Entry;

@@ -8,9 +8,14 @@ using Xunit;
 namespace EtAlii.Adp.Specification.Fbl.Tests.Plugins;
 
 /// <summary>
-/// The changes only a persistence plugin can write (runtime plan step S16): a move to another parent
-/// and index, a type change, and an add at a position among its siblings. A plugin body hands each to
-/// its plugin as it was made; a declared binding refuses each with a sentence, writing nothing.
+/// The changes only a persistence plugin can write (runtime plan step S16): a move to another parent,
+/// a type change, and an add at a position among its siblings. A plugin body hands each to its plugin
+/// as it was made; a declared binding refuses each with a sentence, writing nothing.
+/// <para>
+/// A move among siblings of one parent is no longer one of them: a declared binding plans it as a
+/// removal and an insertion of the entry's own bytes (FBL §5.5, knowledge-designer task 8), and a
+/// plugin body is still handed it as it was made.
+/// </para>
 /// </summary>
 public class PluginOnlyChangesTests
 {
@@ -18,7 +23,10 @@ public class PluginOnlyChangesTests
 
     private const string Timeline = "elements:\n  - id: a\n    label: Alpha\n    start: 2026-01-01\n";
 
-    public static TheoryData<string> Changes() => ["move", "retype", "add at an index"];
+    public static TheoryData<string> Changes() => ["move", "move to another parent", "retype", "add at an index"];
+
+    /// <summary>The changes a declared binding cannot plan.</summary>
+    public static TheoryData<string> PluginOnlyChanges() => ["move to another parent", "retype", "add at an index"];
 
     [Theory]
     [MemberData(nameof(Changes))]
@@ -38,7 +46,7 @@ public class PluginOnlyChangesTests
     }
 
     [Theory]
-    [MemberData(nameof(Changes))]
+    [MemberData(nameof(PluginOnlyChanges))]
     public void ADeclaredBinding_RefusesTheChange_AndWritesNothing(string name)
     {
         // Arrange.
@@ -51,6 +59,39 @@ public class PluginOnlyChangesTests
         // Assert.
         var refused = Assert.IsType<PlanResult.Refused>(result);
         Assert.Contains("only a persistence plugin can", refused.Reason, StringComparison.Ordinal);
+        Assert.Equal(original, body.Bytes);
+    }
+
+    [Fact]
+    public void ADeclaredBinding_MovesAnElementAmongItsSiblings_CarryingItsBytes()
+    {
+        // Arrange: two moments, the second with a comment of its own above it.
+        const string two = "elements:\n  - id: a\n    label: Alpha\n    start: 2026-01-01\n  # kept with b\n  - id: b\n    label: Beta\n    start: 2026-02-01\n";
+        var body = OpenBody.Open(Encoding.UTF8.GetBytes(two), RealFileCorpus.Binding("timeline.fbl", "timeline"), new FblOptions { FileName = "plan.tml" });
+
+        // Act: b becomes the first.
+        var result = body.Change(new ModelChange.Move("b", null, 0));
+
+        // Assert: one removal and one insertion, and b's comment went with it.
+        var planned = Assert.IsType<PlanResult.Planned>(result);
+        Assert.Equal([SpliceOperation.InsertEntry, SpliceOperation.RemoveEntry], planned.Edit.Splices.Select(splice => splice.Operation));
+        Assert.Equal(
+            "elements:\n  # kept with b\n  - id: b\n    label: Beta\n    start: 2026-02-01\n  - id: a\n    label: Alpha\n    start: 2026-01-01\n",
+            Encoding.UTF8.GetString(body.Bytes));
+    }
+
+    [Fact]
+    public void ADeclaredBinding_MovingAnElementToWhereItIs_WritesNothing()
+    {
+        // Arrange.
+        var original = Encoding.UTF8.GetBytes(Timeline);
+        var body = OpenBody.Open(original, RealFileCorpus.Binding("timeline.fbl", "timeline"), new FblOptions { FileName = "plan.tml" });
+
+        // Act: the only element, to the place it already has.
+        var result = body.Change(new ModelChange.Move("a", null, 0));
+
+        // Assert.
+        Assert.Empty(Assert.IsType<PlanResult.Planned>(result).Edit.Splices);
         Assert.Equal(original, body.Bytes);
     }
 
@@ -71,6 +112,7 @@ public class PluginOnlyChangesTests
     private static ModelChange ChangeOf(string name) => name switch
     {
         "move" => new ModelChange.Move("a", null, 0),
+        "move to another parent" => new ModelChange.Move("a", "a", 0),
         "retype" => new ModelChange.Retype("a", "Period", new Dictionary<string, object?> { ["end"] = "2026-02-01" }),
         _ => new ModelChange.Add("Moment", "b", new Dictionary<string, object?> { ["label"] = "Beta", ["start"] = "2026-02-01" }, null, 0),
     };

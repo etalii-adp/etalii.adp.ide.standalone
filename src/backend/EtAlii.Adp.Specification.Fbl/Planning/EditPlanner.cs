@@ -30,8 +30,9 @@ internal static class EditPlanner
                 case ModelChange.Remove remove:
                     PlanRemove(plan, remove);
                     break;
-                case ModelChange.Move:
-                    return new PlanResult.Refused("This file's binding cannot move an element to another place; only a persistence plugin can.");
+                case ModelChange.Move move:
+                    PlanMove(plan, move);
+                    break;
                 case ModelChange.Retype:
                     return new PlanResult.Refused("This file's binding cannot change an element's type; only a persistence plugin can.");
                 case ModelChange.Place or ModelChange.Identify:
@@ -192,9 +193,14 @@ internal static class EditPlanner
         var reading = plan.Reading;
         // A declared binding appends where its insert rule says; a position among siblings is a plugin's to honour.
         if (add.Index is not null) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
-        var rules = reading.Binding.AllRules.Where(r => r.Type == add.Type).ToList();
+        var rules = reading.Binding.AllRules.Where(r => r.Type == add.Type && (add.Slot is null || r.Parent?.Slot == add.Slot)).ToList();
         if (rules.Count == 0) Planning.Plan.Refuse($"This file has no place for a {add.Type}.");
-        var rule = rules.FirstOrDefault(r => r.Insert is not null);
+        // Several rules may write one type (a cell's items are options or rows): the one that
+        // binds the most of the attributes given is the one meant, the first of them on a tie.
+        var rule = rules
+            .Where(r => r.Insert is not null)
+            .OrderByDescending(r => add.Attributes.Keys.Count(name => r.Attribute(name) is not null))
+            .FirstOrDefault();
         if (rule is null)
         {
             Planning.Plan.Refuse(rules[0].ReadOnly is { Length: > 0 } text ? text : $"A {add.Type} cannot be added to this file.");
@@ -243,6 +249,43 @@ internal static class EditPlanner
         if (element is null || element.IsRelation) Planning.Plan.Refuse($"The {end} '{id}' names no element.");
         return element!;
     }
+
+    // ---- move ----
+
+    /// <summary>
+    /// A reorder among siblings (FBL §5.5, §6.4): the entry is removed where it is and inserted
+    /// where it goes, carrying its own bytes - its comments and unbound keys with it.
+    /// </summary>
+    private static void PlanMove(Plan plan, ModelChange.Move move)
+    {
+        var reading = plan.Reading;
+        var element = Element(reading, move.Id);
+        RefuseReadOnly(element.Rule, "moved");
+        if (element.Rule.Insert is null || element.Rule.Remove is null)
+        {
+            Planning.Plan.Refuse($"A {element.Rule.Type} cannot be moved in this file.");
+        }
+        ReadElement? parent = move.NewParentId is { } parentId ? Element(reading, parentId) : null;
+        if (parent != element.Parent)
+        {
+            Planning.Plan.Refuse($"This file's binding cannot move a {element.Rule.Type} to another parent; only a persistence plugin can.");
+        }
+        var siblings = reading.Elements.Where(other => AreSiblings(other, element)).ToList();
+        var current = siblings.IndexOf(element);
+        var index = move.Index < 0 || move.Index > siblings.Count ? siblings.Count : move.Index;
+        if (index == current || index == current + 1) return; // It is there already: no splice.
+        reading.Family.Move(plan, element, index < siblings.Count ? siblings[index] : null, siblings[^1]);
+        if (element.Rule.SnapshotUndo) plan.Snapshot = true;
+    }
+
+    /// <summary>
+    /// Whether two elements are ordered among each other: the same parent and containment slot,
+    /// and at the top level, where there is neither, the same type.
+    /// </summary>
+    private static bool AreSiblings(ReadElement other, ReadElement element) =>
+        other.Parent == element.Parent &&
+        other.Rule.Parent?.Slot == element.Rule.Parent?.Slot &&
+        (element.Parent is not null || other.Rule.Type == element.Rule.Type);
 
     // ---- remove ----
 
