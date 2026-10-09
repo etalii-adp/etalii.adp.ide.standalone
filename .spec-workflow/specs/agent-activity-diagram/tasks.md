@@ -106,7 +106,7 @@
   - _Leverage: `revealPath`, `AppHeader.tsx` (the one external link today), `everyCanvasHasOneRefusalSurface`_
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 5.7_
 
-- [-] 11. Canvas library: locked elements under an automatic layout
+- [x] 11. Canvas library: locked elements under an automatic layout
   - File: `src/client/src/canvas/library/layout/layoutAlgorithm.ts`, `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`
   - `LayoutElement` gains whether it is locked; a layout leaves a locked element at its stored position. `dragUnderAutomaticLayout` gains a value under which a drag raises `element-moved` for that element alone and the mode stays automatic. A locked element can show a declared symbol.
   - Guard: under an automatic mode, a locked element's drawn position is its stored one and an unlocked one's is the layout's; a drag raises `element-moved` once, for the dragged element.
@@ -114,7 +114,7 @@
   - _Leverage: `DiagramCanvas.layoutModes.test.tsx`_
   - _Requirements: 6.6_
 
-- [-] 12. Canvas library: the radiating layout
+- [x] 12. Canvas library: the radiating layout
   - File: `src/client/src/canvas/library/layout/` (a new algorithm and its tests), `definition/diagramDefinition.ts` (a new `LayoutMode` and its settings)
   - The algorithm of the design (*The layout*) and of `agent-activity-diagram.md`: springs along relations, repulsion, a pull to the circle of each element's tier, a final pass separating rectangles, locked elements fixed, starting positions from the tier and the order of entries, a fixed number of steps, nothing random. Written by hand, with no new dependency.
   - Waits on: 11.
@@ -123,7 +123,7 @@
   - _Leverage: `rowPackedLayout.ts` as the shape of an algorithm and its tests_
   - _Requirements: 6.5, 6.7, 6.9, 6.10_
 
-- [-] 13. Canvas library: a change moves little, and moves visibly
+- [x] 13. Canvas library: a change moves little, and moves visibly
   - File: `src/client/src/canvas/library/layout/`, `DiagramCanvas.tsx`, the library stylesheet
   - When the document changes while open, the layout starts from the positions on screen. Elements move from old to new positions over a short fixed time, and at once under reduced motion.
   - Waits on: 12.
@@ -132,7 +132,7 @@
   - _Leverage: `connectionsFollowTheDrag.test.tsx`_
   - _Requirements: 6.8_
 
-- [-] 14. Canvas library: a switch on the canvas
+- [x] 14. Canvas library: a switch on the canvas
   - File: `src/client/src/canvas/library/definition/chrome.ts`, `surface`
   - A switch declared in chrome with a caption, its value from the stream, raising an event when changed, drawn whether or not a filter is declared, with its role and state exposed.
   - Guard: a definition with a switch and no filter draws it; toggling raises the event; the drawn state follows the stream's value.
@@ -243,7 +243,7 @@
   - _Leverage: `src/diagrams/gartner-hype-cycle-graph/examples`, `CLAUDE.md` (*Vendored example data*)_
   - _Requirements: 8.3, 10.5, 10.6_
 
-- [-] 26. The layout at size
+- [x] 26. The layout at size
   - File: `src/client/src/canvas/library/layout/` (a measurement test), a generated diagram never committed
   - Two hundred elements and a thousand rows: assert no overlap and equal results on two runs, measure the time of a cold layout and of one change, and fix the number of steps from the measurement. Report the numbers in the implementation log.
   - Waits on: 12, 13.
