@@ -44,6 +44,40 @@ public sealed class RestoreDocumentCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task ARestoreOfAFileStillAsTheEditLeftIt_WritesTheTextBack()
+    {
+        var path = IoPath.Combine(_folder, "body.yml");
+        await File.WriteAllTextAsync(path, "after the edit", TestContext.Current.CancellationToken);
+        var store = new FirstStore();
+
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store)
+            .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "before the edit", new SampleEdit(), After: "after the edit"), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("before the edit", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        Assert.Equal([path], store.Reloaded);
+    }
+
+    [Fact]
+    public async Task ARestoreOfAFileAnotherProgramChanged_WritesNothing_AndSaysTheRecordIsSpent()
+    {
+        // agent-activity-diagram R9.6. An agent wrote the file after the edit this would undo.
+        // Putting the pre-edit text back would discard the agent's change without a word.
+        var path = IoPath.Combine(_folder, "body.yml");
+        await File.WriteAllTextAsync(path, "after the edit, and then an agent's line", TestContext.Current.CancellationToken);
+        var store = new FirstStore();
+
+        var result = await new RestoreDocumentCommandHandler<FirstStore>(store)
+            .ExecuteAsync(new RestoreDocumentCommand<FirstStore>(path, "before the edit", new SampleEdit(), After: "after the edit"), TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(path, result.OutdatedBodyPath);
+        Assert.Contains("changed by another program", result.Error, StringComparison.Ordinal);
+        Assert.Equal("after the edit, and then an agent's line", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        Assert.Empty(store.Reloaded);
+    }
+
+    [Fact]
     public async Task ARestoreThatCannotWrite_IsAFailedCommand_AndReloadsNothing()
     {
         // A path whose parent is a FILE cannot be written, whatever the writer tries.

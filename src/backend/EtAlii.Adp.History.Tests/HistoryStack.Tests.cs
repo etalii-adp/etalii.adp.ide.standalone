@@ -190,6 +190,42 @@ public class HistoryStackTests
         Assert.True(stack.CanRedo);
     }
 
+    [Fact]
+    public async Task UndoAsync_WhenTheDocumentWasChangedByAnotherProgram_DropsEveryEntryRecordedAgainstIt()
+    {
+        // agent-activity-diagram R9.6. Three edits to one document and one to another, then one of
+        // the three undone so both sides hold an entry for it. Another program writes the first
+        // document, and the next undo is told so. Left on the stack, that entry would refuse for
+        // good and block the other document's edit beneath it; so it goes, with its siblings on
+        // both sides, and the other document's edit is what undo reaches next.
+        (HistoryStack stack, HistoryStackRecordingDispatcher dispatcher) = CreateStack();
+        using var guard = stack;
+        var cancellation = TestContext.Current.CancellationToken;
+        await stack.ExecuteAsync(new HistoryStackBoundCommand("other.aad", "other"), cancellation);
+        await stack.ExecuteAsync(new HistoryStackBoundCommand("plan.aad", "a"), cancellation);
+        await stack.ExecuteAsync(new HistoryStackBoundCommand("plan.aad", "b"), cancellation);
+        await stack.ExecuteAsync(new HistoryStackBoundCommand("PLAN.aad", "c"), cancellation);
+        await stack.UndoAsync(cancellation);
+        Assert.Equal(3, stack.UndoCount);
+        Assert.Equal(1, stack.RedoCount);
+        var changes = 0;
+        stack.Changed += (_, _) => changes++;
+
+        dispatcher.OutdatedNextFor = "plan.aad";
+        var refused = await stack.UndoAsync(cancellation);
+
+        Assert.False(refused.IsSuccess);
+        Assert.Equal("changed by another program", refused.Error);
+        Assert.Equal(1, stack.UndoCount);
+        Assert.Equal(0, stack.RedoCount);
+        Assert.Equal(1, changes);
+
+        // What is left is the other document's edit, and it still undoes.
+        var undone = await stack.UndoAsync(cancellation);
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal("initial", dispatcher.Value);
+    }
+
     // ---- redo -------------------------------------------------------------------------
 
     [Fact]

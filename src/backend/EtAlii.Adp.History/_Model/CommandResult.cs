@@ -71,4 +71,28 @@ public sealed class CommandResult
         ArgumentException.ThrowIfNullOrWhiteSpace(error);
         return new CommandResult(false, error, null);
     }
+
+    /// <summary>
+    /// Rejected because the document at <paramref name="bodyPath"/> is no longer what this command
+    /// was recorded against, and can never be again: another program wrote it since.
+    /// </summary>
+    /// <remarks>
+    /// <b>Not an obstacle that might clear, which is what tells it from <see cref="Failure"/>.</b>
+    /// A failed undo normally stays on the stack to be retried once the file unlocks. One that is
+    /// outdated would stay there for good, refusing every time and blocking every entry beneath it,
+    /// so the history drops it - and every other entry recorded against that document, which is
+    /// outdated for the same reason (agent-activity-diagram R9.6).
+    /// </remarks>
+    public static CommandResult Outdated(string error, string bodyPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(error);
+        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
+        return new CommandResult(false, error, null) { OutdatedBodyPath = bodyPath };
+    }
+
+    /// <summary>
+    /// The document whose recorded changes can no longer be undone or redone; empty for every
+    /// result but <see cref="Outdated"/>.
+    /// </summary>
+    public string OutdatedBodyPath { get; private init; } = "";
 }
