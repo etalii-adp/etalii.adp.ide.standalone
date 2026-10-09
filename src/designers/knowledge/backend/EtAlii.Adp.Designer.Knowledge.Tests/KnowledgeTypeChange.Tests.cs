@@ -103,7 +103,7 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         // Assert: nine types, each to each of the eight others, each said once.
         Assert.Equal(72, table.Count);
         Assert.Equal(72, table.Select(pair => (pair.From, pair.To)).Distinct().Count());
-        Assert.Equal(KnowledgeDefinition.ValueTypes.Order(StringComparer.Ordinal), table.Select(pair => pair.From).Distinct().Order(StringComparer.Ordinal));
+        Assert.Equal(KnowledgeVocabulary.ValueTypes.Order(StringComparer.Ordinal), table.Select(pair => pair.From).Distinct().Order(StringComparer.Ordinal));
 
         // And it says both things: a table read as all kept, or as all converted, would pass every case below for nothing.
         Assert.Contains(table, pair => pair.Kept);

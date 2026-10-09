@@ -33,6 +33,8 @@
 | Zero writes (ansible) | `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/ZeroWrites.Tests.cs` | Does reading an Ansible project change anything of Ansible's in it? The claim the whole type turns on. |
 | Zero writes (helm) | `src/diagrams/helm-chart/backend/EtAlii.Adp.Diagram.HelmChart.Tests/ZeroWrites.Tests.cs` | The same for a chart — trivially today, because the module has no writer for chart content at all. |
 | Shape of sources (causal-loop) | `src/diagrams/causal-loop-diagram/backend/EtAlii.Adp.Diagram.CausalLoopDiagram.Tests/ShapeOfSources.Tests.cs` | What must this module's own files be, as files, regardless of what they say? |
+| Definition conformance (knowledge) | `src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge.Tests/DefinitionConformance.Tests.cs` | Are the module's value types, the key each is stored under, each type's comparisons and what a view stores those of `definition/knowledge.des` - in both directions, a difference named as *missing from the module* or as *unknown to the definition*? |
+| What is shown is what is written (knowledge) | `src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge.Tests/KnowledgeEditing.Tests.cs` | Is the table shown before an edit's write the table the file holds after it, for every gesture and each of the three formats? An edit is shown at once and written behind, by different code. |
 | Example corpus (sparql) | `src/diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/ExampleCorpus.Tests.cs` | Does every vendored example parse, draw something, and report nothing above info? |
 
 ## Tree-wide guards, client

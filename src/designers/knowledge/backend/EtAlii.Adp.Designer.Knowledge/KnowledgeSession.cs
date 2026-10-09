@@ -169,7 +169,7 @@ internal sealed class KnowledgeSession : IDesignerSession
             }
 
             var structure = Structure();
-            return new TableBaseline(structure.Title, structure.Columns, structure.Views, structure.Settings, structure.RowCount, KnowledgeTableMapper.Findings(_body.Model), structure.ReadOnlyReason);
+            return new TableBaseline(structure.Title, structure.Columns, structure.Views, structure.Settings, structure.RowCount, Findings(_body), structure.ReadOnlyReason);
         }
     }
 
@@ -465,7 +465,7 @@ internal sealed class KnowledgeSession : IDesignerSession
         List<TableChange> changes = [Structure()];
         if (_body is not null)
         {
-            changes.Add(new TableFindingsChanged(KnowledgeTableMapper.Findings(_body.Model)));
+            changes.Add(new TableFindingsChanged(Findings(_body)));
         }
 
         if (RowsOfWindow() is { } rows)
@@ -475,6 +475,13 @@ internal sealed class KnowledgeSession : IDesignerSession
 
         return changes;
     }
+
+    /// <summary>
+    /// What the table has to report: what the reading of the file found, and what the designer's own
+    /// rules find in the table as it is shown - so an edit that puts something right is seen to at once.
+    /// </summary>
+    private List<TableFinding> Findings(KnowledgeBody body) =>
+        body.Unreadable.Length > 0 ? [.. KnowledgeTableMapper.Findings(body.Model)] : [.. KnowledgeTableMapper.Findings(body.Model), .. KnowledgeValidator.Validate(_shown, _shownModel)];
 
     private TableStructureChanged Structure() => KnowledgeTableMapper.Structure(_shown, _body?.ReadOnlyReason ?? "", _viewId, Lines().Count);
 

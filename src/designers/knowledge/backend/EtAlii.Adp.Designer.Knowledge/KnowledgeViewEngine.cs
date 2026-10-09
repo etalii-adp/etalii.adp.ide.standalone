@@ -101,6 +101,13 @@ internal static class KnowledgeViewEngine
             return true;
         }
 
+        // A comparison its property's type does not have - written by hand, or left from a type the
+        // property had before - is a setting the view opens without, too.
+        if (!KnowledgeVocabulary.Compares(property.ValueType, condition.Operator))
+        {
+            return true;
+        }
+
         var values = ValuesOf(row, property);
         var value = values.Count > 0 ? values[0] : "";
         var given = condition.Value;

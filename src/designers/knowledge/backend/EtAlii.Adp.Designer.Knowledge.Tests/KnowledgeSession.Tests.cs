@@ -189,7 +189,10 @@ public sealed class KnowledgeSessionTests : IDisposable
         await File.WriteAllTextAsync(path, text.Replace("name: Cities", "name: Towns", StringComparison.Ordinal).Replace("text: Amsterdam", "text: Mokum", StringComparison.Ordinal), TestContext.Current.CancellationToken);
 
         // Assert: the structure, the findings and the window's rows, from the file as it is now.
-        Assert.True(await Eventually(() => pushed.OfType<TableRowsChanged>().Any()), "The session never showed the change made to its file.");
+        // The write is seen as it happens, so a reading taken halfway through may be pushed first: what is waited for is the file as it ended.
+        Assert.True(
+            await Eventually(() => pushed.OfType<TableStructureChanged>().LastOrDefault()?.Title == "Towns" && pushed.OfType<TableRowsChanged>().LastOrDefault()?.Rows.Count > 0),
+            "The session never showed the change made to its file.");
         Assert.Equal("Towns", pushed.OfType<TableStructureChanged>().Last().Title);
         Assert.Equal("Mokum", pushed.OfType<TableRowsChanged>().Last().Rows[0].Cells.Single(cell => cell.ColumnId == "p1").Values.Single());
         Assert.Contains(pushed, change => change is TableFindingsChanged);

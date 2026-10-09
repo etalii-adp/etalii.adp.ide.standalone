@@ -21,7 +21,7 @@ internal static class KnowledgeDefinition
 
     private static readonly Lazy<IReadOnlyDictionary<(string Type, string Attribute), string>> _attributeTypes = new(LoadAttributeTypes);
 
-    private static readonly Lazy<Dictionary<string, (string Label, IReadOnlyList<string> Comparisons)?>> _valueTypes = new(LoadValueTypes);
+    private static readonly Lazy<Dictionary<string, string>> _valueTypes = new(LoadValueTypes);
 
     /// <summary>The binding a body of this extension is read and written with, or null for an extension no binding has.</summary>
     public static FblBinding? BindingFor(string extension) => extension.ToLowerInvariant() switch
@@ -44,13 +44,7 @@ internal static class KnowledgeDefinition
     public static string? AttributeType(string type, string attribute) => _attributeTypes.Value.GetValueOrDefault((type, attribute));
 
     /// <summary>The name the specification gives a value type, or null for a type it does not have.</summary>
-    public static string? ValueTypeLabel(string valueType) => _valueTypes.Value.GetValueOrDefault(valueType)?.Label;
-
-    /// <summary>The comparisons the specification gives a value type, in its order; none for a type it does not have.</summary>
-    public static IReadOnlyList<string> Comparisons(string valueType) => _valueTypes.Value.GetValueOrDefault(valueType)?.Comparisons ?? [];
-
-    /// <summary>The value types the specification has, in its order.</summary>
-    public static IReadOnlyList<string> ValueTypes => [.. _valueTypes.Value.Keys];
+    public static string? ValueTypeLabel(string valueType) => _valueTypes.Value.GetValueOrDefault(valueType);
 
     /// <summary>How many attributes the specification types: none would mean it was not read.</summary>
     public static int TypedAttributeCount => _attributeTypes.Value.Count;
@@ -101,20 +95,11 @@ internal static class KnowledgeDefinition
         return document.Bindings;
     }
 
-    private static Dictionary<string, (string Label, IReadOnlyList<string> Comparisons)?> LoadValueTypes()
+    private static Dictionary<string, string> LoadValueTypes()
     {
         using var specification = JsonDocument.Parse(Resource("knowledge.des"));
-        var surface = specification.RootElement.GetProperty("surface").GetProperty("valueTypes");
-        var types = new Dictionary<string, (string Label, IReadOnlyList<string> Comparisons)?>(StringComparer.Ordinal);
-        foreach (var type in specification.RootElement.GetProperty("metamodel").GetProperty("enums").GetProperty("ValueType").GetProperty("values").EnumerateObject())
-        {
-            IReadOnlyList<string> comparisons = surface.TryGetProperty(type.Name, out var shown) && shown.TryGetProperty("comparisons", out var listed)
-                ? [.. listed.EnumerateArray().Select(comparison => comparison.GetString()!)]
-                : [];
-            types[type.Name] = (type.Value.GetProperty("label").GetString()!, comparisons);
-        }
-
-        return types;
+        return specification.RootElement.GetProperty("metamodel").GetProperty("enums").GetProperty("ValueType").GetProperty("values").EnumerateObject()
+            .ToDictionary(type => type.Name, type => type.Value.GetProperty("label").GetString()!, StringComparer.Ordinal);
     }
 
     private static IReadOnlyDictionary<(string Type, string Attribute), string> LoadAttributeTypes()

@@ -88,9 +88,6 @@ internal sealed record KnowledgeCell(string PropertyId, IReadOnlyList<string> Va
 /// <summary>Reads a <see cref="KnowledgeTable"/> out of a body's FBL model.</summary>
 internal static class KnowledgeModelReader
 {
-    /// <summary>The keys a cell or a condition holds its one value under, by the value's kind.</summary>
-    private static readonly string[] ValueKeys = ["text", "number", "checked", "date", "dateTime", "time", "option"];
-
     public static KnowledgeTable Read(FblModel model)
     {
         ArgumentNullException.ThrowIfNull(model);
@@ -163,7 +160,7 @@ internal static class KnowledgeModelReader
     /// <summary>The one value a cell or a condition holds, whichever key its kind writes it under.</summary>
     private static string ValueOf(FblElement element, out string key)
     {
-        foreach (var candidate in ValueKeys)
+        foreach (var candidate in KnowledgeVocabulary.ValueKeys)
         {
             if (element.Attributes.TryGetValue(candidate, out var value) && value is not null)
             {

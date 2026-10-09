@@ -217,7 +217,7 @@ public sealed class KnowledgeViewTests
 
         foreach ((string type, (string propertyId, string given)) in samples)
         {
-            var comparisons = KnowledgeDefinition.Comparisons(type);
+            var comparisons = KnowledgeVocabulary.Comparisons[type];
             Assert.NotEmpty(comparisons);
             foreach (var comparison in comparisons)
             {

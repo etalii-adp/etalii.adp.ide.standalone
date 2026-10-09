@@ -340,7 +340,7 @@ internal static partial class KnowledgeEdits
             return Refused(RelationNeedsTarget);
         }
 
-        if (KnowledgeDefinition.ValueTypeLabel(type) is not { } label)
+        if (!KnowledgeVocabulary.ValueTypes.Contains(type) || KnowledgeDefinition.ValueTypeLabel(type) is not { } label)
         {
             return Refused($"'{type}' is not a type a property can have.");
         }
@@ -452,11 +452,9 @@ internal static partial class KnowledgeEdits
     /// <summary>The key a cell holds a value of this type under: one of a cell's attributes, or the name of its list of several.</summary>
     internal static string KeyOf(string valueType) => valueType switch
     {
-        "checkbox" => "checked",
-        "selection" => "option",
         "multipleSelection" => "options",
         "relation" => "rows",
-        _ => valueType,
+        _ => KnowledgeVocabulary.StoredKey(valueType),
     };
 
     /// <summary>
@@ -488,7 +486,7 @@ internal static partial class KnowledgeEdits
             return Refused(RelationNeedsTarget);
         }
 
-        if (KnowledgeDefinition.ValueTypeLabel(to) is null)
+        if (!KnowledgeVocabulary.ValueTypes.Contains(to))
         {
             return Refused($"'{to}' is not a type a property can have.");
         }
@@ -857,7 +855,7 @@ internal static partial class KnowledgeEdits
             return Refused("That group is no longer in this filter.");
         }
 
-        var comparison = gesture.Settings.GetValueOrDefault("comparison") is { Length: > 0 } asked ? Comparison(asked) : KnowledgeDefinition.Comparisons(property.ValueType).FirstOrDefault() ?? "is-empty";
+        var comparison = gesture.Settings.GetValueOrDefault("comparison") is { Length: > 0 } asked ? Comparison(asked) : KnowledgeVocabulary.Comparisons.GetValueOrDefault(property.ValueType)?.FirstOrDefault() ?? "is-empty";
         return AddToFilter("Condition", Attributes(("property", property.Id), ("operator", comparison)), view, group, besideItsRule);
     }
 
