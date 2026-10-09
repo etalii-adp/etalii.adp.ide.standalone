@@ -79,13 +79,13 @@ public sealed class FdgContextPropertyProvider : IContextPropertyProvider
         if (FdgEdits.ElementOf(model, target.ElementId) is { } element)
         {
             List<ContextPropertyDefinition> rows = element.IsComment
-                ? [new(TextProperty, "Text", element.Text, ContextPropertyEditor.Text, Group: IdentityGroup)]
-                : [new(NameProperty, "Name", element.Name, Group: IdentityGroup)];
-            rows.Add(new(DescriptionProperty, "Description", element.Description, ContextPropertyEditor.Text, Group: IdentityGroup));
-            rows.Add(new(WidthProperty, "Width", Number(element.Width), Group: SizeGroup));
+                ? [new ContextPropertyDefinition(TextProperty, "Text", element.Text, ContextPropertyEditor.Text, Group: IdentityGroup)]
+                : [new ContextPropertyDefinition(NameProperty, "Name", element.Name, Group: IdentityGroup)];
+            rows.Add(new ContextPropertyDefinition(DescriptionProperty, "Description", element.Description, ContextPropertyEditor.Text, Group: IdentityGroup));
+            rows.Add(new ContextPropertyDefinition(WidthProperty, "Width", Number(element.Width), Group: SizeGroup));
             if (element.IsComment)
             {
-                rows.Add(new(HeightProperty, "Height", Number(element.DrawnHeight), Group: SizeGroup));
+                rows.Add(new ContextPropertyDefinition(HeightProperty, "Height", Number(element.DrawnHeight), Group: SizeGroup));
             }
 
             return Rows(rows);
@@ -95,8 +95,8 @@ public sealed class FdgContextPropertyProvider : IContextPropertyProvider
         {
             return Rows(
             [
-                new(ConnectionNameProperty, "Name", connection.Name, Group: IdentityGroup),
-                new(DescriptionProperty, "Description", connection.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
+                new ContextPropertyDefinition(ConnectionNameProperty, "Name", connection.Name, Group: IdentityGroup),
+                new ContextPropertyDefinition(DescriptionProperty, "Description", connection.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
             ]);
         }
 

@@ -285,11 +285,11 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
     {
         PipelineElementLocationKind.Stage =>
         [
-            new(AddStageActionId, "Add stage", "mdi-layers-plus"),
-            new(AddJobActionId, "Add job", "mdi-plus-box-outline"),
-            new(AddDeploymentJobActionId, "Add deployment job", "mdi-rocket-launch-outline"),
+            new ContextActionDefinition(AddStageActionId, "Add stage", "mdi-layers-plus"),
+            new ContextActionDefinition(AddJobActionId, "Add job", "mdi-plus-box-outline"),
+            new ContextActionDefinition(AddDeploymentJobActionId, "Add deployment job", "mdi-rocket-launch-outline"),
         ],
-        PipelineElementLocationKind.Job => [new(AddStepActionId, "Add step", "mdi-plus-box-outline")],
+        PipelineElementLocationKind.Job => [new ContextActionDefinition(AddStepActionId, "Add step", "mdi-plus-box-outline")],
         _ => [],
     };
 

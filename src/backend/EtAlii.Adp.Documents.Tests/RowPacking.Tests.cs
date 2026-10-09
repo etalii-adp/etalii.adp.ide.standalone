@@ -26,7 +26,7 @@ public class RowPackingTests
     public void TheGap_KeepsTwoItemsThatWouldTouch_OnSeparateRows()
     {
         // Act.
-        var rows = RowPacking.Pack([new("a", 0, 10), new("b", 15, 20)], [], gap: 8);
+        var rows = RowPacking.Pack([new RowItem("a", 0, 10), new RowItem("b", 15, 20)], [], gap: 8);
 
         // Assert.
         Assert.NotEqual(rows["a"], rows["b"]);

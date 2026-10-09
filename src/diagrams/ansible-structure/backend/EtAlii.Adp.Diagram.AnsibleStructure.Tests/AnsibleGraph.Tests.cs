@@ -300,7 +300,7 @@ public class AnsibleGraphTests
     public void HostPatterns_MatchTheSubsetTheModuleClaims(string pattern, bool expected)
     {
         // Arrange.
-        var inventory = new AnsibleInventory("production", "inventories/production", [new("web", 2), new("db", 1)], []);
+        var inventory = new AnsibleInventory("production", "inventories/production", [new AnsibleInventoryGroup("web", 2), new AnsibleInventoryGroup("db", 1)], []);
 
         // Act and assert.
         // Exclusions and intersections deliberately draw nothing: an exclusion names what a

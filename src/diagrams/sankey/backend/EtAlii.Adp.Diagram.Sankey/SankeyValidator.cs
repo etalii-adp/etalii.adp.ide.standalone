@@ -77,14 +77,14 @@ public sealed class SankeyValidator : IDiagramValidator
         {
             if (flow.From.Length > 0 && flow.From == flow.To)
             {
-                breaches.Add(new(SankeyRuleIds.SelfFlow, $"The flow from `{flow.From}` runs to itself and is not drawn.", flow.Range.Start, false));
+                breaches.Add(new SankeyBreach(SankeyRuleIds.SelfFlow, $"The flow from `{flow.From}` runs to itself and is not drawn.", flow.Range.Start, false));
                 continue;
             }
 
             var missing = new[] { flow.From, flow.To }.Where(end => !nodes.Contains(end)).ToList();
             foreach (var end in missing)
             {
-                breaches.Add(new(SankeyRuleIds.DanglingFlow,
+                breaches.Add(new SankeyBreach(SankeyRuleIds.DanglingFlow,
                     end.Length == 0 ? "A flow is missing an end and is not drawn." : $"A flow names `{end}`, which is not a node here; it is not drawn.",
                     flow.Range.Start, false));
             }
@@ -96,16 +96,16 @@ public sealed class SankeyValidator : IDiagramValidator
 
             if (flow.Value is null)
             {
-                breaches.Add(new(SankeyRuleIds.MissingValue, $"The flow from `{flow.From}` to `{flow.To}` states no value, so it is drawn as a hairline.", flow.Range.Start, true));
+                breaches.Add(new SankeyBreach(SankeyRuleIds.MissingValue, $"The flow from `{flow.From}` to `{flow.To}` states no value, so it is drawn as a hairline.", flow.Range.Start, true));
             }
             else if (flow.Value < 0)
             {
-                breaches.Add(new(SankeyRuleIds.NegativeValue, $"The flow from `{flow.From}` to `{flow.To}` has a negative value; it is drawn as zero.", flow.Range.Start, true));
+                breaches.Add(new SankeyBreach(SankeyRuleIds.NegativeValue, $"The flow from `{flow.From}` to `{flow.To}` has a negative value; it is drawn as zero.", flow.Range.Start, true));
             }
 
             if (!SankeyColors.IsKnown(flow.Color))
             {
-                breaches.Add(new(SankeyRuleIds.UnknownColor, UnknownColor(flow.Color), flow.Range.Start, true));
+                breaches.Add(new SankeyBreach(SankeyRuleIds.UnknownColor, UnknownColor(flow.Color), flow.Range.Start, true));
             }
         }
 

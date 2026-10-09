@@ -374,8 +374,8 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
         }
 
         var identity = new ContextActionGroupDefinition([
-            new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(RemoveActionId, "Remove", "mdi-trash-can-outline", new ContextShortcutDefinition("Delete")),
+            new ContextActionDefinition(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
+            new ContextActionDefinition(RemoveActionId, "Remove", "mdi-trash-can-outline", new ContextShortcutDefinition("Delete")),
         ]);
 
         var evolving = map.Evolves.Any(evolve => evolve.Name == component.Name);
@@ -442,13 +442,13 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
         FindChild(map, entry) is null
             ? Empty()
             : Groups(new ContextActionGroupDefinition([
-                new(RemoveFromPipelineActionId, "Remove from pipeline", "mdi-trash-can-outline", new ContextShortcutDefinition("Delete")),
+                new ContextActionDefinition(RemoveFromPipelineActionId, "Remove from pipeline", "mdi-trash-can-outline", new ContextShortcutDefinition("Delete")),
             ]));
 
     private ValueTask<IReadOnlyList<ContextActionGroupDefinition>> ForLink(WardleyMap map, WardleyIdentityEntry entry) =>
         map.Links.Any(link => WardleyIdentityKeys.Of(link) == entry.Key)
             ? Groups(new ContextActionGroupDefinition([
-                new(UnlinkActionId, "Remove link", "mdi-link-variant-off", new ContextShortcutDefinition("Delete")),
+                new ContextActionDefinition(UnlinkActionId, "Remove link", "mdi-link-variant-off", new ContextShortcutDefinition("Delete")),
             ]))
             : Empty();
 

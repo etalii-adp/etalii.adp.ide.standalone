@@ -72,13 +72,13 @@ public sealed class SupplyChainValidator : IDiagramValidator
         {
             if (flow.From.Length > 0 && flow.From == flow.To)
             {
-                breaches.Add(new(SupplyChainRuleIds.SelfFlow, $"The flow `{flow.Id}` runs from `{flow.From}` to itself and is not drawn.", flow.Range.Start, false));
+                breaches.Add(new SupplyChainBreach(SupplyChainRuleIds.SelfFlow, $"The flow `{flow.Id}` runs from `{flow.From}` to itself and is not drawn.", flow.Range.Start, false));
                 continue;
             }
 
             foreach (var end in new[] { flow.From, flow.To }.Where(end => !nodes.Contains(end)))
             {
-                breaches.Add(new(SupplyChainRuleIds.DanglingFlow,
+                breaches.Add(new SupplyChainBreach(SupplyChainRuleIds.DanglingFlow,
                     end.Length == 0 ? $"The flow `{flow.Id}` is missing an end and is not drawn." : $"The flow `{flow.Id}` names `{end}`, which is not a node here; it is not drawn.",
                     flow.Range.Start, false));
             }

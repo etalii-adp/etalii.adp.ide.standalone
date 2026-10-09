@@ -16,19 +16,19 @@ public sealed class DatabricksToolboxProvider(DiagramOrigin origin) : IDiagramTo
     {
         "job" =>
         [
-            new(
+            new ToolboxItemDefinition(
                 "databricks.toolbox.notebook-task",
                 "Notebook task",
                 "mdi-notebook-outline",
                 "Runs a notebook. Drop on the canvas where it should sit.",
                 $"{DatabricksContextActionProvider.AddTaskActionPrefix}notebook"),
-            new(
+            new ToolboxItemDefinition(
                 "databricks.toolbox.python-task",
                 "Python task",
                 "mdi-language-python",
                 "Runs a Python file. Drop on the canvas where it should sit.",
                 $"{DatabricksContextActionProvider.AddTaskActionPrefix}python"),
-            new(
+            new ToolboxItemDefinition(
                 "databricks.toolbox.condition-task",
                 "Condition task",
                 "mdi-call-split",
@@ -37,13 +37,13 @@ public sealed class DatabricksToolboxProvider(DiagramOrigin origin) : IDiagramTo
         ],
         "pipeline" =>
         [
-            new(
+            new ToolboxItemDefinition(
                 "databricks.toolbox.notebook-library",
                 "Notebook library",
                 "mdi-notebook-outline",
                 "A notebook the pipeline's transformations come from.",
                 $"{DatabricksContextActionProvider.AddLibraryActionPrefix}notebook"),
-            new(
+            new ToolboxItemDefinition(
                 "databricks.toolbox.file-library",
                 "File library",
                 "mdi-file-code-outline",
@@ -52,13 +52,13 @@ public sealed class DatabricksToolboxProvider(DiagramOrigin origin) : IDiagramTo
         ],
         _ =>
         [
-            new(
+            new ToolboxItemDefinition(
                 "databricks.toolbox.job-resource",
                 "Job",
                 "mdi-transit-connection-horizontal",
                 "A job resource skeleton, complete with a starter task.",
                 $"{DatabricksContextActionProvider.AddResourceActionPrefix}jobs"),
-            new(
+            new ToolboxItemDefinition(
                 "databricks.toolbox.pipeline-resource",
                 "Pipeline",
                 "mdi-pipe",

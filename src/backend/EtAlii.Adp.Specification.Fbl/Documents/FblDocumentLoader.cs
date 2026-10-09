@@ -344,7 +344,7 @@ internal static class BindingReader
         var attributes = new List<KeyValuePair<string, AttributeBinding>>();
         if (json.TryGetProperty("attributes", out var attrs) && attrs.ValueKind == JsonValueKind.Object)
         {
-            foreach (var a in attrs.EnumerateObject()) attributes.Add(new(a.Name, ReadAttribute(a.Value)));
+            foreach (var a in attrs.EnumerateObject()) attributes.Add(new KeyValuePair<string, AttributeBinding>(a.Name, ReadAttribute(a.Value)));
         }
         InsertSettings? insert = null;
         if (json.TryGetProperty("insert", out var ins))

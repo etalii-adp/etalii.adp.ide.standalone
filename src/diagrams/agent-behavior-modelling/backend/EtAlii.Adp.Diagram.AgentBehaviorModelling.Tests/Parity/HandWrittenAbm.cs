@@ -58,7 +58,7 @@ internal static class HandWrittenAbm
 
             if (node.TakesAnotherChild)
             {
-                groups.Add(new([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AbmContextActionProvider.AddActionId(kind.Id), $"Add child: {Menu(kind)}", "mdi-plus"))]));
+                groups.Add(new ContextActionGroupDefinition([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AbmContextActionProvider.AddActionId(kind.Id), $"Add child: {Menu(kind)}", "mdi-plus"))]));
             }
 
             groups.Add(arrange);
@@ -67,12 +67,12 @@ internal static class HandWrittenAbm
 
         if (GestureIds.TryParsePlacement(elementId, out _, out _))
         {
-            return [new([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AbmContextActionProvider.AddActionId(kind.Id), $"Add {Menu(kind)} here", "mdi-plus"))]), arrange];
+            return [new ContextActionGroupDefinition([.. AbmNodeKinds.All.Select(kind => new ContextActionDefinition(AbmContextActionProvider.AddActionId(kind.Id), $"Add {Menu(kind)} here", "mdi-plus"))]), arrange];
         }
 
         if (GestureIds.TryParseRelation(elementId, out _, out _))
         {
-            return [new([new ContextActionDefinition(AbmContextActionProvider.ConnectChildActionId, "Move under this node", "mdi-file-tree-outline")])];
+            return [new ContextActionGroupDefinition([new ContextActionDefinition(AbmContextActionProvider.ConnectChildActionId, "Move under this node", "mdi-file-tree-outline")])];
         }
 
         return [];
@@ -93,11 +93,11 @@ internal static class HandWrittenAbm
         ];
         if (node.Kind == AbmNodeKinds.Retry)
         {
-            rows.Add(new(AbmContextPropertyProvider.AttemptsProperty, "Attempts", node.RetryCount.ToString(CultureInfo.InvariantCulture), Group: "Node"));
+            rows.Add(new ContextPropertyDefinition(AbmContextPropertyProvider.AttemptsProperty, "Attempts", node.RetryCount.ToString(CultureInfo.InvariantCulture), Group: "Node"));
         }
 
-        rows.Add(new(AbmContextPropertyProvider.NotesProperty, "Notes", node.Notes, ContextPropertyEditor.Text, Group: "Node"));
-        rows.Add(new(AbmContextPropertyProvider.PlaceProperty, "Place", node.Id, ReadOnlyReason: "A node's place follows from where it sits in the tree.", Group: "Node"));
+        rows.Add(new ContextPropertyDefinition(AbmContextPropertyProvider.NotesProperty, "Notes", node.Notes, ContextPropertyEditor.Text, Group: "Node"));
+        rows.Add(new ContextPropertyDefinition(AbmContextPropertyProvider.PlaceProperty, "Place", node.Id, ReadOnlyReason: "A node's place follows from where it sits in the tree.", Group: "Node"));
         return rows;
     }
 

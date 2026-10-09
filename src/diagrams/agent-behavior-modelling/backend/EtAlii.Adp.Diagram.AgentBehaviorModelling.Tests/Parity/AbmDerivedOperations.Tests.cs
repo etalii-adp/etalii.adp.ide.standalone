@@ -31,7 +31,7 @@ public class AbmDerivedOperationsTests
             {
                 Same(text, $"add {kind} under {parent.Id}",
                     document => HandWrittenAbmOperations.AddChild(document, document.Model.NodeOf(parent.Id)!, kind),
-                    document => Derived(document, "addChild", parent.Id, new() { ["kind"] = AbmEdits.TypeOf(kind) }));
+                    document => Derived(document, "addChild", parent.Id, new Dictionary<string, object?> { ["kind"] = AbmEdits.TypeOf(kind) }));
                 Same(text, $"add {kind} first under {parent.Id}",
                     document => HandWrittenAbmOperations.AddHere(document, document.Model.NodeOf(parent.Id)!, 0, kind),
                     document => AbmDefinition.Apply(document, Here(document, kind), change => change is Specification.Fbl.Planning.ModelChange.Add add ? add with { ParentId = parent.Id, Index = 0 } : change));
@@ -61,7 +61,7 @@ public class AbmDerivedOperationsTests
             {
                 Same(text, $"notes of {node.Id}: {notes}",
                     document => HandWrittenAbmOperations.Notes(document, document.Model.NodeOf(node.Id)!, notes),
-                    document => Derived(document, "editNotes", node.Id, new() { ["notes"] = notes }));
+                    document => Derived(document, "editNotes", node.Id, new Dictionary<string, object?> { ["notes"] = notes }));
             }
 
             foreach (var kind in AbmNodeKinds.All.Select(kind => kind.Id).Where(kind => kind != node.Kind))

@@ -99,73 +99,73 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
     /// </summary>
     private static readonly DrawnModule[] Modules =
     [
-        new("agent-behavior-modelling", new(
+        new("agent-behavior-modelling", new DrawnTypes(
             [AbmElementMapper.ChildType],
             [AbmElementMapper.SequenceType, AbmElementMapper.FallbackType, AbmElementMapper.ParallelType, AbmElementMapper.RetryType, AbmElementMapper.RepeatType, AbmElementMapper.GuardType, AbmElementMapper.ApprovalType, AbmElementMapper.CheckType, AbmElementMapper.ActionType, AbmElementMapper.AskType, AbmElementMapper.DelegateType])),
-        new("ansible-structure", new(
+        new("ansible-structure", new DrawnTypes(
             [AnsibleElementMapper.EdgeType],
             [AnsibleElementMapper.PlaybookType, AnsibleElementMapper.PlayType, AnsibleElementMapper.RoleType, AnsibleElementMapper.TaskFileType, AnsibleElementMapper.InventoryType, AnsibleElementMapper.VariableFolderType])),
         // The three levels nest: a stage's jobs and their arrows exist only while the stage is open, and
         // a job's steps only while the job is too. So every stage and every job now drawn is opened, and
         // the helper calls this again with what that revealed - without it the job graph's arrows and
         // every step would never be visited at all.
-        new("azure-devops-pipeline", new(
+        new("azure-devops-pipeline", new DrawnTypes(
             [PipelineElementMapper.EdgeType],
             [PipelineElementMapper.StageType, PipelineElementMapper.JobType, PipelineElementMapper.StepType, PipelineElementMapper.TemplateType]),
             ExpandViews: ExpandPipelineViews),
-        new("c4", new(
+        new("c4", new DrawnTypes(
             [C4ElementMapper.RelationshipType],
             [C4ElementMapper.NodeType, C4ElementMapper.BoundaryType, C4ElementMapper.ViewType])),
-        new("causal-loop-diagram", new(
+        new("causal-loop-diagram", new DrawnTypes(
             [CausalLoopElementMapper.LinkType],
             [CausalLoopElementMapper.VariableType, CausalLoopElementMapper.LoopType])),
-        new("databricks", new(
+        new("databricks", new DrawnTypes(
             [DatabricksElementMapper.EdgeType, DatabricksElementMapper.OverrideEdgeType, DatabricksElementMapper.FlowEdgeType],
             [DatabricksElementMapper.TaskType, DatabricksElementMapper.ClusterType, DatabricksElementMapper.BundleType, DatabricksElementMapper.ResourceType, DatabricksElementMapper.TargetType, DatabricksElementMapper.PipelineNodeType])),
-        new("dependency-graph", new(
+        new("dependency-graph", new DrawnTypes(
             [DependencyGraphElementMapper.RelationType],
             [DependencyGraphElementMapper.NodeType])),
-        new("dotnet-dependency-graph", new(
+        new("dotnet-dependency-graph", new DrawnTypes(
             [DependencyElementMapper.EdgeType],
             [DependencyElementMapper.ProjectType, DependencyElementMapper.PackageType])),
-        new("functional-decomposition-graph", new(
+        new("functional-decomposition-graph", new DrawnTypes(
             [FdgElementMapper.UiChildType, FdgElementMapper.OwnsActionType, FdgElementMapper.OwnsDataType, FdgElementMapper.OwnsFunctionType, FdgElementMapper.ShowsType],
             [FdgElementMapper.UiElementType, FdgElementMapper.DataElementType, FdgElementMapper.ActionType, FdgElementMapper.FunctionType, FdgElementMapper.CommentType])),
-        new("gartner-hype-cycle-graph", new(
+        new("gartner-hype-cycle-graph", new DrawnTypes(
             [GhgElementMapper.InfluenceType],
             [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType])),
-        new("helm-chart", new(
+        new("helm-chart", new DrawnTypes(
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),
-        new("mindmap", new(
+        new("mindmap", new DrawnTypes(
             [],
             [MindmapElementMapper.NodeType],
             NoConnectionsBecause: "a branch is drawn client-side from each node's parentId; the projection emits nodes only")),
-        new("owl", new(
+        new("owl", new DrawnTypes(
             [OwlElementMapper.EdgeType],
             [OwlElementMapper.NodeType, OwlElementMapper.ExpressionType])),
-        new("rdf", new(
+        new("rdf", new DrawnTypes(
             [RdfElementMapper.EdgeType],
             [RdfElementMapper.ResourceType, RdfElementMapper.TruncationType])),
-        new("sankey", new(
+        new("sankey", new DrawnTypes(
             [SankeyElementMapper.FlowType],
             [SankeyElementMapper.NodeType])),
-        new("shacl", new(
+        new("shacl", new DrawnTypes(
             [ShaclElementMapper.EdgeType],
             [ShaclElementMapper.ShapeType])),
-        new("skos", new(
+        new("skos", new DrawnTypes(
             [SkosElementMapper.EdgeType],
             [SkosElementMapper.ConceptType, SkosElementMapper.SchemeType, SkosElementMapper.TruncationType])),
-        new("sparql", new(
+        new("sparql", new DrawnTypes(
             [SparqlElementMapper.EdgeType],
             [SparqlElementMapper.VariableType, SparqlElementMapper.TermType, SparqlElementMapper.RegionType, SparqlElementMapper.AnnotationType, SparqlElementMapper.HeaderType])),
-        new("supply-chain", new(
+        new("supply-chain", new DrawnTypes(
             [SupplyChainElementMapper.FlowType],
             [SupplyChainElementMapper.GroupType, SupplyChainElementMapper.SourceType, SupplyChainElementMapper.ProcessorType, SupplyChainElementMapper.ProducerType, SupplyChainElementMapper.IntegratorType, SupplyChainElementMapper.HubType, SupplyChainElementMapper.OutletType, SupplyChainElementMapper.ConsumerType])),
-        new("timeline", new(
+        new("timeline", new DrawnTypes(
             [TimelineElementMapper.ConnectionType],
             [TimelineElementMapper.PeriodType, TimelineElementMapper.MomentType])),
-        new("wardley-map", new(
+        new("wardley-map", new DrawnTypes(
             [WardleyElementTypes.Link],
             [WardleyElementTypes.Element, WardleyElementTypes.Note, WardleyElementTypes.Annotation, WardleyElementTypes.Accelerator, WardleyElementTypes.Attitude, WardleyElementTypes.EvolutionAxis])),
     ];

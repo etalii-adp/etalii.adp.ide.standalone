@@ -70,10 +70,10 @@ public sealed class WardleyIdentitiesTests : IDisposable
     public void Write_ReplacesWhatWasThere_RatherThanAppending()
     {
         // Arrange.
-        _identities.Write(BodyPath, [new("abc123", "component", "Old")]);
+        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Old")]);
 
         // Act.
-        _identities.Write(BodyPath, [new("def456", "component", "New")]);
+        _identities.Write(BodyPath, [new WardleyIdentityEntry("def456", "component", "New")]);
         var read = _identities.Read(BodyPath);
 
         // Assert.
@@ -84,7 +84,7 @@ public sealed class WardleyIdentitiesTests : IDisposable
     public void Write_LeavesNoTemporaryFileBehind()
     {
         // Act.
-        _identities.Write(BodyPath, [new("abc123", "component", "Cup of Tea")]);
+        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
 
         // Assert. The sidecar is written atomically, and its scratch file must not litter the
         // project folder any more than the document's does.
@@ -97,7 +97,7 @@ public sealed class WardleyIdentitiesTests : IDisposable
     public void Write_RemovesTheSidecar_WhenThereIsNothingLeftToKeep()
     {
         // Arrange.
-        _identities.Write(BodyPath, [new("abc123", "component", "Cup of Tea")]);
+        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
 
         // Act.
         _identities.Write(BodyPath, []);
@@ -164,7 +164,7 @@ public sealed class WardleyIdentitiesTests : IDisposable
     public void Remove_DeletesTheSidecar()
     {
         // Arrange.
-        _identities.Write(BodyPath, [new("abc123", "component", "Cup of Tea")]);
+        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
 
         // Act.
         _identities.Remove(BodyPath);
@@ -189,7 +189,7 @@ public sealed class WardleyIdentitiesTests : IDisposable
         File.WriteAllText(BodyPath, "title Untouched\n");
 
         // Act.
-        _identities.Write(BodyPath, [new("abc123", "component", "Cup of Tea")]);
+        _identities.Write(BodyPath, [new WardleyIdentityEntry("abc123", "component", "Cup of Tea")]);
 
         // Assert.
         Assert.Equal("title Untouched\n", File.ReadAllText(BodyPath));

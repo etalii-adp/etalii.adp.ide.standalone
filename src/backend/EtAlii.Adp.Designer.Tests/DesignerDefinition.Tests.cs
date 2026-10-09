@@ -44,7 +44,7 @@ public class DesignerDefinitionTests
         var definition = new DesignerDefinition(
             "fixture/form",
             "Fixture form",
-            Formats: [new("YAML", ".yaml"), new("JSON", ".json"), new("XML", ".xml")]);
+            Formats: [new DesignerFormat("YAML", ".yaml"), new DesignerFormat("JSON", ".json"), new DesignerFormat("XML", ".xml")]);
 
         // Assert.
         Assert.Equal(new[] { "YAML", "JSON", "XML" }, definition.Formats.Select(format => format.Title));

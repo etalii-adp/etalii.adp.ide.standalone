@@ -1,3 +1,4 @@
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.Specification.Disl;
 using Xunit;
 
@@ -87,7 +88,7 @@ public class GhgDislFunctionsTests
                         {
                             foreach (var slope in slots)
                             {
-                                var trend = new GhgTrend("t", "T", start, stop, 0, count, [peak, trough, slope], [], "", new(0, 0));
+                                var trend = new GhgTrend("t", "T", start, stop, 0, count, [peak, trough, slope], [], "", new LineRange(0, 0));
                                 var element = GhgDisl.TrendOf(new DislDiagram(GhgDisl.Specification), trend);
                                 AssertBoundaries(GhgPhases.BoundariesOf(trend), element, $"{start}..{stop} phases {count} dragged [{peak}, {trough}, {slope}]");
                                 cases++;
@@ -159,7 +160,7 @@ public class GhgDislFunctionsTests
                 {
                     foreach (var slope in slots)
                     {
-                        trends.Add(new GhgTrend($"t{trends.Count}", "T", start, stop, 0, 4, [peak, trough, slope], [], "", new(trends.Count, trends.Count)));
+                        trends.Add(new GhgTrend($"t{trends.Count}", "T", start, stop, 0, 4, [peak, trough, slope], [], "", new LineRange(trends.Count, trends.Count)));
                     }
                 }
             }

@@ -346,20 +346,20 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
 
         return
         [
-            new(NamePropertyId, "Name", child.Name, ReadOnlyReason: ChildNameReason, Group: IdentityGroup),
-            new(KindPropertyId, "Kind", "pipeline component", ReadOnlyReason: KindReason, Group: IdentityGroup),
+            new ContextPropertyDefinition(NamePropertyId, "Name", child.Name, ReadOnlyReason: ChildNameReason, Group: IdentityGroup),
+            new ContextPropertyDefinition(KindPropertyId, "Kind", "pipeline component", ReadOnlyReason: KindReason, Group: IdentityGroup),
 
             // Shown as the parent's, with a reason saying so - rather than as a value of its own
             // that a user could type into and watch do nothing (Requirement 15.4).
-            new(
+            new ContextPropertyDefinition(
                 VisibilityPropertyId,
                 "Visibility",
                 parent is null ? "" : Number(parent.Position.Visibility),
                 ReadOnlyReason: string.Format(CultureInfo.InvariantCulture, ChildVisibilityReason, pipeline.Parent),
                 Group: PositionGroup),
 
-            new(MaturityPropertyId, "Maturity", Number(child.Maturity), Group: PositionGroup),
-            new(StagePropertyId, "Evolution stage", stage.Label, ReadOnlyReason: StageReason, Group: PositionGroup),
+            new ContextPropertyDefinition(MaturityPropertyId, "Maturity", Number(child.Maturity), Group: PositionGroup),
+            new ContextPropertyDefinition(StagePropertyId, "Evolution stage", stage.Label, ReadOnlyReason: StageReason, Group: PositionGroup),
         ];
     }
 

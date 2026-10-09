@@ -87,13 +87,13 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
             var group = SupplyChainEdits.GroupOf(model, node.Group);
             return Rows(
             [
-                new(NameProperty, "Name", node.Name, Group: IdentityGroup),
-                new(StageProperty, "Stage", node.Type, ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: SupplyChainNodeTypes.All),
-                new(GroupProperty, "Group", group is null ? NoGroup : NameOf(group), ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: GroupChoices(model)),
-                new(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new(QuantityProperty, "Quantity", Number(node.Quantity), Group: AmountGroup),
-                new(UnitProperty, "Unit", node.Unit, Group: AmountGroup),
-                new(StepProperty, "Step", Number(node.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
+                new ContextPropertyDefinition(NameProperty, "Name", node.Name, Group: IdentityGroup),
+                new ContextPropertyDefinition(StageProperty, "Stage", node.Type, ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: SupplyChainNodeTypes.All),
+                new ContextPropertyDefinition(GroupProperty, "Group", group is null ? NoGroup : NameOf(group), ContextPropertyEditor.Choice, Group: IdentityGroup, Candidates: GroupChoices(model)),
+                new ContextPropertyDefinition(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
+                new ContextPropertyDefinition(QuantityProperty, "Quantity", Number(node.Quantity), Group: AmountGroup),
+                new ContextPropertyDefinition(UnitProperty, "Unit", node.Unit, Group: AmountGroup),
+                new ContextPropertyDefinition(StepProperty, "Step", Number(node.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
             ]);
         }
 
@@ -101,11 +101,11 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
         {
             return Rows(
             [
-                new(ProductProperty, "Product", flow.Product, Group: IdentityGroup),
-                new(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new(VolumeProperty, "Volume", Number(flow.Volume), Group: AmountGroup),
-                new(UnitProperty, "Unit", flow.Unit, Group: AmountGroup),
-                new(StepProperty, "Step", Number(flow.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
+                new ContextPropertyDefinition(ProductProperty, "Product", flow.Product, Group: IdentityGroup),
+                new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
+                new ContextPropertyDefinition(VolumeProperty, "Volume", Number(flow.Volume), Group: AmountGroup),
+                new ContextPropertyDefinition(UnitProperty, "Unit", flow.Unit, Group: AmountGroup),
+                new ContextPropertyDefinition(StepProperty, "Step", Number(flow.Step ?? SupplyChainGeometry.DefaultStep), Group: AmountGroup),
             ]);
         }
 
@@ -113,8 +113,8 @@ public sealed class SupplyChainContextPropertyProvider : IContextPropertyProvide
         {
             return Rows(
             [
-                new(NameProperty, "Name", frame.Name, Group: IdentityGroup),
-                new(DescriptionProperty, "Description", frame.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
+                new ContextPropertyDefinition(NameProperty, "Name", frame.Name, Group: IdentityGroup),
+                new ContextPropertyDefinition(DescriptionProperty, "Description", frame.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
             ]);
         }
 

@@ -60,10 +60,10 @@ internal static class HandWrittenGhg
             ];
             if (trend.DraggedEnds.Any(boundary => boundary is not null))
             {
-                actions.Add(new(GhgContextActionProvider.EvenPhasesActionId, "Even phases", "mdi-arrow-split-vertical"));
+                actions.Add(new ContextActionDefinition(GhgContextActionProvider.EvenPhasesActionId, "Even phases", "mdi-arrow-split-vertical"));
             }
 
-            actions.Add(new(GhgContextActionProvider.RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
+            actions.Add(new ContextActionDefinition(GhgContextActionProvider.RemoveActionId, "Remove", "mdi-delete-outline", new ContextShortcutDefinition("Delete")));
             return WithArrange([new ContextActionGroupDefinition(actions)]);
         }
 
@@ -148,7 +148,7 @@ internal static class HandWrittenGhg
             var drawn = GhgPhases.BoundariesOf(trend);
             for (var index = 0; index < drawn.Count; index++)
             {
-                rows.Add(new(GhgContextPropertyProvider.BoundaryProperties[index], $"{GhgPhases.Titles[index]} ends", GhgScale.FormatMonth(drawn[index]), ReadOnlyReason: readOnly, Group: phasesGroup));
+                rows.Add(new ContextPropertyDefinition(GhgContextPropertyProvider.BoundaryProperties[index], $"{GhgPhases.Titles[index]} ends", GhgScale.FormatMonth(drawn[index]), ReadOnlyReason: readOnly, Group: phasesGroup));
             }
 
             rows.AddRange(InfluenceRows(model, trend));
@@ -159,10 +159,10 @@ internal static class HandWrittenGhg
         {
             return
             [
-                new(GhgContextPropertyProvider.NameProperty, "Name", trigger.Name, ReadOnlyReason: readOnly, Group: identityGroup),
-                new(GhgContextPropertyProvider.DescriptionProperty, "Description", trigger.Description, ContextPropertyEditor.Text, readOnly, identityGroup),
-                new(GhgContextPropertyProvider.TagsProperty, "Tags", string.Join(", ", trigger.Tags), ContextPropertyEditor.Tags, readOnly, identityGroup, TagsOf(model)),
-                new(GhgContextPropertyProvider.DateProperty, "Date", Month(trigger.Date), ReadOnlyReason: readOnly, Group: timeGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.NameProperty, "Name", trigger.Name, ReadOnlyReason: readOnly, Group: identityGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.DescriptionProperty, "Description", trigger.Description, ContextPropertyEditor.Text, readOnly, identityGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.TagsProperty, "Tags", string.Join(", ", trigger.Tags), ContextPropertyEditor.Tags, readOnly, identityGroup, TagsOf(model)),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.DateProperty, "Date", Month(trigger.Date), ReadOnlyReason: readOnly, Group: timeGroup),
             ];
         }
 
@@ -170,8 +170,8 @@ internal static class HandWrittenGhg
         {
             return
             [
-                new(GhgContextPropertyProvider.TextProperty, "Text", note.Text, ContextPropertyEditor.Text, readOnly, identityGroup),
-                new(GhgContextPropertyProvider.SizeProperty, "Size", note is { Width: { } width, Height: { } height } ? SetGhgNoteSizeCommand.Format(width, height) : "", ReadOnlyReason: readOnly, Group: identityGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.TextProperty, "Text", note.Text, ContextPropertyEditor.Text, readOnly, identityGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.SizeProperty, "Size", note is { Width: { } width, Height: { } height } ? SetGhgNoteSizeCommand.Format(width, height) : "", ReadOnlyReason: readOnly, Group: identityGroup),
             ];
         }
 
@@ -180,11 +180,11 @@ internal static class HandWrittenGhg
             const string shown = "Where it is attached; drag the end on the canvas to move it.";
             return
             [
-                new(GhgContextPropertyProvider.DescriptionProperty, "Description", influence.Description, ContextPropertyEditor.Text, readOnly, identityGroup),
-                new(GhgContextPropertyProvider.FromProperty, "From", Describe(model, influence.From, influence.FromEnd), ReadOnlyReason: shown, Group: endsGroup),
-                new(GhgContextPropertyProvider.ToProperty, "To", Describe(model, influence.To, influence.ToEnd), ReadOnlyReason: shown, Group: endsGroup),
-                new(GhgContextPropertyProvider.FromAttachmentProperty, "From attachment", influence.FromEnd.ToString(), ReadOnlyReason: readOnly, Group: endsGroup),
-                new(GhgContextPropertyProvider.ToAttachmentProperty, "To attachment", influence.ToEnd.ToString(), ReadOnlyReason: readOnly, Group: endsGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.DescriptionProperty, "Description", influence.Description, ContextPropertyEditor.Text, readOnly, identityGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.FromProperty, "From", Describe(model, influence.From, influence.FromEnd), ReadOnlyReason: shown, Group: endsGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.ToProperty, "To", Describe(model, influence.To, influence.ToEnd), ReadOnlyReason: shown, Group: endsGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.FromAttachmentProperty, "From attachment", influence.FromEnd.ToString(), ReadOnlyReason: readOnly, Group: endsGroup),
+                new ContextPropertyDefinition(GhgContextPropertyProvider.ToAttachmentProperty, "To attachment", influence.ToEnd.ToString(), ReadOnlyReason: readOnly, Group: endsGroup),
             ];
         }
 
@@ -212,8 +212,8 @@ internal static class HandWrittenGhg
             }
 
             var group = drawn ? GhgPhases.Titles[phase] : $"{GhgPhases.Titles[phase]} (hidden)";
-            yield return new(GhgContextPropertyProvider.InfluencesProperties[phase], "Influence", List(leaving), ContextPropertyEditor.Text, shown, group);
-            yield return new(GhgContextPropertyProvider.InfluencedByProperties[phase], "Influenced by", List(arriving), ContextPropertyEditor.Text, shown, group);
+            yield return new ContextPropertyDefinition(GhgContextPropertyProvider.InfluencesProperties[phase], "Influence", List(leaving), ContextPropertyEditor.Text, shown, group);
+            yield return new ContextPropertyDefinition(GhgContextPropertyProvider.InfluencedByProperties[phase], "Influenced by", List(arriving), ContextPropertyEditor.Text, shown, group);
         }
     }
 

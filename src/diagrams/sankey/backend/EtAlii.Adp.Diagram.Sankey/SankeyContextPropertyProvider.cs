@@ -101,15 +101,15 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
             var columns = layout.ColumnOrder.Count;
             return Rows(
             [
-                new(NameProperty, "Name", node.Name, Group: IdentityGroup),
-                new(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new(ColorProperty, "Colour", ColorChoice(node.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(node.Color)),
-                new(CustomColorProperty, "Custom colour", SankeyColors.IsHex(node.Color) ? node.Color : "", Group: LookGroup),
-                new(ColumnProperty, "Column", node.Column is { } column ? Number(column) : AutoColumn, ContextPropertyEditor.Choice, Group: LookGroup,
+                new ContextPropertyDefinition(NameProperty, "Name", node.Name, Group: IdentityGroup),
+                new ContextPropertyDefinition(DescriptionProperty, "Description", node.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
+                new ContextPropertyDefinition(ColorProperty, "Colour", ColorChoice(node.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(node.Color)),
+                new ContextPropertyDefinition(CustomColorProperty, "Custom colour", SankeyColors.IsHex(node.Color) ? node.Color : "", Group: LookGroup),
+                new ContextPropertyDefinition(ColumnProperty, "Column", node.Column is { } column ? Number(column) : AutoColumn, ContextPropertyEditor.Choice, Group: LookGroup,
                     Candidates: [AutoColumn, .. Enumerable.Range(1, Math.Max(columns, node.Column ?? 0) + 1).Select(c => Number(c))]),
-                new(ValueProperty, "Value", Number(value), ReadOnlyReason: "A node's value is what flows through it; change a flow's value instead.", Group: AmountGroup),
-                new(NoteProperty, "Note", node.Note, Group: AmountGroup),
-                new(FormatProperty, "Format", node.Format, Group: AmountGroup),
+                new ContextPropertyDefinition(ValueProperty, "Value", Number(value), ReadOnlyReason: "A node's value is what flows through it; change a flow's value instead.", Group: AmountGroup),
+                new ContextPropertyDefinition(NoteProperty, "Note", node.Note, Group: AmountGroup),
+                new ContextPropertyDefinition(FormatProperty, "Format", node.Format, Group: AmountGroup),
             ]);
         }
 
@@ -117,11 +117,11 @@ public sealed class SankeyContextPropertyProvider : IContextPropertyProvider
         {
             return Rows(
             [
-                new(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
-                new(ColorProperty, "Colour", ColorChoice(flow.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(flow.Color)),
-                new(CustomColorProperty, "Custom colour", SankeyColors.IsHex(flow.Color) ? flow.Color : "", Group: LookGroup),
-                new(ValueProperty, "Value", Number(flow.Value), Group: AmountGroup),
-                new(StepProperty, "Step", Number(flow.Step ?? StepSankeyValueCommandHandler.DefaultStep(flow.Value)), Group: AmountGroup),
+                new ContextPropertyDefinition(DescriptionProperty, "Description", flow.Description, ContextPropertyEditor.Text, Group: IdentityGroup),
+                new ContextPropertyDefinition(ColorProperty, "Colour", ColorChoice(flow.Color), ContextPropertyEditor.Choice, Group: LookGroup, Candidates: ColorChoices(flow.Color)),
+                new ContextPropertyDefinition(CustomColorProperty, "Custom colour", SankeyColors.IsHex(flow.Color) ? flow.Color : "", Group: LookGroup),
+                new ContextPropertyDefinition(ValueProperty, "Value", Number(flow.Value), Group: AmountGroup),
+                new ContextPropertyDefinition(StepProperty, "Step", Number(flow.Step ?? StepSankeyValueCommandHandler.DefaultStep(flow.Value)), Group: AmountGroup),
             ]);
         }
 

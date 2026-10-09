@@ -47,14 +47,14 @@ internal readonly record struct DestinationIdentity(DestinationIdentity.State Ki
         {
             if (!OperatingSystem.IsWindows())
             {
-                return new(State.Unknown, 0, 0, "not readable on this platform");
+                return new DestinationIdentity(State.Unknown, 0, 0, "not readable on this platform");
             }
 
-            return File.Exists(path) ? Read(path) : new(State.Absent, 0, 0, null);
+            return File.Exists(path) ? Read(path) : new DestinationIdentity(State.Absent, 0, 0, null);
         }
         catch (Exception exception)
         {
-            return new(State.Unknown, 0, 0, $"{exception.GetType().Name} 0x{exception.HResult:X8}");
+            return new DestinationIdentity(State.Unknown, 0, 0, $"{exception.GetType().Name} 0x{exception.HResult:X8}");
         }
     }
 
@@ -84,16 +84,16 @@ internal readonly record struct DestinationIdentity(DestinationIdentity.State Ki
             var error = Marshal.GetLastPInvokeError();
             // Gone between File.Exists and the open is an answer, not an error.
             return error is ErrorFileNotFound or ErrorPathNotFound
-                ? new(State.Absent, 0, 0, null)
-                : new(State.Unknown, 0, 0, $"open failed, error {error}");
+                ? new DestinationIdentity(State.Absent, 0, 0, null)
+                : new DestinationIdentity(State.Unknown, 0, 0, $"open failed, error {error}");
         }
 
         if (!GetFileInformationByHandle(handle, out var information))
         {
-            return new(State.Unknown, 0, 0, $"GetFileInformationByHandle failed, error {Marshal.GetLastPInvokeError()}");
+            return new DestinationIdentity(State.Unknown, 0, 0, $"GetFileInformationByHandle failed, error {Marshal.GetLastPInvokeError()}");
         }
 
-        return new(
+        return new DestinationIdentity(
             State.Present,
             information.VolumeSerialNumber,
             ((ulong)information.FileIndexHigh << 32) | information.FileIndexLow,
