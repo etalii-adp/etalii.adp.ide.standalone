@@ -27,17 +27,38 @@
   fill: var(--color-diagram-aad-environment);
 }
 
+.aad-label {
+  fill: var(--color-text);
+}
+
+.aad-detail {
+  fill: var(--color-text);
+}
+
 .aad-status {
-  fill: var(--color-text-muted);
+  fill: var(--color-text);
+}
+
+/*
+ * A list's headings and a link's symbol are the library's, painted in the muted colour for a
+ * canvas's own background. On this notation's fills that is too faint, so here they take the
+ * text colour: moduleThemeContrast.test.ts holds the pair, in both themes.
+ */
+.aad-surface .library-compartment-heading-text {
+  fill: var(--color-text);
+}
+
+.aad-surface .library-link-glyph {
+  stroke: var(--color-text);
 }
 
 .aad-status-progressing {
-  fill: var(--color-text);
+  font-weight: 600;
 }
 
 .aad-status-inputRequired {
-  font-weight: 600;
-  fill: var(--color-text);
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 .aad-status-finished {

@@ -16,7 +16,8 @@ import { AAD_PULL_REQUESTS_GROUP, AAD_SHOW_ARCHIVED_SWITCH, AAD_TASK_GROUPS, Aad
  * location a box split in two, an environment a cylinder.
  */
 
-const name = { text: { path: "payload.name" }, typography: { fontWeight: "bold" as const }, truncate: true, tooltip: { path: "payload.name" } };
+// Every label names its colour by a class: an SVG text with none is black, whatever the theme.
+const name = { text: { path: "payload.name" }, className: "aad-label", typography: { fontWeight: "bold" as const, fontSize: 13 }, truncate: true, tooltip: { path: "payload.name" } };
 
 const lock = {
   glyph: "circle" as const,
@@ -83,7 +84,7 @@ const elementTypes: ElementTypeDefinition[] = [
     tooltip: { template: "{payload.name} in {payload.folder}" },
     labels: [
       { ...name, anchorTo: "top", offset: { x: 0, y: 21 } },
-      { text: { path: "payload.folder" }, anchorTo: "top", offset: { x: 0, y: 53 }, truncate: true, tooltip: { path: "payload.folder" }, typography: { fontSize: 11 } },
+      { text: { path: "payload.folder" }, className: "aad-detail", anchorTo: "top", offset: { x: 0, y: 53 }, truncate: true, tooltip: { path: "payload.folder" }, typography: { fontSize: 11 } },
     ],
     decorations: [
       lock,
@@ -122,7 +123,7 @@ const elementTypes: ElementTypeDefinition[] = [
   elementType(AadElementTypes.environment, "cylinder", {
     labels: [
       { ...name, offset: { x: 0, y: 2 } },
-      { text: { path: "payload.kindLabel" }, offset: { x: 0, y: 17 }, typography: { fontSize: 10 } },
+      { text: { path: "payload.kindLabel" }, className: "aad-detail", offset: { x: 0, y: 17 }, typography: { fontSize: 10 } },
     ],
   }),
 ];

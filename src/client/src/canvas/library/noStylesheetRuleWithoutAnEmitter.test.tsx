@@ -194,7 +194,6 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "ghg-canvas",
       "ghg-surface",
       "aad-canvas",
-      "aad-surface",
       "abm-canvas",
       "abm-surface",
     ],

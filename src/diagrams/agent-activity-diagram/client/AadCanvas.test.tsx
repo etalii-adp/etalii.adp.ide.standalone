@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
@@ -118,6 +121,25 @@ describe("the agent activity diagram canvas, mounted", () => {
     expect(container.textContent).toContain("Progressing");
     expect(container.textContent).toContain("Default");
     expect(container.textContent).toContain("Local machine");
+  });
+
+  it("gives every label a class this module's stylesheet colours", () => {
+    // Found in a browser, in the dark theme: a label with no fill of its own is drawn in SVG's
+    // default black, which on this notation's dark fills cannot be read. jsdom computes no style
+    // from a stylesheet, so this holds the two halves apart: each label drawn carries one of the
+    // module's label classes, and the stylesheet gives each of those classes a fill.
+    const { container } = renderCanvas();
+    // A label with no text draws nothing, and so has nothing to colour.
+    const labels = [...container.querySelectorAll(".library-element-label")].filter((label) => label.textContent !== "");
+    const coloured = ["aad-label", "aad-detail", "aad-status"];
+
+    expect(labels.length).toBeGreaterThan(5);
+    expect(labels.filter((label) => !coloured.some((name) => label.classList.contains(name))).map((label) => label.textContent)).toEqual([]);
+
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "aad.css"), "utf8");
+    for (const name of coloured) {
+      expect(css, name).toMatch(new RegExp(`\\.${name} \\{[^}]*fill: var\\(--color-text`));
+    }
   });
 
   it("lists an open group's tasks most recently updated first, and none of a folded group's", () => {
