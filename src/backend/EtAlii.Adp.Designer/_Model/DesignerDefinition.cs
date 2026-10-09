@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Designer;
 
 /// <summary>
 /// What a designer module is: which designer type it serves, how it introduces itself and in
-/// which file formats its documents can be created. Each designer project exposes one or more
+/// which file formats its documents can be created. A designer project exposes one or more
 /// of these through its own static <c>Designer.Definitions</c> array, exactly as a diagram
 /// module exposes <c>Diagram.Definitions</c> and an editor module <c>Editor.Definitions</c> -
 /// an analogue of both and a shared type with neither: a designer is identified by an origin
