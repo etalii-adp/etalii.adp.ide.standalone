@@ -1,6 +1,7 @@
 ﻿using EtAlii.Adp.Authentication;
 using EtAlii.Adp.Backend.Client;
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Editor;
@@ -83,9 +84,10 @@ builder.AddDiagramDefinitions(diagramDefinitions);
 var editorDefinitions = EditorDefinitionDiscovery.Discover();
 builder.AddEditorDefinitions(editorDefinitions);
 
-// The designer family's slot: the same walk, which finds no designer until the first designer
-// module arrives (see the readme in src/designers). Nothing registers them yet, so the result is only logged.
-_ = EtAlii.Adp.DesignerDefinitionDiscovery.Discover();
+// The designer family, discovered by the same walk and registered the same way. An application
+// without a designer module registers an empty catalog, so code that asks for it is always served.
+var designerDefinitions = DesignerDefinitionDiscovery.Discover();
+builder.AddDesignerDefinitions(designerDefinitions);
 
 var app = builder.Build();
 
