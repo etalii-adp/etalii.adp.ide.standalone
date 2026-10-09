@@ -80,7 +80,7 @@
   - _Leverage: `DiagramDiff.Between`, `DiagramStreamMessage`_
   - _Requirements: 10.3_
 
-- [-] 8. Canvas library: lists inside an element
+- [x] 8. Canvas library: lists inside an element
   - File: `src/client/src/canvas/library/definition`, `surface`, `DiagramCanvas.tsx`, a shipped library example
   - A compartment declaration on an element type: rows bound to child elements, optional grouping by a field in a declared order, a heading per group with its name and count, groups with no row left out, a collapse state per heading from the stream, a declared order of rows within a group, one line per row with an ellipsis and the full text on hover. The element's height is computed from declared line heights and its relations follow. Clicking a heading raises an event.
   - Guard: the height of an element with two expanded groups and one collapsed equals the declared sum; a collapsed group's rows are absent; rows come in the declared order.
@@ -88,7 +88,7 @@
   - _Leverage: `CollectionBinding`, `elementBounds`, `labels.ts`_
   - _Requirements: 4.1, 4.2, 4.3, 7.6_
 
-- [-] 9. Canvas library: a row can be selected
+- [x] 9. Canvas library: a row can be selected
   - File: `src/client/src/canvas/library/librarySelection.ts`, `surface`, the context connection
   - A row is hit-testable and takes part in the library's selection under its own id, so the property grid and the context menu serve it as they serve an element. A keyboard path reaches a row and a heading.
   - Waits on: 8.
@@ -97,7 +97,7 @@
   - _Leverage: `librarySelection.test.tsx`, `noModuleSelection.test.ts`_
   - _Requirements: 9.4_
 
-- [-] 10. Canvas library and shell: a symbol that can be activated, and opening a link
+- [x] 10. Canvas library and shell: a symbol that can be activated, and opening a link
   - File: `src/client/src/canvas/library/definition`, `surface`; `src/client/src/shell` (a link handler and its dialog)
   - A declaration separate from `DecorationDeclaration`: a symbol on an element or at the end of a row, drawn only when its binding has a value, with a tooltip saying where it leads, a focus stop and a press that raises a library event.
   - The shell handles the event: `http` and `https` through `window.open` with `noopener` and `noreferrer`; a path inside the project through `revealPath`; any other path in a dialog that shows it, says why it was not opened and copies it; anything else is not opened.
@@ -106,7 +106,7 @@
   - _Leverage: `revealPath`, `AppHeader.tsx` (the one external link today), `everyCanvasHasOneRefusalSurface`_
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 5.7_
 
-- [ ] 11. Canvas library: locked elements under an automatic layout
+- [-] 11. Canvas library: locked elements under an automatic layout
   - File: `src/client/src/canvas/library/layout/layoutAlgorithm.ts`, `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`
   - `LayoutElement` gains whether it is locked; a layout leaves a locked element at its stored position. `dragUnderAutomaticLayout` gains a value under which a drag raises `element-moved` for that element alone and the mode stays automatic. A locked element can show a declared symbol.
   - Guard: under an automatic mode, a locked element's drawn position is its stored one and an unlocked one's is the layout's; a drag raises `element-moved` once, for the dragged element.
@@ -114,7 +114,7 @@
   - _Leverage: `DiagramCanvas.layoutModes.test.tsx`_
   - _Requirements: 6.6_
 
-- [ ] 12. Canvas library: the radiating layout
+- [-] 12. Canvas library: the radiating layout
   - File: `src/client/src/canvas/library/layout/` (a new algorithm and its tests), `definition/diagramDefinition.ts` (a new `LayoutMode` and its settings)
   - The algorithm of the design (*The layout*) and of `agent-activity-diagram.md`: springs along relations, repulsion, a pull to the circle of each element's tier, a final pass separating rectangles, locked elements fixed, starting positions from the tier and the order of entries, a fixed number of steps, nothing random. Written by hand, with no new dependency.
   - Waits on: 11.
@@ -123,7 +123,7 @@
   - _Leverage: `rowPackedLayout.ts` as the shape of an algorithm and its tests_
   - _Requirements: 6.5, 6.7, 6.9, 6.10_
 
-- [ ] 13. Canvas library: a change moves little, and moves visibly
+- [-] 13. Canvas library: a change moves little, and moves visibly
   - File: `src/client/src/canvas/library/layout/`, `DiagramCanvas.tsx`, the library stylesheet
   - When the document changes while open, the layout starts from the positions on screen. Elements move from old to new positions over a short fixed time, and at once under reduced motion.
   - Waits on: 12.
@@ -132,7 +132,7 @@
   - _Leverage: `connectionsFollowTheDrag.test.tsx`_
   - _Requirements: 6.8_
 
-- [ ] 14. Canvas library: a switch on the canvas
+- [-] 14. Canvas library: a switch on the canvas
   - File: `src/client/src/canvas/library/definition/chrome.ts`, `surface`
   - A switch declared in chrome with a caption, its value from the stream, raising an event when changed, drawn whether or not a filter is declared, with its role and state exposed.
   - Guard: a definition with a switch and no filter draws it; toggling raises the event; the drawn state follows the stream's value.
@@ -243,7 +243,7 @@
   - _Leverage: `src/diagrams/gartner-hype-cycle-graph/examples`, `CLAUDE.md` (*Vendored example data*)_
   - _Requirements: 8.3, 10.5, 10.6_
 
-- [ ] 26. The layout at size
+- [-] 26. The layout at size
   - File: `src/client/src/canvas/library/layout/` (a measurement test), a generated diagram never committed
   - Two hundred elements and a thousand rows: assert no overlap and equal results on two runs, measure the time of a cold layout and of one change, and fix the number of steps from the measurement. Report the numbers in the implementation log.
   - Waits on: 12, 13.
