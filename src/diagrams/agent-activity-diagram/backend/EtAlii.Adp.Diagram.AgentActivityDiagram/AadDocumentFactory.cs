@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 public sealed class AadDocumentFactory : IDiagramDocumentFactory
 {
     /// <summary>The version this module writes in a new file's header.</summary>
-    public const int Version = 1;
+    private const int Version = 1;
 
     public DiagramOrigin Origin => Diagram.AgentActivity.Origin;
 
@@ -22,7 +22,7 @@ public sealed class AadDocumentFactory : IDiagramDocumentFactory
     /// nothing can be added to by a splice (the definition's research note R5). CRLF, the house
     /// style, since a new file has no style of its own to keep.
     /// </summary>
-    public static string EmptyDocument(string lineEnding)
+    private static string EmptyDocument(string lineEnding)
     {
         ArgumentException.ThrowIfNullOrEmpty(lineEnding);
         return $"agent-activity-diagram: {Version}{lineEnding}";

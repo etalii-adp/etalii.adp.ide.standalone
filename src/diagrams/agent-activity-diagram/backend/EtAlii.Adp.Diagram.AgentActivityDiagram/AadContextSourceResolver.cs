@@ -76,9 +76,12 @@ public sealed class AadContextSourceResolver : IContextSourceResolver
         var model = _documents.GetOrLoad(bodyPath).Model;
         var elementId = id.ElementId.Value;
 
-        if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _))
+        // A gesture's own target: a drop, a drawn line, the diagram's switch, or one group of one
+        // element. None is selected, tracked or written; each lives for one execution.
+        var isGroup = AadGroupTarget.TryParse(elementId, out var groupOwner, out _) && model.Elements.Any(candidate => candidate.Id == groupOwner);
+        if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _) || elementId == AadElementMapper.ViewId || isGroup)
         {
-            var proposed = GestureIds.IsPlacement(elementId) ? "New element" : "New relation";
+            var proposed = GestureIds.IsPlacement(elementId) ? "New element" : GestureIds.IsRelation(elementId) ? "New relation" : isGroup ? "Group" : "Diagram";
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
                 id,
                 [proposed],
@@ -192,6 +195,13 @@ public sealed class AadContextSourceResolver : IContextSourceResolver
         if (model.Elements.FirstOrDefault(candidate => candidate.Id == id) is { } element)
         {
             var text = NameOf(element);
+            return ([text], text);
+        }
+
+        // A task or a pull request: a row of its element, selected by its own id.
+        if (model.Elements.SelectMany(candidate => candidate.Rows).FirstOrDefault(candidate => candidate.Id == id) is { } row)
+        {
+            var text = row.Title.Length > 0 ? row.Title : row.Id;
             return ([text], text);
         }
 

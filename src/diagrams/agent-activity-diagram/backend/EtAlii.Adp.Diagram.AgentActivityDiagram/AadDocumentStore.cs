@@ -20,8 +20,6 @@ public interface IAadDocumentStore : IReloadableDocumentStore
     /// <returns>The outcome, and the text that was written when it was.</returns>
     AadSaved Save(string path, AadDocumentEntry basis, Func<AadBody, AadEdit> edit);
 
-    void Forget(string path);
-
     void BodyDeleted(string path);
 
     event EventHandler<AadDocumentChangedEventArgs>? Changed;
@@ -86,8 +84,6 @@ public sealed class AadDocumentStore : IAadDocumentStore
 
         return new AadSaved(result, before, after);
     }
-
-    public void Forget(string path) => _lifecycle.Forget(path);
 
     public void Reload(string path)
     {

@@ -60,7 +60,7 @@ public sealed record AadModel(
     bool ShowArchived)
 {
     /// <summary>The model of a file that holds nothing.</summary>
-    public static AadModel Empty { get; } = new([], [], new Dictionary<string, AadPlacement>(), new Dictionary<string, IReadOnlySet<string>>(), false);
+    private static AadModel Empty { get; } = new([], [], new Dictionary<string, AadPlacement>(), new Dictionary<string, IReadOnlySet<string>>(), false);
 
     /// <summary>
     /// Reads the model off an open body. What the body cannot say - an unreadable file - reads as
@@ -88,7 +88,7 @@ public sealed record AadModel(
         List<AadRelation> relations =
         [
             .. diagram.Relations
-                .Where(relation => relation.SourceId is { Length: > 0 } && relation.TargetId is { Length: > 0 })
+                .Where(relation => relation is { SourceId.Length: > 0, TargetId.Length: > 0 })
                 .Select(relation => new AadRelation(relation.Id, relation.Type.Name, relation.SourceId!, relation.TargetId!)),
         ];
 
@@ -128,7 +128,7 @@ public sealed record AadModel(
     }
 
     /// <summary>A group's key on the wire: a task status by its member name, however the file wrote it.</summary>
-    internal static string GroupKey(string written) => AadDefinition.TaskStatus.Find(written)?.Name ?? written;
+    private static string GroupKey(string written) => AadDefinition.TaskStatus.Find(written)?.Name ?? written;
 
     private static AadElement Element(AadKind kind, DislElement node)
     {

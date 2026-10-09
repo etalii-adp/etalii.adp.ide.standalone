@@ -1,4 +1,5 @@
 using EtAlii.Adp.Documents;
+using EtAlii.Adp.History;
 
 namespace EtAlii.Adp.Diagram.AgentActivityDiagram;
 
@@ -8,10 +9,11 @@ public sealed class AadSession : IDiagramSession
     private readonly string _bodyPath;
     private readonly IAadDocumentStore _documents;
     private readonly AadElementMapper _mapper;
+    private readonly IHistoryStack? _history;
     private readonly DiagramDocumentChangeHandler _changes;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
-    public AadSession(string bodyPath, IAadDocumentStore documents, AadElementMapper mapper)
+    public AadSession(string bodyPath, IAadDocumentStore documents, AadElementMapper mapper, IHistoryStack? history = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(documents);
@@ -20,6 +22,7 @@ public sealed class AadSession : IDiagramSession
         _bodyPath = bodyPath;
         _documents = documents;
         _mapper = mapper;
+        _history = history;
         _changes = new DiagramDocumentChangeHandler(bodyPath, Render, Raise);
         _documents.Changed += OnDocumentChanged;
     }
@@ -47,6 +50,24 @@ public sealed class AadSession : IDiagramSession
         return Task.FromResult("An element of this diagram has no parent to move it under; it is locked where it is dropped.");
     }
 
+    /// <summary>
+    /// A drag: the element is locked where it was let go (Requirement 6.2), through the project's
+    /// history, so the lock is one undo away like every other edit.
+    /// </summary>
+    public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_history is null)
+        {
+            return "This diagram is read-only.";
+        }
+
+        var result = await _history.ExecuteAsync(new PinAadElementCommand(_bodyPath, elementId, x, y), cancellationToken);
+        return result.IsSuccess ? "" : result.Error;
+    }
+
     public ValueTask DisposeAsync()
     {
         _documents.Changed -= OnDocumentChanged;
@@ -68,14 +89,17 @@ public sealed class AadSessionFactory : IDiagramSessionFactory
 {
     private readonly IAadDocumentStore _documents;
     private readonly AadElementMapper _mapper;
+    private readonly IHistoryStackStore _historyStacks;
 
-    public AadSessionFactory(IAadDocumentStore documents, AadElementMapper mapper)
+    public AadSessionFactory(IAadDocumentStore documents, AadElementMapper mapper, IHistoryStackStore historyStacks)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
+        ArgumentNullException.ThrowIfNull(historyStacks);
 
         _documents = documents;
         _mapper = mapper;
+        _historyStacks = historyStacks;
     }
 
     public DiagramOrigin Origin => Diagram.AgentActivity.Origin;
@@ -83,8 +107,9 @@ public sealed class AadSessionFactory : IDiagramSessionFactory
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
     {
         _ = watchId;
-        _ = rootPath;
         _ = registrationPath;
-        return new AadSession(bodyPath, _documents, _mapper);
+
+        // The project's history, so a drag is one undo away like every other edit.
+        return new AadSession(bodyPath, _documents, _mapper, _historyStacks.Get(rootPath));
     }
 }
