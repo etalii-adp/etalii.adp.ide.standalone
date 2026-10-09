@@ -26,7 +26,7 @@
   - _Leverage: `specifications/fbl/FBL-specification.md` sections 5.1 to 5.7 and 6.2, `specifications/fbl/databricks-job.fbl`, `.github/scripts/validate-examples.py`_
   - _Requirements: 1.4_
 
-- [-] 2. Measure a ten-thousand-row file in this host's FBL runtime
+- [x] 2. Measure a ten-thousand-row file in this host's FBL runtime
   - File (this repository): `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Measurements/LargeTable.Tests.cs` (new), a generated fixture written to a `TestFolder`, never committed
   - Generate a knowledge file of ten thousand rows and eight properties in the shape of task 1, in YAML, JSON and XML. Through `OpenBody` with the draft binding, measure: opening it, setting one cell, adding one row, and removing one property. Record file size, lines and each time in this task's implementation log, with the machine it ran on.
   - Judge against the Performance requirement ("shown at once", "without a perceptible pause"). If it does not hold: report the measurements to the Scrum master for the user as a selection between making the runtime incremental, batching, and L1's other option. Nothing from task 17 on starts until this is answered.
@@ -70,7 +70,7 @@
 
 ## What this host gains for the designer family
 
-- [-] 6. `EtAlii.Adp.Designer`: the definition, the catalog and registration
+- [x] 6. `EtAlii.Adp.Designer`: the definition, the catalog and registration
   - File: `src/backend/EtAlii.Adp.Designer/` (new project: `_Model/DesignerDefinition.cs`, `DesignerFormat.cs`, `IDesignerDefinitionCatalog.cs`, `DesignerDefinitionCatalog.cs`, `HostApplicationBuilder.AddDesignerDefinitions.cs`), `src/backend/EtAlii.Adp.Designer.Tests/` (new), `src/backend/EtAlii.Adp/_Model/DesignerDefinition.cs` (removed), `src/backend/EtAlii.Adp/DesignerDefinitionDiscovery.cs`, `src/backend/EtAlii.Adp.Backend.Service/Program.cs`, `src/backend/EtAlii.Adp.slnx`
   - Widen `DesignerDefinition` to `Origin`, `Title`, `Description`, `Icon`, `Formats` (a label and an extension each) and `Build`. Register what discovery finds instead of discarding it, invoking each definition's `Build`.
   - Guard: a definition from a test assembly is found, registered in the catalog and its `Build` invoked; two definitions with one origin keep the ordinal-smaller assembly's, as the other families do.
@@ -78,7 +78,7 @@
   - _Leverage: `src/backend/EtAlii.Adp.Editor/_Model/EditorDefinition.cs`, `AddEditorDefinitions`, `EditorDefinitionDiscovery`_
   - _Requirements: 10.2_
 
-- [ ] 7. Routing, the tree's tool type and findings for a designer
+- [-] 7. Routing, the tree's tool type and findings for a designer
   - File: `src/backend/EtAlii.Adp.Hierarchy/DesignerFileRouter.cs` (new), `HierarchyContextSourceResolver.cs`, `src/backend/EtAlii.Adp.Diagram/DiagramService.Open.cs`, `src/backend/EtAlii.Adp.Problems/ProjectValidator.cs`, their tests
   - A registration whose first line is a designer's origin routes to that designer, after the diagram family and before the editor family, and its body no longer opens in the plain editor by default. The tree reports the origin as the entry's tool type. A designer registers a validator by origin into the existing problem store.
   - Guard: an `.adp` with a designer origin routes to the designer; the same body file alone still resolves to an editor; a diagram registration is unaffected; a designer's validator's findings reach the problem store.
