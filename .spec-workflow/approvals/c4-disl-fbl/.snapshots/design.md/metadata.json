@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/c4-disl-fbl/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T10:15:41.431Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791540941013_1jfj160ls",
+      "approvalTitle": "design.md: converting the C4 diagrams (proposes amendments to finding A5 and requirement 2.2)"
+    }
+  ]
+}
