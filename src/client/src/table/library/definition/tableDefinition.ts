@@ -10,6 +10,21 @@
  */
 export type TableEditorKind = "text" | "number" | "checkbox" | "date" | "datetime" | "time" | "option" | "options" | "rows";
 
+/** What a column's menu may offer. A module's definition lists the ones its table has. */
+export type ColumnAction =
+  | "rename"
+  | "changeType"
+  | "filter"
+  | "sortAscending"
+  | "sortDescending"
+  | "group"
+  | "hide"
+  | "wrap"
+  | "insertLeft"
+  | "insertRight"
+  | "duplicate"
+  | "delete";
+
 /** How one kind of value shows itself. */
 export interface TableKindDefinition {
   /** The @mdi/font class of the kind's icon, shown in a column's header. */
@@ -18,11 +33,17 @@ export interface TableKindDefinition {
   label: string;
   /** How a cell of this kind is edited. Left out, its cells are shown and never edited. */
   editor?: TableEditorKind;
+  /** False for a kind a column cannot be given by hand: it is read, shown, and never offered. */
+  addable?: boolean;
 }
 
 export interface TableDefinition {
   /** The kinds of value the table's columns may hold, by the name the model uses. */
   kinds: Readonly<Record<string, TableKindDefinition>>;
+  /** The entries a column's menu offers. Left out, a header names its column and has no menu. */
+  columnActions?: readonly ColumnAction[];
+  /** The kind a column inserted beside another starts as; the first that can be added when left out. */
+  defaultKind?: string;
   /** The height of every row in pixels; the library's default when left out. */
   rowHeight?: number;
   /** A column's width in pixels when the model gives none; the library's default when left out. */

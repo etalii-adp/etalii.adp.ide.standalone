@@ -159,3 +159,73 @@
 .table-cell-tick {
   font-size: 1.125rem;
 }
+
+/* The first column stays in sight while the table is scrolled sideways: it is what names a row. */
+.table-cell-first {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+.table-header-cell {
+  position: relative;
+}
+
+.table-header-cell.table-cell-first {
+  position: sticky;
+  z-index: 2;
+}
+
+.table-header-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* The border that is dragged to resize: a strip over the header's right edge, wider than the line it stands for. */
+.table-header-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.table-header-rename {
+  box-sizing: border-box;
+  width: 100%;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  outline: 2px solid var(--color-primary);
+}
+
+.table-add-column {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-add-column-button {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}

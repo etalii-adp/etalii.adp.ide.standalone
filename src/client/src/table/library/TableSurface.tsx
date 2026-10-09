@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import type { TableEvents } from "./api/tableEvents";
+import type { TableEvents, TableGesture } from "./api/tableEvents";
 import { cellText, type TableCell, type TableColumn, type TableModel, type TableRow } from "./api/tableModel";
 import { CellEditor, type AfterEdit } from "./cells/CellEditor";
 import { keyOutcome, tabTarget, type CellPosition } from "./cells/keyboard";
 import { DEFAULT_COLUMN_WIDTH, kindOf, type TableDefinition } from "./definition/tableDefinition";
+import { AddColumn } from "./header/AddColumn";
+import { ColumnHeader } from "./header/ColumnHeader";
 import { DEFAULT_MARGIN, DEFAULT_ROW_HEIGHT, indexesOf, sameWindow, spacersOf, windowOf, type RowWindow } from "./rows/windowing";
 import "./table.css";
 
@@ -54,6 +56,8 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
   const [active, setActive] = useState<CellPosition | null>(null);
   const [editing, setEditing] = useState<{ replace?: string } | null>(null);
   const [refusal, setRefusal] = useState("");
+  // The width a column is being dragged to, until the drag ends: a preview, and nothing written.
+  const [resizing, setResizing] = useState<{ columnId: string; width: number } | null>(null);
   // Whether the active cell should take the focus when it next renders: after the keyboard or a
   // click moved it, and not when the focus has left the table on its own.
   const focusWantedRef = useRef(false);
@@ -121,6 +125,17 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
     focusWantedRef.current = true;
     setActive(to);
   }, []);
+
+  /** Raises a gesture made outside an editor, and shows a refusal on the table's own line. */
+  const raise = useCallback(
+    (gesture: TableGesture) => {
+      setRefusal("");
+      void onGesture?.(gesture).then(setRefusal);
+    },
+    [onGesture],
+  );
+
+  const onResizePreview = useCallback((columnId: string, width: number | null) => setResizing(width === null ? null : { columnId, width }), []);
 
   /** Sends a cell's new value. The refusal, if any, is the caller's to show. */
   const commitCell = useCallback(
@@ -194,8 +209,7 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
         return;
       case "newRow":
         event.preventDefault();
-        setRefusal("");
-        void onGesture?.({ kind: "addRow", targetId: model.rows.get(active.row)?.id }).then(setRefusal);
+        raise({ kind: "addRow", targetId: model.rows.get(active.row)?.id });
         return;
       case "clear": {
         const target = editableAt(active);
@@ -211,8 +225,14 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
   };
 
   const spacers = spacersOf(window, model.rowCount, rowHeight);
-  const template = columns.map((column) => `${column.width > 0 ? column.width : (definition.columnWidth ?? DEFAULT_COLUMN_WIDTH)}px`).join(" ");
+  const widths = columns.map((column) =>
+    resizing?.columnId === column.id ? resizing.width : column.width > 0 ? column.width : (definition.columnWidth ?? DEFAULT_COLUMN_WIDTH),
+  );
+  const editable = model.readOnlyReason === "" && onGesture !== undefined;
+  const template = widths.map((width) => `${width}px`).join(" ");
   const rowStyle = { gridTemplateColumns: template, height: rowHeight };
+  // The header has one more track than the rows: the room of the button that adds a column.
+  const headerStyle = editable ? { gridTemplateColumns: `${template} 40px`, height: rowHeight } : rowStyle;
   // Until a cell is active, the first one drawn takes the Tab key, so the table can be entered.
   const entry: CellPosition = active ?? { row: window.first, column: 0 };
 
@@ -228,10 +248,20 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
       onScroll={measure}
       onKeyDown={onKeyDown}
     >
-      <div className="table-header-row" role="row" aria-rowindex={1} style={rowStyle}>
+      <div className="table-header-row" role="row" aria-rowindex={1} style={headerStyle}>
         {columns.map((column, index) => (
-          <ColumnHeader key={column.id} column={column} index={index} definition={definition} />
+          <ColumnHeader
+            key={column.id}
+            column={column}
+            index={index}
+            width={widths[index]!}
+            definition={definition}
+            editable={editable}
+            raise={raise}
+            onResizePreview={onResizePreview}
+          />
         ))}
+        {editable && <AddColumn definition={definition} raise={raise} />}
       </div>
       {spacers.before > 0 && <div className="table-spacer" style={{ height: spacers.before }} aria-hidden="true" />}
       {indexesOf(window).map((index) => {
@@ -264,6 +294,7 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
               const editor = isActive && editing !== null && kind.editor !== "checkbox" ? kind.editor : undefined;
               const classes = [
                 "table-cell",
+                columnIndex === 0 ? "table-cell-first" : "",
                 column.wraps ? "table-cell-wraps" : "",
                 cell?.pending ? "table-cell-pending" : "",
                 isActive ? "table-cell-active" : "",
@@ -314,16 +345,6 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
           {refusal}
         </p>
       )}
-    </div>
-  );
-}
-
-function ColumnHeader({ column, index, definition }: { column: TableColumn; index: number; definition: TableDefinition }) {
-  const kind = kindOf(definition, column.kind);
-  return (
-    <div className="table-header-cell" role="columnheader" aria-colindex={index + 1} data-column-id={column.id}>
-      <span className={`mdi ${kind.icon} table-kind-icon`} role="img" aria-label={kind.label} />
-      <span className="table-header-name">{column.name}</span>
     </div>
   );
 }
