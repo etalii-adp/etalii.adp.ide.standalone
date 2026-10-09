@@ -62,7 +62,7 @@ public class KnowledgeFixtureStepsTests
         var body = OpenBody.Open(
             File.ReadAllBytes(Path.Combine(folder, inputName)),
             binding,
-            new FblOptions { FileName = inputName, DeriveId = KnowledgeIds.Derive });
+            new FblOptions { FileName = inputName, DeriveId = KnowledgeIds.Derive, AttributeType = KnowledgeTypes.Of });
         var steps = fixture.GetProperty("steps").EnumerateArray().ToList();
 
         // Act: every step in order, until the first that fails.

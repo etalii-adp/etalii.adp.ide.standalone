@@ -171,11 +171,18 @@ internal sealed class BodyReading
                         if (problem is not null) error ??= problem;
                         if (holds is not true) continue;
                     }
-                    _claims[entry] = rule.Name;
                     var element = new ReadElement { Rule = rule, Candidate = candidate, Line = Text.Position(entry.Own.Start).Line };
+                    ReadSlots(element);
+                    if (Mistyped(element) is { } mistyped)
+                    {
+                        // The entry is this rule's and no other's: it is not offered to a later
+                        // candidate, which would read as an element what the rule could not.
+                        error = mistyped;
+                        break;
+                    }
+                    _claims[entry] = rule.Name;
                     _byEntry[entry] = element;
                     Elements.Add(element);
-                    ReadSlots(element);
                 }
                 else
                 {
@@ -193,6 +200,21 @@ internal sealed class BodyReading
                 Family.Report(FindingCodes.UnreadableEntry, FindingSeverity.Warning, $"This entry cannot be read: {error}", entry.Own);
             }
         }
+    }
+
+    /// <summary>The first attribute whose value does not convert to the type its specification gives it, as a reason, or null.</summary>
+    private string? Mistyped(ReadElement element)
+    {
+        if (Options.AttributeType is not { } typeOf) return null;
+        foreach ((string name, object? value) in element.Attributes)
+        {
+            if (value is null || !element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
+            if (typeOf(element.Rule.Type, name) is { } type && !TypedValue.Reads(type, value))
+            {
+                return $"'{name}' is not a {type}.";
+            }
+        }
+        return null;
     }
 
     private static void Offer(Dictionary<Entry, List<Candidate>> offered, Candidate candidate)

@@ -15,28 +15,16 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 /// read, an unchanged save writes nothing, and the same table in YAML, JSON and XML is one model.
 /// </summary>
 /// <remarks>
-/// The fixtures' edit steps are not run here yet: they need reordering, positioned adds and
-/// several values per edit, which this library gains in the rest of task 8.
+/// The reading is told the specification's attribute types, from the vendored <c>knowledge.des</c>:
+/// a binding does not carry them, and a cell whose number is not a number is an unreadable entry
+/// only to a reading that knows the value is to be a number. The fixtures' edit steps are run by
+/// <see cref="KnowledgeFixturesStepsTests"/>.
 /// </remarks>
 public class KnowledgeFixturesTests
 {
     private static string Root => Path.Combine(Repository.Conformance, "etalii.adp");
 
     private static string FixturesRoot => Path.Combine(Root, "specifications", "fbl", "fixtures");
-
-    /// <summary>
-    /// Fixtures whose listed findings this library does not report yet, each with its reason. The
-    /// test then asserts that NONE is reported, so an entry here fails the day the library catches
-    /// up and cannot outlive the gap it excuses.
-    /// </summary>
-    /// <remarks>
-    /// <c>knowledge-kept</c>: a cell whose <c>number</c> is "about half a million" must be an
-    /// unreadable entry (FBL §7.4, a value that does not convert to the attribute's type). The
-    /// attribute's type is the specification's, and this library is not yet told it; today the
-    /// value is read as text and the cell is an element. The rest of knowledge-designer task 8
-    /// gives the reading the specification's attribute types.
-    /// </remarks>
-    private static readonly string[] NotYetReported = ["knowledge-kept"];
 
     /// <summary>The number of knowledge fixtures vendored: fewer means the enumeration broke.</summary>
     private const int VendoredFixtures = 7;
@@ -55,6 +43,16 @@ public class KnowledgeFixturesTests
     public void TheFixturesAreFound()
     {
         Assert.Equal(VendoredFixtures, Fixtures().Count);
+    }
+
+    [Fact]
+    public void TheSpecificationsAttributeTypes_AreRead()
+    {
+        // Assert: a reading told no type reports no mistyped value, so an empty table would pass
+        // every fixture but the one that lists such a finding.
+        Assert.True(KnowledgeTypes.Count > 20, $"Only {KnowledgeTypes.Count} attribute types were read from knowledge.des.");
+        Assert.Equal("number", KnowledgeTypes.Of("Cell", "number"));
+        Assert.Null(KnowledgeTypes.Of("Cell", "no such attribute"));
     }
 
     [Theory]
@@ -77,7 +75,7 @@ public class KnowledgeFixturesTests
         }
 
         // Assert: the findings it lists and no others - a clean file is read without one.
-        var expected = read.TryGetProperty("findings", out var findings) && !NotYetReported.Contains(name)
+        var expected = read.TryGetProperty("findings", out var findings)
             ? findings.EnumerateArray().Select(f => (Code: f.GetProperty("rule").GetString()!, Line: f.GetProperty("line").GetInt32())).ToList()
             : [];
         Assert.Equal(
@@ -110,7 +108,7 @@ public class KnowledgeFixturesTests
         var binding = BindingOf(fixture, name);
 
         // Act.
-        var reading = Rules.BodyReading.Read(input, binding, new FblOptions { FileName = "cities", DeriveId = KnowledgeIds.Derive });
+        var reading = Rules.BodyReading.Read(input, binding, new FblOptions { FileName = "cities", DeriveId = KnowledgeIds.Derive, AttributeType = KnowledgeTypes.Of });
 
         // Assert: the byte-coverage invariant of FBL §4.1.
         Assert.Null(reading.Unreadable);
@@ -168,7 +166,7 @@ public class KnowledgeFixturesTests
         var fixture = document.RootElement.Clone();
         var inputName = fixture.GetProperty("input").GetString()!;
         var input = File.ReadAllBytes(Path.GetFullPath(Path.Combine(folder, inputName)));
-        var body = OpenBody.Open(input, BindingOf(fixture, name), new FblOptions { FileName = Path.GetFileName(inputName), DeriveId = KnowledgeIds.Derive });
+        var body = OpenBody.Open(input, BindingOf(fixture, name), new FblOptions { FileName = Path.GetFileName(inputName), DeriveId = KnowledgeIds.Derive, AttributeType = KnowledgeTypes.Of });
         return (fixture, body, input);
     }
 }

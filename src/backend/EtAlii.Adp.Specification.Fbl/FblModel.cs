@@ -83,6 +83,14 @@ public sealed class FblOptions
     /// </summary>
     public Func<IdRequest, string?>? DeriveId { get; init; }
 
+    /// <summary>
+    /// The type the tool type's specification gives an attribute of an element type, by the two
+    /// names, or null where it gives none. A binding does not carry it, and without it every value
+    /// reads as what its family makes of it; with it, an entry holding a value that does not
+    /// convert is an unreadable entry: reported, no element, and never rewritten (FBL §7.4).
+    /// </summary>
+    public Func<string, string, string?>? AttributeType { get; init; }
+
     /// <summary>The registration's headers, visible to CEL as <c>registration</c>.</summary>
     public IReadOnlyDictionary<string, string> RegistrationHeaders { get; init; } = new Dictionary<string, string>();
 
