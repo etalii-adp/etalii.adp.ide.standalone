@@ -6,6 +6,8 @@
 
 **Two tasks can change what follows them, and say so to the user as a selection before anything is built on the answer:** task 1 (the two open points in the binding) and task 2 (file size and speed under L1).
 
+**Task 2 is answered** (chat, 2026-10-09): an edit is shown at once and written behind, as the design's *Every edit is a command* now says. Task 10 carries the pending and confirmed states of an edit on the wire, task 12 shows them, and task 17 owns the queue that writes in order and takes a refused edit back. It adds no requirement: it is how Performance's "shown at once" is met.
+
 **Tasks 1 to 5 are pull requests into etalii.adp's `develop`**, under that repository's own rules; it plans with Spec Kit, so whoever takes them opens the feature there that its constitution asks for and cites this document from it. No task from 17 on starts before the definition it implements is merged there (Requirement 1.1), and each such task names the etalii.adp commit it read.
 
 **For every task.** Run `spec-workflow-guide` first. Mark the task `[-]` in this file when starting it. Re-read the seams the task names before changing them, since the design's names come from a survey on one day. Write the guard first and **see it fail against the planted defect the task names** before trusting it (Requirement 11.4). Record the work with `log-implementation`, then mark the task `[x]` once its commit is on `develop`. One Developer owns this specification until every task is done.

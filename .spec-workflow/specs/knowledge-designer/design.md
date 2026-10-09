@@ -287,6 +287,8 @@ flowchart LR
 
 **Every edit is a command.** The client sends a gesture (set this cell, add a property of this type after that one, move this view) as one unary call; a handler turns it into one or more `ModelChange`s, applied to the `OpenBody` as one batch and saved through the document store; its inverse is a `RestoreDocumentCommand` with the bytes before. A step that touches two files (L5) is one command whose inverse restores both, and which writes neither when either refuses.
 
+**An edit is shown at once and written behind** (ruled by the user in chat, 2026-10-09, on task 2's measurement). The table shows an edit the moment it is made, without waiting for the file. The backend applies edits to the file in the order they were made, one at a time, and the client marks an edit as unsaved until its write is confirmed. When a write is refused, the edit is taken back on screen with the refusal's reason, and every later edit still waiting on it is taken back with it. Undo, an edit made outside ADP and closing the document wait for the queue to empty first. On a small file the write lands at once and nobody sees the difference; on a very large one it lands a second or two later.
+
 **Relations.** A session that shows a relation opens its target file read-only through the same store to read titles, and watches it; the reverse side of a two-way relation (Q5) is computed by reading the side that holds the values. A missing or unreadable target, or a row id that is not there, is a finding and the value stays (Requirement 5.7).
 
 ## Components and Interfaces
@@ -401,7 +403,7 @@ The `tests.md` browser pass of Requirement 11.1, in both themes, with each part 
 
 | Risk | Handling |
 | --- | --- |
-| **File size and speed under L1's default.** A cell per entry is large, and this host's FBL runtime re-reads the whole body after every change. | Task 2 measures at ten thousand rows first. If it fails the Performance requirement, the choice is between making the runtime incremental and taking L1's other option, and it goes to the user as a selection with the measurements. |
+| **File size and speed under L1's default.** A cell per entry is large, and this host's FBL runtime re-reads the whole body after every change. | **Measured in task 2 and ruled by the user in chat, 2026-10-09: show at once, write behind.** A ten-thousand-row file is 4.0 MB; one cell edit takes about 1.7 s through the runtime (Debug build, YAML only). The options were: show at once and write behind; make the FBL runtime incremental; switch the file to a map per row; other. See *Every edit is a command*. |
 | **The two open points in the binding** (cascading by stored id, a rule at the root). | Settled in task 1, in etalii.adp, before anything depends on them. |
 | **DESL written for one designer.** Its first constructs may not suit the second. | Only `surface` is new; the rest is DISL's by reference. DESL stays at 0.1, where any construct may change. |
 | **Notion parity is judged by eye.** | Requirement 7 lists what is followed, 7.7 what is not, and the browser pass records each difference found. |
