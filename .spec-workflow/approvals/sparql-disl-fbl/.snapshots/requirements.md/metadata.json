@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/sparql-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:14:10.034Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791508449889_5ocnoj2ov",
+      "approvalTitle": "requirements.md: converting the SPARQL query diagram to DISL and FBL"
+    }
+  ]
+}
