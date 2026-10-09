@@ -246,6 +246,14 @@ jobs:
       # unreachable copy at wwwroot/dist/ - because cp treats an existing destination as a
       # parent. Verified against a real publish: wwwroot/ comes out with index.html,
       # favicon.svg and assets/ before anything is copied.
+      #
+      # version.json turns off Nerdbank.GitVersioning's cloud-build variables. Left on, every
+      # project in the publish appends its three version variables to $GITHUB_ENV - 86 projects,
+      # 258 lines, from parallel build nodes into one file - and on 7413b3eb the runner could not
+      # parse what came out ("Unable to process file command 'env'", "Value cannot be null.
+      # (Parameter 'name')") and failed this step. It is the step's first such failure. Nothing
+      # reads those variables: the version comes from `nbgv get-version` above and is stamped
+      # into the assemblies either way.
       - name: Publish the service
         if: steps.tip.outputs.publish == 'true'
         run: dotnet publish src/backend/EtAlii.Adp.Backend.Service -c Release -o publish
