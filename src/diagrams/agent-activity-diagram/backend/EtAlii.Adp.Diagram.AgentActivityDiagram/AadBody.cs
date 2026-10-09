@@ -87,6 +87,32 @@ public sealed class AadBody
     }
 
     /// <summary>Reads <paramref name="text"/> as an activity file. Never throws for what the file holds: what cannot be read is a finding.</summary>
+    /// <summary>The schema version this host knows; a file of a newer one is shown and never written (Requirement 2.8).</summary>
+    public const long KnownVersion = 1;
+
+    /// <summary>The version the file declares, or the known one when it declares none that can be read.</summary>
+    public long Version =>
+        Model.Elements.FirstOrDefault(element => element.Type == "Diagram")?.Attributes.GetValueOrDefault("version") is long version ? version : KnownVersion;
+
+    /// <summary>
+    /// The entries of the reader's part that name an element the file no longer has: a lock or a
+    /// group state left behind when an agent removed its element (Requirement 8.8).
+    /// </summary>
+    public IReadOnlyList<string> OrphanedViewEntries
+    {
+        get
+        {
+            var elements = Model.Elements.Where(element => element.Type is not ("Placement" or "GroupState" or "Diagram")).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+            return
+            [
+                .. Model.Elements
+                    .Where(element => element.Type is "Placement" or "GroupState")
+                    .Where(element => element.Attributes.GetValueOrDefault("element") is not string named || !elements.Contains(named))
+                    .Select(element => element.Id),
+            ];
+        }
+    }
+
     public static AadBody Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);

@@ -12,6 +12,7 @@ public sealed class AadSession : IDiagramSession
     private readonly IHistoryStack? _history;
     private readonly DiagramDocumentChangeHandler _changes;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
+    private AadModel? _lastRead;
 
     public AadSession(string bodyPath, IAadDocumentStore documents, AadElementMapper mapper, IHistoryStack? history = null)
     {
@@ -74,8 +75,20 @@ public sealed class AadSession : IDiagramSession
         return ValueTask.CompletedTask;
     }
 
-    private IReadOnlyList<DiagramElement> Render() =>
-        _mapper.Visible(_documents.GetOrLoad(_bodyPath).Model, _viewport);
+    /// <summary>
+    /// What the file says now. A file that cannot be read says nothing, so the diagram keeps showing
+    /// what it last read until the file can be read again (Requirement 8.5).
+    /// </summary>
+    private IReadOnlyList<DiagramElement> Render()
+    {
+        var entry = _documents.GetOrLoad(_bodyPath);
+        if (entry.IsUsable || _lastRead is null)
+        {
+            _lastRead = entry.Model;
+        }
+
+        return _mapper.Visible(_lastRead, _viewport);
+    }
 
     private void Raise(IReadOnlyList<DiagramDelta> deltas) =>
         Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));

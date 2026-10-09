@@ -312,7 +312,29 @@ internal static class AadEdits
         ArgumentNullException.ThrowIfNull(self);
         ArgumentNullException.ThrowIfNull(edit);
 
-        var saved = documents.Save(bodyPath, documents.GetOrLoad(bodyPath), edit);
+        var saved = documents.Save(bodyPath, documents.GetOrLoad(bodyPath), document =>
+        {
+            if (document.Version > AadBody.KnownVersion)
+            {
+                return AadEdit.Refused($"{Path.GetFileName(bodyPath)} was written for version {document.Version} of the activity file, which this version of ADP shows and does not change.");
+            }
+
+            var outcome = edit(document);
+            if (!outcome.WasApplied)
+            {
+                return outcome;
+            }
+
+            // What the reader set for an element an agent has since removed goes with this write,
+            // without a word: it describes nothing any more (Requirement 8.8).
+            foreach (var orphan in document.OrphanedViewEntries)
+            {
+                var removed = document.Change(new ModelChange.Remove(orphan));
+                if (!removed.WasApplied) return removed;
+            }
+
+            return outcome;
+        });
         if (saved.Result.Failed)
         {
             return Task.FromResult(CommandResult.Failure(saved.Result.Error));

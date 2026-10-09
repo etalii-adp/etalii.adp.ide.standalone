@@ -102,11 +102,50 @@ public sealed class AadValidator : IDiagramValidator
                 finding.Message,
                 finding.Code,
                 new DiagramProblemLineLocation((uint)Math.Max(finding.Line ?? 1, 1)))),
-            .. document.Model.Findings.Select(finding => new DiagramProblem(
-                finding.Severity switch { FindingSeverity.Error => DiagramProblemSeverity.Error, FindingSeverity.Info => DiagramProblemSeverity.Info, _ => DiagramProblemSeverity.Warning },
-                finding.Message,
+            .. document.Model.Findings.Where(finding => !IsAboutAnOrphan(document, finding)).Select(finding => new DiagramProblem(
+                SeverityOf(document, finding),
+                finding.Code == HeaderMismatch && document.Version > AadBody.KnownVersion
+                    ? $"This file was written for version {document.Version} of the activity file. It is shown, and it is not changed."
+                    : finding.Message,
                 finding.Code,
                 new DiagramProblemLineLocation((uint)Math.Max(finding.Location?.Line ?? 1, 1)))),
+            .. UnknownKeys(document),
         ];
     }
+
+    private const string DanglingReference = "fbl.dangling-reference";
+    private const string HeaderMismatch = "fbl.header-mismatch";
+
+    /// <summary>
+    /// What a reader's finding weighs here. A reference to something the file does not have and an
+    /// id used twice break the file's own rules and are errors (Requirement 3.8); an entry an agent
+    /// wrote without an id is shown and merely mentioned (Requirement 8.7); a file of a newer
+    /// version is an error, since nothing can be changed in it (Requirement 2.8).
+    /// </summary>
+    private static DiagramProblemSeverity SeverityOf(AadBody document, Finding finding) => finding.Code switch
+    {
+        DanglingReference or "std.duplicateId" => DiagramProblemSeverity.Error,
+        "std.missingId" => DiagramProblemSeverity.Info,
+        HeaderMismatch when document.Version > AadBody.KnownVersion => DiagramProblemSeverity.Error,
+        _ => finding.Severity switch { FindingSeverity.Error => DiagramProblemSeverity.Error, FindingSeverity.Info => DiagramProblemSeverity.Info, _ => DiagramProblemSeverity.Warning },
+    };
+
+    /// <summary>A lock or a group state whose element is gone is removed on the next write and not reported (Requirement 8.8).</summary>
+    private static bool IsAboutAnOrphan(AadBody document, Finding finding)
+    {
+        if (finding.Code != DanglingReference || finding.Location is not { } location) return false;
+        var orphans = document.OrphanedViewEntries.ToHashSet(StringComparer.Ordinal);
+        return document.Model.Elements.Any(element => orphans.Contains(element.Id) && location.Line >= element.Line && location.Line < element.Line + 4);
+    }
+
+    /// <summary>Keys the diagram does not read: kept on every write, and mentioned once each (Requirement 2.9).</summary>
+    private static IEnumerable<DiagramProblem> UnknownKeys(AadBody document) =>
+        document.Model.Elements.SelectMany(element =>
+            (element.Attributes.GetValueOrDefault("unknownKeys") as IEnumerable<object?> ?? [])
+                .OfType<string>()
+                .Select(key => new DiagramProblem(
+                    DiagramProblemSeverity.Info,
+                    $"The key \"{key}\" is not one the diagram reads. It is kept as it is.",
+                    "aad.unknown-key",
+                    new DiagramProblemLineLocation((uint)Math.Max(element.Line, 1)))));
 }
