@@ -3,8 +3,10 @@
   "title": "requirements.md: converting the Wardley map to DISL and FBL",
   "filePath": ".spec-workflow/specs/wardley-map-disl-fbl/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T01:13:30.356Z",
   "category": "spec",
-  "categoryName": "wardley-map-disl-fbl"
+  "categoryName": "wardley-map-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T09:53:12.565Z"
 }

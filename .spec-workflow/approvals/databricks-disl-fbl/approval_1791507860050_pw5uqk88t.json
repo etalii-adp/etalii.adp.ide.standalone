@@ -3,8 +3,10 @@
   "title": "requirements.md: converting the Databricks diagrams to DISL and FBL",
   "filePath": ".spec-workflow/specs/databricks-disl-fbl/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T01:04:20.050Z",
   "category": "spec",
-  "categoryName": "databricks-disl-fbl"
+  "categoryName": "databricks-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T09:53:20.303Z"
 }

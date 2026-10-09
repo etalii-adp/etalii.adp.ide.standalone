@@ -3,8 +3,10 @@
   "title": "requirements.md: converting the functional decomposition graph to DISL and FBL",
   "filePath": ".spec-workflow/specs/functional-decomposition-graph-disl-fbl/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T01:03:18.614Z",
   "category": "spec",
-  "categoryName": "functional-decomposition-graph-disl-fbl"
+  "categoryName": "functional-decomposition-graph-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T09:54:55.240Z"
 }

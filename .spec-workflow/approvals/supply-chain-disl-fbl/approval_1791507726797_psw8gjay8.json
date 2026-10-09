@@ -3,8 +3,10 @@
   "title": "requirements.md: converting the supply chain diagram to DISL and FBL",
   "filePath": ".spec-workflow/specs/supply-chain-disl-fbl/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T01:02:06.797Z",
   "category": "spec",
-  "categoryName": "supply-chain-disl-fbl"
+  "categoryName": "supply-chain-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T09:54:50.535Z"
 }

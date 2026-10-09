@@ -239,7 +239,7 @@ A binding rule, to show the level the bindings are written at (YAML; a sketch, n
 }
 ```
 
-Each binding claims its extensions as `shared` and `registrationOnly` (a knowledge file always has its registration), carries a `required` header (the root key `ded` in YAML and JSON, the root element `ded` in XML), and has a template of one title property, one view and no rows.
+Each binding claims its extensions as `shared`, with DED's envelope as its marker (`designer: etalii/knowledge`), so a knowledge file is recognised without its registration and the JSON binding also claims `.ded`, carries a `required` header (the root key `ded` in YAML and JSON, the root element `ded` in XML), and has a template of one title property, one view and no rows.
 
 **Two things the binding task settles first, because the reading left them open:** whether an attribute `reference` can name a rule's stored id, so that deleting a property or an option cascades to the cells that name it (if not, the designer issues those removals in the same transaction, and `knowledge.md` says so); and whether a rule at `/` can bind root keys as `Table`'s attributes (no existing binding does it). Either answer keeps the file shape; a "no" on the second is a sixth language decision and goes to the user as one.
 

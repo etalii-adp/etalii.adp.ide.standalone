@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/c4-disl-fbl/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T01:16:21.981Z",
       "trigger": "initial",
+      "approvalId": "approval_1791508581804_tx1fuce11",
+      "approvalTitle": "requirements.md: converting the C4 diagrams to DISL and FBL"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T09:53:10.691Z",
+      "trigger": "approved",
       "approvalId": "approval_1791508581804_tx1fuce11",
       "approvalTitle": "requirements.md: converting the C4 diagrams to DISL and FBL"
     }

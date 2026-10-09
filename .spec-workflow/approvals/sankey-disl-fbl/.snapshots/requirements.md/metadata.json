@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/sankey-disl-fbl/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T01:02:11.315Z",
       "trigger": "initial",
+      "approvalId": "approval_1791507731139_ouiddcv9s",
+      "approvalTitle": "requirements.md: converting the Sankey diagram to DISL and FBL"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T09:54:52.642Z",
+      "trigger": "approved",
       "approvalId": "approval_1791507731139_ouiddcv9s",
       "approvalTitle": "requirements.md: converting the Sankey diagram to DISL and FBL"
     }

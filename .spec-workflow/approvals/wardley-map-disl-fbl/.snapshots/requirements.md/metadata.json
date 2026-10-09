@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/wardley-map-disl-fbl/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T01:13:30.496Z",
       "trigger": "initial",
+      "approvalId": "approval_1791508410356_u6dl9elqa",
+      "approvalTitle": "requirements.md: converting the Wardley map to DISL and FBL"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T09:53:12.557Z",
+      "trigger": "approved",
       "approvalId": "approval_1791508410356_u6dl9elqa",
       "approvalTitle": "requirements.md: converting the Wardley map to DISL and FBL"
     }

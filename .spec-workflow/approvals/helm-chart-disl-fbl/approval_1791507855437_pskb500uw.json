@@ -3,8 +3,10 @@
   "title": "requirements.md: converting the Helm chart diagram to DISL and FBL",
   "filePath": ".spec-workflow/specs/helm-chart-disl-fbl/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T01:04:15.437Z",
   "category": "spec",
-  "categoryName": "helm-chart-disl-fbl"
+  "categoryName": "helm-chart-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T09:54:57.610Z"
 }

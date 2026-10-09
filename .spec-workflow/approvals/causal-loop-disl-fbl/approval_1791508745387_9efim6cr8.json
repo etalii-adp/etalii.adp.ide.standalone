@@ -3,8 +3,10 @@
   "title": "design.md: converting the causal loop diagram (proposes an amendment to requirement 6.2)",
   "filePath": ".spec-workflow/specs/causal-loop-disl-fbl/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T01:19:05.387Z",
   "category": "spec",
-  "categoryName": "causal-loop-disl-fbl"
+  "categoryName": "causal-loop-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T09:53:07.992Z"
 }

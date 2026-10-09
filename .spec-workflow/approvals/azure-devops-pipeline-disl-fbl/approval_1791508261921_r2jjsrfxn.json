@@ -3,8 +3,10 @@
   "title": "requirements.md: converting the Azure DevOps pipeline diagram to DISL and FBL",
   "filePath": ".spec-workflow/specs/azure-devops-pipeline-disl-fbl/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T01:11:01.921Z",
   "category": "spec",
-  "categoryName": "azure-devops-pipeline-disl-fbl"
+  "categoryName": "azure-devops-pipeline-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T09:53:17.646Z"
 }

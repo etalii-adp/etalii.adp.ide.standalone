@@ -3,8 +3,10 @@
   "title": "Agent activity diagram: tasks (29 tasks, 89 of 89 criteria claimed)",
   "filePath": ".spec-workflow/specs/agent-activity-diagram/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T00:45:57.447Z",
   "category": "spec",
-  "categoryName": "agent-activity-diagram"
+  "categoryName": "agent-activity-diagram",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T00:46:48.535Z"
 }

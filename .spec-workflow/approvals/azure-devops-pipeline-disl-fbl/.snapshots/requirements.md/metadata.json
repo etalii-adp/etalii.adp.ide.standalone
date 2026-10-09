@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/azure-devops-pipeline-disl-fbl/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T01:11:02.024Z",
       "trigger": "initial",
+      "approvalId": "approval_1791508261921_r2jjsrfxn",
+      "approvalTitle": "requirements.md: converting the Azure DevOps pipeline diagram to DISL and FBL"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T09:53:17.639Z",
+      "trigger": "approved",
       "approvalId": "approval_1791508261921_r2jjsrfxn",
       "approvalTitle": "requirements.md: converting the Azure DevOps pipeline diagram to DISL and FBL"
     }

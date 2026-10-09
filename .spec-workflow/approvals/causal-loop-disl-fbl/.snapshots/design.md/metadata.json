@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/causal-loop-disl-fbl/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T01:19:05.512Z",
       "trigger": "initial",
+      "approvalId": "approval_1791508745387_9efim6cr8",
+      "approvalTitle": "design.md: converting the causal loop diagram (proposes an amendment to requirement 6.2)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T09:53:07.978Z",
+      "trigger": "approved",
       "approvalId": "approval_1791508745387_9efim6cr8",
       "approvalTitle": "design.md: converting the causal loop diagram (proposes an amendment to requirement 6.2)"
     }

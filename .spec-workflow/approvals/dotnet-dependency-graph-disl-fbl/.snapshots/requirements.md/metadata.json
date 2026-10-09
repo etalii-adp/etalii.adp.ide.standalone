@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/dotnet-dependency-graph-disl-fbl/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T01:02:06.580Z",
       "trigger": "initial",
+      "approvalId": "approval_1791507726329_9irei9gdp",
+      "approvalTitle": "requirements.md: reading the .NET dependency graph through an FBL plugin binding"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T09:54:43.199Z",
+      "trigger": "approved",
       "approvalId": "approval_1791507726329_9irei9gdp",
       "approvalTitle": "requirements.md: reading the .NET dependency graph through an FBL plugin binding"
     }
