@@ -4,12 +4,20 @@
  * declaration, as the canvas library draws a diagram from its definition.
  */
 
+/**
+ * How a kind of value is edited: in one of the browser's own inputs, by a tick, or from a
+ * searchable list - one option, several options, or rows of another table.
+ */
+export type TableEditorKind = "text" | "number" | "checkbox" | "date" | "datetime" | "time" | "option" | "options" | "rows";
+
 /** How one kind of value shows itself. */
 export interface TableKindDefinition {
   /** The @mdi/font class of the kind's icon, shown in a column's header. */
   icon: string;
   /** The kind's name, read out where the icon is shown. */
   label: string;
+  /** How a cell of this kind is edited. Left out, its cells are shown and never edited. */
+  editor?: TableEditorKind;
 }
 
 export interface TableDefinition {

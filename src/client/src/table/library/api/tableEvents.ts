@@ -27,6 +27,9 @@ export interface TableEvents {
   onWindow?: (window: RowWindow) => void;
   /** The author chose another view. */
   onView?: (viewId: string) => void;
-  /** The author did something that changes the table. */
-  onGesture?: (gesture: TableGesture) => void;
+  /**
+   * The author did something that changes the table. Resolves to the backend's refusal as a
+   * sentence, or to `""` when the edit was accepted; an editor shows a refusal and stays open.
+   */
+  onGesture?: (gesture: TableGesture) => Promise<string>;
 }

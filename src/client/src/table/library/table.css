@@ -97,3 +97,65 @@
 .table-spacer {
   width: 1px;
 }
+
+/* The cell the keyboard is on. An outline inside the cell, so it does not move its neighbours. */
+.table-cell-active {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.table-cell:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* A cell being edited lets its editor - a list, a refusal - reach past its own box. */
+.table-cell-editing {
+  position: relative;
+  overflow: visible;
+  padding: 0;
+  z-index: 2;
+}
+
+.table-cell-editor {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-cell-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--table-cell-padding);
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  outline: none;
+}
+
+.table-cell-list-editor {
+  inset: 0 auto auto 0;
+}
+
+.table-cell-refusal,
+.table-refusal {
+  margin: 0;
+  padding: 4px var(--table-cell-padding);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: 0.8125rem;
+  white-space: normal;
+}
+
+.table-refusal {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+}
+
+.table-cell-tick {
+  font-size: 1.125rem;
+}
