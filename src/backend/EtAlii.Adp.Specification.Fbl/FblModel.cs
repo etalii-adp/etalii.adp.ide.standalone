@@ -47,7 +47,21 @@ public sealed record IdRequest(
     IReadOnlyDictionary<string, object?> Attributes,
     string? Source,
     string? Target,
-    int Line);
+    int Line)
+{
+    /// <summary>The id of the element that contains this one (FBL §5.5), or null at the top level.</summary>
+    /// <remarks>Known before this element's id is asked for: an element is read after the one that contains it.</remarks>
+    public string? ParentId { get; init; }
+
+    /// <summary>The containment slot of the parent this element is in, or null at the top level.</summary>
+    public string? ParentSlot { get; init; }
+
+    /// <summary>
+    /// The element's zero-based place among the elements of the same parent and slot, in document
+    /// order - what an id strategy that addresses an element by its position derives from.
+    /// </summary>
+    public int PositionInSlot { get; init; }
+}
 
 /// <summary>The caller's settings for reading and writing one body.</summary>
 public sealed class FblOptions

@@ -85,6 +85,9 @@ internal sealed class ReadElement
 
     public ReadElement? Parent { get; set; }
 
+    /// <summary>The element's zero-based place among those of the same parent and slot, in document order.</summary>
+    public int PositionInSlot { get; set; }
+
     public SlotRead? SourceRead { get; set; }
 
     public SlotRead? TargetRead { get; set; }

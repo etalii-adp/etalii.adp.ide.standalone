@@ -1,0 +1,167 @@
+{
+  "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
+  "doc": "The Cities example in YAML, read through the yaml binding. The three fixtures of this folder read the same table and list the same elements; the validator checks that their 'read' is identical.",
+  "binding": "../../../../../definitions/designers/knowledge.fbl#yaml",
+  "input": "../../../../../definitions/designers/examples/cities.yaml",
+  "read": {
+    "elements": [
+      {
+        "id": "table",
+        "type": "Table"
+      },
+      {
+        "id": "p1",
+        "type": "Property"
+      },
+      {
+        "id": "p2",
+        "type": "Property"
+      },
+      {
+        "id": "o1",
+        "type": "Option"
+      },
+      {
+        "id": "o2",
+        "type": "Option"
+      },
+      {
+        "id": "p3",
+        "type": "Property"
+      },
+      {
+        "id": "p4",
+        "type": "Property"
+      },
+      {
+        "id": "o3",
+        "type": "Option"
+      },
+      {
+        "id": "o4",
+        "type": "Option"
+      },
+      {
+        "id": "p5",
+        "type": "Property"
+      },
+      {
+        "id": "p6",
+        "type": "Property"
+      },
+      {
+        "id": "p7",
+        "type": "Property"
+      },
+      {
+        "id": "p8",
+        "type": "Property"
+      },
+      {
+        "id": "p9",
+        "type": "Property"
+      },
+      {
+        "id": "v1",
+        "type": "View"
+      },
+      {
+        "id": "v1/columns/p3",
+        "type": "Column"
+      },
+      {
+        "id": "v1/sorts/p3",
+        "type": "Sort"
+      },
+      {
+        "id": "v1/filter/0",
+        "type": "Condition"
+      },
+      {
+        "id": "v2",
+        "type": "View"
+      },
+      {
+        "id": "r1",
+        "type": "Row"
+      },
+      {
+        "id": "r1/p1",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p2",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p3",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p4",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p4/o3",
+        "type": "CellItem"
+      },
+      {
+        "id": "r1/p4/o4",
+        "type": "CellItem"
+      },
+      {
+        "id": "r1/p5",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p5/nh",
+        "type": "CellItem"
+      },
+      {
+        "id": "r1/p6",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p7",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p8",
+        "type": "Cell"
+      },
+      {
+        "id": "r1/p9",
+        "type": "Cell"
+      },
+      {
+        "id": "r2",
+        "type": "Row"
+      },
+      {
+        "id": "r2/p1",
+        "type": "Cell"
+      },
+      {
+        "id": "r2/p2",
+        "type": "Cell"
+      },
+      {
+        "id": "r2/p4",
+        "type": "Cell"
+      },
+      {
+        "id": "r2/p4/o3",
+        "type": "CellItem"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "doc": "Opening and saving without an edit writes the bytes that were read.",
+      "edit": {
+        "save": true
+      },
+      "splices": []
+    }
+  ]
+}

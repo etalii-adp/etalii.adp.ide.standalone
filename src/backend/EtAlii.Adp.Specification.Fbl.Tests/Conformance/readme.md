@@ -11,6 +11,14 @@ Everything in this folder except this readme is copied, unchanged, from [`etalii
 
 `.gitattributes` keeps the fixture inputs and registrations (`*.yml`, `*.json`, `*.cld`, `*.adp`, and `*.tml`, `*.mm`, `*.dsl` through the repository-wide rules) from line-ending conversion, because the fixtures' offsets are byte offsets into them.
 
+## `etalii.adp/`: the Knowledge designer's files
+
+The folder `etalii.adp/` holds a second vendored set, copied unchanged from the same repository at commit `2d5c11d` (`develop`, 2026-10-09), **in that repository's own layout**: `definitions/designers/knowledge.fbl` (the bindings `yaml`, `json` and `xml`), `definitions/designers/examples/`, and `specifications/fbl/fixtures/knowledge-*`. The layout is kept because those fixtures name their binding and their inputs by paths relative to that tree, and the files are never edited here.
+
+`.gitattributes` keeps the whole of `etalii.adp/` from line-ending conversion by its path. A rule by extension would exempt this repository's ordinary `.yaml`, `.json` and `.xml` files too.
+
+`KnowledgeFixtures.Tests.cs` runs them. **It does not run their edit steps yet**: each of the three large fixtures has 132 steps that need reordering, adds at a position and edits of several elements at once, which this library gains in the rest of knowledge-designer task 8. What is run today is each fixture's `read`, an unchanged save, the byte-coverage invariant, and that the one example reads as the same model in all three formats. One listed finding is not reported yet, and the test names it.
+
 ## What this corpus does not demonstrate
 
 - **No persistence plugin runs.** `helm-chart.fbl` and `w3c-turtle.fbl` are plugin-read bindings; only what the host declares for them (routing, recognition, the registration, templates) is exercised.
