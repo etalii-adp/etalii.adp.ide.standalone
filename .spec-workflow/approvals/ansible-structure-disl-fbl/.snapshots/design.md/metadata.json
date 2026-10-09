@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ansible-structure-disl-fbl/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T10:15:40.856Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791540940499_hwn56km7i",
+      "approvalTitle": "design.md: converting the Ansible structure diagram (proposes an amendment to requirement 3.2)"
+    }
+  ]
+}
