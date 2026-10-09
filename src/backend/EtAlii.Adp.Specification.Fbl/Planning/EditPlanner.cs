@@ -195,10 +195,14 @@ internal static class EditPlanner
         if (add.Index is not null) Planning.Plan.Refuse($"This file's binding cannot add a {add.Type} at a position; only a persistence plugin can.");
         var rules = reading.Binding.AllRules.Where(r => r.Type == add.Type && (add.Slot is null || r.Parent?.Slot == add.Slot)).ToList();
         if (rules.Count == 0) Planning.Plan.Refuse($"This file has no place for a {add.Type}.");
-        // Several rules may write one type (a cell's items are options or rows): the one that
-        // binds the most of the attributes given is the one meant, the first of them on a tie.
-        var rule = rules
-            .Where(r => r.Insert is not null)
+        // Several rules may write one type (a cell's items are options or rows; a filter's
+        // conditions are written at each level of nesting). The one meant is a rule the parent
+        // given can contain, where any is, and among those the one that binds the most of the
+        // attributes given, the first of them on a tie.
+        var container = add.ParentId is { } containerId ? reading.Find(containerId) : null;
+        var insertable = rules.Where(r => r.Insert is not null).ToList();
+        var contained = insertable.Where(r => container is not null && r.Parent?.Rules.Contains(container.Rule.Name) == true).ToList();
+        var rule = (contained.Count > 0 ? contained : insertable)
             .OrderByDescending(r => add.Attributes.Keys.Count(name => r.Attribute(name) is not null))
             .FirstOrDefault();
         if (rule is null)

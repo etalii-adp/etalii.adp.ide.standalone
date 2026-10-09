@@ -17,7 +17,12 @@ The folder `etalii.adp/` holds a second vendored set, copied unchanged from the 
 
 `.gitattributes` keeps the whole of `etalii.adp/` from line-ending conversion by its path. A rule by extension would exempt this repository's ordinary `.yaml`, `.json` and `.xml` files too.
 
-`KnowledgeFixtures.Tests.cs` runs them. **It does not run their edit steps yet**: each of the three large fixtures has 132 steps that need reordering, adds at a position and edits of several elements at once, which this library gains in the rest of knowledge-designer task 8. What is run today is each fixture's `read`, an unchanged save, the byte-coverage invariant, and that the one example reads as the same model in all three formats. One listed finding is not reported yet, and the test names it.
+`KnowledgeFixtures.Tests.cs` runs each fixture's `read`, an unchanged save, the byte-coverage invariant, and that the one example reads as the same model in all three formats. `KnowledgeFixtures.Steps.Tests.cs` runs their edit steps: all 132 of each of the three large fixtures, and the 11 of `knowledge-kept`, go through. Two things are not this library's doing, and the tests name both:
+
+- **One step of each large fixture is taken from the fixture, not planned.** Duplicating a view is written there as an add carrying `x-copyOf`, expecting one new entry with the copy's settings in the original's order. Neither FBL nor `knowledge.des` says how that entry is planned, and the `duplicateView` operation, a transaction of creates, would write the settings in another order under this binding. The step applies the fixture's own splices so the steps after it can run.
+- **One listed finding is not reported**: `knowledge-kept` expects a cell whose number is not a number to be an unreadable entry, which needs the specification's attribute types, and the reading is not told them yet.
+
+A fixture's refusal sentence is not compared either, where it is the message of the designer's own rule and not the binding's.
 
 ## What this corpus does not demonstrate
 

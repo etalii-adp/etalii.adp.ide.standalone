@@ -372,11 +372,6 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
         if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
         var container = insert.Container is null ? null : Container(insert.Container, request.Parent?.Entry, CapturesOf(plan));
-        if (container is null || container.Value.Kind == ValueKind.Scalar)
-        {
-            Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
-            return;
-        }
         string text;
         if (insert.Emit is { } emit)
         {
@@ -397,6 +392,27 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
             }
             text = "{ " + string.Join(", ", members) + " }";
         }
+        if (container is null)
+        {
+            if (NewContainer(insert, request.Parent?.Entry as TreeEntry) is not { } created)
+            {
+                Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
+                return;
+            }
+
+            // A container that encloses its entries on one line cannot be written before an entry that
+            // goes inside it, so it is created as its opening and its closing with the entry between
+            // them, all three at one offset (FBL §6.2).
+            plan.Add(SpliceOperation.EnsureContainer, created.Offset, created.Offset, created.Opening);
+            plan.Add(SpliceOperation.InsertEntry, created.Offset, created.Offset, text);
+            plan.Add(SpliceOperation.EnsureContainer, created.Offset, created.Offset, "]");
+            return;
+        }
+        if (container.Value.Kind == ValueKind.Scalar)
+        {
+            Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
+            return;
+        }
         if (insert.Place == "start" && container.Value.Entries.Count > 0)
         {
             var first = container.Value.Entries[0];
@@ -406,6 +422,20 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         (int offset, string inserted) = NewMember(container.Value, text);
         plan.Add(SpliceOperation.InsertEntry, offset, offset, inserted);
+    }
+
+    /// <summary>
+    /// Where a missing container is created and how it opens (FBL §6.2 <c>create</c>): a list under
+    /// the selector's last name, right after the member <c>create.at.after</c> names in the parent
+    /// entry's object. Null when the rule creates no container, or creates it in a way this family
+    /// does not write yet - anywhere but after a member that stands on one line with its siblings.
+    /// </summary>
+    private static (int Offset, string Opening)? NewContainer(InsertSettings insert, TreeEntry? parent)
+    {
+        if (insert is not { Container: { } selector, Create: { At: "after", Argument: { } after, Text: null } } || selector.StartsWith('/')) return null;
+        if (parent?.Value is not { Kind: ValueKind.Mapping } mapping || mapping.Member(after) is not { LineSpan: null } member) return null;
+        var name = selector.TrimEnd('/')[(selector.TrimEnd('/').LastIndexOf('/') + 1)..];
+        return (member.Own.End, $", {Quote(name)}: [");
     }
 
     private static string? WireValue(InsertRequest request, string key)
@@ -482,10 +512,16 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         if (element.Rule.Remove?.RemoveContainerWhenEmpty == true &&
             entry.Parent is TreeEntry { IsRoot: false, Parent: TreeEntry, Value.Entries.Count: 1 } container)
         {
-            var whole = RemovalSpan(container);
-            plan.Add(SpliceOperation.RemoveContainer, whole.Start, entry.Own.Start, "");
+            // The container goes as it was created (FBL §6.2): with the separator before it, where a
+            // member stands before it, so that removing what an insert created leaves the bytes the
+            // insert started from. Only a first member takes the separator after it instead.
+            var members = ((TreeEntry)container.Parent!).Value.Entries;
+            var at = members.IndexOf(container);
+            var start = at > 0 ? members[at - 1].Own.End : container.Own.Start;
+            var end = at == 0 && members.Count > 1 ? members[1].Own.Start : container.Own.End;
+            plan.Add(SpliceOperation.RemoveContainer, start, entry.Own.Start, "");
             plan.Add(SpliceOperation.RemoveEntry, entry.Own, "");
-            plan.Add(SpliceOperation.RemoveContainer, entry.Own.End, whole.End, "");
+            plan.Add(SpliceOperation.RemoveContainer, entry.Own.End, end, "");
             return;
         }
 
