@@ -191,8 +191,9 @@ internal static partial class DislExpressionWalker
                 return next.In(context!).Binding(Bound(value)).As(Mode.Action);
             }
 
-            if (ExpressionKeys.Contains(key)) return next.As(Mode.Expression);
-            return next;
+            return ExpressionKeys.Contains(key)
+                ? next.As(Mode.Expression)
+                : next;
         }
 
         private static Frame Metamodel(Frame frame, string key, JsonElement value, IReadOnlyList<string> path)
@@ -226,15 +227,19 @@ internal static partial class DislExpressionWalker
 
         private static Frame Persistence(Frame frame, string key, IReadOnlyList<string> path)
         {
-            if (path.Contains("ids"))
+            if (!path.Contains("ids"))
+            {
+                return key == "migrations" ? frame.In(DislContexts.Migration) : frame.As(Mode.Literal);
+            }
+
+            return key switch
             {
                 // A derived id is the identity context's; a cel id is made on creation, the create context's.
-                if (key == "expression") return frame.In(DislContexts.Identity).As(Mode.Expression);
-                if (key == "ephemeral") return frame.In(DislContexts.Identity).As(Mode.Expression);
-                if (key == "reason") return frame.In(DislContexts.Element).As(Mode.Literal);
-            }
-            if (key == "migrations") return frame.In(DislContexts.Migration);
-            return frame.As(Mode.Literal);
+                "expression" => frame.In(DislContexts.Identity).As(Mode.Expression),
+                "ephemeral" => frame.In(DislContexts.Identity).As(Mode.Expression),
+                "reason" => frame.In(DislContexts.Element).As(Mode.Literal),
+                _ => key == "migrations" ? frame.In(DislContexts.Migration) : frame.As(Mode.Literal)
+            };
         }
 
         private static Frame Constraints(Frame frame, string key, JsonElement owner, IReadOnlyList<string> path)
@@ -273,7 +278,9 @@ internal static partial class DislExpressionWalker
                 {
                     // A set's own when, and its entries: the connection context for a pending connection (§7.3), else the element's.
                     var forConnection = DislJson.Strings(owner, "for").Contains("connection");
-                    return frame.In(forConnection ? DislContexts.Connection : DislContexts.Element);
+                    return frame.In(forConnection
+                        ? DislContexts.Connection
+                        : DislContexts.Element);
                 }
                 if (path[^1] == "tools")
                 {
@@ -286,25 +293,30 @@ internal static partial class DislExpressionWalker
                 }
                 return frame;
             }
-            // A palette tool: its initial values in the create context, everything else in the element context on the diagram.
-            if (key == "initial") return frame.In(DislContexts.Create).As(Mode.Literal);
-            if (key == "refusal") return frame.In(DislContexts.Create).As(Mode.Literal);
-            return frame;
+
+            return key switch
+            {
+                // A palette tool: its initial values in the create context, everything else in the element context on the diagram.
+                "initial" => frame.In(DislContexts.Create).As(Mode.Literal),
+                "refusal" => frame.In(DislContexts.Create).As(Mode.Literal),
+                _ => frame
+            };
         }
 
         private static Frame Forms(Frame frame, string key, JsonElement value)
         {
-            if (key == "initial") return frame.Binding(["position"]).As(value.ValueKind == JsonValueKind.String ? Mode.Expression : Mode.Literal);
-            if (key == "confirm") return frame.Binding(["count"]);
-            if (key == "options" && value.ValueKind == JsonValueKind.String) return frame.As(Mode.Expression);
-
-            // A type item (DISL 0.3 §7.5): its optionLabel sees each option as item, its refusals the chosen newValue.
-            if (key == "optionLabel") return frame.Binding(["item"]).As(Mode.Expression);
-            if (key == "refusals") return frame.Binding(["newValue"]);
-
-            // A field's parse (DISL 0.3 §7.5): accepts is an Expression over value; its write is an action list.
-            if (key == "accepts") return frame.As(Mode.Expression);
-            return frame;
+            return key switch
+            {
+                "initial" => frame.Binding(["position"]).As(value.ValueKind == JsonValueKind.String ? Mode.Expression : Mode.Literal),
+                "confirm" => frame.Binding(["count"]),
+                "options" when value.ValueKind == JsonValueKind.String => frame.As(Mode.Expression),
+                // A type item (DISL 0.3 §7.5): its optionLabel sees each option as item, its refusals the chosen newValue.
+                "optionLabel" => frame.Binding(["item"]).As(Mode.Expression),
+                "refusals" => frame.Binding(["newValue"]),
+                // A field's parse (DISL 0.3 §7.5): accepts is an Expression over value; its write is an action list.
+                "accepts" => frame.As(Mode.Expression),
+                _ => frame
+            };
         }
 
         private static Frame Behavior(Frame frame, string key, IReadOnlyList<string> path)
@@ -323,11 +335,14 @@ internal static partial class DislExpressionWalker
                 };
             }
 
-            // A confirmation sees count besides its context (§9.5); its count is an Expression.
-            if (key == "confirm") return frame.Binding(["count"]).As(Mode.Literal);
-            if (key == "count" && path[^1] == "confirm") return frame.As(Mode.Expression);
-            if (key == "attributeMapping") return frame.As(Mode.Expression);
-            return frame;
+            return key switch
+            {
+                // A confirmation sees count besides its context (§9.5); its count is an Expression.
+                "confirm" => frame.Binding(["count"]).As(Mode.Literal),
+                "count" when path[^1] == "confirm" => frame.As(Mode.Expression),
+                "attributeMapping" => frame.As(Mode.Expression),
+                _ => frame
+            };
         }
 
         private static Frame Notation(Frame frame, string key, IReadOnlyList<string> path)
@@ -362,9 +377,12 @@ internal static partial class DislExpressionWalker
 
         private static Frame Coordinates(Frame frame, string key)
         {
-            if (key == "categories") return frame.In(DislContexts.Categories).As(Mode.Expression);
-            if (key is "snapping" or "snap") return frame.In(DislContexts.Snap).As(Mode.Literal);
-            return frame;
+            return key switch
+            {
+                "categories" => frame.In(DislContexts.Categories).As(Mode.Expression),
+                "snapping" or "snap" => frame.In(DislContexts.Snap).As(Mode.Literal),
+                _ => frame
+            };
         }
 
         /// <summary>The names an action list binds (§9.4): every <c>let</c> key and every <c>as</c> name in it.</summary>

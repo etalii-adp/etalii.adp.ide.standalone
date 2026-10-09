@@ -163,11 +163,9 @@ public class ConformanceFixturesTests
                 add.TryGetProperty("parent", out var parent) ? parent.GetString() : null);
         }
         if (edit.TryGetProperty("remove", out var remove)) return new ModelChange.Remove(remove.GetProperty("element").GetString()!);
-        if (edit.TryGetProperty("place", out var place))
-        {
-            return new ModelChange.Place(place.GetProperty("element").GetString()!, place.GetProperty("x").GetDouble(), place.GetProperty("y").GetDouble());
-        }
-        throw new InvalidOperationException($"Unknown fixture edit: {edit}.");
+        return edit.TryGetProperty("place", out var place)
+            ? new ModelChange.Place(place.GetProperty("element").GetString()!, place.GetProperty("x").GetDouble(), place.GetProperty("y").GetDouble())
+            : throw new InvalidOperationException($"Unknown fixture edit: {edit}.");
     }
 
     private static Dictionary<string, object?> Attributes(JsonElement attributes) =>

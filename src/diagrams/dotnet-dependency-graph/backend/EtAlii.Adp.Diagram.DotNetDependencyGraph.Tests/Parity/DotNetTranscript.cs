@@ -63,6 +63,13 @@ internal static partial class DotNetTranscript
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
     private static IReadOnlyList<string> Corpus()
     {
+        return
+        [
+            .. Solutions(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures")),
+            .. Solutions(Path.Combine(ModuleFolder, "examples")),
+            .. Solutions(Path.Combine(SourceFolder, "examples", "diagrams", "dotnet-dependency-graph")),
+        ];
+
         static IEnumerable<string> Solutions(string folder) =>
             Directory.Exists(folder)
                 ? Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories)
@@ -70,13 +77,6 @@ internal static partial class DotNetTranscript
                     .Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/'))
                     .Order(StringComparer.Ordinal)
                 : [];
-
-        return
-        [
-            .. Solutions(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures")),
-            .. Solutions(Path.Combine(ModuleFolder, "examples")),
-            .. Solutions(Path.Combine(SourceFolder, "examples", "diagrams", "dotnet-dependency-graph")),
-        ];
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
@@ -254,9 +254,6 @@ internal static partial class DotNetTranscript
     /// </summary>
     private static IEnumerable<(string Name, DependencyGraphModel Graph)> HandBuiltGraphs()
     {
-        static ProjectNode Project(string path, IReadOnlyList<string> frameworks, string? version) =>
-            new($"project:{path}", Path.GetFileNameWithoutExtension(path), path, frameworks, version);
-
         yield return ("descriptions and conflicts", new DependencyGraphModel(
             [
                 Project("src/App/App.csproj", ["net10.0", "net8.0"], "10.0, 8.0"),
@@ -297,6 +294,9 @@ internal static partial class DotNetTranscript
             []));
 
         yield return ("empty", DependencyGraphModel.Empty);
+        yield break;
+
+        static ProjectNode Project(string path, IReadOnlyList<string> frameworks, string? version) => new($"project:{path}", Path.GetFileNameWithoutExtension(path), path, frameworks, version);
     }
 
     private static string Mask(string text)

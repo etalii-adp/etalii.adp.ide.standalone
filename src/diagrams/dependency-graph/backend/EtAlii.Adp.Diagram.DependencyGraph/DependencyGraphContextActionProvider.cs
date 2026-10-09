@@ -99,18 +99,15 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
+        return Result(!Diagram.IsBody(target.ResolvedFullPath)
             // Another type's element; a provider consulted for every element in its scope answers
             // with nothing rather than parsing another notation's file.
-            return Result([]);
-        }
-
-        // A node, a dependency, a placement - which discovers what can happen at empty canvas, because
-        // executing an action by id only finds actions its target discovers, so a drop resolves through
-        // this list - and a finished relation gesture, which the canvas executes by id likewise. Each
-        // menu is the definition's, in its groups.
-        return Result(DependencyGraphDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
+            ? []
+            // A node, a dependency, a placement - which discovers what can happen at empty canvas, because
+            // executing an action by id only finds actions its target discovers, so a drop resolves through
+            // this list - and a finished relation gesture, which the canvas executes by id likewise. Each
+            // menu is the definition's, in its groups.
+            : DependencyGraphDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />

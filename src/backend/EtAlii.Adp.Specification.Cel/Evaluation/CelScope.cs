@@ -34,8 +34,9 @@ internal sealed class CelScope
         {
             if (s._name == name) return s._value;
         }
-        if (Variables.TryGetValue(name, out var value)) return value;
-        throw new CelException($"'{name}' has no value.");
+        return Variables.TryGetValue(name, out var value)
+            ? value
+            : throw new CelException($"'{name}' has no value.");
     }
 
     public void Step() => Budget.Charge(1);

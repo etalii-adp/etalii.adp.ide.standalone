@@ -69,13 +69,12 @@ internal static class GhgTranscript
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
     public static IReadOnlyList<string> Corpus()
     {
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
-            paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
-
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.ghg");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.ghg"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "gartner-hype-cycle-graph")).SelectMany(folder => Directory.GetFiles(folder, "*.ghg"));
         return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
+
+        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
@@ -264,12 +263,6 @@ internal static class GhgTranscript
     /// </summary>
     private static List<string> RowSample(GhgModel model)
     {
-        static IEnumerable<string> Ends(IEnumerable<string> ids)
-        {
-            var list = ids.Where(id => id.Length > 0).ToList();
-            return list.Take(2).Concat(list.Skip(2).TakeLast(1));
-        }
-
         return
         [
             .. Ends(model.Trends.Select(trend => trend.Id))
@@ -281,6 +274,12 @@ internal static class GhgTranscript
                 .Where(id => id.Length > 0)
                 .Distinct(StringComparer.Ordinal),
         ];
+
+        static IEnumerable<string> Ends(IEnumerable<string> ids)
+        {
+            var list = ids.Where(id => id.Length > 0).ToList();
+            return list.Take(2).Concat(list.Skip(2).TakeLast(1));
+        }
     }
 
     /// <summary>

@@ -238,20 +238,6 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
             .Select(entry => (Name: IoPath.GetFileName(entry), IsFolder: Directory.Exists(entry)))
             .ToList();
 
-        string? ResolveBody(string fileName)
-        {
-            var adpPath = IoPath.Combine(directory, fileName);
-            var body = DiagramFilePair.BodyOf(adpPath, catalog, ExampleRootOf(adpPath));
-            if (body is not { } resolved || resolved.Path.Length == 0)
-            {
-                return null;
-            }
-
-            return string.Equals(IoPath.GetDirectoryName(resolved.Path), directory, StringComparison.OrdinalIgnoreCase)
-                ? IoPath.GetFileName(resolved.Path)
-                : null;
-        }
-
         // Act.
         var placements = HierarchyNesting.Assign(siblings, ResolveBody);
 
@@ -272,6 +258,22 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
             {
                 Assert.Equal(body, placement.SubjectName);
             }
+        }
+
+        return;
+
+        string? ResolveBody(string fileName)
+        {
+            var adpPath = IoPath.Combine(directory, fileName);
+            var body = DiagramFilePair.BodyOf(adpPath, catalog, ExampleRootOf(adpPath));
+            if (body is not { } resolved || resolved.Path.Length == 0)
+            {
+                return null;
+            }
+
+            return string.Equals(IoPath.GetDirectoryName(resolved.Path), directory, StringComparison.OrdinalIgnoreCase)
+                ? IoPath.GetFileName(resolved.Path)
+                : null;
         }
     }
 

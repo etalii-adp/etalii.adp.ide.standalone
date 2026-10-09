@@ -116,7 +116,12 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
                 var map = new CelMap();
                 foreach (var merged in value.Merged)
                 {
-                    if (Cel(merged) is CelMap inherited) foreach ((string k, object? v) in inherited) map[k] = v;
+                    if (Cel(merged) is not CelMap inherited)
+                    {
+                        continue;
+                    }
+
+                    foreach ((string k, object? v) in inherited) map[k] = v;
                 }
                 foreach (var member in value.Entries)
                 {
@@ -160,8 +165,9 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
         }
         if (slot.Key is not { } name) return SlotRead.ReadOnlyAbsent($"A {FamilyName} entry has no {slot}.");
         var mapping = Mapping(entry, slot.Child);
-        if (mapping is null) return SlotRead.Absent;
-        return ReadMember(mapping, name);
+        return mapping is null
+            ? SlotRead.Absent
+            : ReadMember(mapping, name);
     }
 
     private static SlotRead ReadMember(TreeValue mapping, string name)

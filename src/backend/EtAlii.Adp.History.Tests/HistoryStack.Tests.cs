@@ -509,14 +509,6 @@ public class HistoryStackTests
         using var guard = stack;
 
         // Act and assert, step by step.
-        void AssertAgrees()
-        {
-            var availability = stack.Availability;
-            Assert.Equal(stack.CanUndo, availability.CanUndo);
-            Assert.Equal(stack.CanRedo, availability.CanRedo);
-            Assert.Equal(stack.UndoCount, availability.UndoCount);
-            Assert.Equal(stack.RedoCount, availability.RedoCount);
-        }
 
         AssertAgrees(); // empty
         Assert.Equal(new HistoryAvailability(false, false, 0, 0), stack.Availability);
@@ -532,6 +524,16 @@ public class HistoryStackTests
         await stack.RedoAsync(TestContext.Current.CancellationToken);
         AssertAgrees();
         Assert.Equal(new HistoryAvailability(true, false, 1, 0), stack.Availability);
+        return;
+
+        void AssertAgrees()
+        {
+            var availability = stack.Availability;
+            Assert.Equal(stack.CanUndo, availability.CanUndo);
+            Assert.Equal(stack.CanRedo, availability.CanRedo);
+            Assert.Equal(stack.UndoCount, availability.UndoCount);
+            Assert.Equal(stack.RedoCount, availability.RedoCount);
+        }
     }
 
     // ---- the Changed event ------------------------------------------------------------

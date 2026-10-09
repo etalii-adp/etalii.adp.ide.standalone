@@ -95,12 +95,9 @@ public static class ShaclWriter
             return ShaclRefusals.BlankRooted;
         }
 
-        if (!ShaclVocabulary.TargetPredicates.Contains(targetPredicateIri))
-        {
-            return ShaclRefusals.NoSuchTarget;
-        }
-
-        return RdfWriter.AddTriple(document, model, shapeIri, targetPredicateIri, term);
+        return !ShaclVocabulary.TargetPredicates.Contains(targetPredicateIri)
+            ? ShaclRefusals.NoSuchTarget
+            : RdfWriter.AddTriple(document, model, shapeIri, targetPredicateIri, term);
     }
 
     /// <summary>

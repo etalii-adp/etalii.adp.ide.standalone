@@ -51,8 +51,9 @@ public static class RegexSubset
                             break;
                         }
                         if (rest.StartsWith('=') || rest.StartsWith('!')) return "Lookahead is not allowed in FBL's regular expressions.";
-                        if (rest.StartsWith('>')) return "Atomic groups are not allowed in FBL's regular expressions.";
-                        return "Inline flags are not allowed in FBL's regular expressions; use the rule's caseInsensitive.";
+                        return rest.StartsWith('>')
+                            ? "Atomic groups are not allowed in FBL's regular expressions."
+                            : "Inline flags are not allowed in FBL's regular expressions; use the rule's caseInsensitive.";
                     }
                     break;
                 case '*':

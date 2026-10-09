@@ -148,12 +148,9 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
         string Display(string elementId)
         {
             var concept = projection.Concepts.FirstOrDefault(c => c.Id == elementId);
-            if (concept is not null)
-            {
-                return SkosLabels.Choose(concept.Labels, SkosLabels.DefaultLanguage, Short(concept.Iri)).Text;
-            }
-
-            return Short(elementId.StartsWith("res:", StringComparison.Ordinal) ? elementId["res:".Length..] : elementId);
+            return concept is not null
+                ? SkosLabels.Choose(concept.Labels, SkosLabels.DefaultLanguage, Short(concept.Iri)).Text
+                : Short(elementId.StartsWith("res:", StringComparison.Ordinal) ? elementId["res:".Length..] : elementId);
         }
     }
 

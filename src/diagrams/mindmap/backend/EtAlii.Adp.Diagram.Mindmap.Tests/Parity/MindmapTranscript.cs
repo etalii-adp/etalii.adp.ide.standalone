@@ -54,13 +54,12 @@ internal static partial class MindmapTranscript
     /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
     private static IReadOnlyList<string> Files()
     {
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
-            paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
-
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.mm");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.mm"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "mindmap")).SelectMany(folder => Directory.GetFiles(folder, "*.mm"));
         return [.. Sorted(fixtures), .. Sorted(examples), .. Sorted(shipped)];
+
+        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
@@ -232,11 +231,6 @@ internal static partial class MindmapTranscript
         var script = new Script(json, session, cancellationToken);
         await script.StartAsync();
 
-        MindmapDocument? Document() => session.TryDocument();
-        MindmapNode? Root() => Document()?.Root;
-        MindmapNode? Leaf() => Document()?.Nodes.FirstOrDefault(node => node is { IsRoot: false, HasChildren: false });
-        MindmapNode? Branch() => Document()?.Nodes.FirstOrDefault(node => node is { IsRoot: false, HasChildren: true });
-
         if (Root() is { } root)
         {
             await script.SetAsync(root.Id, MindmapContextPropertyProvider.TextPropertyId, "Parity root");
@@ -312,6 +306,13 @@ internal static partial class MindmapTranscript
         await script.CommitAsync(Unknown, MindmapContextActionProvider.RenameActionId, "Nobody");
         await script.SetAsync(Unknown, MindmapContextPropertyProvider.TextPropertyId, "Nobody");
         await script.EndAsync();
+        return;
+
+        MindmapNode? Branch() => Document()?.Nodes.FirstOrDefault(node => node is { IsRoot: false, HasChildren: true });
+        MindmapNode? Leaf() => Document()?.Nodes.FirstOrDefault(node => node is { IsRoot: false, HasChildren: false });
+        MindmapNode? Root() => Document()?.Root;
+
+        MindmapDocument? Document() => session.TryDocument();
     }
 
     private static int MenuIndex(List<IReadOnlyList<string>> menus, IReadOnlyList<string> menu)

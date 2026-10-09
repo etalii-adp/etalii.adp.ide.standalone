@@ -129,8 +129,6 @@ public static class SankeyArrangement
         var positions = new Dictionary<string, double>(StringComparer.Ordinal);
         foreach (var column in columns)
         {
-            // A node that carries nothing still takes a little room, so empty nodes do not all collapse onto one point.
-            double Weight(string id) => Math.Max(values[id], 1e-6);
             var total = column.Sum(Weight);
             var above = 0d;
             foreach (var id in column)
@@ -138,6 +136,11 @@ public static class SankeyArrangement
                 positions[id] = (above + (Weight(id) / 2)) / total;
                 above += Weight(id);
             }
+
+            continue;
+
+            // A node that carries nothing still takes a little room, so empty nodes do not all collapse onto one point.
+            double Weight(string id) => Math.Max(values[id], 1e-6);
         }
 
         return positions;
@@ -154,14 +157,6 @@ public static class SankeyArrangement
         IReadOnlyDictionary<string, double> values)
     {
         var positions = PositionsOf(columns, values);
-
-        double At((string Left, string Right, double Value) flow, double column)
-        {
-            var from = columnOf[flow.Left];
-            var to = columnOf[flow.Right];
-            var t = (column - from) / (to - from);
-            return positions[flow.Left] + ((positions[flow.Right] - positions[flow.Left]) * t);
-        }
 
         var cost = 0d;
         for (var i = 0; i < flows.Count; i++)
@@ -193,5 +188,13 @@ public static class SankeyArrangement
         }
 
         return cost;
+
+        double At((string Left, string Right, double Value) flow, double column)
+        {
+            var from = columnOf[flow.Left];
+            var to = columnOf[flow.Right];
+            var t = (column - from) / (to - from);
+            return positions[flow.Left] + ((positions[flow.Right] - positions[flow.Left]) * t);
+        }
     }
 }

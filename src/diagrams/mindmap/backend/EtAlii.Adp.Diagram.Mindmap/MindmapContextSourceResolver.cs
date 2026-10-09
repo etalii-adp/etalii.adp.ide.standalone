@@ -121,6 +121,13 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         var lastPath = level.RelativePath;
         var disposed = false;
 
+        _documents.Changed += OnChanged;
+        return new MindmapNodeSubscription(() =>
+        {
+            disposed = true;
+            _documents.Changed -= OnChanged;
+        });
+
         void OnChanged(object? sender, MindmapChangedEventArgs args)
         {
             if (disposed || !string.Equals(args.BodyPath, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -142,13 +149,6 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
                 onChange(currentPath);
             }
         }
-
-        _documents.Changed += OnChanged;
-        return new MindmapNodeSubscription(() =>
-        {
-            disposed = true;
-            _documents.Changed -= OnChanged;
-        });
     }
 
     private static string[] PathOf(MindmapNode node)

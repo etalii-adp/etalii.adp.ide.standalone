@@ -114,14 +114,11 @@ public sealed class ContextSelectionResolver
         }
 
         var claimants = _resolvers.Where(candidate => candidate.CanResolve(id)).ToList();
-        if (claimants.Count == 0)
-        {
+        return claimants.Count == 0
             // No resolver means no way to verify anything about this level; recording
             // it on trust is exactly what the seam exists to prevent.
-            return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
-        }
-
-        return ResolveThroughAnyAsync(claimants, watchId, rootPath, id, clientPath, parent, cancellationToken);
+            ? ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection))
+            : ResolveThroughAnyAsync(claimants, watchId, rootPath, id, clientPath, parent, cancellationToken);
     }
 
     /// <summary>

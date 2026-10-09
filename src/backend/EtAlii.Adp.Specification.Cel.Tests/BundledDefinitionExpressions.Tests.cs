@@ -106,7 +106,6 @@ public class BundledDefinitionExpressionsTests
     /// <summary>The DISL §12.4 functions and §12.2 methods the two definitions call, which the DISL runtime will register.</summary>
     private static IEnumerable<CelFunction> DislLibraryStubs()
     {
-        static object Stub(CelCall _) => throw new CelException("A stub.");
         yield return CelFunction.Method("isA", 1, 1);
         yield return CelFunction.Method("outgoingOf", 1, 1);
         yield return CelFunction.Method("incomingOf", 1, 1);
@@ -123,6 +122,8 @@ public class BundledDefinitionExpressionsTests
         yield return new CelFunction("max", CelCallStyle.Global, 2, 4, Stub);
         yield return new CelFunction("clamp", CelCallStyle.Global, 3, 3, Stub);
         yield return new CelFunction("textWidth", CelCallStyle.Global, 2, 2, Stub);
+        yield break;
+        static object Stub(CelCall _) => throw new CelException("A stub.");
     }
 
     /// <summary>The names actions bind: an action's <c>as</c>, a context tool's <c>as</c>, and the keys of a <c>let</c>.</summary>

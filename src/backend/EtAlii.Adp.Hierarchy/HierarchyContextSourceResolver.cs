@@ -114,6 +114,13 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
         var lastPath = level.RelativePath;
         var disposed = false;
 
+        model.EntryChanged += OnEntryChanged;
+        return new HierarchyEntrySubscription(() =>
+        {
+            disposed = true;
+            model.EntryChanged -= OnEntryChanged;
+        });
+
         void OnEntryChanged(HierarchyEntryChange change)
         {
             if (disposed || change is not (HierarchyEntryRenamed or HierarchyEntryRemoved))
@@ -134,13 +141,6 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
                 onChange(currentPath);
             }
         }
-
-        model.EntryChanged += OnEntryChanged;
-        return new HierarchyEntrySubscription(() =>
-        {
-            disposed = true;
-            model.EntryChanged -= OnEntryChanged;
-        });
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>

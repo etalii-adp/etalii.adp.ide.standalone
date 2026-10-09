@@ -170,6 +170,9 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new TimelineUnsubscriber(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, TimelineDocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -181,9 +184,6 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
             // changing everything shown, and a removal clears the selection.
             onChange(Describe(args.Model, elementId)?.Path);
         }
-
-        _documents.Changed += OnChanged;
-        return new TimelineUnsubscriber(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>

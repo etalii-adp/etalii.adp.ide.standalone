@@ -581,10 +581,11 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
     private ICommand RemoveLinkCommand(string bodyPath, WardleyLinkChoice link)
     {
         var identities = _documents.Identities(bodyPath);
-        string IdOf(string name) => identities
-            .FirstOrDefault(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)?.Id ?? "";
 
         return new SetWardleyLinkCommand(bodyPath, IdOf(link.Source), IdOf(link.Target), link.Kind, Present: false);
+
+        string IdOf(string name) => identities
+            .FirstOrDefault(entry => entry.Kind == WardleyIdentityKind.Component && entry.Key == name)?.Id ?? "";
     }
 
     private async ValueTask<ContextExecutionResult> Dispatch(

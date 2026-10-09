@@ -71,10 +71,10 @@ public class GhgExampleTests
         var model = Model();
         var trends = model.Trends.ToDictionary(trend => trend.Id);
 
-        bool Drawn(string trendId, GhgEnd end) =>
-            end.Phase == phase && end.Edge == edge && end.PhaseIndex < trends[trendId].VisiblePhases;
-
         Assert.Contains(model.Influences, influence => Drawn(influence.From, influence.FromEnd) || Drawn(influence.To, influence.ToEnd));
+        return;
+
+        bool Drawn(string trendId, GhgEnd end) => end.Phase == phase && end.Edge == edge && end.PhaseIndex < trends[trendId].VisiblePhases;
     }
 
     [Fact]

@@ -80,9 +80,9 @@ internal static class GhgDefinition
     public static IReadOnlyList<ContextPropertyDefinition> Rows(GhgDocumentEntry entry, string elementId)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        if (ElementOf(entry.Document.Disl.Diagram, elementId) is not { } element) return [];
-
-        return WithUnresolvedEnds(element, [.. FormDerivation.Derive(Specification, element, Env(entry), Ids).Select(Row)]);
+        return ElementOf(entry.Document.Disl.Diagram, elementId) is not { } element
+            ? []
+            : WithUnresolvedEnds(element, [.. FormDerivation.Derive(Specification, element, Env(entry), Ids).Select(Row)]);
     }
 
     /// <summary>The element <paramref name="id"/> names, as <see cref="GhgEdits"/> finds it; null for none.</summary>

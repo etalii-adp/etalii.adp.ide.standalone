@@ -51,7 +51,6 @@ internal static class HandWrittenGhg
                 model.Trends.Count + model.Triggers.Count + model.Notes.Count > 0,
                 "There is nothing to arrange until this graph has a trend."),
         ]);
-        IReadOnlyList<ContextActionGroupDefinition> WithArrange(IReadOnlyList<ContextActionGroupDefinition> groups) => [.. groups, arrange];
         if (GhgEdits.TrendOf(model, elementId) is { } trend)
         {
             List<ContextActionDefinition> actions =
@@ -121,6 +120,7 @@ internal static class HandWrittenGhg
         }
 
         return [];
+        IReadOnlyList<ContextActionGroupDefinition> WithArrange(IReadOnlyList<ContextActionGroupDefinition> groups) => [.. groups, arrange];
     }
 
     /// <summary>The property rows of <paramref name="elementId"/>, as <c>GhgContextPropertyProvider.DescribeAsync</c> answered them after its body check (runtime plan step S11).</summary>

@@ -117,24 +117,6 @@ public sealed partial class DiagramService
         await using var session = openedSession;
         var channel = Channel.CreateUnbounded<Delta>();
 
-        void OnChanged(object? sender, DiagramDeltasEventArgs args)
-        {
-            // What the module decided to push, by kind - the one place a reader can see that an
-            // edit produced (say) a remove plus an add rather than the move they expected.
-            _logger.Debug(
-                "Pushing {DeltaCount} deltas for {BodyPath} on watch {WatchId}: {DeltaKinds}",
-                args.Deltas.Count,
-                bodyPath,
-                watchId,
-                KindsOf(args.Deltas));
-
-            // MUST STAY NON-BLOCKING: DiagramDocumentChangeHandler raises into this while holding its lock.
-            foreach (var delta in args.Deltas)
-            {
-                channel.Writer.TryWrite(DiagramWire.ToProto(delta));
-            }
-        }
-
         session.Changed += OnChanged;
 
         // Editor sessions stay out of the viewport registry: a text file has no viewport or
@@ -184,6 +166,26 @@ public sealed partial class DiagramService
             }
 
             _logger.Information("Closed {BodyPath} on watch {WatchId}", bodyPath, watchId);
+        }
+
+        return;
+
+        void OnChanged(object? sender, DiagramDeltasEventArgs args)
+        {
+            // What the module decided to push, by kind - the one place a reader can see that an
+            // edit produced (say) a remove plus an add rather than the move they expected.
+            _logger.Debug(
+                "Pushing {DeltaCount} deltas for {BodyPath} on watch {WatchId}: {DeltaKinds}",
+                args.Deltas.Count,
+                bodyPath,
+                watchId,
+                KindsOf(args.Deltas));
+
+            // MUST STAY NON-BLOCKING: DiagramDocumentChangeHandler raises into this while holding its lock.
+            foreach (var delta in args.Deltas)
+            {
+                channel.Writer.TryWrite(DiagramWire.ToProto(delta));
+            }
         }
     }
 

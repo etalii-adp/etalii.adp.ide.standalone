@@ -76,16 +76,6 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
         var model = _documents.GetOrLoad(bodyPath).Model;
         var elementId = id.ElementId.Value;
 
-        ContextTarget Target() => new(
-            ContextScope.DiagramElement,
-            bodyPath,
-            IsContainer: false,
-            SourceId: default,
-            rootPath,
-            watchId,
-            elementId,
-            routed.Definition.Origin);
-
         if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _))
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New node" : "New flow";
@@ -117,6 +107,16 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
 
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(
             new ContextResolvedLevel(id, path, ContextScope.DiagramElement, Target(), detail, this)));
+
+        ContextTarget Target() => new(
+            ContextScope.DiagramElement,
+            bodyPath,
+            IsContainer: false,
+            SourceId: default,
+            rootPath,
+            watchId,
+            elementId,
+            routed.Definition.Origin);
     }
 
     /// <inheritdoc />
@@ -137,17 +137,6 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
-        void OnChanged(object? sender, SupplyChainDocumentChangedEventArgs args)
-        {
-            if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            // Re-read: a rename keeps the id while changing what is shown, and a removal clears the selection.
-            onChange(Describe(_documents.GetOrLoad(bodyPath).Model, elementId)?.Path);
-        }
-
         _documents.Changed += OnChanged;
         var selected = GestureIds.IsPlacement(elementId) || GestureIds.IsRelation(elementId) || elementId.Length == 0
             ? null
@@ -158,6 +147,17 @@ public sealed class SupplyChainContextSourceResolver : IContextSourceResolver
             _documents.Changed -= OnChanged;
             selected?.Dispose();
         });
+
+        void OnChanged(object? sender, SupplyChainDocumentChangedEventArgs args)
+        {
+            if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            // Re-read: a rename keeps the id while changing what is shown, and a removal clears the selection.
+            onChange(Describe(_documents.GetOrLoad(bodyPath).Model, elementId)?.Path);
+        }
     }
 
     /// <summary>What a selection of <paramref name="id"/> shows, or null when nothing has that id.</summary>

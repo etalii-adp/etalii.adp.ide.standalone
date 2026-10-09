@@ -278,14 +278,11 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 
     private static ContextValidationResult ValidateName(ContextTarget target, string name)
     {
-        // Judged before the extension is added: without this, an empty name would become the
-        // perfectly valid file ".adp" instead of being refused.
-        if (DiagramFileName.StripExtension(name).Trim().Length == 0)
-        {
-            return ContextValidationResult.Rejected("Enter a name.");
-        }
-
-        return EntryNameRules.Validate(DiagramFileName.WithExtension(name), target.ResolvedFullPath);
+        return DiagramFileName.StripExtension(name).Trim().Length == 0
+            // Judged before the extension is added: without this, an empty name would become the
+            // perfectly valid file ".adp" instead of being refused.
+            ? ContextValidationResult.Rejected("Enter a name.")
+            : EntryNameRules.Validate(DiagramFileName.WithExtension(name), target.ResolvedFullPath);
     }
 
     /// <summary>

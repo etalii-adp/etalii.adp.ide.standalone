@@ -216,12 +216,7 @@ public sealed class ConnectAbmChildCommandHandler(IAbmDocumentStore documents) :
                 return AbmEdits.Gone();
             }
 
-            if (AbmDefinition.ElementOf(diagram, command.ParentId) is not { } parent)
-            {
-                return AbmEdit.Refused("The node it was moved under is no longer in this behavior model.");
-            }
-
-            return AbmDefinition.Apply(document, OperationInterpreter.Connect(AbmDefinition.Specification, "Child", diagram, parent, child, AbmDefinition.NewIds, AbmDefinition.Env));
+            return AbmDefinition.ElementOf(diagram, command.ParentId) is not { } parent ? AbmEdit.Refused("The node it was moved under is no longer in this behavior model.") : AbmDefinition.Apply(document, OperationInterpreter.Connect(AbmDefinition.Specification, "Child", diagram, parent, child, AbmDefinition.NewIds, AbmDefinition.Env));
         });
     }
 }

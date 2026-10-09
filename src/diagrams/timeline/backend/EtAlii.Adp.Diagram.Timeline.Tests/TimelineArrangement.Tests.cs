@@ -164,7 +164,6 @@ public class TimelineArrangementTests : IDisposable
         // Arrange: the roadmap starts with a moment, "Project kick-off", linked to the later Discovery.
         var model = TimelineParser.Parse(LineDocument.Parse(Roadmap));
         var byId = model.Elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
-        static bool IsMoment(TimelineElement element) => element.End is not { IsReadable: true };
 
         // Act.
         var rows = TimelineArrangement.RowsOf(model);
@@ -175,5 +174,8 @@ public class TimelineArrangementTests : IDisposable
             .ToList();
         Assert.NotEmpty(leaving);
         Assert.All(leaving, connection => Assert.NotEqual(rows[connection.From], rows[connection.To]));
+        return;
+
+        static bool IsMoment(TimelineElement element) => element.End is not { IsReadable: true };
     }
 }

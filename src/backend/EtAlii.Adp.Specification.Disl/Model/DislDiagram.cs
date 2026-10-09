@@ -136,7 +136,9 @@ public sealed class DislDiagram : ICelObject
             ? after.Descendants().Prepend(after).Max(_nodes.IndexOf) + 1
             : parent is not null
                 ? _nodes.IndexOf(parent) + 1
-                : _nodes.FindIndex(node => node.Parent is null) is var first and >= 0 ? first : _nodes.Count;
+                : _nodes.FindIndex(node => node.Parent is null) is var first and >= 0
+                    ? first
+                    : _nodes.Count;
         _nodes.InsertRange(position, block);
         _ends = null;
     }
@@ -186,9 +188,11 @@ public sealed class DislDiagram : ICelObject
     private DislType TypeOf(string name, bool relation)
     {
         var type = Specification.Metamodel.TypeOf(name) ?? throw new ArgumentException($"'{name}' is not a type of this specification.", nameof(name));
-        if (type.IsRelation != relation) throw new ArgumentException($"'{name}' is {(type.IsRelation ? "a relation type" : "a node type")}.", nameof(name));
-        if (type.Abstract) throw new ArgumentException($"'{name}' is abstract.", nameof(name));
-        return type;
+        if (type.IsRelation != relation)
+        {
+            throw new ArgumentException($"'{name}' is {(type.IsRelation ? "a relation type" : "a node type")}.", nameof(name));
+        }
+        return type.Abstract ? throw new ArgumentException($"'{name}' is abstract.", nameof(name)) : type;
     }
 
     // ---- CEL -------------------------------------------------------------------------------------

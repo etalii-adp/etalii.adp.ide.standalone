@@ -303,13 +303,6 @@ public class CausalLoopLayoutTests
         var order = CausalLoopLayout.RingOrder(model).Select(variable => variable.Id).ToArray();
         var seat = order.Select((id, index) => (id, index)).ToDictionary(entry => entry.id, entry => entry.index, StringComparer.Ordinal);
 
-        // How many ring seats apart the two ends of each link sit, the short way round.
-        int Apart(CausalLoopLink link)
-        {
-            var gap = Math.Abs(seat[link.From] - seat[link.To]);
-            return Math.Min(gap, order.Length - gap);
-        }
-
         // Assert.
         Assert.NotEmpty(model.Links);
 
@@ -317,6 +310,14 @@ public class CausalLoopLayoutTests
         Assert.True(
             adjacent * 2 >= model.Links.Count,
             $"Only {adjacent} of {model.Links.Count} links join ring neighbours; the rest cut across.");
+        return;
+
+        // How many ring seats apart the two ends of each link sit, the short way round.
+        int Apart(CausalLoopLink link)
+        {
+            var gap = Math.Abs(seat[link.From] - seat[link.To]);
+            return Math.Min(gap, order.Length - gap);
+        }
     }
 
     /// <summary>

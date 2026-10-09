@@ -259,9 +259,6 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
     {
         var actions = new GhgContextActionProvider(_historyStacks, _store);
 
-        async Task<IReadOnlyList<string>> IdsOf(string id) =>
-            [.. (await actions.DiscoverAsync(Target(id), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).Select(action => action.Id)];
-
         Assert.Equal([GhgContextActionProvider.RenameActionId, GhgContextActionProvider.RemoveActionId, GhgContextActionProvider.ArrangeActionId], await IdsOf("transistor-invented"));
         Assert.Equal([GhgContextActionProvider.RenameActionId, GhgContextActionProvider.RemoveActionId, GhgContextActionProvider.ArrangeActionId], await IdsOf("note-1"));
         Assert.Equal(
@@ -271,6 +268,9 @@ public sealed class GhgTriggersAndNotesEditingTests : IDisposable
         var editNote = await actions.ExecuteAsync(Target("note-1"), GhgContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
         var input = Assert.IsType<ContextExecutionRequiresInput>(editNote);
         Assert.Equal(("Text", "Dates are illustrative.\n\nSee the readme.", "note-1"), (input.Request.FieldLabel, input.Request.InitialValue, input.Request.InlineLabelElementId));
+        return;
+
+        async Task<IReadOnlyList<string>> IdsOf(string id) => [.. (await actions.DiscoverAsync(Target(id), TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).Select(action => action.Id)];
     }
 
     /// <summary>Requirement 7.5: a graph that could not be read offers nothing that edits, and every new command refuses.</summary>

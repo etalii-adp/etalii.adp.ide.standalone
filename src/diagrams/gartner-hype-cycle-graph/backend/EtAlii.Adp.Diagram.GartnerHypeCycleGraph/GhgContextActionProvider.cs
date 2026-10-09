@@ -82,15 +82,13 @@ public sealed class GhgContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Result([]);
-        }
+        return Result(!Diagram.IsBody(target.ResolvedFullPath)
+            ? []
+            // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
+            // menu, nothing offered on a read-only entry. Executing an action by id only finds actions its
+            // target discovers, so a drop and a finished gesture each discover what may be executed against them.
+            : GhgDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
 
-        // Derived from the DISL definition: the element's, the empty canvas's or the connect gesture's
-        // menu, nothing offered on a read-only entry. Executing an action by id only finds actions its
-        // target discovers, so a drop and a finished gesture each discover what may be executed against them.
-        return Result(GhgDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />

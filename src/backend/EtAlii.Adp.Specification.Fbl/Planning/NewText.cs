@@ -33,11 +33,9 @@ internal static class NewText
         // ECMAScript writes 1e+21 and 1e-7 where .NET writes 1E+21 and 1E-07.
         var mantissa = shortest[..exponent];
         var power = int.Parse(shortest[(exponent + 1)..], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
-        if (power is >= -6 and < 21)
-        {
-            return decimal.Parse(shortest, NumberStyles.Float, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
-        }
-        return $"{mantissa}e{(power < 0 ? "-" : "+")}{Math.Abs(power).ToString(CultureInfo.InvariantCulture)}";
+        return power is >= -6 and < 21
+            ? decimal.Parse(shortest, NumberStyles.Float, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
+            : $"{mantissa}e{(power < 0 ? "-" : "+")}{Math.Abs(power).ToString(CultureInfo.InvariantCulture)}";
     }
 
     public static bool TryNumber(object? value, out double number)

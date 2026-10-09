@@ -22,10 +22,10 @@ public static class FolderSubject
         if (!binding.Body.IsFolder || !Directory.Exists(folder)) return false;
         var caseless = ignoreCase ?? Glob.PlatformIgnoresCase;
         var entries = Entries(folder, includeDirectories: true).Select(e => e.Relative).ToList();
-        bool Any(string glob) => entries.Any(e => Glob.IsMatch(glob, e, caseless));
         return binding.Body.RecogniseAll.All(Any)
-            && (binding.Body.RecogniseAny.Count == 0 || binding.Body.RecogniseAny.Any(Any))
-            && !binding.Body.RecogniseNone.Any(Any);
+               && (binding.Body.RecogniseAny.Count == 0 || binding.Body.RecogniseAny.Any(Any))
+               && !binding.Body.RecogniseNone.Any(Any);
+        bool Any(string glob) => entries.Any(e => Glob.IsMatch(glob, e, caseless));
     }
 
     /// <summary>The files the binding's file rules select (FBL §10.2), first matching rule each, <c>ignore</c> excluded.</summary>

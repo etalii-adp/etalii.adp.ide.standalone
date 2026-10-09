@@ -54,15 +54,24 @@ public static class TimelineArrangement
             return new Dictionary<string, int>(StringComparer.Ordinal);
         }
 
-        double Begin(TimelineElement element) => TimelineScale.ToSeconds(element.Begin.Value!.Value);
-        double End(TimelineElement element) => element.End is { IsReadable: true } end
-            ? Math.Max(Begin(element), TimelineScale.ToSeconds(end.Value!.Value))
-            : Begin(element);
-
         var first = elements.Min(Begin);
         var span = Math.Max(elements.Max(End) - first, Day);
         var unitsPerSecond = FitWidth / span;
 
+        var byId = elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
+
+        var links = model.Connections.Select(connection => (connection.From, connection.To)).ToList();
+        var apart = links
+            .Where(link => (IsMoment(link.From) && IsLaterThan(link.To, link.From)) || (IsMoment(link.To) && IsLaterThan(link.From, link.To)))
+            .ToList();
+        return RowPacking.Pack([.. elements.Select(ItemOf)], links, Gap, apart);
+
+        double End(TimelineElement element) => element.End is { IsReadable: true } end
+            ? Math.Max(Begin(element), TimelineScale.ToSeconds(end.Value!.Value))
+            : Begin(element);
+        double Begin(TimelineElement element) => TimelineScale.ToSeconds(element.Begin.Value!.Value);
+        bool IsLaterThan(string id, string moment) => byId.TryGetValue(id, out var element) && Begin(element) > Begin(byId[moment]);
+        bool IsMoment(string id) => byId.TryGetValue(id, out var element) && element.End is not { IsReadable: true };
         RowItem ItemOf(TimelineElement element)
         {
             var left = (Begin(element) - first) * unitsPerSecond;
@@ -74,15 +83,5 @@ public static class TimelineArrangement
             var label = element.Label.Length > 0 ? element.Label : element.Id;
             return new RowItem(element.Id, left - MomentRadius, left + MomentRadius + LabelGap + TextMetric.WidthOf(label, LabelFontSize));
         }
-
-        var byId = elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
-        bool IsMoment(string id) => byId.TryGetValue(id, out var element) && element.End is not { IsReadable: true };
-        bool IsLaterThan(string id, string moment) => byId.TryGetValue(id, out var element) && Begin(element) > Begin(byId[moment]);
-
-        var links = model.Connections.Select(connection => (connection.From, connection.To)).ToList();
-        var apart = links
-            .Where(link => (IsMoment(link.From) && IsLaterThan(link.To, link.From)) || (IsMoment(link.To) && IsLaterThan(link.From, link.To)))
-            .ToList();
-        return RowPacking.Pack([.. elements.Select(ItemOf)], links, Gap, apart);
     }
 }

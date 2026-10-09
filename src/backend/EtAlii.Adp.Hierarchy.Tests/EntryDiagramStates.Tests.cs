@@ -60,16 +60,17 @@ public class EntryDiagramStatesTests
     [Fact]
     public void AFileASiblingRegistrationResolvesAsItsBody_IsRegistered()
     {
+        // Act and assert.
+        Assert.Equal(
+            EntryDiagramState.Registered,
+            Decide("model.mm", isFolder: false, ["design.adp", "model.mm"], BodyOf));
+        return;
+
         // Arrange.
         // The courier.dsl-beside-courier.adp shape from Requirement 3.1, generalised: the
         // registration's body: resolution - not its name - is what lands on this file.
         static string? BodyOf(string registration) =>
             registration == "design.adp" ? "model.mm" : null;
-
-        // Act and assert.
-        Assert.Equal(
-            EntryDiagramState.Registered,
-            Decide("model.mm", isFolder: false, ["design.adp", "model.mm"], BodyOf));
     }
 
     [Fact]
@@ -102,6 +103,13 @@ public class EntryDiagramStatesTests
     public void AFolderContainingAFolderSubjectRegistration_IsRegistered(string registration)
     {
         // Arrange.
+
+        // Act and assert.
+        Assert.Equal(
+            EntryDiagramState.Registered,
+            Decide("infrastructure", isFolder: true, [registration, "site.yml"], declaresFolderSubject: DeclaresFolderSubject));
+        return;
+
         // The registration lives INSIDE the folder it registers (infrastructure/structure.adp),
         // per the design's correction of Requirement 3.1's parenthetical.
         //
@@ -114,11 +122,6 @@ public class EntryDiagramStatesTests
         // inside the file and the name never enters the decision - which is exactly why the
         // name may vary without the read path caring.
         bool DeclaresFolderSubject(string candidate) => candidate == registration;
-
-        // Act and assert.
-        Assert.Equal(
-            EntryDiagramState.Registered,
-            Decide("infrastructure", isFolder: true, [registration, "site.yml"], declaresFolderSubject: DeclaresFolderSubject));
     }
 
     [Fact]

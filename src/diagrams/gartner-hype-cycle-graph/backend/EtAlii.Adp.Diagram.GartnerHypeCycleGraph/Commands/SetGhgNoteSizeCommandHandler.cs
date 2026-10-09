@@ -23,12 +23,9 @@ public sealed class SetGhgNoteSizeCommandHandler(IGhgDocumentStore documents) : 
                 return GhgEdit.Refused($"'{command.Size}' is not a size; write it as width x height, such as 160 x 64.");
             }
 
-            if ((size.At ?? note.At) is not { } at)
-            {
-                return GhgEdit.Refused("This note's position cannot be read, so it cannot be resized until it is fixed in the file.");
-            }
-
-            return GhgWriter.SetSize(document, note, at, size.Row ?? note.Row, size.Width, size.Height);
+            return (size.At ?? note.At) is not { } at
+                ? GhgEdit.Refused("This note's position cannot be read, so it cannot be resized until it is fixed in the file.")
+                : GhgWriter.SetSize(document, note, at, size.Row ?? note.Row, size.Width, size.Height);
         });
     }
 }

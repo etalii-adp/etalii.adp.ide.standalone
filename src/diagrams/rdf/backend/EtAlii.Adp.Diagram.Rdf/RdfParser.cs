@@ -311,12 +311,9 @@ public sealed class RdfParser
 
         var colon = token.Value.IndexOf(':');
         var prefix = token.Value[..colon];
-        if (!_prefixes.TryGetValue(prefix, out var expansion))
-        {
-            throw Error($"The prefix '{prefix}:' is not declared.");
-        }
-
-        return new IriTerm(expansion + DecodeLocal(token.Value[(colon + 1)..]), token.Value);
+        return !_prefixes.TryGetValue(prefix, out var expansion)
+            ? throw Error($"The prefix '{prefix}:' is not declared.")
+            : new IriTerm(expansion + DecodeLocal(token.Value[(colon + 1)..]), token.Value);
     }
 
     private BlankTerm ParseLabeledBlank()
