@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ansible-structure-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:12:21.439Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791508341357_tvbvjelhp",
+      "approvalTitle": "requirements.md: converting the Ansible structure diagram to DISL and FBL"
+    }
+  ]
+}
