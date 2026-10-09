@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dotnet-dependency-graph-disl-fbl/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T15:07:25.980Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791558445195_zl99gs8qv",
+      "approvalTitle": "tasks.md: the .NET dependency graph through an FBL plugin (written against the recommended amendment)"
+    }
+  ]
+}
