@@ -2,6 +2,7 @@ import type { Binding, BindingPath, Condition } from "./binding";
 import type { BackgroundDeclaration } from "./background";
 import type { ActionDeclaration, DeclaredFlag } from "./actions";
 import type { ChromeDeclaration } from "./chrome";
+import type { CompartmentDeclaration } from "./compartments";
 
 /**
  * The diagram definition: the one declarative place that states what a diagram type allows
@@ -760,6 +761,12 @@ export interface ElementTypeDefinition {
    * that five renderers draw with no shared component at all. Drawn, never interactive.
    */
   decorations?: readonly DecorationDeclaration[];
+  /**
+   * Lists inside this type's elements whose rows are the model's own child entries - grouped,
+   * foldable, and tall enough to make the element grow. See {@link CompartmentDeclaration}.
+   * An element with rows is at least as tall as they need, whatever height the model gives it.
+   */
+  compartments?: readonly CompartmentDeclaration[];
   /** Actions this type offers, beyond the ones the whole diagram declares. */
   actions?: readonly ActionDeclaration[];
   /**

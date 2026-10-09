@@ -199,6 +199,42 @@
   text-anchor: middle;
 }
 
+/*
+ * Lists inside an element. A heading is a button and says so with its cursor; a row is text. The
+ * hit rectangles are transparent and exist so the whole line takes the press, not only its glyphs.
+ */
+.library-compartment-heading {
+  cursor: pointer;
+}
+
+.library-compartment-row {
+  cursor: default;
+}
+
+.library-compartment-heading-hit,
+.library-compartment-row-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.library-compartment-heading-text {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.library-compartment-heading:hover .library-compartment-heading-text,
+.library-compartment-heading:focus-visible .library-compartment-heading-text {
+  fill: var(--color-text, #1c2333);
+}
+
+.library-compartment-row-text {
+  fill: var(--color-text, #1c2333);
+  font-size: 12px;
+  user-select: none;
+}
+
 .canvas-node-label {
   fill: var(--color-text, #1c2333);
   font-size: 12px;

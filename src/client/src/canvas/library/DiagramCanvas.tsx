@@ -33,6 +33,7 @@ import { EllipseElement } from "../elements/ellipse/EllipseElement";
 import { FrameElement } from "../elements/frame/FrameElement";
 import { SpanElement } from "../elements/span/SpanElement";
 import { LABEL_FONT_SIZE, widthOf } from "../label/textMetrics";
+import { compartmentsHeight, layoutCompartments, type LaidOutHeading } from "./definition/compartments";
 import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
@@ -2062,6 +2063,15 @@ export function DiagramCanvasCore({
       edgePress={edgePress(element)}
       onContextMenu={onItemContextMenu(element.id)}
       onDoubleClick={() => dispatchElementGesture(element.id, "activate")}
+      headingPress={(heading) =>
+        raise({
+          kind: "compartment-toggled",
+          elementId: element.id,
+          compartmentId: heading.compartmentId,
+          key: heading.key,
+          collapsed: !heading.collapsed,
+        })
+      }
     />
   );
 
@@ -2466,9 +2476,12 @@ function LibraryElement({
   edgePress,
   onContextMenu,
   onDoubleClick,
+  headingPress,
 }: {
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
+  /** A compartment heading was activated - the request to fold or unfold it. */
+  headingPress: (heading: LaidOutHeading) => void;
   dragValue: GestureValue<ElementDragOffset>;
   connectValue: GestureValue<ConnectPreview>;
   resizeValue: GestureValue<ResizeDragPreview>;
@@ -2573,6 +2586,7 @@ function LibraryElement({
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
         {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" }, highlight, movedBoundary ?? undefined)}
       </ShapeErrorBoundary>
+      {type?.compartments !== undefined && declaredCompartments(type, bounds, sourceOf(resizing, groupState, bounds), headingPress)}
       {type?.anchors.kind === "along" && edgeStrips(type.anchors.edges, bounds, attachmentLayoutOf(resizing, type, bounds, movedBoundary ?? undefined)).map((strip) => (
         <rect
           key={`edge-${strip.edge}-${strip.region ?? "all"}`}
@@ -3074,6 +3088,81 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
   ));
 }
 
+
+/**
+ * The lists a type's `compartments` declare: one heading per group, its rows beneath it unless it
+ * is folded.
+ *
+ * A heading is a button - a press folds or unfolds it, by pointer or by Enter and Space - and its
+ * press does not reach the element beneath, so folding a group neither selects nor drags the
+ * element it is in. Text is anchored inline, for the reason a declared label's is.
+ */
+function declaredCompartments(
+  type: ElementTypeDefinition,
+  bounds: ConnectorBox,
+  source: BindingSource,
+  headingPress: (heading: LaidOutHeading) => void,
+): ReactNode {
+  const laidOut = layoutCompartments(type.compartments, source, bounds);
+  return (
+    <>
+      {laidOut.headings.map((heading) => (
+        <g
+          key={`heading-${heading.compartmentId}-${heading.key}`}
+          className="library-compartment-heading"
+          data-compartment={heading.compartmentId}
+          data-heading={heading.key}
+          role="button"
+          tabIndex={0}
+          aria-expanded={!heading.collapsed}
+          aria-label={`${heading.title}, ${heading.count}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            headingPress(heading);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              headingPress(heading);
+            }
+          }}
+        >
+          <rect className="library-compartment-heading-hit" x={heading.box.x} y={heading.box.y} width={heading.box.width} height={heading.box.height} />
+          <text
+            className="library-compartment-heading-text"
+            x={heading.box.x}
+            y={heading.box.y + heading.box.height / 2 + LABEL_FONT_SIZE / 3}
+            style={{ textAnchor: "start" }}
+          >
+            {`${heading.collapsed ? "\u25B8" : "\u25BE"} ${heading.title} (${heading.count})`}
+          </text>
+        </g>
+      ))}
+      {laidOut.rows.map((row, index) => (
+        <g
+          key={`row-${row.compartmentId}-${row.id ?? `at-${index}`}`}
+          className="library-compartment-row"
+          data-compartment={row.compartmentId}
+          data-row-id={row.id}
+        >
+          <rect className="library-compartment-row-hit" x={row.box.x} y={row.box.y} width={row.box.width} height={row.box.height} />
+          <text
+            className="library-compartment-row-text"
+            x={row.textX}
+            y={row.box.y + row.box.height / 2 + LABEL_FONT_SIZE / 3}
+            style={{ textAnchor: "start" }}
+          >
+            {row.text !== row.fullText ? <title>{row.fullText}</title> : null}
+            {row.text}
+          </text>
+        </g>
+      ))}
+    </>
+  );
+}
 
 /**
  * What a declaration resolves against, with the canvas's own state included.
@@ -3988,7 +4077,10 @@ function leadingOf(element: DiagramModelElement, type: ElementTypeDefinition | u
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {
   const width = element.width ?? (type?.sizing === "content" ? Math.max(DEFAULT_WIDTH, widthOf(element.label ?? "", LABEL_FONT_SIZE) + 16) : DEFAULT_WIDTH);
-  const height = element.height ?? DEFAULT_HEIGHT;
+  // An element with rows is as tall as they need: the model does not know how many are folded
+  // away, and a height it supplied for the element at rest must not cut them off.
+  const rows = type?.compartments === undefined ? null : compartmentsHeight(type.compartments, { element, payload: element.payload });
+  const height = Math.max(element.height ?? DEFAULT_HEIGHT, rows ?? 0);
   return { x: element.x - width / 2, y: element.y - height / 2, width, height };
 }
 

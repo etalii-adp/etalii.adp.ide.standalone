@@ -30,6 +30,7 @@ export type DiagramEvent =
   | LabelCommitRequested
   | ViewChanged
   | LayoutModeChanged
+  | CompartmentToggled
   | ActionInvoked
   | ActionRefused;
 
@@ -235,6 +236,20 @@ export interface ActionRefused {
   kind: "action-refused";
   actionId: string;
   message: string;
+}
+
+/**
+ * The user asked to fold or unfold one heading of a compartment. A request like every other: the
+ * library holds no collapse state, so the heading stays as it is until the model says otherwise.
+ */
+export interface CompartmentToggled {
+  kind: "compartment-toggled";
+  elementId: string;
+  compartmentId: string;
+  /** The heading's key, as the model's collapsed list names it. */
+  key: string;
+  /** What the user is asking for: `true` to fold the heading's rows away. */
+  collapsed: boolean;
 }
 
 /** The user switched between the definition's allowed layout modes (Requirement 8.2). */
