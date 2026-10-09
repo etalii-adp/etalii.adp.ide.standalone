@@ -9,7 +9,7 @@ The files here are copied, byte for byte, from [`etalii-adp/etalii.adp`](https:/
 
 ## What these examples do not demonstrate
 
-- **No registration.** The `.adp` file that makes a knowledge file a document of a project is not here yet, so the examples do not open from the showcase.
+- **No registration here.** The `.adp` file that makes a knowledge file a document of a project is in the showcase, `src/examples/designers/knowledge/`, where each format has a folder of its own with the data file and its registration.
 - **No second table.** `cities` has a relation to `provinces.yaml`, which does not exist: a relation whose target is missing is shown, and a resolved one is not.
 - **Nothing large.** Twelve rows or so say nothing about ten thousand.
 - **No file with something wrong in it**: no unknown key, no value of the wrong type, no missing id. The module's tests write those themselves.

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -44,6 +46,15 @@ internal static class KnowledgeFiles
     /// <summary>The folder of the designer's bundled definition: its specification, its bindings and their prose.</summary>
     public static string DefinitionFolder => IoPath.GetFullPath(IoPath.Combine(_examples.Value, "..", "definition"));
 
+    /// <summary>The module's examples folder.</summary>
+    public static string ExamplesFolder => _examples.Value;
+
+    /// <summary>The repository's <c>src</c> folder.</summary>
+    public static string SourceFolder => IoPath.GetFullPath(IoPath.Combine(_examples.Value, "..", "..", ".."));
+
+    /// <summary>The designer's examples in the showcase project: the copies a reader opens.</summary>
+    public static string ShowcaseFolder => IoPath.Combine(SourceFolder, "examples", "designers", "knowledge");
+
     /// <summary>The path of a shipped example.</summary>
     private static string Example(string name) => IoPath.Combine(_examples.Value, name);
 
@@ -57,4 +68,38 @@ internal static class KnowledgeFiles
         File.Copy(Example(name), path);
         return path;
     }
+
+    /// <summary>A table as text, so that two that differ say where.</summary>
+    public static string Describe(KnowledgeTable table)
+    {
+        var text = new StringBuilder();
+        text.AppendLine(CultureInfo.InvariantCulture, $"table {table.Name} active={table.ActiveViewId}");
+        foreach (var property in table.Properties)
+        {
+            text.AppendLine(CultureInfo.InvariantCulture, $"property {property.Id} {property.Name} {property.ValueType} title={property.IsTitle} target={property.TargetFile} limit={property.Limit} options=[{string.Join(", ", property.Options.Select(option => $"{option.Id}:{option.Name}:{option.Colour}"))}]");
+        }
+
+        foreach (var view in table.Views)
+        {
+            text.AppendLine(CultureInfo.InvariantCulture, $"view {view.Id} {view.Name} groupBy={view.GroupBy} hideEmpty={view.HideEmptyGroups}");
+            text.AppendLine(CultureInfo.InvariantCulture, $"  columns {string.Join(", ", view.Columns)}");
+            text.AppendLine(CultureInfo.InvariantCulture, $"  sorts {string.Join(", ", view.Sorts)}");
+            text.AppendLine(CultureInfo.InvariantCulture, $"  filter {Describe(view.Filter)}");
+            text.AppendLine(CultureInfo.InvariantCulture, $"  order=[{string.Join(", ", view.GroupOrder)}] hidden=[{string.Join(", ", view.HiddenGroups)}] collapsed=[{string.Join(", ", view.Collapsed)}]");
+        }
+
+        foreach (var row in table.Rows)
+        {
+            text.AppendLine(CultureInfo.InvariantCulture, $"row {row.Id} {string.Join("; ", row.Cells.Select(cell => $"{cell.PropertyId}=[{string.Join(", ", cell.Values)}]"))}");
+        }
+
+        return text.ToString();
+    }
+
+    private static string Describe(KnowledgeFilterItem item) => item switch
+    {
+        KnowledgeFilterGroup group => $"{(group.Any ? "any" : "all")}({string.Join(", ", group.Items.Select(Describe))})",
+        KnowledgeCondition condition => $"{condition.PropertyId} {condition.Operator} '{condition.Value}'",
+        _ => "?",
+    };
 }

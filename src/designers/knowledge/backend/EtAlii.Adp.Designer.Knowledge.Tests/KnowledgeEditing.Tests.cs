@@ -721,41 +721,7 @@ public sealed class KnowledgeEditingTests : IDisposable
             // Assert.
             Assert.True(settled.Written, $"{gesture.Kind}: {settled.Error}");
             var disk = table.OnDisk();
-            Assert.Equal(Describe(disk), Describe(shown));
+            Assert.Equal(KnowledgeFiles.Describe(disk), KnowledgeFiles.Describe(shown));
         }
     }
-
-    /// <summary>A table as text, so that two that differ say where.</summary>
-    private static string Describe(KnowledgeTable table)
-    {
-        var text = new StringBuilder();
-        text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"table {table.Name} active={table.ActiveViewId}");
-        foreach (var property in table.Properties)
-        {
-            text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"property {property.Id} {property.Name} {property.ValueType} title={property.IsTitle} target={property.TargetFile} limit={property.Limit} options=[{string.Join(", ", property.Options.Select(option => $"{option.Id}:{option.Name}:{option.Colour}"))}]");
-        }
-
-        foreach (var view in table.Views)
-        {
-            text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"view {view.Id} {view.Name} groupBy={view.GroupBy} hideEmpty={view.HideEmptyGroups}");
-            text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"  columns {string.Join(", ", view.Columns)}");
-            text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"  sorts {string.Join(", ", view.Sorts)}");
-            text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"  filter {Describe(view.Filter)}");
-            text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"  order=[{string.Join(", ", view.GroupOrder)}] hidden=[{string.Join(", ", view.HiddenGroups)}] collapsed=[{string.Join(", ", view.Collapsed)}]");
-        }
-
-        foreach (var row in table.Rows)
-        {
-            text.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"row {row.Id} {string.Join("; ", row.Cells.Select(cell => $"{cell.PropertyId}=[{string.Join(", ", cell.Values)}]"))}");
-        }
-
-        return text.ToString();
-    }
-
-    private static string Describe(KnowledgeFilterItem item) => item switch
-    {
-        KnowledgeFilterGroup group => $"{(group.Any ? "any" : "all")}({string.Join(", ", group.Items.Select(Describe))})",
-        KnowledgeCondition condition => $"{condition.PropertyId} {condition.Operator} '{condition.Value}'",
-        _ => "?",
-    };
 }

@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Designer.Knowledge.Tests;
 /// </summary>
 internal sealed class EditingTable : IAsyncDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(20);
+    private readonly TimeSpan _patience;
 
     private readonly Lock _gate = new();
     private readonly Dictionary<ShortGuid, TaskCompletionSource<TableEditSettled>> _settled = [];
@@ -19,9 +19,12 @@ internal sealed class EditingTable : IAsyncDisposable
     /// <summary>While set, a write waits for it: the time between an edit being shown and being written, held open.</summary>
     private TaskCompletionSource? _hold;
 
-    public EditingTable(string path)
+    /// <param name="path">The knowledge file.</param>
+    /// <param name="patience">How long a write is waited for; twenty seconds unless a test of a very large file says more.</param>
+    public EditingTable(string path, TimeSpan? patience = null)
     {
         Path = path;
+        _patience = patience ?? TimeSpan.FromSeconds(20);
         var documents = new KnowledgeDocuments();
         var services = new Handlers
         {
@@ -109,7 +112,7 @@ internal sealed class EditingTable : IAsyncDisposable
     {
         lock (_gate)
         {
-            return Waiter(editId).Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
+            return Waiter(editId).Task.WaitAsync(_patience, TestContext.Current.CancellationToken);
         }
     }
 
@@ -140,7 +143,7 @@ internal sealed class EditingTable : IAsyncDisposable
 
         if (hold is not null)
         {
-            await hold.WaitAsync(Patience);
+            await hold.WaitAsync(_patience);
         }
 
         return Instead?.Invoke(command) ?? await History.ExecuteAsync(command);
