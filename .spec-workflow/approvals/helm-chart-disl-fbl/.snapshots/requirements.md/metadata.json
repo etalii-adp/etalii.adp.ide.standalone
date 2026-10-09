@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/helm-chart-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:04:15.568Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791507855437_pskb500uw",
+      "approvalTitle": "requirements.md: converting the Helm chart diagram to DISL and FBL"
+    }
+  ]
+}
