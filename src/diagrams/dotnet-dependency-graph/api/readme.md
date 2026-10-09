@@ -5,7 +5,7 @@ node or edge carries, packed into the core `Element`'s `Any`. No core proto is e
 here.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`dotnet-dependency-graph`](../../../../.spec-workflow/archive/specs/dotnet-dependency-graph/) for this
+[`dotnet-dependency-graph`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/fae8ab1eb516094fd3b1afd0c323dd915562f322/.spec-workflow/archive/specs/dotnet-dependency-graph) for this
 diagram type's spec.
 
 `dotnet-dependency-graph.proto` is the one file here. The folder was empty at task 1, when the
