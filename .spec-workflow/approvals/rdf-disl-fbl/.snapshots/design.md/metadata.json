@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/rdf-disl-fbl/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T10:16:39.492Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791540999076_tclg64ztn",
+      "approvalTitle": "design.md: converting the RDF diagrams (proposes an amendment to requirement 6.3)"
+    }
+  ]
+}
