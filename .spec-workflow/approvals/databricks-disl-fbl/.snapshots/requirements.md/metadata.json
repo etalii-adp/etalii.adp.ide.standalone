@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/databricks-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:04:20.216Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791507860050_pw5uqk88t",
+      "approvalTitle": "requirements.md: converting the Databricks diagrams to DISL and FBL"
+    }
+  ]
+}
