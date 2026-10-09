@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/rdf-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:12:47.731Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791508367565_bn5she33z",
+      "approvalTitle": "requirements.md: converting the RDF diagrams to DISL and FBL"
+    }
+  ]
+}
