@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace EtAlii.Adp.Designer;
@@ -18,7 +17,7 @@ public static class HostApplicationBuilderAddDesignerDefinitionsExtension
             ArgumentNullException.ThrowIfNull(definitions);
 
             builder.Services.AddSingleton(definitions);
-            builder.Services.TryAddSingleton<IDesignerDefinitionCatalog>(new DesignerDefinitionCatalog { All = definitions });
+            builder.Services.TryAddDesignerDefinitionCatalog();
             foreach (var definition in definitions)
             {
                 definition.Build?.Invoke(builder);

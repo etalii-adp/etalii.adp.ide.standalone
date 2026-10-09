@@ -107,7 +107,7 @@ public static class DiagramFilePair
     /// the header is user-editable text, and following it anywhere on disk would make an
     /// <c>.adp</c> file a way to read arbitrary files through the backend.
     /// </summary>
-    private static string? ResolveWithin(string projectRoot, string baseDirectory, string relativePath)
+    internal static string? ResolveWithin(string projectRoot, string baseDirectory, string relativePath)
     {
         if (IoPath.IsPathRooted(relativePath))
         {
@@ -138,7 +138,7 @@ public static class DiagramFilePair
     /// stops at the first line that is neither a header nor blank, so a document that happens
     /// to start with prose is not searched to its end.
     /// </summary>
-    private static (string? Body, string? View) ReadBodyAndViewHeaders(string adpPath)
+    internal static (string? Body, string? View) ReadBodyAndViewHeaders(string adpPath)
     {
         try
         {

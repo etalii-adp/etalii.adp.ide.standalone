@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,12 @@ public static class ServiceCollectionAddHierarchyExtension
         // extension for a body dropped in without one. The catalog it reads is registered
         // by AddCommands.
         services.AddSingleton<DiagramFileRouter>();
+
+        // Which designer type a registration names. Asked after the diagram router and before
+        // the editor family (knowledge-designer Requirement 10.2). The catalog tolerates a host
+        // that never ran AddDesignerDefinitions - a test host - by answering empty.
+        services.TryAddDesignerDefinitionCatalog();
+        services.AddSingleton<DesignerFileRouter>();
 
         // Registered through IContextActionProvider so the resolver picks them up from
         // IEnumerable<IContextActionProvider>; likewise IContextSourceResolver. A later
