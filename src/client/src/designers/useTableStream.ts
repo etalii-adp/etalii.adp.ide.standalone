@@ -1,3 +1,5 @@
+import { useCanvasRefusalReporter } from "@client/canvas/library/surface/canvasRefusals";
+import { type CanvasStreamState, useCanvasStatusReporter } from "@client/canvas/library/surface/canvasStatus";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { create } from "@bufbuild/protobuf";
@@ -59,6 +61,26 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
   const [failure, setFailure] = useState("");
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const [refusal, setRefusal] = useState("");
+  // True while a table that had arrived is being opened again after its connection dropped.
+  const [reopening, setReopening] = useState(false);
+
+  // Opening, reconnecting and unavailable are said by the frame around the tool, in the one
+  // appearance every tool shares, and so is a refused edit. A designer draws neither itself.
+  const status = useCanvasStatusReporter();
+  const refusals = useCanvasRefusalReporter();
+  const refusalsRef = useRef(refusals);
+  refusalsRef.current = refusals;
+  const streamRef = useRef(Symbol("table stream"));
+  useEffect(() => {
+    const state: CanvasStreamState =
+      failure !== "" ? { kind: "unavailable", reason: failure } : !loading ? { kind: "open" } : reopening ? { kind: "reconnecting" } : { kind: "opening" };
+    status?.report(streamRef.current, state);
+  }, [status, loading, failure, reopening]);
+  useEffect(() => {
+    const stream = streamRef.current;
+    return () => status?.forget(stream);
+  }, [status]);
+
   // The stream the table's other calls name, while one is open. A ref: the calls are made from
   // handlers, which must reach the stream that is open now, not the one of the render they closed over.
   const streamIdRef = useRef<Uint8Array | null>(null);
@@ -85,6 +107,8 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
     setLoading(true);
     setPending(new Set());
     setRefusal("");
+    setReopening(false);
+    let arrived = false;
 
     void (async () => {
       while (active) {
@@ -111,6 +135,7 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
               });
               if (!outcome.written) {
                 setRefusal(outcome.error);
+                refusalsRef.current?.refused(outcome.error);
               }
               continue;
             }
@@ -119,7 +144,9 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
               // The stream is running from here: its other calls may name it, and the window the
               // surface last asked for is asked again, since this session has never heard it.
               streamIdRef.current = streamId;
+              arrived = true;
               setLoading(false);
+              setReopening(false);
               if (windowRef.current !== null) {
                 sendWindow(streamId, windowRef.current);
               }
@@ -153,6 +180,7 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
         streamIdRef.current = null;
         setModel(EMPTY_TABLE);
         setPending(new Set());
+        setReopening(arrived);
         setLoading(true);
         await new Promise((resolve) => setTimeout(resolve, TABLE_RECONNECT_DELAY_MS));
       }
@@ -199,6 +227,7 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
       const editId = crypto.getRandomValues(new Uint8Array(16));
       const key = editKey(editId);
       setRefusal("");
+      refusalsRef.current?.attempted();
       // Counted before the call: the outcome can overtake the call's own answer.
       setPending((current) => new Set(current).add(key));
       const settle = (error: string) => {
@@ -209,6 +238,7 @@ export function useTableStream(path: readonly string[]): TableStreamResult {
             return next;
           });
           setRefusal(error);
+          refusalsRef.current?.refused(error);
         }
         return error;
       };

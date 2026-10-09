@@ -18,6 +18,8 @@ import "./table.css";
 export interface TableSurfaceProps extends TableEvents {
   model: TableModel;
   definition: TableDefinition;
+  /** How many edits are shown and not written yet, when the table comes from a stream that writes behind. */
+  pendingEdits?: number;
   /**
    * The height the rows are seen through when the surface cannot measure it - before layout, and
    * under a test renderer that lays nothing out. In pixels.
@@ -54,7 +56,7 @@ const FALLBACK_VIEWPORT_HEIGHT = 660;
  * gesture the backend refuses changes nothing here - the reason is shown, and the cell is still
  * what the model says it is.
  */
-export function TableSurface({ model, definition, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
+export function TableSurface({ model, definition, pendingEdits = 0, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
   const rowHeight = definition.rowHeight ?? DEFAULT_ROW_HEIGHT;
   const columns = useMemo(() => model.columns.filter((column) => column.visible), [model.columns]);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -246,6 +248,7 @@ export function TableSurface({ model, definition, onWindow, onView, onGesture, f
     <div className="table-frame">
       {model.views.length > 0 && <ViewTabs views={model.views} activeViewId={model.settings.viewId} editable={editable} onView={onView} raise={raise} />}
       {model.views.length > 0 && <ViewBar model={model} definition={definition} editable={editable} raise={raise} />}
+      <TableNote model={model} pendingEdits={pendingEdits} />
     <div
       ref={scrollerRef}
       className="table-surface"
@@ -366,6 +369,29 @@ export function TableSurface({ model, definition, onWindow, onView, onGesture, f
     </div>
     </div>
   );
+}
+
+/**
+ * What the table has to say about itself, above its rows: that it cannot be changed and why, or
+ * that some edits are not written yet. Opening, unavailable and a refused edit are not said here:
+ * the frame around every tool says those, in one appearance.
+ */
+function TableNote({ model, pendingEdits }: { model: TableModel; pendingEdits: number }) {
+  if (model.readOnlyReason !== "") {
+    return (
+      <p className="table-note table-note-read-only" role="note">
+        {model.readOnlyReason}
+      </p>
+    );
+  }
+  if (pendingEdits > 0) {
+    return (
+      <p className="table-note" role="note">
+        {pendingEdits === 1 ? "1 change is being saved…" : `${pendingEdits} changes are being saved…`}
+      </p>
+    );
+  }
+  return null;
 }
 
 /**

@@ -22,7 +22,7 @@ Read [creating a diagram module](creating-a-diagram-module.md) for the mechanism
 
 - the same four folders - `backend/` (`EtAlii.Adp.Designer.<Designer>` and its `.Tests`), `api/`, `client/`, `examples/` - and the same dependency direction: a module depends on core, never the other way round;
 - a static `Designer` class exposing `Definitions`, whose origin (`<vendor>/<type>`) names the designer type in its `.adp` registration's first line;
-- a `client/register.ts` exporting `registrations` of `ToolPanelRegistration`, whose `Panel` is the designer's canvas;
+- a `client/register.ts` exporting `registrations` of `ToolPanelRegistration`, whose `Panel` mounts the table library's `TableSurface` on the table `useTableStream` holds and writes no element of its own;
 - xUnit v3 test projects added to `EtAlii.Adp.slnx`, and examples seeded into the showcase under `src/examples`, in a `designers` folder beside `diagrams` and `editors`.
 
 ## What the first designer adds
@@ -34,6 +34,14 @@ The first designer is the Knowledge designer, in [`src/designers/knowledge`](../
 - [`KnowledgeBody`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/KnowledgeBody.cs): a document read through `EtAlii.Adp.Specification.Fbl` with the binding its extension selects. The module has no parser and no writer of its own, which is what makes the three formats one table.
 - [`KnowledgeSession`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/KnowledgeSession.cs): the session of one connection. It reads the file with the shared read, writes nothing on open, and watches the file with a text editor session's obligations: subscribed before the watcher is enabled, read again when events were lost, and a refused read retried.
 - [`KnowledgeTableMapper`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/KnowledgeTableMapper.cs): the document onto the host's table model.
+
+Its client is three files, and shows the whole of what a designer module's client is:
+
+- [`knowledgeDefinition.ts`](../src/designers/knowledge/client/knowledgeDefinition.ts): the table as declarations - each value type's name, icon, editor and comparisons, and what a property's menu offers. A test reads `knowledge.des` and fails when a name, an icon or a comparison differs from it.
+- [`KnowledgePanel.tsx`](../src/designers/knowledge/client/KnowledgePanel.tsx): `useTableStream(path)` handed to `TableSurface` - the model, the count of edits not written yet, and the three handlers. The hook reports the stream's state and every refused edit to the frame the shell puts around each tool, which says *Opening…*, why a table cannot be opened and why an edit was taken back in the one appearance all tools share; the table itself says only that it is read-only or still saving. A module draws no status either. `declarativeDesignerModules.test.ts` refuses an element written in a module's client, and counts the clients it walks.
+- [`register.ts`](../src/designers/knowledge/client/register.ts): the registration, matching the designer's origin.
+
+A module client is an npm workspace package (`designers/*/client` in [`src/package.json`](../src/package.json)); adding one means adding its entry to `src/package-lock.json` in the same change.
 
 
 What a designer needs beyond the scan is decided by its specification, the way `modular-text-editors` decided the editor family's: the routing and session seams the host serves designers through (the definition and its catalog are in place), and - when ADP specifies designer types in a language - DESL, the Designer Specification Language, with the designs users create stored as DED, the Designer Definition Language. Extend this document in the same change.

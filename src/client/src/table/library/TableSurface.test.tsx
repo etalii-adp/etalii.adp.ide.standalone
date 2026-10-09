@@ -176,4 +176,34 @@ describe("TableSurface", () => {
     // Assert.
     expect(within(bodyRows()[0]!).getAllByRole("gridcell")[0]!.textContent).toBe("Netherlands, b2");
   });
+
+  it("says nothing about itself while all is well", () => {
+    // Act.
+    render(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={0} />);
+
+    // Assert.
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
+  it("says why a table cannot be changed, before anything else", () => {
+    // Act.
+    render(<TableSurface model={{ ...tableOf(0, 0, []), readOnlyReason: "This table was written by a newer version." }} definition={definition} pendingEdits={2} />);
+
+    // Assert.
+    expect(screen.getByRole("note").textContent).toBe("This table was written by a newer version.");
+  });
+
+  it("says how many edits are not written yet", () => {
+    // Act.
+    const { rerender } = render(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={1} />);
+
+    // Assert.
+    expect(screen.getByRole("note").textContent).toBe("1 change is being saved…");
+
+    // Act.
+    rerender(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={3} />);
+
+    // Assert.
+    expect(screen.getByRole("note").textContent).toBe("3 changes are being saved…");
+  });
 });

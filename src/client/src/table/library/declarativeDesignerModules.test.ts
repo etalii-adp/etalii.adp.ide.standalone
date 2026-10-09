@@ -36,7 +36,7 @@ const DESIGNERS = join(__dirname, "..", "..", "..", "..", "designers");
  * How many designer module clients there are today. Raise it in the change that adds one: a walk
  * that finds fewer than there are has stopped looking, and passes.
  */
-const KNOWN_MODULE_CLIENTS = 0;
+const KNOWN_MODULE_CLIENTS = 1;
 
 /** What a module client may not write, and how each is recognised on one line. */
 const RULES: readonly { rule: string; matches: (line: string) => boolean }[] = [
@@ -99,7 +99,7 @@ describe("a designer module's client renders nothing itself", () => {
   });
 
   it("walks all the module clients the designer family has", () => {
-    // Assert: the canary. No module exists until the first is added; this number moves with it.
+    // Assert: the canary. The Knowledge designer's client is the one there is; this number moves with the next.
     expect(moduleClients().length).toBe(KNOWN_MODULE_CLIENTS);
   });
 

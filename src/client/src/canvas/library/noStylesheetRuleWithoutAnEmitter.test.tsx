@@ -560,9 +560,10 @@ describe("no stylesheet rule without something that draws it, and nothing drawn 
 
   it("mounts every registered diagram canvas on at least one shipped example", () => {
     // The completeness canary: a registration the exports never reach would make both lists
-    // below true of nothing. Editors have no shipped examples and are out of scope.
+    // below true of nothing. Editors have no shipped examples and are out of scope, and so is a
+    // designer: what is exported is the stream a diagram canvas receives, and a table has another.
     const diagramRegistrations = toolPanels.filter(
-      (registration) => registration.Panel !== undefined && !registration.matches("editor/markdown") && !registration.matches("editor/plain"),
+      (registration) => registration.Panel !== undefined && !registration.matches("editor/markdown") && !registration.matches("editor/plain") && !registration.matches("etalii/knowledge"),
     );
     expect(diagramRegistrations.length, "fewer diagram canvases are registered than when this was written").toBeGreaterThanOrEqual(19);
     expect(

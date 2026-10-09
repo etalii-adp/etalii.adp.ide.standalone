@@ -4,6 +4,9 @@ import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { TableBaselineSchema, TableChangeSchema } from "@client/generated/designers_pb";
 import type { TableStreamEvent } from "@client/shell/context/workspaceStreams";
+import { createElement, type ReactNode } from "react";
+import { CanvasRefusalContext, type CanvasRefusalReporter } from "@client/canvas/library/surface/canvasRefusals";
+import { CanvasStatusContext, type CanvasStatusReporter, type CanvasStreamState } from "@client/canvas/library/surface/canvasStatus";
 import { TABLE_RECONNECT_DELAY_MS, useTableStream } from "./useTableStream";
 
 /**
@@ -281,5 +284,132 @@ describe("useTableStream", () => {
 
     // Assert.
     expect(calls.setTableView.mock.calls[0]![0]).toMatchObject({ viewId: "v2", streamId: { value: calls.streams[0]!.streamId } });
+  });
+});
+
+describe("useTableStream inside a tool's frame", () => {
+  /** A frame's two reporters, recording what the stream tells them. */
+  function frame() {
+    const states: CanvasStreamState[] = [];
+    const forgotten: symbol[] = [];
+    const said: string[] = [];
+    const status: CanvasStatusReporter = { report: (_stream, state) => void states.push(state), forget: (stream) => void forgotten.push(stream) };
+    const refusals: CanvasRefusalReporter = { attempted: () => void said.push("attempted"), refused: (message) => void said.push(`refused: ${message}`) };
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(CanvasRefusalContext.Provider, { value: refusals }, createElement(CanvasStatusContext.Provider, { value: status }, children));
+    return { states, forgotten, said, wrapper };
+  }
+
+  const last = (states: CanvasStreamState[]) => states[states.length - 1];
+
+  it("reports opening, then open once the table has arrived", async () => {
+    // Arrange.
+    const { states, wrapper } = frame();
+
+    // Act.
+    renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await settle();
+
+    // Assert.
+    expect(last(states)).toEqual({ kind: "opening" });
+
+    // Act.
+    await act(async () => streamAt(0).push(baseline(1)));
+
+    // Assert.
+    expect(last(states)).toEqual({ kind: "open" });
+  });
+
+  it("reports reconnecting when a table that had arrived drops, and opening when none had", async () => {
+    // Arrange.
+    vi.useFakeTimers();
+    const { states, wrapper } = frame();
+    renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await settle();
+
+    // Act: the stream ends before any table arrived.
+    await act(async () => streamAt(0).end());
+
+    // Assert.
+    expect(last(states)).toEqual({ kind: "opening" });
+
+    // Act: the next one delivers a table and then ends.
+    await act(async () => { await vi.advanceTimersByTimeAsync(TABLE_RECONNECT_DELAY_MS); });
+    await act(async () => streamAt(1).push(baseline(1)));
+    expect(last(states)).toEqual({ kind: "open" });
+    await act(async () => streamAt(1).end());
+
+    // Assert.
+    expect(last(states)).toEqual({ kind: "reconnecting" });
+  });
+
+  it("reports unavailable in the backend's words", async () => {
+    // Arrange.
+    const { states, wrapper } = frame();
+    renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await settle();
+
+    // Act.
+    await act(async () => streamAt(0).fail(new ConnectError("The document cannot be opened.", Code.FailedPrecondition)));
+
+    // Assert.
+    expect(last(states)).toEqual({ kind: "unavailable", reason: "The document cannot be opened." });
+  });
+
+  it("forgets its stream when the table closes", async () => {
+    // Arrange.
+    const { forgotten, wrapper } = frame();
+    const { unmount } = renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await settle();
+
+    // Act.
+    unmount();
+
+    // Assert.
+    expect(forgotten).toHaveLength(1);
+  });
+
+  it("says an edit was attempted, and that it was refused outright", async () => {
+    // Arrange.
+    calls.edit.mockImplementation(async () => ({ error: "A number is expected." }));
+    const { said, wrapper } = frame();
+    const { result } = renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await act(async () => streamAt(0).push(baseline(1)));
+
+    // Act.
+    await act(async () => { await result.current.edit({ kind: "setCell", values: ["many"] }); });
+
+    // Assert: the attempt first, which clears what the line said, and then the refusal.
+    expect(said).toEqual(["attempted", "refused: A number is expected."]);
+  });
+
+  it("says a write was refused when its outcome arrives", async () => {
+    // Arrange.
+    const { said, wrapper } = frame();
+    const { result } = renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await act(async () => streamAt(0).push(baseline(1)));
+    await act(async () => { await result.current.edit({ kind: "setCell" }); });
+    const sent = calls.edit.mock.calls[0]![0] as { editId: { value: Uint8Array } };
+
+    // Act.
+    await act(async () => streamAt(0).push(outcome(sent.editId.value, false, "The file changed on disk.")));
+
+    // Assert.
+    expect(said).toEqual(["attempted", "refused: The file changed on disk."]);
+  });
+
+  it("says nothing of an edit that is written", async () => {
+    // Arrange.
+    const { said, wrapper } = frame();
+    const { result } = renderHook(() => useTableStream(["cities.adp"]), { wrapper });
+    await act(async () => streamAt(0).push(baseline(1)));
+    await act(async () => { await result.current.edit({ kind: "setCell" }); });
+    const sent = calls.edit.mock.calls[0]![0] as { editId: { value: Uint8Array } };
+
+    // Act.
+    await act(async () => streamAt(0).push(outcome(sent.editId.value, true)));
+
+    // Assert.
+    expect(said).toEqual(["attempted"]);
   });
 });

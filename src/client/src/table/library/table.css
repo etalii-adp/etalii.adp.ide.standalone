@@ -476,3 +476,17 @@
   gap: 4px;
   color: var(--color-text-muted);
 }
+
+/* What the table says about itself above its rows: that it is read-only, or that edits are not written yet. */
+.table-note {
+  margin: 0;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.table-note-read-only {
+  background: var(--color-warning-bg);
+  color: var(--color-text);
+}
