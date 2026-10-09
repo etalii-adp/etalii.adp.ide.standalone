@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/agent-activity-diagram/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T00:45:59.886Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791506757447_2xrc9b9nt",
+      "approvalTitle": "Agent activity diagram: tasks (29 tasks, 89 of 89 criteria claimed)"
+    }
+  ]
+}
