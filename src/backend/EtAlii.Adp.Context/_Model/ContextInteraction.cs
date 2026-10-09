@@ -25,4 +25,11 @@ public sealed class ContextInteraction
     public required string RootPath { get; init; }
 
     public uint LastRevision { get; set; }
+
+    /// <summary>
+    /// The values the prompt offered, when it offered a closed set - a file dialog's paths - or
+    /// null when any value may be submitted. A submission outside the set is refused before the
+    /// provider's commit runs.
+    /// </summary>
+    public IReadOnlySet<string>? Offered { get; init; }
 }
