@@ -86,9 +86,11 @@ specifications:
       - id: t-k2
         title: Trial the three bindings
         status: progressing
+        updated: 2026-10-08T23:44:00+02:00
       - id: t-k6
         title: Table component
         status: input-required
+        updated: 2026-10-08T21:10:00+02:00
         link: https://github.com/etalii-adp/etalii.adp.ide.standalone/pull/150
 agents:
   - id: a-dev2
@@ -104,6 +106,7 @@ locations:
     pullRequests:
       - id: pr-150
         title: "150: Knowledge designer, tasks 2 and 6"
+        updated: 2026-10-08T23:50:00+02:00
         link: https://github.com/etalii-adp/etalii.adp.ide.standalone/pull/150
 environments:
   - id: e-fractal
@@ -122,6 +125,7 @@ view:
 ```
 
 - **Statuses** are written `pending`, `progressing`, `input-required`, `finished`, `archived`; **kinds** `local-machine`, `cloud`, `container`, `wsl`, `other`.
+- **`updated`** on a task and a pull request is when it was last changed, as an ISO 8601 moment with its offset. Rows are drawn most recent first within their group; a row without it comes after those that have one, in file order (decision L9).
 - **`folder` left out means `Default`.** An empty optional key is removed, not written empty.
 - **Ids.** ADP writes a ShortGuid. An agent may write any id matching DISL's default pattern, and readable ones such as those above are encouraged in the published description, since an agent finds its own entries again by them.
 - **A link** is an `http` or `https` address, or a path. A relative path is relative to the activity file; an absolute one is taken as written.
@@ -143,7 +147,7 @@ Requirement 1.4 asks that each gap be put to the user before a language changes.
 | L6 | Declare a link that opens how? (D6) | **DISL: an `open` action taking a link, `itemLink` on a compartment, and the `uri` type accepting a relative path (default):** `open` is defined as: an `http` or `https` address goes to the browser, a path to the host's reveal, anything else is refused. · **A plugin action per host:** as `net.etalii.adp.ide.revealPath` is today; nothing on rows. · Other. |
 | L7 | Store view state in the file how? (D7) | **DISL: `persistence.view.bind` maps view data onto entries of the body; FBL unchanged (default):** a locked position is an entry under `view.placements`, a collapse state one under `view.groups`, the switch a key under `view`. FBL binds them as it binds any entry, and FBL 7.3 already covers outside changes. · **FBL: view rules of its own**, beside element rules: cleaner in FBL, and the larger change. · **Plain model attributes**, with no notion that they are view data: no language change; the layout's `respect: "pinned"` then has nothing to read. · Other. |
 | L8 | Write a relation in the file how? | **As a key on the element at the "one" end (default):** shown above. Needs DISL to draw a relation derived from a reference attribute and to map connect and disconnect onto setting and clearing it; DISL 0.3 has derived relations (Agent Behavior Modelling uses one), and whether a reference can be their source is what task 1 proves. · **As entries of a `relations:` list with `from` and `to`:** what the functional decomposition graph does and FBL supports today; relations then have ids, and "at most one" is a rule to check, not a shape. The fallback if the trial fails. · Other. |
-| L9 | Reorder tasks and pull requests? | **No: they are listed in file order (default):** this host's FBL runtime refuses `Move` and an indexed `Add` for a declared binding ("only a persistence plugin can"), and the request does not ask for an order. · **Yes:** the FBL runtime gains `Move` for declared YAML bindings first. · Other. |
+| L9 | Reorder tasks and pull requests? | **Ruled by the user in chat, 2026-10-09, after this document was approved: they are ordered by when they were last updated, most recent first, and not by hand.** Each row carries `updated`, an ISO 8601 moment with its offset, written by whoever adds or changes the row; ADP writes it on its own edits. The order is computed when drawing, so the file's own order does not matter and nothing has to move in it. The approved default was: **no, they are listed in file order:** this host's FBL runtime refuses `Move` and an indexed `Add` for a declared binding ("only a persistence plugin can"), and the request does not ask for an order. · **Yes:** the FBL runtime gains `Move` for declared YAML bindings first. · Other. |
 
 With the defaults, **FBL does not change**; DISL gains six constructs (L1, L3 to L7) and one clarification (L2), which is DISL 0.4.
 
@@ -229,10 +233,10 @@ The model the binding produces, by type:
 | --- | --- | --- |
 | `Project` | `name`, `link` | |
 | `Specification` | `name`, `status`, `link` | references `project` |
-| `Task` | `title`, `status`, `link` | child of `Specification`, slot `tasks` |
+| `Task` | `title`, `status`, `updated`, `link` | child of `Specification`, slot `tasks` |
 | `Agent` | `name`, `link` | references `specification` |
 | `Location` | `branch`, `branchLink`, `folder`, `folderLink` | references `agent`, `environment` |
-| `PullRequest` | `title`, `link` | child of `Location`, slot `pullRequests` |
+| `PullRequest` | `title`, `updated`, `link` | child of `Location`, slot `pullRequests` |
 | `Environment` | `name`, `kind`, `link` | |
 | view: placement | `x`, `y` | references any element |
 | view: group state | `group`, `collapsed` | references a `Specification` or `Location` |
@@ -292,6 +296,8 @@ Each is a small amendment under `CLAUDE.md`: asked in chat as a selection, and a
 | A2 | 4.4 | A group's state is stored while it differs from its default, which shows the same thing on reopening. | L2 |
 | A3 | 9.3 | Rows are not reordered; they are listed in file order. | L9 |
 | A4 | 9.6 | Undo and redo work as for other diagrams, and the history is cleared when another program changes the file. | B9 |
+
+**Ruled by the user in chat, 2026-10-09:** A1, A2 and A4 as asked. A3 otherwise: rows are not reordered by hand, and are ordered by when they were last updated (decision L9). The requirements carry all four.
 
 ## Risks
 

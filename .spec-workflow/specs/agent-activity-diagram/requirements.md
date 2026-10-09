@@ -168,10 +168,10 @@ Each is a selection. The option marked **(default)** is what this document is wr
 
 1. WHEN an agent activity diagram exists THEN it SHALL be one activity file with the extension `.aad` and its `.adp` registration beside it, whose origin is `etalii/agent-activity-diagram` (Q2).
 2. WHEN a specification is stored THEN it SHALL have a name, a status that is one of **Pending**, **Progressing**, **Input Required**, **Finished** or **Archived**, and its tasks (R3).
-3. WHEN a task is stored THEN it SHALL have a title and a status that is one of **Progressing**, **Pending**, **Input Required** or **Finished**.
+3. WHEN a task is stored THEN it SHALL have a title, a status that is one of **Progressing**, **Pending**, **Input Required** or **Finished**, and the moment it was last updated.
 4. WHEN a location is stored THEN it SHALL have a branch, which is required, and a folder, which is `Default` when none is given, and its pull requests.
-5. WHEN a project, an agent or an environment is stored THEN it SHALL have a name, and an environment SHALL also have a kind (R7). WHEN a pull request is stored THEN it SHALL have a title (R4).
-6. WHEN an element, a relation, a task or a pull request is created in ADP THEN it SHALL receive a ShortGuid as its id, stored in the file and never changed by renaming or reordering. An id written by hand SHALL be accepted as it is (R6).
+5. WHEN a project, an agent or an environment is stored THEN it SHALL have a name, and an environment SHALL also have a kind (R7). WHEN a pull request is stored THEN it SHALL have a title and the moment it was last updated (R4).
+6. WHEN an element, a task or a pull request is created in ADP THEN it SHALL receive a ShortGuid as its id, stored in the file and never changed by renaming. An id written by hand SHALL be accepted as it is (R6). A relation SHALL have no id of its own: it is a key on an element, naming the element it relates to.
 7. WHEN an edit is made in ADP THEN only the bytes that edit concerns SHALL change: comments, key order, indentation, line endings and everything the edit did not touch SHALL stay byte for byte as they were.
 8. WHEN the file is read THEN it SHALL declare the version of its schema, and a file of a newer version than the host knows SHALL open read-only with a finding rather than be rewritten.
 9. WHEN the file holds keys the diagram does not know THEN they SHALL be kept on every write and reported as a finding of severity info.
@@ -199,10 +199,10 @@ Each is a selection. The option marked **(default)** is what this document is wr
 #### Acceptance Criteria
 
 1. WHEN a specification is drawn THEN its tasks SHALL be listed inside the element and SHALL NOT be elements: a task has no position, no relation and no toolbox entry of its own.
-2. WHEN a specification's tasks are listed THEN they SHALL be under four groups in this order: **Progressing**, **Pending**, **Input Required**, **Finished**; each heading SHALL show its name and how many tasks it holds, and a group with no task SHALL NOT be drawn.
+2. WHEN a specification's tasks are listed THEN they SHALL be under four groups in this order: **Progressing**, **Pending**, **Input Required**, **Finished**; each heading SHALL show its name and how many tasks it holds, and a group with no task SHALL NOT be drawn. Within a group, tasks SHALL be listed by when they were last updated, the most recent first, and a task with no such moment after those that have one.
 3. WHEN a group's heading is clicked THEN the group SHALL collapse or expand, and the element SHALL grow or shrink to fit with its relations following.
-4. WHEN a group's state has never been set for an element THEN **Progressing** and **Input Required** SHALL be expanded and **Pending** and **Finished** collapsed. WHEN it has been set THEN that state SHALL be stored, for that element and that group, and SHALL be what is shown when the file is next opened, on any machine (Q3).
-5. WHEN a location is drawn THEN its pull requests SHALL be listed inside the element under one collapsible group, collapsed by default, with its state stored as in criterion 4 (R4).
+4. WHEN a group's state has never been set for an element THEN **Progressing** and **Input Required** SHALL be expanded and **Pending** and **Finished** collapsed. WHEN it has been set THEN that state SHALL be what is shown when the file is next opened, on any machine, and SHALL be stored, for that element and that group, for as long as it differs from the default (Q3).
+5. WHEN a location is drawn THEN its pull requests SHALL be listed inside the element under one collapsible group, collapsed by default, with its state stored as in criterion 4 and its items ordered as in criterion 2 (R4).
 6. WHEN the diagram is shown THEN a switch on the canvas SHALL show or hide specifications whose status is **Archived**, and they SHALL be hidden when it has never been set.
 7. WHEN archived specifications are hidden THEN those elements and their relations SHALL NOT be drawn, nothing else SHALL be hidden, and nothing in the model SHALL change (R9).
 8. WHEN the switch is changed THEN its value SHALL be stored and SHALL be what applies when the file is next opened (Q3).
@@ -278,10 +278,10 @@ Each is a selection. The option marked **(default)** is what this document is wr
 
 1. WHEN the toolbox is shown THEN it SHALL have one entry for each of the five element types, and none for a task or a pull request.
 2. WHEN the user connects two elements THEN the relation SHALL be inferred from the pair, since Requirement 3.1 leaves exactly one for each allowed pair.
-3. WHEN a specification or a location is selected THEN the user SHALL be able to add, rename, reorder and remove its list items, to set a task's status, and to do each from the element's context menu or the property grid.
+3. WHEN a specification or a location is selected THEN the user SHALL be able to add, rename and remove its list items, to set a task's status, and to do each from the element's context menu or the property grid. List items SHALL NOT be reordered by hand: their order is that of Requirement 4.2, and an item added or changed in ADP SHALL have its last-updated moment set to that moment.
 4. WHEN an element or a list item is selected THEN the property grid SHALL show its fields, each editable, with a status as a choice among its values.
 5. WHEN an element is renamed THEN it SHALL be by F2 or a double-click, in place.
-6. WHEN any edit is made THEN undo and redo SHALL work as for every other diagram in this host, and the file SHALL be saved as for every other diagram.
+6. WHEN any edit is made THEN undo and redo SHALL work as for every other diagram in this host, and the file SHALL be saved as for every other diagram. WHEN another program changes the file THEN the undo history for it SHALL be cleared, so that undo never puts back a file older than that change.
 7. WHEN an activity file is added from the workspace tree THEN it SHALL be offered where every other tool type is, and SHALL be created as the two files of Requirement 2.1, empty.
 
 ### Requirement 10 - What this host gains, and what ships
@@ -347,6 +347,15 @@ Each is a later specification if it is wanted, and nothing here should be read a
 - History: what an agent was doing yesterday. The file says what is so now.
 - A status for a pull request, an agent or an environment.
 - The other hosts (IntelliJ, VS Code, Eclipse, Notion). They build the same tool from the same definition files under their own specifications (Q1).
+
+## Amendments
+
+Ruled by the user in chat on 2026-10-09, after the design was approved, and applied as small amendments:
+
+- **2.6:** a relation has no id of its own (design decision L8).
+- **4.4:** a group's state is stored while it differs from its default (design decision L2).
+- **9.6:** the undo history is cleared when another program changes the file (design, B9).
+- **2.3, 2.5, 4.2, 4.5, 9.3:** the design asked that list items keep file order. The user ruled otherwise: "Tasks and pull requests are ordered based on last modified/updated time stamp." Most recent first is this document's reading of that.
 
 ## Sources
 
