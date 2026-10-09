@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { NoticeHost } from "./NoticeHost";
 
-const state: { notices: { id: number; text: string }[]; dismiss: (id: number) => void } = {
+const state: { notices: { id: number; text: string; copy?: string }[]; dismiss: (id: number) => void } = {
   notices: [],
   dismiss: vi.fn(),
 };
@@ -68,5 +68,23 @@ describe("NoticeHost", () => {
     render(<NoticeHost />);
 
     expect(screen.getByRole("status").getAttribute("aria-live")).toBe("polite");
+  });
+
+  it("offers a location for copying only where the notice carries one", async () => {
+    // A link the page could not open: the reader is told why, and can take the location
+    // somewhere that can open it (agent-activity-diagram Requirement 5.5).
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    state.notices = [
+      { id: 1, text: "C:\work\kd is outside this project, so it cannot be opened from here.", copy: "C:\work\kd" },
+      { id: 2, text: "The new position could not be saved beside tea.owm." },
+    ];
+
+    render(<NoticeHost />);
+    const copy = screen.getAllByRole("button", { name: "Copy location" });
+
+    expect(copy).toHaveLength(1);
+    fireEvent.click(copy[0]);
+    expect(writeText).toHaveBeenCalledExactlyOnceWith("C:\work\kd");
   });
 });

@@ -33,6 +33,7 @@ import { EllipseElement } from "../elements/ellipse/EllipseElement";
 import { FrameElement } from "../elements/frame/FrameElement";
 import { SpanElement } from "../elements/span/SpanElement";
 import { LABEL_FONT_SIZE, widthOf } from "../label/textMetrics";
+import { compartmentsHeight, layoutCompartments, type LaidOutHeading } from "./definition/compartments";
 import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
@@ -1633,7 +1634,7 @@ export function DiagramCanvasCore({
           event.preventDefault();
           raise({ kind: "element-deleted", elementId: item.id });
         }
-      } else {
+      } else if (item.kind === "connection") {
         const connection = model.connections.find((candidate) => candidate.id === item.id);
         const declared =
           connection === undefined
@@ -1730,6 +1731,10 @@ export function DiagramCanvasCore({
   /** A declared shortcut, dispatched by action id. True when one fired. */
   function dispatchDeclaredAction(event: React.KeyboardEvent): boolean {
     for (const item of selection) {
+      // A row offers no declared shortcut: its actions are the backend's, through the shared menu.
+      if (item.kind === "row") {
+        continue;
+      }
       const element = item.kind === "element" ? elementsById.get(item.id) : undefined;
       const type = element !== undefined ? elementTypes.get(element.type) : undefined;
       const connection = item.kind === "connection" ? model.connections.find((c) => c.id === item.id) : undefined;
@@ -2062,6 +2067,19 @@ export function DiagramCanvasCore({
       edgePress={edgePress(element)}
       onContextMenu={onItemContextMenu(element.id)}
       onDoubleClick={() => dispatchElementGesture(element.id, "activate")}
+      headingPress={(heading) =>
+        raise({
+          kind: "compartment-toggled",
+          elementId: element.id,
+          compartmentId: heading.compartmentId,
+          key: heading.key,
+          collapsed: !heading.collapsed,
+        })
+      }
+      rowSelected={(id) => isSelected("row", id)}
+      rowPress={(id) => select({ kind: "row", id })}
+      rowContextMenu={onItemContextMenu}
+      linkPress={(link, rowId) => raise({ kind: "link-activated", elementId: element.id, rowId, link })}
     />
   );
 
@@ -2466,9 +2484,24 @@ function LibraryElement({
   edgePress,
   onContextMenu,
   onDoubleClick,
+  headingPress,
+  rowSelected,
+  rowPress,
+  rowContextMenu,
+  linkPress,
 }: {
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
+  /** A compartment heading was activated - the request to fold or unfold it. */
+  headingPress: (heading: LaidOutHeading) => void;
+  /** Whether the row with this id is the selection. */
+  rowSelected: (id: string) => boolean;
+  /** A row was pressed or activated from the keyboard - the request to select it. */
+  rowPress: (id: string) => void;
+  /** The shared menu was asked for on a row. */
+  rowContextMenu: (id: string) => (event: React.MouseEvent) => void;
+  /** A link symbol was activated: the element's, or the row's whose id is given. */
+  linkPress: (link: string, rowId?: string) => void;
   dragValue: GestureValue<ElementDragOffset>;
   connectValue: GestureValue<ConnectPreview>;
   resizeValue: GestureValue<ResizeDragPreview>;
@@ -2573,6 +2606,22 @@ function LibraryElement({
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
         {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" }, highlight, movedBoundary ?? undefined)}
       </ShapeErrorBoundary>
+      {type?.compartments !== undefined &&
+        declaredCompartments(type, bounds, sourceOf(resizing, groupState, bounds), { headingPress, rowSelected, rowPress, rowContextMenu, linkPress })}
+      {type?.links?.map((declaration) => {
+        const link = valueAtPath(declaration.link, sourceOf(resizing));
+        return typeof link === "string" && link.length > 0 ? (
+          <LinkSymbol
+            key={`link-${declaration.id}`}
+            id={declaration.id}
+            x={bounds.x + bounds.width - declaration.at.right}
+            y={bounds.y + declaration.at.top}
+            link={link}
+            label={declaration.label}
+            onActivate={() => linkPress(link)}
+          />
+        ) : null;
+      })}
       {type?.anchors.kind === "along" && edgeStrips(type.anchors.edges, bounds, attachmentLayoutOf(resizing, type, bounds, movedBoundary ?? undefined)).map((strip) => (
         <rect
           key={`edge-${strip.edge}-${strip.region ?? "all"}`}
@@ -3074,6 +3123,192 @@ function declaredLabels(type: ElementTypeDefinition, bounds: ConnectorBox, sourc
   ));
 }
 
+
+/** The side of the square a link symbol is drawn and pressed in. */
+const LINK_SYMBOL_SIZE = 14;
+
+/**
+ * A link, drawn as a small chain and activated by a press, or by Enter or Space when focused.
+ *
+ * It says where it leads before it is followed - as a tooltip, and as its accessible name - and
+ * its press reaches nothing beneath it, so following a link neither selects nor drags the
+ * element or the row it sits on. What following MEANS is not decided here: the symbol raises the
+ * request and the page's one rule answers it.
+ */
+function LinkSymbol({
+  id,
+  x,
+  y,
+  link,
+  label,
+  onActivate,
+}: {
+  id: string;
+  x: number;
+  y: number;
+  link: string;
+  label?: string;
+  onActivate: () => void;
+}) {
+  const name = label === undefined ? `Open ${link}` : `Open the ${label}: ${link}`;
+  return (
+    <g
+      className="library-link"
+      data-link={id}
+      role="link"
+      tabIndex={0}
+      aria-label={name}
+      onPointerDown={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        onActivate();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          onActivate();
+        }
+      }}
+    >
+      <title>{name}</title>
+      <rect className="library-link-hit" x={x} y={y} width={LINK_SYMBOL_SIZE} height={LINK_SYMBOL_SIZE} />
+      <path
+        className="library-link-glyph"
+        d={`M${x + 5.5} ${y + 8.5} L${x + 8.5} ${y + 5.5} M${x + 6.2} ${y + 4.2} l1.3 -1.3 a2.4 2.4 0 0 1 3.4 3.4 l-1.3 1.3 M${x + 7.8} ${y + 9.8} l-1.3 1.3 a2.4 2.4 0 0 1 -3.4 -3.4 l1.3 -1.3`}
+      />
+    </g>
+  );
+}
+
+/**
+ * The lists a type's `compartments` declare: one heading per group, its rows beneath it unless it
+ * is folded.
+ *
+ * A heading is a button - a press folds or unfolds it, by pointer or by Enter and Space - and its
+ * press does not reach the element beneath, so folding a group neither selects nor drags the
+ * element it is in. Text is anchored inline, for the reason a declared label's is.
+ */
+function declaredCompartments(
+  type: ElementTypeDefinition,
+  bounds: ConnectorBox,
+  source: BindingSource,
+  {
+    headingPress,
+    rowSelected,
+    rowPress,
+    rowContextMenu,
+    linkPress,
+  }: {
+    linkPress: (link: string, rowId?: string) => void;
+    headingPress: (heading: LaidOutHeading) => void;
+    rowSelected: (id: string) => boolean;
+    rowPress: (id: string) => void;
+    rowContextMenu: (id: string) => (event: React.MouseEvent) => void;
+  },
+): ReactNode {
+  const laidOut = layoutCompartments(type.compartments, source, bounds);
+  return (
+    <>
+      {laidOut.headings.map((heading) => (
+        <g
+          key={`heading-${heading.compartmentId}-${heading.key}`}
+          className="library-compartment-heading"
+          data-compartment={heading.compartmentId}
+          data-heading={heading.key}
+          role="button"
+          tabIndex={0}
+          aria-expanded={!heading.collapsed}
+          aria-label={`${heading.title}, ${heading.count}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            headingPress(heading);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              headingPress(heading);
+            }
+          }}
+        >
+          <rect className="library-compartment-heading-hit" x={heading.box.x} y={heading.box.y} width={heading.box.width} height={heading.box.height} />
+          <text
+            className="library-compartment-heading-text"
+            x={heading.box.x}
+            y={heading.box.y + heading.box.height / 2 + LABEL_FONT_SIZE / 3}
+            style={{ textAnchor: "start" }}
+          >
+            {`${heading.collapsed ? "\u25B8" : "\u25BE"} ${heading.title} (${heading.count})`}
+          </text>
+        </g>
+      ))}
+      {laidOut.rows.map((row, index) => {
+        // A row the model gave no id cannot be named, so it is drawn and takes no press: the
+        // press falls through to the element it is in, which is the nearest thing with an identity.
+        const id = row.id;
+        const selected = id !== undefined && rowSelected(id);
+        const wiring =
+          id === undefined
+            ? {}
+            : {
+                role: "option",
+                tabIndex: 0,
+                "aria-selected": selected,
+                onPointerDown: (event: React.PointerEvent) => event.stopPropagation(),
+                onDoubleClick: (event: React.MouseEvent) => event.stopPropagation(),
+                onClick: (event: React.MouseEvent) => {
+                  event.stopPropagation();
+                  rowPress(id);
+                },
+                onKeyDown: (event: React.KeyboardEvent) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    rowPress(id);
+                  }
+                },
+                onContextMenu: (event: React.MouseEvent) => {
+                  event.stopPropagation();
+                  rowContextMenu(id)(event);
+                },
+              };
+        return (
+        <g
+          key={`row-${row.compartmentId}-${row.id ?? `at-${index}`}`}
+          className={["library-compartment-row", selected ? "canvas-selected library-compartment-row-selected" : ""].filter(Boolean).join(" ")}
+          data-compartment={row.compartmentId}
+          data-row-id={row.id}
+          {...wiring}
+        >
+          <rect className="library-compartment-row-hit" x={row.box.x} y={row.box.y} width={row.box.width} height={row.box.height} />
+          <text
+            className="library-compartment-row-text"
+            x={row.textX}
+            y={row.box.y + row.box.height / 2 + LABEL_FONT_SIZE / 3}
+            style={{ textAnchor: "start" }}
+          >
+            {row.text !== row.fullText ? <title>{row.fullText}</title> : null}
+            {row.text}
+          </text>
+          {row.link !== undefined && (
+            <LinkSymbol
+              id={`${row.compartmentId}-${row.id ?? index}`}
+              x={row.box.x + row.box.width - LINK_SYMBOL_SIZE}
+              y={row.box.y + (row.box.height - LINK_SYMBOL_SIZE) / 2}
+              link={row.link}
+              onActivate={() => linkPress(row.link as string, row.id)}
+            />
+          )}
+        </g>
+        );
+      })}
+    </>
+  );
+}
 
 /**
  * What a declaration resolves against, with the canvas's own state included.
@@ -3988,7 +4223,10 @@ function leadingOf(element: DiagramModelElement, type: ElementTypeDefinition | u
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {
   const width = element.width ?? (type?.sizing === "content" ? Math.max(DEFAULT_WIDTH, widthOf(element.label ?? "", LABEL_FONT_SIZE) + 16) : DEFAULT_WIDTH);
-  const height = element.height ?? DEFAULT_HEIGHT;
+  // An element with rows is as tall as they need: the model does not know how many are folded
+  // away, and a height it supplied for the element at rest must not cut them off.
+  const rows = type?.compartments === undefined ? null : compartmentsHeight(type.compartments, { element, payload: element.payload });
+  const height = Math.max(element.height ?? DEFAULT_HEIGHT, rows ?? 0);
   return { x: element.x - width / 2, y: element.y - height / 2, width, height };
 }
 

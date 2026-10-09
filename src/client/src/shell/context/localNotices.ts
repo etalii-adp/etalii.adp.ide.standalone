@@ -14,7 +14,7 @@
  * would be erased by the next validation push - which is the one moment it is most needed and
  * least likely to survive. The notice surface is transient by design and dismissed by hand.
  */
-type Listener = (text: string) => void;
+type Listener = (text: string, copy?: string) => void;
 
 const listeners = new Set<Listener>();
 
@@ -29,8 +29,8 @@ export function onLocalNotice(listener: Listener): () => void {
  * is dropped rather than queued, because a notice about a request nobody is waiting for any more
  * has nothing to tell anybody.
  */
-export function raiseLocalNotice(text: string): void {
+export function raiseLocalNotice(text: string, copy?: string): void {
   for (const listener of listeners) {
-    listener(text);
+    listener(text, copy);
   }
 }

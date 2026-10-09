@@ -6,6 +6,8 @@ import { ContextSelectionAction } from "@client/generated/context_pb";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
 import { actionForMenuEntry, backendKeyOf, type ActionLookup } from "./definition/actions";
 import type { DiagramModel } from "./api/diagramModel";
+import { hasRow } from "./definition/compartments";
+import { openLink } from "@client/shell/links/openLink";
 import {
   dispatchDiagramEvent,
   type ActionInvoked,
@@ -54,7 +56,13 @@ export function resolveSelection(id: string | null, model: DiagramModel, definit
     return type?.selectable === false ? [] : [{ kind: "element", id }];
   }
 
-  return [];
+  // A row of a compartment: not an element of the model, but an entry of one, with an id of its
+  // own. Looked for last, so an element or a connection that shares the id is what resolves.
+  const owner = model.elements.find((candidate) => {
+    const type = definition.elementTypes.find((entry) => entry.id === candidate.type);
+    return hasRow(type?.compartments, { element: candidate, payload: candidate.payload }, id);
+  });
+  return owner === undefined ? [] : [{ kind: "row", id }];
 }
 
 /**
@@ -68,8 +76,10 @@ function menuLookup(selection: DiagramSelection, model: DiagramModel, definition
   const connection = item?.kind === "connection" ? model.connections.find((candidate) => candidate.id === item.id) : undefined;
   const type = element !== undefined ? definition.elementTypes.find((candidate) => candidate.id === element.type) : undefined;
   return {
-    actions: [...(definition.actions ?? []), ...(type?.actions ?? [])],
-    targetKind: item === undefined ? "canvas" : item.kind,
+    // A row declares no actions of its own and is no declared target: every entry of its menu is
+    // the backend's, and runs as one.
+    actions: item?.kind === "row" ? [] : [...(definition.actions ?? []), ...(type?.actions ?? [])],
+    targetKind: item === undefined || item.kind === "row" ? "canvas" : item.kind,
     targetId: item?.id,
     typeId: element?.type ?? connection?.type,
     source: { element: element ?? { id: item?.id ?? "", type: connection?.type ?? "", x: 0, y: 0 }, payload: element?.payload },
@@ -133,7 +143,7 @@ export function useLibrarySelection(
   definition: DiagramDefinition,
   events: DiagramEventHandlers,
 ): LibrarySelection {
-  const { select, executeAction, executeShortcut } = useContextConnection();
+  const { select, executeAction, executeShortcut, revealPath } = useContextConnection();
   const { selection: pushed, actions } = useContextSelection();
 
   const selectionKey = innermostKey(pushed) ?? undefined;
@@ -214,6 +224,12 @@ export function useLibrarySelection(
     events: {
       ...events,
       onSelectionChanged: ({ selection: next }) => push(next.length > 0 ? next[0].id : null),
+      // A link is opened here, by the page's one rule for what may be opened, and the module
+      // hears of it afterwards. A relative link is relative to the document this canvas draws.
+      onLinkActivated: (activated) => {
+        openLink(activated.link, source.path, { revealPath });
+        dispatchDiagramEvent(events, activated);
+      },
       // The canvas raises every declared action through here, so this is the one place a declared
       // backend key is sent - a key, a gesture and a menu entry alike.
       onActionInvoked: invokeDeclared,

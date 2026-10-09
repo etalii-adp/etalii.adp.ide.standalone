@@ -30,6 +30,8 @@ export type DiagramEvent =
   | LabelCommitRequested
   | ViewChanged
   | LayoutModeChanged
+  | CompartmentToggled
+  | LinkActivated
   | ActionInvoked
   | ActionRefused;
 
@@ -173,7 +175,12 @@ export interface ConnectionAdjusted {
 export type DiagramSelection = readonly SelectedItem[];
 
 export interface SelectedItem {
-  kind: "element" | "connection";
+  /**
+   * `row` is a row of a compartment: one of the model's own child entries, drawn inside an
+   * element and selected by its own id. It is neither moved nor connected, so the gestures that
+   * act on the selection - a declared shortcut, Delete - pass it by.
+   */
+  kind: "element" | "connection" | "row";
   id: string;
 }
 
@@ -235,6 +242,37 @@ export interface ActionRefused {
   kind: "action-refused";
   actionId: string;
   message: string;
+}
+
+/**
+ * The user asked to fold or unfold one heading of a compartment. A request like every other: the
+ * library holds no collapse state, so the heading stays as it is until the model says otherwise.
+ */
+export interface CompartmentToggled {
+  kind: "compartment-toggled";
+  elementId: string;
+  compartmentId: string;
+  /** The heading's key, as the model's collapsed list names it. */
+  key: string;
+  /** What the user is asking for: `true` to fold the heading's rows away. */
+  collapsed: boolean;
+}
+
+/**
+ * The user activated a link symbol, on an element or at the end of a row.
+ *
+ * <b>Where the canvas owns its selection, the library opens the link itself</b> - a web address in
+ * a new tab, a project path in the workspace tree, anything else shown and not followed - and the
+ * module hears this afterwards, to answer or ignore. A module never opens a link from a document
+ * by hand: what may be opened is one rule, kept in one place.
+ */
+export interface LinkActivated {
+  kind: "link-activated";
+  elementId: string;
+  /** The row the link belongs to, where it is a row's and not the element's. */
+  rowId?: string;
+  /** The link as the model holds it. */
+  link: string;
 }
 
 /** The user switched between the definition's allowed layout modes (Requirement 8.2). */
