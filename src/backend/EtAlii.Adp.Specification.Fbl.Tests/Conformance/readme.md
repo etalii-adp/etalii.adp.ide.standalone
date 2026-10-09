@@ -11,7 +11,7 @@ Everything in this folder except this readme is copied, unchanged, from [`etalii
 
 `.gitattributes` keeps the fixture inputs and registrations (`*.yml`, `*.json`, `*.cld`, `*.adp`, and `*.tml`, `*.mm`, `*.dsl` through the repository-wide rules) from line-ending conversion, because the fixtures' offsets are byte offsets into them.
 
-**Added since, from the same folder and from `definitions/diagrams/` at commit `2ab1d8f`** (`develop`, 2026-10-09, the merge of etalii.adp #106): the binding `agent-activity-diagram.fbl` and the three fixtures `fixtures/agent-activity-read`, `-edits` and `-new`, written against FBL 0.3. The rest of the corpus is still the FBL 0.1 copy named above; the bindings and fixtures FBL 0.2 and 0.3 added for other tool types are not vendored here yet.
+**Added since, from the same folder and from `definitions/diagrams/` at commit `2d5c11d`** (`develop`, 2026-10-09, the merge of etalii.adp #109): the binding `agent-activity-diagram.fbl` and the three fixtures `fixtures/agent-activity-read`, `-edits` and `-new`, written against FBL 0.4, whose nested levels (sections 5.2 and 6.2) this library creates and removes in yaml only: a json or xml binding that asks for them is refused or keeps the level, and `Yaml/YamlLevels.Tests.cs` holds the cases the fixtures do not reach. The rest of the corpus is still the FBL 0.1 copy named above; the bindings and fixtures FBL 0.2 and 0.3 added for other tool types are not vendored here yet.
 
 Three things the runner does for those fixtures, each because FBL leaves it to the host or to the tool type's specification and none of them is an edit to a fixture:
 

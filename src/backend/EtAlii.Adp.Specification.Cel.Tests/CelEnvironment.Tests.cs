@@ -197,4 +197,23 @@ public class CelEnvironmentTests
         // Assert.
         Assert.Equal("diagram", seen);
     }
+
+    [Fact]
+    public void TheTypeOfAValueIsComparedWithATypesName_UnlessAVariableHasThatName()
+    {
+        // Arrange: what a binding asks before it reads into a value that may be a scalar.
+        var environment = CelEnvironment.Standard().DeclareVariables("entry");
+        var program = environment.Compile("type(entry.view) == map ? entry.view.size() : -1");
+        static Dictionary<string, object?> With(object? view) => new() { ["entry"] = new Dictionary<string, object?> { ["view"] = view } };
+
+        // Act and assert: a mapping is read into, anything else is not.
+        Assert.Equal(1L, program.Evaluate(With(new Dictionary<string, object?> { ["shown"] = true })));
+        Assert.Equal(-1L, program.Evaluate(With("text")));
+        Assert.Equal(-1L, program.Evaluate(With(new List<object?> { 1L })));
+        Assert.Equal(true, Evaluate.Expression("type('a') == string && type(1) == int && type(1.5) == double && type(true) == bool && type([1]) == list && type(null) == null_type"));
+
+        // A variable named as a type is the variable.
+        var shadowed = CelEnvironment.Standard().DeclareVariables("map");
+        Assert.Equal(false, shadowed.Compile("type({'a': 1}) == map").Evaluate(new Dictionary<string, object?> { ["map"] = 3L }));
+    }
 }

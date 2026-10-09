@@ -377,7 +377,8 @@ internal static class BindingReader
         RemoveSettings? remove = null;
         if (json.TryGetProperty("remove", out var rem))
         {
-            remove = new RemoveSettings(Strings(rem, "cascade"), Str(rem, "container") == "remove-when-empty");
+            var container = Str(rem, "container");
+            remove = new RemoveSettings(Strings(rem, "cascade"), container is "remove-when-empty" or "remove-empty-levels", container == "remove-empty-levels");
         }
         return new Rule
         {
@@ -434,7 +435,9 @@ internal static class BindingReader
         if (json.TryGetProperty("create", out var c))
         {
             var pl = c.TryGetProperty("place", out var place) ? place : default;
-            create = pl.ValueKind == JsonValueKind.Object
+            create = Str(c, "at") == "end"
+                ? new CreateChild("", "last", null, true)
+                : pl.ValueKind == JsonValueKind.Object
                 ? new CreateChild(Str(c, "emit") ?? "", "before", Str(pl, "before"))
                 : new CreateChild(Str(c, "emit") ?? "", pl.ValueKind == JsonValueKind.String ? pl.GetString()! : "last", null);
         }

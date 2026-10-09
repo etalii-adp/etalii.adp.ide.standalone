@@ -194,7 +194,15 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             var member = read.Node as TreeEntry;
             if (change is { IsEmpty: true, Binding.Empty: "remove" })
             {
-                if (member is not null) plan.Add(SpliceOperation.RemoveKey, member.LineSpan ?? member.Own, "");
+                if (member is not null)
+                {
+                    // FBL 0.4, section 5.2: the levels the key leaves empty go with it, up to the entry itself.
+                    if (change.Binding is { Create.AtEnd: true, Child: { } reached })
+                    {
+                        RemoveEmptiedLevels(plan, member, reached.Trim('/').Split('/').Length, entry => entry == member);
+                    }
+                    plan.Add(SpliceOperation.RemoveKey, member.LineSpan ?? member.Own, "");
+                }
                 continue;
             }
             if (read.Present && member is not null)
@@ -204,6 +212,18 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 continue;
             }
             var mapping = read.Node as TreeValue ?? Mapping((TreeEntry)element.Entry, change.Binding.Child);
+            if (mapping is null && change.Binding is { Create.AtEnd: true, Child: { } child, Key: { } created })
+            {
+                // FBL 0.4, section 5.2: every missing level of the child mapping, then the key, at one offset.
+                if (!MissingLevels((TreeEntry)element.Entry, child.Trim('/').Split('/'), out var at, out var levels, out var inside))
+                {
+                    Plan.Refuse($"The {Binding.Name} file has no place to create {child} in.");
+                    return;
+                }
+                foreach (var level in levels) plan.Add(SpliceOperation.EnsureContainer, at, at, NewLine(at, [level]));
+                plan.Add(SpliceOperation.InsertKey, at, at, NewLine(at, [Indentation(inside) + created + ": " + Scalar(change.Value, null, change.Binding, inside)]));
+                continue;
+            }
             if (mapping is null || mapping.Kind != ValueKind.Mapping || change.Binding.Key is not { } key)
             {
                 Plan.Refuse($"The {Binding.Name} file has no mapping to write '{change.Binding.Key}' in.");
@@ -224,6 +244,11 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         if (before is not null)
         {
             offset = LineEndAfter(before);
+        }
+        else if (change.Binding.Create?.AtEnd == true)
+        {
+            // FBL 0.4, section 5.2: with no key of the rule before it, the mapping's first key.
+            offset = mapping.Entries[0].LineSpan?.Start ?? mapping.Entries[0].Own.Start;
         }
         else
         {
@@ -372,6 +397,21 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         int indent;
         switch (create.At)
         {
+            case "end":
+            {
+                // FBL 0.4, section 6.2, Missing levels: outermost first, then the entry, all at one offset.
+                var from = selector.StartsWith('/') ? Root : parent as TreeEntry;
+                if (from is null || !MissingLevels(from, selector.Trim('/').Split('/'), out var at, out var levels, out var inside))
+                {
+                    Plan.Refuse($"The file has no place to create {name} in.");
+                    return;
+                }
+                if (create.Text is { } own && levels.Count > 0) levels[^1] = own;
+                foreach (var level in levels) plan.Add(SpliceOperation.EnsureContainer, at, at, NewLine(at, [level]));
+                var first = inside - Step + SequenceOffset;
+                plan.Add(SpliceOperation.InsertEntry, at, at, NewLine(at, Item(keys, first, first + 2)));
+                return;
+            }
             case "end-of-document":
                 offset = Text.Length;
                 indent = mapping is { Kind: ValueKind.Mapping, Entries.Count: > 0 } ? mapping.Entries[0].Indent : 0;
@@ -401,6 +441,73 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
         plan.Add(SpliceOperation.EnsureContainer, offset, offset, NewLine(offset, [containerText]));
         var dash = indent + SequenceOffset;
         plan.Add(SpliceOperation.InsertEntry, offset, offset, NewLine(offset, Item(keys, dash, dash + 2)));
+    }
+
+    /// <summary>
+    /// The levels of <paramref name="segments"/> that <paramref name="from"/> does not reach, as the key
+    /// lines that create them, outermost first; where they go, which is the end of the innermost level
+    /// the body has; and the indentation of what the innermost level holds (FBL 0.4, section 6.2).
+    /// False when a missing level is named by <c>*</c> or a capture, which gives no key to write, or
+    /// when the level to write in is not a block mapping.
+    /// </summary>
+    private bool MissingLevels(TreeEntry from, IReadOnlyList<string> segments, out int offset, out List<string> lines, out int inside)
+    {
+        offset = 0;
+        inside = 0;
+        lines = [];
+        var level = from;
+        var reached = 0;
+        while (reached < segments.Count && level.Value.Kind == ValueKind.Mapping && level.Value.Member(segments[reached]) is { } member)
+        {
+            level = member;
+            reached++;
+        }
+        int indent;
+        if (level.Value is { Kind: ValueKind.Mapping, Entries.Count: > 0 } mapping)
+        {
+            offset = level.IsRoot ? Text.Length : LineEndAfter(mapping.Entries[^1]);
+            indent = mapping.Entries[0].Indent;
+        }
+        else if (level.Value.Style == ValueStyle.Empty)
+        {
+            offset = level.IsRoot ? Text.Length : LineEndAfter(level);
+            indent = level.IsRoot ? 0 : level.Indent + Step;
+        }
+        else
+        {
+            return false;
+        }
+        for (var i = reached; i < segments.Count; i++)
+        {
+            if (segments[i] == "*" || segments[i].StartsWith('{')) return false;
+            lines.Add(Indentation(indent) + segments[i] + ":");
+            indent += Step;
+        }
+        inside = indent;
+        return true;
+    }
+
+    /// <summary>
+    /// Removes the heads of the levels above <paramref name="start"/> that its removal leaves empty,
+    /// at most <paramref name="most"/> of them and never the root, outermost first (FBL 0.4, section 6.2).
+    /// A level is left empty when everything in it is <paramref name="going"/> or is such a level itself.
+    /// </summary>
+    private void RemoveEmptiedLevels(Plan plan, TreeEntry start, int most, Func<TreeEntry, bool> going)
+    {
+        var heads = new List<Span>();
+        TreeEntry? emptied = null;
+        var level = start.Parent as TreeEntry;
+        while (heads.Count < most && level is { IsRoot: false, LineSpan: { } line } && level.Value.Entries.All(entry => entry == emptied || going(entry)))
+        {
+            var first = level.Value.Entries[0];
+            heads.Insert(0, line with { End = (first.LineSpan ?? first.Own).Start });
+            emptied = level;
+            level = level.Parent as TreeEntry;
+        }
+        foreach (var head in heads)
+        {
+            if (!plan.Touches(head)) plan.Add(SpliceOperation.RemoveContainer, head, "");
+        }
     }
 
     private List<string> Item(List<string> lines, int dash, int keyIndent)
@@ -472,16 +579,20 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
             return;
         }
         var span = entry.LineSpan ?? entry.Own;
-        if (element.Rule.Remove?.RemoveContainerWhenEmpty == true && entry.Parent is TreeEntry { IsRoot: false, LineSpan: { } containerLine } container)
+        if (element.Rule.Remove is { RemoveContainerWhenEmpty: true } remove)
         {
-            var gone = removed.Select(r => r.Entry).ToHashSet();
-            if (container.Value.Entries.All(gone.Contains))
+            // The container alone, or with remove-empty-levels every level of its selector that a key
+            // names, counted from the container up to the first level a * or a capture names.
+            var levels = 1;
+            if (remove.RemoveEmptyLevels)
             {
-                var first = container.Value.Entries[0];
-                var firstStart = (first.LineSpan ?? first.Own).Start;
-                var head = containerLine with { End = firstStart };
-                if (!plan.Touches(head)) plan.Add(SpliceOperation.RemoveContainer, head, "");
+                var segments = (element.Rule.Insert?.Container ?? ContainerOf(element.Rule.At)).Trim('/').Split('/');
+                levels = segments.Reverse().TakeWhile(segment => segment.Length > 0 && segment != "*" && !segment.StartsWith('{')).Count();
             }
+            var gone = removed.Where(r => r.Rule.Remove?.RemoveContainerWhenEmpty == true).Select(r => r.Entry).ToHashSet();
+            // A sibling container goes too when this edit removes everything in it.
+            RemoveEmptiedLevels(plan, entry, levels, other =>
+                removed.Any(r => r.Entry == other) || (other.Value.Entries.Count > 0 && other.Value.Entries.All(gone.Contains)));
         }
         plan.Add(SpliceOperation.RemoveEntry, WithoutFinalNewline(span, removed), "");
     }

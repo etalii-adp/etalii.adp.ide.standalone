@@ -1,6 +1,5 @@
 agent-activity-diagram: 1
 # What the agents of one project were doing on 2026-10-08, kept by agents and by ADP.
-showArchived: false
 projects:
   - id: p-standalone
     name: etalii.adp.ide.standalone
@@ -51,11 +50,13 @@ environments:
     name: Fractal
     kind: local-machine
     owner: Peter   # not read by the diagram, kept
-placements:
-  - element: s-knowledge
-    x: 240
-    y: -80
-groups:
-  - element: s-knowledge
-    group: pending
-    collapsed: false
+view:
+  showArchived: false
+  placements:
+    - element: s-knowledge
+      x: 240
+      y: -80
+  groups:
+    - element: s-knowledge
+      group: pending
+      collapsed: false

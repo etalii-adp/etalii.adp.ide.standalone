@@ -1,6 +1,6 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Fixture",
-  "doc": "A new activity file holds the binding's template, the header alone (spec 014 research R5). Each list is created at the end of the file with its first entry and removed with its last; a specification's tasks are created after its status, and the switch is inserted after the header. All of it is undone back to the template and one edit redone.",
+  "doc": "A new activity file holds the binding's template, the header alone (spec 014 research R5). Each list is created at the end of the file with its first entry and removed with its last; a specification's tasks are created after its status. The user's part shows FBL 0.4: the first pin creates view and placements together and unpinning removes both, the switch creates view by itself, and a pin and a fold then add placements and groups at the end of view. All of it is undone back to the template and one edit redone.",
   "binding": "../../../../definitions/diagrams/agent-activity-diagram.fbl#aad",
   "input": "new.aad",
   "steps": [
@@ -11,26 +11,6 @@
       },
       "splices": [],
       "expect": "agent-activity-diagram: 1\r\n"
-    },
-    {
-      "doc": "Turning on the switch in a new file inserts showArchived right after the header, the one key bound before it.",
-      "edit": {
-        "set": {
-          "element": "diagram",
-          "attributes": {
-            "showArchived": true
-          }
-        }
-      },
-      "splices": [
-        {
-          "operation": "insert-key",
-          "start": 27,
-          "end": 27,
-          "text": "showArchived: true\r\n"
-        }
-      ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\n"
     },
     {
       "doc": "The first project creates projects: at the end of the file (insert.create, end-of-document).",
@@ -46,18 +26,18 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 47,
-          "end": 47,
+          "start": 27,
+          "end": 27,
           "text": "projects:\r\n"
         },
         {
           "operation": "insert-entry",
-          "start": 47,
-          "end": 47,
+          "start": 27,
+          "end": 27,
           "text": "  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
     },
     {
       "doc": "The first specification creates specifications: at the end of the file; its project is a reference by id.",
@@ -75,18 +55,18 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 109,
-          "end": 109,
+          "start": 89,
+          "end": 89,
           "text": "specifications:\r\n"
         },
         {
           "operation": "insert-entry",
-          "start": 109,
-          "end": 109,
+          "start": 89,
+          "end": 89,
           "text": "  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n"
     },
     {
       "doc": "The first task of a specification creates its tasks: right after its status (create: after status).",
@@ -104,21 +84,21 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 216,
-          "end": 216,
+          "start": 196,
+          "end": 196,
           "text": "    tasks:\r\n"
         },
         {
           "operation": "insert-entry",
-          "start": 216,
-          "end": 216,
+          "start": 196,
+          "end": 196,
           "text": "      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
     },
     {
-      "doc": "The first pin creates placements: at the end of the file.",
+      "doc": "The first pin creates both missing levels, view: at the end of the file and placements: inside it, one ensure-container splice each, outermost first, then the entry (FBL 0.4, create at end).",
       "edit": {
         "add": {
           "type": "Placement",
@@ -133,21 +113,111 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 306,
-          "end": 306,
-          "text": "placements:\r\n"
+          "start": 286,
+          "end": 286,
+          "text": "view:\r\n"
+        },
+        {
+          "operation": "ensure-container",
+          "start": 286,
+          "end": 286,
+          "text": "  placements:\r\n"
         },
         {
           "operation": "insert-entry",
-          "start": 306,
-          "end": 306,
-          "text": "  - element: s-addon\r\n    x: 0\r\n    y: 0\r\n"
+          "start": 286,
+          "end": 286,
+          "text": "    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nplacements:\r\n  - element: s-addon\r\n    x: 0\r\n    y: 0\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
     },
     {
-      "doc": "The first fold that differs from its group's default creates groups: at the end of the file.",
+      "doc": "Unpinning it leaves placements: empty and view: with it, so both are removed, outermost first, before the entry (remove-empty-levels).",
+      "edit": {
+        "remove": {
+          "element": "pinned:s-addon"
+        }
+      },
+      "splices": [
+        {
+          "operation": "remove-container",
+          "start": 286,
+          "end": 293,
+          "text": ""
+        },
+        {
+          "operation": "remove-container",
+          "start": 293,
+          "end": 308,
+          "text": ""
+        },
+        {
+          "operation": "remove-entry",
+          "start": 308,
+          "end": 356,
+          "text": ""
+        }
+      ],
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
+    },
+    {
+      "doc": "Turning on the switch in a file without view: creates view: at the end of the file and inserts showArchived into it, one ensure-container splice and one insert-key at one offset (FBL 0.4, an attribute's create).",
+      "edit": {
+        "set": {
+          "element": "diagram",
+          "attributes": {
+            "showArchived": true
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 286,
+          "end": 286,
+          "text": "view:\r\n"
+        },
+        {
+          "operation": "insert-key",
+          "start": 286,
+          "end": 286,
+          "text": "  showArchived: true\r\n"
+        }
+      ],
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  showArchived: true\r\n"
+    },
+    {
+      "doc": "Pinning it again finds view: and creates only placements:, at the end of view, after the switch.",
+      "edit": {
+        "add": {
+          "type": "Placement",
+          "id": "pinned:s-addon",
+          "attributes": {
+            "element": "s-addon",
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 315,
+          "end": 315,
+          "text": "  placements:\r\n"
+        },
+        {
+          "operation": "insert-entry",
+          "start": 315,
+          "end": 315,
+          "text": "    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
+        }
+      ],
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  showArchived: true\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
+    },
+    {
+      "doc": "The first fold that differs from its group's default creates groups: at the end of view, after the placements.",
       "edit": {
         "add": {
           "type": "GroupState",
@@ -162,18 +232,18 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 361,
-          "end": 361,
-          "text": "groups:\r\n"
+          "start": 378,
+          "end": 378,
+          "text": "  groups:\r\n"
         },
         {
           "operation": "insert-entry",
-          "start": 361,
-          "end": 361,
-          "text": "  - element: s-addon\r\n    group: progressing\r\n    collapsed: true\r\n"
+          "start": 378,
+          "end": 378,
+          "text": "    - element: s-addon\r\n      group: progressing\r\n      collapsed: true\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nplacements:\r\n  - element: s-addon\r\n    x: 0\r\n    y: 0\r\ngroups:\r\n  - element: s-addon\r\n    group: progressing\r\n    collapsed: true\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  showArchived: true\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n  groups:\r\n    - element: s-addon\r\n      group: progressing\r\n      collapsed: true\r\n"
     },
     {
       "doc": "Removing a specification's last task removes its tasks: with it (remove-when-empty).",
@@ -185,21 +255,21 @@
       "splices": [
         {
           "operation": "remove-container",
-          "start": 216,
-          "end": 228,
+          "start": 196,
+          "end": 208,
           "text": ""
         },
         {
           "operation": "remove-entry",
-          "start": 228,
-          "end": 306,
+          "start": 208,
+          "end": 286,
           "text": ""
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\nplacements:\r\n  - element: s-addon\r\n    x: 0\r\n    y: 0\r\ngroups:\r\n  - element: s-addon\r\n    group: progressing\r\n    collapsed: true\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\nview:\r\n  showArchived: true\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n  groups:\r\n    - element: s-addon\r\n      group: progressing\r\n      collapsed: true\r\n"
     },
     {
-      "doc": "Removing the last specification removes its group state, its placement and its own entry, and each list it leaves empty; the project, which only it referred to, stays.",
+      "doc": "Removing the last specification removes its group state, its placement and its own entry, and each list it leaves empty; view keeps the switch and stays, and the project, which only the specification referred to, stays too.",
       "edit": {
         "remove": {
           "element": "s-addon"
@@ -208,85 +278,85 @@
       "splices": [
         {
           "operation": "remove-container",
-          "start": 271,
-          "end": 280,
+          "start": 288,
+          "end": 299,
           "text": ""
         },
         {
           "operation": "remove-entry",
-          "start": 280,
-          "end": 347,
+          "start": 299,
+          "end": 372,
           "text": ""
         },
         {
           "operation": "remove-container",
-          "start": 216,
-          "end": 229,
+          "start": 225,
+          "end": 240,
           "text": ""
         },
         {
           "operation": "remove-entry",
-          "start": 229,
-          "end": 271,
+          "start": 240,
+          "end": 288,
           "text": ""
         },
         {
           "operation": "remove-container",
-          "start": 109,
-          "end": 126,
+          "start": 89,
+          "end": 106,
           "text": ""
         },
         {
           "operation": "remove-entry",
-          "start": 126,
-          "end": 216,
+          "start": 106,
+          "end": 196,
           "text": ""
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nview:\r\n  showArchived: true\r\n"
     },
     {
-      "doc": "Undo restores the bytes before the edit: removing the last specification removes its group state, its placement and its own entry, and each list it leaves empty; the project, which only it referred to, stays.",
+      "doc": "Undo restores the bytes before the edit: removing the last specification removes its group state, its placement and its own entry, and each list it leaves empty; view keeps the switch and stays, and the project, which only the specification referred to, stays too.",
       "undo": true,
       "splices": [
         {
           "operation": "remove-container",
-          "start": 109,
-          "end": 109,
+          "start": 89,
+          "end": 89,
           "text": "specifications:\r\n"
         },
         {
           "operation": "remove-entry",
-          "start": 109,
-          "end": 109,
+          "start": 89,
+          "end": 89,
           "text": "  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n"
         },
         {
           "operation": "remove-container",
-          "start": 109,
-          "end": 109,
-          "text": "placements:\r\n"
+          "start": 118,
+          "end": 118,
+          "text": "  placements:\r\n"
         },
         {
           "operation": "remove-entry",
-          "start": 109,
-          "end": 109,
-          "text": "  - element: s-addon\r\n    x: 0\r\n    y: 0\r\n"
+          "start": 118,
+          "end": 118,
+          "text": "    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
         },
         {
           "operation": "remove-container",
-          "start": 109,
-          "end": 109,
-          "text": "groups:\r\n"
+          "start": 118,
+          "end": 118,
+          "text": "  groups:\r\n"
         },
         {
           "operation": "remove-entry",
-          "start": 109,
-          "end": 109,
-          "text": "  - element: s-addon\r\n    group: progressing\r\n    collapsed: true\r\n"
+          "start": 118,
+          "end": 118,
+          "text": "    - element: s-addon\r\n      group: progressing\r\n      collapsed: true\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\nplacements:\r\n  - element: s-addon\r\n    x: 0\r\n    y: 0\r\ngroups:\r\n  - element: s-addon\r\n    group: progressing\r\n    collapsed: true\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\nview:\r\n  showArchived: true\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n  groups:\r\n    - element: s-addon\r\n      group: progressing\r\n      collapsed: true\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit: removing a specification's last task removes its tasks: with it (remove-when-empty).",
@@ -294,56 +364,125 @@
       "splices": [
         {
           "operation": "remove-container",
-          "start": 216,
-          "end": 216,
+          "start": 196,
+          "end": 196,
           "text": "    tasks:\r\n"
         },
         {
           "operation": "remove-entry",
-          "start": 216,
-          "end": 216,
+          "start": 196,
+          "end": 196,
           "text": "      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nplacements:\r\n  - element: s-addon\r\n    x: 0\r\n    y: 0\r\ngroups:\r\n  - element: s-addon\r\n    group: progressing\r\n    collapsed: true\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  showArchived: true\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n  groups:\r\n    - element: s-addon\r\n      group: progressing\r\n      collapsed: true\r\n"
     },
     {
-      "doc": "Undo restores the bytes before the edit: the first fold that differs from its group's default creates groups: at the end of the file.",
+      "doc": "Undo restores the bytes before the edit: the first fold that differs from its group's default creates groups: at the end of view, after the placements.",
       "undo": true,
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 361,
-          "end": 370,
+          "start": 378,
+          "end": 389,
           "text": ""
         },
         {
           "operation": "insert-entry",
-          "start": 370,
-          "end": 437,
+          "start": 389,
+          "end": 462,
           "text": ""
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nplacements:\r\n  - element: s-addon\r\n    x: 0\r\n    y: 0\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  showArchived: true\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
     },
     {
-      "doc": "Undo restores the bytes before the edit: the first pin creates placements: at the end of the file.",
+      "doc": "Undo restores the bytes before the edit: pinning it again finds view: and creates only placements:, at the end of view, after the switch.",
       "undo": true,
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 306,
-          "end": 319,
+          "start": 315,
+          "end": 330,
           "text": ""
         },
         {
           "operation": "insert-entry",
-          "start": 319,
-          "end": 361,
+          "start": 330,
+          "end": 378,
           "text": ""
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  showArchived: true\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit: turning on the switch in a file without view: creates view: at the end of the file and inserts showArchived into it, one ensure-container splice and one insert-key at one offset (FBL 0.4, an attribute's create).",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 286,
+          "end": 293,
+          "text": ""
+        },
+        {
+          "operation": "insert-key",
+          "start": 293,
+          "end": 315,
+          "text": ""
+        }
+      ],
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit: unpinning it leaves placements: empty and view: with it, so both are removed, outermost first, before the entry (remove-empty-levels).",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "remove-container",
+          "start": 286,
+          "end": 286,
+          "text": "view:\r\n"
+        },
+        {
+          "operation": "remove-container",
+          "start": 286,
+          "end": 286,
+          "text": "  placements:\r\n"
+        },
+        {
+          "operation": "remove-entry",
+          "start": 286,
+          "end": 286,
+          "text": "    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
+        }
+      ],
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\nview:\r\n  placements:\r\n    - element: s-addon\r\n      x: 0\r\n      y: 0\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit: the first pin creates both missing levels, view: at the end of the file and placements: inside it, one ensure-container splice each, outermost first, then the entry (FBL 0.4, create at end).",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 286,
+          "end": 293,
+          "text": ""
+        },
+        {
+          "operation": "ensure-container",
+          "start": 293,
+          "end": 308,
+          "text": ""
+        },
+        {
+          "operation": "insert-entry",
+          "start": 308,
+          "end": 356,
+          "text": ""
+        }
+      ],
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n    tasks:\r\n      - id: t-a1\r\n        title: Write the plan\r\n        status: progressing\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit: the first task of a specification creates its tasks: right after its status (create: after status).",
@@ -351,18 +490,18 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 216,
-          "end": 228,
+          "start": 196,
+          "end": 208,
           "text": ""
         },
         {
           "operation": "insert-entry",
-          "start": 228,
-          "end": 306,
+          "start": 208,
+          "end": 286,
           "text": ""
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\nspecifications:\r\n  - id: s-addon\r\n    project: p-notion\r\n    name: Hype cycle add-on\r\n    status: pending\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit: the first specification creates specifications: at the end of the file; its project is a reference by id.",
@@ -370,18 +509,18 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 109,
-          "end": 126,
+          "start": 89,
+          "end": 106,
           "text": ""
         },
         {
           "operation": "insert-entry",
-          "start": 126,
-          "end": 216,
+          "start": 106,
+          "end": 196,
           "text": ""
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit: the first project creates projects: at the end of the file (insert.create, end-of-document).",
@@ -389,27 +528,14 @@
       "splices": [
         {
           "operation": "ensure-container",
-          "start": 47,
-          "end": 58,
+          "start": 27,
+          "end": 38,
           "text": ""
         },
         {
           "operation": "insert-entry",
-          "start": 58,
-          "end": 109,
-          "text": ""
-        }
-      ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\n"
-    },
-    {
-      "doc": "Undo restores the bytes before the edit: turning on the switch in a new file inserts showArchived right after the header, the one key bound before it.",
-      "undo": true,
-      "splices": [
-        {
-          "operation": "insert-key",
-          "start": 27,
-          "end": 47,
+          "start": 38,
+          "end": 89,
           "text": ""
         }
       ],
@@ -420,13 +546,19 @@
       "redo": true,
       "splices": [
         {
-          "operation": "insert-key",
+          "operation": "ensure-container",
           "start": 27,
           "end": 27,
-          "text": "showArchived: true\r\n"
+          "text": "projects:\r\n"
+        },
+        {
+          "operation": "insert-entry",
+          "start": 27,
+          "end": 27,
+          "text": "  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
         }
       ],
-      "expect": "agent-activity-diagram: 1\r\nshowArchived: true\r\n"
+      "expect": "agent-activity-diagram: 1\r\nprojects:\r\n  - id: p-notion\r\n    name: etalii.adp.ide.notion\r\n"
     }
   ]
 }
