@@ -3,8 +3,10 @@
   "title": "Knowledge designer: design amended to your ruling (DESL and DED stand alone, nothing from DISL or DID; L4 rewritten, a DED 0.1 section added, write-behind recorded)",
   "filePath": ".spec-workflow/specs/knowledge-designer/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T00:23:56.537Z",
   "category": "spec",
-  "categoryName": "knowledge-designer"
+  "categoryName": "knowledge-designer",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T00:34:45.980Z"
 }

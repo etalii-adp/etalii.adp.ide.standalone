@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/knowledge-designer/design.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1791477894604_7g4d99b9u",
       "approvalTitle": "Knowledge designer: design (file shape, FBL bindings, DESL 0.1, host seams; approving accepts language decisions L1-L5 at their defaults)"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-10-09T00:34:45.975Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791505436537_359u736ke",
+      "approvalTitle": "Knowledge designer: design amended to your ruling (DESL and DED stand alone, nothing from DISL or DID; L4 rewritten, a DED 0.1 section added, write-behind recorded)"
     }
   ]
 }
