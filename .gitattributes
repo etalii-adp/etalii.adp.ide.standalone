@@ -117,6 +117,11 @@ src/client/src/generated/**   text eol=lf
 # `.fdg` (its Requirement 2.5), with the same `crlf-line-endings` / `lf-line-endings` fixture pair.
 # Added before its first fixture, for the reason given above.
 *.ghg   -text
+# `.aad` is the agent-activity-diagram module's document. Its Requirement 2.7 is that an edit
+# changes only the bytes it concerns, its fixtures' offsets are byte offsets, and agents write it
+# with whatever line ending they have - so its bytes are the test subject, as `.fdg`'s are.
+# Added before its first fixture, for the reason given above.
+*.aad   -text
 # `.ttl` and `.nt` belong to the RDF family, whose round-trip requirement byte-compares them -
 # and unlike `.yml`, these extensions mean Turtle and N-Triples everywhere in the tree, so the
 # by-extension rule applies exactly as written above: the guarantee follows the format.

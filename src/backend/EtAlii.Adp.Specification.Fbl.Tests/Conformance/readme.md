@@ -11,6 +11,16 @@ Everything in this folder except this readme is copied, unchanged, from [`etalii
 
 `.gitattributes` keeps the fixture inputs and registrations (`*.yml`, `*.json`, `*.cld`, `*.adp`, and `*.tml`, `*.mm`, `*.dsl` through the repository-wide rules) from line-ending conversion, because the fixtures' offsets are byte offsets into them.
 
+**Added since, from the same folder and from `definitions/diagrams/` at commit `2ab1d8f`** (`develop`, 2026-10-09, the merge of etalii.adp #106): the binding `agent-activity-diagram.fbl` and the three fixtures `fixtures/agent-activity-read`, `-edits` and `-new`, written against FBL 0.3. The rest of the corpus is still the FBL 0.1 copy named above; the bindings and fixtures FBL 0.2 and 0.3 added for other tool types are not vendored here yet.
+
+Three things the runner does for those fixtures, each because FBL leaves it to the host or to the tool type's specification and none of them is an edit to a fixture:
+
+- **The binding is found beside the others.** A tool type's fixture names its binding under `definitions/`, a folder this corpus does not have.
+- **A refusal's text is compared only where the binding gives it.** FBL words a refusal only there; elsewhere the reason is the host's own (etalii.adp #107 says so in section 15.3).
+- **A removal also clears the keys that named the removed element**, which is the default deletion policy of the tool type's specification, not FBL's; and the attributes that specification types as a date-time are named to the library, which FBL 6.3 needs to write them plain.
+
+Splices are compared in body order, those at one offset as listed: FBL orders only splices at the same offset, and the 0.3 fixtures list a cascaded removal bottom-up where this library lists every edit in body order.
+
 ## What this corpus does not demonstrate
 
 - **No persistence plugin runs.** `helm-chart.fbl` and `w3c-turtle.fbl` are plugin-read bindings; only what the host declares for them (routing, recognition, the registration, templates) is exercised.

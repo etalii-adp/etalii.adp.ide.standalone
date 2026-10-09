@@ -537,7 +537,12 @@ internal sealed class BodyReading
             index = new Dictionary<string, ReadElement>(StringComparer.Ordinal);
             foreach (var element in Elements.Where(e => reference.To.Contains(e.Rule.Name)))
             {
-                index.TryAdd(NewText.Plain(element.Attributes.GetValueOrDefault(reference.By), null), element);
+                // `by: "id"` names an entry by the id its rule stores with `id.from` (FBL 5.2): `id` is
+                // never an attribute's name, since DISL reserves it, so there is no attribute to read.
+                var named = reference.By == "id" && !element.Attributes.ContainsKey("id")
+                    ? (element.IdStored ? element.Id : null)
+                    : NewText.Plain(element.Attributes.GetValueOrDefault(reference.By), null);
+                if (named is not null) index.TryAdd(named, element);
             }
             _referenced[reference] = index;
         }

@@ -16,6 +16,10 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 {
     private List<Span> _leaves = [];
 
+    // The attribute bindings the host says hold a date or a date-time, found once by reference.
+    private readonly HashSet<AttributeBinding> _timeTyped = [.. binding.AllRules
+        .SelectMany(rule => rule.Attributes.Where(attribute => options.TimeAttributes.Contains($"{rule.Name}.{attribute.Key}")).Select(attribute => attribute.Value))];
+
     public override string FamilyName => "yaml";
 
     protected override IReadOnlyList<Span> Leaves => _leaves;
@@ -138,8 +142,8 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
 
     private string String(string value, TreeValue? old, AttributeBinding? binding, int keyIndent)
     {
-        var timeTyped = binding?.KeepTimePrecision == true;
-        if (timeTyped && old is { Kind: ValueKind.Scalar, Text.Length: > 0 }) value = NewText.KeepPrecision(old.Text, value) ?? value;
+        var timeTyped = binding?.KeepTimePrecision == true || (binding is not null && _timeTyped.Contains(binding));
+        if (binding?.KeepTimePrecision == true && old is { Kind: ValueKind.Scalar, Text.Length: > 0 }) value = NewText.KeepPrecision(old.Text, value) ?? value;
         var multiline = value.Contains('\n') || value.Contains('\r');
         switch (old?.Style)
         {
