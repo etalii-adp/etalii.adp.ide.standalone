@@ -79,6 +79,7 @@ import {
 import { effectiveDefinition, type DiagramRuntimeConfig } from "./api/diagramRuntimeConfig";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "./api/diagramModel";
 import { layoutAlgorithmFor, type LayoutInput, type LayoutPositions } from "./layout/layoutAlgorithm";
+import { useAnimatedPlacements } from "./layout/useAnimatedPlacements";
 import type {
   AnchorSet,
   BuiltInShape,
@@ -442,15 +443,19 @@ export function DiagramCanvasCore({
     return positions;
   }, [layoutAlgorithm, layoutInput, definition.layout]);
 
+  // A layout that remembers its placements moves elements when the model changes, and the way
+  // there is drawn rather than jumped; the others re-place from the model and are drawn at once.
+  const drawnPositions = useAnimatedPlacements(layoutPositions, layoutAlgorithm?.signature !== undefined);
+
   const elements = useMemo(
     () =>
-      layoutPositions === null
+      drawnPositions === null
         ? model.elements
         : model.elements.map((element) => {
-            const at = layoutPositions.get(element.id);
+            const at = drawnPositions.get(element.id);
             return at === undefined ? element : { ...element, x: at.x, y: at.y, width: at.width ?? element.width };
           }),
-    [model.elements, layoutPositions],
+    [model.elements, drawnPositions],
   );
 
   const elementsById = useMemo(() => new Map(elements.map((element) => [element.id, element])), [elements]);
@@ -2303,6 +2308,29 @@ export function DiagramCanvasCore({
               {layoutToggle.caption}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Declared switches: drawn whether or not a filter is declared, and showing the document's
+          value - the canvas holds none of its own. */}
+      {(definition.chrome?.switches ?? []).length > 0 && (
+        <div className="library-switches" data-testid="library-switches">
+          {(definition.chrome?.switches ?? []).map((declared) => {
+            const on = valueAtPath(declared.on, chromeSource) === true;
+            return (
+              <button
+                key={declared.id}
+                type="button"
+                role="switch"
+                className="library-switch"
+                data-switch={declared.id}
+                aria-checked={on}
+                onClick={() => raise({ kind: "switch-toggled", id: declared.id, on: !on })}
+              >
+                {declared.caption}
+              </button>
+            );
+          })}
         </div>
       )}
 

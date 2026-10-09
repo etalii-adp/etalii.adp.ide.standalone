@@ -78,6 +78,8 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
       "library-link",
       "library-link-glyph",
       "library-link-hit",
+      "library-switch",
+      "library-switches",
     ],
   },
   {

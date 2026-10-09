@@ -1,4 +1,4 @@
-import { formatEpochSeconds, holds, resolveMany, resolveOne, type Binding, type BindingSource, type Condition, type TemporalFormat } from "./binding";
+import { formatEpochSeconds, holds, resolveMany, resolveOne, type Binding, type BindingSource, type Condition, type TemporalFormat, type BindingPath } from "./binding";
 import type { LabelTypography } from "./diagramDefinition";
 
 /**
@@ -121,6 +121,27 @@ export interface ChromeDeclaration {
   title?: ChromeTextDeclaration;
   legend?: ChromeLegendDeclaration;
   rulers?: readonly RulerDeclaration[];
+  /**
+   * Switches drawn over the canvas, each showing a value the document holds. See
+   * {@link SwitchDeclaration}.
+   */
+  switches?: readonly SwitchDeclaration[];
+}
+
+/**
+ * A two-state switch over the canvas whose state is the DOCUMENT's, not the view's.
+ *
+ * The filter box and the layout toggle are view state: held by the canvas, sent nowhere, gone
+ * when the diagram closes. This is the other kind - "show archived specifications" is something
+ * the reader sets and finds set again tomorrow, on another machine - so the canvas holds nothing:
+ * it draws what the model's background says and raises a request when the switch is pressed.
+ */
+export interface SwitchDeclaration {
+  /** Names the switch in the event it raises. */
+  id: string;
+  caption: string;
+  /** A path into the model's background to the switch's value. Anything but `true` reads as off. */
+  on: BindingPath;
 }
 
 /** One resolved chrome line. */

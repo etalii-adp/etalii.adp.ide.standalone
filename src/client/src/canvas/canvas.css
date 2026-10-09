@@ -542,6 +542,30 @@
   box-shadow: inset 0 0 0 1px var(--color-primary, limegreen);
 }
 
+/* Declared switches: the document's own two-state settings, in the corner the filter box leaves free. */
+.library-switches {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.library-switch {
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--color-text, #1f2430);
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #d6dae2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.library-switch[aria-checked="true"] {
+  border-color: var(--color-primary, limegreen);
+  box-shadow: inset 0 0 0 1px var(--color-primary, limegreen);
+}
+
 /* A declared bottom ruler: HTML pinned to the canvas's own box, so it never scrolls away. */
 .library-ruler {
   position: absolute;
