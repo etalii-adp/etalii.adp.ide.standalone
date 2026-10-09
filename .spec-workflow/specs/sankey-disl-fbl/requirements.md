@@ -1,0 +1,411 @@
+# Requirements Document
+
+## Introduction
+
+The user's request, verbatim (2026-10-09):
+
+> Create spec workflow MCP specifications. One specification for converting one of the standalone diagram tools to FBL and DISL. i.e. analyse the current implementation, define the DISL and FBL and then write the specification on the refactoring., also focus on finding issues and aspects where the DISL and FBL languages do not yet cover everything.
+
+This is one of the fifteen specifications that reading gives (the series and the survey behind it are in `causal-loop-disl-fbl`, *Introduction*). It converts the **Sankey diagram** (`etalii/sankey`, `.skv`).
+
+**The Sankey diagram is on neither language.** A DISL definition exists in etalii-adp/etalii.adp, written against DISL 0.1 and not bundled here. No FBL binding exists anywhere, so this document drafts one: the body is YAML read with YamlDotNet and written by line splices, which makes it a declared binding of the `yaml` family, the family of the timeline and the hype cycle graph. It is not one of the formats FBL 11.5 expects to stay a persistence plugin.
+
+**What "converted" means here** is what it means for the hype cycle graph today: the toolbox, context menus, property rows, findings and refusals are derived from a bundled DISL definition by `EtAlii.Adp.Specification.Disl`, the body is read and written through an FBL binding by `EtAlii.Adp.Specification.Fbl`, and the module keeps code only for what neither language can state. For this tool that remainder is large on purpose: nothing in a Sankey diagram has a stored position, so the layout that computes every bar and band stays code.
+
+## What was measured
+
+Read on 2026-10-09: the module at `develop` `9a646009`; `definitions/diagrams/sankey.dis` and `.md`, the DISL specification (0.3 draft) and the FBL specification (0.2 draft) in etalii-adp/etalii.adp at `develop` `da64ff0`; and the two libraries in this repository.
+
+| Thing | State |
+| --- | --- |
+| The module's backend | 3,224 lines of C# in 39 files. `SankeyParser` (260 lines) reads with YamlDotNet; `SankeyWriter` (273) writes through the shared `LineSplice`; `SankeyValidator` (136), `SankeyContextActionProvider` (259), `SankeyContextPropertyProvider` (192) and `SankeyToolboxProvider` (20) hold the findings, menus, rows and palette as code; `SankeyLayout` (372) and `SankeyArrangement` (197) compute every position. 11 test files, 1,362 lines. |
+| The module's client | 589 lines outside tests. `SankeyCanvas.tsx` (350) holds a hand-written canvas definition that draws each flow as a filled ribbon. |
+| The DISL definition | Exists in etalii.adp, 818 lines, **written against DISL 0.1**, last changed 2026-10-04. It is not bundled here (`src/diagrams/sankey/definition/` does not exist). It declares `persistence.format` as a plugin and the layout as a second plugin with five CEL functions. |
+| The FBL binding | None, in either repository. The appendix drafts one. |
+| The real-file check | None. `RealFiles/divergences.json` has no entry for this tool and `ModuleCrossCheck.Tests` reads no `.skv`. |
+| The corpus | 12 `.skv` files: six fixtures (`crlf-line-endings`, `lf-line-endings`, `no-trailing-newline`, `malformed-entries`, `not-yaml`, `rules-broken`) and three examples, each also under `src/examples/diagrams/sankey/`. |
+| A parity transcript | None. |
+| The registration | Two lines, the origin and `body:`. No position is stored, so there is no `layout:` block to keep. |
+
+**How each finding below is known** is marked, because nothing was built or run: *read* is a reading of the code or the definition against the specification text; *recorded* is a fixture, a test or a sentence in the code that already holds it; *measured* is a search whose command is in *Sources*. Requirement 1 turns every *read* finding into a fixture before anything is changed.
+
+## Findings
+
+The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is repaired in the definition or the binding, a **runtime gap** in this repository's libraries, a **language gap** in etalii-adp/etalii.adp. A **module defect** is a fault of today's code that the conversion would repair by accident and that is fixed on purpose instead.
+
+### A. The DISL definition against the module
+
+| # | Finding | Kind | Known |
+| --- | --- | --- | --- |
+| A1 | The definition is DISL 0.1. The client's `parseDisl` refuses anything but 0.3, and every bundled definition here is 0.3. It must be rewritten at 0.3 before it can be bundled. | Definition defect | Read |
+| A2 | Its companion document lists ten "DISL 0.1 gaps". Seven have been answered since and the definition still works around each: a derived id (`from->to`; a per-type `derived` rule, DISL 11.5.2), a deletion confirmation that asks only when there are flows and names how many (`count`, `threshold`, 9.5), a menu on the empty canvas (`diagram` in `contextMenus[].for`), a toolbox entry that is dropped (`mode: "drop"`, 7.2), anchors on the left and right sides only (`sides`, 6.9), an end attached at a fraction along a side (`part` anchoring with `at`, 6.10), and one attribute shown as two rows (`id`, `display` and `parse` on a form item, 7.5). | Definition defect | Read |
+| A3 | The definition has no **Arrange diagram**. The module gained the action `sankey.arrange`, `SankeyArrangement` and the sentences "There is nothing to arrange until this diagram has a node." and "This diagram is already arranged." on 2026-10-04, the day the definition was last changed, and neither the `.dis` nor the `.md` names them. It becomes a `layout` action with `refusals` (DISL 0.3). | Definition defect | Measured |
+| A4 | `persistence` names a plugin that reads and writes the body. With the binding it becomes `format: "fbl"` with a `typeMap`, and the keys DISL 11.2 forbids beside a binding (`encoding`, `newline`, `mediaType`, `files`, `ordering`, `omitDefaults`, `precision`, `definition`) go. | Definition defect | Read |
+| A5 | The definition gives no wire ids. The module's 9 action ids, 9 property ids and 1 toolbox id are what the client's `sankeyIds.ts` and the backend share. The definition already uses the key `x-sankey` on its two types for something else (`documentList`), which the binding makes redundant. | Language gap, already ruled: wire ids stay an `x-` block (Peter, 2026-10-06, "Spec all but wire ids"). | Read |
+| A6 | **Ids.** A node's wire id is the id written in the file; a flow's is the id it states, or `from->to` when it states none, which is nearly every flow. The definition says `strategy: "nanoid"` for both and describes the flow's id in prose. A new node gets a ShortGuid, which is `uuid-v4` with `encoding: "base36"`; a flow needs a per-type `derived` rule; and the default id `pattern` admits neither the `>` of `from->to` nor a hand-written id with a space or an accent, both of which the module reads as written. | Definition defect | Read |
+| A7 | **An entry that is not drawn.** A node without an id, and every second and later holder of an id, is reported as an error and **not drawn**, its flows do not count towards any value, and no id is ever written for it. DISL 11.5.4 says the second and later holders "MUST be drawn", and gives an element without an id either a new id that is "written with the next save" (`missing: "assign"`) or a drawing with an ephemeral id (`"ephemeral"`). Neither says "kept and not drawn". | Language gap; behaviour change to rule on (Q5) | Read |
+| A8 | **The order of findings.** The module sorts every finding by its line, whatever its code (`OrderBy(breach => breach.Line)`). DISL orders by kind (reader, built-ins, declared rules), or with `constraints.order` by the position of the code and only then by line. A list that follows the file from top to bottom across codes is neither. | Language gap | Read |
+| A9 | **Which finding silences which.** A flow to itself is reported as `sankey.self-flow` and as nothing else. A flow with a missing end is reported once per missing end as `sankey.dangling-flow`, and its value and colour are then not checked. The definition's `missingValue`, `negativeValue` and `unknownColor` rules carry no such guard, and its messages read `self.source.id` and `self.target.id`, which are unset on exactly those flows. `sankey.missing-id` and `sankey.duplicate-id` are called "Not expressible" and are `std.missingId` and `std.duplicateId` with a `code`, a severity of error and a computed `message` (the duplicate has two sentences, one for an id and one for "A flow from `a` to `b` is written twice; …"). | Definition defect | Read |
+| A10 | **`sankey.unreadable` is nine sentences of the reader's**, and in eight of them the entry is still read and drawn: an unknown key, a number that will not read, a `column` that is not a whole number from 1, a `flow-color` that is neither word, a `thickness` not above zero, and the three about the header. DISL's `std.unreadableEntry` is for an entry that "is kept and not drawn", and `hostAttributes`, where the hype cycle keeps its `unknownKeys`, "are not visible in CEL, forms or constraints". So these sentences cannot be declared, and stay a module reader over the binding's elements, as `GhgParser.ReaderFindings` is. | Language gap | Read |
+| A11 | The definition calls CEL functions this repository's runtime does not register: `sum()` on a list, `cel.bind` and `formatNumber`. The five functions of its layout plugin (`sankeyColumn`, `sankeyColumnCount`, `sankeyScale`, `sankeyTop`, `bandAt`) are the host's to supply through `DislPluginFunctions`, which exists. | Runtime gap | Measured |
+| A12 | A node's `value` is declared as derived over every incoming and outgoing flow. The module's value counts only **drawn** flows (`SankeyLayout.Values`): a duplicate, a self-flow or a flow with a missing end adds nothing. | Definition defect | Read |
+| A13 | **Thickness is clamped when it is read.** A file that says `thickness: 50` is drawn at 10, and Thinner bands writes `8`. The definition's operations compute from the attribute as written, so the same press writes `10`. | Definition defect | Read |
+| A14 | **Rows that show something other than the stored value.** Step shows the default step as its value when the flow states none (the definition makes it a placeholder); Column shows `auto`; Colour shows `(default)` and `(custom)`; numbers are shown as `0.####`; Rename is prefilled with the label, which is the id when there is no name. The disabled Thicker and Thinner entries say "… as thick as they go." while the command refuses with "… as thick as this diagram draws them."; the definition has the first sentence only in a `doc`. | Definition defect (`display`, `parse`, `unavailable`) | Read |
+| A15 | **What DISL 0.3 still cannot state of the notation and the gestures.** A flow is a filled ribbon whose thickness is measured vertically along its whole length, where DISL has stroked edges only. Its control points lie `max(40, half the horizontal distance)` from each end, and `BezierSpec`'s `auto` is "at least 30". A node is reordered by dragging it up or down a column the layout computed, and DISL's `reorder` gesture is for a child of an ordered container. A dropped node takes its place among the top-level entries by geometry and has its `column` written from the drop point, and a parent placement (9.1) chooses an index only under a parent. | Language gap | Read |
+| A16 | The layout, the arrangement, the viewport filter and the `.proto` payloads are the host's and stay code. This is not a gap: DISL names the layout as a plugin. | None | Read |
+
+### B. The FBL binding against the module's reader and writer
+
+| # | Finding | Kind | Known |
+| --- | --- | --- | --- |
+| B1 | **A text value is the text it was written with.** `id`, `name`, `color`, `note`, `format`, `description`, `from` and `to` are read as the scalar's text, so a node named `2050` or an id written `1` is that text. FBL's YAML reading types a plain scalar by the core schema. This is the timeline's finding B1, and it blocks this conversion the same way. | Language gap | Recorded for the timeline (`TimelineDisl.cs`); read here. No `.skv` in the corpus holds such a scalar. |
+| B2 | **A number is read from the scalar's text, quoted or not, by .NET.** `value: "12"` is 12 to the module and a string to FBL. `value: 0x10` is "not a number and was ignored" to the module and 16 to FBL's core schema; `.inf` is refused by the module and infinity to FBL. | Language gap (the same construct as B1) | Read |
+| B3 | **A value that will not read does not cost the entry.** `value: lots` leaves a flow that is drawn as a hairline, with the module's sentence on the value's line. FBL 7.4 makes an entry with "a value that does not convert to the attribute's type" an unreadable entry that produces no element. For `thickness: wide` and `flow-color: sideways` the entry is the root mapping, that is, every document-wide setting. The hype cycle's answer is untyped slots and a module reader that converts and reports. | Language gap, with a known detour | Recorded on the module's side (`malformed-entries.skv`); read on FBL's |
+| B4 | **Unknown keys** are reported one by one, each on its own line, for a node, a flow and the root ("`colour` is not a key this module reads on a node; the line is kept."). The hype cycle's computed `unknownKeys` attribute answers it. | Definition defect, with a known pattern | Read |
+| B5 | **An entry that is not a mapping** is passed over with "A node entry is not a mapping and was passed over.". The hype cycle's pair of rules answers it: `when: "entry.all(k, true)"` on the list's rule and an `Unreadable` rule behind it. | Definition defect, with a known pattern | Recorded (`malformed-entries.skv`) |
+| B6 | **A flow whose end names no node** is kept, not drawn and reported. FBL 5.4 creates no relation. The pattern is the hype cycle's: the binding reads a flow as an element with reference attributes, and `typeMap` makes it a relation with an unset end. | Definition defect, with a known pattern | Recorded (`rules-broken.skv`) |
+| B7 | **A flow has no `id` key and a new one must write none.** An FBL rule with `id.from` writes a generated id when the element is created. The flow rule therefore declares no `id`, binds the stated id as an attribute, and the definition derives the id (A6). Nodes and flows share one id space and the first holder wins, which is the hype cycle's `storedId`. | Definition defect, with a known pattern | Read |
+| B8 | **A body that is not YAML stays editable today.** The parser answers an empty model with one `sankey.unreadable` warning that quotes YamlDotNet's message. `SankeyEdits.Run` refuses an edit only when the *store* could not read the file, so "Add node here" is offered and splices lines into text that does not parse. FBL 7.5 opens such a body empty and read-only, never writes it, and reports `std.unparseable`, an error. | Behaviour change to rule on (Q3) | Read; the model's side is recorded (`not-yaml.skv`) |
+| B9 | **A key written twice in one mapping.** YamlDotNet refuses the document, so the whole diagram is one "could not be read as YAML" warning. FBL 7.4 binds the first and reports `fbl.duplicate-key`. | Behaviour change to rule on (Q4) | Read |
+| B10 | **The header.** The module reads `sankey:` wherever it stands in the root mapping, quoted or not, and has three sentences under `sankey.unreadable`: a missing header (reported on line 1), a version that is not a number, and a version other than 1. A document with no root mapping reports nothing at all. FBL's `header` reports one `fbl.header-mismatch`, and DISL's `builtIn` settings name no `fbl.` code, so neither its code nor its sentence can be set. The draft declares no `header` and reads the version as an attribute. | Definition defect; language gap for the code | Read |
+| B11 | **What a changed value writes.** `LineSplice.SetKey` replaces the whole line with the key and a value quoted by `SankeyWriter.Text`. A trailing comment on the line is lost and the author's quotes are decided again: the module quotes any value holding `:` or `#` and leaves `on`, `off` and a date plain. FBL replaces the value's span in its own style. `thickness` is rewritten as a whole line in the same way. | Behaviour change to rule on (Q1) | Read |
+| B12 | **Where a new key goes.** A key an entry does not have yet is written directly after the entry's first line. A missing `thickness:` is written directly under the `sankey:` line. FBL places both by the order of `insert.keys` or of the attributes. | Behaviour change to rule on (Q1) | Read |
+| B13 | **A new entry.** Its indentation and the gap after its dash are copied from the **first** entry of its list; FBL copies the previous sibling and does not say the gap is copied (the timeline's B7). A node dropped above another is written directly before it, which FBL 0.2 states as an `add` with a `position`. A missing `nodes:` or `flows:` is created at the end of the document. The first entry of a new document goes into `nodes: []`: FBL 4.3 and 6.1 name no splice that opens an empty flow sequence, **and the library here does it anyway** (`YamlFamily.cs`: "An empty flow sequence … becomes a block sequence"), so the runtime is ahead of the text. | Behaviour change (Q1) for the indentation; language gap in the text for the flow sequence | Read; the library's handling is measured |
+| B14 | **Comments above an entry.** The module's range of an entry starts at its dash and stops before trailing blank and comment lines, so removing or moving a node leaves a comment above it where it was. FBL's line span is "extended upwards over its leading comments", so the comment goes with the entry. No `.skv` in the corpus has an indented comment line. | Behaviour change to rule on (Q1) | Read; the absence is measured |
+| B15 | **Numbers written.** Values, steps and the starting value of a new flow are written with `0.####`; thickness is rounded to two decimals by its command. FBL's `number: {decimals: 4}` rounds "halves away from zero". Whether the two agree on a half in the fifth decimal and on a very large value is not known. | To settle by fixture | Read |
+| B16 | **Four shapes the parser reads and the writer damages.** `LineSplice.FindKey` finds a key by the start of a line, so a line of a block-scalar description that starts with `color:` is taken for the key. An entry written as a flow mapping (`- {id: a, name: A}`) gets a block line inserted under it and no longer parses. A first key after a wide dash gap (`-   name: A`) is not found, a second `name:` is written, and the duplicate makes the document unreadable (B9). `FindSection` takes any line that starts with `nodes:` for the section. | Module defect, each fixed on purpose with its own guard | Read; none was run |
+| B17 | **The template and the document factory agree**: both are `sankey: 1`, `nodes: []`, `flows: []` with CRLF and a final newline. | None | Read |
+
+### C. Language gaps, as they would be reported to etalii-adp/etalii.adp
+
+1. **FBL: a slot that reads a YAML scalar as written** (B1, B2), for text and for a number the tool parses itself. It is the timeline's first gap; this tool adds the quoted number and the `0x` form as evidence. It blocks the conversion.
+2. **FBL: a slot whose value will not read, without losing the entry** (B3). Candidate: an attribute option that reads the slot as absent and reports a finding with the binding's own reason, so that the root mapping and a flow survive one bad value.
+3. **DISL: reader findings worded by the definition for an entry that is still drawn** (A10, B4). `std.unreadableEntry` means not drawn, and host attributes are invisible to constraints, so every binding of a hand-edited format keeps a reader in code to say "this key is not read".
+4. **FBL and DISL: the code and sentence of `fbl.header-mismatch`** (B10). DISL's `builtIn` reaches `std.` codes only.
+5. **FBL: opening an empty flow sequence** (B13). The library does it; sections 4.3 and 6.1 should say so, or two hosts will write different bytes into the template's own document.
+6. **FBL: what a new sequence item copies** (B13): the gap after the dash, and whether the model is the previous sibling or the list's first entry, if the fixture shows other bytes.
+7. **DISL: an entry that is kept, reported and not drawn** (A7), for a missing id and for a second holder of an id.
+8. **DISL: findings in the order of the file** (A8).
+9. **DISL: the notation and gestures of A15**: a ribbon, a minimum bezier reach, reordering a top-level node within a computed column, and a drop that chooses a top-level index and writes an attribute from its point.
+
+These are candidates. Requirement 10 says they are recorded with their evidence and reported, and never worked around silently.
+
+## Open questions
+
+Each is put to the user as a selection. The option marked **(default)** is what this document is written against until the user rules otherwise.
+
+| # | Question | Options | Criteria affected |
+| --- | --- | --- | --- |
+| Q1 | When an edit changes one value, adds one key, or removes or moves an entry, what is written (B11 to B14)? | **(default) What FBL writes**: the value's own span in its own style, a new key where the binding orders it, a leading comment travelling with its entry; a trailing comment and the author's quotes survive, and the transcript's edit hunks are regenerated once and reviewed as a diff. · **What the writer writes today**: the transcript stays byte-identical, and FBL needs a whole-line rewrite, a key placed after the first line and a line span without leading comments, each a language change first. · Other. | 5.2, 5.3, 1.4 |
+| Q2 | The lenient readings of B2 (a quoted number, `0x10` refused): keep them? | **(default) Yes**: no file that opens today opens differently, which waits on gap 1. · **No**: FBL's core-schema reading becomes the format, a quoted number is reported, and the corpus is checked for it. · Other. | 4.2 |
+| Q3 | A body that is not YAML can be edited today (B8). | **(default) Read-only, as FBL 7.5 requires**, with the store's existing sentence "… could not be read, so nothing can be edited until it can: …"; the finding keeps its code `sankey.unreadable`, its severity and its sentence through `std.unparseable`'s settings. Recommended because the other option writes into text nothing can read back, and needs a language change. · **Editable, as today**. · Other. | 4.6 |
+| Q4 | Findings and readings the languages would add: a duplicated key read instead of refused (B9), `fbl.header-mismatch`, a finding for a value or colour on a flow that is already dangling (A9). | **(default) Switched off in this conversion**, so the findings before and after are the same list, a duplicated key still makes the document unreadable, and each is raised afterwards as a small change of its own. · **Adopted now**, each named in the transcript's diff. · Other. | 3.3, 4.5 |
+| Q5 | A node without an id, and a later holder of an id, is not drawn and never given an id (A7). | **(default) Keep that**: `missing: "ephemeral"`, nothing written, and the entry hidden by the notation until DISL has a construct for it. · **Follow DISL**: such an entry is drawn, a node without an id gets one at the next save, and values and columns change for the documents that hold one. · Other. | 3.4 |
+| Q6 | Gap 1 blocks the conversion until FBL answers it. What happens meanwhile? | **(default) Report the gap and wait**, as `timeline-disl-fbl` Q3 does; Requirements 1 to 3 and 9 do not depend on it and proceed. · **Work around it**: the module's reader turns FBL's typed values back into text, which loses `1.0` against `1`. · **Narrow the format**: a text that reads as a number or a boolean must be quoted. · Other. | 4.2 |
+| Q7 | Is the client's canvas definition in scope? | **(default) Yes**, compiled from the bundled definition with `compileNotation`, with the ribbon and the column drag stated in a `NotationBindings` as standing in for A15. · **No**: backend only. · Other. | 8 |
+
+## Alignment with Product Vision
+
+The product direction (2026-09-26) is that every tool is a markup definition interpreted by a core in each IDE, with code only where a definition cannot reach. The Sankey diagram is the test of that sentence's second half: it is the tool in which nothing is placed by the user, so the conversion shows how much of a layout-driven tool a definition can carry and where the plugin boundary falls. It follows `structure.md`'s rule that a diagram type adds declarations and no core code: what the libraries lack (A11) is added to the libraries for every tool.
+
+## Requirements
+
+### Requirement 1: An oracle before any change
+
+**User Story:** As the owner of the tool, I want what it answers today frozen before anything is converted, so that every later step is held to it.
+
+#### Acceptance Criteria
+
+1. WHEN the work starts THEN a parity transcript `Parity/sankey.transcript.json` SHALL be generated from today's hand-written code and committed before any provider, parser or writer is changed, in the shape of the timeline's: per document, the context menu of every element, of the empty canvas, of a placement, of a connect gesture and of an unknown id; the property rows of every element; the findings; the payload of every mapped element; and a scripted edit sequence with each step's answer and the hunks it made to the text.
+2. The corpus SHALL be the six fixtures, the three examples and their copies, and **one new fixture for each finding of tables A and B marked Read that concerns a file** (A7, A9, A12, A13, B1 to B4, B8 to B16), written so that the finding either shows in the transcript or is struck from this document with the reason.
+3. A test SHALL require today's code to reproduce the checked-in transcript byte for byte, and SHALL have been seen to fail against a deliberately changed sentence before it is trusted.
+4. WHEN a later step changes the transcript THEN the change SHALL be one this document names (Q1, Q3, B16), regenerated on purpose, and the diff of the checked-in file SHALL be the review of it.
+5. `ModuleCrossCheck.Tests` SHALL read every `.skv` under `src/` through the drafted binding and compare ids per type with `SankeyParser`, and each disagreement SHALL be an entry of `RealFiles/divergences.json` until it no longer occurs.
+
+### Requirement 2: The definition, at DISL 0.3, bundled
+
+**User Story:** As a tool engineer, I want one definition of the Sankey diagram that every host runs.
+
+#### Acceptance Criteria
+
+1. `definitions/diagrams/sankey.dis` in etalii-adp/etalii.adp SHALL be rewritten at DISL 0.3, using the constructs finding A2 names in place of each workaround, with Arrange diagram (A3), the guards of A9, the value over drawn flows (A12), the clamped thickness (A13) and the rows of A14, and SHALL validate against the DISL schema in that repository's checks.
+2. It SHALL declare `persistence.format` `fbl` with `binding` naming the module's binding, a `typeMap`, the id rules of A6, and an `x-sankey` block mapping its tools, actions and properties to today's wire ids (A5).
+3. Its companion `sankey.md` SHALL be rewritten to say what DISL 0.3 cannot express, which is A7, A8, A10, A15 and whatever Requirement 10 adds, and nothing that 0.3 can.
+4. The definition SHALL be bundled into `src/diagrams/sankey/definition/` by `src/diagrams/tools/bundle-disl.sh`, never edited here, embedded in the backend project, and held by a `BundledDefinition.Tests` like the other bundled modules'.
+5. WHEN the bundled definition is loaded by `EtAlii.Adp.Specification.Disl` THEN it SHALL load with no diagnostic of severity error.
+
+### Requirement 3: Toolbox, menus, rows and findings are derived
+
+**User Story:** As a maintainer, I want the palette, the menus, the rows and the findings to come from the definition, so that changing the tool is changing one file.
+
+#### Acceptance Criteria
+
+1. The toolbox, the context menu of every target, the property rows of a node and of a flow, the deletion confirmation and the reason on every unavailable action SHALL be derived from the bundled definition through `ToolboxDerivation`, `ContextMenuDerivation` and `FormDerivation`, mapped to the wire ids of `x-sankey`.
+2. Every sentence a user reads today SHALL be read unchanged: "Removing this node also removes the 1 flow to or from it." and its plural, "The value is already zero.", both wordings at each end of the thickness range, "A node's value is what flows through it; change a flow's value instead.", and the choices `(default)`, `(custom)` and `auto`.
+3. The findings the definition can state (`sankey.missing-id`, `sankey.duplicate-id`, `sankey.dangling-flow`, `sankey.self-flow`, `sankey.missing-value`, `sankey.negative-value`, `sankey.unknown-color`, `sankey.backward-flow`) SHALL be derived by `ConstraintEvaluator` with today's codes, severities, sentences and lines, and no finding the tool does not give today SHALL appear (Q4).
+4. An entry the tool does not draw today SHALL not be drawn, SHALL not count towards any value or column, and SHALL have no id written for it (Q5).
+5. The findings SHALL be listed in the order of their lines, as today. WHERE DISL cannot state that order (A8) THEN the module SHALL sort the derived list, and that code SHALL be named in the companion document as standing in for a language gap.
+6. WHEN the derived answers are compared with the transcript THEN the menus, rows, findings and payloads SHALL be byte-identical.
+7. The hand-written providers' logic SHALL be kept in the test project as the oracle (`Parity/HandWrittenSankey.cs`) and removed from the product code.
+
+### Requirement 4: The body is read through the binding
+
+**User Story:** As a user, I want every `.skv` that opens today to open the same.
+
+#### Acceptance Criteria
+
+1. The module SHALL own its binding, `backend/EtAlii.Adp.Diagram.Sankey/sankey.fbl`, embedded in the backend project, and a copy SHALL be offered to etalii.adp as `specifications/fbl/sankey.fbl` with a round-trip fixture.
+2. WHEN a body is read THEN the nodes, the flows, the three document-wide settings and the version SHALL be those `SankeyParser` reads today for every document of the corpus, every text value as the text it was written with (B1) and every number as today (B2, Q2), by the construct FBL gains for it (Q6).
+3. A flow whose end names no node, or that is missing an end, SHALL be kept, not drawn, and reported once per missing end with today's sentences (B6).
+4. A value that will not read SHALL be passed over, the rest of its entry read and drawn, and reported on the value's line with today's sentence (B3); an unknown key and an entry that is not a mapping likewise (B4, B5). The sentences SHALL come from one module reader over the binding's elements, named in the companion document as standing in for gaps 2 and 3.
+5. The header's three sentences SHALL be given as today, and `fbl.header-mismatch` SHALL not appear (B10, Q4).
+6. A body that is not YAML SHALL open empty and read-only, with the one finding it gives today (Q3). Reading SHALL never throw on content.
+7. A node's id SHALL be the id written, and a flow's the id it states or `from->to`, with no id computed in module code (A6, B7).
+
+### Requirement 5: Every edit is written by splices
+
+**User Story:** As a user editing a file I also edit by hand, I want an edit to change what I changed and nothing beside it.
+
+#### Acceptance Criteria
+
+1. Every command of the module SHALL write through `EtAlii.Adp.Specification.Fbl` as a model change planned into splices; no module code SHALL build a line of YAML, and the module SHALL no longer use `LineSplice`.
+2. WHEN a value changes THEN only its span SHALL change, in its own style (Q1): a trailing comment on its line and the author's quotes SHALL survive.
+3. WHEN a key or an entry is added THEN it SHALL go where the binding declares; WHERE that differs from today's bytes (B12, B13) THEN the difference SHALL be in the regenerated transcript and named in the pull request.
+4. A new node SHALL be written with `id`, `name`, and `color` and `column` when they have values, directly before the node it was dropped above or after the last node; a new flow with `from`, `to` and `value` and no `id`; the first entry of a new document SHALL be addable; and a missing list SHALL be created at the end of the document.
+5. Moving a node in its column and Arrange diagram SHALL be planned as moves that keep each entry's own bytes, Arrange as one edit and one undo step.
+6. Removing a node SHALL remove every flow to or from it in one undo step, with the count known beforehand as today.
+7. Thicker bands and Thinner bands SHALL write the one `thickness` value, computed from the clamped value (A13).
+8. Every refusal SHALL keep today's sentence, the ones of `SetSankeyPropertyCommandHandler`, `ConnectSankeyNodesCommandHandler`, `StepSankeyValueCommandHandler` and `SankeySession` included.
+9. Undo SHALL restore the body byte for byte, and a document ADP did not change SHALL be written back byte-identical, the pair of line-ending fixtures and the one without a final newline included.
+10. Each of the four shapes of B16 SHALL be edited without damage or refused with a sentence, each held by a test seen to fail against today's writer first.
+
+### Requirement 6: The registration
+
+**User Story:** As an author, I want my project's `.adp` files untouched by the conversion.
+
+#### Acceptance Criteria
+
+1. The definition SHALL declare `view.store` empty, and no edit, move or arrangement SHALL write anything to a registration.
+2. A document opened without a history SHALL refuse a move with "This diagram is read-only.", as today.
+
+### Requirement 7: What stays code, and why
+
+**User Story:** As a maintainer, I want the code that remains in the module to be exactly what the languages cannot state, each piece with its reason.
+
+#### Acceptance Criteria
+
+1. The module SHALL keep: `SankeyLayout` and `SankeyArrangement` behind the definition's layout plugin and its five CEL functions, `SankeyFormat` and `SankeyColors` where a payload needs them, the element mapper and the viewport filter, the session and the document store, the `.proto` payloads, the reader of Requirement 4.4 and the sort of Requirement 3.5.
+2. `SankeyParser`'s YAML reading, `SankeyWriter`, `SankeyValidator`'s rules and the logic of the three providers SHALL leave the product code.
+3. WHEN the conversion is complete THEN `sankey.md` SHALL list every remaining module class beside the gap or the host concern that keeps it, and a class with neither SHALL be removed.
+
+### Requirement 8: The client
+
+**User Story:** As a user, I want the canvas to look and behave as it does, drawn from the same definition the backend runs.
+
+#### Acceptance Criteria
+
+1. The client's canvas definition SHALL be compiled from the bundled definition with `parseDisl` and `compileNotation` (Q7), with what the library cannot read from it stated in a `NotationBindings`.
+2. Today's hand-written definition SHALL be kept in a test as the oracle, and the compiled one SHALL draw the same markup for the corpus.
+3. IF `compileNotation` cannot read something the definition states THEN it SHALL be added to the shared library for every module, named for its geometry, and SHALL NOT be written in this module.
+4. A `tests.md` entry SHALL cover in a real browser, in both themes: bands meeting edge to edge at a bar, a band's thickness constant along its curve, labels left of the first column and right of the others, a hex colour and each palette word, dragging a node up and down its column with the others stepping aside, a right-button drag that draws a flow, `+` and `-` on a selected flow, dropping the toolbox entry in a later column, Thicker and Thinner to both ends, and Arrange diagram with its undo.
+
+### Requirement 9: The library work this tool needs
+
+**User Story:** As a maintainer of the shared libraries, I want each thing this tool needs added once, for every tool.
+
+#### Acceptance Criteria
+
+1. `EtAlii.Adp.Specification.Disl` and `.Cel` SHALL implement every function the rewritten definition calls and the runtime lacks (A11), each proven by a library test seen to fail first.
+2. `ConstraintEvaluator`, `ToolboxDerivation`, `ContextMenuDerivation` and `FormDerivation` SHALL support the constructs of A2 and A14 that they do not support yet; the design SHALL list which, from a load of the rewritten definition.
+3. `EtAlii.Adp.Specification.Fbl` SHALL implement what FBL gains for gaps 1 and 2, each with a conformance fixture vendored from etalii.adp; a language gap SHALL NOT be repaired here ahead of the language.
+4. No module name SHALL appear in a library change.
+
+### Requirement 10: Gaps are recorded and reported, never tuned away
+
+**User Story:** As the owner of DISL and FBL, I want every place the languages fall short reported back with its evidence.
+
+#### Acceptance Criteria
+
+1. Every language gap found, the nine of section C and any the implementation adds, SHALL be recorded in `sankey.md` with the construct concerned, the fixture or test that shows it, and what would resolve it.
+2. A gap SHALL NOT be closed by weakening a check, skipping a fixture, or stating in the definition something the tool does not do.
+3. The delivery report SHALL list every gap as a candidate change for etalii-adp/etalii.adp, every definition defect that was repaired, and the four module defects of B16.
+4. WHEN a *read* finding of this document turns out not to occur THEN it SHALL be struck here with the fixture that shows it, as a small amendment.
+
+### Requirement 11: Documentation, catalog and gates
+
+**User Story:** As a reader of the repository, I want its pages to stay true through the conversion.
+
+#### Acceptance Criteria
+
+1. `src/diagrams/readme.md`'s list of modules with a `definition/` folder, `docs/creating-a-diagram-module.md`, `docs/diagram-module-client-api.md`'s list of modules that compile their notation, and `docs/architecture.md` and `docs/solution-structure.md` where a sentence becomes false SHALL be updated in the change that makes them so.
+2. `docs/tools.md`'s row for `etalii/sankey` SHALL name this specification.
+3. All four gates SHALL exit zero on every pull request of this specification, judged by captured exit codes, and a newly created worktree SHALL be built before a green gate is trusted about the bundled definition.
+4. WHEN the tasks document is written THEN every acceptance criterion here SHALL be claimed by a task, established by diffing the two sets, and two traces SHALL be read back to their artefacts.
+
+## Non-Functional Requirements
+
+### Code Architecture and Modularity
+
+- The module ends as its definition, its binding and the code Requirement 7.1 names. Library additions are named for what they do, never for this tool.
+- The house rules apply: `src/.editorconfig`, no blocking call in an `async` method, `TestContext.Current.CancellationToken` in tests, no unneeded `using`; `.skv` and `.dis` are byte-compared and already `-text`, and `.fbl` in the module follows what the hype cycle's has.
+
+### Performance
+
+- Opening, validating, editing and arranging `uk-energy.skv` (48 nodes, 68 flows) SHALL not be perceptibly slower than today. The layout stays computed once per model and is not recomputed per CEL call of a plugin function.
+
+### Reliability
+
+- No file that opens today opens differently, except a body that is not YAML becoming read-only (Q3). An unchanged document is written back byte-identical. Undo restores bytes.
+- Every test written for a finding is seen to fail against that finding before it is trusted.
+
+### Usability
+
+- Every sentence a user reads today is read unchanged, unless this document names the change.
+
+## Out of scope
+
+- Any change to what the tool does beyond the questions above and finding B16, the implementation's known inconsistencies listed in `sankey.md` (*Known gaps*) included.
+- Changing DISL or FBL. Gaps are reported (Requirement 10); a language change is etalii.adp's own specification.
+- The layout and arrangement algorithms, and the viewport streaming model.
+- The other tools of the series.
+
+## Appendix: the binding, as drafted
+
+A draft against FBL 0.2, to be settled in the design. A flow is read as an element with reference attributes (B6) and has no `id` rule (B7); every entry carries its unknown keys (B4); the two `Unreadable` rules take an entry that is not a mapping (B5); no `header` is declared (B10). **`"as": "text"` is not FBL**: it marks every slot where the construct of gap 1 is needed (B1, B2), and on the four numbers it also stands for gap 2 (B3), since the module reader converts them.
+
+```json
+{
+  "fbl": "0.2",
+  "bindings": {
+    "skv": {
+      "title": "Sankey diagram",
+      "claims": { "extensions": [".skv"], "origins": ["etalii/sankey"] },
+      "body": { "kind": "file", "family": "yaml" },
+      "reader": "declared",
+      "text": { "newline": "crlf", "indent": 2, "sequenceIndent": "indented", "finalNewline": true, "quote": "double" },
+      "elements": [
+        {
+          "name": "document", "type": "Document", "at": "/",
+          "attributes": {
+            "version": { "key": "sankey", "as": "text", "readOnly": "The version is changed in the file itself." },
+            "format": { "key": "format", "as": "text", "readOnly": "The format is changed in the file itself." },
+            "flowColor": { "key": "flow-color", "as": "text", "readOnly": "The flow colour is changed in the file itself." },
+            "thickness": { "key": "thickness", "as": "text", "number": { "decimals": 2 } },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['sankey', 'format', 'flow-color', 'thickness', 'nodes', 'flows']))" }
+          }
+        },
+        {
+          "name": "node", "type": "Node", "at": "/nodes/*", "when": "entry.all(k, true)",
+          "id": { "from": { "key": "id" } },
+          "attributes": {
+            "storedId": { "key": "id", "as": "text", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'name', 'color', 'note', 'format', 'column', 'description']))" },
+            "name": { "key": "name", "as": "text", "empty": "refuse" },
+            "color": { "key": "color", "as": "text", "empty": "remove" },
+            "note": { "key": "note", "as": "text", "empty": "remove" },
+            "format": { "key": "format", "as": "text", "empty": "remove" },
+            "column": { "key": "column", "as": "text", "empty": "remove" },
+            "description": { "key": "description", "as": "text", "empty": "remove" }
+          },
+          "insert": {
+            "place": "after-last", "container": "/nodes", "create": { "at": "end-of-document" },
+            "keys": ["id", "name", "color", "note", "format", "column", "description"]
+          },
+          "remove": { "cascade": ["flow"] }
+        },
+        {
+          "name": "flow", "type": "Flow", "at": "/flows/*", "when": "entry.all(k, true)",
+          "attributes": {
+            "statedId": { "key": "id", "as": "text", "readOnly": true },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['id', 'from', 'to', 'value', 'step', 'color', 'description']))" },
+            "from": { "key": "from", "as": "text", "reference": { "to": ["node"], "by": "storedId" } },
+            "to": { "key": "to", "as": "text", "reference": { "to": ["node"], "by": "storedId" } },
+            "value": { "key": "value", "as": "text", "number": { "decimals": 4 }, "empty": "remove" },
+            "step": { "key": "step", "as": "text", "number": { "decimals": 4 }, "empty": "remove" },
+            "color": { "key": "color", "as": "text", "empty": "remove" },
+            "description": { "key": "description", "as": "text", "empty": "remove" }
+          },
+          "insert": {
+            "place": "after-last", "container": "/flows", "create": { "at": "end-of-document" },
+            "keys": ["id", "from", "to", "value", "step", "color", "description"]
+          },
+          "remove": {}
+        },
+        { "name": "node-not-a-mapping", "type": "Unreadable", "at": "/nodes/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
+        { "name": "flow-not-a-mapping", "type": "Unreadable", "at": "/flows/*", "readOnly": "This entry is not a mapping, so it is kept as it is." }
+      ],
+      "template": { "text": "sankey: 1\r\nnodes: []\r\nflows: []\r\n" }
+    }
+  }
+}
+```
+
+Four things in it are unsettled and are the design's to close with fixtures: where FBL writes a `thickness:` key the root mapping does not have yet (B12); whether a rule at `/` may write a key at all without an `insert`; whether the template's `nodes: []` is opened by every host (B13); and that the document rule is the one place a bad value would otherwise cost every setting (B3).
+
+## Appendix: the definition's persistence and wire ids, as drafted
+
+The rest of the definition is the existing file brought to 0.3 (Requirement 2.1). These two blocks are new.
+
+```json
+{
+  "persistence": {
+    "format": "fbl",
+    "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/sankey/backend/EtAlii.Adp.Diagram.Sankey/sankey.fbl#skv",
+    "ids": {
+      "strategy": "uuid-v4", "encoding": "base36", "stable": true, "pattern": "^.+$", "missing": "ephemeral",
+      "types": {
+        "Flow": { "strategy": "derived", "expression": "self.statedId != '' ? self.statedId : self.source.id + '->' + self.target.id" }
+      }
+    },
+    "view": { "store": [] },
+    "typeMap": {
+      "Document": { "as": "diagram", "hostAttributes": ["version", "unknownKeys"] },
+      "Node": { "as": "Node", "hostAttributes": ["storedId", "unknownKeys"] },
+      "Flow": { "as": "Flow", "attributes": { "from": "source", "to": "target" }, "hostAttributes": ["unknownKeys"] },
+      "Unreadable": { "as": "unreadable" }
+    }
+  },
+  "x-sankey": {
+    "tools": {
+      "node": { "id": "sankey.toolbox.node", "drop": "sankey.add" }
+    },
+    "actions": {
+      "addNodeHere": "sankey.add",
+      "connect": "sankey.connect",
+      "increaseValue": "sankey.increase",
+      "decreaseValue": "sankey.decrease",
+      "rename": "sankey.rename",
+      "delete": "sankey.remove",
+      "thicker": "sankey.thicker",
+      "thinner": "sankey.thinner",
+      "arrange": "sankey.arrange"
+    },
+    "properties": {
+      "name": "sankey.name",
+      "description": "sankey.description",
+      "color": "sankey.color",
+      "customColor": "sankey.custom-color",
+      "column": "sankey.column",
+      "value": "sankey.value",
+      "Value": "sankey.value",
+      "note": "sankey.note",
+      "format": "sankey.format",
+      "step": "sankey.step"
+    }
+  }
+}
+```
+
+`statedId` is a model attribute and not a host attribute, because the identity expression must read it and host attributes are not visible in CEL. The expression fails on a flow whose end is unset, which DISL reports as `std.missingId`; today such a flow is still `from->ghost` and is compared for duplicates under that id. That difference is the design's to close, with the fixture of A9. One wire id, `sankey.value`, is shared by a node's computed row and a flow's attribute row, which the two keys `Value` and `value` state.
+
+## Sources
+
+- The module `src/diagrams/sankey/` at `develop` `9a646009`: `SankeyParser.cs`, `SankeyWriter.cs`, `SankeyValidator.cs`, `SankeyDocumentFactory.cs`, `_Model/`, the three providers, `Commands/` (`SankeyEdits.cs` for B8), `SankeySession.cs`, `SankeyElementMapper.cs`, `client/sankeyIds.ts`, and the six fixtures. Counts are from `git ls-files src/diagrams/sankey` piped to `wc -l`.
+- `src/backend/EtAlii.Adp.Documents/LineSplice.cs` (`FindKey`, `SetKey`, `IndentOf`, `InsertionPointFor`, `Quote`) and `YamlNodeRange.cs` for B11 to B14 and B16.
+- etalii-adp/etalii.adp at `develop` `da64ff0`: `definitions/diagrams/sankey.dis` and `.md`, read with `git show origin/develop:…`; a search of the `.dis` for `arrange` finds the word in two descriptions and in no operation (A3), and `git log` dates both the definition and the module's Arrange commit 2026-10-04. `specifications/disl/DISL-specification.md` (0.3 draft: *Changes from 0.1*, *Changes from 0.2*, sections 6.10, 7.2, 7.5, 8.1, 8.6, 8.7, 9.1, 9.5, 11.2, 11.5); a search of it for `ribbon` and for `header-mismatch` finds nothing. `specifications/fbl/FBL-specification.md` (0.2 draft: sections 3, 4.1, 4.3, 5.1 to 5.7, 6.1 to 6.4, 7.4, 7.5).
+- For A11: the names registered by `CelFunction.Global`, `.Receiver`, `.Method` and `new CelFunction` across `EtAlii.Adp.Specification.Cel` and `.Disl`, listed with `grep -rhoE`; `sum`, `cel.bind` and `formatNumber` are not among them. A macro implemented without such a registration would not show in that list.
+- For B13: `src/backend/EtAlii.Adp.Specification.Fbl/Files/Yaml/YamlFamily.cs`, the branch for `ValueStyle.FlowSequence` with no items. This disagrees with `timeline-disl-fbl` finding B4, which searched `Planning/` only.
+- For B14: `grep -c -E "^\s+#"` over the three examples, which counts no line.
+- `src/backend/EtAlii.Adp.Specification.Fbl.Tests/RealFiles/divergences.json` and `ModuleCrossCheck.Tests.cs`, searched for `sankey` and `.skv` with no result.
+- The hype cycle graph module for the patterns of B3 to B7: `gartner-hype-cycle-graph.fbl`, `GhgParser.cs` (`ReaderFindings`, `Text`), `GhgValidator.cs`, the `typeMap` and `x-ghg` of its definition, and its `Parity/` folder.
+- `causal-loop-disl-fbl` and `timeline-disl-fbl` for the series, the survey and the shape of this document.
