@@ -1,4 +1,5 @@
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram.AgentActivityDiagram;
 using EtAlii.Adp.Diagram.AgentBehaviorModelling;
 using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -134,6 +135,9 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
         new("gartner-hype-cycle-graph", new DrawnTypes(
             [GhgElementMapper.InfluenceType],
             [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType])),
+        new("agent-activity-diagram", new DrawnTypes(
+            [AadElementMapper.RelationType],
+            [AadElementMapper.ProjectType, AadElementMapper.SpecificationType, AadElementMapper.AgentType, AadElementMapper.LocationType, AadElementMapper.EnvironmentType, AadElementMapper.ViewType])),
         new("helm-chart", new DrawnTypes(
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),

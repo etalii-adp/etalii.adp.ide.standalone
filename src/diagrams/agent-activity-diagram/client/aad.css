@@ -1,0 +1,84 @@
+/*
+ * What this notation needs that the shared appearance has no opinion about: a fill per kind of
+ * element, the colour a status is written in, the line that splits a location, and the mark a
+ * locked element carries. Everything else - lists, link symbols, the switch - comes from canvas.css.
+ *
+ * The colours are theme tokens from index.css, with their dark values beside them there. A kind is
+ * told apart by its shape first and its fill second, and a status by its word first.
+ */
+
+.aad-project {
+  fill: var(--color-diagram-aad-project);
+}
+
+.aad-specification {
+  fill: var(--color-diagram-aad-specification);
+}
+
+.aad-agent {
+  fill: var(--color-diagram-aad-agent);
+}
+
+.aad-location {
+  fill: var(--color-diagram-aad-location);
+}
+
+.aad-environment {
+  fill: var(--color-diagram-aad-environment);
+}
+
+.aad-label {
+  fill: var(--color-text);
+}
+
+.aad-detail {
+  fill: var(--color-text);
+}
+
+.aad-status {
+  fill: var(--color-text);
+}
+
+/*
+ * A list's headings and a link's symbol are the library's, painted in the muted colour for a
+ * canvas's own background. On this notation's fills that is too faint, so here they take the
+ * text colour: moduleThemeContrast.test.ts holds the pair, in both themes.
+ */
+.aad-surface .library-compartment-heading-text {
+  fill: var(--color-text);
+}
+
+.aad-surface .library-link-glyph {
+  stroke: var(--color-text);
+}
+
+.aad-status-progressing {
+  font-weight: 600;
+}
+
+.aad-status-inputRequired {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.aad-status-finished {
+  font-style: italic;
+}
+
+.aad-status-archived {
+  font-style: italic;
+  text-decoration: line-through;
+}
+
+.aad-split {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+
+.aad-lock {
+  fill: var(--color-text);
+}
+
+.aad-relation .canvas-connection-line {
+  stroke: var(--color-border-strong);
+}

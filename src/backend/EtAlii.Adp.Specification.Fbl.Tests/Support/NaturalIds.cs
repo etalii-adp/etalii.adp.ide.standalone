@@ -20,8 +20,26 @@ internal static class NaturalIds
         ("settings", "library") => $"library:{Attribute(request, "path")}",
         ("freeplane", "branch") => $"branch:{request.Source}->{request.Target}",
         ("workspace", "relationship") => $"{request.Source}->{request.Target}",
+        // The agent activity diagram (DISL 0.4, persistence.view.bind): the root is the diagram, and a
+        // locked position and a group state are view data, keyed by the element they name.
+        ("aad", "diagram") => "diagram",
+        ("aad", "placement") => $"pinned:{Attribute(request, "element")}",
+        ("aad", "group") => $"groups:{Attribute(request, "element")}#{Attribute(request, "group")}",
         _ => null,
     };
+
+    /// <summary>
+    /// The attributes a binding's tool type gives a date or date-time type, which FBL section 6.3
+    /// asks of the host: read here, as the ids are, from the specifications in etalii.adp.
+    /// </summary>
+    public static IReadOnlySet<string> TimeAttributes(string binding) => binding switch
+    {
+        "aad" => new HashSet<string>(StringComparer.Ordinal) { "task.updated", "pullRequest.updated" },
+        _ => new HashSet<string>(StringComparer.Ordinal),
+    };
+
+    /// <summary>Whether a binding's tool type keeps DISL's default deletion policy, which clears the references to a removed element.</summary>
+    public static bool UnsetsReferences(string binding) => binding == "aad";
 
     private static string Attribute(IdRequest request, string name) =>
         request.Attributes.TryGetValue(name, out var value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";

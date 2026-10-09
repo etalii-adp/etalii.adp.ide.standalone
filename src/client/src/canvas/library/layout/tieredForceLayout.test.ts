@@ -243,20 +243,26 @@ describe("the radiating layout at about two hundred elements", () => {
       }
       return total;
     };
-    const fastest = (work: () => unknown, runs: number) => {
-      let best = Number.POSITIVE_INFINITY;
-      for (let run = 0; run < runs; run++) {
-        const started = performance.now();
-        work();
-        best = Math.min(best, performance.now() - started);
-      }
-      return best;
+    // The two are timed in turn, round after round, and the fastest of each is kept: a busy
+    // machine slows a run and never speeds one up, and timing them in turn gives both the same
+    // chance of a quiet moment. Timed apart, three runs each, a loaded machine once put a pass at
+    // 252 sweeps and a quiet one at 105.
+    const timed = (work: () => unknown) => {
+      const started = performance.now();
+      work();
+      return performance.now() - started;
     };
-    // A hundred sweeps a run, so the reference is long enough to time.
-    const reference = fastest(() => { for (let n = 0; n < 100; n++) { sweep(); } }, 5) / 100;
-    const pass = fastest(() => placed(grown, settled), 5);
+    let reference = Number.POSITIVE_INFINITY;
+    let pass = Number.POSITIVE_INFINITY;
+    for (let round = 0; round < 12; round++) {
+      // Fifty sweeps a round, so the reference is long enough to time.
+      reference = Math.min(reference, timed(() => { for (let n = 0; n < 50; n++) { sweep(); } }) / 50);
+      pass = Math.min(pass, timed(() => placed(grown, settled)));
+    }
 
     // Measured at about 105 sweeps; with the step counts raised tenfold, about 555.
     expect(pass / reference).toBeLessThan(250);
-  });
+    // The ratio is the bound, not the clock: on a slow build server the measuring itself outran
+    // the runner's default five seconds, so this test names its own deadline.
+  }, 60_000);
 });

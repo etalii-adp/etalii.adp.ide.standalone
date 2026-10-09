@@ -69,6 +69,14 @@ public sealed class FblOptions
     /// </summary>
     public Func<IdRequest, string?>? DeriveId { get; init; }
 
+    /// <summary>
+    /// The attributes whose type, in the tool type's specification, is a date or a date-time, each
+    /// as <c>rule.attribute</c>. FBL does not know an attribute's type and section 6.3 needs it: a
+    /// new value that reads as a timestamp is written plain when it IS one, and quoted when it is a
+    /// string that only looks like one. Without this, every such value is taken for a string.
+    /// </summary>
+    public IReadOnlySet<string> TimeAttributes { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>The registration's headers, visible to CEL as <c>registration</c>.</summary>
     public IReadOnlyDictionary<string, string> RegistrationHeaders { get; init; } = new Dictionary<string, string>();
 

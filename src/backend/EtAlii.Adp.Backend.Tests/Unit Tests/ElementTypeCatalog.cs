@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram.AgentActivityDiagram;
 using EtAlii.Adp.Diagram.AgentBehaviorModelling;
 using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Diagram.AzureDevOpsPipeline;
@@ -80,6 +81,10 @@ internal static class ElementTypeCatalog
         new("gartner-hype-cycle-graph",
             [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType],
             [GhgElementMapper.InfluenceType]),
+        // The view element carries what is set for the diagram as a whole and is never drawn.
+        new("agent-activity-diagram",
+            [AadElementMapper.ProjectType, AadElementMapper.SpecificationType, AadElementMapper.AgentType, AadElementMapper.LocationType, AadElementMapper.EnvironmentType, AadElementMapper.ViewType],
+            [AadElementMapper.RelationType]),
         new("helm-chart",
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.CrdsType, HelmElementMapper.SubchartType, HelmElementMapper.ArchiveType, HelmElementMapper.LockType],
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType]),

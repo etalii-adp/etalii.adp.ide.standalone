@@ -66,21 +66,8 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
     ],
   },
   {
-    reason: "drawn only by an element type that declares compartments, and no shipped module does yet: agent-activity-diagram is the first, and its examples arrive with its module (that specification's tasks 23 and 25). DiagramCanvas.compartments.test.tsx mounts them meanwhile",
-    classes: [
-      "library-compartment-heading",
-      "library-compartment-heading-hit",
-      "library-compartment-heading-text",
-      "library-compartment-row",
-      "library-compartment-row-hit",
-      "library-compartment-row-selected",
-      "library-compartment-row-text",
-      "library-link",
-      "library-link-glyph",
-      "library-link-hit",
-      "library-switch",
-      "library-switches",
-    ],
+    reason: "a list row's selected state, drawn only while a row is selected, and nothing is selected here",
+    classes: ["library-compartment-row-selected"],
   },
   {
     reason: "drawn only on a selected element or connection, and nothing is selected here",
@@ -206,6 +193,7 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
       "timeline-surface",
       "ghg-canvas",
       "ghg-surface",
+      "aad-canvas",
       "abm-canvas",
       "abm-surface",
     ],
@@ -299,8 +287,8 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
     ],
   },
   {
-    reason: "the unmarked member of a ruled family - no play, a normal-weight link - drawn by the family's base rule, with nothing to add",
-    classes: ["ansible-play-none", "causal-loop-weight-normal"],
+    reason: "the unmarked member of a ruled family - no play, a normal-weight link, a status nothing has happened to yet - drawn by the family's base rule, with nothing to add",
+    classes: ["ansible-play-none", "causal-loop-weight-normal", "aad-status-pending"],
   },
   {
     reason: "a label, line or hit path beside the ruled shared class that paints it (library-element-label, canvas-node-label, canvas-connection-line, canvas-connection-hit)",

@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Specification.Cel;
 /// <summary>
 /// Core CEL: the macros <c>all</c>, <c>exists</c>, <c>exists_one</c>, <c>filter</c> and <c>map</c>,
 /// <c>size</c>, <c>matches</c> (over the regular expression subset of FBL §2.5) and the conversions
-/// <c>int</c>, <c>double</c> and <c>string</c>.
+/// <c>int</c>, <c>double</c> and <c>string</c>, and <c>type</c> with the type names it is compared with.
 /// </summary>
 public static class CelCore
 {
@@ -25,6 +25,7 @@ public static class CelCore
         environment.AddFunction(CelFunction.Global("int", 1, a => Int(a[0])));
         environment.AddFunction(CelFunction.Global("double", 1, a => Double(a[0])));
         environment.AddFunction(CelFunction.Global("string", 1, a => CelValues.Format(a[0])));
+        environment.AddFunction(CelFunction.Global("type", 1, a => CelType.Of(a[0])));
     }
 
     /// <summary>A cost proportional to the length of the first argument, for a function that walks it.</summary>

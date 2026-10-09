@@ -1,6 +1,19 @@
 {
   "reason": "Written by ElementTypesTests from each diagram module's own type constants, through ElementTypeCatalog: every element and relation type string a module puts on the wire, keyed by the module's folder under src/diagrams. The backend's constants are the source and this file is their copy; the client suite reads it against the type ids each client module declares (backend-centralization R12). An element is drawn as a box of its own, a relation between two elements. Each list is sorted ordinally, and the modules by folder name. Do not edit by hand: re-run the test and commit what it writes.",
   "modules": {
+    "agent-activity-diagram": {
+      "elements": [
+        "etalii/agent-activity-diagram+agent",
+        "etalii/agent-activity-diagram+environment",
+        "etalii/agent-activity-diagram+location",
+        "etalii/agent-activity-diagram+project",
+        "etalii/agent-activity-diagram+specification",
+        "etalii/agent-activity-diagram+view"
+      ],
+      "relations": [
+        "etalii/agent-activity-diagram+relation"
+      ]
+    },
     "agent-behavior-modelling": {
       "elements": [
         "etalii/agent-behavior-modelling+action",

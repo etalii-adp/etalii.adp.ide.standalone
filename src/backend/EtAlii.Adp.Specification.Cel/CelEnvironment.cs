@@ -107,7 +107,7 @@ public sealed class CelEnvironment
         switch (node)
         {
             case CelNode.Ident ident:
-                if (!_variables.Contains(ident.Name) && !bound.Contains(ident.Name))
+                if (!_variables.Contains(ident.Name) && !bound.Contains(ident.Name) && !CelType.TryNamed(ident.Name, out _))
                 {
                     throw new CelException($"'{ident.Name}' is not a variable here; available: {string.Join(", ", _variables)}.");
                 }

@@ -48,7 +48,22 @@ git -C "$checkout" show "HEAD:$source_md" | sed -e 's/\r$//' -e 's/$/\r/' > "$ta
 sha256="$(sha256sum "$target/$module.dis" | cut -d' ' -f1)"
 
 # CRLF, as .gitattributes asks of a JSON file in the working tree.
-printf '{\r\n  "repository": "etalii-adp/etalii.adp",\r\n  "path": "%s",\r\n  "revision": "%s",\r\n  "sha256": "%s"\r\n}\r\n' \
-  "$source_dis" "$revision" "$sha256" > "$target/provenance.json"
+# A tool type whose file is ADP's own keeps its FBL binding beside its specification, and the
+# binding is bundled with it, byte for byte, with its own hash in the provenance. A type whose
+# binding lives elsewhere (specifications/fbl/, or in the module) bundles none.
+source_fbl="definitions/diagrams/$module.fbl"
+if git -C "$checkout" cat-file -e "HEAD:$source_fbl" 2>/dev/null; then
+  if [ -n "$(git -C "$checkout" status --porcelain -- "$source_fbl")" ]; then
+    echo "$source_fbl has uncommitted changes in $checkout; commit or discard them first." >&2
+    exit 1
+  fi
+  git -C "$checkout" show "HEAD:$source_fbl" > "$target/$module.fbl"
+  binding_sha256="$(sha256sum "$target/$module.fbl" | cut -d' ' -f1)"
+  printf '{\r\n  "repository": "etalii-adp/etalii.adp",\r\n  "path": "%s",\r\n  "revision": "%s",\r\n  "sha256": "%s",\r\n  "binding": "%s",\r\n  "bindingSha256": "%s"\r\n}\r\n' \
+    "$source_dis" "$revision" "$sha256" "$source_fbl" "$binding_sha256" > "$target/provenance.json"
+else
+  printf '{\r\n  "repository": "etalii-adp/etalii.adp",\r\n  "path": "%s",\r\n  "revision": "%s",\r\n  "sha256": "%s"\r\n}\r\n' \
+    "$source_dis" "$revision" "$sha256" > "$target/provenance.json"
+fi
 
 echo "Bundled $module at $revision (sha256 $sha256)."
