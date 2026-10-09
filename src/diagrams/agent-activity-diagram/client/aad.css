@@ -44,6 +44,11 @@
   font-style: italic;
 }
 
+.aad-status-archived {
+  font-style: italic;
+  text-decoration: line-through;
+}
+
 .aad-split {
   stroke: var(--color-border-strong);
   stroke-width: 1;

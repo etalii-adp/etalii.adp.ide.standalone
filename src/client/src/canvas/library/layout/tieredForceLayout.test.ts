@@ -253,10 +253,12 @@ describe("the radiating layout at about two hundred elements", () => {
       return best;
     };
     // A hundred sweeps a run, so the reference is long enough to time.
-    const reference = fastest(() => { for (let n = 0; n < 100; n++) { sweep(); } }, 5) / 100;
-    const pass = fastest(() => placed(grown, settled), 5);
+    const reference = fastest(() => { for (let n = 0; n < 100; n++) { sweep(); } }, 3) / 100;
+    const pass = fastest(() => placed(grown, settled), 3);
 
     // Measured at about 105 sweeps; with the step counts raised tenfold, about 555.
     expect(pass / reference).toBeLessThan(250);
-  });
+    // The ratio is the bound, not the clock: on a slow build server the measuring itself outran
+    // the runner's default five seconds, so this test names its own deadline.
+  }, 60_000);
 });

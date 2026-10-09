@@ -288,8 +288,8 @@ const DRAWN_BUT_UNRULED: readonly Listed[] = [
     ],
   },
   {
-    reason: "the unmarked member of a ruled family - no play, a normal-weight link - drawn by the family's base rule, with nothing to add",
-    classes: ["ansible-play-none", "causal-loop-weight-normal"],
+    reason: "the unmarked member of a ruled family - no play, a normal-weight link, a status nothing has happened to yet - drawn by the family's base rule, with nothing to add",
+    classes: ["ansible-play-none", "causal-loop-weight-normal", "aad-status-pending"],
   },
   {
     reason: "a label, line or hit path beside the ruled shared class that paints it (library-element-label, canvas-node-label, canvas-connection-line, canvas-connection-hit)",
