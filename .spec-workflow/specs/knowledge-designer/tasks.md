@@ -87,7 +87,7 @@
   - _Leverage: `DiagramFileRouter`, `DiagramFilePair`, `EditorResolver`, `IDiagramValidator`, `DiagramValidators`_
   - _Requirements: 10.2, 2.1_
 
-- [ ] 8. FBL runtime: reordering and positioned adds for declared bindings
+- [-] 8. FBL runtime: reordering and positioned adds for declared bindings
   - File: `src/backend/EtAlii.Adp.Specification.Fbl/Planning/EditPlanner.cs`, the `YamlFamily`, `JsonFamily` and `XmlFamily` writers, `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Planning/`, `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/` (the knowledge bindings and fixtures vendored from etalii.adp, with its commit in `Conformance/readme.md`), `.gitattributes`
   - Plan `ModelChange.Move`, and `ModelChange.Add` with an index or a before or after position, for the three tree families as FBL 0.2 section 6.4 states; accept `place: {before: key}`. Vendor the knowledge fixtures; exempt them from line-ending conversion by their path under `Conformance/`, not by extension.
   - Guard: the conformance runner passes every vendored knowledge fixture; existing fixtures are unchanged.
