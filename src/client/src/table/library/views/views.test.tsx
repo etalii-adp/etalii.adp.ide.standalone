@@ -5,7 +5,7 @@ import type { TableGesture } from "../api/tableEvents";
 import { applyTableEvent, EMPTY_TABLE, type TableColumn, type TableFilterGroup, type TableModel, type TableRow, type TableViewSettings } from "../api/tableModel";
 import type { TableDefinition } from "../definition/tableDefinition";
 import { TableSurface } from "../TableSurface";
-import { childPath, comparisonsOf, describeCondition, MAXIMUM_FILTER_DEPTH } from "./FilterEditor";
+import { childPath, comparisonsOf, describeCondition, FilterEditor, MAXIMUM_FILTER_DEPTH } from "./FilterEditor";
 import { groupableColumns } from "./GroupEditor";
 import { describeSort, sortableColumns } from "./SortEditor";
 
@@ -390,6 +390,31 @@ describe("the filter editor", () => {
     expect(describeCondition({ kind: "condition", columnId: "p2", comparison: "greaterThan", values: ["1000"] }, COLUMNS, definition)).toBe("Population is greater than 1000");
     expect(describeCondition({ kind: "condition", columnId: "p1", comparison: "isEmpty", values: [] }, COLUMNS, definition)).toBe("Name is empty");
     expect(describeCondition({ kind: "condition", columnId: "p9", comparison: "is", values: ["x"] }, COLUMNS, definition)).toBe("p9 is x");
+  });
+
+  it("names an option by its name, and keeps the id of one that is gone", () => {
+    // Arrange: an option is stored by id.
+    const kinds = [column("p3", "Kind", "select", { options: [{ id: "o1", name: "Port", color: "" }] })];
+
+    // Assert.
+    expect(describeCondition({ kind: "condition", columnId: "p3", comparison: "is", values: ["o1"] }, kinds, definition)).toBe("Kind is Port");
+    expect(describeCondition({ kind: "condition", columnId: "p3", comparison: "is", values: ["o9"] }, kinds, definition)).toBe("Kind is o9");
+  });
+
+  it("offers a condition on a column with options its options, and raises the one chosen by id", () => {
+    // Arrange.
+    const kinds = [column("p3", "Kind", "select", { options: [{ id: "o1", name: "Port", color: "" }, { id: "o2", name: "Capital", color: "" }] })];
+    const raise = vi.fn();
+    render(<FilterEditor filter={{ kind: "group", any: false, items: [{ kind: "condition", columnId: "p3", comparison: "is", values: [] }] }} columns={kinds} definition={definition} raise={raise} />);
+
+    // Act.
+    const value = screen.getByRole("combobox", { name: "Value of condition 0" });
+    fireEvent.change(value, { target: { value: "o2" } });
+
+    // Assert: a list, not a box to type an id in.
+    expect(screen.queryByRole("textbox", { name: "Value of condition 0" })).toBeNull();
+    expect(within(value).getAllByRole("option").map((option) => option.textContent)).toEqual(["Choose…", "Port", "Capital"]);
+    expect(raise).toHaveBeenCalledWith(expect.objectContaining({ kind: "setFilter", targetId: "0", columnId: "p3", values: ["o2"] }));
   });
 });
 

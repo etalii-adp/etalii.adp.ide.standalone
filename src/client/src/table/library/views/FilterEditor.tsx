@@ -31,7 +31,8 @@ export function childPath(parent: string, index: number): string {
 export function describeCondition(condition: TableCondition, columns: readonly TableColumn[], definition: TableDefinition): string {
   const column = columns.find((candidate) => candidate.id === condition.columnId);
   const comparison = column === undefined ? undefined : comparisonsOf(definition, column.kind).find((candidate) => candidate.id === condition.comparison);
-  const value = condition.values.join(", ");
+  // An option is stored by its id and read by its name.
+  const value = condition.values.map((stored) => column?.options.find((option) => option.id === stored)?.name ?? stored).join(", ");
   return [column?.name ?? condition.columnId, comparison?.label ?? condition.comparison, value].filter((part) => part !== "").join(" ");
 }
 
@@ -124,6 +125,9 @@ function FilterGroupEditor({ group, path, depth, columns, definition, raise }: F
   );
 }
 
+/** The browser's own input for a value of each kind that is typed: a date, a date and time, a time. Text for every other. */
+const VALUE_INPUT: Readonly<Record<string, string>> = { date: "date", datetime: "datetime-local", time: "time" };
+
 interface ConditionEditorProps {
   condition: TableCondition;
   path: string;
@@ -183,9 +187,21 @@ function ConditionEditor({ condition, path, columns, definition, raise }: Condit
           </option>
         ))}
       </select>
-      {comparison?.takesValue !== false && (
+      {comparison?.takesValue !== false && column !== undefined && column.options.length > 0 && (
+        // A value that is one of the column's options is chosen from them, by name.
+        <select aria-label={`Value of condition ${path}`} value={condition.values[0] ?? ""} onChange={(event) => set({ values: event.target.value === "" ? [] : [event.target.value] })}>
+          <option value="">Choose…</option>
+          {condition.values[0] !== undefined && !column.options.some((option) => option.id === condition.values[0]) && <option value={condition.values[0]}>{condition.values[0]}</option>}
+          {column.options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+      )}
+      {comparison?.takesValue !== false && (column === undefined || column.options.length === 0) && (
         <input
-          type="text"
+          type={VALUE_INPUT[kindOf(definition, column?.kind ?? "").editor ?? "text"] ?? "text"}
           aria-label={`Value of condition ${path}`}
           value={value}
           onChange={(event) => setValue(event.target.value)}
