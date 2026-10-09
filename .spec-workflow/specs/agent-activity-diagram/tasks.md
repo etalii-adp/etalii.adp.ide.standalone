@@ -140,7 +140,7 @@
   - _Leverage: `LayoutToggleDeclaration`, `DiagramCanvas.filter.test.tsx`_
   - _Requirements: 4.6_
 
-- [ ] 15. The two DISL readers learn DISL 0.4
+- [-] 15. The two DISL readers learn DISL 0.4
   - File: `src/backend/EtAlii.Adp.Specification.Disl`, `src/client/src/canvas/library/disl` (`compileNotation.ts`, `disTypes.ts`)
   - Backend: read the constructs of task 2; derive menu entries for pin, unpin and unpin all and for rows; evaluate the declared gesture constraint a connect needs. Client: compile compartments with `groupBy`, activatable symbols, `itemLink`, the kept filter, `tiers` and `respect: "pinned"` into the declarations of tasks 8 to 14.
   - Waits on: 2, 8, 10, 11, 12, 14.
@@ -151,7 +151,7 @@
 
 ## The module
 
-- [-] 16. The module opens an activity file
+- [x] 16. The module opens an activity file
   - File: `src/diagrams/agent-activity-diagram/` (`api/agent-activity-diagram.proto`, `backend/EtAlii.Adp.Diagram.AgentActivityDiagram` and its `.Tests`, `definition/`), `.gitattributes`, `src/backend/EtAlii.Adp.slnx`
   - Bundle the definition with `bundle-disl.sh`. Add `Diagram`, `AadBody`, `AadDefinition`, `AadParser` and `AadModel`, `AadDocumentStore`, `AadDocumentReloader`, `AadSession` and its factory, `AadElementMapper` and the registration, after the hype cycle graph's. Read every field of the design's *Data Models*, with `folder` defaulting to `Default`; a newer header opens read-only; unknown keys are kept. Add `*.aad -text`.
   - Waits on: 4, 7, 15.
@@ -160,7 +160,7 @@
   - _Leverage: `src/diagrams/gartner-hype-cycle-graph`, `docs/creating-a-diagram-module.md`_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 2.9, 10.1, 10.2, 10.4, 10.7_
 
-- [-] 17. Adding an activity file
+- [x] 17. Adding an activity file
   - File: `backend/…/AadDocumentFactory.cs`
   - `CreateEmptyDocument`: the header and five empty lists, no `view` key, CRLF. Offered where every other tool type is.
   - Waits on: 16.
@@ -169,7 +169,7 @@
   - _Leverage: `GhgDocumentFactory`, `CreateDiagramFileCommandHandler`_
   - _Requirements: 9.7_
 
-- [-] 18. Element commands
+- [x] 18. Element commands
   - File: `backend/…/Commands/`, `AadContextActionProvider`, `AadContextPropertyProvider`, `AadToolboxProvider`
   - Add from the toolbox (five entries, none for a row), rename in place by F2 or a double-click, set a field or a link from the property grid, and remove with the relations that name the element in one undoable step, telling how many. New ids are ShortGuids; an edit splices only its own lines.
   - Waits on: 16.
@@ -178,7 +178,7 @@
   - _Leverage: `GhgEdits.Run`, `AadDefinition.Apply`, `FormDerivation`_
   - _Requirements: 2.6, 2.7, 3.9, 5.8, 9.1, 9.5_
 
-- [-] 19. Connecting and its refusals
+- [x] 19. Connecting and its refusals
   - File: `backend/…/Commands/`, `AadGestures`
   - Connect and disconnect set and clear the reference key. The relation is inferred from the pair. Any pair but the four is refused; an agent that has a specification is refused a second; a location is refused a second agent or environment; each refusal names its rule where the gesture ended. An environment may be named by any number of locations and a specification by any number of agents.
   - Waits on: 18.
@@ -187,7 +187,7 @@
   - _Leverage: `GestureConstraintEvaluator`, `connectOnRightDrag`, `relationOnto`_
   - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 9.2_
 
-- [-] 20. Row commands
+- [x] 20. Row commands
   - File: `backend/…/Commands/`, the context providers
   - Add, rename and remove a task and a pull request, and set a task's status, from the element's menu, the row's menu and the property grid. Every add and change writes `updated` as that moment, with its offset. No command reorders rows. A status change moves the row to its group without expanding a collapsed one.
   - Waits on: 18, 9.
@@ -205,7 +205,7 @@
   - _Leverage: `GhgSession`, `AadElementMapper`_
   - _Requirements: 4.4, 4.5, 4.7, 4.8, 6.1, 6.2, 6.3, 6.4, 6.11_
 
-- [-] 22. Findings
+- [x] 22. Findings
   - File: `backend/…/AadValidator.cs`, `Fixtures/rule-*.aad`
   - One fixture and one test per row of the design's *Error Scenarios*, with the severities the requirements give: info for an agent with no specification or no location, a specification with no project, a project with no specification, a location with no agent or no environment, an entry without an id, and unknown keys; warning for a link that is neither a web address nor a path; error for a reference to nothing, a reference to the wrong type, an id used twice and a key written twice. Nothing is removed on the next write. A file that cannot be read keeps the last picture and accepts no edit. An entry without an id gets one on the first edit in ADP. A `view` entry for a missing element is removed on the next write and not reported.
   - Waits on: 16.
@@ -214,7 +214,7 @@
   - _Leverage: `GhgValidator`, `ConstraintEvaluator`, the functional decomposition graph's `rule-*.fdg` fixtures_
   - _Requirements: 3.3, 3.7, 3.8, 5.6, 8.4, 8.5, 8.7, 8.8_
 
-- [-] 23. The module's client
+- [x] 23. The module's client
   - File: `src/diagrams/agent-activity-diagram/client/` (`register.ts`, `AadCanvas.tsx`, `aadBindings.ts`, ids, model, stylesheet)
   - `assertValidDiagramDefinition(compileNotation(SPEC, BINDINGS))` and event handlers; no drawing of its own. The notation as specified: a shape and a colour pair per type, recognisable without colour; the location as two fields split by a line with its pull requests beneath; the specification with its name, its status in words and colour, and its groups; relations as plain lines; link symbols, one per field on a location; theme tokens in both themes.
   - Waits on: 16, 15.
@@ -223,7 +223,7 @@
   - _Leverage: `GhgCanvas.tsx`, `ghgBindings.ts`, `docs/diagram-module-client-api.md` ("Tests a module writes")_
   - _Requirements: 4.10, 5.1, 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [-] 24. An outside change, end to end
+- [x] 24. An outside change, end to end
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/AgentActivityDiagramFlow.Tests.cs`
   - Open a diagram over gRPC, write the file from outside as an agent would (a task's status, a new location, a removed agent), and assert the deltas on the `Watch` stream: only what changed, with a locked element's position unchanged and the view untouched.
   - Waits on: 5, 6, 21.
@@ -234,7 +234,7 @@
 
 ## Examples, tests, documentation and checks
 
-- [-] 25. Examples and the instruction text
+- [x] 25. Examples and the instruction text
   - File: `src/diagrams/agent-activity-diagram/examples/` (`adp-one-day`, `every-state`, `two-projects`, each with a readme; `updating-this-file.md`), seeded into `src/examples/diagrams/agent-activity-diagram`
   - Written for ADP, since no published corpus exists; each readme says so and what its set does not demonstrate. Between them they show everything Requirement 10.5 lists. `updating-this-file.md` tells an agent when to update the file and how to make each kind of change, including writing `updated` and leaving `view` alone.
   - Waits on: 22.
@@ -252,7 +252,7 @@
   - _Leverage: `dragCost.test.tsx`, `scale-fixture.json` of the hype cycle graph_
   - _Requirements: 11.2_
 
-- [-] 27. Documentation
+- [x] 27. Documentation
   - File: `docs/tools.md`, `docs/diagram-module-client-api.md`, `docs/creating-a-diagram-module.md`, `docs/architecture.md`, `docs/solution-structure.md`
   - Add the row for `etalii/agent-activity-diagram`, kind Diagram, and move it with the state, in `docs/tools.md` and in the Notion "Tools" database. Describe the library capabilities of tasks 8 to 14, what a module with rows and view state in its body declares, and the lifecycle's behaviour on a write and on a reload.
   - Waits on: 23.
