@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/functional-decomposition-graph-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:03:18.765Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791507798614_37n19opp8",
+      "approvalTitle": "requirements.md: converting the functional decomposition graph to DISL and FBL"
+    }
+  ]
+}
