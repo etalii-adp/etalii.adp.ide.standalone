@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dependency-graph-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:02:06.758Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791507726626_c6patcryf",
+      "approvalTitle": "requirements.md: reading and writing the dependency graph through FBL"
+    }
+  ]
+}
