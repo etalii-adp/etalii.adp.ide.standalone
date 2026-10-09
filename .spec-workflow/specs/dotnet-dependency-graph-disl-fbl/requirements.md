@@ -1,0 +1,298 @@
+# Requirements Document
+
+## Introduction
+
+The user's request, verbatim (2026-10-09):
+
+> Create spec workflow MCP specifications. One specification for converting one of the standalone diagram tools to FBL and DISL. i.e. analyse the current implementation, define the DISL and FBL and then write the specification on the refactoring., also focus on finding issues and aspects where the DISL and FBL languages do not yet cover everything.
+
+This is one of the fifteen specifications that reading gives (the series and the survey behind it are in `causal-loop-disl-fbl`, *Introduction*). It converts the **.NET dependency graph** (`dotnet/dependency-graph`, a registration that names a `.sln` or `.slnx`).
+
+**The .NET dependency graph is half converted, like the timeline.** Its property rows and its refusal of a write are derived from a bundled DISL 0.3 definition today, its canvas is compiled from that definition, and a parity transcript holds all of it. Its model is still read by `SolutionReader`, `ProjectReader` and `PackageDescriptionReader`, and `DotNetDefinition` builds the DISL model from their reading "not through FBL". No FBL binding exists, here or in etalii.adp. This specification is the FBL half only.
+
+**Two things were established before anything else.**
+
+- **The tool never writes the files it reads.** Each of the three readers says "This reader never writes", and the module readme says what is written: "One file, one block: the `layout:` block of its own `.adp` registration." It creates one file, once: the empty solution of a new document (`DotNetSolutionDocumentFactory`). So the conversion is reading, the registration, the template and derivation. There is no insert, no remove and no splice into a body.
+- **The subject is neither of FBL's two kinds.** The registration's `body:` header names one solution file, on purpose ("Binding is stated, never inferred": a folder can hold two solutions). The model is read from that file and from the files it leads to: every project file it names, the `Directory.Packages.props` files above each project, and the local NuGet cache. That is not a file body, whose reading is its own bytes, and it is not a folder subject (FBL section 10), whose files are the globs of one folder. This is finding B2, and it is what the document is mostly about.
+
+**FBL itself expects this format to stay a persistence plugin.** FBL 11.5 lists "`.sln`, `.slnx`, MSBuild projects" for this tool. Findings B1 and B3 confirm that from the module's side, so the findings below are about the **plugin contract** of FBL section 11, not about selectors and splices.
+
+## What was measured
+
+Read on 2026-10-09: the module at `develop` `9a646009`; its bundled definition (etalii.adp `34ec3a78`); the FBL specification (0.2 draft), `helm-chart.fbl` and `specs/005-format-binding/inventory.md` in etalii-adp/etalii.adp at `develop` `da64ff0`; the DISL specification (0.3 draft); and `EtAlii.Adp.Specification.Fbl` here.
+
+| Thing | State |
+| --- | --- |
+| The module | 88 tracked files. The backend is 2,511 lines of C# in 27 files: `SolutionReader` (196 lines), `ProjectReader` (260), `PackageDescriptionReader` (139), `DependencyGraph` (297, the derivation), `DependencyGraphStore` (126), `SolutionWatcher` (166), `DotNetDefinition` (124). 14 test files. |
+| The DISL definition | Bundled, DISL 0.3, 436 lines, with an `x-dotnet` wire-id block. Its `persistence` says `format: "plugin:net.etalii.adp.dotnet.solution"` with a split `files` pattern. |
+| The FBL binding | None. No `dotnet` file exists under `specifications/fbl/`, and the inventory in etalii.adp records the outcome as "plugin reader (MSBuild evaluation), read-only". |
+| The parity transcript | Exists: `Parity/dotnet.transcript.json`, over the seven solutions of the corpus (two `.sln`, five `.slnx`), a set of hand-built graphs and the module's registrations. It records the graph, the failures, the payloads, the computed positions, the rows and the refusals. |
+| The real-file check | None. `RealFiles/divergences.json` has no entry for this tool and `ModuleCrossCheck.Tests` does not read a solution, because there is no binding to read it through. |
+| The library's plugin support | `PluginBody` opens one file and hands a plugin exactly that file. `FolderSubject` has no caller in product code, and `IPersistencePlugin.Watch` carries the comment "no host calls it yet". |
+
+**How each finding is known:** *recorded* is a sentence in the module's code, its companion document, FBL 11.5 or the inventory; *measured* is a search whose command is in *Sources*; *read* is a reading of the code against the specification text, not run. Nothing was built or run.
+
+## Findings
+
+The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is repaired in the definition or the binding, a **runtime gap** in this repository's libraries, a **language gap** in etalii-adp/etalii.adp.
+
+### A. The DISL definition
+
+| # | Finding | Kind | Known |
+| --- | --- | --- | --- |
+| A1 | `persistence` declares `format: "plugin:net.etalii.adp.dotnet.solution"` and `files` with `mode: "split"`, `model: "{name}.slnx"`, `view: "{name}.adp"`. With a binding it becomes `format: "fbl"` with `binding`, and DISL 11.2 forbids `files` beside it. That also removes two things the companion says DISL cannot state: FBL 8.2 finds the body through the `body:` header, and `claims.extensions` names both extensions. The definition changes in etalii.adp and is bundled again. | Definition defect | Read |
+| A2 | The companion says "FBL binds one file, so it cannot carry a model spread over a solution" and "A persistence plugin cannot **report problems**". FBL section 10 defines folder subjects, and FBL 11.2 has `read` deliver findings. The inventory already lists the second as a gap "that FBL answers". Both sentences are stale, and `DotNetDefinition.cs` repeats the first. What is true is narrower: finding B2. | Definition defect | Recorded (inventory, line 31) |
+| A3 | `persistence.ids` declares no `pattern`. DISL 11.5 gives the default `^[A-Za-z0-9_.:#-]{1,128}$`. A project's id holds `/` (`project:src/Pipeline.Core/Pipeline.Core.csproj`), a reference's id holds `>` and two ids (`depends:<source id>-><target id>`), and either can pass 128 characters. Whether a plugin's ids are held to the pattern is not stated; the definition should declare one that admits them. | Definition defect | Read |
+| A4 | No `typeMap` is needed: a plugin delivers the metamodel's own types (`Project`, `Package`, `ProjectReference`, `PackageReference`). | None | Read |
+| A5 | The definition stores a package's `versions`, `hasVersionConflict`, `dependentProjectCount` and `isAmbient` as attributes the plugin supplies. DISL 4.11.1 draws the line the other way: a binding reads one stored element per entry ("a project reference" is its own example), and an element that groups several entries is **derived**. The companion records why the earlier derived version was withdrawn: the code compares versions without regard to case, and counts dependents by exact id. | Language gap behind a recorded decision (Q5, B8) | Recorded (companion, *How the `.dis` maps the implementation*) |
+
+### B. The plugin contract of FBL section 11 against the module's readers
+
+| # | Finding | Kind | Known |
+| --- | --- | --- | --- |
+| B1 | **A declared binding cannot read this model.** The `.slnx` alone could be declared (`xml` family, `/Solution/**/Project`, the `Path` attribute), and so could the entries of one project file. What cannot be declared: the set of files is named by another file's content and not by a glob; a `ProjectReference` is matched to a project by resolving a relative path, both separators accepted, compared without regard to case; a wildcard `Include` is expanded against the file system; a version is the `Version` attribute, else a `Version` child, else the nearest `Directory.Packages.props` above; `TargetFrameworks` is split on `;`; and one package is every declaration of its id in every file. | None: FBL 11.5 expects it | Recorded (FBL 11.5 and 17) |
+| B2 | **The subject is a file with the files it leads to.** As a file body, `read` receives "the body's bytes" and the host watches the body only: `watch` is for "folder subjects, optional". As a folder subject, `read` receives the files "the file rules select", by glob, relative to one folder. Neither reaches the model: 88 of the 123 projects of `EtAlii.Adp.slnx` lie outside the solution's folder, the central versions file lies above it, and a folder may hold two solutions, which only the `body:` header tells apart. FBL has no subject that is one named file plus what it references. | Language gap | Measured (the 88 of 123); Read |
+| B3 | **FBL 11.5's reason overstates.** It says "Wildcards, imports and central package management are evaluated". The module expands wildcards and walks to the central versions file; it follows no `Import`, evaluates no condition and expands no property, and says so in its readme. The plugin is one because of B1, not because it evaluates MSBuild. | Definition defect (informative text of FBL) | Recorded (module readme) |
+| B4 | **The readers open files; the contract hands over bytes.** `ProjectReader` asks whether a file exists, lists folders for a wildcard and walks parent folders. `read` has no way to ask for a path, to learn that a path is absent ("The solution names this project, but the file is not there."), or to list a folder. FBL 11.4 forbids a plugin to write and is silent on reading, while requiring that "the same bytes and change give the same result". | Language gap | Read |
+| B5 | **The library opens a plugin body as one file.** `PluginBody.Open` takes one byte array and calls `Read` with exactly one `PluginFile`. `PluginReadRequest` carries no `args`, which FBL 11.2 says `read` receives. Nothing calls `FolderSubject` or `Watch` outside the tests. An `FblElement` has a span and a line and no file, so an element of a second file cannot be located. | Runtime gap | Measured |
+| B6 | **Two readings go outside the workspace.** Package descriptions come from `NUGET_PACKAGES` or the user profile's `.nuget/packages`, and the walk for `Directory.Packages.props` continues to the root of the drive. FBL 16 says a host "MUST NOT read or write outside it, or follow symbolic links, without the user's consent". Today neither asks. The cache also makes the reading depend on the machine, which FBL 11.4's determinism does not allow for. | Behaviour change to rule on (Q3) and language gap | Read |
+| B7 | **Source spans.** `read` must deliver "the source span of the entry" of every element. The readers use `XDocument` without line information and keep none. A project is a file and an entry of the solution; a wildcard reference is one entry for many relations; a package has as many entries as declarations, in several files, or none that is its own. The contract has one span per element. | Language gap and module work (Q6) | Read |
+| B8 | **A reference to a package spelled in another casing** becomes a relation whose target is missing; `DotNetDefinition.Build` keeps it so and the canvas draws neither. FBL 5.4 creates no relation with a missing end, DISL 11.2 allows one only through a `typeMap` of reference attributes, and the plugin contract does not say whether `read` may deliver one. | Module defect, recorded, and language gap (Q5) | Recorded (companion, *Known gaps*) |
+| B9 | **Failures become findings.** The module carries six sentences as failures with the graph (among them "The solution file could not be parsed." and "This project was not read, so its references are unknown."). They are "logged and nowhere shown", although the canvas says "Any reason is reported in the problems panel." Under the contract the plugin reports them and "the host shows them like any other finding". FBL also adds its own: `fbl.missing-body` where the module says "The solution file does not exist.", `std.unparseable` for a solution that is not XML, and `fbl.stale-view-data` for a stored position that names nothing, which the module drops in silence. | Behaviour change to rule on (Q2) | Recorded (companion); Read |
+| B10 | **An unreadable project file fits.** The module omits the project, reports it and reads the rest. FBL 10.3 says the same of a folder subject's file. For a file body FBL 7.5 makes the whole model empty, which is right for the solution and wrong for a project file: one more reason B2 matters. | None, given B2 | Read |
+| B11 | **The new document.** Core writes the sibling as the base name plus the definition's primary extension, `.sln`, and the factory's content is the `.slnx` serialization. `SolutionReader` chooses by extension, so the new file is read by the classic pattern, which matches nothing and reports nothing. A new document is an XML file under the classic extension. FBL's `template` is one text per binding or per origin, not per extension, and the order of `claims.extensions` decides the sibling; the same order decides which of `Both.sln` and `Both.slnx` a registration without a `body:` header opens. | Module defect (Q4), and to settle by fixture | Read |
+| B12 | **A read-only binding with a template.** FBL 3.4 says such a body "is never written". Section 13 writes a new one. The specification does not say that creating is not writing. | Language gap, minor | Read |
+| B13 | **The refusal has two homes.** The binding's `readOnly` takes "the reason a host shows", and the module takes its sentence from the definition's `behavior.messages` `std.readOnly`. Stated twice they can disagree. The session's four other sentences (a reparent, a moved reference, no history, no registration) are the host's and stay code; `registration.createOnFirstPlacement` is a boolean and cannot carry "This diagram was opened without a registration, so there is nowhere to store a position." | Definition defect to avoid; language gap, minor | Read |
+| B14 | **The one write is the registration, and no module writes it through the library.** Core's `RegistrationLayout` orders entries with .NET's ordinal comparison, writes `0.###` and CRLF, and removes an empty block. FBL 8.3 orders by "byte order of the UTF-8 encoding", which differs from UTF-16 order for a path holding a character beyond the basic plane beside one above U+E000, and writes "the registration's own line ending". | To settle by fixture | Measured (no caller of the library's registration classes in module or hierarchy code); Read |
+| B15 | **Watching.** The module watches exactly the files it read, with a settle delay of 250 ms, and only the `Directory.Packages.props` files that existed when the watch began. FBL 10.3 watches "every file it read and the folders that `files` globs could add files to", settles for 400 ms unless `settle` says otherwise, and has both only for folder subjects. A project added through a wildcard, or a versions file created later, is seen by FBL's rule and missed by the module's. | Behaviour change for the better, blocked by B2 | Read |
+| B16 | **Encoding.** FBL 2.6 says a body "is UTF-8" and anything else is unreadable. XML declares its own encoding and `XDocument.Load` honours it, so a project file written in UTF-16 opens today. | Language gap | Read |
+| B17 | **Namespaces.** FBL 4.2 selects "the child element with that name". The word *namespace* does not occur in the FBL specification. The readers match by local name because a `.nuspec` and an older project file carry a default namespace. It matters to any declared `xml` binding, not to this plugin. | Language gap, for the `xml` family | Measured |
+
+### C. Language gaps, as they would be reported to etalii-adp/etalii.adp
+
+1. **FBL: a subject that is one file and the files it references** (B2, B4, B10, B15). Candidate: a plugin operation `resolve` for a file body, receiving the bytes read so far and delivering the paths and folder listings it needs next, repeated until it asks for nothing; the host reads them under section 16, hands all of them to `read`, and watches them as section 10.3 says. This one decides the shape of the conversion (Q1).
+2. **FBL: reading outside the workspace as part of a reading** (B6). Candidate: the binding declares the roots a plugin may be handed (`environment` names such as the NuGet cache), so consent is asked once and the reading stays a function of its inputs.
+3. **FBL: an element with several source entries, or with a file as its entry** (B7), and **DISL: whether a plugin may deliver a grouped element as stored** (A5).
+4. **FBL: whether `read` may deliver a relation with an end that names nothing** (B8).
+5. **FBL: a template per extension, and creating under a read-only binding** (B11, B12).
+6. **FBL: a body that is not UTF-8 where its format declares its encoding** (B16), and **XML namespaces in selectors** (B17).
+7. **FBL: the sentence of a refused first placement** (B13).
+8. **FBL 11.5's row for this tool** (B3): say what is evaluated and what is not.
+
+## Open questions
+
+Each is put to the user as a selection; the **(default)** is what this document is written against.
+
+| # | Question | Options | Criteria affected |
+| --- | --- | --- | --- |
+| Q1 | The contract cannot hand the plugin the files a solution leads to (B2, B4). What is built meanwhile? | **(default) A file body whose plugin opens the other files itself**, as the readers do today, named in the companion as standing in for gap 1. FBL 11.4 forbids writing, not reading, and no file opens differently. · **Report the gap and wait**: the requirements stand and nothing is built until FBL has the construct. · **A folder subject** with a header naming the solution: every registration is rewritten once, and projects outside the folder are lost. · Other. | 3.1, 4.1, 4.2 |
+| Q2 | Findings the conversion would show that the tool does not show today (the read failures, a missing body, a stale position). | **(default) Not in this conversion**: failures stay logged and travel with the graph as today, and showing them is raised afterwards as a change of its own with its codes and locations. · **Adopted now**: each failure is a finding with a `dotnet.` code at its declaration, and the canvas's sentence about the problems panel becomes true. · Other. | 3.5 |
+| Q3 | Reading the NuGet cache and the versions files above the workspace (B6). | **(default) Read as today, without asking**: it is the user's recorded decision that descriptions come from the local cache, and the binding names both roots in an `x-` property until FBL has a place. · **Ask once per workspace.** · **Stop at the workspace root**: a version or a description may then read *Not discoverable* where it is found today. · Other. | 3.3 |
+| Q4 | A new document is XML under `.sln` (B11). | **(default) Fix it here**: the new body is `.slnx`, because a template must read through its binding with no finding and the classic reading of it reads nothing; the guard is seen to fail first. This departs from "keep today's behaviour" because today's file is one the .NET tooling cannot open. · **Keep it**, and raise the defect separately. · Other. | 5.3 |
+| Q5 | A package reference spelled in another casing (B8), and the stored summaries (A5). | **(default) Keep both as today**: the plugin delivers the relation with its end unset and the summaries as attributes, and the casing defect is raised separately. · **Fix the casing now**: the hand-built graphs of the transcript change and are reviewed as a diff. · Other. | 3.2, 3.4 |
+| Q6 | Where is an element's source (B7)? | **(default)** A project at its entry in the solution, a reference at its declaration, a package at its first declaration in reading order, as DISL 4.11.4 lends a derived element its first source. · **The file only**, with no span, until FBL says more. · Other. | 3.6 |
+
+## Alignment with Product Vision
+
+The product direction (2026-09-26) is one definition per tool, interpreted by a core in each IDE. This tool is the first of the series that FBL expects to remain a plugin, and the only one whose every file belongs to another toolchain. It is therefore the test of FBL section 11 and of its promise that a plugin-backed body "behaves exactly as a declared one". What it finds about a file that leads to other files is owed to the Helm chart, the Ansible structure and the Azure DevOps pipeline before they are converted on the same contract.
+
+## Requirements
+
+### Requirement 1: Every finding has a fixture first
+
+**User Story:** As the owner of the tool, I want each claimed difference shown before anything is changed.
+
+#### Acceptance Criteria
+
+1. WHEN the work starts THEN one fixture SHALL be added to the corpus for each finding of table B marked Read or to settle by fixture that a file can show: a project outside the solution's folder and a versions file above it (B2), a new document as core creates it (B11), a registration without a `body:` header beside both serializations (B11), a registration whose ids order differently in UTF-8 and UTF-16 (B14), a project file in UTF-16 (B16) and one with a default namespace (B17). The transcript SHALL be regenerated from today's unchanged code and the diff reviewed as showing only the new documents.
+2. Each such finding SHALL then be shown by a test seen to fail for the reason the finding gives, or SHALL be struck from this document with that test as the reason.
+3. WHEN a later step changes the transcript THEN the change SHALL be one this document names (Q2, Q4, Q5), regenerated on purpose. Any other difference is a regression.
+
+### Requirement 2: The binding and the definition's persistence
+
+**User Story:** As a tool engineer, I want the tool's format stated once, in a binding every host reads.
+
+#### Acceptance Criteria
+
+1. The module SHALL own its binding, `backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/dotnet-dependency-graph.fbl`, embedded in the backend project, with a plugin reader naming `net.etalii.adp.dotnet.solution`, and no element or relation rule.
+2. The binding SHALL claim `.sln` and `.slnx` as a shared extension that is opened through a registration only, so that a solution in the workspace is not a diagram until the user adds one, as today.
+3. The definition's `persistence` SHALL become `format: "fbl"` with `binding`, without `files` (finding A1), with an id `pattern` that admits today's ids (finding A3), and SHALL be bundled again with `bundle-disl.sh`.
+4. The refusal of a write SHALL be stated in one place (finding B13), and SHALL read as today.
+5. The companion `dotnet-dependency-graph.md` SHALL lose the two stale sentences of finding A2 and gain the gaps of section C.
+
+### Requirement 3: The model is read by the plugin, under the contract
+
+**User Story:** As a user, I want every solution that opens today to open the same.
+
+#### Acceptance Criteria
+
+1. The three readers and the derivation SHALL be the inside of one `IPersistencePlugin` whose `read` delivers the projects, packages and references. It SHALL obtain the files the solution leads to as Q1 rules.
+2. Every element SHALL carry today's id (`project:` and the path relative to the solution, forward-slashed; `package:` and the package id; `depends:` and both ends), today's attributes, and the summaries as the definition declares them (Q5).
+3. Package descriptions and central versions SHALL be read from where they are read today (Q3), and a package never restored SHALL have no description, never an error.
+4. What the readers do not resolve SHALL stay unresolved and stated: conditions, imports, properties, an `Exclude` beside a wildcard, transitive packages.
+5. No finding the tool does not show today SHALL appear (Q2), and every failure SHALL keep its sentence and travel with the graph as today.
+6. Every element SHALL carry the source Q6 gives it, with the file it is in.
+7. The DISL model SHALL be built from the plugin's reading by the shared builder, and `DotNetDefinition.Build` SHALL leave the product code.
+8. Reading SHALL never throw on content. A solution that cannot be read SHALL open as an empty graph, and a project file that cannot be read SHALL cost that project only.
+9. WHEN the answers are compared with the transcript THEN the graph, the payloads, the positions, the rows and the refusals of every document SHALL be byte-identical.
+
+### Requirement 4: Files, watching and refresh
+
+**User Story:** As a user who edits a project file in another tool, I want the diagram to follow.
+
+#### Acceptance Criteria
+
+1. The files a reading depends on SHALL be reported by the plugin's `watch` and watched by the host side, and `SolutionWatcher` SHALL leave the module once the library does so.
+2. A change SHALL settle for 250 ms before one re-read, stated in the binding where FBL has a place for it, and a watcher overflow SHALL count as a change, as today.
+3. A re-read SHALL keep the position of every element whose id survives, place the new ones and remove the gone ones, pushing only the differences.
+4. A project that a wildcard begins to match, and a versions file created above a project after the diagram opened, SHALL cause a re-read (finding B15), each with a test seen to fail against today's watcher first.
+
+### Requirement 5: The registration and the new document
+
+**User Story:** As an author who arranged a graph, I want it to open where I left it, and a new one to be a real solution.
+
+#### Acceptance Criteria
+
+1. Moving a box SHALL write the `layout:` block through the library's registration writer, as one undo step that restores the registration byte for byte.
+2. Every registration of the corpus SHALL be written back byte-identical when nothing moved, and WHERE the library's order or line ending differs from core's (finding B14) THEN the difference SHALL be shown by its fixture and ruled on before it lands.
+3. A new document SHALL be created from the binding's `template`, at the extension Q4 rules, never over an existing file, and SHALL read with no failure.
+4. A document opened without a registration SHALL refuse a move with today's sentence.
+
+### Requirement 6: What stays code, and what goes
+
+**User Story:** As a maintainer, I want what remains in the module to be what the languages cannot state.
+
+#### Acceptance Criteria
+
+1. The module SHALL keep the plugin (the readers and `DependencyGraph`), the layout plugin, the element mapper, the session, the source resolver and the store.
+2. `DotNetSolutionDocumentFactory`, `SolutionWatcher` and the model building of `DotNetDefinition` SHALL leave the product code, each when the requirement that replaces it is met.
+3. WHEN the conversion is complete THEN the companion SHALL list every remaining module class beside the gap or the host concern that keeps it.
+
+### Requirement 7: The library work this tool needs
+
+**User Story:** As a maintainer of the shared libraries, I want each thing this tool needs added once, for every tool.
+
+#### Acceptance Criteria
+
+1. `EtAlii.Adp.Specification.Fbl` SHALL open a plugin body that spans several files, hand `read` the binding's `args`, call `watch`, and carry the file of every element (finding B5), each proven by a library test seen to fail first.
+2. A read-only binding's plugin SHALL never be asked to plan, and a move of a box SHALL never reach it.
+3. A language gap SHALL NOT be repaired in the library, and no module name SHALL appear in a library change.
+
+### Requirement 8: Gaps are recorded and reported, never tuned away
+
+**User Story:** As the owner of FBL, I want every place it falls short reported with its evidence.
+
+#### Acceptance Criteria
+
+1. Each language gap of section C, and any the implementation adds, SHALL be recorded in the companion with the construct concerned, the fixture that shows it, and what would resolve it.
+2. An example binding for this tool SHALL be offered to etalii.adp's `specifications/fbl/`, as the Helm chart has one.
+3. A gap SHALL NOT be closed by weakening a check, skipping a fixture, or changing a fixture that was written before the code.
+4. The delivery report SHALL list every gap as a candidate change for etalii-adp/etalii.adp.
+
+### Requirement 9: Documentation and gates
+
+**User Story:** As a reader of the repository, I want its pages to stay true.
+
+#### Acceptance Criteria
+
+1. The module readme, `src/diagrams/readme.md`, `docs/creating-a-diagram-module.md`, and `docs/architecture.md` and `docs/solution-structure.md` where a sentence becomes false, SHALL be updated in the change that makes them so.
+2. All four gates SHALL exit zero on every pull request of this specification, judged by captured exit codes, with a newly created worktree built before a green gate is trusted about the bundled definition.
+3. WHEN the tasks document is written THEN every acceptance criterion here SHALL be claimed by a task, established by diffing the two sets, and two traces SHALL be read back to their artefacts.
+
+## Non-Functional Requirements
+
+### Code Architecture and Modularity
+
+- The module ends as its definition, its binding and the code Requirement 6.1 names. The house rules of `src/.editorconfig` and the three rules the gates refuse apply. The `.fbl` follows what the hype cycle's has in `.gitattributes`.
+
+### Performance
+
+- Opening and refreshing `EtAlii.Adp.slnx` (123 declared projects) SHALL not be perceptibly slower than today. A refresh reads each file once.
+
+### Reliability
+
+- No solution that opens today opens differently. No stored position is lost. Nothing under a solution is ever written, and a test SHALL hold that no file of the corpus other than a registration changes during any step of the transcript.
+
+### Usability
+
+- Every sentence a user reads today is read unchanged, unless this document names the change.
+
+## Out of scope
+
+- The property rows, the refusal and the canvas: they are derived or compiled already, and this specification changes none.
+- Resolving more of MSBuild than the readers resolve today.
+- Changing FBL or DISL. The gaps are reported, and a language change is etalii.adp's own specification.
+- The other tools of the series.
+
+## Appendix: the binding, as drafted
+
+A draft against FBL 0.2. There is no example in etalii.adp to differ from.
+
+```json
+{
+  "fbl": "0.2",
+  "bindings": {
+    "solution": {
+      "title": ".NET solution",
+      "claims": {
+        "extensions": [".slnx", ".sln"],
+        "origins": ["dotnet/dependency-graph"],
+        "shared": true,
+        "registrationOnly": true
+      },
+      "body": {
+        "kind": "file",
+        "settle": 250,
+        "x-follows": ["the project files the solution names", "Directory.Packages.props above each project"],
+        "x-environment": ["NUGET_PACKAGES"]
+      },
+      "reader": { "plugin": "net.etalii.adp.dotnet.solution", "version": "^0.1.0" },
+      "readOnly": "A .NET dependency graph shows the solution as it is and changes nothing in it. Edit the project file this value comes from, and the diagram will follow.",
+      "registration": { "createOnFirstPlacement": false },
+      "template": { "text": "<Solution>\r\n</Solution>\r\n" }
+    }
+  }
+}
+```
+
+Three things in it are not FBL 0.2 as written. `settle` is for folder bodies only; on a file body it marks finding B15. `x-follows` and `x-environment` are extension properties a host ignores; they mark where the constructs of gaps 1 and 2 are needed (findings B2 and B6). The extensions are in the order Q4's default needs, `.slnx` first, which is the reverse of the definition's primary and alternate today. `readOnly` repeats the definition's `std.readOnly` until Requirement 2.4 settles which of the two stays.
+
+## Appendix: the definition's persistence and plugin, as drafted
+
+```json
+{
+  "persistence": {
+    "format": "fbl",
+    "binding": "https://raw.githubusercontent.com/etalii-adp/etalii.adp.ide.standalone/develop/src/diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/dotnet-dependency-graph.fbl#solution",
+    "ids": {
+      "strategy": "natural",
+      "prefix": { "Project": "project:", "Package": "package:" },
+      "stable": true,
+      "pattern": "^(project|package|depends):.{1,1024}$"
+    },
+    "view": { "store": ["bounds"], "styleOverrides": "none" }
+  },
+  "plugins": {
+    "net.etalii.adp.dotnet.solution": {
+      "version": "^0.1.0",
+      "provides": ["persistenceFormat", "action"],
+      "required": true,
+      "plans": []
+    }
+  }
+}
+```
+
+The `x-dotnet` block stays as it is. Whether an empty `plans` is allowed is not stated in DISL 13.1, whose default is add, set and remove; FBL 11.4 makes it moot for a read-only binding, and the design settles which of the two says it.
+
+## Sources
+
+- The module `src/diagrams/dotnet-dependency-graph/` at `develop` `9a646009`: `SolutionReader.cs`, `ProjectReader.cs`, `PackageDescriptionReader.cs`, `DependencyGraphStore.cs` (`WatchedFiles`), `SolutionWatcher.cs`, `DotNetDefinition.cs`, `DotNetSolutionDocumentFactory.cs`, `Diagram.cs`, `DotNetDependencyGraphSession.cs`, `definition/dotnet-dependency-graph.dis`, its companion and `provenance.json`, `Parity/DotNetTranscript.cs`, and both readmes. Counts are from `git ls-files src/diagrams/dotnet-dependency-graph`.
+- `src/backend/EtAlii.Adp.Hierarchy/AddDiagramContextActionProvider.cs` (the sibling is the base name plus `definition.Extension`) for finding B11, and `RegistrationLayout.cs` for B14.
+- etalii-adp/etalii.adp at `develop` `da64ff0`: `specifications/fbl/FBL-specification.md` sections 2.6, 3.2, 3.4, 4.2, 4.5, 5.4, 7.4, 7.5, 8.2 to 8.5, 10, 11, 12.1, 13, 16 and 17; `specifications/fbl/helm-chart.fbl` as the one example of a plugin reader over several files; `specs/005-format-binding/inventory.md`, lines 23 and 31; `specifications/disl/DISL-specification.md` sections 4.11.1, 11.2, 11.5 and 13.1.
+- For B5: `src/backend/EtAlii.Adp.Specification.Fbl/Plugins/PluginBody.cs`, `IPersistencePlugin.cs`, `PluginReadRequest.cs` and `FblModel.cs`, and `git grep -n 'FolderSubject\.\|\.Watch(\|PluginReadRequest(' -- '*.cs'` from `src/`, which finds no caller of `FolderSubject` or of the plugin's `Watch` outside the library's tests, and `PluginReadRequest` built with one file everywhere.
+- For B14: `git grep -n 'OpenRegistration\|RegistrationDocument' -- 'diagrams/*.cs' 'backend/EtAlii.Adp.Hierarchy/*.cs'`, with no result.
+- For B2: `grep -c 'Project Path="\.\./' backend/EtAlii.Adp.slnx` gives 88, and `grep -c '<Project Path=' backend/EtAlii.Adp.slnx` gives 123.
+- For B17: `grep -c -i namespace` over the FBL specification gives 0, and a search of `Files/Xml/XmlFamily.cs` and `Rules/Selector.cs` for `namespace`, `LocalName` and `prefix` finds only the C# namespace lines.
+- `src/backend/EtAlii.Adp.Specification.Fbl.Tests/RealFiles/divergences.json`, searched for `dotnet`, `sln` and `csproj` with no result.
+- `causal-loop-disl-fbl` and `timeline-disl-fbl` for the series, the survey and the shape of this document.
