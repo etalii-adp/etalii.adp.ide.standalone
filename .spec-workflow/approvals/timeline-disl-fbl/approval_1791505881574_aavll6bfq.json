@@ -3,8 +3,10 @@
   "title": "requirements.md: reading and writing the timeline through FBL",
   "filePath": ".spec-workflow/specs/timeline-disl-fbl/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T00:31:21.574Z",
   "category": "spec",
-  "categoryName": "timeline-disl-fbl"
+  "categoryName": "timeline-disl-fbl",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T00:34:57.061Z"
 }
