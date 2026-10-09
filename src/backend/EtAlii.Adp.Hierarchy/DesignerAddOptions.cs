@@ -5,7 +5,7 @@ using IoPath = System.IO.Path;
 namespace EtAlii.Adp.Hierarchy;
 
 /// <summary>
-/// The designer family's part of the Add dialog: each designer type as an entry of the same
+/// The designer family's part of the Add dialog: a designer type is an entry of the same
 /// option tree the diagram types are in, with the formats a document can be created in as the
 /// choices under it (knowledge-designer Requirements 10.4 and 2.4).
 /// </summary>
