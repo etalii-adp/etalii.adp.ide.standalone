@@ -113,7 +113,6 @@ public sealed class SupplyChainLayout
             .ToList();
 
         var groupIds = declaredGroups.Select(group => group.Id).ToHashSet(StringComparer.Ordinal);
-        string? GroupOf(SupplyChainNode node) => groupIds.Contains(node.Group) ? node.Group : null;
 
         var arranged = Arrange(nodes, flows, GroupOf, out var arrangedLanes);
 
@@ -147,9 +146,6 @@ public sealed class SupplyChainLayout
             groupBoxes[group.Id] = new SupplyChainBox(left, top, right - left, bottom - top);
         }
 
-        // A lane was reserved beside the arranged positions; once an end is drawn anywhere else the
-        // slots no longer line up with it, so that flow runs straight to its ends instead.
-        bool AtArranged(string id) => Math.Abs(nodeBoxes[id].X - arranged[id].X) < double.Tolerance && Math.Abs(nodeBoxes[id].Y - arranged[id].Y) < double.Tolerance;
         var lanes = flows
             .Where(flow => arrangedLanes.ContainsKey(flow.Id) && AtArranged(flow.From) && AtArranged(flow.To))
             .ToDictionary(flow => flow.Id, flow => arrangedLanes[flow.Id], StringComparer.Ordinal);
@@ -162,6 +158,11 @@ public sealed class SupplyChainLayout
             groupBoxes,
             arranged,
             lanes);
+
+        // A lane was reserved beside the arranged positions; once an end is drawn anywhere else the
+        // slots no longer line up with it, so that flow runs straight to its ends instead.
+        bool AtArranged(string id) => Math.Abs(nodeBoxes[id].X - arranged[id].X) < double.Tolerance && Math.Abs(nodeBoxes[id].Y - arranged[id].Y) < double.Tolerance;
+        string? GroupOf(SupplyChainNode node) => groupIds.Contains(node.Group) ? node.Group : null;
     }
 
     /// <summary>
@@ -220,11 +221,6 @@ public sealed class SupplyChainLayout
         // id cannot be a document id - those never hold a control character.
         var index = nodes.Select((node, position) => (node.Id, position)).ToDictionary(pair => pair.Id, pair => pair.position, StringComparer.Ordinal);
         var neighbours = nodes.ToDictionary(node => node.Id, _ => new List<string>(), StringComparer.Ordinal);
-        void Join(string a, string b)
-        {
-            neighbours[a].Add(b);
-            neighbours[b].Add(a);
-        }
 
         var laneSlots = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var laneTarget = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -259,7 +255,6 @@ public sealed class SupplyChainLayout
         // flow delivers to.
         const string ungrouped = "\u0000ungrouped";
         var byId = nodes.ToDictionary(node => node.Id, StringComparer.Ordinal);
-        string BandKey(string id) => groupOf(byId[laneTarget.GetValueOrDefault(id, id)]) ?? ungrouped;
         var bands = index.Keys
             .GroupBy(BandKey, StringComparer.Ordinal)
             .Select(group => group.ToList())
@@ -267,7 +262,6 @@ public sealed class SupplyChainLayout
 
         // A position to sort by, refined each pass: start from document order.
         var rank = index.Keys.ToDictionary(id => id, id => (double)index[id], StringComparer.Ordinal);
-        double Barycentre(string id) => neighbours[id].Count == 0 ? rank[id] : neighbours[id].Average(other => rank[other]);
 
         List<int> bandOrder = [.. Enumerable.Range(0, bands.Count)];
         // Within a band, the members of each layer in their order.
@@ -362,6 +356,14 @@ public sealed class SupplyChainLayout
         }
 
         return result;
+
+        double Barycentre(string id) => neighbours[id].Count == 0 ? rank[id] : neighbours[id].Average(other => rank[other]);
+        string BandKey(string id) => groupOf(byId[laneTarget.GetValueOrDefault(id, id)]) ?? ungrouped;
+        void Join(string a, string b)
+        {
+            neighbours[a].Add(b);
+            neighbours[b].Add(a);
+        }
     }
 
     /// <summary>The flows that do not close a cycle, found by a depth-first walk in document order.</summary>

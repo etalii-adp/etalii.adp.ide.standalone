@@ -235,16 +235,15 @@ public static class DiagramFilePair
         }
 
         var whole = IoPath.Combine(directory, name.FullBase + extension);
-        if (!File.Exists(whole))
-        {
+        return !File.Exists(whole)
             // The qualified reading won: the derived subject is shared by construction, since
             // any other qualifier over the same subject derives the same file.
-            return (subject, null, true);
-        }
-
-        // Both readings name a real file, so the name alone cannot say which was meant. The
-        // longer wins, and that is the unqualified reading - the name IS that subject.
-        return (whole, File.Exists(subject) ? subject : null, false);
+            ? (subject, null, true)
+            // Both readings name a real file, so the name alone cannot say which was meant. The
+            // longer wins, and that is the unqualified reading - the name IS that subject.
+            : (whole, File.Exists(subject)
+                ? subject
+                : null, false);
     }
 
     /// <summary>

@@ -173,6 +173,13 @@ public static partial class PipelineGraphBuilder
         var path = new List<string>();
         var reported = new HashSet<string>(StringComparer.Ordinal);
 
+        foreach (var id in nodeIds.Where(id => !seen.Contains(id)))
+        {
+            Walk(id);
+        }
+
+        return cycles;
+
         void Walk(string id)
         {
             seen.Add(id);
@@ -200,12 +207,5 @@ public static partial class PipelineGraphBuilder
             path.RemoveAt(path.Count - 1);
             onPath.Remove(id);
         }
-
-        foreach (var id in nodeIds.Where(id => !seen.Contains(id)))
-        {
-            Walk(id);
-        }
-
-        return cycles;
     }
 }

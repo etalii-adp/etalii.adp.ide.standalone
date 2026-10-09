@@ -53,7 +53,9 @@ public static class CelStrings
         if (a[0] is IReadOnlyList<object?> list)
         {
             // DISL §12.4 l.indexOf(v): the first index, or -1.
-            for (var i = 0; i < list.Count; i++) if (CelValues.Equal(list[i], a[1])) return (long)i;
+            for (var i = 0; i < list.Count; i++)
+                if (CelValues.Equal(list[i], a[1]))
+                    return (long)i;
             return -1L;
         }
         var text = CodePoints.Of(Text(a[0]));
@@ -67,7 +69,9 @@ public static class CelStrings
     {
         if (a[0] is IReadOnlyList<object?> list)
         {
-            for (var i = list.Count - 1; i >= 0; i--) if (CelValues.Equal(list[i], a[1])) return (long)i;
+            for (var i = list.Count - 1; i >= 0; i--)
+                if (CelValues.Equal(list[i], a[1]))
+                    return (long)i;
             return -1L;
         }
         var text = CodePoints.Of(Text(a[0]));

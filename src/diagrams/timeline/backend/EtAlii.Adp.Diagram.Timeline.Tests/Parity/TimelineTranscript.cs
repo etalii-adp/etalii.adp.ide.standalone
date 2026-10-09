@@ -63,15 +63,15 @@ internal static class TimelineTranscript
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
     private static IReadOnlyList<string> Corpus()
     {
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
-            paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
-
         var fixtureFolder = Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures");
         var fixtures = Directory.GetFiles(fixtureFolder, "*.tml");
         var findings = Directory.GetFiles(Path.Combine(fixtureFolder, "findings"), "*.tml");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.tml"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "timeline")).SelectMany(folder => Directory.GetFiles(folder, "*.tml"));
         return [.. Sorted(fixtures), .. Sorted(findings), .. Sorted(examples), .. Sorted(shipped)];
+
+        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
+            paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>

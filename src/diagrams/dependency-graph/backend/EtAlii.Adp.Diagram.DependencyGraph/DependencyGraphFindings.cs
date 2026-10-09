@@ -95,14 +95,6 @@ internal static class DependencyGraphFindings
         var written = model.Elements.Select(element => element.Id).Concat(model.Relations.Select(relation => relation.Id)).ToHashSet(StringComparer.Ordinal);
         var taken = new HashSet<string>(StringComparer.Ordinal);
         var ephemeral = 0;
-        string ModelId(string id)
-        {
-            if (id.Length > 0 && taken.Add(id)) return id;
-            string unnamed;
-            do unnamed = $"dependencies:unnamed:{++ephemeral}";
-            while (written.Contains(unnamed) || !taken.Add(unnamed));
-            return unnamed;
-        }
 
         var nodeIds = new Dictionary<string, string>(StringComparer.Ordinal);
         var lines = new List<int>();
@@ -138,6 +130,15 @@ internal static class DependencyGraphFindings
         }
 
         return (DislModelBuilder.From(new FblModel(read, [], false), DependencyGraphDefinition.Specification).Diagram, lines);
+
+        string ModelId(string id)
+        {
+            if (id.Length > 0 && taken.Add(id)) return id;
+            string unnamed;
+            do unnamed = $"dependencies:unnamed:{++ephemeral}";
+            while (written.Contains(unnamed) || !taken.Add(unnamed));
+            return unnamed;
+        }
     }
 
     private static string WrittenIdOf(DislElement element) =>

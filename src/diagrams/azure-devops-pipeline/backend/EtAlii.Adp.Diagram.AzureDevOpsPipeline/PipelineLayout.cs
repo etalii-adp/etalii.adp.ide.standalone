@@ -46,8 +46,6 @@ public static class PipelineLayout
         }
 
         var defaultSize = fallback ?? metrics.Stage;
-        PipelineSize SizeOf(string id) =>
-            size is not null && size.TryGetValue(id, out var found) ? found : defaultSize;
 
         var layers = Layers(graph);
         var placements = new List<PipelinePlacement>(graph.NodeIds.Count);
@@ -94,6 +92,8 @@ public static class PipelineLayout
             new PipelineSize(
                 layerX[lastLayer] + layerWidth[lastLayer],
                 placements.Max(placement => placement.Y + placement.Size.Height)));
+
+        PipelineSize SizeOf(string id) => size is not null && size.TryGetValue(id, out var found) ? found : defaultSize;
     }
 
     /// <summary>
@@ -186,6 +186,13 @@ public static class PipelineLayout
         var layers = new Dictionary<string, int>(StringComparer.Ordinal);
         var resolving = new HashSet<string>(StringComparer.Ordinal);
 
+        foreach (var id in graph.NodeIds)
+        {
+            Depth(id);
+        }
+
+        return layers;
+
         int Depth(string id)
         {
             if (layers.TryGetValue(id, out var known))
@@ -210,12 +217,5 @@ public static class PipelineLayout
             layers[id] = depth;
             return depth;
         }
-
-        foreach (var id in graph.NodeIds)
-        {
-            Depth(id);
-        }
-
-        return layers;
     }
 }

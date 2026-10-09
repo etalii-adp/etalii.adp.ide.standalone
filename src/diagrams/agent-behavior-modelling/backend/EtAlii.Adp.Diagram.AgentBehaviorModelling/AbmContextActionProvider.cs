@@ -79,16 +79,14 @@ public sealed class AbmContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!IsOurs(target))
-        {
+        return Result(!IsOurs(target)
             // Another type's element: answered with nothing rather than by reading another notation's file.
-            return Result([]);
-        }
+            ? []
+            : AbmDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
 
         // Derived from the DISL definition (AbmDefinition.Menus): its context-menu sets, grouped by
         // group, the ids mapped by its x-abm block. Executing an action by id only finds actions
         // its target discovers, so a drop and a finished gesture each discover what may be run on them.
-        return Result(AbmDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />
@@ -250,8 +248,6 @@ public sealed class AbmContextActionProvider : IContextActionProvider
         }
 
         var positions = AbmLayout.Arrange(model, stored);
-        static (double X, double Y) Centre(RegistrationPosition topLeft) =>
-            (topLeft.X + (AbmLayout.NodeWidth / 2), topLeft.Y + (AbmLayout.NodeHeight / 2));
 
         var parent = model.Nodes
             .Where(node => node.TakesAnotherChild && Centre(positions[node.Id]).Y < y)
@@ -269,6 +265,8 @@ public sealed class AbmContextActionProvider : IContextActionProvider
 
         var index = model.ChildrenOf(parent).Count(child => Centre(positions[child.Id]).X < x);
         return (parent, index, "");
+
+        static (double X, double Y) Centre(RegistrationPosition topLeft) => (topLeft.X + (AbmLayout.NodeWidth / 2), topLeft.Y + (AbmLayout.NodeHeight / 2));
     }
 
     private async ValueTask<ContextExecutionResult> AddThenEditAsync(

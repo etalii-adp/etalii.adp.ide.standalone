@@ -161,16 +161,18 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         }
 
         var bodyPath = target.ResolvedFullPath;
-        ICommand? command = !MindmapDefinition.Offers(element!, actionId) ? null : actionId switch
-        {
-            AddChildActionId => new AddChildNodeCommand(bodyPath, node.Id, MindmapDocument.NewId(), value),
-            AddSiblingActionId => new AddSiblingNodeCommand(bodyPath, node.Id, MindmapDocument.NewId(), value),
-            RenameActionId => new SetNodeTextCommand(bodyPath, node.Id, value),
-            DeleteActionId => new RemoveNodeCommand(bodyPath, node.Id),
-            EditNotesActionId => new SetNodeNotesCommand(bodyPath, node.Id, value),
-            LinkActionId => LinkCommand(target, node, value),
-            _ => null,
-        };
+        ICommand? command = !MindmapDefinition.Offers(element!, actionId)
+            ? null
+            : actionId switch
+            {
+                AddChildActionId => new AddChildNodeCommand(bodyPath, node.Id, MindmapDocument.NewId(), value),
+                AddSiblingActionId => new AddSiblingNodeCommand(bodyPath, node.Id, MindmapDocument.NewId(), value),
+                RenameActionId => new SetNodeTextCommand(bodyPath, node.Id, value),
+                DeleteActionId => new RemoveNodeCommand(bodyPath, node.Id),
+                EditNotesActionId => new SetNodeNotesCommand(bodyPath, node.Id, value),
+                LinkActionId => LinkCommand(target, node, value),
+                _ => null,
+            };
 
         if (command is null)
         {

@@ -22,12 +22,9 @@ internal static class FieldServiceExample
                 if (directory.Name == "functional-decomposition-graph")
                 {
                     var path = System.IO.Path.Combine(directory.FullName, "examples", "field-service", "field-service.fdg");
-                    if (!File.Exists(path))
-                    {
-                        throw new InvalidOperationException($"The field-service example is missing: {path}");
-                    }
-
-                    return path;
+                    return !File.Exists(path)
+                        ? throw new InvalidOperationException($"The field-service example is missing: {path}")
+                        : path;
                 }
             }
 

@@ -14,13 +14,10 @@ public sealed partial class HierarchyContextActionProvider
 
     private static ContextValidationResult ValidateRename(ContextTarget target, string value)
     {
-        if (ParentFolderOf(target) is not { } parentFolder)
-        {
-            return ContextValidationResult.Rejected("This item has no parent folder to act within.");
-        }
-
-        // Every other rule lives in EntryNameRules, shared with creating a new entry, so a
-        // rename and an add can never disagree about what a usable name is.
-        return EntryNameRules.Validate(value, parentFolder, IoPath.GetFileName(target.ResolvedFullPath));
+        return ParentFolderOf(target) is not { } parentFolder
+            ? ContextValidationResult.Rejected("This item has no parent folder to act within.")
+            // Every other rule lives in EntryNameRules, shared with creating a new entry, so a
+            // rename and an add can never disagree about what a usable name is.
+            : EntryNameRules.Validate(value, parentFolder, IoPath.GetFileName(target.ResolvedFullPath));
     }
 }

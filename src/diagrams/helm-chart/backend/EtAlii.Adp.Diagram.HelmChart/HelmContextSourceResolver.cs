@@ -64,12 +64,9 @@ public sealed class HelmContextSourceResolver : IContextSourceResolver
         var graph = HelmGraph.Derive(chart);
 
         var elementId = id.ElementId.Value;
-        if (Locate(chart, graph, elementId) is not { } located)
-        {
-            return Rejected("Unknown element.");
-        }
-
-        return Resolve(watchId, rootPath, id, clientPath, folder, elementId, located.Path, located.Text);
+        return Locate(chart, graph, elementId) is not { } located
+            ? Rejected("Unknown element.")
+            : Resolve(watchId, rootPath, id, clientPath, folder, elementId, located.Path, located.Text);
     }
 
     /// <summary>Nothing nests inside a chart node; a subchart's own files are its own diagram's business.</summary>
@@ -93,6 +90,13 @@ public sealed class HelmContextSourceResolver : IContextSourceResolver
         var lastPath = level.RelativePath;
         var disposed = false;
 
+        _store.Changed += OnChanged;
+        return new HelmNodeSubscription(() =>
+        {
+            disposed = true;
+            _store.Changed -= OnChanged;
+        });
+
         void OnChanged(object? sender, HelmChartChangedEventArgs args)
         {
             if (disposed ||
@@ -114,13 +118,6 @@ public sealed class HelmContextSourceResolver : IContextSourceResolver
                 onChange(located.Path);
             }
         }
-
-        _store.Changed += OnChanged;
-        return new HelmNodeSubscription(() =>
-        {
-            disposed = true;
-            _store.Changed -= OnChanged;
-        });
     }
 
     /// <summary>

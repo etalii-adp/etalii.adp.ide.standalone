@@ -142,6 +142,9 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new CausalLoopSubscription(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, CausalLoopDocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -155,9 +158,6 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
             var text = entry.IsUsable ? Describe(entry.Model, elementId) : null;
             onChange(text is null ? null : [text]);
         }
-
-        _documents.Changed += OnChanged;
-        return new CausalLoopSubscription(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>

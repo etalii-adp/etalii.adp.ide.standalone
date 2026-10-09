@@ -562,3 +562,8 @@ csharp_space_between_square_brackets = false
 # Wrapping preferences
 csharp_preserve_single_line_blocks = true
 csharp_preserve_single_line_statements = true
+
+# Always put ? and : on their own lines
+resharper_csharp_wrap_ternary_expr_style = chop_if_long
+# Report code that doesn't match the wrap/line-break settings above
+resharper_missing_linebreak_highlighting = warning

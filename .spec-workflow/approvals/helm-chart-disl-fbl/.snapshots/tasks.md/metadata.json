@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/helm-chart-disl-fbl/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T15:07:41.084Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791558460242_o9qqkk5av",
+      "approvalTitle": "tasks.md: converting the Helm chart diagram (written against the recommended amendment)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T15:13:38.045Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791558460242_o9qqkk5av",
+      "approvalTitle": "tasks.md: converting the Helm chart diagram (written against the recommended amendment)"
+    }
+  ]
+}

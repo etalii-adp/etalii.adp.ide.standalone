@@ -84,12 +84,8 @@ internal sealed class SparqlTokenizer
                 // '<' opens an IRI only when a closing '>' arrives before any whitespace or
                 // quote - otherwise it is the less-than of an expression, which this module
                 // never interprets but must still slice past correctly.
-                if (TryReadIri(start, out var iri))
-                {
-                    return iri;
-                }
+                return TryReadIri(start, out var iri) ? iri : ReadOperator(start);
 
-                return ReadOperator(start);
             case '"' or '\'':
                 return ReadString(start, character);
             case '?' or '$':
@@ -126,12 +122,7 @@ internal sealed class SparqlTokenizer
             return ReadNumber(start);
         }
 
-        if (IsNameStartChar(character))
-        {
-            return ReadNameOrPrefixedName(start);
-        }
-
-        return ReadOperator(start);
+        return IsNameStartChar(character) ? ReadNameOrPrefixedName(start) : ReadOperator(start);
     }
 
     private void SkipTrivia()
@@ -242,12 +233,9 @@ internal sealed class SparqlTokenizer
             _position++;
         }
 
-        if (_position == start + 1)
-        {
-            throw Error("A lone '@' is not a SPARQL token; a language tag is '@' followed by letters.", start);
-        }
-
-        return Slice(SparqlTokenKind.LanguageTag, start);
+        return _position == start + 1
+            ? throw Error("A lone '@' is not a SPARQL token; a language tag is '@' followed by letters.", start)
+            : Slice(SparqlTokenKind.LanguageTag, start);
     }
 
     private SparqlToken ReadBlankNodeLabel(int start)
@@ -320,12 +308,9 @@ internal sealed class SparqlTokenizer
         }
 
         var value = _text[start.._position];
-        if (value is "true" or "false")
-        {
-            return new SparqlToken(SparqlTokenKind.Boolean, start, _position - start, value);
-        }
-
-        return new SparqlToken(SparqlTokenKind.Name, start, _position - start, value);
+        return value is "true" or "false"
+            ? new SparqlToken(SparqlTokenKind.Boolean, start, _position - start, value)
+            : new SparqlToken(SparqlTokenKind.Name, start, _position - start, value);
     }
 
     private SparqlToken ReadOperator(int start)

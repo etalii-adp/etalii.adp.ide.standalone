@@ -55,12 +55,6 @@ internal static class PipelineWriter
             return "";
         }
 
-        string[] Entry(string entryIndent) =>
-        [
-            $"{entryIndent}- {kind}:",
-            $"{entryIndent}    {pathKey}: {DatabricksSplices.Quote(path)}",
-        ];
-
         if (pipeline.Libraries.Count > 0)
         {
             var last = pipeline.Libraries[^1];
@@ -78,6 +72,12 @@ internal static class PipelineWriter
         var keyIndent = DatabricksSplices.KeyIndentWithin(document, pipeline.Lines);
         document.Insert(pipeline.Lines.End + 1, [$"{keyIndent}libraries:", .. Entry(keyIndent + "  ")]);
         return "";
+
+        string[] Entry(string entryIndent) =>
+        [
+            $"{entryIndent}- {kind}:",
+            $"{entryIndent}    {pathKey}: {DatabricksSplices.Quote(path)}",
+        ];
     }
 
     /// <summary>

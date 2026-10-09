@@ -249,7 +249,9 @@ public sealed class RdfParser
                 Advance();
                 var datatype = token.Value.Contains('e') || token.Value.Contains('E')
                     ? RdfVocabulary.XsdDouble
-                    : token.Value.Contains('.') ? RdfVocabulary.XsdDecimal : RdfVocabulary.XsdInteger;
+                    : token.Value.Contains('.')
+                        ? RdfVocabulary.XsdDecimal
+                        : RdfVocabulary.XsdInteger;
                 return (new LiteralTerm(token.Value, datatype, null, token.Value), token.End);
             }
             case RdfTokenKind.Boolean:
@@ -311,12 +313,9 @@ public sealed class RdfParser
 
         var colon = token.Value.IndexOf(':');
         var prefix = token.Value[..colon];
-        if (!_prefixes.TryGetValue(prefix, out var expansion))
-        {
-            throw Error($"The prefix '{prefix}:' is not declared.");
-        }
-
-        return new IriTerm(expansion + DecodeLocal(token.Value[(colon + 1)..]), token.Value);
+        return !_prefixes.TryGetValue(prefix, out var expansion)
+            ? throw Error($"The prefix '{prefix}:' is not declared.")
+            : new IriTerm(expansion + DecodeLocal(token.Value[(colon + 1)..]), token.Value);
     }
 
     private BlankTerm ParseLabeledBlank()

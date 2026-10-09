@@ -125,6 +125,9 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new RdfUnsubscriber(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, RdfDocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -136,9 +139,6 @@ public sealed class RdfContextSourceResolver : IContextSourceResolver
             var text = RdfSelection.Describe(args.Entry, elementId) ?? OwlSelection.Describe(args.Entry, elementId) ?? Shacl.ShaclSelection.Describe(args.Entry, elementId);
             onChange(text is null ? null : [text]);
         }
-
-        _documents.Changed += OnChanged;
-        return new RdfUnsubscriber(() => _documents.Changed -= OnChanged);
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>

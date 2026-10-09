@@ -57,12 +57,11 @@ internal static class AbmTranscript
     /// <summary>The documents on disk, as paths relative to <c>src/</c> with forward slashes, in the order they are recorded.</summary>
     private static IReadOnlyList<string> Files()
     {
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
-            paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
-
         var examples = AbmExamples.Names.Select(AbmExamples.BodyOf);
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "agent-behavior-modelling")).SelectMany(folder => Directory.GetFiles(folder, "*.md"));
         return [.. Sorted(examples), .. Sorted(shipped)];
+
+        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>
@@ -265,10 +264,6 @@ internal static class AbmTranscript
         var script = new Script(json, session, cancellationToken);
         var original = await script.StartAsync();
 
-        AbmNode? Root() => session.Model.Roots.FirstOrDefault();
-        AbmNode? Leaf() => session.Model.Nodes.FirstOrDefault(node => node.Category == AbmNodeCategory.Leaf);
-        AbmNode? Branching() => session.Model.Nodes.FirstOrDefault(node => node.ChildIds.Count >= 2);
-
         if (Root() is { } root)
         {
             await script.SetAsync(root.Id, AbmContextPropertyProvider.LabelProperty, "Parity root");
@@ -334,6 +329,11 @@ internal static class AbmTranscript
         await script.CommitAsync(Unknown, AbmContextActionProvider.RenameActionId, "Nobody");
         await script.ExecuteAsync("", AbmContextActionProvider.ArrangeActionId);
         await script.EndAsync(original);
+        return;
+
+        AbmNode? Branching() => session.Model.Nodes.FirstOrDefault(node => node.ChildIds.Count >= 2);
+        AbmNode? Leaf() => session.Model.Nodes.FirstOrDefault(node => node.Category == AbmNodeCategory.Leaf);
+        AbmNode? Root() => session.Model.Roots.FirstOrDefault();
     }
 
     private static int MenuIndex(List<IReadOnlyList<string>> menus, IReadOnlyList<string> menu)

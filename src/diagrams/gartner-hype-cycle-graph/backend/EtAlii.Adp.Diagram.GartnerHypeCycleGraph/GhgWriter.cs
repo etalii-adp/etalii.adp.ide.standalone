@@ -48,12 +48,9 @@ public static class GhgWriter
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(trend);
 
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return GhgEdit.Refused("A trend needs a name.");
-        }
-
-        return body.Set(Trend, trend.Id, trend.Range, Values(("name", name.Trim())));
+        return string.IsNullOrWhiteSpace(name)
+            ? GhgEdit.Refused("A trend needs a name.")
+            : body.Set(Trend, trend.Id, trend.Range, Values(("name", name.Trim())));
     }
 
     /// <summary>Rewrites a trend's Description. An empty one removes the key.</summary>
@@ -117,12 +114,9 @@ public static class GhgWriter
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(trend);
 
-        if (phases is < 1 or > GhgPhases.Count)
-        {
-            return GhgEdit.Refused($"A trend shows 1 to {GhgPhases.Count} phases.");
-        }
-
-        return body.Set(Trend, trend.Id, trend.Range, Values(("phases", phases)));
+        return phases is < 1 or > GhgPhases.Count
+            ? GhgEdit.Refused($"A trend shows 1 to {GhgPhases.Count} phases.")
+            : body.Set(Trend, trend.Id, trend.Range, Values(("phases", phases)));
     }
 
     /// <summary>Rewrites a trend's tags as one flow sequence, so a tag added rewrites one line.</summary>
@@ -210,12 +204,9 @@ public static class GhgWriter
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(trigger);
 
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return GhgEdit.Refused("A trigger needs a name.");
-        }
-
-        return body.Set(Trigger, trigger.Id, trigger.Range, Values(("name", name.Trim())));
+        return string.IsNullOrWhiteSpace(name)
+            ? GhgEdit.Refused("A trigger needs a name.")
+            : body.Set(Trigger, trigger.Id, trigger.Range, Values(("name", name.Trim())));
     }
 
     /// <summary>Rewrites a trigger's Description. An empty one removes the key.</summary>

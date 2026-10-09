@@ -116,12 +116,9 @@ public sealed record C4Verdict(string CliVersion, IReadOnlyList<C4VerdictFinding
         }
 
         var ruleId = parts[1].Trim();
-        if (ruleId.Length == 0)
-        {
-            throw new FormatException($"'{path}' line {number} names no rule: '{line}'. {RegenerationHint}");
-        }
-
-        return new C4VerdictFinding(parts[0].Trim(), ruleId, parts[2].Trim());
+        return ruleId.Length == 0
+            ? throw new FormatException($"'{path}' line {number} names no rule: '{line}'. {RegenerationHint}")
+            : new C4VerdictFinding(parts[0].Trim(), ruleId, parts[2].Trim());
     }
 }
 

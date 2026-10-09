@@ -93,19 +93,16 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
+        return Result(!Diagram.IsBody(target.ResolvedFullPath)
             // Another type's element; a provider consulted for every element in its scope answers
             // with nothing rather than parsing another notation's file.
-            return Result([]);
-        }
-
-        // Derived from the definition (TimelineDefinition.Menus): an element's and a relation's
-        // menus, empty canvas at a placement - which a drop resolves its add through, because
-        // executing an action by id only finds actions its target discovers - and a finished
-        // relation gesture's one action, which the canvas executes by id against that target.
-        // Arrange is offered wherever the reader is, which keeps it in the ribbon too.
-        return Result(TimelineDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
+            ? []
+            // Derived from the definition (TimelineDefinition.Menus): an element's and a relation's
+            // menus, empty canvas at a placement - which a drop resolves its add through, because
+            // executing an action by id only finds actions its target discovers - and a finished
+            // relation gesture's one action, which the canvas executes by id against that target.
+            // Arrange is offered wherever the reader is, which keeps it in the ribbon too.
+            : TimelineDefinition.Menus(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />

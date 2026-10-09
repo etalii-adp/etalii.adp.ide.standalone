@@ -66,16 +66,6 @@ public sealed class SankeyContextSourceResolver : IContextSourceResolver
         var model = _documents.GetOrLoad(bodyPath).Model;
         var elementId = id.ElementId.Value;
 
-        ContextTarget Target() => new(
-            ContextScope.DiagramElement,
-            bodyPath,
-            IsContainer: false,
-            SourceId: default,
-            rootPath,
-            watchId,
-            elementId,
-            routed.Definition.Origin);
-
         if (GestureIds.TryParsePlacement(elementId, out _, out _) || GestureIds.TryParseRelation(elementId, out _, out _))
         {
             var proposed = GestureIds.IsPlacement(elementId) ? "New node" : "New flow";
@@ -107,6 +97,16 @@ public sealed class SankeyContextSourceResolver : IContextSourceResolver
 
         return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(
             new ContextResolvedLevel(id, path, ContextScope.DiagramElement, Target(), detail, this)));
+
+        ContextTarget Target() => new(
+            ContextScope.DiagramElement,
+            bodyPath,
+            IsContainer: false,
+            SourceId: default,
+            rootPath,
+            watchId,
+            elementId,
+            routed.Definition.Origin);
     }
 
     /// <inheritdoc />
@@ -124,6 +124,9 @@ public sealed class SankeyContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new Unsubscriber(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, SankeyDocumentChangedEventArgs args)
         {
             if (string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -131,9 +134,6 @@ public sealed class SankeyContextSourceResolver : IContextSourceResolver
                 onChange(Describe(_documents.GetOrLoad(bodyPath).Model, elementId)?.Path);
             }
         }
-
-        _documents.Changed += OnChanged;
-        return new Unsubscriber(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>What a selection of <paramref name="id"/> shows, or null when nothing has that id.</summary>

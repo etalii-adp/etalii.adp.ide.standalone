@@ -359,11 +359,7 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     {
         if (container.Entries.Count == 0) return (container.Span.Start + 1, text);
         var last = container.Entries[^1];
-        if (last.LineSpan is not null)
-        {
-            return (last.Own.End, "," + NewlineAt(last.Own.End) + Indentation(last.Indent) + text);
-        }
-        return (last.Own.End, ", " + text);
+        return last.LineSpan is not null ? (last.Own.End, "," + NewlineAt(last.Own.End) + Indentation(last.Indent) + text) : (last.Own.End, ", " + text);
     }
 
     public override void Insert(Plan plan, InsertRequest request)

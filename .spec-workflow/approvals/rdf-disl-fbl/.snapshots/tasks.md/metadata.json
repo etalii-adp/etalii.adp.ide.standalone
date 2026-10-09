@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/rdf-disl-fbl/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T15:07:41.999Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791558461136_g5wx09zr5",
+      "approvalTitle": "tasks.md: converting the RDF diagrams (written against the recommended amendment)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T15:13:43.650Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791558461136_g5wx09zr5",
+      "approvalTitle": "tasks.md: converting the RDF diagrams (written against the recommended amendment)"
+    }
+  ]
+}

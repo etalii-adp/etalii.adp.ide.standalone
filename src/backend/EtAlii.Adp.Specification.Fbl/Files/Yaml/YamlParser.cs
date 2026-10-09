@@ -59,8 +59,9 @@ internal sealed class YamlParser(BodyText text)
         if (DocumentEnd < text.Length) Leaves.Add(new Span(DocumentEnd, text.Length));
         var root = ParseBlockNode(-1, false) ?? Empty(text.BomLength);
         var rest = NextSignificant(_line);
-        if (rest < _end) throw new YamlError(FirstNonSpace(rest), "This line does not continue the structure above it.");
-        return root;
+        return rest < _end
+            ? throw new YamlError(FirstNonSpace(rest), "This line does not continue the structure above it.")
+            : root;
     }
 
     // ---- lines ----
@@ -129,8 +130,7 @@ internal sealed class YamlParser(BodyText text)
         if (column == parentIndent && !(sequenceAtParent && IsDash(line, p))) return null;
         _line = line;
         if (IsDash(line, p)) return ParseSequence(line, p, column);
-        if (KeyAt(line, p) is not null) return ParseMapping(line, p, column);
-        return ParseInline(line, p, parentIndent);
+        return KeyAt(line, p) is not null ? ParseMapping(line, p, column) : ParseInline(line, p, parentIndent);
     }
 
     private TreeValue ParseSequence(int line, int p, int column)
@@ -168,8 +168,7 @@ internal sealed class YamlParser(BodyText text)
     {
         var column = Column(line, q);
         if (IsDash(line, q)) return ParseSequence(line, q, column);
-        if (KeyAt(line, q) is not null) return ParseMapping(line, q, column);
-        return ParseInline(line, q, parentIndent);
+        return KeyAt(line, q) is not null ? ParseMapping(line, q, column) : ParseInline(line, q, parentIndent);
     }
 
     private TreeValue ParseMapping(int line, int p, int column)
@@ -252,8 +251,7 @@ internal sealed class YamlParser(BodyText text)
             if (c != (byte)':' || !(k + 1 == end || _bytes[k + 1] is (byte)' ' or (byte)'\t')) continue;
             var keyEnd = k;
             while (keyEnd > p && _bytes[keyEnd - 1] is (byte)' ' or (byte)'\t') keyEnd--;
-            if (keyEnd == p) return null;
-            return new Key(text.Text(p, keyEnd), new Span(p, keyEnd), k);
+            return keyEnd == p ? null : new Key(text.Text(p, keyEnd), new Span(p, keyEnd), k);
         }
         return null;
     }

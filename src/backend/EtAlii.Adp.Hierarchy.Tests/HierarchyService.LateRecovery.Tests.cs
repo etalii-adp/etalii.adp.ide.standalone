@@ -73,19 +73,6 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         // The recovery task is discarded where it starts, so a fault in it surfaces only as an
         // unobserved task exception once the task is collected.
         var faults = new ConcurrentQueue<Exception>();
-        void OnUnobserved(object? sender, UnobservedTaskExceptionEventArgs args)
-        {
-            var ours = args.Exception.Flatten().InnerExceptions
-                .Where(exception => exception.StackTrace?.Contains(nameof(HierarchyService), StringComparison.Ordinal) == true)
-                .ToList();
-            if (ours.Count == 0)
-            {
-                return;
-            }
-
-            ours.ForEach(faults.Enqueue);
-            args.SetObserved();
-        }
 
         TaskScheduler.UnobservedTaskException += OnUnobserved;
         try
@@ -127,6 +114,22 @@ public class HierarchyServiceLateRecoveryTests : IDisposable
         finally
         {
             TaskScheduler.UnobservedTaskException -= OnUnobserved;
+        }
+
+        return;
+
+        void OnUnobserved(object? sender, UnobservedTaskExceptionEventArgs args)
+        {
+            var ours = args.Exception.Flatten().InnerExceptions
+                .Where(exception => exception.StackTrace?.Contains(nameof(HierarchyService), StringComparison.Ordinal) == true)
+                .ToList();
+            if (ours.Count == 0)
+            {
+                return;
+            }
+
+            ours.ForEach(faults.Enqueue);
+            args.SetObserved();
         }
     }
 }

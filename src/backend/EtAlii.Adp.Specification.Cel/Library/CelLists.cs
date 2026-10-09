@@ -64,9 +64,10 @@ public static class CelLists
             bool => "bool",
             _ => throw new CelException("sort() needs strings, numbers or bools."),
         }).Distinct().Count();
-        if (kinds > 1) throw new CelException("sort() needs values of one type.");
-        // OrderBy is a stable sort, which DISL §12.1 requires; List.Sort is not.
-        return keyed.OrderBy(k => k.Key, Comparer<object?>.Create(CelValues.Compare)).Select(k => k.Item).ToList();
+        return kinds > 1
+            ? throw new CelException("sort() needs values of one type.")
+            // OrderBy is a stable sort, which DISL §12.1 requires; List.Sort is not.
+            : keyed.OrderBy(k => k.Key, Comparer<object?>.Create(CelValues.Compare)).Select(k => k.Item).ToList();
     }
 
     private static long Squared(object? list) => list is IReadOnlyList<object?> l ? 1 + ((long)l.Count * l.Count) : 1;

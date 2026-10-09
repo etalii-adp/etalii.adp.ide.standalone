@@ -172,8 +172,6 @@ public class ConstraintEvaluationTests
         var box = Node(diagram, "Box", "a", 1, new Dictionary<string, object?> { ["name"] = "Ann" });
         var lid = Node(diagram, "Lid", "l", 2, new Dictionary<string, object?> { ["name"] = "Lid" });
 
-        static string Refused(IReadOnlyList<DislFinding> refusals) => string.Join(" / ", refusals.Select(refusal => $"{refusal.ConstraintId}: {refusal.Message}"));
-
         Assert.Equal("", Refused(GestureConstraintEvaluator.Change(specification, box, "name", "Bo")));
         Assert.Equal("named: A box needs a name.", Refused(GestureConstraintEvaluator.Change(specification, box, "name", "")));
         Assert.Equal("short: Ann to Bartholomew is too long.", Refused(GestureConstraintEvaluator.Change(specification, box, "name", "Bartholomew")));
@@ -182,6 +180,9 @@ public class ConstraintEvaluationTests
         var bounds = new Dictionary<string, object?> { ["width"] = 10.0 };
         Assert.Equal("wide: Only wider.", Refused(GestureConstraintEvaluator.Placement(specification, box, "resize", bounds, new Dictionary<string, object?> { ["width"] = 5.0 })));
         Assert.Equal("", Refused(GestureConstraintEvaluator.Placement(specification, box, "move", bounds, new Dictionary<string, object?> { ["width"] = 5.0 })));
+        return;
+
+        static string Refused(IReadOnlyList<DislFinding> refusals) => string.Join(" / ", refusals.Select(refusal => $"{refusal.ConstraintId}: {refusal.Message}"));
     }
 
     [Fact]

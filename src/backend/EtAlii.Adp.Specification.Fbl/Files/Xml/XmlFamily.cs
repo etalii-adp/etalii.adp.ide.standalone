@@ -234,8 +234,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     {
         var end = position;
         while (end < Text.Length && IsNameByte(Text.Bytes[end], end == position)) end++;
-        if (end == position) throw new XmlError(position, "A name was expected here.");
-        return end;
+        return end == position ? throw new XmlError(position, "A name was expected here.") : end;
     }
 
     private int SkipSpace(int position)
@@ -418,8 +417,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
         var target = slot.Child is null ? element : Child(element, slot.Child);
         if (slot.XmlAttribute is { } name)
         {
-            if (target is null) return SlotRead.Absent;
-            return ReadAttribute(target, name);
+            return target is null ? SlotRead.Absent : ReadAttribute(target, name);
         }
         if (slot.Text)
         {
@@ -457,8 +455,9 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     private static string Paragraphs(XmlElement body)
     {
         var paragraphs = Descendants(body).Where(e => e.Name == "p").ToList();
-        if (paragraphs.Count == 0) return Collapse(AllText(body));
-        return string.Join('\n', paragraphs.Select(p => Collapse(AllText(p))));
+        return paragraphs.Count == 0
+            ? Collapse(AllText(body))
+            : string.Join('\n', paragraphs.Select(p => Collapse(AllText(p))));
     }
 
     private static IEnumerable<XmlElement> Descendants(XmlElement element)

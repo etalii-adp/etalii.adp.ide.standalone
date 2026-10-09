@@ -28,12 +28,11 @@ public sealed class ScaleSankeyThicknessCommandHandler(ISankeyDocumentStore docu
         {
             var current = model.Settings.Thickness;
             var scaled = Math.Round(Math.Clamp(current * Math.Pow(SankeyGeometry.ThicknessFactor, command.Steps), SankeyGeometry.MinimumScale, SankeyGeometry.MaximumScale), 2);
-            if (Math.Abs(scaled - current) < double.Tolerance)
-            {
-                return SankeyEdit.Refused(command.Steps > 0 ? "The bands are already as thick as this diagram draws them." : "The bands are already as thin as this diagram draws them.");
-            }
-
-            return SankeyWriter.SetRootKey(document, model.Settings.ThicknessLine, SankeyParser.ThicknessKey, SankeyWriter.Number(scaled));
+            return Math.Abs(scaled - current) < double.Tolerance
+                ? SankeyEdit.Refused(command.Steps > 0
+                    ? "The bands are already as thick as this diagram draws them."
+                    : "The bands are already as thin as this diagram draws them.")
+                : SankeyWriter.SetRootKey(document, model.Settings.ThicknessLine, SankeyParser.ThicknessKey, SankeyWriter.Number(scaled));
         });
     }
 }

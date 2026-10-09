@@ -129,6 +129,9 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new DatabricksUnsubscriber(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, DatabricksDocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -140,9 +143,6 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
             var text = DatabricksSelection.Describe(args.Entry, elementId);
             onChange(text is null ? null : [text]);
         }
-
-        _documents.Changed += OnChanged;
-        return new DatabricksUnsubscriber(() => _documents.Changed -= OnChanged);
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>

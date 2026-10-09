@@ -145,12 +145,9 @@ public sealed class SupplyChainContextActionProvider : IContextActionProvider
             ]);
         }
 
-        if (GestureIds.TryParseRelation(target.ElementId, out _, out _))
-        {
-            return Result([new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])]);
-        }
-
-        return Result([]);
+        return GestureIds.TryParseRelation(target.ElementId, out _, out _)
+            ? Result([new ContextActionGroupDefinition([new ContextActionDefinition(ConnectActionId, "Add flow", "mdi-arrow-right-thin")])])
+            : Result([]);
     }
 
     /// <inheritdoc />

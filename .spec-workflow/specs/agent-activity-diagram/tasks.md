@@ -106,7 +106,7 @@
   - _Leverage: `revealPath`, `AppHeader.tsx` (the one external link today), `everyCanvasHasOneRefusalSurface`_
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 5.7_
 
-- [-] 11. Canvas library: locked elements under an automatic layout
+- [x] 11. Canvas library: locked elements under an automatic layout
   - File: `src/client/src/canvas/library/layout/layoutAlgorithm.ts`, `definition/diagramDefinition.ts`, `DiagramCanvas.tsx`
   - `LayoutElement` gains whether it is locked; a layout leaves a locked element at its stored position. `dragUnderAutomaticLayout` gains a value under which a drag raises `element-moved` for that element alone and the mode stays automatic. A locked element can show a declared symbol.
   - Guard: under an automatic mode, a locked element's drawn position is its stored one and an unlocked one's is the layout's; a drag raises `element-moved` once, for the dragged element.
@@ -114,7 +114,7 @@
   - _Leverage: `DiagramCanvas.layoutModes.test.tsx`_
   - _Requirements: 6.6_
 
-- [-] 12. Canvas library: the radiating layout
+- [x] 12. Canvas library: the radiating layout
   - File: `src/client/src/canvas/library/layout/` (a new algorithm and its tests), `definition/diagramDefinition.ts` (a new `LayoutMode` and its settings)
   - The algorithm of the design (*The layout*) and of `agent-activity-diagram.md`: springs along relations, repulsion, a pull to the circle of each element's tier, a final pass separating rectangles, locked elements fixed, starting positions from the tier and the order of entries, a fixed number of steps, nothing random. Written by hand, with no new dependency.
   - Waits on: 11.
@@ -123,7 +123,7 @@
   - _Leverage: `rowPackedLayout.ts` as the shape of an algorithm and its tests_
   - _Requirements: 6.5, 6.7, 6.9, 6.10_
 
-- [-] 13. Canvas library: a change moves little, and moves visibly
+- [x] 13. Canvas library: a change moves little, and moves visibly
   - File: `src/client/src/canvas/library/layout/`, `DiagramCanvas.tsx`, the library stylesheet
   - When the document changes while open, the layout starts from the positions on screen. Elements move from old to new positions over a short fixed time, and at once under reduced motion.
   - Waits on: 12.
@@ -132,7 +132,7 @@
   - _Leverage: `connectionsFollowTheDrag.test.tsx`_
   - _Requirements: 6.8_
 
-- [-] 14. Canvas library: a switch on the canvas
+- [x] 14. Canvas library: a switch on the canvas
   - File: `src/client/src/canvas/library/definition/chrome.ts`, `surface`
   - A switch declared in chrome with a caption, its value from the stream, raising an event when changed, drawn whether or not a filter is declared, with its role and state exposed.
   - Guard: a definition with a switch and no filter draws it; toggling raises the event; the drawn state follows the stream's value.
@@ -151,7 +151,7 @@
 
 ## The module
 
-- [ ] 16. The module opens an activity file
+- [-] 16. The module opens an activity file
   - File: `src/diagrams/agent-activity-diagram/` (`api/agent-activity-diagram.proto`, `backend/EtAlii.Adp.Diagram.AgentActivityDiagram` and its `.Tests`, `definition/`), `.gitattributes`, `src/backend/EtAlii.Adp.slnx`
   - Bundle the definition with `bundle-disl.sh`. Add `Diagram`, `AadBody`, `AadDefinition`, `AadParser` and `AadModel`, `AadDocumentStore`, `AadDocumentReloader`, `AadSession` and its factory, `AadElementMapper` and the registration, after the hype cycle graph's. Read every field of the design's *Data Models*, with `folder` defaulting to `Default`; a newer header opens read-only; unknown keys are kept. Add `*.aad -text`.
   - Waits on: 4, 7, 15.
@@ -160,7 +160,7 @@
   - _Leverage: `src/diagrams/gartner-hype-cycle-graph`, `docs/creating-a-diagram-module.md`_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 2.9, 10.1, 10.2, 10.4, 10.7_
 
-- [ ] 17. Adding an activity file
+- [-] 17. Adding an activity file
   - File: `backend/…/AadDocumentFactory.cs`
   - `CreateEmptyDocument`: the header and five empty lists, no `view` key, CRLF. Offered where every other tool type is.
   - Waits on: 16.
@@ -169,7 +169,7 @@
   - _Leverage: `GhgDocumentFactory`, `CreateDiagramFileCommandHandler`_
   - _Requirements: 9.7_
 
-- [ ] 18. Element commands
+- [-] 18. Element commands
   - File: `backend/…/Commands/`, `AadContextActionProvider`, `AadContextPropertyProvider`, `AadToolboxProvider`
   - Add from the toolbox (five entries, none for a row), rename in place by F2 or a double-click, set a field or a link from the property grid, and remove with the relations that name the element in one undoable step, telling how many. New ids are ShortGuids; an edit splices only its own lines.
   - Waits on: 16.
@@ -178,7 +178,7 @@
   - _Leverage: `GhgEdits.Run`, `AadDefinition.Apply`, `FormDerivation`_
   - _Requirements: 2.6, 2.7, 3.9, 5.8, 9.1, 9.5_
 
-- [ ] 19. Connecting and its refusals
+- [-] 19. Connecting and its refusals
   - File: `backend/…/Commands/`, `AadGestures`
   - Connect and disconnect set and clear the reference key. The relation is inferred from the pair. Any pair but the four is refused; an agent that has a specification is refused a second; a location is refused a second agent or environment; each refusal names its rule where the gesture ended. An environment may be named by any number of locations and a specification by any number of agents.
   - Waits on: 18.
@@ -187,7 +187,7 @@
   - _Leverage: `GestureConstraintEvaluator`, `connectOnRightDrag`, `relationOnto`_
   - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 9.2_
 
-- [ ] 20. Row commands
+- [-] 20. Row commands
   - File: `backend/…/Commands/`, the context providers
   - Add, rename and remove a task and a pull request, and set a task's status, from the element's menu, the row's menu and the property grid. Every add and change writes `updated` as that moment, with its offset. No command reorders rows. A status change moves the row to its group without expanding a collapsed one.
   - Waits on: 18, 9.
@@ -196,7 +196,7 @@
   - _Leverage: `OperationInterpreter`, the hype cycle graph's nested entries_
   - _Requirements: 4.9, 9.3_
 
-- [ ] 21. View commands: lock, unlock, groups and the switch
+- [-] 21. View commands: lock, unlock, groups and the switch
   - File: `backend/…/Commands/`, `AadSession.MoveElementToAsync`
   - A drag stores a placement and locks; *Lock position* stores the layout's position, which the client supplies; *Unlock position* removes the placement; *Unlock all positions* removes them all and is offered only when there is one; an element added from the toolbox is locked where it was dropped and one written into the file is not. A heading click stores the group's state while it differs from its default and removes the entry when it returns; defaults are Progressing and Input Required expanded, Pending, Finished and pull requests collapsed. The switch is stored under `view`, off when absent; hiding archived specifications changes nothing in the model.
   - Waits on: 18.
@@ -205,7 +205,7 @@
   - _Leverage: `GhgSession`, `AadElementMapper`_
   - _Requirements: 4.4, 4.5, 4.7, 4.8, 6.1, 6.2, 6.3, 6.4, 6.11_
 
-- [ ] 22. Findings
+- [-] 22. Findings
   - File: `backend/…/AadValidator.cs`, `Fixtures/rule-*.aad`
   - One fixture and one test per row of the design's *Error Scenarios*, with the severities the requirements give: info for an agent with no specification or no location, a specification with no project, a project with no specification, a location with no agent or no environment, an entry without an id, and unknown keys; warning for a link that is neither a web address nor a path; error for a reference to nothing, a reference to the wrong type, an id used twice and a key written twice. Nothing is removed on the next write. A file that cannot be read keeps the last picture and accepts no edit. An entry without an id gets one on the first edit in ADP. A `view` entry for a missing element is removed on the next write and not reported.
   - Waits on: 16.
@@ -214,7 +214,7 @@
   - _Leverage: `GhgValidator`, `ConstraintEvaluator`, the functional decomposition graph's `rule-*.fdg` fixtures_
   - _Requirements: 3.3, 3.7, 3.8, 5.6, 8.4, 8.5, 8.7, 8.8_
 
-- [ ] 23. The module's client
+- [-] 23. The module's client
   - File: `src/diagrams/agent-activity-diagram/client/` (`register.ts`, `AadCanvas.tsx`, `aadBindings.ts`, ids, model, stylesheet)
   - `assertValidDiagramDefinition(compileNotation(SPEC, BINDINGS))` and event handlers; no drawing of its own. The notation as specified: a shape and a colour pair per type, recognisable without colour; the location as two fields split by a line with its pull requests beneath; the specification with its name, its status in words and colour, and its groups; relations as plain lines; link symbols, one per field on a location; theme tokens in both themes.
   - Waits on: 16, 15.
@@ -223,7 +223,7 @@
   - _Leverage: `GhgCanvas.tsx`, `ghgBindings.ts`, `docs/diagram-module-client-api.md` ("Tests a module writes")_
   - _Requirements: 4.10, 5.1, 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 24. An outside change, end to end
+- [-] 24. An outside change, end to end
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/AgentActivityDiagramFlow.Tests.cs`
   - Open a diagram over gRPC, write the file from outside as an agent would (a task's status, a new location, a removed agent), and assert the deltas on the `Watch` stream: only what changed, with a locked element's position unchanged and the view untouched.
   - Waits on: 5, 6, 21.
@@ -234,7 +234,7 @@
 
 ## Examples, tests, documentation and checks
 
-- [ ] 25. Examples and the instruction text
+- [-] 25. Examples and the instruction text
   - File: `src/diagrams/agent-activity-diagram/examples/` (`adp-one-day`, `every-state`, `two-projects`, each with a readme; `updating-this-file.md`), seeded into `src/examples/diagrams/agent-activity-diagram`
   - Written for ADP, since no published corpus exists; each readme says so and what its set does not demonstrate. Between them they show everything Requirement 10.5 lists. `updating-this-file.md` tells an agent when to update the file and how to make each kind of change, including writing `updated` and leaving `view` alone.
   - Waits on: 22.
@@ -243,7 +243,7 @@
   - _Leverage: `src/diagrams/gartner-hype-cycle-graph/examples`, `CLAUDE.md` (*Vendored example data*)_
   - _Requirements: 8.3, 10.5, 10.6_
 
-- [-] 26. The layout at size
+- [x] 26. The layout at size
   - File: `src/client/src/canvas/library/layout/` (a measurement test), a generated diagram never committed
   - Two hundred elements and a thousand rows: assert no overlap and equal results on two runs, measure the time of a cold layout and of one change, and fix the number of steps from the measurement. Report the numbers in the implementation log.
   - Waits on: 12, 13.
@@ -252,7 +252,7 @@
   - _Leverage: `dragCost.test.tsx`, `scale-fixture.json` of the hype cycle graph_
   - _Requirements: 11.2_
 
-- [ ] 27. Documentation
+- [-] 27. Documentation
   - File: `docs/tools.md`, `docs/diagram-module-client-api.md`, `docs/creating-a-diagram-module.md`, `docs/architecture.md`, `docs/solution-structure.md`
   - Add the row for `etalii/agent-activity-diagram`, kind Diagram, and move it with the state, in `docs/tools.md` and in the Notion "Tools" database. Describe the library capabilities of tasks 8 to 14, what a module with rows and view state in its body declares, and the lifecycle's behaviour on a write and on a reload.
   - Waits on: 23.
@@ -261,7 +261,7 @@
   - _Leverage: the rows for `etalii/functional-decomposition-graph` and `gartner/hypecycle-graph`_
   - _Requirements: 10.8_
 
-- [ ] 28. The browser pass
+- [-] 28. The browser pass
   - File: `tests.md`
   - Write and run the entry Requirement 11.1 lists, in a real browser and both themes, against a build from a fresh worktree. Nothing here is taken from jsdom.
   - Waits on: 24, 25.
@@ -270,7 +270,7 @@
   - _Leverage: `tests.md`, `CLAUDE.md` (*Bugs found during implementation or verification*)_
   - _Requirements: 11.1, 11.3_
 
-- [ ] 29. Coverage, before and after
+- [-] 29. Coverage, before and after
   - File: this document, the requirements
   - Before the card: extract every requirement reference from this document, list every acceptance criterion in the requirements, and diff the two sets. After implementing: trace each criterion to files and strings, and read two traces back to their artefacts to ask whether the evidence is that criterion's. Check that no task lacks a *Seen to fail against* line.
   - Guard: the diff is empty in both directions.

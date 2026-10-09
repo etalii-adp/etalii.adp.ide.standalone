@@ -208,7 +208,9 @@ public sealed class DatabricksElementMapper
 
         var targetLabel = pipeline.Catalog.Length > 0 && pipeline.Schema.Length > 0
             ? $"{pipeline.Catalog}.{pipeline.Schema}"
-            : pipeline.Catalog.Length > 0 ? pipeline.Catalog : pipeline.Schema;
+            : pipeline.Catalog.Length > 0
+                ? pipeline.Catalog
+                : pipeline.Schema;
         elements.Add(Pack("target", At(positions, "target"), PipelineNodeType,
             new DatabricksPipelineNodePayload { Role = "target", Label = targetLabel }));
         elements.Add(Pack("flow:pipeline->target", default, FlowEdgeType,

@@ -94,12 +94,9 @@ public static class SparqlParser
                 throw Error($"Expected a query form (SELECT, CONSTRUCT, ASK or DESCRIBE), found '{first.Value}'.", first);
             }
 
-            if (Current.Kind != SparqlTokenKind.EndOfFile)
-            {
-                throw Error($"The query is over, but '{Current.Value}' follows it.", Current);
-            }
-
-            return model;
+            return Current.Kind != SparqlTokenKind.EndOfFile
+                ? throw Error($"The query is over, but '{Current.Value}' follows it.", Current)
+                : model;
         }
 
         // -- The prologue -------------------------------------------------------------------
@@ -344,12 +341,9 @@ public static class SparqlParser
                 }
             }
 
-            if (items.Count == 0)
-            {
-                throw Error("SELECT projects at least one variable, or '*'.", Current);
-            }
-
-            return (false, items);
+            return items.Count == 0
+                ? throw Error("SELECT projects at least one variable, or '*'.", Current)
+                : (false, items);
         }
 
         private List<string> ParseDatasetClauses()
@@ -1147,20 +1141,6 @@ public static class SparqlParser
 
         private void IndexScope(GroupScope scope, Dictionary<string, UsageBuilder> usages)
         {
-            void Touch(string name, bool patternPosition)
-            {
-                var builder = GetOrAdd(usages, name);
-                if (patternPosition)
-                {
-                    builder.PatternOccurrences++;
-                }
-
-                if (!builder.ScopePaths.Contains(scope.Path))
-                {
-                    builder.ScopePaths.Add(scope.Path);
-                }
-            }
-
             foreach (var pattern in scope.Patterns)
             {
                 foreach (var term in (SparqlTerm[])[pattern.Subject, pattern.Predicate, pattern.Object])
@@ -1198,6 +1178,22 @@ public static class SparqlParser
             foreach (var child in scope.Children)
             {
                 IndexScope(child, usages);
+            }
+
+            return;
+
+            void Touch(string name, bool patternPosition)
+            {
+                var builder = GetOrAdd(usages, name);
+                if (patternPosition)
+                {
+                    builder.PatternOccurrences++;
+                }
+
+                if (!builder.ScopePaths.Contains(scope.Path))
+                {
+                    builder.ScopePaths.Add(scope.Path);
+                }
             }
         }
 

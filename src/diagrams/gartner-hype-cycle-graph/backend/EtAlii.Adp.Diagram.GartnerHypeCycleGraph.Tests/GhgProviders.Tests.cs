@@ -139,7 +139,6 @@ public sealed class GhgProvidersTests : IDisposable
     public async Task EachPhase_ListsItsInfluences_AndWhatInfluencesIt()
     {
         var rows = await RowsOf("steam-engine");
-        string Value(IReadOnlyList<string> ids, int phase) => Assert.Single(rows, row => row.Id == ids[phase]).Value;
         var influences = GhgContextPropertyProvider.InfluencesProperties;
         var influencedBy = GhgContextPropertyProvider.InfluencedByProperties;
 
@@ -160,6 +159,8 @@ public sealed class GhgProvidersTests : IDisposable
             Assert.Contains(row.Label, new[] { "Influence", "Influenced by" });
         });
         Assert.Equal(["Peak", "Peak", "Trough", "Trough", "Slope", "Slope", "Plateau", "Plateau"], rows.Where(row => IsInfluenceList(row.Id)).Select(row => row.Group));
+        return;
+        string Value(IReadOnlyList<string> ids, int phase) => Assert.Single(rows, row => row.Id == ids[phase]).Value;
     }
 
     /// <summary>

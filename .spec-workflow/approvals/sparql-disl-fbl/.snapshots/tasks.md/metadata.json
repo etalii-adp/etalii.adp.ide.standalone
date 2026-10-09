@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/sparql-disl-fbl/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T15:07:43.807Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791558462971_bmg0o6h1p",
+      "approvalTitle": "tasks.md: converting the SPARQL query diagram (written against the recommended amendment)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T15:13:41.814Z",
+      "trigger": "approved",
+      "approvalId": "approval_1791558462971_bmg0o6h1p",
+      "approvalTitle": "tasks.md: converting the SPARQL query diagram (written against the recommended amendment)"
+    }
+  ]
+}

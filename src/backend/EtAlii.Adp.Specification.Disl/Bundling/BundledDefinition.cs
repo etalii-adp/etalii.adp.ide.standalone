@@ -46,11 +46,9 @@ public sealed record BundledDefinition(DislSpecification Specification, Definiti
         }
 
         var loaded = DislLoader.Load(bytes, plugins);
-        if (loaded.Specification is null)
-        {
-            throw new InvalidOperationException($"{logicalName} does not load: {string.Join("; ", loaded.Errors)}");
-        }
-        return new BundledDefinition(loaded.Specification, provenance, loaded.Diagnostics);
+        return loaded.Specification is null
+            ? throw new InvalidOperationException($"{logicalName} does not load: {string.Join("; ", loaded.Errors)}")
+            : new BundledDefinition(loaded.Specification, provenance, loaded.Diagnostics);
     }
 
     private static byte[] Resource(Assembly assembly, string logicalName)
@@ -66,7 +64,7 @@ public sealed record BundledDefinition(DislSpecification Specification, Definiti
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
-        string Field(string field) => DislJson.String(root, field) ?? throw new InvalidOperationException($"The provenance of {name} has no {field}.");
         return new DefinitionProvenance(Field("repository"), Field("path"), Field("revision"), Field("sha256"));
+        string Field(string field) => DislJson.String(root, field) ?? throw new InvalidOperationException($"The provenance of {name} has no {field}.");
     }
 }

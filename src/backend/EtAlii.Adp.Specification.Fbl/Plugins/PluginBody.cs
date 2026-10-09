@@ -39,8 +39,9 @@ public sealed class PluginBody : SplicedFile
     {
         ArgumentNullException.ThrowIfNull(bytes);
         ArgumentNullException.ThrowIfNull(binding);
-        if (binding.Plugin is null) throw new ArgumentException($"The binding '{binding.Name}' is read by its declared rules, not by a plugin.", nameof(binding));
-        return new PluginBody(bytes, binding, plugin, fileName);
+        return binding.Plugin is null
+            ? throw new ArgumentException($"The binding '{binding.Name}' is read by its declared rules, not by a plugin.", nameof(binding))
+            : new PluginBody(bytes, binding, plugin, fileName);
     }
 
     public PlanResult Plan(ModelChange change)

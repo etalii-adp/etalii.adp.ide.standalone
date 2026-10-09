@@ -34,12 +34,9 @@ public sealed class DiagramFileRouter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        if (DiagramFilePair.IsRegistrationFile(path))
-        {
-            return RouteRegistration(path, projectRoot);
-        }
-
-        return RouteBody(path, projectRoot);
+        return DiagramFilePair.IsRegistrationFile(path)
+            ? RouteRegistration(path, projectRoot)
+            : RouteBody(path, projectRoot);
     }
 
     /// <summary>

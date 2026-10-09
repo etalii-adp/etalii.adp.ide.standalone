@@ -67,8 +67,7 @@ internal static partial class YamlScalars
         var lower = value.ToLowerInvariant();
         if (lower is "yes" or "no" or "on" or "off" or "y" or "n" or "true" or "false" or "null" or "~") return false;
         if (Yaml11Number().IsMatch(value) && value.Any(char.IsAsciiDigit)) return false;
-        if (Timestamp().IsMatch(value)) return timeTyped;
-        return true;
+        return !Timestamp().IsMatch(value) || timeTyped;
     }
 
     /// <summary>

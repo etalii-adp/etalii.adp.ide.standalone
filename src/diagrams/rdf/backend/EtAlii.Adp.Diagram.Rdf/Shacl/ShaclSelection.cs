@@ -24,12 +24,9 @@ internal static class ShaclSelection
         }
 
         var projection = ShaclProjection.Project(entry.Model, int.MaxValue);
-        if (projection.Edges.FirstOrDefault(edge => edge.Id == elementId) is not { } found)
-        {
-            return null;
-        }
-
-        return $"{DisplayOf(projection, found.FromId)} → {DisplayOf(projection, found.ToId)}";
+        return projection.Edges.FirstOrDefault(edge => edge.Id == elementId) is not { } found
+            ? null
+            : $"{DisplayOf(projection, found.FromId)} → {DisplayOf(projection, found.ToId)}";
     }
 
     private static string DisplayOf(ShaclProjectionResult projection, string cardId) =>
