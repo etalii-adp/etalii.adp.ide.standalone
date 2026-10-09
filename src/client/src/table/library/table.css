@@ -229,3 +229,60 @@
   font: inherit;
   cursor: pointer;
 }
+
+/* An option, as a rounded tag in its colour. One rule per name, each reading that name's theme token. */
+.table-option-tag {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 8px;
+  border-radius: 999px;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.table-option-tag + .table-option-tag {
+  margin-inline-start: 4px;
+}
+
+.table-option-default {
+  background: var(--color-table-option-default);
+}
+
+.table-option-gray {
+  background: var(--color-table-option-gray);
+}
+
+.table-option-brown {
+  background: var(--color-table-option-brown);
+}
+
+.table-option-orange {
+  background: var(--color-table-option-orange);
+}
+
+.table-option-yellow {
+  background: var(--color-table-option-yellow);
+}
+
+.table-option-green {
+  background: var(--color-table-option-green);
+}
+
+.table-option-blue {
+  background: var(--color-table-option-blue);
+}
+
+.table-option-purple {
+  background: var(--color-table-option-purple);
+}
+
+.table-option-pink {
+  background: var(--color-table-option-pink);
+}
+
+.table-option-red {
+  background: var(--color-table-option-red);
+}

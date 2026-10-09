@@ -3,6 +3,7 @@ import type { TableEvents, TableGesture } from "./api/tableEvents";
 import { cellText, type TableCell, type TableColumn, type TableModel, type TableRow } from "./api/tableModel";
 import { CellEditor, type AfterEdit } from "./cells/CellEditor";
 import { keyOutcome, tabTarget, type CellPosition } from "./cells/keyboard";
+import { OptionTag } from "./cells/OptionTag";
 import { DEFAULT_COLUMN_WIDTH, kindOf, type TableDefinition } from "./definition/tableDefinition";
 import { AddColumn } from "./header/AddColumn";
 import { ColumnHeader } from "./header/ColumnHeader";
@@ -331,7 +332,7 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
                       onClose={closeEdit}
                     />
                   ) : (
-                    <CellValue cell={cell} isTick={kind.editor === "checkbox"} />
+                    <CellValue cell={cell} column={column} shows={kind.editor === "checkbox" ? "tick" : kind.editor === "option" || kind.editor === "options" ? "tags" : "text"} />
                   )}
                 </div>
               );
@@ -349,11 +350,27 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
   );
 }
 
-/** What a cell shows while it is not being edited: its text, or a tick for a kind that is one. */
-function CellValue({ cell, isTick }: { cell: TableCell | undefined; isTick: boolean }) {
-  if (!isTick) {
-    return <>{cellText(cell)}</>;
+/**
+ * What a cell shows while it is not being edited: its text, a tick for a kind that is one, or a
+ * tag per option for a kind that chooses among options.
+ */
+function CellValue({ cell, column, shows }: { cell: TableCell | undefined; column: TableColumn; shows: "text" | "tick" | "tags" }) {
+  if (shows === "tick") {
+    const ticked = cell?.values[0] === "true";
+    return <span className={`mdi ${ticked ? "mdi-checkbox-marked" : "mdi-checkbox-blank-outline"} table-cell-tick`} role="checkbox" aria-checked={ticked} />;
   }
-  const ticked = cell?.values[0] === "true";
-  return <span className={`mdi ${ticked ? "mdi-checkbox-marked" : "mdi-checkbox-blank-outline"} table-cell-tick`} role="checkbox" aria-checked={ticked} />;
+
+  if (shows === "tags" && cell !== undefined) {
+    return (
+      <>
+        {cell.values.map((value, index) => {
+          // An option the column no longer has is still shown, by the label its cell carries or by its id.
+          const option = column.options.find((candidate) => candidate.id === value);
+          return <OptionTag key={value} label={option?.name ?? (cell.labels[index] || value)} color={option?.color ?? ""} />;
+        })}
+      </>
+    );
+  }
+
+  return <>{cellText(cell)}</>;
 }

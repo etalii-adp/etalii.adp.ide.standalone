@@ -89,6 +89,19 @@
   --color-diagram-helm-values: #2ea064;
   --color-diagram-helm-template: #c48220;
   --color-diagram-helm-dependency: #8e54c4;
+  /* THE TAG OF AN OPTION, in the ten colours a table's file may name. Fills behind --color-text,
+     pale here and deep in the dark block, each held to the contrast line by tableOptionColors.test.ts.
+     A file names a colour by its word, never by a value, so these twenty are the whole palette. */
+  --color-table-option-default: #f1f5f9;
+  --color-table-option-gray: #e2e8f0;
+  --color-table-option-brown: #eedfd3;
+  --color-table-option-orange: #fde3c8;
+  --color-table-option-yellow: #fdecc8;
+  --color-table-option-green: #dbeddb;
+  --color-table-option-blue: #d3e5ef;
+  --color-table-option-purple: #e8deee;
+  --color-table-option-pink: #f5e0e9;
+  --color-table-option-red: #ffe2dd;
   --color-diagram-helm-subchart: #3498a0;
 
   /* THE TYPE STACKS. Not colours, which is why a --color-* walk never saw them: four module
@@ -159,6 +172,17 @@
     --color-diagram-helm-values: #6ecd96;
     --color-diagram-helm-template: #e8b05a;
     --color-diagram-helm-dependency: #b88ce4;
+    /* The ten option colours again: deep fills, because the text over them is light here. */
+    --color-table-option-default: #334155;
+    --color-table-option-gray: #475569;
+    --color-table-option-brown: #603b2c;
+    --color-table-option-orange: #7a4317;
+    --color-table-option-yellow: #6b4d14;
+    --color-table-option-green: #2b593f;
+    --color-table-option-blue: #28456c;
+    --color-table-option-purple: #492f64;
+    --color-table-option-pink: #69314c;
+    --color-table-option-red: #6e3630;
     --color-diagram-helm-subchart: #6ecdd4;
     --color-diagram-sankey-grey: #a8a8a8; /* the same twelve words, lifted so they still read on the dark surface */
     --color-diagram-sankey-slate: #8fb0d4;
