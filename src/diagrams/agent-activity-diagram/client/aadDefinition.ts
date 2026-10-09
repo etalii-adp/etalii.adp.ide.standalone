@@ -11,9 +11,15 @@ import { AAD_PULL_REQUESTS_GROUP, AAD_SHOW_ARCHIVED_SWITCH, AAD_TASK_GROUPS, Aad
  * compiler does not read DISL 0.4's lists, links, rings and kept switch yet; until it does, what
  * is declared here must be kept equal to the bundled definition by whoever changes either.
  *
+ * `aadDefinition.test.ts` holds this object to the bundled `.dis` meanwhile: the element types,
+ * their shapes, the rings, the relations and their ends, the task groups and their order, the
+ * rows' order, the links and the switch. What it cannot compare - where a label sits - is not held.
+ *
  * Five element types, each with its own shape so that a kind is told apart without colour
- * (Requirement 7.2): a project is a hexagon, a specification a rounded card, an agent a pill, a
- * location a box split in two, an environment a cylinder.
+ * (Requirement 7.2), as the definition names them: a specification a rounded card, an agent a pill,
+ * a location a box split in two, an environment a hexagon. A project is the definition's `folder`,
+ * which this library does not draw yet; it stands in as a superellipse, the one shape no other
+ * kind has, and the test names the stand-in so that it goes when the library gains the shape.
  */
 
 // Every label names its colour by a class: an SVG text with none is black, whatever the theme.
@@ -47,7 +53,7 @@ function elementType(id: string, shape: ElementTypeDefinition["shape"], extra: P
 }
 
 const elementTypes: ElementTypeDefinition[] = [
-  elementType(AadElementTypes.project, "hexagon"),
+  elementType(AadElementTypes.project, "superellipse"),
   elementType(AadElementTypes.specification, "rounded-rectangle", {
     labels: [
       { ...name, anchorTo: "top", offset: { x: 0, y: 20 } },
@@ -120,7 +126,7 @@ const elementTypes: ElementTypeDefinition[] = [
       },
     ],
   }),
-  elementType(AadElementTypes.environment, "cylinder", {
+  elementType(AadElementTypes.environment, "hexagon", {
     labels: [
       { ...name, offset: { x: 0, y: 2 } },
       { text: { path: "payload.kindLabel" }, className: "aad-detail", offset: { x: 0, y: 17 }, typography: { fontSize: 10 } },

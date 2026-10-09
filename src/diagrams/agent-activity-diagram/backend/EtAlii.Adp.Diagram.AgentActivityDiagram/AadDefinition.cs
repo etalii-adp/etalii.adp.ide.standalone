@@ -54,6 +54,16 @@ internal static class AadDefinition
     /// <summary>What an expression reads as <c>env</c> for one gesture: the moment it was made.</summary>
     public static DislEnv Env() => new(Now: AadEdits.Now());
 
+    /// <summary>
+    /// The size the definition gives an element of a type before its lists are added: the default
+    /// of its notation's <c>size</c> (DISL section 6.6).
+    /// </summary>
+    public static (double Width, double Height) SizeOf(string type)
+    {
+        var size = Specification.Root.GetProperty("notation").GetProperty("nodes").GetProperty(type).GetProperty("size").GetProperty("default");
+        return (size[0].GetDouble(), size[1].GetDouble());
+    }
+
     /// <summary>The enumeration of that name, or nothing for any other type.</summary>
     public static AadEnum? EnumOf(string type) => LoadedEnums.Value.GetValueOrDefault(type);
 
