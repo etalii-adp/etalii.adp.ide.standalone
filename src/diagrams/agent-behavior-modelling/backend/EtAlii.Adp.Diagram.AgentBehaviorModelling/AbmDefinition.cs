@@ -152,8 +152,11 @@ internal static class AbmDefinition
     {
         var editor = row.Retypes
             ? ContextPropertyEditor.Choice
-            : row.Widget == "textarea" ? ContextPropertyEditor.Text : ContextPropertyEditor.Line;
-        return new ContextPropertyDefinition(row.Id, row.Label, row.Value, editor, row.ReadOnlyReason, row.Group, row.Retypes ? row.Candidates ?? [] : null);
+            : row.Widget == "textarea"
+                ? ContextPropertyEditor.Text
+                : ContextPropertyEditor.Line;
+        return new ContextPropertyDefinition(row.Id, row.Label, row.Value, editor, row.ReadOnlyReason, row.Group,
+            row.Retypes ? row.Candidates ?? [] : null);
     }
 
     /// <summary>The sentence of Arrange's one <c>unavailable</c> reason, as the definition writes it.</summary>

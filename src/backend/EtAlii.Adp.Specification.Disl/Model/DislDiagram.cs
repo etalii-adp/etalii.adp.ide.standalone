@@ -136,7 +136,9 @@ public sealed class DislDiagram : ICelObject
             ? after.Descendants().Prepend(after).Max(_nodes.IndexOf) + 1
             : parent is not null
                 ? _nodes.IndexOf(parent) + 1
-                : _nodes.FindIndex(node => node.Parent is null) is var first and >= 0 ? first : _nodes.Count;
+                : _nodes.FindIndex(node => node.Parent is null) is var first and >= 0
+                    ? first
+                    : _nodes.Count;
         _nodes.InsertRange(position, block);
         _ends = null;
     }

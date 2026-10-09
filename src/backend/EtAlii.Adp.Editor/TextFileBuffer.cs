@@ -207,7 +207,9 @@ public sealed class TextFileBuffer
                 // The final line had no newline of its own in the incoming text: it keeps the
                 // original's decision - a file that never ended in a newline still does not.
                 ? (index < _terminators.Length ? original : "")
-                : original.Length > 0 ? original : _dominantTerminator);
+                : original.Length > 0
+                    ? original
+                    : _dominantTerminator);
         }
 
         return builder.ToString();

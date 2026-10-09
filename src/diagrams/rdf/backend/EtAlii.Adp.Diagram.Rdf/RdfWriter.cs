@@ -331,7 +331,9 @@ public static class RdfWriter
 
         var line = model.Prefixes.Count > 0
             ? model.Prefixes.Max(p => p.Line) + 1
-            : model.BaseLine >= 0 ? model.BaseLine + 1 : 0;
+            : model.BaseLine >= 0
+                ? model.BaseLine + 1
+                : 0;
         document.Insert(line, [$"@prefix {prefix}: <{iri}> ."]);
         return "";
     }
