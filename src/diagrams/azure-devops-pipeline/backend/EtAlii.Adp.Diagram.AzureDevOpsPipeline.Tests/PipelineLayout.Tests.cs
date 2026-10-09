@@ -38,7 +38,9 @@ public class PipelineLayoutTests
             $"  - stage: {stage.Split(':')[0]}\n" +
             (stage.Contains(':', StringComparison.Ordinal) && stage.Split(':')[1].Length > 0
                 ? $"    dependsOn: [{stage.Split(':')[1]}]\n"
-                : stage.Contains(':', StringComparison.Ordinal) ? "    dependsOn: []\n" : "") +
+                : stage.Contains(':', StringComparison.Ordinal)
+                    ? "    dependsOn: []\n"
+                    : "") +
             "    jobs:\n      - job: J\n        steps:\n          - script: x\n"));
         return Parse(text);
     }

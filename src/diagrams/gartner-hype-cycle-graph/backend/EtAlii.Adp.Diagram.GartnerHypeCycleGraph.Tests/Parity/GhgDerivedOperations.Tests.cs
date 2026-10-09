@@ -76,10 +76,13 @@ public class GhgDerivedOperationsTests
             compared.Add($"confirm removing {id}");
             var expected = HandWrittenGhgEdits.RemoveConfirmation(model, id);
             var element = GhgDefinition.ElementOf(GhgBody.Parse(text).Disl.Diagram, id);
-            var actual = element is null ? null : DeletionPolicy.Confirmation(GhgDefinition.Specification, element) is { } confirmation
-                ? $"{confirmation.Title} | {confirmation.Message} | {confirmation.ConfirmLabel} | {confirmation.Danger}"
-                : null;
-            if (!string.Equals(expected, actual, StringComparison.Ordinal)) mismatches.Add($"confirm removing {id}\n  hand-written {expected ?? "none"}\n  definition   {actual ?? "none"}");
+            var actual = element is null
+                ? null
+                : DeletionPolicy.Confirmation(GhgDefinition.Specification, element) is { } confirmation
+                    ? $"{confirmation.Title} | {confirmation.Message} | {confirmation.ConfirmLabel} | {confirmation.Danger}"
+                    : null;
+            if (!string.Equals(expected, actual, StringComparison.Ordinal))
+                mismatches.Add($"confirm removing {id}\n  hand-written {expected ?? "none"}\n  definition   {actual ?? "none"}");
         }
 
         Assert.True(mismatches.Count == 0, $"{path}: {mismatches.Count} of {compared.Count} differ\n{string.Join("\n", mismatches)}");

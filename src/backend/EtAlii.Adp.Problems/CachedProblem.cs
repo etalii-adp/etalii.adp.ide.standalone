@@ -48,8 +48,10 @@ internal sealed record CachedProblem(
         DiagramProblemLocation? location = cached.FilePath is not null
             ? new DiagramProblemFileLocation(cached.FilePath, cached.Line ?? 0)
             : cached.ElementId is not null
-            ? new DiagramProblemElementLocation(cached.ElementId)
-            : cached.Line is { } line ? new DiagramProblemLineLocation(line) : null;
+                ? new DiagramProblemElementLocation(cached.ElementId)
+                : cached.Line is { } line
+                    ? new DiagramProblemLineLocation(line)
+                    : null;
         return new StoredProblem(
             new DiagramProblem(cached.Severity, cached.Message, cached.RuleId, location),
             cached.RelativePath,

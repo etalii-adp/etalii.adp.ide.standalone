@@ -238,8 +238,11 @@ public static class ContextMenuDerivation
         }
 
         var fallback = operation is { } declared && declared.TryGetProperty("label", out var operationLabel)
-            ? DislEvaluation.Message(specification, operationLabel, DislJson.Pointer(OperationPointer(operationName!), "label"), DislContexts.Operation, Operational(target, variables, arguments), kind)
-            : DislJson.String(tool, "via") is { } via && specification.Metamodel.TypeOf(via) is { } viaType ? DislJson.String(viaType.Json, "label") ?? via : kind;
+            ? DislEvaluation.Message(specification, operationLabel, DislJson.Pointer(OperationPointer(operationName!), "label"),
+                DislContexts.Operation, Operational(target, variables, arguments), kind)
+            : DislJson.String(tool, "via") is { } via && specification.Metamodel.TypeOf(via) is { } viaType
+                ? DislJson.String(viaType.Json, "label") ?? via
+                : kind;
         var label = tool.TryGetProperty("label", out var message)
             ? DislEvaluation.Message(specification, message, DislJson.Pointer(pointer, "label"), context, variables, fallback)
             : fallback;
