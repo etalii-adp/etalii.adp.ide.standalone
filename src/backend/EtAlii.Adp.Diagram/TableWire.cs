@@ -61,6 +61,7 @@ internal static class TableWire
             Count = row.Count,
             Collapsed = row.Collapsed,
             HasChildren = row.HasChildren,
+            IsNewRow = row.IsNewRow,
         };
         message.Cells.AddRange(row.Cells.Select(ToProto));
         return message;

@@ -194,7 +194,9 @@ message TableRows {
   int32 row_count = 3;   // the view's total, which an edit or a filter may have changed
 }
 
-// A line of the view: a row of the table, or the heading of a group of them.
+// A line of the view: a row of the table, the heading of a group of rows, or the place a new row
+// is added at - the bottom of the table and of every group. All three are lines, because the
+// client asks for lines by index and every line has the same height.
 message TableRow {
   string id = 1;                 // a row's id, or a group's key
   int32 depth = 2;               // nesting under a parent row
@@ -204,6 +206,9 @@ message TableRow {
   int32 count = 6;               // of a group heading: the rows in it
   bool collapsed = 7;            // of a group heading, or of a row with rows under it
   bool has_children = 8;
+  // True for the line a new row is added at. Its id is the key of the group it ends, or empty
+  // for the bottom of a table that is not grouped.
+  bool is_new_row = 9;
 }
 
 message TableCell {

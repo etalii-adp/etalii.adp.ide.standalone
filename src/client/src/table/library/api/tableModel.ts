@@ -76,7 +76,7 @@ export interface TableCell {
   pending: boolean;
 }
 
-/** One line of a view: a row of the table, or the heading of a group of rows. */
+/** One line of a view: a row of the table, the heading of a group of rows, or the place a new row is added at. */
 export interface TableRow {
   id: string;
   depth: number;
@@ -86,6 +86,8 @@ export interface TableRow {
   count: number;
   collapsed: boolean;
   hasChildren: boolean;
+  /** True for the line a new row is added at; its id is the key of the group it ends, or empty. */
+  isNewRow: boolean;
 }
 
 export interface TableFinding {

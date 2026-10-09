@@ -25,6 +25,16 @@ export type ColumnAction =
   | "duplicate"
   | "delete";
 
+/** One way a kind of value can be compared in a filter. */
+export interface TableComparison {
+  /** The name the document knows the comparison by. */
+  id: string;
+  /** How it reads between a property and a value, e.g. `contains`. */
+  label: string;
+  /** False for a comparison that is complete without a value, such as *is empty*. */
+  takesValue?: boolean;
+}
+
 /** How one kind of value shows itself. */
 export interface TableKindDefinition {
   /** The @mdi/font class of the kind's icon, shown in a column's header. */
@@ -35,6 +45,12 @@ export interface TableKindDefinition {
   editor?: TableEditorKind;
   /** False for a kind a column cannot be given by hand: it is read, shown, and never offered. */
   addable?: boolean;
+  /** The comparisons a filter offers for this kind; *is empty* and *is not empty* are offered for every kind besides. */
+  comparisons?: readonly TableComparison[];
+  /** False for a kind a view cannot be sorted by. */
+  sortable?: boolean;
+  /** True for a kind a view can be grouped by. */
+  groupable?: boolean;
 }
 
 export interface TableDefinition {

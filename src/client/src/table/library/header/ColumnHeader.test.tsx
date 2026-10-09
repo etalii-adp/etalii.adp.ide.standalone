@@ -325,7 +325,7 @@ describe("the first column", () => {
       kind: "rows",
       first: 0,
       rowCount: 1,
-      rows: [{ id: "r1", depth: 0, cells: [], isGroup: false, label: "", count: 0, collapsed: false, hasChildren: false }],
+      rows: [{ id: "r1", depth: 0, cells: [], isGroup: false, label: "", count: 0, collapsed: false, hasChildren: false, isNewRow: false }],
     });
 
     // Act.

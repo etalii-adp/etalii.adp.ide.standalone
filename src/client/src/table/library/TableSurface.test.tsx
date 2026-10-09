@@ -25,7 +25,7 @@ function row(id: string, cells: Record<string, string>, extra: Partial<TableRow>
     label: "",
     count: 0,
     collapsed: false,
-    hasChildren: false,
+    hasChildren: false, isNewRow: false,
     ...extra,
   };
 }

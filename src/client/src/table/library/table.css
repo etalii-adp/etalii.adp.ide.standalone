@@ -286,3 +286,193 @@
 .table-option-red {
   background: var(--color-table-option-red);
 }
+
+/* The table with what stands above it: the views, their bar, and the grid taking the room that is left. */
+.table-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+}
+
+.table-frame > .table-surface {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+.table-view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table-view-tab,
+.table-view-add,
+.table-view-control,
+.table-view-item-open,
+.table-view-item-remove,
+.table-row-toggle,
+.table-new-row-button,
+.table-filter-remove,
+.table-sort-remove,
+.table-filter-add-group {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.table-view-tab {
+  padding: 6px 10px;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+}
+
+.table-view-tab-active {
+  border-bottom-color: var(--color-text);
+  color: var(--color-text);
+}
+
+.table-view-rename {
+  width: 140px;
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  outline: 2px solid var(--color-primary);
+}
+
+.table-view-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table-view-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.table-view-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+}
+
+.table-view-control[aria-expanded="true"] {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.table-view-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.table-view-item {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.table-view-item-open {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px 1px 8px;
+}
+
+.table-view-panel {
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.table-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.table-filter-nested {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-inline-start: 16px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.table-filter-condition,
+.table-filter-add,
+.table-filter-match,
+.table-sort-row,
+.table-property-row,
+.table-group-editor label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-sort-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.table-sort-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.table-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.table-row-toggle {
+  flex: none;
+  padding: 0 2px;
+  color: var(--color-text-muted);
+}
+
+.table-new-row {
+  display: block;
+}
+
+.table-new-row-cell {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 var(--table-cell-padding);
+}
+
+.table-new-row-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+}

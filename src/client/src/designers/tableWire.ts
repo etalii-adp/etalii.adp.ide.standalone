@@ -115,6 +115,7 @@ function rowOf(source: Wire.TableRow): TableRow {
     count: source.count,
     collapsed: source.collapsed,
     hasChildren: source.hasChildren,
+    isNewRow: source.isNewRow,
   };
 }
 

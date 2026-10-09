@@ -1,8 +1,9 @@
 namespace EtAlii.Adp.Designer.TableModel;
 
 /// <summary>
-/// One line of a view: a row of the table, or the heading of a group of rows. The two share a
-/// type because they share an order - the client asks for lines by index and draws what is there.
+/// One line of a view: a row of the table, the heading of a group of rows, or the place a new
+/// row is added at. They share a type because they share an order - the client asks for lines by
+/// index and draws what is there.
 /// </summary>
 /// <param name="Id">A row's id, or a group's key.</param>
 /// <param name="Depth">How deep the row is nested under parent rows.</param>
@@ -12,6 +13,10 @@ namespace EtAlii.Adp.Designer.TableModel;
 /// <param name="Count">A group heading's number of rows.</param>
 /// <param name="Collapsed">Whether the group, or the rows under this row, are folded away.</param>
 /// <param name="HasChildren">Whether rows are nested under this row.</param>
+/// <param name="IsNewRow">
+/// Whether this line is where a new row is added: the bottom of the table, or of the group whose
+/// key is the line's id.
+/// </param>
 public sealed record TableRow(
     string Id,
     int Depth = 0,
@@ -20,7 +25,8 @@ public sealed record TableRow(
     string Label = "",
     int Count = 0,
     bool Collapsed = false,
-    bool HasChildren = false)
+    bool HasChildren = false,
+    bool IsNewRow = false)
 {
     public IReadOnlyList<TableCell> Cells { get; } = Cells ?? [];
 }

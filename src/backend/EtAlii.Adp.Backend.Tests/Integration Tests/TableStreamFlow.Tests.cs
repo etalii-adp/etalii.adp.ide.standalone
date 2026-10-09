@@ -139,7 +139,8 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
         var rows = await ReadTableAsync(watch.ResponseStream, cts.Token);
         Assert.Equal(streamId, rows.StreamId);
         Assert.Equal(Proto.TableChange.ChangeOneofCase.Rows, rows.Change.ChangeCase);
-        Assert.Equal(["r1", "r2"], rows.Change.Rows.Rows.Select(row => row.Id));
+        Assert.Equal(["r1", "r2", ""], rows.Change.Rows.Rows.Select(row => row.Id));
+        Assert.Equal([false, false, true], rows.Change.Rows.Rows.Select(row => row.IsNewRow));
         Assert.Equal(["Amsterdam"], rows.Change.Rows.Rows[0].Cells[0].Values);
         Assert.Equal((0, 50), opened.Window);
 
@@ -405,7 +406,7 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
         public void SetWindow(int first, int count)
         {
             Window = (first, count);
-            Raise(new TableRowsChanged(0, [new TableRow("r1", Cells: [new TableCell("p1", ["Amsterdam"])]), new TableRow("r2")], 2));
+            Raise(new TableRowsChanged(0, [new TableRow("r1", Cells: [new TableCell("p1", ["Amsterdam"])]), new TableRow("r2"), new TableRow("", IsNewRow: true)], 2));
         }
 
         public void SetActiveView(string viewId) => Changed?.Invoke(this, new TableChangedEventArgs(

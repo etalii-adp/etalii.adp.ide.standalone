@@ -102,7 +102,7 @@ describe("a cell that chooses among options", () => {
       rowCount: 1,
       readOnlyReason: "",
     };
-    const row = { id: "r1", depth: 0, cells: [{ columnId: "p1", values: ["o2", "o1", "gone"], labels: [], pending: false }], isGroup: false, label: "", count: 0, collapsed: false, hasChildren: false };
+    const row = { id: "r1", depth: 0, cells: [{ columnId: "p1", values: ["o2", "o1", "gone"], labels: [], pending: false }], isGroup: false, label: "", count: 0, collapsed: false, hasChildren: false, isNewRow: false };
     const model = applyTableEvent(applyTableEvent(EMPTY_TABLE, { kind: "baseline", structure, findings: [] }), { kind: "rows", first: 0, rows: [row], rowCount: 1 });
 
     // Act.

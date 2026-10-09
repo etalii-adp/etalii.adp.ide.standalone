@@ -7,7 +7,12 @@ import { OptionTag } from "./cells/OptionTag";
 import { DEFAULT_COLUMN_WIDTH, kindOf, type TableDefinition } from "./definition/tableDefinition";
 import { AddColumn } from "./header/AddColumn";
 import { ColumnHeader } from "./header/ColumnHeader";
+import { GroupHeading } from "./rows/GroupHeading";
+import { NestedRowToggle } from "./rows/NestedRow";
+import { NewRow } from "./rows/NewRow";
 import { DEFAULT_MARGIN, DEFAULT_ROW_HEIGHT, indexesOf, sameWindow, spacersOf, windowOf, type RowWindow } from "./rows/windowing";
+import { ViewBar } from "./views/ViewBar";
+import { ViewTabs } from "./views/ViewTabs";
 import "./table.css";
 
 export interface TableSurfaceProps extends TableEvents {
@@ -49,7 +54,7 @@ const FALLBACK_VIEWPORT_HEIGHT = 660;
  * gesture the backend refuses changes nothing here - the reason is shown, and the cell is still
  * what the model says it is.
  */
-export function TableSurface({ model, definition, onWindow, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
+export function TableSurface({ model, definition, onWindow, onView, onGesture, fallbackViewportHeight = FALLBACK_VIEWPORT_HEIGHT }: TableSurfaceProps) {
   const rowHeight = definition.rowHeight ?? DEFAULT_ROW_HEIGHT;
   const columns = useMemo(() => model.columns.filter((column) => column.visible), [model.columns]);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -150,7 +155,7 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
     const row = model.rows.get(at.row);
     const column = columns[at.column];
     const editor = column === undefined ? undefined : kindOf(definition, column.kind).editor;
-    if (row === undefined || row.isGroup || column === undefined || editor === undefined || model.readOnlyReason !== "") {
+    if (row === undefined || row.isGroup || row.isNewRow || column === undefined || editor === undefined || model.readOnlyReason !== "") {
       return undefined;
     }
     return { row, column, editor, cell: row.cells.find((candidate) => candidate.columnId === column.id) };
@@ -238,6 +243,9 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
   const entry: CellPosition = active ?? { row: window.first, column: 0 };
 
   return (
+    <div className="table-frame">
+      {model.views.length > 0 && <ViewTabs views={model.views} activeViewId={model.settings.viewId} editable={editable} onView={onView} raise={raise} />}
+      {model.views.length > 0 && <ViewBar model={model} definition={definition} editable={editable} raise={raise} />}
     <div
       ref={scrollerRef}
       className="table-surface"
@@ -277,10 +285,16 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
         if (row.isGroup) {
           return (
             <div key={index} className="table-row table-group-row" role="row" aria-rowindex={rowIndex} data-row-id={row.id} style={{ height: rowHeight }}>
-              <div className="table-group-cell" role="gridcell" aria-colspan={Math.max(1, columns.length)}>
-                <span className="table-group-label">{row.label}</span>
-                <span className="table-group-count">{row.count}</span>
-              </div>
+              <GroupHeading row={row} columnCount={columns.length} editable={editable} raise={raise} />
+            </div>
+          );
+        }
+
+        if (row.isNewRow) {
+          // A table that cannot be edited has nowhere to add a row: the line keeps its height and is empty.
+          return (
+            <div key={index} className="table-row table-new-row" role="row" aria-rowindex={rowIndex} data-new-row-of={row.id} style={{ height: rowHeight }}>
+              {editable && <NewRow row={row} columnCount={columns.length} raise={raise} />}
             </div>
           );
         }
@@ -332,7 +346,10 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
                       onClose={closeEdit}
                     />
                   ) : (
-                    <CellValue cell={cell} column={column} shows={kind.editor === "checkbox" ? "tick" : kind.editor === "option" || kind.editor === "options" ? "tags" : "text"} />
+                    <>
+                      {column.isTitle && <NestedRowToggle row={row} title={cellText(cell)} editable={editable} raise={raise} />}
+                      <CellValue cell={cell} column={column} shows={kind.editor === "checkbox" ? "tick" : kind.editor === "option" || kind.editor === "options" ? "tags" : "text"} />
+                    </>
                   )}
                 </div>
               );
@@ -346,6 +363,7 @@ export function TableSurface({ model, definition, onWindow, onGesture, fallbackV
           {refusal}
         </p>
       )}
+    </div>
     </div>
   );
 }
