@@ -2,7 +2,7 @@
 
 **The order follows the design: the definition first, then what this host gains for the designer family, then the module.** Tasks 1 to 5 are delivered in etalii.adp; tasks 6 to 16 are core and the shared table library; tasks 17 to 27 are the module; tasks 28 to 33 are its examples, tests, documentation and checks. Each task names the tasks it waits on.
 
-**The rulings this is written against.** The requirements were approved on 2026-10-08 with Q1 to Q7 at their defaults, and the design on 2026-10-08 with language decisions L1 to L5 at theirs: a row is a list of cell entries with typed keys (L1), several values are several entries (L2), three bindings named by the specification (L3), DESL adopts DISL's model contract by reference (L4), and a step that writes two files is made atomic in the host (L5).
+**The rulings this is written against.** The requirements were approved on 2026-10-08 with Q1 to Q7 at their defaults, and the design on 2026-10-08 with language decisions L1 to L5 at theirs: a row is a list of cell entries with typed keys (L1), several values are several entries (L2), three bindings named by the specification (L3), DESL and DED stand alone and take nothing from the diagram pair (L4, as the user ruled in chat on 2026-10-09 in place of the approved default), and a step that writes two files is made atomic in the host (L5).
 
 **Two tasks can change what follows them, and say so to the user as a selection before anything is built on the answer:** task 1 (the two open points in the binding) and task 2 (file size and speed under L1).
 
@@ -37,13 +37,14 @@
   - _Requirements: 9.6_
 
 - [ ] 3. FBL 0.3 wording and DESL 0.1
-  - File (etalii.adp): `specifications/fbl/FBL-specification.md`, `specifications/fbl/fbl.schema.json`, `specifications/desl/DESL-specification.md`, `specifications/desl/desl.schema.json` (new), `definitions/designers/README.md`, `specifications/ded/DED-specification.md` (its status sentence only)
-  - FBL 0.3: replace "the DISL specification" and "DISL node type" with wording that covers a specification in either language (L4), and "its binding" with "the binding for the body's family" in sections 1.2 and 8.1 (L3). No behaviour changes; every existing fixture passes unchanged.
-  - DESL 0.1 with the sections the design lists: `desl`, `language`, `metamodel`, `persistence` (`bindings` per family, `ids`), `constraints`, `surface` (`kind: table`, the types playing columns, rows, cells and views, and `valueTypes`), `operations`. `metamodel`, `constraints`, `operations`, ids and findings cite DISL's sections and do not copy them. Each construct is named for what it does.
+  - File (etalii.adp): `specifications/fbl/FBL-specification.md`, `specifications/fbl/fbl.schema.json`, `specifications/desl/DESL-specification.md`, `specifications/desl/desl.schema.json` (new), `definitions/designers/README.md`, `specifications/ded/DED-specification.md`, `specifications/ded/ded.schema.json` (new)
+  - FBL 0.3: replace the wording that names the diagram specification language and its node type with wording that covers a specification of either pair (L4), and "its binding" with "the binding for the body's family" in sections 1.2 and 8.1 (L3). No behaviour changes; every existing fixture passes unchanged.
+  - DESL 0.1 with the sections the design lists: `desl`, `language`, `metamodel`, `persistence` (`bindings` per family, `ids`), `constraints`, `surface` (`kind: table`, the types playing columns, rows, cells and views, and `valueTypes`), `operations`. DESL defines each of these itself: it cites, imports and depends on nothing in DISL or DID (L4, chat ruling of 2026-10-09). Each construct is named for what it does.
+  - DED 0.1: what a stored designer holds (the version it is written in, the specification it was made with, and the model that specification declares), with its schema. It names no diagram language.
   - Guard: the validator accepts a minimal `.des` example and every existing `.fbl` and fixture.
   - Seen to fail against: a `.des` example whose `surface.rows` names a type its `metamodel` does not declare (the validator must report it).
   - _Waits on: task 1_
-  - _Leverage: `specifications/disl/DISL-specification.md` sections 3.2, 4, 8.6, 9.3, 11.5, 14.4; `specifications/disl/disl.schema.json`_
+  - _Leverage: `specifications/fbl/FBL-specification.md` for the layout of a specification document and its schema_
   - _Requirements: 1.2, 1.6_
 
 - [ ] 4. The three bindings, their templates and their fixtures

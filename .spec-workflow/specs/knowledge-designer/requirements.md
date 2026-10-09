@@ -63,13 +63,13 @@ The request names **FBL and a second language**. FBL is right as named. **The se
 
 - **FBL** declares how the knowledge file is read and written: one binding per format. FBL has a `yaml`, a `json` and an `xml` family, and this host already implements all three (`EtAlii.Adp.Specification.Fbl`).
 - **DESL** specifies the designer type: its property types, what a view can set, its gestures and how it looks. **DESL is an empty placeholder today**: no construct, no schema, no example. The Knowledge designer is what gives it its first content.
-- **DED**, the Designer Definition Language (`.ded`), stays a placeholder. It is where a designer would be stored if it had no other file; the request stores it in YAML, JSON or XML, which is what FBL is for.
+- **DED**, the Designer Definition Language (`.ded`), is the designer pair's definition language: it says what a stored designer holds. **The Knowledge designer uses DESL and DED and never the diagram pair** (ruled by the user in chat, 2026-10-09; this replaces "DED stays a placeholder"). The request stores a knowledge file in YAML, JSON or XML, so this document reads the two together as: DED defines what a stored Knowledge designer holds, and FBL bindings carry it into the three formats. How DED says that is decided in etalii.adp's DED specification, which wins where it and this sentence differ (Requirement 1.7).
 
 ## Whether the languages suffice
 
 The request asks to be told where the specification languages fall short, so they can be extended.
 
-**DESL: not sufficient, because it does not exist yet.** Everything `knowledge.des` needs to say has to be added to DESL first. Nothing in it can be reused from a previous designer; the pattern to follow is DISL's.
+**DESL: not sufficient, because it does not exist yet.** Everything `knowledge.des` needs to say has to be added to DESL first. Nothing in it can be reused from a previous designer, and it takes nothing from the diagram pair: DESL and DED are written as languages of their own (ruled by the user in chat, 2026-10-09).
 
 **FBL: assessed against a knowledge file's shape, with the result below.**
 
@@ -86,7 +86,7 @@ The request asks to be told where the specification languages fall short, so the
 
 What FBL already covers: the version mark in a header; elements with ids read from and written to the file; nested entries such as a selection's options and a filter's groups; ordered entries with move; renaming through references; unknown content kept byte for byte and unreadable entries reported, never dropped; and recognising a generic `.yaml`, `.json` or `.xml` file by a marker and its registration.
 
-**G4 decides how large the language work is**, and it is the same question as Q1 seen from FBL's side.
+**G4 decides how large the language work is**, and it is the same question as Q1 seen from FBL's side. It is answered (ruled by the user in chat, 2026-10-09): DESL defines its own types, ids, findings and transactions, and FBL's model side is stated for either pair.
 
 Requirement 1.4 turns each gap into a decision for the user before anything is added to a language.
 
@@ -115,7 +115,7 @@ Read on 2026-10-08: this repository on `develop` at `61f802e0`, etalii.adp on `o
 
 ## Open questions
 
-Each is a selection. The option marked **(default)** is what this document is written against until the user rules otherwise.
+Each is a selection. The option marked **(default)** is what this document is written against until the user rules otherwise. **Q1 is ruled** (by approval at its default, and again by the user in chat on 2026-10-09): the Knowledge designer uses DESL and DED and never DISL or DID, so Q1's diagram-language option is closed, and Q2's derived option, if it is ever taken, means a DESL runtime.
 
 | # | Question | Options | Criteria affected |
 | --- | --- | --- | --- |
@@ -140,7 +140,7 @@ Each is a selection. The option marked **(default)** is what this document is wr
 #### Acceptance Criteria
 
 1. WHEN the work starts THEN its first deliverables SHALL be, in etalii.adp: one FBL binding per format (YAML, JSON, XML) for the knowledge file, and `definitions/designers/knowledge.des` with `definitions/designers/knowledge.md` beside it, the first holding everything about the designer type DESL can express and the second everything it cannot (Q1). No implementation task in this repository SHALL start before the definition it implements is merged there.
-2. WHEN `knowledge.des` is written THEN DESL SHALL first gain, in its specification and its schema, the constructs that file needs, each named for what it does and not for this designer.
+2. WHEN `knowledge.des` is written THEN DESL SHALL first gain, in its specification and its schema, the constructs that file needs, each named for what it does and not for this designer. DESL and DED SHALL stand alone: neither SHALL cite, import or depend on DISL or DID (ruled by the user in chat, 2026-10-09).
 3. WHEN the bindings are written THEN each SHALL have fixtures in etalii.adp that prove reading and every kind of edit this document names, and one fixture SHALL prove that the same table read from each of the three formats gives the same model.
 4. WHEN FBL or DESL cannot express something this designer needs THEN the gap SHALL be reported to the user as a selection (extend the language, and how; or change the designer; or other) before anything is added to a language. The gaps known today are listed under *Whether the languages suffice*.
 5. WHEN the designer is defined THEN `docs/terminology.md` in etalii.adp SHALL say why a tool whose cells hold relations is a designer and not a diagram (Q7), and SHALL name the Knowledge designer as the example of a designer.

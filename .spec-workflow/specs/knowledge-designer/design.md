@@ -37,7 +37,7 @@ The FBL 0.2 specification was read in full for this design on etalii.adp's `orig
 ### Project Structure (structure.md)
 
 - A tool type is a module on the shared core. What the first designer needs from core is added to core, named for what it does (`EtAlii.Adp.Designer`, a table library in the client, a file dialog prompt), and names no designer type.
-- The module lives in `src/designers/knowledge` with `backend`, `api`, `client`, `examples` and, as DISL-derived diagram modules have, `definition` for its copy of the definition files.
+- The module lives in `src/designers/knowledge` with `backend`, `api`, `client`, `examples` and `definition` for its copy of the definition files, as modules built from a specification file have.
 
 ## Code Reuse Analysis
 
@@ -47,7 +47,7 @@ The FBL 0.2 specification was read in full for this design on etalii.adp's `orig
 | --- | --- | --- |
 | The FBL runtime: `FblDocumentLoader`, `OpenBody` (`Open`, `Model`, `Change`, `Plan`, `Save`, `Fork`), `ModelChange`, the `yaml`, `json` and `xml` families | `src/backend/EtAlii.Adp.Specification.Fbl` | Reading and writing the knowledge file. The module has no parser or writer of its own (Requirement 10.5). |
 | The declared-binding consumer pattern: a body class over `OpenBody`, an edits class turning commands into `ModelChange`s, a `WritableDocumentLifecycle` store, `RestoreDocumentCommand` as the inverse | `src/diagrams/gartner-hype-cycle-graph/backend` (`GhgBody`, `GhgEdits`, `GhgDocumentStore`) | The model for the module's backend. |
-| `ShortGuid` (25 lowercase base-36 characters) | `src/backend/EtAlii.Adp/ShortGuid.cs` | Every id (Requirement 2.6). In the specification it is DISL's `uuid-v4` strategy with `base36` encoding. |
+| `ShortGuid` (25 lowercase base-36 characters) | `src/backend/EtAlii.Adp/ShortGuid.cs` | Every id (Requirement 2.6). In `knowledge.des` it is DESL's id strategy: a version 4 UUID written in base 36. |
 | Commands and undo: `ICommandHandler<T>`, `CommandResult.Success(inverse)`, `IHistoryStackStore` | `src/backend/EtAlii.Adp.History` | Every edit, and one undoable step across two files (L5). |
 | The editor family's seams, as the shape to follow: `EditorDefinition` with `Build`, `AddEditorDefinitions`, a session and its factory, the file watcher obligations and their tests | `src/backend/EtAlii.Adp.Editor`, `src/editors/markdown/backend` | The designer family's seams (Requirement 10.2). |
 | The Add flow: `AddDiagramContextActionProvider` returning a choice with an option tree and a name field; `CreateDiagramFileCommand` creating two files at once with `DeleteEntryCommand` as inverse | `src/backend/EtAlii.Adp.Hierarchy` | Adding a knowledge file with a choice of format (Requirement 10.4). The option tree already nests, so the three formats are three leaves under one entry and no new prompt is needed. |
@@ -195,7 +195,7 @@ Requirement 1.4 asks that each gap be put to the user before a language changes.
 | L1 | How a row holds its values | **A list of cell entries, each with a typed key (default):** as shown above. No change to FBL; findings per cell; values survive a type change. Costs size: about three lines per value in YAML, so a table of ten thousand rows and eight properties is roughly a quarter of a million lines. Task 2 measures reading and editing at that size before anything is built on it. · **A map from property id to value:** about one line per value. Needs a new FBL slot that reads and writes a matched member's own value (gap G2) and a way to type a value by something outside its entry; a bad value then costs its whole row unless FBL also gains finer findings. · Other. |
 | L2 | How several values are written | **One entry per value (default):** `options:` and `rows:` lists of small entries. No change to FBL, and one splice per value in all three formats. · **A list value:** `options: [o1, o2]`. Compact, and what YAML and JSON readers expect. Needs list slots in FBL for all three families with per-item splices (gap G1); FBL 0.2 writes a YAML flow list only as a whole and has nothing for XML. · Other. |
 | L3 | How one tool type gets three formats (gap G5) | **Three bindings, named by the specification (default):** `knowledge.fbl` holds bindings `yaml`, `json` and `xml`; `knowledge.des` names all three under `persistence.bindings`, and the body's extension picks one. Each binding has its own template, so the format chosen when adding decides the bytes. FBL's text changes in two places (sections 1.2 and 8.1: "its binding" becomes "the binding for the body's family"); the list itself is DESL's, which is new anyway. · **Two bindings through `alsoRead`:** JSON and YAML share one binding. Fewer rules to keep equal, but a JSON file is also valid YAML, so the read order has to be got right, and new-file templates are per binding, not per family. · **Three origins,** one tool type per format. No language change, and three rows in the catalogue for one tool. · Other. |
-| L4 | What FBL binds to when the specification is not DISL (gap G4) | **DESL adopts DISL's model contract by reference, and FBL names "the tool type's specification" (default):** DESL 0.1's metamodel, ids, findings and editing transaction *are* DISL's sections 4, 8.6, 11.5 and 14.4, cited and not copied; FBL 0.3 replaces "the DISL specification" and "DISL node type" with wording that covers both. No behaviour of FBL changes. · **Specify the Knowledge designer's model in a DISL file** beside `knowledge.des`. No change to FBL's text, and a designer with a diagram specification it does not otherwise use. · Other. |
+| L4 | What FBL binds to for a designer (gap G4) | **Ruled by the user in chat, 2026-10-09, after this document was approved: the designer pair stands alone.** DESL 0.1 defines its own metamodel, ids, findings and editing transaction, and DED 0.1 defines what a stored designer holds; neither cites, imports or depends on the diagram pair. FBL 0.3 names "the tool type's specification" and "the specification's type", so that it binds to either pair, and no behaviour of FBL changes. The approved default had DESL adopt the diagram language's model contract by reference; that is withdrawn. The other option, specifying the Knowledge designer's model in a diagram specification beside `knowledge.des`, is ruled out by the same ruling. |
 | L5 | One undoable step that writes two files (gap G3) | **In the host, not in FBL (default):** FBL keeps one history per body. Creating or deleting a two-way relation, and renaming a target file, are one host command whose inverse restores both files. `knowledge.md` states that every host must make these steps atomic and how. Relation values are plain ids to FBL, resolved by the designer, so FBL reports nothing as dangling across files. · **In FBL:** a cross-body reference and a multi-body edit, as folder subjects already have (section 10.4). Every host then gets it from its FBL runtime, at the cost of the largest change to FBL of any option here. · Other. |
 
 With the defaults, **FBL's behaviour does not change at all**: FBL 0.3 is two wording changes (L3, L4), and gaps G1, G2 and G6 are closed by the file's shape. What remains real work is in this host's FBL runtime (B3).
@@ -249,14 +249,18 @@ DESL gains only what `knowledge.des` needs, each construct named for what it doe
 
 | Section | Content |
 | --- | --- |
-| `desl`, `language` | The version key, and origin, title and kind, as DISL's `language`. |
-| `metamodel` | DISL's metamodel layer by reference (L4): the types and attributes of the table above. |
-| `persistence` | `bindings`, one per family (L3), and `ids` (DISL section 11.5). |
-| `constraints` | DISL's constraint layer by reference: one title property; unique property names; a parent relation has no cycles; a relation's limit. Their findings carry DISL's shape. |
+| `desl`, `language` | The version key, and the designer type's origin, title and kind. |
+| `metamodel` | DESL's own (L4): types, their attributes with a value type each, and containment. The types and attributes of the table above. |
+| `persistence` | `bindings`, one per family (L3), and `ids`: how a new id is made (here a version 4 UUID written in base 36, which is this host's ShortGuid) and which types store theirs. |
+| `constraints` | DESL's own: a rule as a CEL condition over the model with a severity and a message. Here: one title property; unique property names; a parent relation has no cycles; a relation's limit. A broken rule is a finding, as ADP terminology defines one. |
 | `surface` | New, and the only part that is a designer's own: `{ "kind": "table", "columns": type, "rows": type, "cells": type, "views": type }` naming which types play which part, and `valueTypes`: per property type its value key, its editor, its comparisons for filters, its sort order and what it converts to. |
-| `operations` | DISL's operations by reference: each gesture of Requirements 3 to 6 as a named transaction of model changes, so every host makes the same changes for the same gesture. |
+| `operations` | DESL's own: each gesture of Requirements 3 to 6 as a named transaction of model changes (add, set, remove, move), so every host makes the same changes for the same gesture. |
 
-`knowledge.md` holds what DESL 0.1 cannot say: the layout and behaviour of Requirement 7, the conversion table for type changes, the atomic two-file steps (L5), the handling of entries without an id (Requirement 8.5), a complete example per format, and the JSON Schema of the file. DED stays a placeholder.
+`knowledge.md` holds what DESL 0.1 cannot say: the layout and behaviour of Requirement 7, the conversion table for type changes, the atomic two-file steps (L5), the handling of entries without an id (Requirement 8.5), a complete example per format, and the JSON Schema of the file.
+
+### DED 0.1
+
+DED is the designer pair's definition language (ruled by the user in chat, 2026-10-09): it says what a stored designer holds, as DESL says what a designer type is. For the Knowledge designer a stored designer is a knowledge file. DED 0.1 defines that a definition names the version it is written in and the specification it was made with, and holds the model that specification's `metamodel` declares; the three FBL bindings are how that definition is written as YAML, JSON or XML. The file shape above is unchanged by this. Whether the file's version key stays `knowledge` or becomes DED's own is decided in etalii.adp's DED specification, and the bindings, the examples and this section follow it (Requirement 1.7).
 
 ### The host
 
@@ -298,7 +302,7 @@ flowchart LR
 | # | Deliverable | Serves |
 | --- | --- | --- |
 | E1 | `specifications/fbl`: FBL 0.3 wording (L3, L4), with nothing else changed; fixtures `knowledge-yaml`, `knowledge-json`, `knowledge-xml`, each proving read and every kind of edit, and one proving the three give the same model | 1.2, 1.3, 1.4 |
-| E2 | `specifications/desl`: DESL 0.1 as above, with `desl.schema.json` | 1.2 |
+| E2 | `specifications/desl`: DESL 0.1 as above, with `desl.schema.json`; `specifications/ded`: DED 0.1, what a stored designer holds, with `ded.schema.json` | 1.2 |
 | E3 | `definitions/designers`: `knowledge.des`, `knowledge.md`, `knowledge.fbl`, `knowledge.schema.json` (the file's JSON Schema, for YAML and JSON) and one example per format | 1.1, 1.8, 8.4 |
 | E4 | `docs/terminology.md`: the sentence of Q7, and the Knowledge designer as the example of a designer | 1.5 |
 
@@ -405,6 +409,6 @@ The `tests.md` browser pass of Requirement 11.1, in both themes, with each part 
 | --- | --- |
 | **File size and speed under L1's default.** A cell per entry is large, and this host's FBL runtime re-reads the whole body after every change. | **Measured in task 2 and ruled by the user in chat, 2026-10-09: show at once, write behind.** A ten-thousand-row file is 4.0 MB; one cell edit takes about 1.7 s through the runtime (Debug build, YAML only). The options were: show at once and write behind; make the FBL runtime incremental; switch the file to a map per row; other. See *Every edit is a command*. |
 | **The two open points in the binding** (cascading by stored id, a rule at the root). | Settled in task 1, in etalii.adp, before anything depends on them. |
-| **DESL written for one designer.** Its first constructs may not suit the second. | Only `surface` is new; the rest is DISL's by reference. DESL stays at 0.1, where any construct may change. |
+| **DESL written for one designer.** Its first constructs may not suit the second. | DESL defines every construct it uses and shares none with the diagram pair (L4), so all of it is new. Each is kept to what `knowledge.des` needs and named for what it does, and DESL stays at 0.1, where any construct may change. |
 | **Notion parity is judged by eye.** | Requirement 7 lists what is followed, 7.7 what is not, and the browser pass records each difference found. |
 | **The definition and this host drift apart.** | `provenance.json` names the commit; the guard of Requirement 10.5 and the vendored fixtures fail when they differ. |
