@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/supply-chain-disl-fbl/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T15:07:44.717Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791558463856_axclu0fco",
+      "approvalTitle": "tasks.md: converting the supply chain diagram (written against the recommended amendments)"
+    }
+  ]
+}
