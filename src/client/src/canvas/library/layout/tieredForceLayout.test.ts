@@ -199,10 +199,9 @@ describe("what a layout pass depends on", () => {
  * At size (agent-activity-diagram Requirement 11.2): about two hundred elements, which is a team
  * of a dozen projects. Measured on 2026-10-09 at 197 elements: a first pass took 93 ms and a pass
  * after one addition 45 ms, with nothing overlapping after either. The step counts in the
- * algorithm are fixed from that measurement; the bound below is about three times the measured time: a
- * bound of ten times was tried first and did not fail against tenfold steps, which took about
- * 240 ms. The fastest of three passes is what is held to it, since a busy machine slows a pass
- * and never speeds one up.
+ * algorithm are fixed from that measurement; its time is held as a multiple of a
+ * reference workload timed beside it, not in milliseconds: a fixed bound of 150 ms passed here and
+ * failed on the shared build machine, where the same pass took 200 ms.
  */
 describe("the radiating layout at about two hundred elements", () => {
   const { input } = generate(12);
@@ -215,7 +214,7 @@ describe("the radiating layout at about two hundred elements", () => {
     expect([...placed(input)]).toEqual([...first]);
   });
 
-  it("places one addition without laying everything out from nothing, in a bounded time", () => {
+  it("places one addition without laying everything out from nothing", () => {
     // The planted defect this was seen to fail against: the step counts raised tenfold.
     const settled = placed(input);
     const grown: LayoutInput = {
@@ -223,15 +222,41 @@ describe("the radiating layout at about two hundred elements", () => {
       connections: [...input.connections, { sourceId: "p0s2", targetId: "new-agent" }],
     };
 
-    let after = placed(grown, settled);
-    let elapsed = Number.POSITIVE_INFINITY;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const started = performance.now();
-      after = placed(grown, settled);
-      elapsed = Math.min(elapsed, performance.now() - started);
-    }
-
+    const after = placed(grown, settled);
     expect(overlapping(grown, after)).toEqual([]);
-    expect(elapsed).toBeLessThan(150);
+
+    // The pass is held to a multiple of a reference workload timed here, beside it: one sweep over
+    // every pair of elements, the arithmetic a single step of the layout does. A slower machine
+    // slows both alike, so the ratio says how many sweeps' worth of work a pass is - which is
+    // what a regression changes - and not how fast the machine is. The fastest of several runs of
+    // each is used, since a busy machine slows a run and never speeds one up.
+    const count = grown.elements.length;
+    const sweep = () => {
+      let total = 0;
+      for (let i = 0; i < count; i++) {
+        for (let j = i + 1; j < count; j++) {
+          const dx = (j - i) * 1.5 + total * 1e-12;
+          const dy = (i + 1) * 0.5;
+          const distance = Math.hypot(dx, dy);
+          total += (dx / distance) * (26000 / (distance * distance));
+        }
+      }
+      return total;
+    };
+    const fastest = (work: () => unknown, runs: number) => {
+      let best = Number.POSITIVE_INFINITY;
+      for (let run = 0; run < runs; run++) {
+        const started = performance.now();
+        work();
+        best = Math.min(best, performance.now() - started);
+      }
+      return best;
+    };
+    // A hundred sweeps a run, so the reference is long enough to time.
+    const reference = fastest(() => { for (let n = 0; n < 100; n++) { sweep(); } }, 5) / 100;
+    const pass = fastest(() => placed(grown, settled), 5);
+
+    // Measured at about 105 sweeps; with the step counts raised tenfold, about 555.
+    expect(pass / reference).toBeLessThan(250);
   });
 });
