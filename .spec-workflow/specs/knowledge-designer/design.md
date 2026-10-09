@@ -80,7 +80,8 @@ The FBL 0.2 specification was read in full for this design on etalii.adp's `orig
 One shape, written three ways. Ids are ShortGuids; they are shortened here (`p1`, `o1`, `v1`, `r1`) to keep the example readable.
 
 ```yaml
-knowledge: "0.1"
+ded: "0.1"
+designer: etalii/knowledge
 name: Cities
 activeView: v1
 properties:
@@ -115,17 +116,15 @@ views:
     sorts:
       - property: p3
         direction: descending
+    filterMatch: all
     filter:
-      match: all
-      conditions:
-        - property: p3
-          operator: greater-than
-          number: 100000
-    group:
-      by: p2
-      hideEmpty: true
-      collapsed:
-        - key: o1
+      - property: p3
+        operator: greater-than
+        number: 100000
+    groupBy: p2
+    hideEmptyGroups: true
+    collapsed:
+      - key: o1
 rows:
   - id: r1
     cells:
@@ -142,7 +141,8 @@ rows:
 
 ```json
 {
-  "knowledge": "0.1",
+  "ded": "0.1",
+  "designer": "etalii/knowledge",
   "name": "Cities",
   "properties": [
     { "id": "p1", "name": "Name", "type": "text", "title": true }
@@ -159,7 +159,7 @@ rows:
 ```
 
 ```xml
-<knowledge version="0.1" name="Cities">
+<ded version="0.1" designer="etalii/knowledge" name="Cities">
   <properties>
     <property id="p1" name="Name" type="text" title="true"/>
   </properties>
@@ -171,7 +171,7 @@ rows:
       <cell property="p1" text="Amsterdam"/>
     </row>
   </rows>
-</knowledge>
+</ded>
 ```
 
 What the shape decides, and why:
@@ -184,7 +184,7 @@ What the shape decides, and why:
 - **A relation's values are row ids of the target file**, and the property carries the target's path relative to this file, the limit, and for a two-way relation the id of its counterpart property in the target (Q5: only the side that was created holds values; the counterpart carries `computed: true` and no cells).
 - **`activeView`, `collapsed`, column `width`, `visible` and `wrap`, group order and hidden groups** are all in the file (Requirements 2.3, 6.9, 6.10). The registration is the origin line and, when the names differ, a `body:` line, and nothing else (Requirement 2.2); the bindings set `createOnFirstPlacement: false` and store no layout.
 - **Dates and times** are ISO 8601 (Requirement 4.8). **Colours** are one of ten names: `default`, `gray`, `brown`, `orange`, `yellow`, `green`, `blue`, `purple`, `pink`, `red`.
-- **A filter is a tree**: a group has `match` (`all` or `any`) and `conditions`, each a condition or a nested group, to three levels (Requirement 6.5). A condition's comparison value uses the same typed keys as a cell.
+- **A filter is a list on the view**: `filterMatch` (`all` or `any`) says how its entries combine, and each entry of `filter` is a condition or a group, a group having `match` and `conditions`, to three levels (Requirement 6.5). A condition's comparison value uses the same typed keys as a cell. **A view's group settings are keys of the view too**: `groupBy`, `hideEmptyGroups`, and the lists `groupOrder`, `hiddenGroups` and `collapsed`. (The definition settled this shape in etalii.adp; this document first nested both under mappings of their own.)
 
 ### Language decisions
 
@@ -207,11 +207,11 @@ With the defaults, **FBL's behaviour does not change at all**: FBL 0.3 is two wo
 | `Table` | the root | | none | `name`, `activeView` |
 | `Property` | `properties/*` | | stored | `name`, `type`, `title`, `target`, `limit`, `counterpart`, `computed`, `parent` |
 | `Option` | `properties/*/options/*` | `Property` | stored | `name`, `colour` |
-| `View` | `views/*` | | stored | `name`, group settings (`by`, `hideEmpty`) |
+| `View` | `views/*` | | stored | `name`, `filterMatch`, `groupBy`, `hideEmptyGroups` |
 | `Column` | `views/*/columns/*` | `View` | derived | `property`, `visible`, `width`, `wrap` |
 | `Sort` | `views/*/sorts/*` | `View` | derived | `property`, `direction` |
-| `FilterGroup`, `Condition` | `views/*/filter/**` | `View` or `FilterGroup` | derived | `match`; `property`, `operator` and a typed value |
-| `GroupSetting` | `views/*/group/hidden/*`, `order/*`, `collapsed/*` | `View` | derived | `key` |
+| `FilterGroup`, `Condition` | `views/*/filter/*` and, nested, `conditions/*` to three levels | `View` or `FilterGroup` | derived | `match`; `property`, `operator` and a typed value |
+| `GroupSetting` | `views/*/groupOrder/*`, `hiddenGroups/*`, `collapsed/*` | `View` | derived | `key` |
 | `Row` | `rows/*` | | stored | |
 | `Cell` | `rows/*/cells/*` | `Row` | derived from row and property | `property` and one typed value |
 | `CellItem` | `rows/*/cells/*/options/*`, `rows/*/cells/*/rows/*` | `Cell` | derived | `option` or `row` |
@@ -239,7 +239,7 @@ A binding rule, to show the level the bindings are written at (YAML; a sketch, n
 }
 ```
 
-Each binding claims its extensions as `shared` and `registrationOnly` (a knowledge file always has its registration), carries a `required` header (the root key `knowledge` in YAML and JSON, the root start tag in XML), and has a template of one title property, one view and no rows.
+Each binding claims its extensions as `shared` and `registrationOnly` (a knowledge file always has its registration), carries a `required` header (the root key `ded` in YAML and JSON, the root element `ded` in XML), and has a template of one title property, one view and no rows.
 
 **Two things the binding task settles first, because the reading left them open:** whether an attribute `reference` can name a rule's stored id, so that deleting a property or an option cascades to the cells that name it (if not, the designer issues those removals in the same transaction, and `knowledge.md` says so); and whether a rule at `/` can bind root keys as `Table`'s attributes (no existing binding does it). Either answer keeps the file shape; a "no" on the second is a sixth language decision and goes to the user as one.
 
@@ -260,7 +260,7 @@ DESL gains only what `knowledge.des` needs, each construct named for what it doe
 
 ### DED 0.1
 
-DED is the designer pair's definition language (ruled by the user in chat, 2026-10-09): it says what a stored designer holds, as DESL says what a designer type is. For the Knowledge designer a stored designer is a knowledge file. DED 0.1 defines that a definition names the version it is written in and the specification it was made with, and holds the model that specification's `metamodel` declares; the three FBL bindings are how that definition is written as YAML, JSON or XML. The file shape above is unchanged by this. Whether the file's version key stays `knowledge` or becomes DED's own is decided in etalii.adp's DED specification, and the bindings, the examples and this section follow it (Requirement 1.7).
+DED is the designer pair's definition language (ruled by the user in chat, 2026-10-09): it says what a stored designer holds, as DESL says what a designer type is. For the Knowledge designer a stored designer is a knowledge file, and **a knowledge file is a DED definition**: it opens with DED's envelope, `ded: "0.1"` and `designer: etalii/knowledge` (in XML the root element `ded` with `version` and `designer` attributes), and then holds the model `knowledge.des` declares. The three FBL bindings are how that definition is written as YAML, JSON or XML. This is as etalii.adp's DED 0.1 defines it (commit `d0d4034`, in its pull request 102), which this section follows (Requirement 1.7); the envelope replaces the `knowledge: "0.1"` key this document first showed.
 
 ### The host
 
