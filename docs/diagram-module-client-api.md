@@ -203,7 +203,7 @@ classDiagram
 
 **Whether a module needs it.** Always — all 14 modules declare it (read at `5b44878d`), and it is the only member with no useful default.
 
-**Its shape.** An `ElementTypeDefinition` carries `id`, `shape`, `style`, `boundStyle`, `classNames`, `data`, `tooltip`, `label`, `labels`, `decorations`, `actions`, `anchors`, `sizing`, `resize`, `segments`, `draggable`, `editOnDrop`, `deletable`, `selectable` and `beneathConnections`. A type whose shape is not one of the built-ins names a `CustomShapeRef` instead, which carries `customShape`, `render`, `edgePoint` and `anchors`; a renderer is handed `ShapeBounds` — `x`, `y`, `width`, `height`.
+**Its shape.** An `ElementTypeDefinition` carries `id`, `shape`, `style`, `boundStyle`, `classNames`, `data`, `tooltip`, `label`, `labels`, `decorations`, `compartments` (see *Lists inside an element*), `links` (see *Links*), `actions`, `anchors`, `sizing`, `resize`, `segments`, `draggable`, `editOnDrop`, `deletable`, `selectable` and `beneathConnections`. A type whose shape is not one of the built-ins names a `CustomShapeRef` instead, which carries `customShape`, `render`, `edgePoint` and `anchors`; a renderer is handed `ShapeBounds` — `x`, `y`, `width`, `height`.
 
 Source: [`src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition.test.tsx`](../src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition.test.tsx)
 
@@ -323,7 +323,7 @@ Source: [`src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition
   dragging: "enabled",
 ```
 
-**Their members.** `LayoutDefinition` carries `modes`, `dragUnderAutomaticLayout`, `treeDirection`, `rowPacked`, `modeOverrides`, `toggle`; `RowPackedDeclaration` carries `width`, `gap`, `types`, `rowStep`, `followConnections`; `LayoutToggleDeclaration` carries `caption`, `on`; `SnapAxis` carries `step`, `origin`.
+**Their members.** `LayoutDefinition` carries `modes`, `dragUnderAutomaticLayout`, `treeDirection`, `rowPacked`, `modeOverrides`, `toggle`, `pinned`, `tiers`; `RowPackedDeclaration` carries `width`, `gap`, `types`, `rowStep`, `followConnections`; `LayoutToggleDeclaration` carries `caption`, `on`; `SnapAxis` carries `step`, `origin`.
 
 **A second layout mode, switched by a toggle.** A definition allowing two modes may declare `toggle: { caption, on }`: the library draws a toggle button with that caption directly below the filter box's legend, which is why the validator requires a `filter` beside it, and switches between the first mode and `on`. The active mode is the canvas's own view state, so a module need hold nothing; `layout-mode-changed` is still raised on every switch for a module that wants to know, and a host that sets `activeLayoutMode` in the runtime config keeps the last word. Without a toggle, a definition allowing several modes gets the switcher row, whose clicks now switch too.
 
@@ -335,6 +335,10 @@ Source: [`src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition
 
 **`snapToStep(value, step)` is the one rounding rule for a lattice**, halves away from zero and never negative zero - the rule a declared `snap` drags by, and the one the backend persists a row with. A module that needs a row index for an id divides it back out, `snapToStep(y, ROW_HEIGHT) / ROW_HEIGHT`, rather than rounding again; the dependency graph and the timeline each had their own copy until `client-centralization` task 9.
 
+
+**Locked elements.** `pinned` on the layout is a path that says whether the reader put an element where it is. Such an element keeps the model's position under every automatic mode, and a layout places the others around it. A drag under an automatic mode raises `ElementMoved` for the dragged element, as it always has; a module that stores the position and marks the element pinned has locked it, and the mode stays automatic for the rest.
+
+**The radiating layout.** The mode `tiered-force` places element types on rings from the centre outwards, as `tiers` lists them, draws connected elements together and keeps every pair clear of each other, whatever their sizes. The same model gives the same picture every time. When the model changes while the diagram is open the layout starts from where the picture is, so one change moves the rest a little; and a change that places nothing differently, such as a label, moves nothing at all. A type no tier names goes on a ring beyond the last. A move this layout makes is drawn as a short motion from the old place to the new, and as a jump where the reader's system asks for reduced motion.
 ### Background
 
 **Declarations:** `DiagramBackground`, `AxisDeclaration`, `BackgroundDeclaration`, `BandDeclaration`, `GridlineDeclaration`, `MarkDeclaration`, `RegionDeclaration`
@@ -360,6 +364,38 @@ Source: [`src/diagrams/dependency-graph/client/dependencyGraphCompiledDefinition
 **A wrapped label is edited in a multiline editor.** A label declaring `wrap: true` is laid out as wrapped text inside the shape's text region, and when it is editable its inline editor opens over that same region as a text area rather than a one-line field. There, **Enter types a newline**; Ctrl+Enter or Cmd+Enter commits; Escape cancels; and blur commits, as it does in the one-line field. The commit is the same `LabelCommitRequested`, so a module's handler does not change - but its `value` can now contain newlines, and a module whose document keeps a label on one line has to decide what a newline means there. The functional decomposition graph's Comment is the first to declare it (read at `04cc58df`); its declaration is excerpted under [Element types and shapes](#element-types-and-shapes). The mechanism is [`src/client/src/canvas/label/readme.md`](../src/client/src/canvas/label/readme.md)'s.
 
 **Their members.** `LabelColumn` carries `text`, `insetX`, `align`, `className`, `truncate`; `LabelDeclaration` carries `wrap`, `text`, `placement`, `slot`, `offset`, `anchorTo`, `stack`, `typography`, `editable`, `truncate`, `when`, `tooltip`, `className`, `align`, `insetX`, `editorBox`, `columns`; `LabelRule` carries `placement`, `insetTop`, `insetHeight`, `insetX`, `truncate`, `editable`; `LabelStack` carries `lineHeight`, `start`; `LabelTypography` carries `fontSize`, `fontWeight`, `fontStyle`, `color`, `scaleWithView`; `CollectionBinding` carries `path`, `each`, `when`, `join`; `FieldBinding` carries `path`, `when`, `plural`, `number`; `NumberFormat` carries `times`, `plus`, `modulo`, `round`, `format`; `PartsBinding` carries `parts`, `join`, `when`; `TemplateBinding` carries `template`, `when`.
+
+### Lists inside an element
+
+**Declarations:** `CompartmentDeclaration`, `CompartmentGroup`
+
+**What it is for.** Rows inside an element that are things in their own right - a specification's tasks, a location's pull requests - grouped under headings that fold.
+
+**Whether a module needs it.** Only a module whose elements hold child entries the reader should see without their becoming elements. A label bound to a collection is enough where the lines are only text; a compartment is for rows that have an id.
+
+**Its shape.** An element type declares `compartments`, each naming the path to its rows, how a row reads its id and its text, and the line heights it is laid out with. `groupBy` gives one heading per value of a field, in the declared order, each showing its title and its count; a group with no row is not drawn, and a row whose value is none of the declared ones goes under `otherTitle` rather than disappearing. `orderBy` orders rows within a group, with rows lacking the value last.
+
+**Which headings are folded is the model's to say.** `collapsed` is a path to the keys of the folded headings: a group's `value`, or the compartment's `id` when it is not grouped. The library holds no collapse state. Pressing a heading, by pointer or by Enter or Space, raises `CompartmentToggled`, and the heading stays as it is until the model changes.
+
+**A row can be the selection.** A row that has an id takes a press, or Enter or Space when focused, and becomes the selection as `{ kind: "row", id }`; the press does not reach the element it is in. The property grid and the shared menu then serve the row through the same selection an element uses, so a module writes nothing for it beyond answering for that id on its backend. A row the model gave no id is drawn and takes no press. Delete and the declared shortcuts pass a selected row by.
+
+**The element grows with its rows.** A row is one line, shortened with an ellipsis and carrying its full text as a tooltip, so the height is the declared `top`, one `headingHeight` per heading, one `rowHeight` per visible row and the `bottom` inset. An element with rows is at least that tall, whatever height the model gives it, and its connections follow.
+
+**Their members.** `CompartmentDeclaration` carries `id`, `rows`, `rowId`, `text`, `link`, `orderBy`, `groupBy`, `title`, `collapsed`, `top`, `headingHeight`, `rowHeight`, `bottom`, `insetX`, `rowIndent`; `CompartmentGroup` carries `value`, `title`.
+
+### Links
+
+**Declarations:** `LinkDeclaration`
+
+**What it is for.** A link an element or a row carries - a web page, a file - drawn as a small symbol the reader can follow.
+
+**Whether a module needs it.** Only a module whose document holds links.
+
+**Its shape.** An element type declares `links`, each with the path to the link and where its symbol sits, measured from the element's top-right corner; a compartment names a row's link with its own `link` path, and the symbol is drawn at the row's end. Nothing is drawn where the model has no link. A press, or Enter or Space when focused, raises `LinkActivated`; it selects nothing and drags nothing, and the symbol says where it leads as its tooltip and its accessible name.
+
+**A module does not open a link.** Where the canvas owns its selection the library opens it, by the page's one rule: an `http` or `https` address in a new tab that gets no handle on the page, a path inside the project in the workspace tree, relative to the document the canvas draws, and anything else shown in a notice with its location offered for copying and never followed. The module hears `LinkActivated` afterwards and usually ignores it.
+
+**Their members.** `LinkDeclaration` carries `id`, `link`, `at`, `label`.
 
 ### Actions, shortcuts and enablement
 
@@ -410,7 +446,7 @@ export const TOOLBOX_EXAMPLE: ToolboxDefinition = {
 
 ### Chrome
 
-**Declarations:** `ChromeDeclaration`, `ChromeLegendDeclaration`, `ChromeTextDeclaration`, `RulerDeclaration`, `RulerRung`, `MonthScale`, `CalendarStep`, `FilterDeclaration`, `FilterLegendEntry`
+**Declarations:** `ChromeDeclaration`, `ChromeLegendDeclaration`, `ChromeTextDeclaration`, `RulerDeclaration`, `RulerRung`, `MonthScale`, `CalendarStep`, `FilterDeclaration`, `FilterLegendEntry`, `SwitchDeclaration`
 
 **What it is for.** The text around the diagram rather than the diagram — loading and unavailable states, a title, a legend, rulers.
 
@@ -434,6 +470,10 @@ Source: [`src/client/src/canvas/library/examples/chrome.example.ts`](../src/clie
 
 **A ruler on the bottom edge, and a filter box.** A ruler declaring `edge: "bottom"` is drawn by the canvas as a strip under the diagram that follows the view. Its `scale` may be a `MonthScale` - a fixed number of canvas units per calendar month from a `YYYY-MM` origin - instead of `unitsPerCanvasUnit`, and a rung's `every` may be any `CalendarStep`, `"decade"` included. A definition's `filter` - a `FilterDeclaration` on the DiagramDefinition rather than in chrome, declared here because it is the other piece of view furniture - shows a box that takes tags as removable chips, looking typed text up among the tags the elements carry at `field`, and hides every element having none of the chosen tags - or, with its Any/All switch on All, not every one of them - with the connections touching them. The filter is view state: nothing is sent to the backend. Its optional `legend` draws a small key under the box, one swatch and caption per `FilterLegendEntry`; the swatch carries the entry's `swatchClass`, so the module colours it with the rule that colours what it stands for, as the hype cycle graph does for its four phases. Its optional `elementTypes` scopes it: an element of any other type is never hidden by it, keeps its connections, and offers none of its tags as suggestions - the hype cycle's notes stay put under every filter.
 
+
+**A switch whose value is the document's.** `switches` declares two-state switches drawn over the canvas, top right, whether or not a filter is declared. Each reads its value from the model's background at its `on` path and raises `SwitchToggled` when pressed; the canvas holds no state for it, so the switch changes when the model does. It is for a setting the reader expects to find as they left it - the filter box and the layout toggle are for what belongs to one viewing.
+
+**Its members.** `SwitchDeclaration` carries `id`, `caption`, `on`.
 ### Compiling it from the bundled specification
 
 **Declarations:** `compileNotation`, `NotationBindings`, `parseDisl`
@@ -485,7 +525,7 @@ Source: [`src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`](../sr
 
 ## Events, and how a module answers them
 
-**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`, `ElementPreviewed`, `ConnectionEndMoved`
+**Declarations:** `DiagramEventHandlers`, `ElementDropped`, `ElementDeleted`, `ElementMoved`, `ElementResized`, `ConnectionDrawn`, `ConnectionReleasedOnEmpty`, `ConnectionDeleted`, `ConnectionAdjusted`, `LabelCommitRequested`, `ViewChanged`, `LayoutModeChanged`, `ActionInvoked`, `ActionRefused`, `DiagramEvent`, `DiagramViewport`, `ResizedSide`, `SelectionChanged`, `SegmentBoundaryMoved`, `ElementPreviewed`, `ConnectionEndMoved`, `CompartmentToggled`, `LinkActivated`, `SwitchToggled`
 
 **What it is for.** **Every event is a request, never a report.** The canvas raises what a user did; the module decides what happens and sends it to the backend. Nothing is applied to the model by the library on its own.
 
@@ -533,7 +573,7 @@ sequenceDiagram
 
 **Their members.** `DiagramViewport` carries `x`, `y`, `width`, `height`; `SelectionChanged` carries `kind`, `selection`.
 
-**Their members.** `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `ConnectionEndMoved` carries `connectionId`, `end`, `attachment`; `ElementPreviewed` carries `elementId`, `bounds`, `boundaries`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
+**Their members.** `CompartmentToggled` carries `elementId`, `compartmentId`, `key`, `collapsed`; `LinkActivated` carries `elementId`, `rowId`, `link`; `SwitchToggled` carries `id`, `on`; `ElementDropped` carries `elementType`, `position`; `ElementDeleted` carries `elementId`; `ElementMoved` carries `elementId`, `position`; `ElementResized` carries `elementId`, `side`, `bounds`; `ConnectionDrawn` carries `relationType`, `sourceElementId`, `targetElementId`, `sourceAnchor`, `targetAnchor`, `sourceAttachment`, `targetAttachment`; `SegmentBoundaryMoved` carries `elementId`, `index`, `x`; `ConnectionReleasedOnEmpty` carries `relationType`, `sourceElementId`, `sourceAnchor`, `position`; `ConnectionDeleted` carries `connectionId`; `ConnectionAdjusted` carries `connectionId`, `waypoints`; `ConnectionEndMoved` carries `connectionId`, `end`, `attachment`; `ElementPreviewed` carries `elementId`, `bounds`, `boundaries`; `LabelCommitRequested` carries `target`, `value`; `ViewChanged` carries `viewport`; `LayoutModeChanged` carries `mode`; `ActionInvoked` carries `targetKind`, `targetId`.
 
 ## Selection
 
@@ -772,5 +812,5 @@ sequenceDiagram
 
 **69 names** since `client-centralization` task 5 moved `estimatedTextWidth` out of the library into `textMetrics.ts`; 70 since task 9 made `snapToStep` module-facing; 71 since `gartner-hype-cycle-graph` added `BEFORE_GAP`, `canvasPositionOf` and `monthIndexOf`; 68 read on `client-centralization` task 7's branch over `develop` at `a062888d`: `client-centralization` task 6 added `ActionDeclaring` and `backendKeyOf`, and task 7 `DiagramEditingIntegration`; 70 since `labelKey` gave a declaration's columns keys of their own; 72 since `ghg-compact-mode` added `LayoutPlacement` and `rowPackedLayout`, for the library's own use; 109 since `hype-cycle-fbl-client` compiled two modules' definitions from DISL, leaving `CompileOptions`, `typeList` and the DISL document types `parseDisl` returns to the library's own use:
 
-`ActionDeclaring`, `ActionLookup`, `BEFORE_GAP`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `Bindable`, `BindingSource`, `CompileOptions`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DiagramEditingIntegration`, `DislAnchors`, `DislAttribute`, `DislAxis`, `DislBox`, `DislCanvas`, `DislContextMenu`, `DislContextTool`, `DislCoordinateSystem`, `DislCoordinates`, `DislCustomShape`, `DislDocument`, `DislEdgeLabel`, `DislEdgeNotation`, `DislEndAnchoring`, `DislEnum`, `DislFilter`, `DislLabel`, `DislLayout`, `DislMetamodel`, `DislNodeNotation`, `DislNotation`, `DislPathSegment`, `DislPlacement`, `DislRelation`, `DislRelationEnd`, `DislRuler`, `DislShapePart`, `DislShapeRef`, `DislSize`, `DislTheme`, `DislTool`, `DislToolbox`, `DislType`, `DislViewpoint`, `DispatchedAction`, `ElementBounds`, `Extensions`, `GeomExpr`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutLabel`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPlacement`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `canvasPositionOf`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `flagOf`, `formatEpochSeconds`, `holds`, `isConnectionElement`, `isCustomShape`, `labelKey`, `layoutAlgorithmFor`, `layoutLabels`, `manualLayout`, `monthIndexOf`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rowPackedLayout`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `structuralModelOf`, `treeLayout`, `typeList`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
+`ActionDeclaring`, `ActionLookup`, `BEFORE_GAP`, `BUILT_IN_ROUTES`, `BUILT_IN_SHAPES`, `BackgroundLine`, `BackgroundMark`, `BackgroundRect`, `BackgroundText`, `Bindable`, `BindingSource`, `CompileOptions`, `DiagramCanvasCore`, `DiagramCanvasCoreProps`, `DiagramEditingIntegration`, `DislAnchors`, `DislAttribute`, `DislAxis`, `DislBox`, `DislCanvas`, `DislContextMenu`, `DislContextTool`, `DislCoordinateSystem`, `DislCoordinates`, `DislCustomShape`, `DislDocument`, `DislEdgeLabel`, `DislEdgeNotation`, `DislEndAnchoring`, `DislEnum`, `DislFilter`, `DislLabel`, `DislLayout`, `DislMetamodel`, `DislNodeNotation`, `DislNotation`, `DislPathSegment`, `DislPlacement`, `DislRelation`, `DislRelationEnd`, `DislRuler`, `DislShapePart`, `DislShapeRef`, `DislSize`, `DislTheme`, `DislTool`, `DislToolbox`, `DislType`, `DislViewpoint`, `DispatchedAction`, `ElementBounds`, `Extensions`, `GeomExpr`, `InteractionState`, `LAYOUT_ALGORITHMS`, `LaidOutCompartments`, `LaidOutHeading`, `LaidOutLabel`, `LaidOutRow`, `LayoutAlgorithm`, `LayoutElement`, `LayoutInput`, `LayoutPlacement`, `LayoutPositions`, `LibraryEventHandlers`, `LibrarySelectionHarness`, `PLACEMENT_MOTION_MS`, `ROW_LINK_WIDTH`, `ResolvedBackground`, `ResolvedChromeText`, `ResolvedDecoration`, `ResolvedEntry`, `ResolvedLegendEntry`, `ResolvedTick`, `actionForGesture`, `actionForKey`, `actionForMenuEntry`, `anchorPoints`, `backendKeyOf`, `canvasPositionOf`, `compartmentsHeight`, `connectionOf`, `dispatchDiagramEvent`, `effectiveDefinition`, `elementOf`, `flagOf`, `formatEpochSeconds`, `hasRow`, `holds`, `isConnectionElement`, `isCustomShape`, `labelKey`, `layoutAlgorithmFor`, `layoutCompartments`, `layoutLabels`, `manualLayout`, `monthIndexOf`, `resolveBackground`, `resolveChromeText`, `resolveDecorations`, `resolveEntries`, `resolveLegend`, `resolveMany`, `resolveNumber`, `resolveNumberAt`, `resolveOne`, `resolveOneAt`, `resolveTicks`, `routePath`, `rowPackedLayout`, `rulerRangeOf`, `scaledTypography`, `shortcutKeysOf`, `structuralModelOf`, `tieredForceLayout`, `treeLayout`, `typeList`, `useAnimatedPlacements`, `validateDiagramDefinition`, `valueAtPath`, `wrappedLabelRegion`
 

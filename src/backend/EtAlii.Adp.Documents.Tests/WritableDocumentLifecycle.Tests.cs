@@ -208,6 +208,64 @@ public class WritableDocumentLifecycleTests : IDisposable
         Assert.Equal("first", File.ReadAllText(path));
     }
 
+    [Fact]
+    public void AnEditSavedAfterAnotherProgramWrote_KeepsBothChanges()
+    {
+        // agent-activity-diagram R8.6. The command read the document, another program wrote the file,
+        // and the change notice has not arrived - so the cache still holds what the command read. The
+        // plain save would write "one\n" plus the edit and the other program's line would be gone.
+        var path = Write("plan.note", "one\n");
+        var lifecycle = Lifecycle();
+        var basis = lifecycle.GetOrLoad(path);
+        File.WriteAllText(path, "one\ntwo\n");
+
+        var saved = lifecycle.Save(path, basis, note => DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n")));
+
+        Assert.False(saved.Failed, saved.Error);
+        Assert.Equal("one\ntwo\nmine\n", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void AnEditSavedWithNothingChangedOnDisk_IsAppliedToTheDocumentTheCallerRead()
+    {
+        // The other half: an unchanged file is not parsed again, so the edit sees the caller's own
+        // document - the same reference - and a store pays nothing for the comparison but one read.
+        var path = Write("plan.note", "one\n");
+        var lifecycle = Lifecycle();
+        var basis = lifecycle.GetOrLoad(path);
+        Note? handed = null;
+
+        var saved = lifecycle.Save(path, basis, note =>
+        {
+            handed = note;
+            return DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n"));
+        });
+
+        Assert.False(saved.Failed, saved.Error);
+        Assert.Same(basis, handed);
+        Assert.Equal("one\nmine\n", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void AnEditThatNoLongerApplies_IsRefused_AndNothingIsWritten()
+    {
+        // The other program removed what the edit was for. The edit says so against the fresh
+        // document, the user is told, and the file keeps the other program's text untouched.
+        var path = Write("plan.note", "one\n");
+        var lifecycle = Lifecycle();
+        var basis = lifecycle.GetOrLoad(path);
+        File.WriteAllText(path, "two\n");
+
+        var saved = lifecycle.Save(path, basis, note => note.Text.Contains("one", StringComparison.Ordinal)
+            ? DocumentEdit<Note>.Applied(new Note(note.Text + "mine\n"))
+            : DocumentEdit<Note>.Refused("The entry this edit was for is no longer in the file."));
+
+        Assert.True(saved.Failed);
+        Assert.Equal("The entry this edit was for is no longer in the file.", saved.Error);
+        Assert.Equal("two\n", File.ReadAllText(path));
+        Assert.Same(basis, lifecycle.Get(path));
+    }
+
     private static WritableDocumentLifecycle<Note> Lifecycle(Action<string, string>? write = null) =>
         new((_, text) => new Note(text), note => note.Text, unavailable: null, write ?? AdpFileWriter.Save);
 

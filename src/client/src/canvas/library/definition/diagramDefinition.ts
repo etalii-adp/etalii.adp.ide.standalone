@@ -2,6 +2,7 @@ import type { Binding, BindingPath, Condition } from "./binding";
 import type { BackgroundDeclaration } from "./background";
 import type { ActionDeclaration, DeclaredFlag } from "./actions";
 import type { ChromeDeclaration } from "./chrome";
+import type { CompartmentDeclaration } from "./compartments";
 
 /**
  * The diagram definition: the one declarative place that states what a diagram type allows
@@ -429,6 +430,25 @@ export interface DecorationDeclaration {
 }
 
 /**
+ * A link an element carries, drawn as a small symbol that can be activated.
+ *
+ * <b>Not a decoration, because a decoration takes no gesture</b> - that line is what keeps
+ * decorations a small closed set. This is the one ornament with a press, and it has exactly one:
+ * it raises `link-activated` with the link the model holds. It selects nothing and drags nothing,
+ * and where the model has no link at the path, nothing is drawn.
+ */
+export interface LinkDeclaration {
+  /** Names the link among an element's links - a location has one for its branch and one for its folder. */
+  id: string;
+  /** A path, rooted at the element, to the link. */
+  link: BindingPath;
+  /** The symbol's top-left corner, measured from the element's top-right corner: leftwards and down. */
+  at: { right: number; top: number };
+  /** What the link is of, for a reader who cannot see where the symbol sits - "branch", "folder". */
+  label?: string;
+}
+
+/**
  * Where a label sits relative to its element's shape. Carried over from `LabelRule`.
  *
  * `before` is the mirror of `beside`: the text ENDS 8 units left of the element's left edge,
@@ -760,6 +780,17 @@ export interface ElementTypeDefinition {
    * that five renderers draw with no shared component at all. Drawn, never interactive.
    */
   decorations?: readonly DecorationDeclaration[];
+  /**
+   * Lists inside this type's elements whose rows are the model's own child entries - grouped,
+   * foldable, and tall enough to make the element grow. See {@link CompartmentDeclaration}.
+   * An element with rows is at least as tall as they need, whatever height the model gives it.
+   */
+  compartments?: readonly CompartmentDeclaration[];
+  /**
+   * Link symbols this type's elements carry: each drawn only where the model has a link at its
+   * path, and activated by a press or from the keyboard. See {@link LinkDeclaration}.
+   */
+  links?: readonly LinkDeclaration[];
   /** Actions this type offers, beyond the ones the whole diagram declares. */
   actions?: readonly ActionDeclaration[];
   /**
@@ -1028,7 +1059,7 @@ export interface ToolboxItemDefinition {
 }
 
 /** The layout modes a definition may allow (Requirement 8.1). */
-export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph" | "row-packed";
+export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph" | "row-packed" | "tiered-force";
 
 export interface LayoutDefinition {
   /**
@@ -1043,6 +1074,22 @@ export interface LayoutDefinition {
    * until the next layout pass reclaims it.
    */
   dragUnderAutomaticLayout?: "repin-to-manual" | "reclaimed-displacement";
+  /**
+   * A path, rooted at an element, that says whether the reader put it where it is. Such an
+   * element keeps the position the model gives it under every automatic mode: the layout places
+   * the others and leaves this one alone. Omitted, a layout places every element.
+   *
+   * With it, a drag under an automatic mode pins: the default `repin-to-manual` raises
+   * `element-moved` for the dragged element, the module stores the position and marks it pinned,
+   * and the mode stays automatic for everything else.
+   */
+  pinned?: BindingPath;
+  /**
+   * The rings of the `tiered-force` mode, from the centre outwards: each entry lists the element
+   * types on one ring. A type no entry names is placed on a ring beyond the last. Required where
+   * that mode is allowed.
+   */
+  tiers?: readonly (readonly string[])[];
   /** The direction a `tree` mode grows in, where that mode is allowed. */
   treeDirection?: "left-to-right" | "right-to-left" | "top-down" | "bottom-up";
   /**

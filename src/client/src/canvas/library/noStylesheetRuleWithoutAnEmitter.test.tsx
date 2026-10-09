@@ -66,6 +66,23 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
     ],
   },
   {
+    reason: "drawn only by an element type that declares compartments, and no shipped module does yet: agent-activity-diagram is the first, and its examples arrive with its module (that specification's tasks 23 and 25). DiagramCanvas.compartments.test.tsx mounts them meanwhile",
+    classes: [
+      "library-compartment-heading",
+      "library-compartment-heading-hit",
+      "library-compartment-heading-text",
+      "library-compartment-row",
+      "library-compartment-row-hit",
+      "library-compartment-row-selected",
+      "library-compartment-row-text",
+      "library-link",
+      "library-link-glyph",
+      "library-link-hit",
+      "library-switch",
+      "library-switches",
+    ],
+  },
+  {
     reason: "drawn only on a selected element or connection, and nothing is selected here",
     classes: ["library-resize-handle", "library-adjust-handle", "library-end-handle", "library-span-anchor", "library-span-anchor-hit"],
   },

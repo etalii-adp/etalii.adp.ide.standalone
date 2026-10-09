@@ -191,6 +191,11 @@ export interface ContextNotice {
   /** Distinguishes two notices carrying the same sentence. */
   readonly id: number;
   readonly text: string;
+  /**
+   * Text the notice offers to put on the clipboard - a location the page could not open, so the
+   * reader can take it somewhere that can. Absent, the notice offers nothing but its dismissal.
+   */
+  readonly copy?: string;
 }
 
 let noticeSequence = 0;
@@ -610,7 +615,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   // dismissal as a backend notice, because to a reader it is the same kind of thing: something
   // that happened which they need to know and can then put away.
   useEffect(
-    () => onLocalNotice((text) => setNotices((previous) => [...previous, { id: nextNoticeId(), text }])),
+    () => onLocalNotice((text, copy) => setNotices((previous) => [...previous, { id: nextNoticeId(), text, copy }])),
     [],
   );
 

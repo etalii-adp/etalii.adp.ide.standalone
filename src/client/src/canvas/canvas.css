@@ -199,6 +199,73 @@
   text-anchor: middle;
 }
 
+/*
+ * Lists inside an element. A heading is a button and says so with its cursor; a row is text. The
+ * hit rectangles are transparent and exist so the whole line takes the press, not only its glyphs.
+ */
+.library-compartment-heading {
+  cursor: pointer;
+}
+
+.library-compartment-row {
+  cursor: default;
+}
+
+/* The selected row, shown the way a selected element is: by the accent, on its own line only. */
+.library-compartment-row-selected .library-compartment-row-hit {
+  fill: var(--color-accent-subtle);
+}
+
+.library-compartment-heading-hit,
+.library-compartment-row-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.library-compartment-heading-text {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.library-compartment-heading:hover .library-compartment-heading-text,
+.library-compartment-heading:focus-visible .library-compartment-heading-text {
+  fill: var(--color-text, #1c2333);
+}
+
+.library-compartment-row-text {
+  fill: var(--color-text, #1c2333);
+  font-size: 12px;
+  user-select: none;
+}
+
+/*
+ * A link symbol: a small chain that takes a press. Muted at rest so it does not compete with the
+ * text beside it, and the accent on hover and on keyboard focus, which is where it says it can
+ * be followed.
+ */
+.library-link {
+  cursor: pointer;
+}
+
+.library-link-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.library-link-glyph {
+  fill: none;
+  stroke: var(--color-text-muted, #5a6376);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.library-link:hover .library-link-glyph,
+.library-link:focus-visible .library-link-glyph {
+  stroke: var(--color-primary);
+}
+
 .canvas-node-label {
   fill: var(--color-text, #1c2333);
   font-size: 12px;
@@ -471,6 +538,30 @@
 }
 
 .library-layout-toggle[aria-pressed="true"] {
+  border-color: var(--color-primary, limegreen);
+  box-shadow: inset 0 0 0 1px var(--color-primary, limegreen);
+}
+
+/* Declared switches: the document's own two-state settings, in the corner the filter box leaves free. */
+.library-switches {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.library-switch {
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--color-text, #1f2430);
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #d6dae2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.library-switch[aria-checked="true"] {
   border-color: var(--color-primary, limegreen);
   box-shadow: inset 0 0 0 1px var(--color-primary, limegreen);
 }

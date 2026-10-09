@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Core alone: the shared discovery scan (ToolDefinitionScan) and the assembly walk
+         (ApplicationAssemblies) live there, and the designer family's abstractions name no
+         other family's types. -->
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+</Project>
