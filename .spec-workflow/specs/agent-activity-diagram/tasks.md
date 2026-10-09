@@ -56,7 +56,7 @@
 
 ## What this host's core gains
 
-- [-] 5. A write that does not overwrite a change it has not seen
+- [x] 5. A write that does not overwrite a change it has not seen
   - File: `src/backend/EtAlii.Adp.Diagram` (`WritableDocumentLifecycle` and its tests)
   - Before writing, compare the file on disk with the text the edit was planned against. If they differ, read it again, plan the same change against the fresh reading and write that; if the change no longer applies, refuse it with a reason the session shows.
   - Guard: a test that changes the file on disk between a command's plan and its save, and asserts both changes are in the result; and one where the edited entry was removed outside, asserting a refusal and an untouched file.
@@ -64,7 +64,7 @@
   - _Leverage: `SelfWriteGuard`, `GhgEdits.Run`, `OpenBody.Plan`_
   - _Requirements: 8.6_
 
-- [-] 6. Undo never restores a file older than an outside change
+- [x] 6. Undo never restores a file older than an outside change
   - File: `src/backend/EtAlii.Adp.History`, `src/backend/EtAlii.Adp.Diagram` (`DiagramDocumentReloadBridge`)
   - When a reload reads a change this host did not write, clear that document's undo and redo history. A reload of the host's own write clears nothing.
   - Guard: edit, change the file outside, undo: the outside change is still in the file and undo is unavailable. Edit, reload of the own write, undo: the edit is undone.
@@ -80,7 +80,7 @@
   - _Leverage: `DiagramDiff.Between`, `DiagramStreamMessage`_
   - _Requirements: 10.3_
 
-- [ ] 8. Canvas library: lists inside an element
+- [-] 8. Canvas library: lists inside an element
   - File: `src/client/src/canvas/library/definition`, `surface`, `DiagramCanvas.tsx`, a shipped library example
   - A compartment declaration on an element type: rows bound to child elements, optional grouping by a field in a declared order, a heading per group with its name and count, groups with no row left out, a collapse state per heading from the stream, a declared order of rows within a group, one line per row with an ellipsis and the full text on hover. The element's height is computed from declared line heights and its relations follow. Clicking a heading raises an event.
   - Guard: the height of an element with two expanded groups and one collapsed equals the declared sum; a collapsed group's rows are absent; rows come in the declared order.
@@ -88,7 +88,7 @@
   - _Leverage: `CollectionBinding`, `elementBounds`, `labels.ts`_
   - _Requirements: 4.1, 4.2, 4.3, 7.6_
 
-- [ ] 9. Canvas library: a row can be selected
+- [-] 9. Canvas library: a row can be selected
   - File: `src/client/src/canvas/library/librarySelection.ts`, `surface`, the context connection
   - A row is hit-testable and takes part in the library's selection under its own id, so the property grid and the context menu serve it as they serve an element. A keyboard path reaches a row and a heading.
   - Waits on: 8.
@@ -97,7 +97,7 @@
   - _Leverage: `librarySelection.test.tsx`, `noModuleSelection.test.ts`_
   - _Requirements: 9.4_
 
-- [ ] 10. Canvas library and shell: a symbol that can be activated, and opening a link
+- [-] 10. Canvas library and shell: a symbol that can be activated, and opening a link
   - File: `src/client/src/canvas/library/definition`, `surface`; `src/client/src/shell` (a link handler and its dialog)
   - A declaration separate from `DecorationDeclaration`: a symbol on an element or at the end of a row, drawn only when its binding has a value, with a tooltip saying where it leads, a focus stop and a press that raises a library event.
   - The shell handles the event: `http` and `https` through `window.open` with `noopener` and `noreferrer`; a path inside the project through `revealPath`; any other path in a dialog that shows it, says why it was not opened and copies it; anything else is not opened.
