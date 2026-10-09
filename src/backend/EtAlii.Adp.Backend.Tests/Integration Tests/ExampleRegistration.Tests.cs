@@ -129,7 +129,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     /// <summary>
-    /// Every designer's example in the showcase opens: its registration names a designer type the
+    /// An example of the designer family in the showcase opens: its registration names a designer type the
     /// deployed catalog carries, and the data file it names is there beside it.
     /// </summary>
     [Theory]
