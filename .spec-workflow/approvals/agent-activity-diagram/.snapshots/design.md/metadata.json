@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/agent-activity-diagram/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T00:33:51.326Z",
       "trigger": "initial",
+      "approvalId": "approval_1791506031244_puriy7ct6",
+      "approvalTitle": "Agent activity diagram: design (9 language decisions at their defaults, 4 requirement amendments asked)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T00:35:05.087Z",
+      "trigger": "approved",
       "approvalId": "approval_1791506031244_puriy7ct6",
       "approvalTitle": "Agent activity diagram: design (9 language decisions at their defaults, 4 requirement amendments asked)"
     }

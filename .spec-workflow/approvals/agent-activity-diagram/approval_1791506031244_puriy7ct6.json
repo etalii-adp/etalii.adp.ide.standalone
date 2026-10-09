@@ -3,8 +3,10 @@
   "title": "Agent activity diagram: design (9 language decisions at their defaults, 4 requirement amendments asked)",
   "filePath": ".spec-workflow/specs/agent-activity-diagram/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-10-09T00:33:51.244Z",
   "category": "spec",
-  "categoryName": "agent-activity-diagram"
+  "categoryName": "agent-activity-diagram",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-10-09T00:35:05.096Z"
 }
