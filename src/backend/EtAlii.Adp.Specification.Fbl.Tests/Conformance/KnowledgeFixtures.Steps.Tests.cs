@@ -15,41 +15,30 @@ namespace EtAlii.Adp.Specification.Fbl.Tests.Conformance;
 /// from.
 /// </summary>
 /// <remarks>
-/// <b>This is a ratchet, because the library does not pass every step yet.</b> Each fixture runs
-/// until its first step that fails, and the number of steps passed must be exactly the number
-/// recorded in <see cref="StepsThatPass"/>. Fewer is a regression. More means the library caught
-/// up: raise the number in the same change, so the record never understates what works. A fixture
-/// is done when its number is its step count, and the ratchet goes when all of them are.
-/// <para>
-/// <b>One kind of step is taken from the fixture rather than planned.</b> A fixture duplicates a
-/// view with an add that carries <c>x-copyOf</c>, and expects one new entry holding the copy's
-/// settings in the order the original has them. Nothing in FBL or in <c>knowledge.des</c> says
-/// how that entry is planned: the <c>duplicateView</c> operation is a transaction of creates,
-/// which under this binding would write the settings in another order. Until the definition
-/// says which is meant, such a step applies the fixture's own splices, so the steps after it can
-/// still be run, and the number of steps taken this way is recorded beside the number that pass.
-/// A taken step proves nothing about this library.
-/// </para>
+/// Every step of every fixture passes, and the number of steps run is recorded in
+/// <see cref="StepsThatPass"/> beside the number that pass. The record is what keeps this from
+/// passing by running nothing: a fixture that lost its steps, or a runner that stopped early,
+/// gives another number. A newly vendored fixture that the library does not pass yet lowers
+/// its first number, with the reason written beside it, until the library catches up.
 /// </remarks>
 public class KnowledgeFixtureStepsTests
 {
     private static string FixturesRoot => Path.Combine(Repository.Conformance, "etalii.adp", "specifications", "fbl", "fixtures");
 
     /// <summary>
-    /// How many steps of each fixture go through today, of how many, and how many of those were
-    /// taken from the fixture rather than planned by the library.
+    /// How many steps of each fixture pass, and of how many.
     /// </summary>
-    public static TheoryData<string, int, int, int> StepsThatPass => new()
+    public static TheoryData<string, int, int> StepsThatPass => new()
     {
-        { "knowledge-kept", 11, 11, 0 },
-        { "knowledge-yaml", 132, 132, 1 },
-        { "knowledge-json", 132, 132, 1 },
-        { "knowledge-xml", 132, 132, 1 },
+        { "knowledge-kept", 11, 11 },
+        { "knowledge-yaml", 138, 138 },
+        { "knowledge-json", 138, 138 },
+        { "knowledge-xml", 138, 138 },
     };
 
     [Theory]
     [MemberData(nameof(StepsThatPass))]
-    public void TheFixturesStepsPass_AsFarAsRecorded(string name, int passing, int of, int taken)
+    public void TheFixturesStepsPass_AsFarAsRecorded(string name, int passing, int of)
     {
         // Arrange.
         var folder = Path.Combine(FixturesRoot, name);
@@ -67,21 +56,11 @@ public class KnowledgeFixtureStepsTests
 
         // Act: every step in order, until the first that fails.
         var passed = 0;
-        var takenFromTheFixture = 0;
         string? failure = null;
         foreach (var step in steps)
         {
             var label = $"{name} step {passed + 1} ({Describe(step)})";
-            if (IsTakenFromTheFixture(step))
-            {
-                failure = Take(step, body, label);
-                if (failure is null) takenFromTheFixture++;
-            }
-            else
-            {
-                failure = Run(step, body, label);
-            }
-
+            failure = Run(step, body, label);
             if (failure is not null) break;
             passed++;
         }
@@ -93,19 +72,6 @@ public class KnowledgeFixtureStepsTests
             passed < passing
                 ? $"{name}: only {passed} of {of} steps pass, where {passing} did. The first failure:\n{failure}"
                 : $"{name}: {passed} of {of} steps pass, more than the {passing} recorded. Raise the number in StepsThatPass. The first failure now:\n{failure ?? "none"}");
-        Assert.Equal(taken, takenFromTheFixture);
-    }
-
-    /// <summary>Whether a step's edit is one the definition does not say how to plan (see the class remarks).</summary>
-    private static bool IsTakenFromTheFixture(JsonElement step) =>
-        step.TryGetProperty("edit", out var edit) && edit.TryGetProperty("add", out var add) && add.TryGetProperty("x-copyOf", out _);
-
-    /// <summary>Applies a step's own splices as one edit, and says what went wrong, or null when its document resulted.</summary>
-    private static string? Take(JsonElement step, OpenBody body, string label)
-    {
-        body.Apply(new Edit(step.GetProperty("splices").EnumerateArray().Select(ReadSplice).ToList()));
-        var expect = Encoding.UTF8.GetBytes(step.GetProperty("expect").GetString()!);
-        return expect.AsSpan().SequenceEqual(body.Bytes) ? null : $"{label}: the fixture's own splices do not give its 'expect'.";
     }
 
     /// <summary>Runs one step, and says what went wrong, or null when the step passed.</summary>

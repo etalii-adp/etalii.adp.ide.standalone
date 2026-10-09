@@ -967,15 +967,15 @@
       "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
     },
     {
-      "doc": "Duplicating a view is one new entry holding the copy's settings: its columns, sorts, filter and grouping come with it.",
+      "doc": "Duplicating a view starts with the copy itself, after the last view, with the original's own settings.",
       "edit": {
         "add": {
           "type": "View",
           "id": "v4",
           "attributes": {
-            "name": "All cities copy"
-          },
-          "x-copyOf": "v1"
+            "name": "All cities copy",
+            "groupBy": "p2"
+          }
         }
       },
       "splices": [
@@ -983,10 +983,113 @@
           "operation": "insert-entry",
           "start": 1235,
           "end": 1235,
-          "text": ",\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" }"
+          "text": ",\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\" }"
         }
       ],
-      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "doc": "The copy's first column creates its list of columns at the end of the view.",
+      "edit": {
+        "add": {
+          "type": "Column",
+          "parent": "v4",
+          "attributes": {
+            "property": "p3",
+            "width": 120
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1298,
+          "end": 1298,
+          "text": ", \"columns\": ["
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1298,
+          "end": 1298,
+          "text": "{ \"property\": \"p3\", \"width\": 120 }"
+        },
+        {
+          "operation": "ensure-container",
+          "start": 1298,
+          "end": 1298,
+          "text": "]"
+        }
+      ],
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "doc": "The copy's first sort creates its list of sorts after its columns.",
+      "edit": {
+        "add": {
+          "type": "Sort",
+          "parent": "v4",
+          "attributes": {
+            "property": "p3",
+            "direction": "descending"
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1347,
+          "end": 1347,
+          "text": ", \"sorts\": ["
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1347,
+          "end": 1347,
+          "text": "{ \"property\": \"p3\", \"direction\": \"descending\" }"
+        },
+        {
+          "operation": "ensure-container",
+          "start": 1347,
+          "end": 1347,
+          "text": "]"
+        }
+      ],
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "doc": "The copy's first condition creates its filter after its sorts.",
+      "edit": {
+        "add": {
+          "type": "Condition",
+          "parent": "v4",
+          "attributes": {
+            "property": "p2",
+            "operator": "is",
+            "option": "o1"
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1407,
+          "end": 1407,
+          "text": ", \"filter\": ["
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1407,
+          "end": 1407,
+          "text": "{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }"
+        },
+        {
+          "operation": "ensure-container",
+          "start": 1407,
+          "end": 1407,
+          "text": "]"
+        }
+      ],
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
     },
     {
       "doc": "Moving a view keeps its bytes.",
@@ -1013,7 +1116,7 @@
           "text": "    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n"
         }
       ],
-      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
     },
     {
       "doc": "Removing a view removes its entry with everything in it.",
@@ -1179,7 +1282,7 @@
       "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v2\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"visible\": false, \"width\": 160, \"wrap\": true }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
     },
     {
-      "doc": "The first column of a view creates its list of columns right after the view's name.",
+      "doc": "The first column of a view creates its list of columns at the end of the view.",
       "edit": {
         "add": {
           "type": "Column",
@@ -2179,10 +2282,10 @@
           "operation": "remove-entry",
           "start": 1235,
           "end": 1235,
-          "text": ",\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" }"
+          "text": ",\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }] }"
         }
       ],
-      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit.",
@@ -2201,7 +2304,82 @@
           "text": ""
         }
       ],
-      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1407,
+          "end": 1420,
+          "text": ""
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1420,
+          "end": 1474,
+          "text": ""
+        },
+        {
+          "operation": "ensure-container",
+          "start": 1474,
+          "end": 1475,
+          "text": ""
+        }
+      ],
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1347,
+          "end": 1359,
+          "text": ""
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1359,
+          "end": 1406,
+          "text": ""
+        },
+        {
+          "operation": "ensure-container",
+          "start": 1406,
+          "end": 1407,
+          "text": ""
+        }
+      ],
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }] }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1298,
+          "end": 1312,
+          "text": ""
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1312,
+          "end": 1346,
+          "text": ""
+        },
+        {
+          "operation": "ensure-container",
+          "start": 1346,
+          "end": 1347,
+          "text": ""
+        }
+      ],
+      "expect": "{\r\n  \"ded\": \"0.1\",\r\n  \"designer\": \"etalii/knowledge\",\r\n  \"name\": \"Cities\",\r\n  \"activeView\": \"v1\",\r\n  \"properties\": [\r\n    { \"id\": \"p1\", \"name\": \"Name\", \"type\": \"text\", \"title\": true },\r\n    { \"id\": \"p10\", \"name\": \"Mayor name\", \"type\": \"number\" },\r\n    { \"id\": \"p2\", \"name\": \"Country\", \"type\": \"selection\", \"options\": [{ \"id\": \"o5\", \"name\": \"Luxemburg\", \"colour\": \"purple\" }, { \"id\": \"o1\", \"name\": \"Netherlands\", \"colour\": \"blue\" }] },\r\n    { \"id\": \"p3\", \"name\": \"Population\", \"type\": \"text\" },\r\n    { \"id\": \"p4\", \"name\": \"Tags\", \"type\": \"multipleSelection\", \"options\": [{ \"id\": \"o4\", \"name\": \"Capital\", \"colour\": \"red\" }] },\r\n    { \"id\": \"p5\", \"name\": \"Province\", \"type\": \"relation\", \"target\": \"provinces.yaml\", \"limit\": \"one\" },\r\n    { \"id\": \"p6\", \"name\": \"Visited\", \"type\": \"checkbox\" },\r\n    { \"id\": \"p7\", \"name\": \"Founded\", \"type\": \"date\" },\r\n    { \"id\": \"p8\", \"name\": \"Updated\", \"type\": \"dateTime\" }\r\n  ],\r\n  \"views\": [\r\n    { \"id\": \"v1\", \"name\": \"All cities\", \"columns\": [{ \"property\": \"p3\", \"width\": 120 }], \"sorts\": [{ \"property\": \"p3\", \"direction\": \"descending\" }], \"filter\": [{ \"property\": \"p2\", \"operator\": \"is\", \"option\": \"o1\" }], \"groupBy\": \"p2\" },\r\n    { \"id\": \"v2\", \"name\": \"Map\" },\r\n    { \"id\": \"v3\", \"name\": \"Kanban\" },\r\n    { \"id\": \"v4\", \"name\": \"All cities copy\", \"groupBy\": \"p2\" }\r\n  ],\r\n  \"rows\": [\r\n    { \"id\": \"r3\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Ghent\" }] },\r\n    { \"id\": \"r1\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Mokum\" }, { \"property\": \"p2\" }, { \"property\": \"p3\", \"text\": \"931300\" }, { \"property\": \"p4\" }, { \"property\": \"p5\", \"rows\": [{ \"row\": \"ut\" }] }, { \"property\": \"p6\" }, { \"property\": \"p7\" }, { \"property\": \"p8\" }] },\r\n    { \"id\": \"r2\", \"cells\": [{ \"property\": \"p1\", \"text\": \"Antwerpen\" }, { \"property\": \"p4\", \"options\": [{ \"option\": \"o4\" }] }] }\r\n  ]\r\n}\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit.",
@@ -2210,7 +2388,7 @@
         {
           "operation": "insert-entry",
           "start": 1235,
-          "end": 1477,
+          "end": 1300,
           "text": ""
         }
       ],

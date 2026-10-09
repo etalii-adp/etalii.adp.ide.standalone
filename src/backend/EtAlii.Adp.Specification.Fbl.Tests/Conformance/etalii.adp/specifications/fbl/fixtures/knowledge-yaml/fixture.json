@@ -955,15 +955,15 @@
       "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
     },
     {
-      "doc": "Duplicating a view is one new entry holding the copy's settings: its columns, sorts, filter and grouping come with it.",
+      "doc": "Duplicating a view starts with the copy itself, after the last view, with the original's own settings.",
       "edit": {
         "add": {
           "type": "View",
           "id": "v4",
           "attributes": {
-            "name": "All cities copy"
-          },
-          "x-copyOf": "v1"
+            "name": "All cities copy",
+            "groupBy": "p2"
+          }
         }
       },
       "splices": [
@@ -971,10 +971,95 @@
           "operation": "insert-entry",
           "start": 1190,
           "end": 1190,
-          "text": "  - id: v4\r\n    name: All cities copy\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n"
+          "text": "  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n"
         }
       ],
-      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+    },
+    {
+      "doc": "The copy's first column creates its list of columns at the end of the view.",
+      "edit": {
+        "add": {
+          "type": "Column",
+          "parent": "v4",
+          "attributes": {
+            "property": "p3",
+            "width": 120
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1246,
+          "end": 1246,
+          "text": "    columns:\r\n"
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1246,
+          "end": 1246,
+          "text": "      - property: p3\r\n        width: 120\r\n"
+        }
+      ],
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+    },
+    {
+      "doc": "The copy's first sort creates its list of sorts after its columns.",
+      "edit": {
+        "add": {
+          "type": "Sort",
+          "parent": "v4",
+          "attributes": {
+            "property": "p3",
+            "direction": "descending"
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1302,
+          "end": 1302,
+          "text": "    sorts:\r\n"
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1302,
+          "end": 1302,
+          "text": "      - property: p3\r\n        direction: descending\r\n"
+        }
+      ],
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+    },
+    {
+      "doc": "The copy's first condition creates its filter after its sorts.",
+      "edit": {
+        "add": {
+          "type": "Condition",
+          "parent": "v4",
+          "attributes": {
+            "property": "p2",
+            "operator": "is",
+            "option": "o1"
+          }
+        }
+      },
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1367,
+          "end": 1367,
+          "text": "    filter:\r\n"
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1367,
+          "end": 1367,
+          "text": "      - property: p2\r\n        operator: is\r\n        option: o1\r\n"
+        }
+      ],
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
     },
     {
       "doc": "Moving a view keeps its bytes.",
@@ -1001,7 +1086,7 @@
           "text": "  - id: v3\r\n    name: Kanban\r\n"
         }
       ],
-      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v4\r\n    name: All cities copy\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
     },
     {
       "doc": "Removing a view removes its entry with everything in it.",
@@ -1167,7 +1252,7 @@
       "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v2\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        visible: false\r\n        width: 160\r\n        wrap: true\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
     },
     {
-      "doc": "The first column of a view creates its list of columns right after the view's name.",
+      "doc": "The first column of a view creates its list of columns at the end of the view.",
       "edit": {
         "add": {
           "type": "Column",
@@ -2071,10 +2156,10 @@
           "operation": "remove-entry",
           "start": 1190,
           "end": 1190,
-          "text": "  - id: v4\r\n    name: All cities copy\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n"
+          "text": "  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n"
         }
       ],
-      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v4\r\n    name: All cities copy\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit.",
@@ -2093,7 +2178,64 @@
           "text": ""
         }
       ],
-      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1367,
+          "end": 1380,
+          "text": ""
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1380,
+          "end": 1444,
+          "text": ""
+        }
+      ],
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1302,
+          "end": 1314,
+          "text": ""
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1314,
+          "end": 1367,
+          "text": ""
+        }
+      ],
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
+    },
+    {
+      "doc": "Undo restores the bytes before the edit.",
+      "undo": true,
+      "splices": [
+        {
+          "operation": "ensure-container",
+          "start": 1246,
+          "end": 1260,
+          "text": ""
+        },
+        {
+          "operation": "insert-entry",
+          "start": 1260,
+          "end": 1302,
+          "text": ""
+        }
+      ],
+      "expect": "ded: \"0.1\"\r\ndesigner: etalii/knowledge\r\n# Cities of the Low Countries, kept by hand and by ADP.\r\nname: Cities\r\nactiveView: v1\r\nproperties:\r\n  - id: p1\r\n    name: Name\r\n    type: text\r\n    title: true\r\n  - id: p10\r\n    name: Mayor name\r\n    type: number\r\n  - id: p2\r\n    name: Country\r\n    type: selection\r\n    options:\r\n      - id: o5\r\n        name: Luxemburg\r\n        colour: purple\r\n      - id: o1\r\n        name: Netherlands\r\n        colour: blue\r\n  - id: p3\r\n    name: Population\r\n    type: text\r\n  - id: p4\r\n    name: Tags\r\n    type: multipleSelection\r\n    options:\r\n      - id: o4\r\n        name: Capital\r\n        colour: red\r\n  - id: p5\r\n    name: Province\r\n    type: relation\r\n    target: provinces.yaml\r\n    limit: one\r\n  - id: p6\r\n    name: Visited\r\n    type: checkbox\r\n  - id: p7\r\n    name: Founded\r\n    type: date\r\n  - id: p8\r\n    name: Updated\r\n    type: dateTime\r\nviews:\r\n  - id: v1\r\n    name: All cities\r\n    columns:\r\n      - property: p3\r\n        width: 120\r\n    sorts:\r\n      - property: p3\r\n        direction: descending\r\n    filter:\r\n      - property: p2\r\n        operator: is\r\n        option: o1\r\n    groupBy: p2\r\n  - id: v2\r\n    name: Map\r\n  - id: v3\r\n    name: Kanban\r\n  - id: v4\r\n    name: All cities copy\r\n    groupBy: p2\r\nrows:\r\n  - id: r3\r\n    cells:\r\n      - property: p1\r\n        text: Ghent\r\n  - id: r1\r\n    cells:\r\n      - property: p1\r\n        text: Mokum\r\n      - property: p2\r\n      - property: p3\r\n        text: \"931300\"\r\n      - property: p4\r\n      - property: p5\r\n        rows:\r\n          - row: ut\r\n      - property: p6\r\n      - property: p7\r\n      - property: p8\r\n  - id: r2\r\n    cells:\r\n      - property: p1\r\n        text: Antwerpen\r\n      - property: p4\r\n        options:\r\n          - option: o4\r\n"
     },
     {
       "doc": "Undo restores the bytes before the edit.",
@@ -2102,7 +2244,7 @@
         {
           "operation": "insert-entry",
           "start": 1190,
-          "end": 1444,
+          "end": 1246,
           "text": ""
         }
       ],

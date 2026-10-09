@@ -423,13 +423,17 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
     /// <summary>
     /// Where a missing container is created and how it opens (FBL §6.2 <c>create</c>): a list under
     /// the selector's last name, right after the member <c>create.at.after</c> names in the parent
-    /// entry's object. Null when the rule creates no container, or creates it in a way this family
+    /// entry's object, or after that object's last member for <c>create.at: "end"</c>. Null when the rule creates no container, or creates it in a way this family
     /// does not write yet - anywhere but after a member that stands on one line with its siblings.
     /// </summary>
     private static (int Offset, string Opening)? NewContainer(InsertSettings insert, TreeEntry? parent)
     {
-        if (insert is not { Container: { } selector, Create: { At: "after", Argument: { } after, Text: null } } || selector.StartsWith('/')) return null;
-        if (parent?.Value is not { Kind: ValueKind.Mapping } mapping || mapping.Member(after) is not { LineSpan: null } member) return null;
+        if (insert is not { Container: { } selector, Create: { At: "after" or "end", Text: null } create } || selector.StartsWith('/')) return null;
+        if (parent?.Value is not { Kind: ValueKind.Mapping, Entries.Count: > 0 } mapping) return null;
+
+        // "end" (FBL 0.4) is after the last member of the container's parent; "after" names the member.
+        var member = create.At == "end" ? mapping.Entries[^1] : create.Argument is { } after ? mapping.Member(after) : null;
+        if (member is not { LineSpan: null }) return null;
         var name = selector.TrimEnd('/')[(selector.TrimEnd('/').LastIndexOf('/') + 1)..];
         return (member.Own.End, $", {Quote(name)}: [");
     }

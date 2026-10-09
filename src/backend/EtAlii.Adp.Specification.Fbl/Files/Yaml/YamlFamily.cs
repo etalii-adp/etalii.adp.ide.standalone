@@ -388,6 +388,11 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
                 offset = Text.Length;
                 indent = mapping.Entries[0].Indent;
                 break;
+            // FBL 0.4: after the last member of the container's parent, which for a member of the root is the end of the document.
+            case "end" when mapping is { Kind: ValueKind.Mapping, Entries.Count: > 0 }:
+                offset = LineEndAfter(mapping.Entries[^1]);
+                indent = mapping.Entries[0].Indent;
+                break;
             case "under" when Container(create.Argument!, parent, new Dictionary<string, string>()) is { Value: { Kind: ValueKind.Mapping, Entries.Count: > 0 } under }:
                 offset = LineEndAfter(under.Entries[^1]);
                 indent = under.Entries[0].Indent;

@@ -1,6 +1,6 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
-  "fbl": "0.3",
+  "fbl": "0.4",
   "doc": "The knowledge file of the Knowledge designer (definitions/designers/knowledge.des, knowledge.md): one table of typed properties, rows and views, in YAML, JSON or XML, one binding per format family. Every knowledge file is a DED definition: it opens with `ded` and `designer`, which are also the marker that lets a host recognise it without a registration. The file is ADP's own; every id is stored in it, a cell names its property by id and holds its value under a key named for its type, and several values are several entries.",
   "bindings": {
     "yaml": {
@@ -92,7 +92,7 @@
             "width": { "key": "width", "empty": "remove", "number": "shortest" },
             "wrap": { "key": "wrap", "empty": "remove", "default": false }
           },
-          "insert": { "place": "after-last", "container": "columns", "create": { "at": { "after": "name" } }, "keys": ["property", "visible", "width", "wrap"] },
+          "insert": { "place": "after-last", "container": "columns", "create": { "at": "end" }, "keys": ["property", "visible", "width", "wrap"] },
           "remove": { "container": "remove-when-empty" }
         },
         {
@@ -104,7 +104,7 @@
             "property": { "key": "property", "empty": "refuse", "reference": { "to": ["property"], "by": "id" } },
             "direction": { "key": "direction", "empty": "remove", "default": "ascending" }
           },
-          "insert": { "place": "after-last", "container": "sorts", "create": { "at": { "after": "name" } }, "keys": ["property", "direction"] },
+          "insert": { "place": "after-last", "container": "sorts", "create": { "at": "end" }, "keys": ["property", "direction"] },
           "remove": { "container": "remove-when-empty" }
         },
         {
@@ -127,7 +127,7 @@
           "insert": {
             "place": "after-last",
             "container": "filter",
-            "create": { "at": { "after": "name" } },
+            "create": { "at": "end" },
             "keys": ["property", "operator", "text", "number", "checked", "date", "dateTime", "time", "option"]
           },
           "remove": { "container": "remove-when-empty" }
@@ -139,7 +139,7 @@
           "when": "has(entry.match)",
           "parent": { "rules": ["view"], "slot": "filter" },
           "attributes": { "match": { "key": "match", "empty": "refuse" } },
-          "insert": { "place": "after-last", "container": "filter", "create": { "at": { "after": "name" } }, "keys": ["match"] },
+          "insert": { "place": "after-last", "container": "filter", "create": { "at": "end" }, "keys": ["match"] },
           "remove": { "container": "remove-when-empty" }
         },
         {
@@ -383,7 +383,7 @@
           "insert": {
             "place": "after-last",
             "container": "columns",
-            "create": { "at": { "after": "name" } },
+            "create": { "at": "end" },
             "emit": "{ \"property\": \"{property}\"[, \"visible\": {visible}][, \"width\": {width}][, \"wrap\": {wrap}] }"
           },
           "remove": { "container": "remove-when-empty" }
@@ -400,7 +400,7 @@
           "insert": {
             "place": "after-last",
             "container": "sorts",
-            "create": { "at": { "after": "name" } },
+            "create": { "at": "end" },
             "emit": "{ \"property\": \"{property}\"[, \"direction\": \"{direction}\"] }"
           },
           "remove": { "container": "remove-when-empty" }
@@ -425,7 +425,7 @@
           "insert": {
             "place": "after-last",
             "container": "filter",
-            "create": { "at": { "after": "name" } },
+            "create": { "at": "end" },
             "emit": "{ \"property\": \"{property}\", \"operator\": \"{operator}\"[, \"text\": \"{text}\"][, \"number\": {number}][, \"checked\": {checked}][, \"date\": \"{date}\"][, \"dateTime\": \"{dateTime}\"][, \"time\": \"{time}\"][, \"option\": \"{option}\"] }"
           },
           "remove": { "container": "remove-when-empty" }
@@ -437,7 +437,7 @@
           "when": "has(entry.match)",
           "parent": { "rules": ["view"], "slot": "filter" },
           "attributes": { "match": { "key": "match", "empty": "refuse" } },
-          "insert": { "place": "after-last", "container": "filter", "create": { "at": { "after": "name" } }, "emit": "{ \"match\": \"{match}\" }" },
+          "insert": { "place": "after-last", "container": "filter", "create": { "at": "end" }, "emit": "{ \"match\": \"{match}\" }" },
           "remove": { "container": "remove-when-empty" }
         },
         {
