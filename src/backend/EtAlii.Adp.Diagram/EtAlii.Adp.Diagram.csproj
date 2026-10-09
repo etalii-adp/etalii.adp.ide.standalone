@@ -7,6 +7,7 @@
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
   </ItemGroup>
 
@@ -34,6 +35,9 @@
          ride, because saving resolves the project and dispatches on its history like the stream
          does - and EtAlii.Adp.Hierarchy, which owns the save command, already references EtAlii.Adp.Editor. -->
     <Protobuf Include="..\..\api\editors.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\editors.proto" />
+    <!-- The designer family's unary calls and its table messages. Served here beside the stream
+         a table rides, as the editor family's call is; workspace imports it for its table member. -->
+    <Protobuf Include="..\..\api\designers.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\designers.proto" />
     <!-- A tab's one stream composes the hierarchy, context and diagram streams, and this is the
          one project that references all three. -->
     <Protobuf Include="..\..\api\workspace.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\workspace.proto" />
