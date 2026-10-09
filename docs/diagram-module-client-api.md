@@ -768,6 +768,7 @@ sequenceDiagram
 | `noPrivateLabelEditors.test.ts` | a module's own inline label editor | the declared label, which the library edits from the backend's prompt |
 | `noPrivateViewReports.test.ts` | a hand-rolled viewport report | `useViewReport` |
 | `diagramStreamOpensOnlyInHook.test.ts` | opening a delta stream anywhere else | `useDiagramStream`, which every module wraps |
+| `tableStreamOpensOnlyInHook.test.ts` | opening a designer's table stream anywhere else; it walks the diagram modules' clients too, where no table stream belongs | `useTableStream`, for a designer module; nothing, for a diagram module |
 | `declarativeModules.test.ts` | drawing a diagram outside the declaration | `DiagramDefinition` |
 | `libraryGuards.test.tsx` | built-in routes leaving the shared geometry | the connectors module |
 | `noUnstyledLibraryClasses.test.ts` | a library class with no style behind it | the library's own stylesheet |

@@ -1,10 +1,11 @@
 {
   "name": "adp-workspace",
   "private": true,
-  "description": "Workspace root for the web client and the diagram modules that plug into it. The modules live outside src/client/, so they need a package each and a root that hoists their shared dependencies - otherwise nothing outside src/client/ can resolve react or @bufbuild/protobuf.",
+  "description": "Workspace root for the web client and the diagram and designer modules that plug into it. The modules live outside src/client/, so they need a package each and a root that hoists their shared dependencies - otherwise nothing outside src/client/ can resolve react or @bufbuild/protobuf.",
   "workspaces": [
     "client",
-    "diagrams/*/client"
+    "diagrams/*/client",
+    "designers/*/client"
   ],
   "allowScripts": {
     "@bufbuild/buf@1.72.0": true

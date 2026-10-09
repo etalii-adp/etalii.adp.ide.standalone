@@ -1,0 +1,99 @@
+/*
+ * The table library's own stylesheet. Every colour and font is one of the host's theme tokens:
+ * a table looks like the application it is in, in both themes, and carries none of the artwork
+ * of the products it resembles.
+ */
+
+.table-surface {
+  --table-cell-padding: 8px; /* TableSurface.tsx adds a nested row's indent to this same number */
+
+  position: relative;
+  height: 100%;
+  overflow: auto;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+}
+
+.table-header-row,
+.table-row {
+  display: grid;
+  box-sizing: border-box;
+  /* As wide as its columns, so a table wider than its panel scrolls sideways as a whole. */
+  width: max-content;
+  min-width: 100%;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table-header-row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.table-header-cell,
+.table-cell {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0 var(--table-cell-padding);
+  border-right: 1px solid var(--color-border);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.table-header-cell {
+  gap: 6px;
+}
+
+.table-kind-icon {
+  flex: none;
+  font-size: 1rem;
+}
+
+.table-header-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-cell-wraps {
+  white-space: normal;
+}
+
+/* An edit shown before its write is confirmed: present, and visibly not settled yet. */
+.table-cell-pending {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.table-row-loading {
+  background: var(--color-surface-raised);
+}
+
+.table-group-row {
+  display: block;
+  background: var(--color-surface-raised);
+}
+
+.table-group-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 var(--table-cell-padding);
+  font-weight: 600;
+}
+
+.table-group-count {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.table-spacer {
+  width: 1px;
+}

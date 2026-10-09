@@ -14,8 +14,12 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     passWithNoTests: true,
-    // The diagram modules' own tests live with the modules, outside this project.
-    include: ["src/**/*.{test,spec}.{ts,tsx}", "../diagrams/*/client/**/*.{test,spec}.{ts,tsx}"],
+    // The diagram and designer modules' own tests live with the modules, outside this project.
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      "../diagrams/*/client/**/*.{test,spec}.{ts,tsx}",
+      "../designers/*/client/**/*.{test,spec}.{ts,tsx}",
+    ],
     setupFiles: ["./src/test-setup.ts"],
   },
 });

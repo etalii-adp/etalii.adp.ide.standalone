@@ -16,7 +16,9 @@ import { useAuth } from "../../auth/AuthContext";
 import { reportedCall, useCanvasRefusalReporter } from "../../canvas/library/surface/canvasRefusals";
 import { ContextSourceSchema } from "../../generated/context-contract_pb";
 import { ContextService, ContextSelectionSchema } from "../../generated/context_pb";
+import type { Path } from "../../generated/connection_pb";
 import type { Delta } from "../../generated/deltas_pb";
+import { DesignerService } from "../../generated/designers_pb";
 import type { OpenDiagramRequest } from "../../generated/diagrams_pb";
 import type { HierarchyMessage } from "../../generated/hierarchy_pb";
 import { WorkspaceService } from "../../generated/workspace_pb";
@@ -27,7 +29,7 @@ import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPro
 import { useCoalescedSelect } from "./useCoalescedSelect";
 import { requestTextTab } from "../panels/textTabRequests";
 import { onLocalNotice } from "./localNotices";
-import { WorkspaceStreams } from "./workspaceStreams";
+import { WorkspaceStreams, type TableStreamEvent } from "./workspaceStreams";
 
 /** The `none` alternative: a plain selection, nothing more. */
 export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: create(EmptySchema) };
@@ -162,6 +164,11 @@ export interface WorkspaceStreamsValue {
     request: Pick<OpenDiagramRequest, "path" | "editorId">,
     options: { signal: AbortSignal },
   ) => AsyncIterable<Delta>;
+  /**
+   * One table's events - the baseline, then every change - under the stream id the caller made,
+   * which the table's other calls name. Ends and rejects as a diagram stream does.
+   */
+  openTableStream: (request: { path: Path; streamId: Uint8Array }, options: { signal: AbortSignal }) => AsyncIterable<TableStreamEvent>;
   /** The hierarchy's changes; fails when the connection drops, as the explorer's own stream did. */
   watchHierarchy: (options: { signal: AbortSignal }) => AsyncIterable<HierarchyMessage>;
 }
@@ -282,6 +289,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   const { transport } = useAuth();
   const client = useMemo(() => createClient(ContextService, transport), [transport]);
   const workspaceClient = useMemo(() => createClient(WorkspaceService, transport), [transport]);
+  const designerClient = useMemo(() => createClient(DesignerService, transport), [transport]);
   const streamsRef = useRef<WorkspaceStreams>(new WorkspaceStreams());
   const watchIdRef = useRef<Uint8Array>(crypto.getRandomValues(new Uint8Array(16)));
   const lastSentRef = useRef<ContextSelection | null>(null);
@@ -347,6 +355,10 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
             }
             if (workspaceMessage.message.case === "diagram") {
               streamsRef.current.diagram(workspaceMessage.message.value);
+              continue;
+            }
+            if (workspaceMessage.message.case === "table") {
+              streamsRef.current.table(workspaceMessage.message.value);
               continue;
             }
             if (workspaceMessage.message.case !== "context") {
@@ -536,9 +548,24 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
           },
           signal,
         ),
+      openTableStream: (request, { signal }) =>
+        streamsRef.current.openTable(
+          request.streamId,
+          {
+            open: (streamId) =>
+              designerClient.openTable({
+                projectId: { value: projectId },
+                watchId: { value: watchIdRef.current },
+                streamId: { value: streamId },
+                path: request.path,
+              }),
+            close: (streamId) => designerClient.closeTable({ watchId: { value: watchIdRef.current }, streamId: { value: streamId } }),
+          },
+          signal,
+        ),
       watchHierarchy: ({ signal }) => streamsRef.current.watchHierarchy(signal),
     }),
-    [workspaceClient, projectId],
+    [workspaceClient, designerClient, projectId],
   );
 
   const promptInteractionId = prompt?.interactionId?.value;
