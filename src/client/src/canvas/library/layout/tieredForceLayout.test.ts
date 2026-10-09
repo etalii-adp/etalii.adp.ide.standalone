@@ -194,3 +194,44 @@ describe("what a layout pass depends on", () => {
     expect(layoutSignatureOf({ ...input, connections: input.connections.slice(1) })).not.toBe(signature);
   });
 });
+
+/**
+ * At size (agent-activity-diagram Requirement 11.2): about two hundred elements, which is a team
+ * of a dozen projects. Measured on 2026-10-09 at 197 elements: a first pass took 93 ms and a pass
+ * after one addition 45 ms, with nothing overlapping after either. The step counts in the
+ * algorithm are fixed from that measurement; the bound below is about three times the measured time: a
+ * bound of ten times was tried first and did not fail against tenfold steps, which took about
+ * 240 ms. The fastest of three passes is what is held to it, since a busy machine slows a pass
+ * and never speeds one up.
+ */
+describe("the radiating layout at about two hundred elements", () => {
+  const { input } = generate(12);
+
+  it("still leaves nothing overlapping and still gives the same picture twice", () => {
+    const first = placed(input);
+
+    expect(input.elements.length).toBeGreaterThanOrEqual(190);
+    expect(overlapping(input, first)).toEqual([]);
+    expect([...placed(input)]).toEqual([...first]);
+  });
+
+  it("places one addition without laying everything out from nothing, in a bounded time", () => {
+    // The planted defect this was seen to fail against: the step counts raised tenfold.
+    const settled = placed(input);
+    const grown: LayoutInput = {
+      elements: [...input.elements, { id: "new-agent", type: "agent", x: 0, y: 0, width: 150, height: 44 }],
+      connections: [...input.connections, { sourceId: "p0s2", targetId: "new-agent" }],
+    };
+
+    let after = placed(grown, settled);
+    let elapsed = Number.POSITIVE_INFINITY;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const started = performance.now();
+      after = placed(grown, settled);
+      elapsed = Math.min(elapsed, performance.now() - started);
+    }
+
+    expect(overlapping(grown, after)).toEqual([]);
+    expect(elapsed).toBeLessThan(150);
+  });
+});
