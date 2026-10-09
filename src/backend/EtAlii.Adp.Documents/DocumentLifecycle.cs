@@ -205,6 +205,16 @@ public sealed class DocumentLifecycle<TDocument> : DocumentLifecycle
     /// </summary>
     internal void Install(string path, TDocument document) => _documents[path] = document;
 
+    /// <summary>
+    /// The text <paramref name="path"/> holds on disk right now, read once and without touching the
+    /// cache - for a save that must know whether the file moved under the edit it is about to write.
+    /// </summary>
+    /// <returns>False for a body that is missing or cannot be read; the save then has nothing to compare.</returns>
+    internal bool TryReadCurrentText(string path, out string text) => TryReadOnce(path, out text, out _, out _);
+
+    /// <summary>Parses <paramref name="text"/> as the document at <paramref name="path"/>, without caching it.</summary>
+    internal TDocument Parse(string path, string text) => _parse(path, text);
+
     private TDocument Open(string path)
     {
         // A missing body on a first open is a new document rather than a publish in flight, so only a

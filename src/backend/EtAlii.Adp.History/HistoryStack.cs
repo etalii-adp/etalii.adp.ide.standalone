@@ -179,9 +179,22 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
 
             result = await _dispatcher.DispatchAsync(entry.Inverse, cancellationToken).ConfigureAwait(false);
 
+            if (result.OutdatedBodyPath.Length > 0)
+            {
+                // Not an obstacle that clears: the document was written by another program, so this
+                // entry and every other recorded against that document describe a file that is gone.
+                // Left in place it would refuse for good and block everything beneath it.
+                var dropped = DropEntriesFor(result.OutdatedBodyPath);
+                _logger.Information(
+                    "Dropped {Dropped} recorded changes to {BodyPath}: another program changed it since",
+                    dropped,
+                    result.OutdatedBodyPath);
+                moved = true;
+            }
+
             // Left in place on failure: the state was not reversed, so the entry still describes
             // a real change and undo stays available to retry once the obstacle is gone.
-            if (!result.IsSuccess)
+            else if (!result.IsSuccess)
             {
                 _logger.Warning(
                     "Could not undo {Command}: {Reason}. It stays on the undo stack",
@@ -267,6 +280,39 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
         }
 
         return result;
+    }
+
+    /// <summary>Removes, from both sides, every entry whose inverse was recorded against <paramref name="bodyPath"/>.</summary>
+    private int DropEntriesFor(string bodyPath)
+    {
+        bool Bound(HistoryEntry entry) =>
+            entry.Inverse is IDocumentBoundCommand bound
+            && string.Equals(bound.BodyPath, bodyPath, StringComparison.OrdinalIgnoreCase);
+
+        lock (_sync)
+        {
+            var before = _undo.Count + _redo.Count;
+            for (var node = _undo.First; node is not null;)
+            {
+                var next = node.Next;
+                if (Bound(node.Value))
+                {
+                    _undo.Remove(node);
+                }
+
+                node = next;
+            }
+
+            // A stack enumerates newest first; pushed back oldest first, the order is kept.
+            var kept = _redo.Where(entry => !Bound(entry)).Reverse().ToList();
+            _redo.Clear();
+            foreach (var entry in kept)
+            {
+                _redo.Push(entry);
+            }
+
+            return before - _undo.Count - _redo.Count;
+        }
     }
 
     public void Clear()

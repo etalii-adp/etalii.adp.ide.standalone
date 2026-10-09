@@ -183,6 +183,65 @@ public sealed class WritableDocumentLifecycle<TDocument>
         }
     }
 
+    /// <summary>
+    /// Applies <paramref name="edit"/> and writes the result - to what the file holds NOW, when
+    /// another program changed it after <paramref name="basis"/> was read.
+    /// </summary>
+    /// <param name="path">The path of the document to write.</param>
+    /// <param name="basis">The document the caller read and planned its edit against.</param>
+    /// <param name="edit">
+    /// The edit, as a function of the document it is applied to. <b>It must not change the document
+    /// it is handed</b> - <paramref name="basis"/> is usually the cached one - and it may be called
+    /// with a document other than <paramref name="basis"/>, so it must find what it edits by
+    /// identity rather than by position. It answers <see cref="DocumentEdit{TDocument}.Refused"/>
+    /// when the entry it was for is no longer there.
+    /// </param>
+    /// <returns>
+    /// As for <see cref="Save(string, TDocument)"/>, and a failure carrying the edit's own reason when
+    /// it was refused. Nothing is written and nothing is cached on a refusal.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this exists beside the plain save.</b> A command edits a copy of the cached document
+    /// and saves it. The cache is only as fresh as the last change notice, and a watcher reports a
+    /// write after it lands, on its own thread - so a file another program has just written is
+    /// overwritten by the next edit made here, with the older text plus that one edit. For a file a
+    /// person alone edits that window is theoretical. For one that agents write every few minutes
+    /// while it is open, it is a lost update a day (agent-activity-diagram R8.6).
+    /// </para>
+    /// <para>
+    /// <b>The comparison is on content, as <see cref="SelfWriteGuard"/>'s is, and for its reason:</b>
+    /// a timestamp cannot tell this store's own save from somebody else's write in the same instant.
+    /// The file is compared with what <paramref name="basis"/> serializes to; a store whose
+    /// serializer does not reproduce an unchanged document byte for byte would see every save as a
+    /// change, and would merely parse once more for it.
+    /// </para>
+    /// <para>
+    /// <b>The window is narrowed, not closed.</b> The read and the write are two calls, and a write
+    /// landing between them is still lost. Closing it needs a lock every writer honours, which an
+    /// agent with a text editor does not.
+    /// </para>
+    /// </remarks>
+    public DocumentSaveResult Save(string path, TDocument basis, Func<TDocument, DocumentEdit<TDocument>> edit)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(basis);
+        ArgumentNullException.ThrowIfNull(edit);
+
+        var current = basis;
+        if (_lifecycle.TryReadCurrentText(path, out var onDisk)
+            && !string.Equals(onDisk, _serialize(basis), StringComparison.Ordinal))
+        {
+            _logger.Information("{Path} changed on disk under an edit; applying the edit to what it holds now", path);
+            current = _lifecycle.Parse(path, onDisk);
+        }
+
+        var edited = edit(current);
+        return edited.Document is null
+            ? DocumentSaveResult.Failure(edited.Refusal)
+            : Save(path, edited.Document);
+    }
+
     private static void CreateFolderOf(string path)
     {
         var directory = IoPath.GetDirectoryName(path);

@@ -16,9 +16,16 @@ namespace EtAlii.Adp.History;
 /// <param name="BodyPath">The document to restore.</param>
 /// <param name="Text">Its complete text as captured before the edit.</param>
 /// <param name="Redo">The original command, so redoing the undo runs the same edit again.</param>
+/// <param name="After">
+/// The document's complete text as the edit left it, or null for a module that does not say.
+/// <b>With it, the restore refuses to overwrite a file another program has written since:</b> a
+/// file that no longer holds this text was changed by somebody else, and putting
+/// <paramref name="Text"/> back would discard that change without a word. Without it the restore
+/// writes regardless, as every module's did before agent-activity-diagram R9.6.
+/// </param>
 /// <remarks>
 /// A module registers its handler in one line:
 /// <c>services.AddSingleton&lt;ICommandHandler&lt;RestoreDocumentCommand&lt;IMyStore&gt;&gt;, RestoreDocumentCommandHandler&lt;IMyStore&gt;&gt;();</c>
 /// </remarks>
-public sealed record RestoreDocumentCommand<TStore>(string BodyPath, string Text, ICommand Redo) : ICommand
+public sealed record RestoreDocumentCommand<TStore>(string BodyPath, string Text, ICommand Redo, string? After = null) : IDocumentBoundCommand
     where TStore : IReloadableDocumentStore;
