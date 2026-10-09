@@ -1,3 +1,4 @@
+using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Designer.Knowledge;
@@ -13,6 +14,9 @@ public static class ServiceCollectionAddKnowledgeExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddSingleton<IKnowledgeDocumentStore, KnowledgeDocuments>();
+        services.AddSingleton<ICommandHandler<KnowledgeEditCommand>, KnowledgeEditCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>, RestoreDocumentCommandHandler<IKnowledgeDocumentStore>>();
         services.AddSingleton<IDesignerSessionFactory, KnowledgeSessionFactory>();
         services.AddSingleton<IDesignerDocumentTemplate, KnowledgeDocumentTemplate>();
     }

@@ -75,7 +75,15 @@ internal sealed record KnowledgeCondition(string PropertyId, string Operator, st
 internal sealed record KnowledgeRow(string Id, IReadOnlyList<KnowledgeCell> Cells);
 
 /// <summary>A row's value for one property, in written form: one value, or several for a kind that holds several.</summary>
-internal sealed record KnowledgeCell(string PropertyId, IReadOnlyList<string> Values);
+/// <param name="PropertyId">The property it is the value of.</param>
+/// <param name="Values">The value or values.</param>
+/// <param name="Key">
+/// The key the file holds the value under: <c>text</c>, <c>number</c>, <c>checked</c>, <c>date</c>,
+/// <c>dateTime</c>, <c>time</c> or <c>option</c> for one value, <c>options</c> or <c>rows</c> for
+/// several, and empty for a cell without a value. It is the key of the type the value was written
+/// as, which after a change of type need not be the property's.
+/// </param>
+internal sealed record KnowledgeCell(string PropertyId, IReadOnlyList<string> Values, string Key = "");
 
 /// <summary>Reads a <see cref="KnowledgeTable"/> out of a body's FBL model.</summary>
 internal static class KnowledgeModelReader
@@ -101,16 +109,18 @@ internal static class KnowledgeModelReader
             Text(property, "name"),
             Text(property, "valueType"),
             KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("title")),
-            [.. ChildrenOf(property, "options").Select(option => new KnowledgeOption(option.Id, Text(option, "name"), Text(option, "colour")))],
+            // An option that names no colour has the default one, and a relation that names no limit
+            // has none: the bindings' defaults, restated for a model that was not read through them.
+            [.. ChildrenOf(property, "options").Select(option => new KnowledgeOption(option.Id, Text(option, "name"), Text(option, "colour") is { Length: > 0 } colour ? colour : "default"))],
             Text(property, "targetFile"),
-            Text(property, "limit"),
+            Text(property, "limit") is { Length: > 0 } limit ? limit : "none",
             Text(property, "counterpart"),
             KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("computed")),
             KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("isParent")))).ToList();
 
         KnowledgeFilterItem FilterItemOf(FblElement element) => element.Type == "FilterGroup"
             ? new KnowledgeFilterGroup(Text(element, "match") == "any", [.. ChildrenOf(element, "conditions").Select(FilterItemOf)])
-            : new KnowledgeCondition(Text(element, "property"), Text(element, "operator"), ValueOf(element));
+            : new KnowledgeCondition(Text(element, "property"), Text(element, "operator"), ValueOf(element, out _));
 
         var views = model.Elements.Where(element => element.Type == "View").Select(view => new KnowledgeView(
             view.Id,
@@ -136,8 +146,13 @@ internal static class KnowledgeModelReader
                 var items = ChildrenOf(cell, "items");
                 // Several values are several items: an option each, or a related row each.
                 var several = items.Select(item => item.Attributes.ContainsKey("option") ? Text(item, "option") : Text(item, "row")).Where(value => value.Length > 0).ToList();
-                var one = ValueOf(cell);
-                return new KnowledgeCell(Text(cell, "property"), items.Count > 0 ? several : one.Length > 0 ? [one] : []);
+                if (items.Count > 0)
+                {
+                    return new KnowledgeCell(Text(cell, "property"), several, items[0].Attributes.ContainsKey("option") ? "options" : "rows");
+                }
+
+                var one = ValueOf(cell, out var key);
+                return one.Length > 0 ? new KnowledgeCell(Text(cell, "property"), [one], key) : new KnowledgeCell(Text(cell, "property"), []);
             })])).ToList();
 
         return new KnowledgeTable(table is null ? "" : Text(table, "name"), table is null ? "" : Text(table, "activeView"), properties, views, rows);
@@ -146,16 +161,18 @@ internal static class KnowledgeModelReader
     private static string Text(FblElement element, string attribute) => KnowledgeValues.Text(element.Attributes.GetValueOrDefault(attribute));
 
     /// <summary>The one value a cell or a condition holds, whichever key its kind writes it under.</summary>
-    private static string ValueOf(FblElement element)
+    private static string ValueOf(FblElement element, out string key)
     {
-        foreach (var key in ValueKeys)
+        foreach (var candidate in ValueKeys)
         {
-            if (element.Attributes.TryGetValue(key, out var value) && value is not null)
+            if (element.Attributes.TryGetValue(candidate, out var value) && value is not null)
             {
+                key = candidate;
                 return KnowledgeValues.Text(value);
             }
         }
 
+        key = "";
         return "";
     }
 }

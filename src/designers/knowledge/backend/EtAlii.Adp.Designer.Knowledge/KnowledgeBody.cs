@@ -1,5 +1,6 @@
 using EtAlii.Adp.Specification.Fbl;
 using EtAlii.Adp.Specification.Fbl.History;
+using EtAlii.Adp.Specification.Fbl.Planning;
 
 namespace EtAlii.Adp.Designer.Knowledge;
 
@@ -58,6 +59,32 @@ internal sealed class KnowledgeBody
 
             return _body is { IsReadOnly: true } ? "This file cannot be changed here." : "";
         }
+    }
+
+    /// <summary>
+    /// The body's bytes with <paramref name="changes"/> made, or why they cannot be. The changes are
+    /// made to a copy, one after the other, each planned against the result of the one before; the
+    /// first that is refused ends it, and this body is as it was either way.
+    /// </summary>
+    public (byte[]? Bytes, string Refusal) Change(IReadOnlyList<ModelChange> changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+
+        if (_body is null || ReadOnlyReason.Length > 0)
+        {
+            return (null, ReadOnlyReason.Length > 0 ? ReadOnlyReason : "This file cannot be changed here.");
+        }
+
+        var copy = _body.Fork();
+        foreach (var change in changes)
+        {
+            if (copy.Change(change) is PlanResult.Refused refused)
+            {
+                return (null, refused.Reason);
+            }
+        }
+
+        return (copy.Bytes, "");
     }
 
     /// <summary>

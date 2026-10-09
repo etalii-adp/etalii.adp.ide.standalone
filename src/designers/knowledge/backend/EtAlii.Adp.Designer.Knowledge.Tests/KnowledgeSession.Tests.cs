@@ -1,5 +1,6 @@
 using System.Reflection;
 using EtAlii.Adp.Designer.TableModel;
+using EtAlii.Adp.History;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -70,16 +71,18 @@ public sealed class KnowledgeSessionTests : IDisposable
         Assert.NotEmpty(baseline.Views);
         Assert.Equal("v1", baseline.Settings.ViewId);
 
-        // The lines: every row of the file, and the line a new row is added at.
-        var rows = KnowledgeBody.Read(KnowledgeFiles.ExampleBytes("cities" + extension), "cities" + extension).Table.Rows;
-        Assert.Equal(rows.Count + 1, baseline.RowCount);
+        // The lines of that view, which shows the cities of the Netherlands grouped by country: a
+        // heading for each country and for the cities without one, the one city the filter lets
+        // through, and under every heading the line a new row is added at.
+        Assert.Equal("p2", baseline.Settings.GroupBy);
+        Assert.Equal(3 + 1 + 3, baseline.RowCount);
     }
 
     [Fact]
     public async Task TheWindow_IsTheLinesAskedFor_WithTheNewRowLineAtTheBottom()
     {
         // Arrange.
-        var path = KnowledgeFiles.CopyExample("cities.yaml", _root);
+        var path = KnowledgeFiles.CopyPlain("cities.yaml", _root);
         await using var session = new KnowledgeSession(path);
         var pushed = Collect(session);
         var total = session.Baseline().RowCount;
@@ -176,7 +179,7 @@ public sealed class KnowledgeSessionTests : IDisposable
     public async Task AChangeMadeOutsideAdp_IsShownWithoutReopening()
     {
         // Arrange.
-        var path = KnowledgeFiles.CopyExample("cities.yaml", _root);
+        var path = KnowledgeFiles.CopyPlain("cities.yaml", _root);
         await using var session = new KnowledgeSession(path);
         session.SetWindow(0, 100);
         var pushed = Collect(session);
@@ -416,12 +419,18 @@ public sealed class KnowledgeSessionTests : IDisposable
         Assert.Equal("etalii/knowledge", definition.Origin);
         Assert.Equal([".yaml", ".json", ".xml"], definition.Formats.Select(format => format.Extension));
         Assert.NotNull(definition.Build);
-        Assert.Equal(definition.Origin, new KnowledgeSessionFactory().Origin);
+        using var histories = new HistoryStackStore(new CommandDispatcher(new NoServices()));
+        Assert.Equal(definition.Origin, new KnowledgeSessionFactory(histories, new KnowledgeDocuments()).Origin);
         Assert.Equal(definition.Origin, new KnowledgeDocumentTemplate().Origin);
         Assert.Null(new KnowledgeDocumentTemplate().Create(new DesignerFormat("TOML", ".toml"), "x.toml"));
     }
 
     // ---- helpers ------------------------------------------------------------------------------------
+
+    private sealed class NoServices : IServiceProvider
+    {
+        public object? GetService(Type serviceType) => null;
+    }
 
     /// <summary>A read that refuses as many times as it is told to, as a file mid-replace does, and counts how often it was asked.</summary>
     private sealed class ScriptedRead(string refusal)

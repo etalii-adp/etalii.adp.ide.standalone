@@ -11,9 +11,8 @@ namespace EtAlii.Adp.Designer.Knowledge;
 internal static class KnowledgeTableMapper
 {
     /// <summary>Everything about the table but its rows, for the view a connection shows.</summary>
-    public static TableStructureChanged Structure(KnowledgeBody body, string viewId, int rowCount)
+    public static TableStructureChanged Structure(KnowledgeTable table, string readOnlyReason, string viewId, int rowCount)
     {
-        var table = body.Table;
         var view = table.ViewOrDefault(viewId);
         return new TableStructureChanged(
             table.Name,
@@ -21,7 +20,7 @@ internal static class KnowledgeTableMapper
             [.. table.Views.Select(candidate => new TableView(candidate.Id, candidate.Name))],
             Settings(view),
             rowCount,
-            body.ReadOnlyReason);
+            readOnlyReason);
     }
 
     /// <summary>
@@ -55,8 +54,13 @@ internal static class KnowledgeTableMapper
             view.GroupBy,
             view.HideEmptyGroups);
 
-    /// <summary>One row as a line of the view, holding the cells that have a value.</summary>
-    public static TableRow Row(KnowledgeRow row) => new(row.Id, Cells: [.. row.Cells.Where(cell => cell.Values.Count > 0).Select(cell => new TableCell(cell.PropertyId, cell.Values))]);
+    /// <summary>
+    /// One row as a line of the view, holding the cells that have a value. A cell among
+    /// <paramref name="unwritten"/> shows an edit that is not in the file yet, and says so.
+    /// </summary>
+    public static TableRow Row(KnowledgeRow row, IReadOnlySet<(string RowId, string ColumnId)> unwritten) => new(
+        row.Id,
+        Cells: [.. row.Cells.Where(cell => cell.Values.Count > 0).Select(cell => new TableCell(cell.PropertyId, cell.Values, Pending: unwritten.Contains((row.Id, cell.PropertyId))))]);
 
     /// <summary>What the body's reading reported, as the table's findings.</summary>
     public static IReadOnlyList<TableFinding> Findings(FblModel model) =>
@@ -104,7 +108,16 @@ internal static class KnowledgeTableMapper
             .. group.Items.Select(item => item switch
             {
                 KnowledgeFilterGroup nested => (TableFilterItem)Filter(nested),
-                KnowledgeCondition condition => new TableCondition(condition.PropertyId, condition.Operator, condition.Value.Length > 0 ? [condition.Value] : []),
+                // The two comparisons every type has are the table library's own, under its names for them.
+                KnowledgeCondition condition => new TableCondition(
+                    condition.PropertyId,
+                    condition.Operator switch
+                    {
+                        "is-empty" => "isEmpty",
+                        "is-not-empty" => "isNotEmpty",
+                        _ => condition.Operator,
+                    },
+                    condition.Value.Length > 0 ? [condition.Value] : []),
                 _ => throw new InvalidOperationException($"A filter item of type {item.GetType().Name} has no place in a table's filter."),
             }),
         ]);
