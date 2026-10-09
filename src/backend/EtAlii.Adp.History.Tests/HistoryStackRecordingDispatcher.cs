@@ -54,7 +54,7 @@ internal sealed class HistoryStackRecordingDispatcher : ICommandDispatcher
     {
         var previous = Value;
         Value = command.Value;
-        return CommandResult.Success(new HistoryStackBoundCommand(command.BodyPath, previous));
+        return CommandResult.Success(command with { Value = previous });
     }
 
     private CommandResult Apply(HistoryStackSetCommand command)
