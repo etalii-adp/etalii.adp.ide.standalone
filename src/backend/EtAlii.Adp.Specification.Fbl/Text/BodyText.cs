@@ -89,7 +89,8 @@ public sealed class BodyText
         while (lo < hi)
         {
             var mid = (lo + hi + 1) / 2;
-            if (_lines[mid].Start <= offset) lo = mid; else hi = mid - 1;
+            if (_lines[mid].Start <= offset) lo = mid;
+            else hi = mid - 1;
         }
         return lo;
     }

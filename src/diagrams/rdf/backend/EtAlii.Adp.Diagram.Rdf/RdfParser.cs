@@ -249,7 +249,9 @@ public sealed class RdfParser
                 Advance();
                 var datatype = token.Value.Contains('e') || token.Value.Contains('E')
                     ? RdfVocabulary.XsdDouble
-                    : token.Value.Contains('.') ? RdfVocabulary.XsdDecimal : RdfVocabulary.XsdInteger;
+                    : token.Value.Contains('.')
+                        ? RdfVocabulary.XsdDecimal
+                        : RdfVocabulary.XsdInteger;
                 return (new LiteralTerm(token.Value, datatype, null, token.Value), token.End);
             }
             case RdfTokenKind.Boolean:

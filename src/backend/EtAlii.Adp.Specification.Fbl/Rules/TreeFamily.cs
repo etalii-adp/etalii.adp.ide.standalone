@@ -116,12 +116,9 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
                 var map = new CelMap();
                 foreach (var merged in value.Merged)
                 {
-                    if (Cel(merged) is not CelMap inherited)
-                    {
-                        continue;
-                    }
-
-                    foreach ((string k, object? v) in inherited) map[k] = v;
+                    if (Cel(merged) is CelMap inherited)
+                        foreach ((string k, object? v) in inherited)
+                            map[k] = v;
                 }
                 foreach (var member in value.Entries)
                 {
