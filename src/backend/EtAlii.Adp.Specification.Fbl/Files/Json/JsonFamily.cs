@@ -322,9 +322,36 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
                 Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
                 return;
             }
-            (int offset, string text) = NewMember(mapping, $"{Quote(key)}: {Format(read, change.Binding, change.Value)}");
+            var added = $"{Quote(key)}: {Format(read, change.Binding, change.Value)}";
+            (int offset, string text) = MemberBefore(mapping, key, change.Rule.WireOrder()) is { } before
+                ? (before.Own.End, (before.LineSpan is not null ? "," + NewlineAt(before.Own.End) + Indentation(before.Indent) : ", ") + added)
+                : NewMember(mapping, added);
             plan.Add(SpliceOperation.InsertKey, offset, offset, text);
         }
+    }
+
+    /// <summary>
+    /// The member a new <paramref name="key"/> is written right after: the nearest one before it in
+    /// the rule's key order (FBL §6.1, "at the position <c>insert.keys</c> gives"). Null when the
+    /// order does not place the key, or places it after every member, and it goes last.
+    /// </summary>
+    private static TreeEntry? MemberBefore(TreeValue mapping, string key, IReadOnlyList<string>? order)
+    {
+        if (order is null) return null;
+        var position = PlaceIn(order, key);
+        if (position < 0) return null;
+        var before = mapping.Entries.LastOrDefault(entry => entry.Name is { } name && PlaceIn(order, name) is >= 0 and var at && at < position);
+        return before is null || before == mapping.Entries[^1] ? null : before;
+    }
+
+    /// <summary>The place of <paramref name="key"/> in a rule's key order, or -1 when the order does not name it.</summary>
+    private static int PlaceIn(IReadOnlyList<string> order, string key)
+    {
+        for (var index = 0; index < order.Count; index++)
+        {
+            if (order[index] == key) return index;
+        }
+        return -1;
     }
 
     /// <summary>A new member or item after a container's last entry, with the previous entry's separator (FBL §6.3).</summary>
@@ -449,6 +476,19 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
             Plan.Refuse($"The whole {Binding.Name} file cannot be removed.");
             return;
         }
+
+        // The only entry of a container that goes when it is left empty (FBL §6.2): the container
+        // goes with it, as what is before the entry, the entry itself, and what is after it.
+        if (element.Rule.Remove?.RemoveContainerWhenEmpty == true &&
+            entry.Parent is TreeEntry { IsRoot: false, Parent: TreeEntry, Value.Entries.Count: 1 } container)
+        {
+            var whole = RemovalSpan(container);
+            plan.Add(SpliceOperation.RemoveContainer, whole.Start, entry.Own.Start, "");
+            plan.Add(SpliceOperation.RemoveEntry, entry.Own, "");
+            plan.Add(SpliceOperation.RemoveContainer, entry.Own.End, whole.End, "");
+            return;
+        }
+
         plan.Add(SpliceOperation.RemoveEntry, RemovalSpan(entry), "");
     }
 }

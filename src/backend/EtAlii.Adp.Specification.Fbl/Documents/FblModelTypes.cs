@@ -123,7 +123,7 @@ public sealed record HeaderSettings(string? Key, JsonElement? Value, string? Lin
 public sealed record BlockRule(string Name, string Line, IReadOnlyList<string>? Within, bool CaseInsensitive, string? View);
 
 /// <summary>An element rule or a relation rule (FBL §5.1, §5.4).</summary>
-public sealed class Rule
+public sealed partial class Rule
 {
     public required string Name { get; init; }
 
@@ -165,6 +165,32 @@ public sealed class Rule
     public string? ReadOnly { get; init; }
 
     public AttributeBinding? Attribute(string name) => Attributes.FirstOrDefault(a => a.Key == name).Value;
+
+    /// <summary>A placeholder of an <c>emit</c> text: an attribute's name, or <c>id</c>, in braces.</summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"\{([A-Za-z_][A-Za-z0-9_]*)\}", System.Text.RegularExpressions.RegexOptions.CultureInvariant)]
+    private static partial System.Text.RegularExpressions.Regex PlaceholderPattern();
+
+    /// <summary>
+    /// The order a new entry's keys or attributes are written in, as the names they are written
+    /// under: <c>insert.keys</c>, or, for a rule that writes its entry from <c>emit</c>, the order
+    /// of the text's placeholders. A key or attribute added to an existing entry takes its place
+    /// in this order (FBL §6.1). Empty for a rule that cannot insert.
+    /// </summary>
+    public IReadOnlyList<string> WireOrder()
+    {
+        if (Insert is null) return [];
+        if (Insert.Keys.Count > 0) return Insert.Keys;
+        if (Insert.Emit is not { } emit) return [];
+        var order = new List<string>();
+        foreach (System.Text.RegularExpressions.Match placeholder in PlaceholderPattern().Matches(emit))
+        {
+            var name = placeholder.Groups[1].Value;
+            var slot = name == "id" ? Id?.From : Attribute(name);
+            var wire = slot?.Key ?? slot?.XmlAttribute;
+            if (wire is not null && !order.Contains(wire)) order.Add(wire);
+        }
+        return order;
+    }
 }
 
 public sealed record IdBinding(Slot? From, string? SidecarKey);
