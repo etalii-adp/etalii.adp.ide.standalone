@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/functional-decomposition-graph-disl-fbl/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T15:07:26.856Z",
       "trigger": "initial",
+      "approvalId": "approval_1791558446026_s9c7s8m08",
+      "approvalTitle": "tasks.md: converting the functional decomposition graph (written against the recommended amendments)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T15:13:36.356Z",
+      "trigger": "approved",
       "approvalId": "approval_1791558446026_s9c7s8m08",
       "approvalTitle": "tasks.md: converting the functional decomposition graph (written against the recommended amendments)"
     }

@@ -29,13 +29,15 @@ public static class CelCore
     }
 
     /// <summary>A cost proportional to the length of the first argument, for a function that walks it.</summary>
-    internal static long Length(IReadOnlyList<object?> arguments) => arguments.Count == 0 ? 1 : arguments[0] switch
-    {
-        string s => 1 + (s.Length / 16),
-        IReadOnlyList<object?> l => 1 + l.Count,
-        IReadOnlyDictionary<string, object?> m => 1 + m.Count,
-        _ => 1,
-    };
+    internal static long Length(IReadOnlyList<object?> arguments) => arguments.Count == 0
+        ? 1
+        : arguments[0] switch
+        {
+            string s => 1 + (s.Length / 16),
+            IReadOnlyList<object?> l => 1 + l.Count,
+            IReadOnlyDictionary<string, object?> m => 1 + m.Count,
+            _ => 1,
+        };
 
     private static long Size(object? value) => value switch
     {

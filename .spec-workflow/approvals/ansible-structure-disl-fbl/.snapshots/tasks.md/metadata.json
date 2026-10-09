@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/ansible-structure-disl-fbl/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T15:07:21.143Z",
       "trigger": "initial",
+      "approvalId": "approval_1791558440958_a6ly4yu6x",
+      "approvalTitle": "tasks.md: converting the Ansible structure diagram (written against the recommended amendment)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T15:13:27.331Z",
+      "trigger": "approved",
       "approvalId": "approval_1791558440958_a6ly4yu6x",
       "approvalTitle": "tasks.md: converting the Ansible structure diagram (written against the recommended amendment)"
     }
