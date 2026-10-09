@@ -101,6 +101,9 @@
     <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph/EtAlii.Adp.Diagram.DotNetDependencyGraph.csproj" />
     <Project Path="../diagrams/dotnet-dependency-graph/backend/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests/EtAlii.Adp.Diagram.DotNetDependencyGraph.Tests.csproj" />
     <Project Path="../diagrams/erd-entity-relationship/backend/EtAlii.Adp.Diagram.ErdEntityRelationship/EtAlii.Adp.Diagram.ErdEntityRelationship.csproj" />
+    <!-- The agent activity diagram: which agent works on what, where and on which system, in a file agents keep current. -->
+    <Project Path="../diagrams/agent-activity-diagram/backend/EtAlii.Adp.Diagram.AgentActivityDiagram/EtAlii.Adp.Diagram.AgentActivityDiagram.csproj" />
+    <Project Path="../diagrams/agent-activity-diagram/backend/EtAlii.Adp.Diagram.AgentActivityDiagram.Tests/EtAlii.Adp.Diagram.AgentActivityDiagram.Tests.csproj" />
     <!-- Agent Behavior Modelling: a chat agent's instructions as a behavior tree, stored as the Markdown the agent reads. -->
     <Project Path="../diagrams/agent-behavior-modelling/backend/EtAlii.Adp.Diagram.AgentBehaviorModelling/EtAlii.Adp.Diagram.AgentBehaviorModelling.csproj" />
     <Project Path="../diagrams/agent-behavior-modelling/backend/EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests/EtAlii.Adp.Diagram.AgentBehaviorModelling.Tests.csproj" />

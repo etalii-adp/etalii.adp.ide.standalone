@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package etalii.adp.agentactivitydiagram;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.AgentActivityDiagram";
+
+// The agent activity diagram's own wire payloads, packed into the core Element's Any. Everything
+// the canvas draws about an element travels here: the core contract carries the id, the position
+// and the type, and what a locked element, a folded group or the archived switch look like is
+// this module's to say - which is why none of them needed a field in the core contract.
+
+// One row of a list inside an element: a task of a specification, a pull request of a location.
+message AadRowPayload {
+  string id = 1;
+  string title = 2;
+  // A task's status, as the enum's member name: progressing, pending, inputRequired, finished.
+  // Empty for a pull request, and for a task whose status is none of those.
+  string status = 3;
+  // When the row was last changed, as the file holds it; rows are listed by it, most recent first.
+  string updated = 4;
+  string link = 5;
+}
+
+// A project, a specification, an agent, a location or an environment.
+message AadElementPayload {
+  // The element's name; for a location, its branch.
+  string name = 1;
+  // A specification's status, as the enum's member name, and the words it is shown with.
+  string status = 2;
+  string status_label = 3;
+  string link = 4;
+  // A location's folder, and the links of its two fields.
+  string folder = 5;
+  string branch_link = 6;
+  string folder_link = 7;
+  // An environment's kind, in words.
+  string kind_label = 8;
+  // Whether the reader put the element where it is. An element that is not is placed by the layout.
+  bool pinned = 9;
+  // The keys of the folded groups: a task status, or "pullRequests".
+  repeated string collapsed = 10;
+  repeated AadRowPayload tasks = 11;
+  repeated AadRowPayload pull_requests = 12;
+  // The size the element is drawn with at rest; the canvas grows it by its unfolded rows.
+  double width = 13;
+  double height = 14;
+}
+
+// One relation: a key on the element at its "one" end, drawn as a line.
+message AadRelationPayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+}
+
+// What is set for the diagram as a whole.
+message AadViewPayload {
+  bool show_archived = 1;
+}

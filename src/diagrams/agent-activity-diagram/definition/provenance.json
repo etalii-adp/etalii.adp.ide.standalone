@@ -1,0 +1,8 @@
+{
+  "repository": "etalii-adp/etalii.adp",
+  "path": "definitions/diagrams/agent-activity-diagram.dis",
+  "revision": "2ab1d8f38dd3d41d9028052cd49daaa8e6599c3a",
+  "sha256": "1642ee486ff9fe70ef910e5a70c5181a52212fac48451d4efd22e0a412df4fa1",
+  "binding": "definitions/diagrams/agent-activity-diagram.fbl",
+  "bindingSha256": "f403171c7e2a80554dae6cbc167330d19eb57858d0d054997461ba9b2f32059d"
+}
