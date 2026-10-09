@@ -78,7 +78,7 @@ import {
 } from "./api/diagramEvents";
 import { effectiveDefinition, type DiagramRuntimeConfig } from "./api/diagramRuntimeConfig";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "./api/diagramModel";
-import { layoutAlgorithmFor, type LayoutInput } from "./layout/layoutAlgorithm";
+import { layoutAlgorithmFor, type LayoutInput, type LayoutPositions } from "./layout/layoutAlgorithm";
 import type {
   AnchorSet,
   BuiltInShape,
@@ -388,6 +388,7 @@ export function DiagramCanvasCore({
   // Laid out over every element of the model, never only those the filter leaves: filtering hides,
   // it does not re-place what is left.
   const layoutAlgorithm = layoutAlgorithmFor(activeLayoutMode);
+  const pinnedPath = statedDefinition.layout.pinned;
   const layoutInput = useMemo<LayoutInput>(
     () => ({
       elements: model.elements.map((element) => {
@@ -401,13 +402,14 @@ export function DiagramCanvasCore({
           height: bounds.height,
           parentId: element.parentId,
           type: element.type,
+          pinned: pinnedPath !== undefined && holds({ path: pinnedPath, is: "true" }, sourceOf(element)),
           leading: leadingOf(element, type),
           ...packedWidthOf(statedDefinition.layout.rowPacked?.width, element),
         };
       }),
       connections: model.connections.map((connection) => ({ sourceId: connection.sourceId, targetId: connection.targetId })),
     }),
-    [model, elementTypes, statedDefinition.layout.rowPacked?.width],
+    [model, elementTypes, statedDefinition.layout.rowPacked?.width, pinnedPath],
   );
   const layoutToggle = statedDefinition.layout.toggle;
   /** A switch the reader made: held as view state, and raised for a host that wants to know. */
@@ -415,11 +417,30 @@ export function DiagramCanvasCore({
     setViewLayoutMode(mode);
     raise({ kind: "layout-mode-changed", mode });
   };
-  const layoutPositions = useMemo(
+  // What the last pass was for and what it gave. Kept so that an input that places alike - a
+  // label changed, a status changed - keeps its placements exactly, and so that a changed input
+  // starts from where the picture is. Keyed by the algorithm too: another mode's placements are
+  // not a start for this one.
+  const lastLayoutRef = useRef<{ mode: LayoutMode; signature: string; positions: LayoutPositions } | null>(null);
+  const layoutPositions = useMemo(() => {
     // An unimplemented mode lays out as manual - the honest fallback.
-    () => (layoutAlgorithm === undefined ? null : layoutAlgorithm.place(layoutInput, definition.layout)),
-    [layoutAlgorithm, layoutInput, definition.layout],
-  );
+    if (layoutAlgorithm === undefined) {
+      return null;
+    }
+    // Only a layout that says what it depends on is remembered: the others read the model's own
+    // positions, and are asked afresh whenever the model changes, as they always were.
+    if (layoutAlgorithm.signature === undefined) {
+      return layoutAlgorithm.place(layoutInput, definition.layout);
+    }
+    const signature = layoutAlgorithm.signature(layoutInput);
+    const last = lastLayoutRef.current?.mode === layoutAlgorithm.mode ? lastLayoutRef.current : null;
+    if (last !== null && last.signature === signature) {
+      return last.positions;
+    }
+    const positions = layoutAlgorithm.place(layoutInput, definition.layout, last?.positions);
+    lastLayoutRef.current = { mode: layoutAlgorithm.mode, signature, positions };
+    return positions;
+  }, [layoutAlgorithm, layoutInput, definition.layout]);
 
   const elements = useMemo(
     () =>

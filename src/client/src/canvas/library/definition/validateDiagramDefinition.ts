@@ -26,6 +26,14 @@ export function validateDiagramDefinition(definition: DiagramDefinition): readon
       problems.push(`The row-packed layout gives its width to element type "${type}", which this definition does not declare.`);
     }
   }
+  if (layout.modes.includes("tiered-force") && layout.tiers === undefined) {
+    problems.push("The layout allows tiered-force without declaring tiers: the mode has no rings to place on.");
+  }
+  for (const type of (layout.tiers ?? []).flat()) {
+    if (!declaredTypes.has(type)) {
+      problems.push(`The tiered-force layout puts element type "${type}" on a ring, which this definition does not declare.`);
+    }
+  }
   if (layout.toggle !== undefined) {
     if (!layout.modes.includes(layout.toggle.on)) {
       problems.push(`The layout toggle switches to "${layout.toggle.on}", which the layout does not allow.`);

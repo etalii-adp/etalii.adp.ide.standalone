@@ -1,5 +1,6 @@
 import type { LayoutDefinition, LayoutMode, ShapePoint } from "../definition/diagramDefinition";
 import { rowPackedLayout } from "./rowPackedLayout";
+import { tieredForceLayout } from "./tieredForceLayout";
 
 /** What a layout pass reads: positions, sizes, and the two structures a hierarchy can hang on. */
 export interface LayoutInput {
@@ -17,6 +18,11 @@ export interface LayoutElement {
   parentId?: string;
   /** The element's type, for a layout that treats types differently. */
   type?: string;
+  /**
+   * The reader put this element where it is, and it stays there: a layout returns no placement
+   * for it, and may treat it as a fixed point the others arrange themselves around.
+   */
+  pinned?: boolean;
   /**
    * The width a packing layout draws this element with, where the layout declares one per element:
    * the declared width resolved for it. Omitted, the layout's own width applies.
@@ -51,7 +57,20 @@ export interface LayoutPlacement extends ShapePoint {
  */
 export interface LayoutAlgorithm {
   readonly mode: LayoutMode;
-  place(input: LayoutInput, definition: LayoutDefinition): LayoutPositions;
+  /**
+   * @param previous What this algorithm returned the last time, where the canvas has it: a layout
+   * that settles by steps starts from there, so one change to the model moves the rest a little
+   * and not everything from nothing. Absent on a first pass, which is what makes the picture a
+   * reopened document gives depend on the document alone.
+   */
+  place(input: LayoutInput, definition: LayoutDefinition, previous?: LayoutPositions): LayoutPositions;
+  /**
+   * What a pass of this layout depends on, as text. An algorithm that states it is asked again
+   * only when it changes, and is then handed its previous placements to start from - so a change
+   * to the model that places nothing differently leaves a settled picture exactly as it is.
+   * An algorithm without one is asked on every change of the model, as every algorithm was.
+   */
+  signature?(input: LayoutInput): string;
   /**
    * The point in the model's own space that `point`, in the placed space, stands for - what a
    * drop under this layout means to a module that places by the model's positions. A layout
@@ -163,7 +182,8 @@ export const treeLayout: LayoutAlgorithm = {
  * manual: the honest fallback, because inventing placements for an unimplemented mode would
  * be worse than leaving the model's own.
  */
-export const LAYOUT_ALGORITHMS: readonly LayoutAlgorithm[] = [manualLayout, treeLayout, rowPackedLayout];
+export const LAYOUT_ALGORITHMS: readonly LayoutAlgorithm[] = [manualLayout, treeLayout, rowPackedLayout, tieredForceLayout];
+
 
 export function layoutAlgorithmFor(mode: LayoutMode): LayoutAlgorithm | undefined {
   return LAYOUT_ALGORITHMS.find((algorithm) => algorithm.mode === mode);

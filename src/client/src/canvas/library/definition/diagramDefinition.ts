@@ -1059,7 +1059,7 @@ export interface ToolboxItemDefinition {
 }
 
 /** The layout modes a definition may allow (Requirement 8.1). */
-export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph" | "row-packed";
+export type LayoutMode = "manual" | "horizontal-flow" | "vertical-flow" | "tree" | "layered-graph" | "row-packed" | "tiered-force";
 
 export interface LayoutDefinition {
   /**
@@ -1074,6 +1074,22 @@ export interface LayoutDefinition {
    * until the next layout pass reclaims it.
    */
   dragUnderAutomaticLayout?: "repin-to-manual" | "reclaimed-displacement";
+  /**
+   * A path, rooted at an element, that says whether the reader put it where it is. Such an
+   * element keeps the position the model gives it under every automatic mode: the layout places
+   * the others and leaves this one alone. Omitted, a layout places every element.
+   *
+   * With it, a drag under an automatic mode pins: the default `repin-to-manual` raises
+   * `element-moved` for the dragged element, the module stores the position and marks it pinned,
+   * and the mode stays automatic for everything else.
+   */
+  pinned?: BindingPath;
+  /**
+   * The rings of the `tiered-force` mode, from the centre outwards: each entry lists the element
+   * types on one ring. A type no entry names is placed on a ring beyond the last. Required where
+   * that mode is allowed.
+   */
+  tiers?: readonly (readonly string[])[];
   /** The direction a `tree` mode grows in, where that mode is allowed. */
   treeDirection?: "left-to-right" | "right-to-left" | "top-down" | "bottom-up";
   /**
