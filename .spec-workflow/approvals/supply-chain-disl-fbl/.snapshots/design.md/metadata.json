@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/supply-chain-disl-fbl/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T10:20:50.567Z",
       "trigger": "initial",
+      "approvalId": "approval_1791541249930_gq0s6hbgj",
+      "approvalTitle": "design.md: converting the supply chain diagram (proposes amendments to question Q5 and findings A7 and B3)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T14:03:25.641Z",
+      "trigger": "approved",
       "approvalId": "approval_1791541249930_gq0s6hbgj",
       "approvalTitle": "design.md: converting the supply chain diagram (proposes amendments to question Q5 and findings A7 and B3)"
     }

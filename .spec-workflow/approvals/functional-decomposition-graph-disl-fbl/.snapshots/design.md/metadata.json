@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/functional-decomposition-graph-disl-fbl/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T10:17:10.367Z",
       "trigger": "initial",
+      "approvalId": "approval_1791541029836_4fru5db8g",
+      "approvalTitle": "design.md: converting the functional decomposition graph (proposes amendments to finding A13 and requirements 4.8 and 6.2)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T14:03:27.132Z",
+      "trigger": "approved",
       "approvalId": "approval_1791541029836_4fru5db8g",
       "approvalTitle": "design.md: converting the functional decomposition graph (proposes amendments to finding A13 and requirements 4.8 and 6.2)"
     }

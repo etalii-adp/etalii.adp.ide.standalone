@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/databricks-disl-fbl/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T10:16:10.348Z",
       "trigger": "initial",
+      "approvalId": "approval_1791540969865_vqnn5xbub",
+      "approvalTitle": "design.md: converting the Databricks diagrams (proposes an amendment to requirement 5.5)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T14:03:30.244Z",
+      "trigger": "approved",
       "approvalId": "approval_1791540969865_vqnn5xbub",
       "approvalTitle": "design.md: converting the Databricks diagrams (proposes an amendment to requirement 5.5)"
     }

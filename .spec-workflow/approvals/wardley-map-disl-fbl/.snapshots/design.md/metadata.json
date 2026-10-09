@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/wardley-map-disl-fbl/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-10-09T10:18:08.926Z",
       "trigger": "initial",
+      "approvalId": "approval_1791541088440_2mhmn9uzf",
+      "approvalTitle": "design.md: converting the Wardley map (proposes amendments to requirements 1.2, 1.4 and 6.4)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-10-09T14:03:26.463Z",
+      "trigger": "approved",
       "approvalId": "approval_1791541088440_2mhmn9uzf",
       "approvalTitle": "design.md: converting the Wardley map (proposes amendments to requirements 1.2, 1.4 and 6.4)"
     }
