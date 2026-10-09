@@ -179,7 +179,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 #### Acceptance Criteria
 
 1. Every position stored in a registration today SHALL be applied after the conversion, with no registration rewritten to make it so (Q3), and the `cld` entries of `RealFiles/divergences.json` SHALL be removed because they no longer occur.
-2. Moving a variable and Arrange diagram SHALL write the registration's `layout:` block through the library's registration writer, each as one undo step that restores the registration byte for byte.
+2. Moving a variable and Arrange diagram SHALL write the registration's `layout:` block through core's `SetRegistrationLayoutCommand` and `RegistrationLayout`, as today, each as one undo step that restores the registration byte for byte.
 3. A document opened without a registration SHALL refuse a move and an arrangement with today's sentences.
 
 ### Requirement 7: What stays code, and why

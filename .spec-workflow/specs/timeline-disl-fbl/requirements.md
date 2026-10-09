@@ -44,23 +44,22 @@ The three kinds are those of `causal-loop-disl-fbl`: a **definition defect** is 
 | B1 | **A value is the text it was written with.** A label written `yes`, `1.0` or `null` is that text to the timeline. FBL's YAML reading types a plain scalar by the core schema, and gives a slot no way to ask for the scalar as written. | Language gap | Recorded (`TimelineDisl.cs`, the reason the model is not built through FBL) |
 | B2 | **A relation whose end names no element** is kept and reported as `timeline.dangling-connection`. FBL 5.4 creates no relation. The pattern the hype cycle uses answers it: the binding reads the entry as an element with reference attributes, and `typeMap` makes it a relation with an unset end. | Definition defect, with a known pattern | Recorded (`dangling.tml`, `combined.tml`) |
 | B3 | **An id written more than once** is read as written by the module, to report it (`timeline.duplicate-id`) and to find the first holder. FBL gives a stored id to one holder and addresses a later one by its place. The hype cycle's `storedId` host attribute answers it. | Definition defect, with a known pattern | Recorded (`identity.tml`) |
-| B4 | **The first element of a new timeline.** A new document is `timeline: 1` and `elements: []`, which is also the binding's own template. The writer opens the empty flow sequence into a bare `elements:` key before it appends. FBL 4.3 makes a flow collection one value whose only writable span is the whole collection, and the splice catalogue has no operation that opens one into block form; the planner here has no code for it and no fixture covers it. If that reading holds, FBL cannot add the first element to the document its own template creates. | Language gap and runtime gap | Read |
+| B4 | **The first element of a new timeline.** A new document is `timeline: 1` and `elements: []`, which is also the binding's own template. The writer opens the empty flow sequence into a bare `elements:` key before it appends. FBL 4.3 makes a flow collection one value whose only writable span is the whole collection, and the splice catalogue names no operation that opens one into block form. The library here does it all the same: `Files/Yaml/YamlFamily.cs` replaces an empty flow sequence by a block sequence when an entry is inserted, and the hype cycle's template relies on it. So the first element can be added; what is missing is the sentence in FBL that says so, and a conformance fixture, without which another host may not do the same. | Language gap (the text only) | Measured (the library's case); Read |
 | B5 | **What a changed value writes.** The writer replaces the whole line with the key and a value quoted only where YAML needs it. That drops a trailing comment on the line and the author's choice of quotes. FBL replaces the value's span and keeps its style, so the comment and the quotes survive. The bytes after an edit differ, and FBL's are the smaller change. | Behaviour change to rule on (Q1) | Read |
 | B6 | **Where a new key goes.** Giving a moment an end writes `end:` directly after the entry's first line. FBL writes it where the binding's `keys` order puts it, after `begin`. | Behaviour change to rule on (Q1) | Read |
 | B7 | **The gap after a dash.** A new entry copies the indentation and the spaces after the `-` of the entries already there, so a document written `-   id:` stays so. FBL copies the previous sibling's indentation and aligns keys "with the column after `- `"; it does not say the gap is copied. `indentation.tml` exists to hold this. | Language gap, or none, to settle by fixture | Read |
 | B8 | **A sequence entry that is not a mapping** is passed over in silence by the parser; the transcript shows no finding for the one in `combined.tml`. FBL reads it as an unreadable entry, which DISL reports. | Behaviour change to rule on (Q2) | Recorded (the transcript) |
 | B9 | **The header.** The module reports nothing when `timeline: 1` is missing or says another version. The binding's `header` reports `fbl.header-mismatch`. | Behaviour change to rule on (Q2) | Read |
-| B10 | **A key written twice in one mapping.** YamlDotNet refuses the document, so the timeline reports `timeline.unparseable`. FBL 4.4 says what a duplicate member means in JSON and 4.3 says nothing for YAML. | Language gap | Read |
+| B10 | **A key written twice in one mapping.** The timeline is believed to report `timeline.unparseable`, because YamlDotNet refuses such a document; that is from knowledge of the library and is settled by the fixture. FBL 7.4 reads the body: `fbl.duplicate-key`, a warning, with the first key bound. So a file that does not open today would open with a warning. | Behaviour change to rule on (Q2) | Read |
 | B11 | **Period or moment.** The parser reads an entry as a period when its `end` key holds a scalar, the empty one included. The binding asks `has(entry.end)`. They differ where `end` holds a mapping or a sequence, and may differ on an empty `end:`, which FBL may present as null. `times.tml` holds an empty `end:` and its ids agree per type today. | Definition defect or none, to settle by fixture | Read; the agreement is recorded |
 | B12 | **Times.** The module reads every form .NET reads (`2026/07/01`, `July 5, 2026`) and writes what its commands format. The binding writes `time: "keep-precision"`. Whether a moved element whose begin was written in a .NET-only form comes back in the same bytes is not known. | To settle by fixture | Read |
 
 ### C. Language gaps, as they would be reported to etalii-adp/etalii.adp
 
 1. **FBL: a slot that reads a YAML scalar as written** (B1). Candidate: an attribute option `as: "text"`, or the rule that a slot bound to a DISL `string` attribute reads the scalar's text whatever the core schema would type it as. This one blocks the conversion.
-2. **FBL: opening an empty flow collection** (B4). Candidate: an `open-flow` splice beside `open-block`, replacing `[]` by nothing and writing the first entry in block form under the key.
+2. **FBL: opening an empty flow collection** (B4). The library does it; FBL's text does not say it. Candidate: a sentence in 4.3 or 6.2, and a conformance fixture that adds a first entry to `elements: []`.
 3. **FBL: a relation with an end that names nothing** (B2), and **an id held twice** (B3). DISL 0.3 answers both from its side, but only when the binding reads a relation as an element and carries a `storedId`. Every binding of a hand-edited format will need the same two detours; FBL 5.4 and 5.3 could say it once.
 4. **FBL: the gap after a dash in a new sequence item** (B7), if the fixture shows FBL's rule writes other bytes.
-5. **FBL: a duplicate key in YAML** (B10).
 
 ## Open questions
 
@@ -69,7 +68,7 @@ Each is put to the user as a selection; the **(default)** is what this document 
 | # | Question | Options | Criteria affected |
 | --- | --- | --- | --- |
 | Q1 | When an edit changes one value or adds one key, what is written? | **(default) What FBL writes**: the value's own span, in its own style, a new key where the binding orders it; a trailing comment and the author's quotes survive; the transcript's edit hunks are regenerated once and reviewed as a diff. · **What the writer writes today**: the transcript stays byte-identical, and FBL needs a way to state a whole-line rewrite and a key's place after the first line, which is a language change first. · Other. | 3.2, 3.3, 1.3 |
-| Q2 | Findings FBL and DISL would add that the timeline does not give today (a missing header, a sequence entry that is not a mapping). | **(default) Switched off in this conversion**, each raised afterwards as a small change of its own. · **Adopted now**, each named in the transcript's diff. · Other. | 2.5 |
+| Q2 | Findings FBL and DISL would add that the timeline does not give today (a missing header, a sequence entry that is not a mapping, a key written twice). | **(default) Switched off in this conversion**, each raised afterwards as a small change of its own. · **Adopted now**, each named in the transcript's diff. · Other. | 2.5 |
 | Q3 | Finding B1 blocks the conversion until FBL answers it. What happens meanwhile? | **(default) Report the gap and wait**: the requirements stand, the design is written when FBL has the construct, and nothing is built on a workaround. · **Work around it**: the module keeps a small reader of its own for the scalars FBL types, named as standing in for the gap. · **Narrow the format**: a label that reads as a number or a boolean must be quoted, and the examples are checked for it. · Other. | 2.2 |
 
 ## Alignment with Product Vision
@@ -133,7 +132,7 @@ The product direction (2026-09-26) is one definition per tool, interpreted by a 
 
 #### Acceptance Criteria
 
-1. `EtAlii.Adp.Specification.Fbl` SHALL implement what FBL gains for findings B1 and B4, each proven by a library test seen to fail first and by a conformance fixture vendored from etalii.adp.
+1. `EtAlii.Adp.Specification.Fbl` SHALL implement what FBL gains for finding B1, proven by a library test seen to fail first and by a conformance fixture vendored from etalii.adp.
 2. A defect of the library that a fixture of Requirement 1 shows SHALL be repaired in the library; a language gap SHALL NOT be repaired here.
 3. No module name SHALL appear in a library change.
 
@@ -243,7 +242,7 @@ A draft against FBL 0.2. It differs from the example in etalii.adp where finding
 }
 ```
 
-It declares no `header`, so that a missing one raises no finding (Q2). `storedId` is stated as the hype cycle's binding states it. The template still writes `elements: []`, which is finding B4 and the design's to close.
+It declares no `header`, so that a missing one raises no finding (Q2). `storedId` is stated as the hype cycle's binding states it. The template still writes `elements: []`, which the library opens into a block sequence (finding B4).
 
 ## Appendix: the definition's persistence, as drafted
 
@@ -268,6 +267,6 @@ It declares no `header`, so that a missing one raises no finding (Q2). `storedId
 - The module `src/diagrams/timeline/` at `develop` `9a646009`: `TimelineParser.cs`, `TimelineWriter.cs`, `TimelineDisl.cs`, `TimelineDocumentFactory.cs`, `definition/timeline.dis` and its `provenance.json`, `Parity/timeline.transcript.json` (the findings of `combined.tml` for B8), and `Fixtures/readme.md`.
 - `src/backend/EtAlii.Adp.Documents/LineSplice.cs` (`SetKey`, `Quote`, `IndentOf`, `InsertionPointFor`) for findings B4 to B7.
 - etalii-adp/etalii.adp at `develop` `da64ff0`: `specifications/fbl/timeline.fbl`; `specifications/fbl/FBL-specification.md` sections 4.3, 5.3, 5.4, 6.1 and 6.3; `specifications/disl/DISL-specification.md` section 11.2.
-- `src/backend/EtAlii.Adp.Specification.Fbl.Tests/RealFiles/divergences.json` for B2 and B3, and the conformance fixtures `timeline-edits` and `timeline-bom-lf`, neither of which adds an entry to an empty flow sequence; a search of `EtAlii.Adp.Specification.Fbl/Planning/` for `flow` found nothing.
+- `src/backend/EtAlii.Adp.Specification.Fbl.Tests/RealFiles/divergences.json` for B2 and B3, and the conformance fixtures `timeline-edits` and `timeline-bom-lf`, neither of which adds an entry to an empty flow sequence; `src/backend/EtAlii.Adp.Specification.Fbl/Files/Yaml/YamlFamily.cs` for the case that does (finding B4), and FBL 7.4 for `fbl.duplicate-key` (finding B10).
 - The hype cycle graph module for the patterns of B2 and B3: `gartner-hype-cycle-graph.fbl` and the `typeMap` of its definition.
 - `causal-loop-disl-fbl` for the series, the survey and the shape of this document.
