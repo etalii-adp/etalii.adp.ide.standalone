@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/causal-loop-disl-fbl/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T10:07:45.476Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791540464953_ut93hyln7",
+      "approvalTitle": "tasks.md: converting the causal loop diagram to DISL and FBL"
+    }
+  ]
+}
