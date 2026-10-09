@@ -56,7 +56,7 @@
 
 ## What this host's core gains
 
-- [ ] 5. A write that does not overwrite a change it has not seen
+- [-] 5. A write that does not overwrite a change it has not seen
   - File: `src/backend/EtAlii.Adp.Diagram` (`WritableDocumentLifecycle` and its tests)
   - Before writing, compare the file on disk with the text the edit was planned against. If they differ, read it again, plan the same change against the fresh reading and write that; if the change no longer applies, refuse it with a reason the session shows.
   - Guard: a test that changes the file on disk between a command's plan and its save, and asserts both changes are in the result; and one where the edited entry was removed outside, asserting a refusal and an untouched file.
@@ -64,7 +64,7 @@
   - _Leverage: `SelfWriteGuard`, `GhgEdits.Run`, `OpenBody.Plan`_
   - _Requirements: 8.6_
 
-- [ ] 6. Undo never restores a file older than an outside change
+- [-] 6. Undo never restores a file older than an outside change
   - File: `src/backend/EtAlii.Adp.History`, `src/backend/EtAlii.Adp.Diagram` (`DiagramDocumentReloadBridge`)
   - When a reload reads a change this host did not write, clear that document's undo and redo history. A reload of the host's own write clears nothing.
   - Guard: edit, change the file outside, undo: the outside change is still in the file and undo is unavailable. Edit, reload of the own write, undo: the edit is undone.
