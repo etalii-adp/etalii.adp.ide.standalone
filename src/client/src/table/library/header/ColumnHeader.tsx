@@ -5,6 +5,7 @@ import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn } from "../api/tableModel";
 import { kindOf, type TableDefinition } from "../definition/tableDefinition";
 import { columnMenuGroups, dropIndex, resizedWidth } from "./columnActions";
+import { OptionsEditor } from "./OptionsEditor";
 
 export interface ColumnHeaderProps {
   column: TableColumn;
@@ -33,6 +34,8 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
   const cellRef = useRef<HTMLDivElement>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const [renaming, setRenaming] = useState(false);
+  // Where the panel of the column's options stands while it is open: under the header, in the window.
+  const [optionsAt, setOptionsAt] = useState<{ x: number; y: number } | null>(null);
 
   const move = usePointerGesture<null>({
     onPress: () => {
@@ -83,7 +86,14 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
     },
   });
 
-  const groups = columnMenuGroups(column, definition, { raise, startRename: () => setRenaming(true) });
+  const groups = columnMenuGroups(column, definition, {
+    raise,
+    startRename: () => setRenaming(true),
+    editOptions: () => {
+      const rect = cellRef.current?.getBoundingClientRect();
+      setOptionsAt({ x: rect?.left ?? 0, y: rect?.bottom ?? 0 });
+    },
+  });
   const classes = ["table-header-cell", index === 0 ? "table-cell-first" : ""].filter(Boolean).join(" ");
 
   return (
@@ -111,6 +121,7 @@ export function ColumnHeader({ column, index, width, definition, editable, raise
       )}
       {editable && <span className="table-header-resize" role="separator" aria-orientation="vertical" aria-label={`Resize ${column.name}`} {...resize.press(null)} />}
       <ContextMenu open={menuAt !== null} groups={groups} position={menuAt ?? { x: 0, y: 0 }} onClose={() => setMenuAt(null)} />
+      {editable && optionsAt !== null && <OptionsEditor column={column} position={optionsAt} raise={raise} onClose={() => setOptionsAt(null)} />}
     </div>
   );
 }

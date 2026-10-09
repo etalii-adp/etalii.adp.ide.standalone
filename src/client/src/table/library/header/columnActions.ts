@@ -1,7 +1,7 @@
 import type { ContextMenuGroup, ContextMenuItem } from "../../../shell/context/ContextMenu";
 import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn } from "../api/tableModel";
-import type { ColumnAction, TableDefinition } from "../definition/tableDefinition";
+import { kindOf, type ColumnAction, type TableDefinition } from "../definition/tableDefinition";
 
 /**
  * A column's menu, as data: which entries the module's definition offers, what each is called
@@ -40,7 +40,7 @@ export function resizedWidth(start: number, dx: number): number {
 
 /** The order the menu shows its entries in, and where a line separates them. */
 const MENU_ORDER: readonly (readonly ColumnAction[])[] = [
-  ["rename", "changeType"],
+  ["rename", "changeType", "options"],
   ["filter", "sortAscending", "sortDescending", "group"],
   ["hide", "wrap"],
   ["insertLeft", "insertRight", "duplicate", "delete"],
@@ -52,11 +52,18 @@ export interface ColumnMenuHandlers {
   raise: (gesture: TableGesture) => void;
   /** Renaming is done in the header itself; the menu only starts it. */
   startRename: () => void;
+  /** A column's options are edited in a panel of their own; the menu only opens it. Left out, the menu has no such entry. */
+  editOptions?: () => void;
 }
 
 /** The menu of one column: the entries the definition offers, grouped, each bound to its gesture. */
-export function columnMenuGroups(column: TableColumn, definition: TableDefinition, { raise, startRename }: ColumnMenuHandlers): ContextMenuGroup[] {
+export function columnMenuGroups(column: TableColumn, definition: TableDefinition, { raise, startRename, editOptions }: ColumnMenuHandlers): ContextMenuGroup[] {
   const offered = new Set(definition.columnActions ?? []);
+  // Only a column whose values are chosen from options has options to edit.
+  const editor = kindOf(definition, column.kind).editor;
+  if (editOptions === undefined || (editor !== "option" && editor !== "options")) {
+    offered.delete("options");
+  }
   const entry = (action: ColumnAction): ContextMenuItem => {
     switch (action) {
       case "rename":
@@ -77,6 +84,8 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
             })),
           ],
         };
+      case "options":
+        return { id: action, label: "Edit options", icon: "mdi-format-list-bulleted-square", onSelect: () => editOptions?.() };
       case "filter":
         return { id: action, label: "Filter", icon: "mdi-filter-outline", onSelect: () => raise({ kind: "addFilter", columnId: column.id }) };
       case "sortAscending":

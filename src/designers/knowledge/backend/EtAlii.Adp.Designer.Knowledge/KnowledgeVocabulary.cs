@@ -20,6 +20,9 @@ internal static class KnowledgeVocabulary
     /// <summary>The keys a cell or a condition holds its one value under.</summary>
     public static IReadOnlyList<string> ValueKeys { get; } = ["text", "number", "checked", "date", "dateTime", "time", "option"];
 
+    /// <summary>The colours an option can have, by name. Each is a token of the theme, never a colour value.</summary>
+    public static IReadOnlyList<string> Colours { get; } = ["default", "gray", "brown", "orange", "yellow", "green", "blue", "purple", "pink", "red"];
+
     /// <summary>The element types a view's settings are made of.</summary>
     public static IReadOnlyList<string> ViewSettings { get; } = ["Column", "Sort", "Condition", "FilterGroup", "GroupSetting"];
 

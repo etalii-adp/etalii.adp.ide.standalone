@@ -104,6 +104,17 @@ public sealed class DefinitionConformanceTests
     }
 
     [Fact]
+    public void AnOptionsColours_AreTheDefinitions()
+    {
+        // Arrange.
+        var colours = Definition().GetProperty("metamodel").GetProperty("enums").GetProperty("Colour").GetProperty("values").EnumerateObject().Select(colour => colour.Name).ToList();
+
+        // Assert.
+        Assert.Equal(10, colours.Count);
+        Assert.Empty(Differences("The colour", colours, KnowledgeVocabulary.Colours));
+    }
+
+    [Fact]
     public void ADifference_IsNamedInItsDirection()
     {
         // The guard's own control: what a type removed from the module, and one added only to it, are reported as.

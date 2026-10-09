@@ -14,6 +14,7 @@ export type TableEditorKind = "text" | "number" | "checkbox" | "date" | "datetim
 export type ColumnAction =
   | "rename"
   | "changeType"
+  | "options"
   | "filter"
   | "sortAscending"
   | "sortDescending"
