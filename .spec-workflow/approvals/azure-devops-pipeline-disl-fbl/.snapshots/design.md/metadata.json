@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/azure-devops-pipeline-disl-fbl/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T10:16:55.040Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791541014697_hmfkqkblw",
+      "approvalTitle": "design.md: converting the Azure DevOps pipeline diagram (proposes amendments to requirements 1.2, 2.2 and question Q2)"
+    }
+  ]
+}
