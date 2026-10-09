@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/databricks-disl-fbl/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T15:07:24.311Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791558443523_bee98movl",
+      "approvalTitle": "tasks.md: converting the Databricks diagrams (written against the recommended amendment)"
+    }
+  ]
+}
