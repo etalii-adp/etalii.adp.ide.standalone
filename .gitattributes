@@ -145,6 +145,17 @@ src/client/src/generated/**   text eol=lf
 # the first `.dis` was committed, for the reason given above.
 *.dis   -text
 
+# `.des` is a DESL designer specification, and a designer module bundles its FBL binding beside it:
+# both are copied verbatim from etalii-adp/etalii.adp into `src/designers/<module>/definition/`, and
+# `provenance.json` there records the sha256 of each. As with `.dis`, a line-ending conversion would
+# make the hash measure git rather than the definition. The binding is exempted by its path, because
+# an `.fbl` elsewhere in the tree is ordinary text. A designer's example documents are exempted with
+# them: they are copies of the definition's examples, in formats a project is full of, and a rule by
+# extension would exempt every `.yaml`, `.json` and `.xml` in the repository.
+*.des   -text
+src/designers/*/definition/*.fbl -text
+src/designers/*/examples/** -text
+
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,
 # compose file and configuration document in the tree. Scoped to the one folder where the bytes are

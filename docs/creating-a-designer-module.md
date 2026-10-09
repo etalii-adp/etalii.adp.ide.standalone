@@ -27,4 +27,13 @@ Read [creating a diagram module](creating-a-diagram-module.md) for the mechanism
 
 ## What the first designer adds
 
+The first designer is the Knowledge designer, in [`src/designers/knowledge`](../src/designers/knowledge). Its backend shows what a designer module supplies:
+
+- [`Designer.cs`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/Designer.cs): the definition, with its origin, its formats and a `Build` that registers the module's services.
+- [`definition/`](../src/designers/knowledge/definition): the specification (`knowledge.des`) and the bindings (`knowledge.fbl`), copied byte for byte from etalii-adp/etalii.adp and embedded, with `provenance.json` recording the revision and each file's sha256. A test fails when a bundled file no longer hashes to what was recorded.
+- [`KnowledgeBody`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/KnowledgeBody.cs): a document read through `EtAlii.Adp.Specification.Fbl` with the binding its extension selects. The module has no parser and no writer of its own, which is what makes the three formats one table.
+- [`KnowledgeSession`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/KnowledgeSession.cs): the session of one connection. It reads the file with the shared read, writes nothing on open, and watches the file with a text editor session's obligations: subscribed before the watcher is enabled, read again when events were lost, and a refused read retried.
+- [`KnowledgeTableMapper`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/KnowledgeTableMapper.cs): the document onto the host's table model.
+
+
 What a designer needs beyond the scan is decided by its specification, the way `modular-text-editors` decided the editor family's: the routing and session seams the host serves designers through (the definition and its catalog are in place), and - when ADP specifies designer types in a language - DESL, the Designer Specification Language, with the designs users create stored as DED, the Designer Definition Language. Extend this document in the same change.

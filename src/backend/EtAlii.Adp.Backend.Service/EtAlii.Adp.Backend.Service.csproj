@@ -16,6 +16,7 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <ProjectReference Include="..\..\diagrams\*\backend\*\*.csproj" Exclude="..\..\diagrams\*\backend\*\*.Tests.csproj" />
     <ProjectReference Include="..\..\editors\*\backend\*\*.csproj" Exclude="..\..\editors\*\backend\*\*.Tests.csproj" />
+    <ProjectReference Include="..\..\designers\*\backend\*\*.csproj" Exclude="..\..\designers\*\backend\*\*.Tests.csproj" />
   </ItemGroup>
 
   <!--

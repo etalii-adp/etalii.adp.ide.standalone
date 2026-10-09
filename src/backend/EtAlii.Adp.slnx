@@ -18,6 +18,10 @@
   <Project Path="EtAlii.Adp.Designer/EtAlii.Adp.Designer.csproj" />
   <Project Path="EtAlii.Adp.Designer.Tests/EtAlii.Adp.Designer.Tests.csproj" />
   <Project Path="EtAlii.Adp.Editor.Tests/EtAlii.Adp.Editor.Tests.csproj" />
+  <Folder Name="/designers/">
+    <Project Path="../designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/EtAlii.Adp.Designer.Knowledge.csproj" />
+    <Project Path="../designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge.Tests/EtAlii.Adp.Designer.Knowledge.Tests.csproj" />
+  </Folder>
   <Folder Name="/editors/">
     <Project Path="../editors/plain/backend/EtAlii.Adp.Editor.Plain/EtAlii.Adp.Editor.Plain.csproj" />
     <Project Path="../editors/plain/backend/EtAlii.Adp.Editor.Plain.Tests/EtAlii.Adp.Editor.Plain.Tests.csproj" />

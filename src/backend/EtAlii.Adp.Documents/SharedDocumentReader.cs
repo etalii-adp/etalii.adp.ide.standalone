@@ -25,6 +25,21 @@ public static class SharedDocumentReader
         return await reader.ReadToEndAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// The file's bytes exactly as they are, over the same sharing: for a document whose bytes are
+    /// what must not change - a byte order mark, a line ending, a stray byte - and which a text
+    /// read would have decoded and so already altered.
+    /// </summary>
+    public static byte[] ReadAllBytes(string path)
+    {
+        using var stream = new FileStream(
+            path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
+            bufferSize: 4096, FileOptions.SequentialScan);
+        using var buffer = new MemoryStream(stream.CanSeek ? (int)Math.Min(stream.Length, int.MaxValue) : 0);
+        stream.CopyTo(buffer);
+        return buffer.ToArray();
+    }
+
     /// <summary>A line-by-line reader over the same sharing, for header scans that stop early.</summary>
     public static StreamReader OpenText(string path, FileOptions options = FileOptions.SequentialScan) =>
         new(new FileStream(
