@@ -58,5 +58,5 @@ behaviour is therefore in the library (`DiagramCanvas.declared.test.tsx`), and t
 the compiled declaration to the hand-written one.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`declarative-diagram-modules`](../../../../.spec-workflow/archive/specs/declarative-diagram-modules/) for
+[`declarative-diagram-modules`](https://github.com/etalii-adp/etalii.adp.ide.standalone/tree/fae8ab1eb516094fd3b1afd0c323dd915562f322/.spec-workflow/archive/specs/declarative-diagram-modules) for
 the specification this canvas is the reference for.
