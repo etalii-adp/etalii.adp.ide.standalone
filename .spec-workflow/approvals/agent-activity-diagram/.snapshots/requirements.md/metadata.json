@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/agent-activity-diagram/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T00:10:25.842Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791504625703_cjac68mi7",
+      "approvalTitle": "Agent activity diagram: requirements (7 open questions, 10 readings, 7 language gaps)"
+    }
+  ]
+}
