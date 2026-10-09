@@ -356,7 +356,9 @@ internal static partial class DislExpressionWalker
             if (key == "options" && path.Contains("filters")) return frame.In(DislContexts.FilterOptions).As(Mode.Literal);
             if (key == "legend") return frame.In(DislContexts.Legend).As(Mode.Literal);
             if (key is "notices" or "chrome" or "emptyCanvas") return frame.In(DislContexts.Chrome).As(Mode.Literal);
-            if (key == "items" && path.Contains("compartments")) return frame.In(DislContexts.CompartmentItem);
+            // A compartment (section 6.9): its items, and everything said per item - its text, its icon,
+            // its conditions and, since DISL 0.4, its link and its order - see the item.
+            if (key is "items" or "itemText" or "itemIcon" or "itemConditions" or "itemLink" or "itemOrder" && path.Contains("compartments")) return frame.In(DislContexts.CompartmentItem);
             return frame;
         }
 
