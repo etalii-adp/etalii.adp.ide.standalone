@@ -162,8 +162,9 @@ internal abstract class TreeFamily(BodyText text, FblBinding binding, FblOptions
         }
         if (slot.Key is not { } name) return SlotRead.ReadOnlyAbsent($"A {FamilyName} entry has no {slot}.");
         var mapping = Mapping(entry, slot.Child);
-        if (mapping is null) return SlotRead.Absent;
-        return ReadMember(mapping, name);
+        return mapping is null
+            ? SlotRead.Absent
+            : ReadMember(mapping, name);
     }
 
     private static SlotRead ReadMember(TreeValue mapping, string name)

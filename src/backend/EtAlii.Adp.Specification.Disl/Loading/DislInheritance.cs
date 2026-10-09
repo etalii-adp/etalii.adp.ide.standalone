@@ -91,6 +91,13 @@ internal static class DislInheritance
         var done = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var visiting = new HashSet<string>(StringComparer.Ordinal);
 
+        foreach (var type in types.Values)
+        {
+            type.Linearisation = Of(type);
+        }
+
+        return;
+
         List<string> Of(DislType type)
         {
             if (done.TryGetValue(type.Name, out var known)) return known;
@@ -118,11 +125,6 @@ internal static class DislInheritance
             visiting.Remove(type.Name);
             done[type.Name] = result;
             return result;
-        }
-
-        foreach (var type in types.Values)
-        {
-            type.Linearisation = Of(type);
         }
     }
 

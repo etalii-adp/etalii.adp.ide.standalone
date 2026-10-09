@@ -46,23 +46,6 @@ public static class ApplicationAssemblies
         var queue = new Queue<Assembly>();
         var ordered = new List<Assembly>();
 
-        void Enqueue(Assembly assembly)
-        {
-            if (!visited.Add(assembly.FullName ?? assembly.GetName().Name ?? string.Empty))
-            {
-                return;
-            }
-
-            queue.Enqueue(assembly);
-
-            // The entry assembly is walked from whatever it is, but only returned - and so
-            // only scanned - when it is one of ours: under a test runner it is the test host.
-            if (IsApplicationAssembly(assembly.GetName().Name))
-            {
-                ordered.Add(assembly);
-            }
-        }
-
         Enqueue(entry);
 
         var context = DependencyContext.Default;
@@ -112,6 +95,23 @@ public static class ApplicationAssemblies
         }
 
         return ordered;
+
+        void Enqueue(Assembly assembly)
+        {
+            if (!visited.Add(assembly.FullName ?? assembly.GetName().Name ?? string.Empty))
+            {
+                return;
+            }
+
+            queue.Enqueue(assembly);
+
+            // The entry assembly is walked from whatever it is, but only returned - and so
+            // only scanned - when it is one of ours: under a test runner it is the test host.
+            if (IsApplicationAssembly(assembly.GetName().Name))
+            {
+                ordered.Add(assembly);
+            }
+        }
     }
 
     private static bool IsApplicationAssembly(string? simpleName) =>

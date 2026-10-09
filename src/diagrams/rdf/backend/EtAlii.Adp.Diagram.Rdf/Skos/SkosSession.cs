@@ -196,8 +196,6 @@ public sealed class SkosSession : IDiagramSession
     private SkosProjectionResult InView(
         SkosProjectionResult projection, IReadOnlyDictionary<string, RegistrationPosition> positions)
     {
-        bool Visible(string id) => RdfViewport.Admits(_viewport, positions, id, CellWidth, CellHeight);
-
         var schemes = projection.Schemes.Where(scheme => Visible(scheme.Id)).ToList();
         var concepts = projection.Concepts.Where(concept => Visible(concept.Id)).ToList();
         var collections = projection.Collections.Where(collection => Visible(collection.Id)).ToList();
@@ -221,6 +219,8 @@ public sealed class SkosSession : IDiagramSession
             projection.OutOfFileMappings,
             truncated ? RdfProjection.DefaultBudget : drawn,
             truncated ? projection.Total : drawn);
+
+        bool Visible(string id) => RdfViewport.Admits(_viewport, positions, id, CellWidth, CellHeight);
     }
 
     private void OnDocumentChanged(object? sender, RdfDocumentChangedEventArgs args)

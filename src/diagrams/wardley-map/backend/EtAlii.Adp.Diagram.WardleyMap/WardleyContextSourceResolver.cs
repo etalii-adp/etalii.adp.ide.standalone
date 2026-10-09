@@ -164,6 +164,9 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new CallbackDisposable(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, WardleyDocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -177,9 +180,6 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
             var description = WardleyElementDescriptions.Of(map, _documents.Identities(bodyPath), elementId);
             onChange(description?.Path);
         }
-
-        _documents.Changed += OnChanged;
-        return new CallbackDisposable(() => _documents.Changed -= OnChanged);
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>

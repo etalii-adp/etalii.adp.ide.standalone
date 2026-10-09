@@ -105,8 +105,9 @@ internal static partial class UserFunctions
         if (!refused.Success) return message;
         var name = refused.Groups[1].Value;
         if (name == declaration.Name) return $"'{name}' calls itself, which a function may do only when it declares recursion (DISL §3.4).";
-        if (declared.Contains(name)) return $"'{declaration.Name}' calls '{name}', which is declared after it or does not compile; a function may call only the functions declared before it (DISL §3.4).";
-        return message;
+        return declared.Contains(name)
+            ? $"'{declaration.Name}' calls '{name}', which is declared after it or does not compile; a function may call only the functions declared before it (DISL §3.4)."
+            : message;
     }
 
     /// <summary>One user function: the CEL function the environment offers, and the programs it evaluates.</summary>

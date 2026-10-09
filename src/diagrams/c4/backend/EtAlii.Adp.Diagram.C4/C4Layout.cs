@@ -215,24 +215,6 @@ public static class C4LayoutEngine
     {
         var byId = members.ToDictionary(element => element.Id, StringComparer.OrdinalIgnoreCase);
 
-        // The nearest ancestor that is on the view: a node the view excludes does not stop what
-        // it hosts from being drawn inside the next node up.
-        string? HostOf(C4Element element)
-        {
-            var parentId = element.ParentId;
-            while (parentId is not null)
-            {
-                if (byId.TryGetValue(parentId, out C4Element? elementForParentId))
-                {
-                    return elementForParentId.Id;
-                }
-
-                parentId = workspace.Find(parentId)?.ParentId;
-            }
-
-            return null;
-        }
-
         var hosts = members.ToDictionary(element => element.Id, HostOf, StringComparer.OrdinalIgnoreCase);
         var hosted = members
             .Where(element => hosts[element.Id] is not null)
@@ -244,6 +226,29 @@ public static class C4LayoutEngine
         var padding = metrics.BoundaryPadding;
         var boxes = new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase);
         var boundaries = new List<C4Boundary>();
+
+        (Dictionary<string, C4Box> topBoxes, List<C4Boundary> topBoundaries, _, _) = Arrange(members.Where(element => hosts[element.Id] is null).ToArray());
+        foreach ((string id, C4Box box) in topBoxes)
+        {
+            boxes[id] = box;
+        }
+
+        boundaries.AddRange(topBoundaries);
+
+        var hasAuthored = authored is { Count: > 0 } && authored.Keys.Any(boxes.ContainsKey);
+        var authoredIgnored = hasAuthored && view.AutoLayout is not null;
+        if (hasAuthored && !authoredIgnored)
+        {
+            foreach ((string id, C4SidecarPosition position) in authored!)
+            {
+                if (boxes.TryGetValue(id, out var box) && byId.TryGetValue(id, out var element) && hosts[element.Id] is null)
+                {
+                    boxes[id] = box with { X = Math.Round(position.X, 2), Y = Math.Round(position.Y, 2) };
+                }
+            }
+        }
+
+        return new C4Layout(boxes, boundaries, authoredIgnored);
 
         // Lays out one set of siblings with its top-left corner at the origin, returning every box
         // and boundary inside it relative to that corner, and the extent it takes up.
@@ -269,18 +274,6 @@ public static class C4LayoutEngine
             // Rank the siblings along the relationships between them, each end standing in for
             // the sibling that hosts it.
             var siblingIds = siblings.Select(element => element.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            string? SiblingOf(string id)
-            {
-                for (var current = id; current is not null; current = hosts.GetValueOrDefault(current))
-                {
-                    if (siblingIds.Contains(current))
-                    {
-                        return current;
-                    }
-                }
-
-                return null;
-            }
 
             var siblingEdges = edges
                 .Select(edge => (SourceId: SiblingOf(edge.SourceId), DestinationId: SiblingOf(edge.DestinationId)))
@@ -318,30 +311,38 @@ public static class C4LayoutEngine
             var extentWidth = placed.Values.Max(box => box.Right) - left;
             var extentHeight = placed.Values.Max(box => box.Bottom) - top;
             return (resultBoxes, resultBoundaries, extentWidth, extentHeight);
-        }
 
-        (Dictionary<string, C4Box> topBoxes, List<C4Boundary> topBoundaries, _, _) = Arrange(members.Where(element => hosts[element.Id] is null).ToArray());
-        foreach ((string id, C4Box box) in topBoxes)
-        {
-            boxes[id] = box;
-        }
-
-        boundaries.AddRange(topBoundaries);
-
-        var hasAuthored = authored is { Count: > 0 } && authored.Keys.Any(boxes.ContainsKey);
-        var authoredIgnored = hasAuthored && view.AutoLayout is not null;
-        if (hasAuthored && !authoredIgnored)
-        {
-            foreach ((string id, C4SidecarPosition position) in authored!)
+            string? SiblingOf(string id)
             {
-                if (boxes.TryGetValue(id, out var box) && byId.TryGetValue(id, out var element) && hosts[element.Id] is null)
+                for (var current = id; current is not null; current = hosts.GetValueOrDefault(current))
                 {
-                    boxes[id] = box with { X = Math.Round(position.X, 2), Y = Math.Round(position.Y, 2) };
+                    if (siblingIds.Contains(current))
+                    {
+                        return current;
+                    }
                 }
+
+                return null;
             }
         }
 
-        return new C4Layout(boxes, boundaries, authoredIgnored);
+        // The nearest ancestor that is on the view: a node the view excludes does not stop what
+        // it hosts from being drawn inside the next node up.
+        string? HostOf(C4Element element)
+        {
+            var parentId = element.ParentId;
+            while (parentId is not null)
+            {
+                if (byId.TryGetValue(parentId, out C4Element? elementForParentId))
+                {
+                    return elementForParentId.Id;
+                }
+
+                parentId = workspace.Find(parentId)?.ParentId;
+            }
+
+            return null;
+        }
     }
 
     private static C4Box Offset(C4Box box, double dx, double dy) =>

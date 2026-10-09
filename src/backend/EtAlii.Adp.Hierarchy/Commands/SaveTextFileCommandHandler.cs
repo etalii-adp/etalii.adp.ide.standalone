@@ -39,11 +39,8 @@ public sealed class SaveTextFileCommandHandler : ICommandHandler<SaveTextFileCom
 
         var previousContent = opened.Buffer.Content;
         var error = await opened.Buffer.SaveAsync(command.Content, cancellationToken);
-        if (error.Length > 0)
-        {
-            return CommandResult.Failure(error);
-        }
-
-        return CommandResult.Success(command with { Content = previousContent });
+        return error.Length > 0
+            ? CommandResult.Failure(error)
+            : CommandResult.Success(command with { Content = previousContent });
     }
 }

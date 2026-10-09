@@ -38,11 +38,8 @@ internal static class CausalLoopEdits
         }
 
         var saved = documents.Save(bodyPath, entry);
-        if (saved.Failed)
-        {
-            return Task.FromResult(CommandResult.Failure(saved.Error));
-        }
-
-        return Task.FromResult(CommandResult.Success(new RestoreDocumentCommand<ICausalLoopDocumentStore>(bodyPath, before, self)));
+        return Task.FromResult(saved.Failed
+            ? CommandResult.Failure(saved.Error)
+            : CommandResult.Success(new RestoreDocumentCommand<ICausalLoopDocumentStore>(bodyPath, before, self)));
     }
 }

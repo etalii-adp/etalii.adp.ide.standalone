@@ -340,12 +340,9 @@ public static class SparqlProjection
                 return $"@{literal.Language}";
             }
 
-            if (literal.DatatypeIri.Length > 0)
-            {
-                return ShortDatatype(literal.DatatypeIri);
-            }
-
-            return "";
+            return literal.DatatypeIri.Length > 0
+                ? ShortDatatype(literal.DatatypeIri)
+                : "";
         }
 
         private static string ShortDatatype(string iri)

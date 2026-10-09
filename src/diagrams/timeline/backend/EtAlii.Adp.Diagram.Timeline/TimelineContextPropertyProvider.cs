@@ -58,15 +58,12 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Rows([]);
-        }
-
-        // Derived from the definition's forms (TimelineDefinition.Rows). A moment has no End row:
-        // giving it an end is the context menu's action (Requirement 7.5), not a blank field
-        // inviting a value. A relation's From and To are read-only and say why.
-        return Rows(TimelineDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
+        return Rows(!Diagram.IsBody(target.ResolvedFullPath)
+            ? []
+            // Derived from the definition's forms (TimelineDefinition.Rows). A moment has no End row:
+            // giving it an end is the context menu's action (Requirement 7.5), not a blank field
+            // inviting a value. A relation's From and To are read-only and say why.
+            : TimelineDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />

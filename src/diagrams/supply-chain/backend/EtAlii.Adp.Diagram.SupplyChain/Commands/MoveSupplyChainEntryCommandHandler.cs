@@ -77,8 +77,6 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
     /// </summary>
     private static string? GroupAt(SupplyChainLayout layout, string current, double x, double y)
     {
-        static bool Holds(SupplyChainBox box, double x, double y) => x >= box.X && x <= box.Right && y >= box.Y && y <= box.Bottom;
-
         if (current.Length > 0 && Holds(layout.GroupBoxes[current], x, y))
         {
             return null;
@@ -89,6 +87,8 @@ public sealed class MoveSupplyChainEntryCommandHandler(ISupplyChainDocumentStore
             .OrderBy(group => layout.GroupBoxes[group.Id].Width * layout.GroupBoxes[group.Id].Height)
             .Select(group => group.Id)
             .FirstOrDefault();
+
+        static bool Holds(SupplyChainBox box, double x, double y) => x >= box.X && x <= box.Right && y >= box.Y && y <= box.Bottom;
     }
 
     private static SupplyChainEdit MoveGroup(LineDocument document, SupplyChainModel model, SupplyChainLayout layout, SupplyChainBox frame, MoveSupplyChainEntryCommand command)

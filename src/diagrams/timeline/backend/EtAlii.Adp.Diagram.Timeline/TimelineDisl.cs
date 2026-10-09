@@ -63,14 +63,6 @@ internal static class TimelineDisl
         var written = model.Elements.Select(element => element.Id).Concat(model.Connections.Select(connection => connection.Id)).ToHashSet(StringComparer.Ordinal);
         var taken = new HashSet<string>(StringComparer.Ordinal);
         var ephemeral = 0;
-        string ModelId(string id)
-        {
-            if (id.Length > 0 && taken.Add(id)) return id;
-            string unnamed;
-            do unnamed = $"timeline:unnamed:{++ephemeral}";
-            while (written.Contains(unnamed) || !taken.Add(unnamed));
-            return unnamed;
-        }
 
         var elementIds = new Dictionary<string, string>(StringComparer.Ordinal);
         var declarations = new Dictionary<int, int>();
@@ -108,6 +100,15 @@ internal static class TimelineDisl
 
         var built = DislModelBuilder.From(new FblModel(read, [], false), TimelineDefinition.Specification);
         return new TimelineDislModel(built.Diagram, declarations);
+
+        string ModelId(string id)
+        {
+            if (id.Length > 0 && taken.Add(id)) return id;
+            string unnamed;
+            do unnamed = $"timeline:unnamed:{++ephemeral}";
+            while (written.Contains(unnamed) || !taken.Add(unnamed));
+            return unnamed;
+        }
     }
 
     /// <summary>The id <paramref name="element"/> is written with; empty for none.</summary>

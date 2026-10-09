@@ -58,9 +58,6 @@ internal static class DependencyGraphTranscript
     /// <summary>The corpus, as paths relative to <c>src/</c> with forward slashes, then the inline documents, in the order they are recorded.</summary>
     private static IReadOnlyList<(string Name, Func<CancellationToken, Task<byte[]>> Read)> Corpus()
     {
-        static IEnumerable<string> Sorted(IEnumerable<string> paths) =>
-            paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
-
         var fixtures = Directory.GetFiles(Path.Combine(ModuleFolder, "backend", TestProject, "Fixtures"), "*.dgr");
         var examples = Directory.GetDirectories(Path.Combine(ModuleFolder, "examples")).SelectMany(folder => Directory.GetFiles(folder, "*.dgr"));
         var shipped = Directory.GetDirectories(Path.Combine(SourceFolder, "examples", "diagrams", "dependency-graph")).SelectMany(folder => Directory.GetFiles(folder, "*.dgr"));
@@ -71,6 +68,8 @@ internal static class DependencyGraphTranscript
             .. DependencyGraphCorpus.Inline
                 .Select(document => (document.Name, (Func<CancellationToken, Task<byte[]>>)(_ => Task.FromResult(Encoding.UTF8.GetBytes(document.Text))))),
         ];
+
+        static IEnumerable<string> Sorted(IEnumerable<string> paths) => paths.Select(path => Path.GetRelativePath(SourceFolder, path).Replace('\\', '/')).Order(StringComparer.Ordinal);
     }
 
     /// <summary>The whole transcript, as the bytes the checked-in file must hold.</summary>

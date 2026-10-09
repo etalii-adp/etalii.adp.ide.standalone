@@ -188,9 +188,11 @@ public sealed class DislDiagram : ICelObject
     private DislType TypeOf(string name, bool relation)
     {
         var type = Specification.Metamodel.TypeOf(name) ?? throw new ArgumentException($"'{name}' is not a type of this specification.", nameof(name));
-        if (type.IsRelation != relation) throw new ArgumentException($"'{name}' is {(type.IsRelation ? "a relation type" : "a node type")}.", nameof(name));
-        if (type.Abstract) throw new ArgumentException($"'{name}' is abstract.", nameof(name));
-        return type;
+        if (type.IsRelation != relation)
+        {
+            throw new ArgumentException($"'{name}' is {(type.IsRelation ? "a relation type" : "a node type")}.", nameof(name));
+        }
+        return type.Abstract ? throw new ArgumentException($"'{name}' is abstract.", nameof(name)) : type;
     }
 
     // ---- CEL -------------------------------------------------------------------------------------

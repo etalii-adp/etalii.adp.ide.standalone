@@ -75,6 +75,29 @@ internal static class DatabricksJobLayout
         var layers = new Dictionary<string, int>(StringComparer.Ordinal);
         var walking = new HashSet<string>(StringComparer.Ordinal);
 
+        foreach (var key in byKey.Keys)
+        {
+            LayerOf(key);
+        }
+
+        // The stubs: keys depends_on names and no task declares (Requirement 4.5), each with
+        // the layer of the first task depending on it.
+        var found = new List<(string, int)>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var task in job.Tasks.Where(task => task.Key.Length > 0))
+        {
+            foreach (var dependency in task.DependsOn)
+            {
+                if (!byKey.ContainsKey(dependency.TaskKey) && seen.Add(dependency.TaskKey))
+                {
+                    found.Add((dependency.TaskKey, layers[task.Key]));
+                }
+            }
+        }
+
+        stubs = found;
+        return layers;
+
         int LayerOf(string key)
         {
             if (layers.TryGetValue(key, out var known))
@@ -102,28 +125,5 @@ internal static class DatabricksJobLayout
             layers[key] = layer;
             return layer;
         }
-
-        foreach (var key in byKey.Keys)
-        {
-            LayerOf(key);
-        }
-
-        // The stubs: keys depends_on names and no task declares (Requirement 4.5), each with
-        // the layer of the first task depending on it.
-        var found = new List<(string, int)>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var task in job.Tasks.Where(task => task.Key.Length > 0))
-        {
-            foreach (var dependency in task.DependsOn)
-            {
-                if (!byKey.ContainsKey(dependency.TaskKey) && seen.Add(dependency.TaskKey))
-                {
-                    found.Add((dependency.TaskKey, layers[task.Key]));
-                }
-            }
-        }
-
-        stubs = found;
-        return layers;
     }
 }

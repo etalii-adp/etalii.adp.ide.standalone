@@ -155,11 +155,9 @@ public static class FormDerivation
             if (reason is null && env.ReadOnly) reason = DislEvaluation.StandardMessage(specification, "std.readOnly", variables, "This diagram is read-only.");
 
             var key = DislJson.String(item, "id") ?? attribute ?? label;
-            if (kind == "type")
-            {
-                return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(item, pointer, variables), Retypes: true);
-            }
-            return new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Candidates(item, pointer, variables));
+            return kind == "type"
+                ? new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Types(item, pointer, variables), Retypes: true)
+                : new DerivedRow(ids.PropertyId(key), label, value, DislJson.String(item, "widget"), reason ?? "", group, Candidates(item, pointer, variables));
         }
 
         /// <summary>The types a type item offers, each named by its <c>optionLabel</c> with <c>item</c> bound, else as itself.</summary>

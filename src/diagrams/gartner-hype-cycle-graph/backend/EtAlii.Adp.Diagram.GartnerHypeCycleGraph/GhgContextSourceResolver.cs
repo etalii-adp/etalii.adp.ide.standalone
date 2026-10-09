@@ -170,6 +170,9 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new Unsubscriber(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, GhgDocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -181,9 +184,6 @@ public sealed class GhgContextSourceResolver : IContextSourceResolver
             // everything shown, and a removal clears the selection.
             onChange(Describe(_documents.GetOrLoad(bodyPath).Model, elementId)?.Path);
         }
-
-        _documents.Changed += OnChanged;
-        return new Unsubscriber(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>What a selection of <paramref name="id"/> shows, or null when nothing drawn has that id.</summary>

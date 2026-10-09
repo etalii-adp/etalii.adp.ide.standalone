@@ -55,6 +55,9 @@ public class DependencyGraphToolboxProviderTests : IDisposable
     public void EveryEntryCarriesOnlyData_AndAllOfIt()
     {
         // Assert.
+        Assert.All(_toolbox.Items, AssertItem);
+        return;
+
         static void AssertItem(ToolboxItemDefinition item)
         {
             ArgumentNullException.ThrowIfNull(item);
@@ -64,8 +67,6 @@ public class DependencyGraphToolboxProviderTests : IDisposable
             Assert.NotEmpty(item.Description);
             Assert.NotEmpty(item.DropActionId);
         }
-
-        Assert.All(_toolbox.Items, AssertItem);
     }
 
     [Fact]

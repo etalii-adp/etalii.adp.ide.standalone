@@ -239,13 +239,14 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
                     }
 
                     var identities = _documents.Identities(bodyPath);
-                    string IdOf(string name) => identities
-                        .FirstOrDefault(candidate => candidate.Kind == WardleyIdentityKind.Component && candidate.Key == name)?.Id ?? "";
 
                     return await Dispatch(
                         target,
                         new SetWardleyLinkCommand(bodyPath, IdOf(link.Source), IdOf(link.Target), link.Kind, Present: true, value.Trim()),
                         cancellationToken);
+
+                    string IdOf(string name) => identities
+                        .FirstOrDefault(candidate => candidate.Kind == WardleyIdentityKind.Component && candidate.Key == name)?.Id ?? "";
                 }
 
             default:

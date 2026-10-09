@@ -47,12 +47,7 @@ public sealed class ContextInteractionStore : IContextInteractionStore
     {
         // Only ever this exact connection's writer: a prompt raised on one connection must
         // never become observable on another, even for the same project and user.
-        if (!_connections.TryGetValue(watchId, out var connection))
-        {
-            return false;
-        }
-
-        return connection.Writer.TryWrite(new ContextMessage { Prompt = prompt });
+        return _connections.TryGetValue(watchId, out var connection) && connection.Writer.TryWrite(new ContextMessage { Prompt = prompt });
     }
 
     public void Begin(ContextInteraction interaction)

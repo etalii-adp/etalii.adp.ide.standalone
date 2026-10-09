@@ -175,11 +175,8 @@ internal static class MindmapDefinition
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
         var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        if (document is null)
-        {
-            throw new InvalidOperationException($"The mind map's FBL binding does not load: {string.Join("; ", problems)}");
-        }
-
-        return document.Bindings["mindmap"];
+        return document is null
+            ? throw new InvalidOperationException($"The mind map's FBL binding does not load: {string.Join("; ", problems)}")
+            : document.Bindings["mindmap"];
     }
 }

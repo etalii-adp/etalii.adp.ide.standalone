@@ -356,7 +356,9 @@ public class MindmapLayoutTests
         var far = MindmapLayout.Compute(document.Root, MindmapMetrics.Default with { MinimumGapRatio = 0.5 }, _ => false);
 
         // Act and assert, step by step.
-        static double Distance(IReadOnlyDictionary<string, MindmapBox> boxes) => boxes["b"].Y - boxes["a"].Bottom;
         Assert.True(Distance(far) > Distance(near), "a larger ratio must push the siblings further apart");
+        return;
+
+        static double Distance(IReadOnlyDictionary<string, MindmapBox> boxes) => boxes["b"].Y - boxes["a"].Bottom;
     }
 }

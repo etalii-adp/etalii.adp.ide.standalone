@@ -93,12 +93,9 @@ public static class RowPacking
         var rows = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var item in order)
         {
-            bool Fits(int top) => Enumerable.Range(top, item.Rows).All(row => row >= freeFrom.Count || freeFrom[row] <= item.Left);
-
             var placed = neighbours[item.Id].Where(rows.ContainsKey).Select(id => rows[id]).ToList();
             var existing = Enumerable.Range(0, Math.Max(0, freeFrom.Count - item.Rows + 1)).Where(Fits).ToList();
             var shunned = avoided[item.Id].Where(rows.ContainsKey).Select(id => rows[id]).ToHashSet();
-            bool Clear(int top) => Fits(top) && !Enumerable.Range(top, item.Rows).Any(shunned.Contains);
             existing.RemoveAll(candidate => !Clear(candidate));
 
             int row;
@@ -129,6 +126,10 @@ public static class RowPacking
             }
 
             rows[item.Id] = row;
+            continue;
+
+            bool Clear(int top) => Fits(top) && !Enumerable.Range(top, item.Rows).Any(shunned.Contains);
+            bool Fits(int top) => Enumerable.Range(top, item.Rows).All(r => r >= freeFrom.Count || freeFrom[r] <= item.Left);
         }
 
         return SwapRows(order, rows, neighbours, freeFrom.Count);
@@ -158,8 +159,6 @@ public static class RowPacking
         var links = items
             .SelectMany(item => neighbours[item.Id].Where(other => string.CompareOrdinal(item.Id, other) < 0).Select(other => (From: item.Id, To: other)))
             .ToList();
-
-        double Cost() => links.Sum(link => Math.Abs(at[rows[link.From]] - at[rows[link.To]]));
 
         var cost = Cost();
         for (var pass = 0; pass < SwapPasses; pass++)
@@ -194,5 +193,7 @@ public static class RowPacking
         }
 
         return rows.ToDictionary(entry => entry.Key, entry => at[entry.Value], StringComparer.Ordinal);
+
+        double Cost() => links.Sum(link => Math.Abs(at[rows[link.From]] - at[rows[link.To]]));
     }
 }

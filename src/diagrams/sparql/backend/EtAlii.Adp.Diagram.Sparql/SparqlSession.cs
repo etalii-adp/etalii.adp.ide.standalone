@@ -154,17 +154,12 @@ public sealed class SparqlSession : IDiagramSession
             return "An annotation stays with what it constrains; move that instead.";
         }
 
-        if (elementId == SparqlElementMapper.HeaderId)
+        return elementId switch
         {
-            return "The header band states the query's form and modifiers, and stays at the top of the diagram.";
-        }
-
-        if (elementId == SparqlElementMapper.TruncationId)
-        {
-            return "That banner reports the truncation and is not something this diagram can move.";
-        }
-
-        return "";
+            SparqlElementMapper.HeaderId => "The header band states the query's form and modifiers, and stays at the top of the diagram.",
+            SparqlElementMapper.TruncationId => "That banner reports the truncation and is not something this diagram can move.",
+            _ => ""
+        };
     }
 
     /// <inheritdoc />

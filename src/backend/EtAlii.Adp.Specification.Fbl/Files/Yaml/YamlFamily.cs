@@ -266,15 +266,16 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     {
         var order = new List<string>();
         if (child is null) order.AddRange(rule.Insert?.Keys ?? []);
-        void Add(Slot? slot)
-        {
-            if (slot?.Key is { } key && slot.Child == child && !order.Contains(key)) order.Add(key);
-        }
         Add(rule.Id?.From);
         Add(rule.Source);
         Add(rule.Target);
         foreach ((_, AttributeBinding binding) in rule.Attributes) Add(binding);
         return order;
+
+        void Add(Slot? slot)
+        {
+            if (slot?.Key is { } key && slot.Child == child && !order.Contains(key)) order.Add(key);
+        }
     }
 
     /// <summary>
@@ -377,9 +378,11 @@ internal sealed class YamlFamily(BodyText text, FblBinding binding, FblOptions o
     /// <summary>The entry a relation is written inside when one of its ends is its enclosing entry (a Databricks dependency inside its task).</summary>
     private static Entry? EndParent(InsertRequest request)
     {
-        if (request.Rule.Target?.Parent is not null) return request.Target?.Entry;
-        if (request.Rule.Source?.Parent is not null) return request.Source?.Entry;
-        return null;
+        return request.Rule.Target?.Parent is not null
+            ? request.Target?.Entry
+            : request.Rule.Source?.Parent is not null
+                ? request.Source?.Entry
+                : null;
     }
 
     private void EnsureContainer(Plan plan, InsertSettings insert, string selector, Entry? parent, List<string> keys)

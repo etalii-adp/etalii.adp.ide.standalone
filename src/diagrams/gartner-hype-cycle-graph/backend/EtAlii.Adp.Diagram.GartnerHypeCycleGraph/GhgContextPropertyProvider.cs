@@ -93,12 +93,9 @@ public sealed class GhgContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Rows([]);
-        }
-
-        return Rows(GhgDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
+        return Rows(!Diagram.IsBody(target.ResolvedFullPath)
+            ? []
+            : GhgDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath), target.ElementId));
     }
 
     /// <inheritdoc />

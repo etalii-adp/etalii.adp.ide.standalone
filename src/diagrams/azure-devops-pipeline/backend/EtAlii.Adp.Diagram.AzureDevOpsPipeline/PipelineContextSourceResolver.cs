@@ -133,6 +133,9 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new PipelineChangeUnsubscriber(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, PipelineDocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -142,9 +145,6 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
 
             onChange(Find(args.Model, elementId)?.Path);
         }
-
-        _documents.Changed += OnChanged;
-        return new PipelineChangeUnsubscriber(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>

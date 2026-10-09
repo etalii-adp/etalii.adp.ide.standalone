@@ -155,12 +155,9 @@ public sealed class MindmapDocument
     /// </summary>
     public XElement Remove(MindmapNode node)
     {
-        if (node.IsRoot)
-        {
-            throw new InvalidOperationException("The root cannot be removed.");
-        }
-
-        return Detach(node.Element);
+        return node.IsRoot
+            ? throw new InvalidOperationException("The root cannot be removed.")
+            : Detach(node.Element);
     }
 
     /// <summary>Puts a subtree removed by <see cref="Remove"/> back under <paramref name="parent"/> at <paramref name="index"/>.</summary>

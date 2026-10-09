@@ -62,15 +62,12 @@ public sealed class DependencyGraphContextPropertyProvider : IContextPropertyPro
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!Diagram.IsBody(target.ResolvedFullPath))
-        {
-            return Rows([]);
-        }
-
-        // From and To are read-only and labelled by what they mean rather than by their key names:
-        // which end is which is this type's whole content, and "From"/"To" alone leaves the reader to
-        // guess which way the arrow points. The rows are the definition's forms.
-        return Rows(DependencyGraphDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
+        return Rows(!Diagram.IsBody(target.ResolvedFullPath)
+            ? []
+            // From and To are read-only and labelled by what they mean rather than by their key names:
+            // which end is which is this type's whole content, and "From"/"To" alone leaves the reader to
+            // guess which way the arrow points. The rows are the definition's forms.
+            : DependencyGraphDefinition.Rows(_documents.GetOrLoad(target.ResolvedFullPath).Model, target.ElementId));
     }
 
     /// <inheritdoc />

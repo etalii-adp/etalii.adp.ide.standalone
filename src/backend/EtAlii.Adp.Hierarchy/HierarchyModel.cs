@@ -735,29 +735,6 @@ public sealed class HierarchyModel
         var bodyByRegistration = names
             .Where(DiagramFilePair.IsRegistrationFile)
             .ToDictionary(name => name, name => ResolvedBodyNameOf(folderPath, name), StringComparer.OrdinalIgnoreCase);
-        string? BodyNameOf(string registration) => bodyByRegistration.GetValueOrDefault(registration);
-
-        // An unreadable registration routes to DiagramUnreadable, which simply is not a
-        // folder-subject type: neutral, never an exception out of the scan. The catalog probe
-        // keeps deployments without folder-subject types from paying any reads at all.
-        bool DeclaresFolderSubject(string registration) =>
-            _router.HasFolderSubjectTypes
-            && _router.Route(IoPath.Combine(folderPath, registration), RootPath) is DiagramRouted { Definition.HasFolderSubject: true };
-
-        void Apply(ShortGuid entryId, EntryDiagramState state, bool raise)
-        {
-            var current = _entriesById[entryId];
-            if (current.DiagramState == state)
-            {
-                return;
-            }
-
-            _entriesById[entryId] = current with { DiagramState = state };
-            if (raise)
-            {
-                EntryChanged?.Invoke(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: state));
-            }
-        }
 
         foreach (var file in contained.Where(entry => !entry.IsFolder))
         {
@@ -795,12 +772,39 @@ public sealed class HierarchyModel
                 continue; // Vanished or unreadable mid-scan: its state stays what it was.
             }
 
+            Apply(sub.Id, EntryDiagramStates.Decide(
+                sub.Name, isFolder: true, subNames, name => ResolvedBodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubjectIn), raiseEvents);
+            continue;
+
             bool DeclaresFolderSubjectIn(string registration) =>
                 _router.HasFolderSubjectTypes
                 && _router.Route(IoPath.Combine(subPath, registration), RootPath) is DiagramRouted { Definition.HasFolderSubject: true };
+        }
 
-            Apply(sub.Id, EntryDiagramStates.Decide(
-                sub.Name, isFolder: true, subNames, name => ResolvedBodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubjectIn), raiseEvents);
+        return;
+
+        // An unreadable registration routes to DiagramUnreadable, which simply is not a
+        // folder-subject type: neutral, never an exception out of the scan. The catalog probe
+        // keeps deployments without folder-subject types from paying any reads at all.
+        bool DeclaresFolderSubject(string registration) =>
+            _router.HasFolderSubjectTypes
+            && _router.Route(IoPath.Combine(folderPath, registration), RootPath) is DiagramRouted { Definition.HasFolderSubject: true };
+
+        string? BodyNameOf(string registration) => bodyByRegistration.GetValueOrDefault(registration);
+
+        void Apply(ShortGuid entryId, EntryDiagramState state, bool raise)
+        {
+            var current = _entriesById[entryId];
+            if (current.DiagramState == state)
+            {
+                return;
+            }
+
+            _entriesById[entryId] = current with { DiagramState = state };
+            if (raise)
+            {
+                EntryChanged?.Invoke(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: state));
+            }
         }
     }
 

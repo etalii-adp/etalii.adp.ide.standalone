@@ -132,8 +132,9 @@ public static class DislLoader
         UserFunctions.Compile(environment, functions, diagnostics);
         var expressions = Compile(root, environment, diagnostics);
 
-        if (diagnostics.Any(diagnostic => diagnostic.Severity == DislSeverity.Error)) return new DislLoadResult(null, diagnostics);
-        return new DislLoadResult(new DislSpecification(root, metamodel, functions, environment, expressions), diagnostics);
+        return diagnostics.Any(diagnostic => diagnostic.Severity == DislSeverity.Error)
+            ? new DislLoadResult(null, diagnostics)
+            : new DislLoadResult(new DislSpecification(root, metamodel, functions, environment, expressions), diagnostics);
     }
 
     internal static DislDiagnostic Error(string pointer, string message) => new(pointer, DislSeverity.Error, message);

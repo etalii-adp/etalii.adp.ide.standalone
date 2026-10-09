@@ -123,6 +123,24 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
         var lastPath = level.RelativePath;
         var disposed = false;
 
+        _store.Changed += OnChanged;
+        return new AnsibleNodeSubscription(() =>
+        {
+            disposed = true;
+            _store.Changed -= OnChanged;
+        });
+
+        void Announce(string[] current)
+        {
+            if (current.SequenceEqual(lastPath, StringComparer.Ordinal))
+            {
+                return;
+            }
+
+            lastPath = current;
+            onChange(current);
+        }
+
         void OnChanged(object? sender, AnsibleProjectChangedEventArgs args)
         {
             if (disposed ||
@@ -148,22 +166,6 @@ public sealed class AnsibleContextSourceResolver : IContextSourceResolver
 
             Announce(Segments(node.RelativePath));
         }
-
-        void Announce(string[] current)
-        {
-            if (!current.SequenceEqual(lastPath, StringComparer.Ordinal))
-            {
-                lastPath = current;
-                onChange(current);
-            }
-        }
-
-        _store.Changed += OnChanged;
-        return new AnsibleNodeSubscription(() =>
-        {
-            disposed = true;
-            _store.Changed -= OnChanged;
-        });
     }
 
     /// <summary>

@@ -106,6 +106,9 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         var bodyPath = level.Target.ResolvedFullPath;
         var elementId = level.Target.ElementId;
 
+        _documents.Changed += OnChanged;
+        return new CallbackDisposable(() => _documents.Changed -= OnChanged);
+
         void OnChanged(object? sender, C4DocumentChangedEventArgs args)
         {
             if (!string.Equals(args.Path, bodyPath, StringComparison.OrdinalIgnoreCase))
@@ -116,9 +119,6 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             var element = args.Workspace.Find(elementId);
             onChange(element is null ? null : PathOf(args.Workspace, element));
         }
-
-        _documents.Changed += OnChanged;
-        return new CallbackDisposable(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>The element's chain of names from the top of the model - what identifies it to a human.</summary>

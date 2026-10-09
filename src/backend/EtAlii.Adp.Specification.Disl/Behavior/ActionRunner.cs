@@ -94,10 +94,9 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                 return Set(target, values);
             }
             case "unset":
-            {
-                if (!Target(action, at, variables, out var target)) return false;
-                return Set(target, DislJson.Strings(body).ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal));
-            }
+                {
+                    return Target(action, at, variables, out var target) && Set(target, DislJson.Strings(body).ToDictionary(name => name, _ => (object?)null, StringComparer.Ordinal));
+                }
             case "create":
                 return Create(action, body, bodyAt, variables);
             case "connect":
@@ -197,10 +196,7 @@ internal sealed class ActionRunner(DislSpecification specification, DislDiagram 
                 return true;
             }
             case "abort":
-            {
-                if (!Member(body, bodyAt, "message", variables, "The change was refused.", out var message)) return false;
-                return Refuse(DislEvaluation.TextOf(message));
-            }
+                return Member(body, bodyAt, "message", variables, "The change was refused.", out var message) && Refuse(DislEvaluation.TextOf(message));
             default:
                 return Refuse($"This runtime cannot run a `{kind}` action yet ({at}).");
         }

@@ -82,7 +82,6 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         var model = _hierarchyModelStore.GetOrCreate(watchId, rootPath);
         var channel = Channel.CreateUnbounded<HierarchyMessage>();
 
-        void OnEntryChanged(HierarchyEntryChange change) => channel.Writer.TryWrite(new HierarchyMessage { Change = ToProto(change) });
         model.EntryChanged += OnEntryChanged;
 
         using var recoveryCts = new CancellationTokenSource();
@@ -136,6 +135,8 @@ public sealed class HierarchyService : Wire.HierarchyService.HierarchyServiceBas
         }
 
         return;
+
+        void OnEntryChanged(HierarchyEntryChange change) => channel.Writer.TryWrite(new HierarchyMessage { Change = ToProto(change) });
 
         async Task RecoverAsync()
         {
