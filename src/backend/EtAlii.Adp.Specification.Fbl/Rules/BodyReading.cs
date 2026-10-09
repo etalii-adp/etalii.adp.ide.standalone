@@ -574,25 +574,17 @@ internal sealed class BodyReading
             index = new Dictionary<string, ReadElement>(StringComparer.Ordinal);
             foreach (var element in Elements.Where(e => reference.To.Contains(e.Rule.Name)))
             {
-                index.TryAdd(ReferenceKey(element, reference), element);
+                // `by: "id"` names an entry by the id its rule stores with `id.from` (FBL 5.2): `id` is
+                // never an attribute's name, since DISL reserves it, so there is no attribute to read.
+                var named = reference.By == "id" && !element.Attributes.ContainsKey("id")
+                    ? (element.IdStored ? element.Id : null)
+                    : NewText.Plain(element.Attributes.GetValueOrDefault(reference.By), null);
+                if (named is not null) index.TryAdd(named, element);
             }
             _referenced[reference] = index;
         }
         return index.GetValueOrDefault(key);
     }
-
-    /// <summary>
-    /// What a reference names <paramref name="element"/> by: the value of the attribute
-    /// <c>by</c>, or, when the element's rule binds no such attribute and <c>by</c> is
-    /// <c>id</c>, the id the rule stores in the body (FBL §5.7: "or an id stored with from").
-    /// </summary>
-    private static string ReferenceKey(ReadElement element, ReferenceBinding reference) =>
-        reference.By == StoredIdReference && element.Rule.Attributes.All(attribute => attribute.Key != reference.By) && element.Rule.Id?.From is not null
-            ? element.Key
-            : NewText.Plain(element.Attributes.GetValueOrDefault(reference.By), null);
-
-    /// <summary>The <c>by</c> of a reference that names an element by its stored id rather than by an attribute.</summary>
-    private const string StoredIdReference = "id";
 
     // ---- the public model ----
 

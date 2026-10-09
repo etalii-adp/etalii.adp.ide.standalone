@@ -34,9 +34,12 @@ internal sealed class CelScope
         {
             if (s._name == name) return s._value;
         }
+        // A type's name denotes the type only where nothing else has the name.
         return Variables.TryGetValue(name, out var value)
             ? value
-            : throw new CelException($"'{name}' has no value.");
+            : CelType.TryNamed(name, out var type)
+                ? type
+                : throw new CelException($"'{name}' has no value.");
     }
 
     public void Step() => Budget.Charge(1);

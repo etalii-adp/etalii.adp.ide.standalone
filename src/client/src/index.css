@@ -18,6 +18,14 @@
      already run 11.96 to 15.44 to 1 and there is nothing to fix. The dark block restates each at
      the same hue and saturation with the lightness lowered; see the note there for why those are
      not simply the lightest same-hue variants that reach 4.5. */
+  /* The agent activity diagram's five kinds of element. Each is told apart by its shape as well;
+     the fills are chosen for the text colour above, as the other diagrams' are, and their dark
+     values are beside the others' below. */
+  --color-diagram-aad-project: #f6d186;
+  --color-diagram-aad-specification: #aad4f5;
+  --color-diagram-aad-agent: #d3c5f3;
+  --color-diagram-aad-location: #b9e6c9;
+  --color-diagram-aad-environment: #e6e6e6;
   --color-diagram-fdg-ui-element: #aaed92;
   --color-diagram-fdg-data-element: #ededed;
   --color-diagram-fdg-action: #9edcfa;
@@ -145,6 +153,11 @@
        those figures is against #f1f5f9 and NOT against white, where #7c7203 reads 4.92 - which is
        how two sessions computed different numbers for the same colour. `theme.contrast.test.ts`
        recomputes all of this from this file. */
+    --color-diagram-aad-project: #7a5a10;
+    --color-diagram-aad-specification: #1f5b8a;
+    --color-diagram-aad-agent: #4b3a87;
+    --color-diagram-aad-location: #1f6b3c;
+    --color-diagram-aad-environment: #5a5a5a;
     --color-diagram-fdg-ui-element: #2e7814;
     --color-diagram-fdg-data-element: #696969;
     --color-diagram-fdg-action: #086fa1;

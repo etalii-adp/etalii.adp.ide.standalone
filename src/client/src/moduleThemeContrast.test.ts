@@ -156,6 +156,40 @@ describe("module colours honour the theme", () => {
   });
 
   /**
+   * agent-activity-diagram's text against the fill of each kind of element.
+   *
+   * Found in a browser: the names were SVG's default black, and once they had a colour the
+   * smaller text under them - a status, a folder, a list's headings, a link symbol - was the
+   * muted text colour, which on these fills measured between 2.5:1 and 3.8:1. Everything written
+   * or drawn on an element is small, so all of it is held to the text bar, on every fill, in
+   * both themes; and the stylesheet may colour nothing on an element with the muted colour.
+   */
+  describe("agent-activity-diagram's text reads on every kind of element", () => {
+    // Compared as text, so whichever line endings the checkout gave the file are taken out first.
+    const css = moduleFile("agent-activity-diagram", "aad.css").replaceAll("\r\n", "\n");
+
+    for (const theme of ["light", "dark"] as const) {
+      for (const kind of ["project", "specification", "agent", "location", "environment"]) {
+        it(`reads on a ${kind} in the ${theme} theme`, () => {
+          const fill = resolvedIn(theme, `--color-diagram-aad-${kind}`);
+          const text = resolvedIn(theme, "--color-text");
+          const ratio = contrastRatio(text, fill);
+
+          expect(ratio, `text (${text}) on the ${kind} fill (${fill}) in the ${theme} theme is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+        });
+      }
+    }
+
+    it("colours what is written on an element with the text colour, never the muted one", () => {
+      expect(css).not.toContain("--color-text-muted");
+      for (const selector of [".aad-label", ".aad-detail", ".aad-status", ".aad-surface .library-compartment-heading-text"]) {
+        expect(css, selector).toContain(`${selector} {\n  fill: var(--color-text);`);
+      }
+      expect(css).toContain(".aad-surface .library-link-glyph {\n  stroke: var(--color-text);");
+    });
+  });
+
+  /**
    * supply-chain's seven stage hues: the header each card wears, and the band its flows run in.
    *
    * The module shipped its own palette and nobody looked at it in a browser. Manufacturer and

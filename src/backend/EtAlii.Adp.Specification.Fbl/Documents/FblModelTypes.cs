@@ -269,8 +269,12 @@ public sealed record AttributeBinding : Slot
 
 public sealed record ReferenceBinding(IReadOnlyList<string> To, string By);
 
-/// <summary>xml: how a missing child element holding the value is written.</summary>
-public sealed record CreateChild(string Emit, string Place, string? Before);
+/// <summary>
+/// How a missing child holding the value is written. xml: the element's text and its place. yaml
+/// (FBL 0.4): <see cref="AtEnd"/>, each missing level of the mapping <c>child</c> reaches created at
+/// the end of the level above it.
+/// </summary>
+public sealed record CreateChild(string Emit, string Place, string? Before, bool AtEnd = false);
 
 public sealed class InsertSettings
 {
@@ -290,10 +294,14 @@ public sealed class InsertSettings
     public string? When { get; init; }
 }
 
-/// <summary>How a missing container is created: <see cref="At"/> is "end-of-document", "before", "after" or "under".</summary>
+/// <summary>How a missing container is created: <see cref="At"/> is "end-of-document", "before", "after", "under" or (FBL 0.4) "end".</summary>
 public sealed record CreateContainer(string At, string? Argument, string? Text);
 
-public sealed record RemoveSettings(IReadOnlyList<string> Cascade, bool RemoveContainerWhenEmpty);
+/// <summary>
+/// What goes with a removed entry. <see cref="RemoveEmptyLevels"/> (FBL 0.4) implies
+/// <see cref="RemoveContainerWhenEmpty"/>, and removes the levels above the container that it leaves empty too.
+/// </summary>
+public sealed record RemoveSettings(IReadOnlyList<string> Cascade, bool RemoveContainerWhenEmpty, bool RemoveEmptyLevels = false);
 
 public sealed class RegistrationSettings
 {
