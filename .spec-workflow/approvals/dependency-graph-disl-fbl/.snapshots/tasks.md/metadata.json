@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dependency-graph-disl-fbl/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T15:07:25.154Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791558444355_qzp0m6e87",
+      "approvalTitle": "tasks.md: the dependency graph through FBL (written against the recommended amendment)"
+    }
+  ]
+}
