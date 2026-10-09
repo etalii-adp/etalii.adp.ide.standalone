@@ -31,6 +31,7 @@ const oneOfEvery: readonly DiagramEvent[] = [
   { kind: "layout-mode-changed", mode: "tree" },
   { kind: "compartment-toggled", elementId: "a", compartmentId: "tasks", key: "pending", collapsed: true },
   { kind: "link-activated", elementId: "a", rowId: "t1", link: "https://example.org" },
+  { kind: "switch-toggled", id: "show-archived", on: true },
   { kind: "action-invoked", actionId: "mindmap.add-child", targetKind: "element", targetId: "a" },
   { kind: "action-refused", actionId: "helm.install", message: "The chart is read-only." },
 ];
@@ -59,6 +60,7 @@ describe("the diagram event surface", () => {
       onLayoutModeChanged: (event) => seen.push(event.kind),
       onCompartmentToggled: (event) => seen.push(event.kind),
       onLinkActivated: (event) => seen.push(event.kind),
+      onSwitchToggled: (event) => seen.push(event.kind),
       onActionInvoked: (event) => seen.push(event.kind),
       onActionRefused: (event) => seen.push(event.kind),
     };

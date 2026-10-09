@@ -32,6 +32,7 @@ export type DiagramEvent =
   | LayoutModeChanged
   | CompartmentToggled
   | LinkActivated
+  | SwitchToggled
   | ActionInvoked
   | ActionRefused;
 
@@ -273,6 +274,15 @@ export interface LinkActivated {
   rowId?: string;
   /** The link as the model holds it. */
   link: string;
+}
+
+/** The user pressed a declared canvas switch. A request: the switch shows what the model says. */
+export interface SwitchToggled {
+  kind: "switch-toggled";
+  /** The switch's declared id. */
+  id: string;
+  /** What the user is asking for. */
+  on: boolean;
 }
 
 /** The user switched between the definition's allowed layout modes (Requirement 8.2). */

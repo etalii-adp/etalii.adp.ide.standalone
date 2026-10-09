@@ -78,7 +78,8 @@ import {
 } from "./api/diagramEvents";
 import { effectiveDefinition, type DiagramRuntimeConfig } from "./api/diagramRuntimeConfig";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "./api/diagramModel";
-import { layoutAlgorithmFor, type LayoutInput } from "./layout/layoutAlgorithm";
+import { layoutAlgorithmFor, type LayoutInput, type LayoutPositions } from "./layout/layoutAlgorithm";
+import { useAnimatedPlacements } from "./layout/useAnimatedPlacements";
 import type {
   AnchorSet,
   BuiltInShape,
@@ -388,6 +389,7 @@ export function DiagramCanvasCore({
   // Laid out over every element of the model, never only those the filter leaves: filtering hides,
   // it does not re-place what is left.
   const layoutAlgorithm = layoutAlgorithmFor(activeLayoutMode);
+  const pinnedPath = statedDefinition.layout.pinned;
   const layoutInput = useMemo<LayoutInput>(
     () => ({
       elements: model.elements.map((element) => {
@@ -401,13 +403,14 @@ export function DiagramCanvasCore({
           height: bounds.height,
           parentId: element.parentId,
           type: element.type,
+          pinned: pinnedPath !== undefined && holds({ path: pinnedPath, is: "true" }, sourceOf(element)),
           leading: leadingOf(element, type),
           ...packedWidthOf(statedDefinition.layout.rowPacked?.width, element),
         };
       }),
       connections: model.connections.map((connection) => ({ sourceId: connection.sourceId, targetId: connection.targetId })),
     }),
-    [model, elementTypes, statedDefinition.layout.rowPacked?.width],
+    [model, elementTypes, statedDefinition.layout.rowPacked?.width, pinnedPath],
   );
   const layoutToggle = statedDefinition.layout.toggle;
   /** A switch the reader made: held as view state, and raised for a host that wants to know. */
@@ -415,21 +418,44 @@ export function DiagramCanvasCore({
     setViewLayoutMode(mode);
     raise({ kind: "layout-mode-changed", mode });
   };
-  const layoutPositions = useMemo(
+  // What the last pass was for and what it gave. Kept so that an input that places alike - a
+  // label changed, a status changed - keeps its placements exactly, and so that a changed input
+  // starts from where the picture is. Keyed by the algorithm too: another mode's placements are
+  // not a start for this one.
+  const lastLayoutRef = useRef<{ mode: LayoutMode; signature: string; positions: LayoutPositions } | null>(null);
+  const layoutPositions = useMemo(() => {
     // An unimplemented mode lays out as manual - the honest fallback.
-    () => (layoutAlgorithm === undefined ? null : layoutAlgorithm.place(layoutInput, definition.layout)),
-    [layoutAlgorithm, layoutInput, definition.layout],
-  );
+    if (layoutAlgorithm === undefined) {
+      return null;
+    }
+    // Only a layout that says what it depends on is remembered: the others read the model's own
+    // positions, and are asked afresh whenever the model changes, as they always were.
+    if (layoutAlgorithm.signature === undefined) {
+      return layoutAlgorithm.place(layoutInput, definition.layout);
+    }
+    const signature = layoutAlgorithm.signature(layoutInput);
+    const last = lastLayoutRef.current?.mode === layoutAlgorithm.mode ? lastLayoutRef.current : null;
+    if (last !== null && last.signature === signature) {
+      return last.positions;
+    }
+    const positions = layoutAlgorithm.place(layoutInput, definition.layout, last?.positions);
+    lastLayoutRef.current = { mode: layoutAlgorithm.mode, signature, positions };
+    return positions;
+  }, [layoutAlgorithm, layoutInput, definition.layout]);
+
+  // A layout that remembers its placements moves elements when the model changes, and the way
+  // there is drawn rather than jumped; the others re-place from the model and are drawn at once.
+  const drawnPositions = useAnimatedPlacements(layoutPositions, layoutAlgorithm?.signature !== undefined);
 
   const elements = useMemo(
     () =>
-      layoutPositions === null
+      drawnPositions === null
         ? model.elements
         : model.elements.map((element) => {
-            const at = layoutPositions.get(element.id);
+            const at = drawnPositions.get(element.id);
             return at === undefined ? element : { ...element, x: at.x, y: at.y, width: at.width ?? element.width };
           }),
-    [model.elements, layoutPositions],
+    [model.elements, drawnPositions],
   );
 
   const elementsById = useMemo(() => new Map(elements.map((element) => [element.id, element])), [elements]);
@@ -2282,6 +2308,29 @@ export function DiagramCanvasCore({
               {layoutToggle.caption}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Declared switches: drawn whether or not a filter is declared, and showing the document's
+          value - the canvas holds none of its own. */}
+      {(definition.chrome?.switches ?? []).length > 0 && (
+        <div className="library-switches" data-testid="library-switches">
+          {(definition.chrome?.switches ?? []).map((declared) => {
+            const on = valueAtPath(declared.on, chromeSource) === true;
+            return (
+              <button
+                key={declared.id}
+                type="button"
+                role="switch"
+                className="library-switch"
+                data-switch={declared.id}
+                aria-checked={on}
+                onClick={() => raise({ kind: "switch-toggled", id: declared.id, on: !on })}
+              >
+                {declared.caption}
+              </button>
+            );
+          })}
         </div>
       )}
 

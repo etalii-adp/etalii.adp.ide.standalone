@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { LAYOUT_ALGORITHMS, layoutAlgorithmFor, manualLayout, treeLayout } from "./layoutAlgorithm";
 import { rowPackedLayout } from "./rowPackedLayout";
+import { tieredForceLayout } from "./tieredForceLayout";
 import { DiagramCanvas } from "../DiagramCanvas";
 import type { DiagramDefinition } from "../definition/diagramDefinition";
 import type { DiagramModel } from "../api/diagramModel";
@@ -55,7 +56,8 @@ describe("the layout seam", () => {
     // to manual rather than inventing placements.
     expect(layoutAlgorithmFor("horizontal-flow")).toBeUndefined();
     expect(layoutAlgorithmFor("row-packed")).toBe(rowPackedLayout);
-    expect(LAYOUT_ALGORITHMS.length).toBe(3);
+    expect(layoutAlgorithmFor("tiered-force")).toBe(tieredForceLayout);
+    expect(LAYOUT_ALGORITHMS.length).toBe(4);
   });
 });
 
