@@ -16,7 +16,7 @@
 
 ## The definition, in etalii.adp
 
-- [ ] 1. Draft the YAML binding and settle its two open points
+- [x] 1. Draft the YAML binding and settle its two open points
   - File (etalii.adp): `definitions/designers/knowledge.fbl` (draft, binding `yaml` only), `specifications/fbl/fixtures/knowledge-yaml/` (first fixture)
   - Write the `yaml` binding for the file shape in the design (*The knowledge file*, *The model the bindings produce*) and run the repository's validator over it and one read fixture.
   - Settle, by the FBL specification's text and the validator: whether an attribute `reference` can name a rule's stored id, so that removing a property or an option cascades to the cells, columns, sorts and conditions that name it; and whether a rule at `/` can bind the root's keys as `Table`'s attributes.
@@ -36,7 +36,7 @@
   - _Leverage: `src/backend/EtAlii.Adp.Specification.Fbl/History/OpenBody.cs`, `GhgBody.Batch` in `src/diagrams/gartner-hype-cycle-graph/backend`, `src/TestSupport/TestFolder.cs`_
   - _Requirements: 9.6_
 
-- [ ] 3. FBL 0.3 wording and DESL 0.1
+- [x] 3. FBL 0.3 wording and DESL 0.1
   - File (etalii.adp): `specifications/fbl/FBL-specification.md`, `specifications/fbl/fbl.schema.json`, `specifications/desl/DESL-specification.md`, `specifications/desl/desl.schema.json` (new), `definitions/designers/README.md`, `specifications/ded/DED-specification.md`, `specifications/ded/ded.schema.json` (new)
   - FBL 0.3: replace the wording that names the diagram specification language and its node type with wording that covers a specification of either pair (L4), and "its binding" with "the binding for the body's family" in sections 1.2 and 8.1 (L3). No behaviour changes; every existing fixture passes unchanged.
   - DESL 0.1 with the sections the design lists: `desl`, `language`, `metamodel`, `persistence` (`bindings` per family, `ids`), `constraints`, `surface` (`kind: table`, the types playing columns, rows, cells and views, and `valueTypes`), `operations`. DESL defines each of these itself: it cites, imports and depends on nothing in DISL or DID (L4, chat ruling of 2026-10-09). Each construct is named for what it does.
@@ -47,7 +47,7 @@
   - _Leverage: `specifications/fbl/FBL-specification.md` for the layout of a specification document and its schema_
   - _Requirements: 1.2, 1.6_
 
-- [ ] 4. The three bindings, their templates and their fixtures
+- [x] 4. The three bindings, their templates and their fixtures
   - File (etalii.adp): `definitions/designers/knowledge.fbl` (bindings `yaml`, `json`, `xml`), `specifications/fbl/fixtures/knowledge-yaml/`, `knowledge-json/`, `knowledge-xml/`, `knowledge-equivalence/`, `.gitattributes`
   - Complete the three bindings: every type of the design's model table, stored ids for properties, options, views and rows, the `required` header, `shared` and `registrationOnly` claims, `createOnFirstPlacement: false`, and a template of one title property, one view and no rows.
   - Fixtures per format: reading; and one step for each kind of edit the requirements name (add, rename, retype, reorder and remove a property; add, rename, recolour, reorder and remove an option; add, remove and move a row; set and clear a cell of each value key; add and remove one of several values; add, rename, duplicate, reorder and remove a view; each view setting; collapse; the active view), each with its exact splices, and an undo. One fixture reads the same table from all three and lists the same elements. One fixture has an unknown key and an unreadable cell and shows both kept.
@@ -57,7 +57,7 @@
   - _Leverage: `specifications/fbl/fixtures/timeline-edits/fixture.json`, `specifications/fbl/fixtures/databricks-pipeline-json/`_
   - _Requirements: 1.1, 1.3, 2.6, 2.7, 2.10_
 
-- [ ] 5. `knowledge.des`, `knowledge.md`, the file's schema and the terminology
+- [x] 5. `knowledge.des`, `knowledge.md`, the file's schema and the terminology
   - File (etalii.adp): `definitions/designers/knowledge.des`, `definitions/designers/knowledge.md`, `definitions/designers/knowledge.schema.json`, `definitions/designers/examples/cities.yaml`, `cities.json`, `cities.xml`, `docs/terminology.md`
   - `knowledge.des`: the metamodel, the three bindings, ids as `uuid-v4` with `base36`, the constraints, the table surface and its value types (key, editor, comparisons, sort order, conversions), and one operation per gesture of Requirements 3 to 6.
   - `knowledge.md`: the file in each format, complete enough to write one by hand, with the complete examples; the layout and behaviour of Requirement 7 and the differences from Notion that Requirement 7.7 names; the conversion table for type changes; the two-file steps and that every host makes them atomic (L5); entries without an id (Requirement 8.5); the finding codes; and a provenance note that the definition files, not any host's specification, are authoritative.
