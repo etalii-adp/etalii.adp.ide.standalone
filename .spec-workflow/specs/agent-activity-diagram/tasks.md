@@ -261,7 +261,7 @@
   - _Leverage: the rows for `etalii/functional-decomposition-graph` and `gartner/hypecycle-graph`_
   - _Requirements: 10.8_
 
-- [ ] 28. The browser pass
+- [-] 28. The browser pass
   - File: `tests.md`
   - Write and run the entry Requirement 11.1 lists, in a real browser and both themes, against a build from a fresh worktree. Nothing here is taken from jsdom.
   - Waits on: 24, 25.
@@ -270,7 +270,7 @@
   - _Leverage: `tests.md`, `CLAUDE.md` (*Bugs found during implementation or verification*)_
   - _Requirements: 11.1, 11.3_
 
-- [ ] 29. Coverage, before and after
+- [-] 29. Coverage, before and after
   - File: this document, the requirements
   - Before the card: extract every requirement reference from this document, list every acceptance criterion in the requirements, and diff the two sets. After implementing: trace each criterion to files and strings, and read two traces back to their artefacts to ask whether the evidence is that criterion's. Check that no task lacks a *Seen to fail against* line.
   - Guard: the diff is empty in both directions.
