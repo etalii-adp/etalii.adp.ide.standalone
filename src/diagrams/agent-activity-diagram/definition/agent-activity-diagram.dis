@@ -1174,7 +1174,7 @@
             "Specification"
           ],
           "keep": "value || self.status != 'archived'",
-          "doc": "Shows or hides specifications whose status is Archived, with their relations; nothing else is hidden and the model does not change (Requirement 4.6, 4.7). Kept in the file as `showArchived` (persistence.view.bind)."
+          "doc": "Shows or hides specifications whose status is Archived, with their relations; nothing else is hidden and the model does not change (Requirement 4.6, 4.7). Kept in the file as `view.showArchived` (persistence.view.bind)."
         }
       }
     }
@@ -1792,7 +1792,7 @@
         "hostAttributes": [
           "unknownKeys"
         ],
-        "doc": "The file's root: the header is the binding's, and showArchived is the kept filter's value (view.bind)."
+        "doc": "The file's root: the header is the binding's, and view.showArchived is the kept filter's value (view.bind)."
       },
       "Project": {
         "as": "Project",
@@ -1856,24 +1856,24 @@
           "element": "element",
           "x": "x",
           "y": "y",
-          "doc": "A locked position is an entry of `placements`."
+          "doc": "A locked position is an entry of `view.placements`."
         },
         "groups": {
           "type": "GroupState",
           "element": "element",
           "group": "group",
           "collapsed": "collapsed",
-          "doc": "A group whose state differs from its default is an entry of `groups`."
+          "doc": "A group whose state differs from its default is an entry of `view.groups`."
         },
         "filters": {
           "type": "Diagram",
           "values": {
             "archived": "showArchived"
           },
-          "doc": "The switch is the top-level `showArchived` key."
+          "doc": "The switch is the key `view.showArchived`."
         }
       },
-      "doc": "The user's part of the file: locked positions, folded groups and the switch, kept in the activity file itself so that one file tells everything (standalone Q3). Agents leave it alone."
+      "doc": "The user's part of the file, the top-level `view` mapping: locked positions, folded groups and the switch, kept in the activity file itself so that one file tells everything (standalone Q3). Agents leave it alone."
     },
     "doc": "One YAML file, `.aad`, read and written through the FBL binding `agent-activity-diagram.fbl#aad` with byte-preserving splices; its `.adp` registration beside it identifies it. The file's format, written for agents, is in agent-activity-diagram.md, and its JSON Schema is agent-activity-diagram.schema.json."
   },

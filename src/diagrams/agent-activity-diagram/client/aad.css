@@ -1,0 +1,58 @@
+/*
+ * What this notation needs that the shared appearance has no opinion about: a fill per kind of
+ * element, the colour a status is written in, the line that splits a location, and the mark a
+ * locked element carries. Everything else - lists, link symbols, the switch - comes from canvas.css.
+ *
+ * The colours are theme tokens from index.css, with their dark values beside them there. A kind is
+ * told apart by its shape first and its fill second, and a status by its word first.
+ */
+
+.aad-project {
+  fill: var(--color-diagram-aad-project);
+}
+
+.aad-specification {
+  fill: var(--color-diagram-aad-specification);
+}
+
+.aad-agent {
+  fill: var(--color-diagram-aad-agent);
+}
+
+.aad-location {
+  fill: var(--color-diagram-aad-location);
+}
+
+.aad-environment {
+  fill: var(--color-diagram-aad-environment);
+}
+
+.aad-status {
+  fill: var(--color-text-muted);
+}
+
+.aad-status-progressing {
+  fill: var(--color-text);
+}
+
+.aad-status-inputRequired {
+  font-weight: 600;
+  fill: var(--color-text);
+}
+
+.aad-status-finished {
+  font-style: italic;
+}
+
+.aad-split {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+
+.aad-lock {
+  fill: var(--color-text);
+}
+
+.aad-relation .canvas-connection-line {
+  stroke: var(--color-border-strong);
+}

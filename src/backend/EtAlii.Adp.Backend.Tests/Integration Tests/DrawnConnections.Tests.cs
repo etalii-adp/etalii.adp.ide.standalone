@@ -137,7 +137,7 @@ public class DrawnConnectionsTests : IClassFixture<WebApplicationFactory<Program
             [GhgElementMapper.TrendType, GhgElementMapper.TriggerType, GhgElementMapper.NoteType])),
         new("agent-activity-diagram", new DrawnTypes(
             [AadElementMapper.RelationType],
-            [AadElementMapper.ProjectType, AadElementMapper.SpecificationType, AadElementMapper.AgentType, AadElementMapper.LocationType, AadElementMapper.EnvironmentType])),
+            [AadElementMapper.ProjectType, AadElementMapper.SpecificationType, AadElementMapper.AgentType, AadElementMapper.LocationType, AadElementMapper.EnvironmentType, AadElementMapper.ViewType])),
         new("helm-chart", new DrawnTypes(
             [HelmElementMapper.EdgeType, HelmElementMapper.DependencyType],
             [HelmElementMapper.ChartType, HelmElementMapper.ValuesType, HelmElementMapper.SchemaType, HelmElementMapper.TemplateType, HelmElementMapper.PartialType, HelmElementMapper.SubchartType, HelmElementMapper.LockType])),

@@ -1,7 +1,7 @@
 {
   "$schema": "https://etalii.net/adp/fbl/schema/0.1/fbl.schema.json#/$defs/Document",
-  "fbl": "0.3",
-  "doc": "The activity file of the Agent activity diagram (agent-activity-diagram.dis, agent-activity-diagram.md): ADP's own YAML, written by agents and by ADP. Five lists of elements; tasks are entries of a specification and pull requests entries of a location. A relation is a key on the element at its 'one' end, bound as a reference by id, from which the specification derives the drawn line. The user's part (placements, groups and showArchived) is three top-level keys rather than one nested mapping, because FBL creates one missing level only (research R3 of etalii.adp spec 014). Each list rule's when refuses an item that is not a mapping, which that list's not-a-mapping rule then takes, and its computed unknownKeys lists the keys the diagram does not read, which it reports while FBL keeps them.",
+  "fbl": "0.4",
+  "doc": "The activity file of the Agent activity diagram (agent-activity-diagram.dis, agent-activity-diagram.md): ADP's own YAML, written by agents and by ADP. Five lists of elements; tasks are entries of a specification and pull requests entries of a location. A relation is a key on the element at its 'one' end, bound as a reference by id, from which the specification derives the drawn line. The user's part is the top-level mapping view, holding showArchived, placements and groups; FBL 0.4 creates view with the first of them and removes it with the last (research R3 of etalii.adp spec 014). Each list rule's when refuses an item that is not a mapping, which that list's not-a-mapping rule then takes, and its computed unknownKeys lists the keys the diagram does not read, which it reports while FBL keeps them.",
   "bindings": {
     "aad": {
       "title": "Agent activity diagram",
@@ -17,12 +17,12 @@
         {
           "name": "diagram",
           "type": "Diagram",
-          "doc": "The root mapping: the file's version and the archived switch. A value set on showArchived while the key is absent is inserted after the header, the attribute before it.",
+          "doc": "The root mapping: the file's version, and the archived switch under view. Setting showArchived in a file without view creates view at the end of the file with the switch as its only key; in a view without the switch, the switch becomes its first key (FBL 0.4, section 5.2).",
           "at": "/",
           "attributes": {
             "version": { "key": "agent-activity-diagram", "readOnly": "The file's version is written when the file is created and changed by nobody but a migration." },
-            "showArchived": { "key": "showArchived", "default": false },
-            "unknownKeys": { "value": "entry.filter(k, !(k in ['agent-activity-diagram', 'projects', 'specifications', 'agents', 'locations', 'environments', 'showArchived', 'placements', 'groups']))" }
+            "showArchived": { "key": "showArchived", "child": "view", "default": false, "create": { "at": "end" } },
+            "unknownKeys": { "value": "entry.filter(k, !(k in ['agent-activity-diagram', 'projects', 'specifications', 'agents', 'locations', 'environments', 'view'])) + (has(entry.view) && type(entry.view) == map ? entry.view.filter(k, !(k in ['showArchived', 'placements', 'groups'])).map(k, 'view.' + k) : [])" }
           }
         },
         {
@@ -175,7 +175,7 @@
           "name": "placement",
           "type": "Placement",
           "doc": "A locked position: the element it names and where it is. It has no id of its own; the specification binds it as view data of the element it names (DISL 0.4, persistence.view.bind), which identifies it.",
-          "at": "/placements/*",
+          "at": "/view/placements/*",
           "when": "entry.all(k, true)",
           "attributes": {
             "unknownKeys": { "value": "entry.filter(k, !(k in ['element', 'x', 'y']))" },
@@ -185,17 +185,17 @@
           },
           "insert": {
             "place": "after-last",
-            "container": "/placements",
-            "create": { "at": "end-of-document" },
+            "container": "/view/placements",
+            "create": { "at": "end" },
             "keys": ["element", "x", "y"]
           },
-          "remove": { "container": "remove-when-empty" }
+          "remove": { "container": "remove-empty-levels" }
         },
         {
           "name": "group",
           "type": "GroupState",
           "doc": "The state of one group of one element, stored only while it differs from the group's default (DISL 0.4, section 6.9). It has no id of its own; the element and the group identify it.",
-          "at": "/groups/*",
+          "at": "/view/groups/*",
           "when": "entry.all(k, true)",
           "attributes": {
             "unknownKeys": { "value": "entry.filter(k, !(k in ['element', 'group', 'collapsed']))" },
@@ -205,11 +205,11 @@
           },
           "insert": {
             "place": "after-last",
-            "container": "/groups",
-            "create": { "at": "end-of-document" },
+            "container": "/view/groups",
+            "create": { "at": "end" },
             "keys": ["element", "group", "collapsed"]
           },
-          "remove": { "container": "remove-when-empty" }
+          "remove": { "container": "remove-empty-levels" }
         },
         { "name": "project-not-a-mapping", "type": "Unreadable", "at": "/projects/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
         { "name": "specification-not-a-mapping", "type": "Unreadable", "at": "/specifications/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
@@ -218,8 +218,8 @@
         { "name": "location-not-a-mapping", "type": "Unreadable", "at": "/locations/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
         { "name": "pullRequest-not-a-mapping", "type": "Unreadable", "at": "/locations/*/pullRequests/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
         { "name": "environment-not-a-mapping", "type": "Unreadable", "at": "/environments/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
-        { "name": "placement-not-a-mapping", "type": "Unreadable", "at": "/placements/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
-        { "name": "group-not-a-mapping", "type": "Unreadable", "at": "/groups/*", "readOnly": "This entry is not a mapping, so it is kept as it is." }
+        { "name": "placement-not-a-mapping", "type": "Unreadable", "at": "/view/placements/*", "readOnly": "This entry is not a mapping, so it is kept as it is." },
+        { "name": "group-not-a-mapping", "type": "Unreadable", "at": "/view/groups/*", "readOnly": "This entry is not a mapping, so it is kept as it is." }
       ],
       "template": { "text": "agent-activity-diagram: 1\r\n" }
     }

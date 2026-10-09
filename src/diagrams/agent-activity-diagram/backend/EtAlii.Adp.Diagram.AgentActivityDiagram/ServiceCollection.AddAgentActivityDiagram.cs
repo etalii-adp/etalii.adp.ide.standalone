@@ -1,3 +1,4 @@
+using EtAlii.Adp.Context;
 using EtAlii.Adp.Documents;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -24,5 +25,8 @@ public static class ServiceCollectionAddAgentActivityDiagramExtension
         // The reload seam: an agent's write to an .aad body reaches the store, and through it every
         // open session - and a deleted body reaches it as a deletion, not as a reload.
         services.AddSingleton<IDiagramDocumentReloader, AadDocumentReloader>();
+
+        // Selection: an element or a relation of an activity file resolves to a selection the panels read.
+        services.AddSingleton<IContextSourceResolver, AadContextSourceResolver>();
     }
 }

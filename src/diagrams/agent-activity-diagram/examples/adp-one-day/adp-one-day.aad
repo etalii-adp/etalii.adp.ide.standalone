@@ -147,3 +147,12 @@ environments:
     name: Claude Code cloud environment
     kind: cloud
     link: https://code.claude.com/docs/en/claude-code-on-the-web
+view:
+  placements:
+    - element: p-standalone
+      x: 0
+      y: 0
+  groups:
+    - element: s-activity
+      group: finished
+      collapsed: false

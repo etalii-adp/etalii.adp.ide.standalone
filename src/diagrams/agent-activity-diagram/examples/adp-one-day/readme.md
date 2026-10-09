@@ -11,9 +11,10 @@ The work on ADP as it stood on 2026-10-09: two projects, the specifications in f
 - An agent with two locations, one of them on `develop` in the folder `Default`; and an agent with no specification.
 - Two environments of different kinds, one shared by three locations.
 - Links to web pages on elements, on tasks and on pull requests.
+- The reader's own part, under `view`: one project locked in the middle, and one specification's Finished group unfolded.
 
 ## What it does not demonstrate
 
-- The reader's own part: no element is locked, no group is folded away from its default and the archived switch is not set. That part of the file is moving back under one `view:` key in etalii.adp, and the example gains it when the definition bundled here does.
+- The archived switch set: the archived specification stays hidden until the reader shows it.
 - A link to a file location, a Pending specification, a container or a WSL environment, and a location with no environment.
 - Anything that breaks a rule: the module's `Fixtures/` hold those.

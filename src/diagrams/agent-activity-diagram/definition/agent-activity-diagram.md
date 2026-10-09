@@ -21,7 +21,6 @@ One YAML file with the extension `.aad`, registered by an `.adp` file beside it 
 ```yaml
 agent-activity-diagram: 1
 # What the agents of one project were doing on 2026-10-08, kept by agents and by ADP.
-showArchived: false
 projects:
   - id: p-standalone
     name: etalii.adp.ide.standalone
@@ -71,14 +70,16 @@ environments:
   - id: e-fractal
     name: Fractal
     kind: local-machine
-placements:
-  - element: s-knowledge
-    x: 240
-    y: -80
-groups:
-  - element: s-knowledge
-    group: pending
-    collapsed: false
+view:
+  showArchived: false
+  placements:
+    - element: s-knowledge
+      x: 240
+      y: -80
+  groups:
+    - element: s-knowledge
+      group: pending
+      collapsed: false
 ```
 
 - **The header.** The first key is `agent-activity-diagram: 1`, the format's version. A file of a later version opens read-only.
@@ -101,14 +102,14 @@ groups:
 - **`folder` left out means `Default`.** An empty optional key is removed, not written empty.
 - **Ids.** ADP writes a ShortGuid: a version 4 GUID written as 25 characters of base 36. Anyone may write any id of letters, digits, `_`, `.` and `-`; readable ones such as those above are encouraged, since an agent finds its own entries again by them. Ids are unique across the whole file and never change on a rename.
 - **A link** is an `http` or `https` address, or a path. A relative path is relative to the activity file's folder; an absolute one, such as `C:/git/...`, is taken as written. Anything else is kept, reported as `aad.link-not-openable` and never opened. A location has two: `branchLink` for its branch and `folderLink` for its folder.
-- **The person's part:** `showArchived`, right after the header (absent means `false`); `placements`, one entry per locked element and nothing for the others; and `groups`, one entry per group whose state differs from its default. A group is a task status as written, or `pullRequests` for a location's pull requests. Agents leave these three alone. When an element is removed, its placement and group states go with it on ADP's next write, without a finding.
+- **The person's part** is the mapping `view`: `showArchived` (absent means `false`); `placements`, one entry per locked element and nothing for the others; and `groups`, one entry per group whose state differs from its default. A group is a task status as written, or `pullRequests` for a location's pull requests. ADP creates `view` at the end of the file with the first of them and removes it when the last is gone (FBL 0.4). Agents leave `view` alone. When an element is removed, its placement and group states go with it on ADP's next write, without a finding.
 - **Comments, key order, indentation, line endings and keys the diagram does not read** are kept byte for byte. An edit in ADP changes only the bytes it concerns: the fixtures `specifications/fbl/fixtures/agent-activity-read/`, `agent-activity-edits/` and `agent-activity-new/` show each kind of edit. A key the diagram does not read is reported at severity info.
 
 ## Instructions for agents
 
 The text an agent is given so that it keeps the file current. A host ships it beside its examples (standalone Requirement 8.3); this is its source.
 
-> The file `<name>.aad` is the overview of who works on what. Keep your own entries in it current; never touch another agent's entries, and never touch `showArchived`, `placements` or `groups`.
+> The file `<name>.aad` is the overview of who works on what. Keep your own entries in it current; never touch another agent's entries, and never touch `view`.
 >
 > - **Starting work on a specification:** add yourself under `agents` with an id you will recognise (`a-<your name>`), your `name`, and `specification:` naming the specification's id. Add the specification under `specifications` first if it is not there, with its `project` and `status: progressing`.
 > - **Changing a status:** change the `status` of the specification or the task in place, and set the task's `updated` to now, with your offset.
@@ -168,7 +169,7 @@ DISL 0.4's `open` action opens an `http` or `https` address in the platform's br
 - **Relations** are straight lines without a label or a marker.
 - **Long names** are cut with an ellipsis and shown in full on hover; an element does not grow without limit.
 
-## What DISL 0.4 and FBL 0.3 cannot state yet
+## What DISL 0.4 and FBL 0.4 cannot state yet
 
 - **The reference layout's numbers.** DISL 10.4 states the properties of a tiered `force` layout, not its constants; they are above, under *Layout*, by the design's decision L5.
 - **`updated` on every edit.** DISL has no way to say that every edit of a row sets one of its attributes. The `.dis` sets `updated` on a new row (its default, `env.now`) and when its status is set (`setTaskStatus`); a host **must** also set it when it renames a row or changes its link (standalone Requirement 9.3).
@@ -186,6 +187,6 @@ A host ships its own examples; the standalone IDE's are to be `adp-one-day` (thi
 ## Sources
 
 - Specification: `standalone:.spec-workflow/specs/agent-activity-diagram/requirements.md`, `design.md` and `tasks.md` at `08d917f`.
-- Languages: DISL 0.4 (`specifications/disl/`), FBL 0.3 (`specifications/fbl/`), and the research of this repository's spec 014 (`specs/014-agent-activity-diagram/research.md`).
+- Languages: DISL 0.4 (`specifications/disl/`), FBL 0.4 (`specifications/fbl/`), and the research of this repository's spec 014 (`specs/014-agent-activity-diagram/research.md`).
 - Notion: the "Tools" database row for Agent activity diagram.
-- Conversation: Peter's ruling of 2026-10-09 that tasks and pull requests are ordered by when they were last updated.
+- Conversation: Peter's rulings of 2026-10-09 that tasks and pull requests are ordered by when they were last updated, and that the person's part stays under `view`, with FBL 0.4 creating and removing it.
