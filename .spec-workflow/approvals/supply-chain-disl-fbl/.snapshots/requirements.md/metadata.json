@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/supply-chain-disl-fbl/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T01:02:06.929Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791507726797_psw8gjay8",
+      "approvalTitle": "requirements.md: converting the supply chain diagram to DISL and FBL"
+    }
+  ]
+}
