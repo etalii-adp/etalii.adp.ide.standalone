@@ -211,6 +211,11 @@
   cursor: default;
 }
 
+/* The selected row, shown the way a selected element is: by the accent, on its own line only. */
+.library-compartment-row-selected .library-compartment-row-hit {
+  fill: var(--color-accent-subtle);
+}
+
 .library-compartment-heading-hit,
 .library-compartment-row-hit {
   fill: transparent;

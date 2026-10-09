@@ -1634,7 +1634,7 @@ export function DiagramCanvasCore({
           event.preventDefault();
           raise({ kind: "element-deleted", elementId: item.id });
         }
-      } else {
+      } else if (item.kind === "connection") {
         const connection = model.connections.find((candidate) => candidate.id === item.id);
         const declared =
           connection === undefined
@@ -1731,6 +1731,10 @@ export function DiagramCanvasCore({
   /** A declared shortcut, dispatched by action id. True when one fired. */
   function dispatchDeclaredAction(event: React.KeyboardEvent): boolean {
     for (const item of selection) {
+      // A row offers no declared shortcut: its actions are the backend's, through the shared menu.
+      if (item.kind === "row") {
+        continue;
+      }
       const element = item.kind === "element" ? elementsById.get(item.id) : undefined;
       const type = element !== undefined ? elementTypes.get(element.type) : undefined;
       const connection = item.kind === "connection" ? model.connections.find((c) => c.id === item.id) : undefined;
@@ -2072,6 +2076,9 @@ export function DiagramCanvasCore({
           collapsed: !heading.collapsed,
         })
       }
+      rowSelected={(id) => isSelected("row", id)}
+      rowPress={(id) => select({ kind: "row", id })}
+      rowContextMenu={onItemContextMenu}
     />
   );
 
@@ -2477,11 +2484,20 @@ function LibraryElement({
   onContextMenu,
   onDoubleClick,
   headingPress,
+  rowSelected,
+  rowPress,
+  rowContextMenu,
 }: {
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
   /** A compartment heading was activated - the request to fold or unfold it. */
   headingPress: (heading: LaidOutHeading) => void;
+  /** Whether the row with this id is the selection. */
+  rowSelected: (id: string) => boolean;
+  /** A row was pressed or activated from the keyboard - the request to select it. */
+  rowPress: (id: string) => void;
+  /** The shared menu was asked for on a row. */
+  rowContextMenu: (id: string) => (event: React.MouseEvent) => void;
   dragValue: GestureValue<ElementDragOffset>;
   connectValue: GestureValue<ConnectPreview>;
   resizeValue: GestureValue<ResizeDragPreview>;
@@ -2586,7 +2602,8 @@ function LibraryElement({
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
         {renderShape(resizing, type, bounds, { selected, dragging, connectTarget: connectHighlight === "valid" }, highlight, movedBoundary ?? undefined)}
       </ShapeErrorBoundary>
-      {type?.compartments !== undefined && declaredCompartments(type, bounds, sourceOf(resizing, groupState, bounds), headingPress)}
+      {type?.compartments !== undefined &&
+        declaredCompartments(type, bounds, sourceOf(resizing, groupState, bounds), { headingPress, rowSelected, rowPress, rowContextMenu })}
       {type?.anchors.kind === "along" && edgeStrips(type.anchors.edges, bounds, attachmentLayoutOf(resizing, type, bounds, movedBoundary ?? undefined)).map((strip) => (
         <rect
           key={`edge-${strip.edge}-${strip.region ?? "all"}`}
@@ -3101,7 +3118,17 @@ function declaredCompartments(
   type: ElementTypeDefinition,
   bounds: ConnectorBox,
   source: BindingSource,
-  headingPress: (heading: LaidOutHeading) => void,
+  {
+    headingPress,
+    rowSelected,
+    rowPress,
+    rowContextMenu,
+  }: {
+    headingPress: (heading: LaidOutHeading) => void;
+    rowSelected: (id: string) => boolean;
+    rowPress: (id: string) => void;
+    rowContextMenu: (id: string) => (event: React.MouseEvent) => void;
+  },
 ): ReactNode {
   const laidOut = layoutCompartments(type.compartments, source, bounds);
   return (
@@ -3141,12 +3168,43 @@ function declaredCompartments(
           </text>
         </g>
       ))}
-      {laidOut.rows.map((row, index) => (
+      {laidOut.rows.map((row, index) => {
+        // A row the model gave no id cannot be named, so it is drawn and takes no press: the
+        // press falls through to the element it is in, which is the nearest thing with an identity.
+        const id = row.id;
+        const selected = id !== undefined && rowSelected(id);
+        const wiring =
+          id === undefined
+            ? {}
+            : {
+                role: "option",
+                tabIndex: 0,
+                "aria-selected": selected,
+                onPointerDown: (event: React.PointerEvent) => event.stopPropagation(),
+                onDoubleClick: (event: React.MouseEvent) => event.stopPropagation(),
+                onClick: (event: React.MouseEvent) => {
+                  event.stopPropagation();
+                  rowPress(id);
+                },
+                onKeyDown: (event: React.KeyboardEvent) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    rowPress(id);
+                  }
+                },
+                onContextMenu: (event: React.MouseEvent) => {
+                  event.stopPropagation();
+                  rowContextMenu(id)(event);
+                },
+              };
+        return (
         <g
           key={`row-${row.compartmentId}-${row.id ?? `at-${index}`}`}
-          className="library-compartment-row"
+          className={["library-compartment-row", selected ? "canvas-selected library-compartment-row-selected" : ""].filter(Boolean).join(" ")}
           data-compartment={row.compartmentId}
           data-row-id={row.id}
+          {...wiring}
         >
           <rect className="library-compartment-row-hit" x={row.box.x} y={row.box.y} width={row.box.width} height={row.box.height} />
           <text
@@ -3159,7 +3217,8 @@ function declaredCompartments(
             {row.text}
           </text>
         </g>
-      ))}
+        );
+      })}
     </>
   );
 }

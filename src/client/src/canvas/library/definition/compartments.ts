@@ -198,6 +198,17 @@ export function compartmentsHeight(
   return laidOut.headings.length === 0 ? null : laidOut.bottom;
 }
 
+/**
+ * Whether one of an element's compartments holds a row with this id - folded away or not, since
+ * a row that is not drawn is still in the model and may still be what is selected.
+ */
+export function hasRow(declarations: readonly CompartmentDeclaration[] | undefined, source: BindingSource, id: string): boolean {
+  return (declarations ?? []).some((declaration) => {
+    const value = valueAtPath(declaration.rows, source);
+    return Array.isArray(value) && value.some((row) => textAt(row, declaration.rowId) === id);
+  });
+}
+
 interface ResolvedGroup {
   key: string;
   title: string;

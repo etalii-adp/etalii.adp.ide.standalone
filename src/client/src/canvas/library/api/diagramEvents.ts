@@ -174,7 +174,12 @@ export interface ConnectionAdjusted {
 export type DiagramSelection = readonly SelectedItem[];
 
 export interface SelectedItem {
-  kind: "element" | "connection";
+  /**
+   * `row` is a row of a compartment: one of the model's own child entries, drawn inside an
+   * element and selected by its own id. It is neither moved nor connected, so the gestures that
+   * act on the selection - a declared shortcut, Delete - pass it by.
+   */
+  kind: "element" | "connection" | "row";
   id: string;
 }
 

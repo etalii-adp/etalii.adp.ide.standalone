@@ -3,7 +3,8 @@ import { fireEvent, render } from "@testing-library/react";
 import { DiagramCanvasCore } from "./DiagramCanvas";
 import type { DiagramDefinition } from "./definition/diagramDefinition";
 import type { DiagramModel } from "./api/diagramModel";
-import type { LibraryEventHandlers } from "./api/diagramEvents";
+import type { DiagramSelection, LibraryEventHandlers } from "./api/diagramEvents";
+import { resolveSelection } from "./librarySelection";
 import { DiagramViewProvider } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "@client/shell/panels/DiagramToolboxContext";
 import { pointer } from "@client/canvas/library/testing/canvasHarness";
@@ -80,11 +81,11 @@ function modelOf(collapsed: readonly string[]): DiagramModel {
   };
 }
 
-function canvasOf(collapsed: readonly string[], events: LibraryEventHandlers = {}) {
+function canvasOf(collapsed: readonly string[], events: LibraryEventHandlers = {}, selection: DiagramSelection = []) {
   return render(
     <DiagramViewProvider>
       <DiagramToolboxProvider>
-        <DiagramCanvasCore definition={definition} model={modelOf(collapsed)} events={events} selection={[]} />
+        <DiagramCanvasCore definition={definition} model={modelOf(collapsed)} events={events} selection={selection} />
       </DiagramToolboxProvider>
     </DiagramViewProvider>,
   );
@@ -146,5 +147,68 @@ describe("lists inside an element", () => {
     fireEvent.keyDown(target, { key: "Enter" });
 
     expect(onCompartmentToggled).toHaveBeenCalledWith(expect.objectContaining({ key: "pending", collapsed: false }));
+  });
+});
+
+/**
+ * A row is a thing with an id, so it can be the selection (agent-activity-diagram Requirement
+ * 9.4): the property grid and the shared menu then serve it as they serve an element, through
+ * the same selection and nothing of their own.
+ */
+describe("a row inside an element", () => {
+  const row = (container: HTMLElement, id: string) => container.querySelector(`[data-element-id="s1"] [data-row-id="${id}"]`);
+
+  it("is selected by a press, which does not reach the element it is in", () => {
+    // The planted defect this was seen to fail against: the row's own press wiring removed, so
+    // the press lands on the element and it is the element that is selected.
+    const onSelectionChanged = vi.fn();
+    const { container } = canvasOf([], { onSelectionChanged });
+    const target = row(container, "t2")!;
+
+    fireEvent(target, pointer("pointerdown", { button: 0, clientX: 130, clientY: 210 }));
+    fireEvent(target, pointer("pointerup", { clientX: 130, clientY: 210 }));
+    fireEvent.click(target);
+
+    expect(onSelectionChanged).toHaveBeenCalledTimes(1);
+    expect(onSelectionChanged).toHaveBeenCalledWith({ kind: "selection-changed", selection: [{ kind: "row", id: "t2" }] });
+  });
+
+  it("shows as selected when the selection names it, and the element does not", () => {
+    const { container } = canvasOf([], {}, [{ kind: "row", id: "t2" }]);
+
+    expect(row(container, "t2")?.getAttribute("aria-selected")).toBe("true");
+    expect(row(container, "t2")?.classList.contains("canvas-selected")).toBe(true);
+    expect(row(container, "t1")?.getAttribute("aria-selected")).toBe("false");
+    expect(container.querySelector('[data-element-id="s1"]')?.classList.contains("canvas-selected")).toBe(false);
+  });
+
+  it("is reached and selected from the keyboard", () => {
+    const onSelectionChanged = vi.fn();
+    const { container } = canvasOf([], { onSelectionChanged });
+    const target = row(container, "t1")!;
+
+    expect(target.getAttribute("tabindex")).toBe("0");
+    fireEvent.keyDown(target, { key: "Enter" });
+
+    expect(onSelectionChanged).toHaveBeenCalledWith({ kind: "selection-changed", selection: [{ kind: "row", id: "t1" }] });
+  });
+
+  it("is not deleted as a connection would be when Delete is pressed", () => {
+    const onConnectionDeleted = vi.fn();
+    const onElementDeleted = vi.fn();
+    const { container } = canvasOf([], { onConnectionDeleted, onElementDeleted }, [{ kind: "row", id: "t2" }]);
+
+    fireEvent.keyDown(container.querySelector("svg")!, { key: "Delete" });
+
+    expect(onConnectionDeleted).not.toHaveBeenCalled();
+    expect(onElementDeleted).not.toHaveBeenCalled();
+  });
+
+  it("resolves from a pushed selection by its id, folded away or not, and after an element or a connection", () => {
+    expect(resolveSelection("t2", modelOf([]), definition)).toEqual([{ kind: "row", id: "t2" }]);
+    // Folded away is not gone: the row is still in the model and may still be what is selected.
+    expect(resolveSelection("t3", modelOf(["pending"]), definition)).toEqual([{ kind: "row", id: "t3" }]);
+    expect(resolveSelection("s1", modelOf([]), definition)).toEqual([{ kind: "element", id: "s1" }]);
+    expect(resolveSelection("nothing", modelOf([]), definition)).toEqual([]);
   });
 });

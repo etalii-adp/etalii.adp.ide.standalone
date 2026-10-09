@@ -73,6 +73,7 @@ const RULED_BUT_NOT_DRAWN_AT_REST: readonly Listed[] = [
       "library-compartment-heading-text",
       "library-compartment-row",
       "library-compartment-row-hit",
+      "library-compartment-row-selected",
       "library-compartment-row-text",
     ],
   },
