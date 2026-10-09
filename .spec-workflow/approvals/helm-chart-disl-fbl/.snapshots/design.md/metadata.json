@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/helm-chart-disl-fbl/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-09T10:15:09.640Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791540909143_d7g29wlyf",
+      "approvalTitle": "design.md: converting the Helm chart diagram (proposes an amendment to requirement 5.2)"
+    }
+  ]
+}
