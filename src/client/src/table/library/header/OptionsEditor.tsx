@@ -3,6 +3,9 @@ import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn, TableOption } from "../api/tableModel";
 import { OPTION_COLORS, OptionTag } from "../cells/OptionTag";
 
+/** The setting a column says under how many rows have one of its options. */
+export const USES_PREFIX = "uses:";
+
 /** How near the window's left edge the panel may stand, in pixels. */
 const PANEL_MARGIN = 8;
 
@@ -110,6 +113,14 @@ function OptionLine({ column, option, index, count, raise }: OptionLineProps) {
 
   const move = (to: number) => raise({ kind: "moveOption", columnId: column.id, targetId: option.id, index: to });
 
+  // How many rows have the option, as the column says it; nothing said is none.
+  const uses = Number(column.settings[`${USES_PREFIX}${option.id}`] ?? "0") || 0;
+  const [asking, setAsking] = useState(false);
+  const remove = () => {
+    setAsking(false);
+    raise({ kind: "deleteOption", columnId: column.id, targetId: option.id });
+  };
+
   return (
     <li className="table-options-line" data-option-id={option.id}>
       <OptionTag label={option.name} color={option.color} />
@@ -143,9 +154,21 @@ function OptionLine({ column, option, index, count, raise }: OptionLineProps) {
       <button type="button" className="table-options-button" aria-label={`Move ${option.name} down`} disabled={index === count - 1} onClick={() => move(index + 1)}>
         <span className="mdi mdi-chevron-down" aria-hidden="true" />
       </button>
-      <button type="button" className="table-options-button" aria-label={`Delete ${option.name}`} onClick={() => raise({ kind: "deleteOption", columnId: column.id, targetId: option.id })}>
+      <button type="button" className="table-options-button" aria-label={`Delete ${option.name}`} onClick={() => (uses > 0 ? setAsking(true) : remove())}>
         <span className="mdi mdi-trash-can-outline" aria-hidden="true" />
       </button>
+      {asking && (
+        // An option some rows have is not deleted on one press: its author is told how many first.
+        <div className="table-options-ask" role="alertdialog" aria-label={`Delete ${option.name}?`}>
+          <span>{uses === 1 ? "1 row has this option. Deleting it clears that value." : `${uses} rows have this option. Deleting it clears those values.`}</span>
+          <button type="button" onClick={remove}>
+            Delete
+          </button>
+          <button type="button" onClick={() => setAsking(false)}>
+            Keep
+          </button>
+        </div>
+      )}
     </li>
   );
 }
