@@ -87,7 +87,7 @@ internal static partial class KnowledgeEdits
             "addColumn" => AddColumn(table, view, gesture, newId),
             "renameColumn" => RenameColumn(table, gesture),
             "duplicateColumn" => DuplicateColumn(table, view, gesture, newId),
-            "deleteColumn" => DeleteColumn(table, gesture),
+            "deleteColumn" => DeleteColumn(table, gesture, files),
             "setColumnType" => ChangeType(table, gesture, newId),
 
             "addRelation" => AddRelation(table, view, gesture, newId, files),
@@ -454,7 +454,9 @@ internal static partial class KnowledgeEdits
         return new KnowledgeEdit(changes);
     }
 
-    private static KnowledgeEdit DeleteColumn(KnowledgeTable table, TableGesture gesture)
+    public const string OtherSideChoice = "This relation has another side: choose whether that is deleted too or kept as a one-way relation.";
+
+    private static KnowledgeEdit DeleteColumn(KnowledgeTable table, TableGesture gesture, KnowledgeSurroundings? files)
     {
         if (table.Properties.FirstOrDefault(candidate => candidate.Id == gesture.ColumnId) is not { } property)
         {
@@ -477,7 +479,47 @@ internal static partial class KnowledgeEdits
         }
 
         changes.Add(new ModelChange.Remove(property.Id));
-        return new KnowledgeEdit(changes);
+
+        // One side of a two-way relation: what becomes of the other side is its author's choice, never a guess.
+        var self = property.TargetFile is KnowledgeRelations.Self or "";
+        var target = self ? null : files?.TargetOf(property);
+        var related = self ? table : target?.Table;
+        if (property is not { ValueType: "relation", Counterpart.Length: > 0 } || related?.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart) is not { } other)
+        {
+            return new KnowledgeEdit(changes);
+        }
+
+        List<ModelChange> theirs = [];
+        switch (gesture.Settings.GetValueOrDefault("otherSide"))
+        {
+            case "delete":
+                theirs.Add(new ModelChange.Remove(other.Id));
+                break;
+            case "keep" when !other.IsComputed:
+                // It holds the values already: it only stops naming the side that goes.
+                theirs.Add(Set(other.Id, ("counterpart", null)));
+                break;
+            case "keep":
+                // It showed the values of the side that goes: they become its own, row by row.
+                theirs.Add(Set(other.Id, ("counterpart", null), ("computed", null)));
+                foreach (var row in related.Rows)
+                {
+                    var naming = table.Rows
+                        .Where(candidate => candidate.Cells.Any(cell => cell.PropertyId == property.Id && cell.Key == "rows" && cell.Values.Contains(row.Id)))
+                        .Select(candidate => candidate.Id)
+                        .ToList();
+                    if (naming.Count > 0)
+                    {
+                        theirs.Add(new ModelChange.Add("Cell", null, Attributes(("property", other.Id)), row.Id));
+                        theirs.AddRange(naming.Select(value => (ModelChange)new ModelChange.Add("CellItem", null, Attributes(("row", value)), CellId(row.Id, other.Id))));
+                    }
+                }
+                break;
+            default:
+                return Refused(OtherSideChoice);
+        }
+
+        return self ? new KnowledgeEdit([.. theirs, .. changes]) : new KnowledgeEdit(changes, Others: [new KnowledgeOtherFile(target!.Path, theirs)]);
     }
 
     // ---- relations ----

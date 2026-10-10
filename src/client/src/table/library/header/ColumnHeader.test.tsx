@@ -201,6 +201,32 @@ describe("columnMenuGroups", () => {
     expect(raise).toHaveBeenLastCalledWith({ kind: "setColumnWrap", columnId: "p2", settings: { wrap: "false" } });
   });
 
+  it("asks what becomes of the other side before deleting one side of a two-way relation", () => {
+    // Arrange: a column that names its other side.
+    const asked = vi.fn();
+    const groups = columnMenuGroups(column("p2", "Near", "text", { settings: { otherSide: "Cities nearby" } }), definition, { raise: asked, startRename });
+    const remove = groups.flat().find((candidate) => candidate.id === "delete")!;
+
+    // Assert: deleting is a choice of two, and not something one press does.
+    expect(remove.onSelect).toBeUndefined();
+    const choices = remove.items!.flat();
+    expect(choices.map((choice) => choice.label)).toEqual(["Delete 'Cities nearby' too", "Keep 'Cities nearby' as a one-way relation"]);
+
+    // Act.
+    choices[0].onSelect!();
+    choices[1].onSelect!();
+
+    // Assert.
+    expect(asked).toHaveBeenNthCalledWith(1, { kind: "deleteColumn", columnId: "p2", settings: { otherSide: "delete" } });
+    expect(asked).toHaveBeenNthCalledWith(2, { kind: "deleteColumn", columnId: "p2", settings: { otherSide: "keep" } });
+
+    // A column with no other side is deleted as before.
+    const plain = columnMenuGroups(column("p2", "Population", "number"), definition, { raise: asked, startRename }).flat().find((candidate) => candidate.id === "delete")!;
+    expect(plain.items).toBeUndefined();
+    plain.onSelect!();
+    expect(asked).toHaveBeenLastCalledWith({ kind: "deleteColumn", columnId: "p2" });
+  });
+
   it("separates its entries into the four groups, leaving out a group with nothing offered", () => {
     expect(columnMenuGroups(column("p2", "Population", "number"), definition, { raise, startRename }).map((group) => group.length)).toEqual([2, 4, 2, 4]);
     expect(columnMenuGroups(column("p2", "Population", "number"), { ...definition, columnActions: ["filter", "delete"] }, { raise, startRename }).map((group) => group.map((item) => item.id))).toEqual([["filter"], ["delete"]]);

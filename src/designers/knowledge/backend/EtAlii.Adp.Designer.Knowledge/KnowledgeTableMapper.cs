@@ -60,11 +60,11 @@ internal static class KnowledgeTableMapper
             // A view naming a property that is gone still opens, without that setting.
             if (byId.Remove(column.PropertyId, out var property))
             {
-                columns.Add(Column(property, column, targetOf, uses));
+                columns.Add(Column(table, property, column, targetOf, uses));
             }
         }
 
-        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(property, null, targetOf, uses)));
+        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(table, property, null, targetOf, uses)));
         return columns;
     }
 
@@ -111,7 +111,7 @@ internal static class KnowledgeTableMapper
             finding.Location is { } at ? $"{finding.Message} (line {at.Line})" : finding.Message)),
     ];
 
-    private static TableColumn Column(KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses)
+    private static TableColumn Column(KnowledgeTable table, KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses)
     {
         var settings = new Dictionary<string, string>(StringComparer.Ordinal);
         if (property.TargetFile.Length > 0)
@@ -140,6 +140,13 @@ internal static class KnowledgeTableMapper
             if (property.IsParent)
             {
                 settings["parent"] = "true";
+            }
+
+            // The other side of a two-way relation, by its name: deleting this side asks what becomes of it.
+            var related = property.TargetFile is KnowledgeRelations.Self or "" ? table : targetOf?.Invoke(property)?.Table;
+            if (property.Counterpart.Length > 0 && related?.Properties.FirstOrDefault(candidate => candidate.Id == property.Counterpart) is { } other)
+            {
+                settings["otherSide"] = other.Name;
             }
 
             // What a relation offers to choose from is the rows of its target, by their titles.

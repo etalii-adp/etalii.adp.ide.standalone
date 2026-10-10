@@ -229,6 +229,123 @@ public sealed class KnowledgeRelationsTests : IDisposable
     }
 
     [Fact]
+    public async Task DeletingOneSideOfATwoWayRelation_AsksWhatBecomesOfTheOtherSide()
+    {
+        // Arrange: a two-way relation between the two files.
+        await using var table = Open();
+        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
+        var near = Property(table, "Near").Id;
+        (byte[] ours, byte[] theirs) = (table.Bytes(), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+
+        // Act: deleted without saying.
+        (_, string answer) = table.Begin(new TableGesture("deleteColumn", ColumnId: near));
+
+        // Assert: asked, nothing written, and the column names its other side so that the question can be put.
+        Assert.Equal(KnowledgeEdits.OtherSideChoice, answer);
+        Assert.Equal(ours, table.Bytes());
+        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+        Assert.Equal("Cities nearby", table.Session.Baseline().Columns.Single(column => column.Id == near).Settings["otherSide"]);
+        Assert.DoesNotContain("otherSide", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings.Keys);
+    }
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task DeletingOneSide_AndTheOtherSideToo_TakesBothOutInOneStep(string extension)
+    {
+        // Arrange.
+        await using var table = Open(extension);
+        (byte[] ours, byte[] theirs) = (table.Bytes(), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
+        var near = Property(table, "Near").Id;
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["nh", "zh"]));
+        (byte[] oursWith, byte[] theirsWith) = (table.Bytes(), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+
+        // Act.
+        await table.Edit(new TableGesture("deleteColumn", ColumnId: near, Settings: Settings(("otherSide", "delete"))));
+
+        // Assert: both files as they were before the relation.
+        Assert.Equal(ours, table.Bytes());
+        Assert.Equal(theirs, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+
+        // Act: one undo.
+        var undone = await table.History.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert: both sides are back, values and all.
+        Assert.True(undone.IsSuccess);
+        Assert.Equal(oursWith, table.Bytes());
+        Assert.Equal(theirsWith, await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
+    }
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task DeletingTheSideThatHoldsTheValues_AndKeepingTheOther_GivesTheOtherThoseValues(string extension)
+    {
+        // Arrange: Amsterdam is near two provinces, Antwerp near one of them.
+        await using var table = Open(extension);
+        await table.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
+        var near = Property(table, "Near").Id;
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["nh", "zh"]));
+        await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: near, Values: ["zh"]));
+
+        // Act.
+        await table.Edit(new TableGesture("deleteColumn", ColumnId: near, Settings: Settings(("otherSide", "keep"))));
+
+        // Assert: this side is gone; the other is a relation of its own, holding what it showed.
+        Assert.DoesNotContain(table.OnDisk().Properties, property => property.Id == near);
+        var provinces = KnowledgeDocumentStore.Read(Provinces).Body!.Table;
+        var nearby = provinces.Properties.Single(property => property.Name == "Cities nearby");
+        Assert.Equal(("", false, "relation", "cities" + extension), (nearby.Counterpart, nearby.IsComputed, nearby.ValueType, nearby.TargetFile));
+        IReadOnlyList<string>? Held(string rowId) => provinces.Rows.Single(row => row.Id == rowId).Cells.FirstOrDefault(cell => cell.PropertyId == nearby.Id)?.Values;
+        Assert.Equal(["r1"], Held("nh"));
+        Assert.Equal(["r1", "r2"], Held("zh"));
+        Assert.Null(Held("an"));
+    }
+
+    [Fact]
+    public async Task DeletingTheSideThatShowsTheValues_AndKeepingTheOther_LeavesTheOtherItsValues()
+    {
+        // Arrange: both tables open, and a value on the side that holds them.
+        var documents = new KnowledgeDocuments();
+        await using var cities = Open(documents: documents);
+        await cities.Edit(new TableGesture("addRelation", Values: ["Near"], Settings: Settings(("target", KnowledgeFiles.Related), ("counterpart", "Cities nearby"))));
+        var near = Property(cities, "Near").Id;
+        await cities.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: near, Values: ["nh"]));
+        await using var provinces = new EditingTable(Provinces, documents: documents);
+        var nearby = provinces.Session.Baseline().Columns.Single(column => column.Name == "Cities nearby");
+        Assert.Equal("Near", nearby.Settings["otherSide"]);
+
+        // Act: the computed side is deleted from its own table.
+        await provinces.Edit(new TableGesture("deleteColumn", ColumnId: nearby.Id, Settings: Settings(("otherSide", "keep"))));
+
+        // Assert: the side that holds the values is a one-way relation, with its values.
+        Assert.DoesNotContain(provinces.OnDisk().Properties, property => property.Id == nearby.Id);
+        var kept = KnowledgeDocumentStore.Read(cities.Path).Body!.Table;
+        Assert.Equal(("", false), (kept.Properties.Single(property => property.Id == near).Counterpart, kept.Properties.Single(property => property.Id == near).IsComputed));
+        Assert.Equal(["nh"], kept.Rows.Single(row => row.Id == "r1").Cells.Single(cell => cell.PropertyId == near).Values);
+    }
+
+    [Fact]
+    public async Task DeletingOneSideOfARelationToTheTableItself_KeepsTheOtherInTheSameFile()
+    {
+        // Arrange.
+        await using var table = Open();
+        await table.Edit(new TableGesture("addRelation", Values: ["Rival of"], Settings: Settings(("target", KnowledgeRelations.Self), ("counterpart", "Rivalled by"))));
+        (string rival, string rivalled) = (Property(table, "Rival of").Id, Property(table, "Rivalled by").Id);
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: rival, Values: ["r2"]));
+
+        // Act.
+        await table.Edit(new TableGesture("deleteColumn", ColumnId: rival, Settings: Settings(("otherSide", "keep"))));
+
+        // Assert: what the other side showed is now what it holds, and the table shows it as before.
+        var kept = table.OnDisk();
+        Assert.DoesNotContain(kept.Properties, property => property.Id == rival);
+        Assert.Equal(("", false), (kept.Properties.Single(property => property.Id == rivalled).Counterpart, kept.Properties.Single(property => property.Id == rivalled).IsComputed));
+        Assert.Equal(["r1"], kept.Rows.Single(row => row.Id == "r2").Cells.Single(cell => cell.PropertyId == rivalled).Values);
+        Assert.Equal(["Amsterdam"], Cell(table.Lines(), "r2", rivalled)?.Labels);
+        Assert.DoesNotContain("otherSide", table.Session.Baseline().Columns.Single(column => column.Id == rivalled).Settings.Keys);
+    }
+
+    [Fact]
     public async Task WhenTheOtherFileRefuses_NeitherFileIsWritten()
     {
         // Arrange: the edit is accepted and shown, and waits to be written.

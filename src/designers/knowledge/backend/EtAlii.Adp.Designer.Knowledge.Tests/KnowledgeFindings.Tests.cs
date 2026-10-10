@@ -165,7 +165,7 @@ public sealed class KnowledgeFindingsTests : IDisposable
         // Arrange: the shipped example, with a key of the file and a key of its first property that no rule reads.
         var path = KnowledgeFiles.CopyExample("cities.json", _root);
         var text = File.ReadAllText(path);
-        Assert.Empty(FindingsOf(path).Where(finding => finding.Code == KnowledgeValidator.UnknownKey));
+        Assert.DoesNotContain(FindingsOf(path), finding => finding.Code == KnowledgeValidator.UnknownKey);
         File.WriteAllText(path, text
             .Replace("\"name\": \"Cities\",", "\"name\": \"Cities\", \"owner\": \"Peter\",", StringComparison.Ordinal)
             .Replace("{ \"id\": \"p1\",", "{ \"id\": \"p1\", \"unit\": \"none\",", StringComparison.Ordinal));
@@ -185,7 +185,7 @@ public sealed class KnowledgeFindingsTests : IDisposable
         // Arrange: the shipped example, with an attribute of the file, an attribute of its first property and an element of the file that no rule reads.
         var path = KnowledgeFiles.CopyExample("cities.xml", _root);
         var text = File.ReadAllText(path);
-        Assert.Empty(FindingsOf(path).Where(finding => finding.Code == KnowledgeValidator.UnknownKey));
+        Assert.DoesNotContain(FindingsOf(path), finding => finding.Code == KnowledgeValidator.UnknownKey);
         File.WriteAllText(path, text
             .Replace(" name=\"Cities\"", " name=\"Cities\" owner=\"Peter\"", StringComparison.Ordinal)
             .Replace("<property id=\"p1\"", "<property id=\"p1\" unit=\"none\"", StringComparison.Ordinal)
