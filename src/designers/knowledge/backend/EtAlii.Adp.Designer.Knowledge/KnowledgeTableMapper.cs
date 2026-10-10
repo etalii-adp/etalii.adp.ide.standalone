@@ -100,7 +100,8 @@ internal static class KnowledgeTableMapper
     public static IReadOnlyList<TableFinding> Findings(FblModel model) =>
     [
         .. model.Findings.Select(finding => new TableFinding(
-            finding.Code,
+            // A key the bindings do not read is the designer's own finding: kept, and said.
+            finding.Code == FindingCodes.UnboundKey ? KnowledgeValidator.UnknownKey : finding.Code,
             finding.Severity switch
             {
                 FindingSeverity.Error => TableFindingSeverity.Error,

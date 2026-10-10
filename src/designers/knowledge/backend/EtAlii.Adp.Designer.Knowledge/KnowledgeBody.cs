@@ -109,6 +109,7 @@ internal sealed class KnowledgeBody
             FileName = Path.GetFileName(fileName),
             DeriveId = KnowledgeDefinition.DeriveId,
             AttributeType = KnowledgeDefinition.AttributeType,
+            ReportUnboundKeys = true,
         });
         var model = body.Model;
         var unreadable = "";

@@ -130,6 +130,78 @@ public sealed class KnowledgeFindingsTests : IDisposable
     }
 
     [Fact]
+    public async Task AKeyTheDesignerDoesNotKnow_IsReported_WhereverItStands_AndKept()
+    {
+        // Arrange: a key of the file, of a property, of an option, of a view, of a row and of a cell that no rule reads.
+        var path = Write(Sound
+            .Replace("name: Cities\n", "name: Cities\nowner: Peter\n", StringComparison.Ordinal)
+            .Replace("    name: People\n", "    name: People\n    unit: people\n", StringComparison.Ordinal)
+            .Replace("        name: Large\n", "        name: Large\n        icon: star\n", StringComparison.Ordinal)
+            .Replace("    name: All\n", "    name: All\n    density: compact\n", StringComparison.Ordinal)
+            .Replace("  - id: r2\n", "  - id: r2\n    weight: 3\n", StringComparison.Ordinal)
+            .Replace("        text: Antwerp\n", "        text: Antwerp\n        note: a port\n", StringComparison.Ordinal));
+
+        // Act.
+        var unknown = FindingsOf(path).Where(finding => finding.Code == KnowledgeValidator.UnknownKey).ToList();
+
+        // Assert: each is said once, as information, by its name and its line.
+        string[] keys = ["owner", "unit", "icon", "density", "weight", "note"];
+        Assert.Equal(keys.Length, unknown.Count);
+        Assert.All(keys, key => Assert.Single(unknown, finding => finding.Message.Contains($"'{key}'", StringComparison.Ordinal) && finding.Message.Contains("(line ", StringComparison.Ordinal)));
+        Assert.All(unknown, finding => Assert.Equal(TableFindingSeverity.Info, finding.Severity));
+
+        // Act: an edit beside them.
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        await using var table = new EditingTable(path);
+        await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: "p1", Values: ["Antwerpen"]));
+
+        // Assert: one line changed, and every key nobody reads is where it was.
+        Assert.Equal(before.Replace("text: Antwerp\r\n", "text: Antwerpen\r\n", StringComparison.Ordinal), await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public void AKeyTheDesignerDoesNotKnow_IsReported_InAJsonFileToo()
+    {
+        // Arrange: the shipped example, with a key of the file and a key of its first property that no rule reads.
+        var path = KnowledgeFiles.CopyExample("cities.json", _root);
+        var text = File.ReadAllText(path);
+        Assert.Empty(FindingsOf(path).Where(finding => finding.Code == KnowledgeValidator.UnknownKey));
+        File.WriteAllText(path, text
+            .Replace("\"name\": \"Cities\",", "\"name\": \"Cities\", \"owner\": \"Peter\",", StringComparison.Ordinal)
+            .Replace("{ \"id\": \"p1\",", "{ \"id\": \"p1\", \"unit\": \"none\",", StringComparison.Ordinal));
+
+        // Act.
+        var unknown = FindingsOf(path).Where(finding => finding.Code == KnowledgeValidator.UnknownKey).ToList();
+
+        // Assert.
+        Assert.Equal(2, unknown.Count);
+        Assert.Single(unknown, finding => finding.Message.Contains("'owner'", StringComparison.Ordinal));
+        Assert.Single(unknown, finding => finding.Message.Contains("'unit'", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AnAttributeOrElementTheDesignerDoesNotKnow_IsReported_InAnXmlFile()
+    {
+        // Arrange: the shipped example, with an attribute of the file, an attribute of its first property and an element of the file that no rule reads.
+        var path = KnowledgeFiles.CopyExample("cities.xml", _root);
+        var text = File.ReadAllText(path);
+        Assert.Empty(FindingsOf(path).Where(finding => finding.Code == KnowledgeValidator.UnknownKey));
+        File.WriteAllText(path, text
+            .Replace(" name=\"Cities\"", " name=\"Cities\" owner=\"Peter\"", StringComparison.Ordinal)
+            .Replace("<property id=\"p1\"", "<property id=\"p1\" unit=\"none\"", StringComparison.Ordinal)
+            .Replace("  <properties>", "  <notes>Kept by hand.</notes>\r\n  <properties>", StringComparison.Ordinal));
+
+        // Act.
+        var unknown = FindingsOf(path).Where(finding => finding.Code == KnowledgeValidator.UnknownKey).ToList();
+
+        // Assert.
+        Assert.Equal(3, unknown.Count);
+        Assert.Single(unknown, finding => finding.Message.Contains("attribute 'owner'", StringComparison.Ordinal));
+        Assert.Single(unknown, finding => finding.Message.Contains("attribute 'unit'", StringComparison.Ordinal));
+        Assert.Single(unknown, finding => finding.Message.Contains("element 'notes'", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void ATableWithoutAView_IsShownAsIfItHadOne_AndSaysSo()
     {
         // Arrange.
