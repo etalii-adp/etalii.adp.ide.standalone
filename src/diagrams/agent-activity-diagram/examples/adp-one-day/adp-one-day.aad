@@ -3,11 +3,8 @@ agent-activity-diagram: 1
 # Agents keep a file like this current: each changes its own entries and leaves the rest alone.
 projects:
   - id: p-standalone
-    name: etalii.adp.ide.standalone
-    link: https://github.com/etalii-adp/etalii.adp.ide.standalone
-  - id: p-adp
     name: etalii.adp
-    link: https://github.com/etalii-adp/etalii.adp
+    link: https://github.com/etalii-adp/etalii.adp.ide.standalone
 specifications:
   - id: s-knowledge
     project: p-standalone
@@ -70,7 +67,7 @@ specifications:
     name: FBL implementation
     status: archived
   - id: s-definitions
-    project: p-adp
+    project: p-standalone
     name: Agent activity diagram definitions
     link: https://github.com/etalii-adp/etalii.adp/tree/develop/specs/014-agent-activity-diagram
     status: progressing
@@ -150,9 +147,36 @@ environments:
 view:
   placements:
     - element: p-standalone
-      x: 0
-      y: 0
+      x: 49
+      y: 52
+    - element: l-activity
+      x: -123
+      y: -562
+    - element: a-upkeep
+      x: -489
+      y: 197
+    - element: e-cloud
+      x: 1220
+      y: -154
+    - element: a-definitions
+      x: 686
+      y: -109
+    - element: l-definitions
+      x: 927
+      y: -59
+    - element: s-definitions
+      x: 402
+      y: 68
+    - element: l-activity-specs
+      x: -528
+      y: -609
   groups:
     - element: s-activity
+      group: finished
+      collapsed: false
+    - element: s-knowledge
+      group: pending
+      collapsed: false
+    - element: s-definitions
       group: finished
       collapsed: false
