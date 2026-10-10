@@ -152,11 +152,8 @@ public sealed class AadBody
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
         var problems = FblDocumentLoader.Load(buffer.ToArray(), out var document);
-        if (document is null)
-        {
-            throw new InvalidOperationException($"The agent activity diagram's FBL binding does not load: {string.Join("; ", problems)}");
-        }
-
-        return document.Bindings["aad"];
+        return document is null
+            ? throw new InvalidOperationException($"The agent activity diagram's FBL binding does not load: {string.Join("; ", problems)}")
+            : document.Bindings["aad"];
     }
 }

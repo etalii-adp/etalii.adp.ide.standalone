@@ -115,7 +115,6 @@ public sealed class KnowledgeOptionsTests : IDisposable
         var before = table.Bytes();
 
         // Act.
-        string Answer(TableGesture gesture) => table.Begin(gesture).Answer;
 
         // Assert.
         Assert.Equal(KnowledgeEdits.OptionNameNeeded, Answer(Option("addOption", "p2", name: "  ")));
@@ -126,5 +125,8 @@ public sealed class KnowledgeOptionsTests : IDisposable
         Assert.Equal("That option is no longer one of this property's.", Answer(Option("renameOption", "p2", "o3", "Harbour")));
         Assert.Equal(before, table.Bytes());
         Assert.False(table.History.CanUndo);
+        return;
+
+        string Answer(TableGesture gesture) => table.Begin(gesture).Answer;
     }
 }

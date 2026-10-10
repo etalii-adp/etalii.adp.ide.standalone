@@ -521,8 +521,7 @@ public class ProjectValidatorTests : IDisposable
 
     private static readonly DiagramOrigin Sheet = new("fixture", "sheet");
 
-    private static readonly Designer.DesignerDefinition SheetDefinition =
-        new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
+    private static readonly DesignerDefinition SheetDefinition = new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
     private static ProjectValidator SubjectWithDesigner(ProjectValidatorTestValidator? validator)
     {
@@ -530,7 +529,7 @@ public class ProjectValidatorTests : IDisposable
         return new ProjectValidator(
             new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition)),
             validators,
-            designerRouter: new DesignerFileRouter(new Designer.DesignerDefinitionCatalog { All = [SheetDefinition] }));
+            designerRouter: new DesignerFileRouter(new DesignerDefinitionCatalog { All = [SheetDefinition] }));
     }
 
     private void CreateSheet(string baseName, string body)

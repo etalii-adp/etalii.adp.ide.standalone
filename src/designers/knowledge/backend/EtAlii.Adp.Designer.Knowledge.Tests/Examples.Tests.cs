@@ -126,7 +126,6 @@ public sealed class ExamplesTests : IDisposable
 
     private static TableGesture Gesture(string edit)
     {
-        static Dictionary<string, string> Settings(string name, string value) => new() { [name] = value };
         return edit switch
         {
             "setCell" => new TableGesture("setCell", RowId: "r2", ColumnId: "p3", Values: ["529247"]),
@@ -155,6 +154,7 @@ public sealed class ExamplesTests : IDisposable
             "toggleGroup" => new TableGesture("toggleGroup", ViewId: "v1", TargetId: "o2", Settings: Settings("collapsed", "true")),
             _ => throw new InvalidOperationException($"No gesture is written for '{edit}'."),
         };
+        static Dictionary<string, string> Settings(string name, string value) => new() { [name] = value };
     }
 
     [Theory]

@@ -71,11 +71,6 @@ public sealed class LargeTableTests : IDisposable
         var before = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
         var output = TestContext.Current.TestOutputHelper;
         var watch = Stopwatch.StartNew();
-        void Took(string what)
-        {
-            output?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{what}: {watch.ElapsedMilliseconds} ms"));
-            watch.Restart();
-        }
 
         // Act: opened.
         await using var table = new EditingTable(path, TimeSpan.FromMinutes(5));
@@ -97,15 +92,6 @@ public sealed class LargeTableTests : IDisposable
         // Act: a window in the middle.
         table.Session.SetWindow(5000, Window);
         Took("a window of the plain view");
-
-        // Assert.
-        TableRowsChanged LastRows()
-        {
-            lock (pushed)
-            {
-                return pushed.OfType<TableRowsChanged>().Last();
-            }
-        }
 
         Assert.Equal(Window, LastRows().Rows.Count);
         Assert.Equal("r5000", LastRows().Rows[0].Id);
@@ -162,6 +148,22 @@ public sealed class LargeTableTests : IDisposable
             var windows = pushed.OfType<TableRowsChanged>().ToList();
             Assert.True(windows.Count >= 6, $"Only {windows.Count} windows were pushed.");
             Assert.All(windows, window => Assert.InRange(window.Rows.Count, 1, Window));
+        }
+
+        return;
+
+        TableRowsChanged LastRows()
+        {
+            lock (pushed)
+            {
+                return pushed.OfType<TableRowsChanged>().Last();
+            }
+        }
+
+        void Took(string what)
+        {
+            output?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{what}: {watch.ElapsedMilliseconds} ms"));
+            watch.Restart();
         }
     }
 }

@@ -48,8 +48,6 @@ internal static class KnowledgeValidator
         ArgumentNullException.ThrowIfNull(model);
 
         List<TableFinding> findings = [];
-        void Warn(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Warning, message, rowId, columnId));
-        void Error(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Error, message, rowId, columnId));
 
         var properties = new Dictionary<string, KnowledgeProperty>(StringComparer.Ordinal);
         foreach (var property in table.Properties)
@@ -216,6 +214,10 @@ internal static class KnowledgeValidator
         }
 
         return findings;
+
+        void Error(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Error, message, rowId, columnId));
+
+        void Warn(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Warning, message, rowId, columnId));
     }
 
     private static IEnumerable<KnowledgeCondition> Conditions(KnowledgeFilterGroup group) => group.Items.SelectMany(item => item switch

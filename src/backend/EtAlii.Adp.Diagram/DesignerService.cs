@@ -168,15 +168,6 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         Documents.Wire.ShortGuid wireStreamId = streamId;
         var changes = Channel.CreateUnbounded<TableChange>();
 
-        // MUST STAY NON-BLOCKING: a session may raise this while holding its lock.
-        void OnChanged(object? sender, TableChangedEventArgs args)
-        {
-            foreach (var change in args.Changes)
-            {
-                changes.Writer.TryWrite(change);
-            }
-        }
-
         try
         {
             await using var session = opened;
@@ -211,6 +202,17 @@ public sealed class DesignerService : Proto.DesignerService.DesignerServiceBase
         {
             connection.Forget(streamId, source);
             source.Dispose();
+        }
+
+        return;
+
+        // MUST STAY NON-BLOCKING: a session may raise this while holding its lock.
+        void OnChanged(object? sender, TableChangedEventArgs args)
+        {
+            foreach (var change in args.Changes)
+            {
+                changes.Writer.TryWrite(change);
+            }
         }
     }
 

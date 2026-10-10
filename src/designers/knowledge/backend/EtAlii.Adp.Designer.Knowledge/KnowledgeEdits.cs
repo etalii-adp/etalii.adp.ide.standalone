@@ -732,19 +732,6 @@ internal static partial class KnowledgeEdits
             ids.TryAdd(option.Name, option.Id);
         }
 
-        // The option of a name, made in this step when the property has none of it.
-        string Option(string name)
-        {
-            if (!ids.TryGetValue(name, out var id))
-            {
-                id = newId();
-                ids[name] = id;
-                changes.Add(new ModelChange.Add("Option", id, Attributes(("name", name)), property.Id));
-            }
-
-            return id;
-        }
-
         foreach (var row in table.Rows)
         {
             // Only a value written as the type the property had is converted. One kept from an
@@ -794,6 +781,19 @@ internal static partial class KnowledgeEdits
         }
 
         return new KnowledgeEdit(changes);
+
+        // The option of a name, made in this step when the property has none of it.
+        string Option(string name)
+        {
+            if (!ids.TryGetValue(name, out var id))
+            {
+                id = newId();
+                ids[name] = id;
+                changes.Add(new ModelChange.Add("Option", id, Attributes(("name", name)), property.Id));
+            }
+
+            return id;
+        }
     }
 
     // ---- a view's columns ----
@@ -808,8 +808,6 @@ internal static partial class KnowledgeEdits
             return Refused(PropertyGone);
         }
 
-        // The index is among the columns in sight; the one that will follow the moved column says where that is among all of them.
-        bool Shown(string id) => table.Properties.First(property => property.Id == id).IsTitle || (view.Columns.FirstOrDefault(column => column.PropertyId == id)?.Visible ?? true);
         var others = order.Where(id => id != gesture.ColumnId).ToList();
         var shown = others.Where(Shown).ToList();
         var to = gesture.Index >= 0 && gesture.Index < shown.Count ? others.IndexOf(shown[gesture.Index]) : others.Count;
@@ -829,6 +827,9 @@ internal static partial class KnowledgeEdits
 
         changes.AddRange(MoveTo(ColumnId(view, gesture.ColumnId), view.Id, [.. listed.Select(id => ColumnId(view, id))], Math.Min(to, listed.Count - 1)).Changes);
         return new KnowledgeEdit(changes);
+
+        // The index is among the columns in sight; the one that will follow the moved column says where that is among all of them.
+        bool Shown(string id) => table.Properties.First(property => property.Id == id).IsTitle || (view.Columns.FirstOrDefault(column => column.PropertyId == id)?.Visible ?? true);
     }
 
     private static KnowledgeEdit ResizeColumn(KnowledgeTable table, KnowledgeView view, TableGesture gesture) =>

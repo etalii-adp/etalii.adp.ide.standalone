@@ -65,11 +65,12 @@ internal sealed class EditingTable : IAsyncDisposable
     public IReadOnlyList<TableRow> Lines()
     {
         TableRowsChanged? rows = null;
-        void Keep(object? sender, TableChangedEventArgs args) => rows = args.Changes.OfType<TableRowsChanged>().LastOrDefault() ?? rows;
         Session.Changed += Keep;
         Session.SetWindow(0, int.MaxValue);
         Session.Changed -= Keep;
         return rows?.Rows ?? [];
+
+        void Keep(object? sender, TableChangedEventArgs args) => rows = args.Changes.OfType<TableRowsChanged>().LastOrDefault() ?? rows;
     }
 
     /// <summary>Makes writes wait until <see cref="Release"/>.</summary>

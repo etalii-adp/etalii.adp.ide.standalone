@@ -238,8 +238,6 @@ public sealed class KnowledgeViewTests
         var large = new KnowledgeCondition("size", "is", "large");
         var seen = new KnowledgeCondition("seen", "is-checked", "");
         var many = new KnowledgeCondition("people", "at-least", "500");
-        HashSet<string> Shown(KnowledgeFilterGroup filter) => [.. Lines(table, View(filter)).Select(line => line.Id)];
-        bool Is(KnowledgeRow row, KnowledgeCondition condition) => Means(row, condition.PropertyId, condition.Operator, condition.Value);
 
         // Act.
         var all = Shown(new KnowledgeFilterGroup(false, [large, seen]));
@@ -251,6 +249,11 @@ public sealed class KnowledgeViewTests
         Assert.All(table.Rows, row => Assert.Equal(Is(row, large) || Is(row, seen), any.Contains(row.Id)));
         Assert.All(table.Rows, row => Assert.Equal(Is(row, large) && (Is(row, seen) || Is(row, many)), nested.Contains(row.Id)));
         Assert.True(all.Count < nested.Count && nested.Count < any.Count);
+        return;
+
+        bool Is(KnowledgeRow row, KnowledgeCondition condition) => Means(row, condition.PropertyId, condition.Operator, condition.Value);
+
+        HashSet<string> Shown(KnowledgeFilterGroup filter) => [.. Lines(table, View(filter)).Select(line => line.Id)];
     }
 
     [Fact]
@@ -316,7 +319,6 @@ public sealed class KnowledgeViewTests
         // Arrange.
         var table = Table();
         var byId = table.Rows.ToDictionary(row => row.Id);
-        int Size(KnowledgeRow row) => One(row, "size", "option") is { } id ? Array.FindIndex(Sizes, option => option.Id == id) : int.MaxValue;
 
         // Act: by size - in the options' order, not by their names - and within a size by number, descending.
         var rows = Lines(table, View(sorts: [new KnowledgeSort("size", false), new KnowledgeSort("people", true)])).Select(line => byId[line.Id]).ToList();
@@ -333,6 +335,9 @@ public sealed class KnowledgeViewTests
 
         // Small, Medium, Large is the options' order; by name it would be Large, Medium, Small.
         Assert.Equal(["small", "medium", "large"], rows.Select(row => One(row, "size", "option")).OfType<string>().Distinct());
+        return;
+
+        int Size(KnowledgeRow row) => One(row, "size", "option") is { } id ? Array.FindIndex(Sizes, option => option.Id == id) : int.MaxValue;
     }
 
     [Fact]

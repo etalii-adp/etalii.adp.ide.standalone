@@ -52,7 +52,6 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         var lines = File.ReadAllLines(IoPath.Combine(KnowledgeFiles.DefinitionFolder, "knowledge.md"));
         var start = Array.FindIndex(lines, line => line.StartsWith("| From", StringComparison.Ordinal));
         Assert.True(start >= 0, "knowledge.md has no conversion table.");
-        static string[] Cells(string line) => [.. line.Trim().Trim('|').Split('|').Select(cell => cell.Trim())];
 
         var columns = Cells(lines[start])[1..];
         List<(string, string, bool)> table = [];
@@ -77,6 +76,8 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         }
 
         return table;
+
+        static string[] Cells(string line) => [.. line.Trim().Trim('|').Split('|').Select(cell => cell.Trim())];
     }
 
     /// <summary>
@@ -186,7 +187,6 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         var id = table.OnDisk().Properties[^1].Id;
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: id, Values: ["42"]));
         await table.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: id, Values: ["a great many"]));
-        KnowledgeCell Cell(string rowId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.Single(cell => cell.PropertyId == id);
 
         // Act.
         await table.Edit(new TableGesture("setColumnType", ColumnId: id, Settings: new Dictionary<string, string> { ["type"] = "number" }));
@@ -202,6 +202,9 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         // Assert: both are text again, and neither was lost on the way.
         Assert.Equal("text: 42", Show(Cell("r1")));
         Assert.Equal("text: a great many", Show(Cell("r2")));
+        return;
+
+        KnowledgeCell Cell(string rowId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.Single(cell => cell.PropertyId == id);
     }
 
     [Theory]
@@ -231,7 +234,6 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
     {
         // Arrange: r1 has the tags Port and Capital.
         await using var table = new EditingTable(KnowledgeFiles.CopyExample("cities" + extension, _root));
-        KnowledgeCell Cell(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.Single(cell => cell.PropertyId == propertyId);
 
         // Act.
         await table.Edit(new TableGesture("setColumnType", ColumnId: "p4", Settings: new Dictionary<string, string> { ["type"] = "text" }));
@@ -247,6 +249,9 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         // Assert: one value, the new one.
         Assert.Equal("checked: true", Show(Cell("r1", "p3")));
         Assert.DoesNotContain("931298", await File.ReadAllTextAsync(table.Path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        return;
+
+        KnowledgeCell Cell(string rowId, string propertyId) => table.OnDisk().Rows.Single(row => row.Id == rowId).Cells.Single(cell => cell.PropertyId == propertyId);
     }
 
     [Fact]

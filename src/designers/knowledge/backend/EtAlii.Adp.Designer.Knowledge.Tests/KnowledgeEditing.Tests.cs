@@ -443,7 +443,6 @@ public sealed class KnowledgeEditingTests : IDisposable
     {
         // Arrange: v1 sorts by population, descending.
         await using var table = Open(extension);
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
 
         // Act.
         await table.Edit(new TableGesture("addSort", ColumnId: "p1", ViewId: "v1", Settings: Settings(("direction", "ascending"))));
@@ -460,6 +459,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Assert: none left, and the file still reads without a word.
         Assert.Empty(View().Sorts);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
+        return;
+
+        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     [Theory]
@@ -468,7 +470,6 @@ public sealed class KnowledgeEditingTests : IDisposable
     {
         // Arrange: v1 has one condition, Country is Netherlands.
         await using var table = Open(extension);
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
 
         // Act: a second condition, a group with a condition of its own, and any instead of all.
         await table.Edit(new TableGesture("addFilter", ColumnId: "p3", ViewId: "v1", Settings: Settings(("comparison", "greater-than"))));
@@ -505,6 +506,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Assert.
         Assert.Empty(View().Filter.Items);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
+        return;
+
+        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     [Fact]
@@ -528,7 +532,6 @@ public sealed class KnowledgeEditingTests : IDisposable
     {
         // Arrange: v1 is grouped by Country.
         await using var table = Open(extension);
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
 
         // Act.
         await table.Edit(new TableGesture("toggleGroup", ViewId: "v1", TargetId: "o1", Settings: Settings(("collapsed", "true"))));
@@ -555,6 +558,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal("A view is grouped by a selection, a checkbox or a relation.", refused);
         Assert.Equal("", View().GroupBy);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
+        return;
+
+        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     // ---- shown at once, written behind ------------------------------------------------------------------
