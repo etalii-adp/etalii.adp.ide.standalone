@@ -18,6 +18,14 @@ properties:
       - id: o2
         name: Belgium
         colour: yellow
+      - id: b4ff5lo4rezgty4ge7siqndey
+        name: Germany
+      - id: dn1qx45l0fu88pip2l9ua7joz
+        name: France
+      - id: 7h1eyx85f462uj3sb6jlxdxvu
+        name: Finland
+      - id: 2xc52nefzictwc49wy8ldxh7t
+        name: Italy
   - id: p3
     name: Population
     type: number
@@ -96,3 +104,50 @@ rows:
       - property: p4
         options:
           - option: o3
+  - id: 45ako65f2m2wasyxq3mam8ikt
+    cells:
+      - property: p2
+        option: o1
+      - property: p3
+        number: 345345
+      - property: p1
+        text: Sevenum
+      - property: p4
+        options:
+          - option: o3
+  - id: a8q7ddqb6zyubcyf5vuky6iwb
+    cells:
+      - property: p2
+        option: o1
+      - property: p1
+        text: Venlo
+  - id: 8heh3sdyy0a63fyq7gicize5a
+    cells:
+      - property: p2
+        option: b4ff5lo4rezgty4ge7siqndey
+      - property: p1
+        text: Berlin
+  - id: 7pa30fmuw51bv1vyl5jnmf5jh
+    cells:
+      - property: p2
+        option: dn1qx45l0fu88pip2l9ua7joz
+      - property: p1
+        text: Paris
+  - id: 8rj09k224141g98x6rguz7f5h
+    cells:
+      - property: p2
+        option: 7h1eyx85f462uj3sb6jlxdxvu
+      - property: p1
+        text: Helsinki
+  - id: e1v5f01oi4bx1syl7x6ty3zeo
+    cells:
+      - property: p2
+        option: 2xc52nefzictwc49wy8ldxh7t
+      - property: p1
+        text: Venice
+  - id: 1dytemy0l8cen9xxkpcxzlgwq
+    cells:
+      - property: p1
+        text: Ahlen
+      - property: p2
+        option: b4ff5lo4rezgty4ge7siqndey
