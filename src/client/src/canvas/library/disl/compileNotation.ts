@@ -736,7 +736,7 @@ class Compiler {
    */
   private heldOnce(relation: DislRelation): { maxFromSource: 1 } | { maxIntoTarget: 1 } | undefined {
     const derived = relation.derived;
-    if (this.spec.disl !== "0.4" || !isObject(derived) || !isObject(derived.edits) || typeof derived.edits.connect !== "string") {
+    if (this.spec["disl"] !== "0.4" || !isObject(derived) || !isObject(derived.edits) || typeof derived.edits.connect !== "string") {
       return undefined;
     }
 

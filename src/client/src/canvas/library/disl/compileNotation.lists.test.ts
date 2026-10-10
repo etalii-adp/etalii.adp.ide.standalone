@@ -87,7 +87,7 @@ function withCard(change: (node: DislDocument["notation"]["nodes"][string]) => D
 
 describe("compileNotation, DISL 0.4", () => {
   it("reads a specification of DISL 0.4, and still refuses one it was not written against", () => {
-    expect(parseDisl(JSON.stringify(specOf())).disl).toBe("0.4");
+    expect(parseDisl(JSON.stringify(specOf()))["disl"]).toBe("0.4");
     expect(() => parseDisl(JSON.stringify({ ...specOf(), disl: "0.5" }))).toThrow(/declares "0.5"/);
   });
 
