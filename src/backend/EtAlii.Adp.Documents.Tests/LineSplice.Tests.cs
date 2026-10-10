@@ -395,6 +395,55 @@ public class LineSpliceTests
     }
 
     /// <summary>
+    /// A plain YAML scalar may not begin with an indicator character. Quote left these plain, so a name
+    /// such as <c>[draft] plan</c> was written as a flow sequence, <c>&amp;x</c> as an anchor and
+    /// <c>*x</c> as an alias: the value read back differently, or the document no longer parsed.
+    /// </summary>
+    [Theory]
+    [InlineData("[draft] plan")]
+    [InlineData("]x")]
+    [InlineData("{x} y")]
+    [InlineData("}x")]
+    [InlineData("&anchor")]
+    [InlineData("*alias")]
+    [InlineData("!tag")]
+    [InlineData("|pipe")]
+    [InlineData(">fold")]
+    [InlineData("%percent")]
+    [InlineData("@at")]
+    [InlineData("`tick")]
+    [InlineData("? question")]
+    [InlineData(", comma")]
+    public void Quote_AValueStartingWithAnIndicator_ReadsBackAsWritten(string value)
+    {
+        // Arrange.
+        var line = $"name: {LineSplice.Quote(value)}";
+
+        // Act.
+        var read = ReadName(line);
+
+        // Assert.
+        Assert.Equal(value, read);
+    }
+
+    private static string? ReadName(string document)
+    {
+        var stream = new YamlDotNet.RepresentationModel.YamlStream();
+        try
+        {
+            stream.Load(new StringReader(document));
+        }
+        catch (YamlDotNet.Core.YamlException e)
+        {
+            return $"(does not parse: {e.Message})";
+        }
+        var root = (YamlDotNet.RepresentationModel.YamlMappingNode)stream.Documents[0].RootNode;
+        return root.Children[new YamlDotNet.RepresentationModel.YamlScalarNode("name")] is YamlDotNet.RepresentationModel.YamlScalarNode scalar
+            ? scalar.Value
+            : "(not a scalar)";
+    }
+
+    /// <summary>
     /// A line break in a plain scalar ends the key: the rest lands at column 0 and the document no
     /// longer parses. Every break - LF, CRLF and a lone CR - is therefore written as a YAML
     /// double-quoted escape, so the value stays on its key's line and reads back unchanged.
