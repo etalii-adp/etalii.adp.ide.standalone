@@ -30,3 +30,27 @@ public class CelArithmeticTests
         Assert.IsType(expected.GetType(), value);
     }
 }
+
+/// <summary>
+/// An int operation that overflows is an error, as CEL makes it. It wrapped silently: the sum of
+/// two large ints came back as a large negative one.
+/// </summary>
+public class CelOverflowTests
+{
+    [Theory]
+    [InlineData("9223372036854775807 + 1")]
+    [InlineData("-9223372036854775807 - 2")]
+    [InlineData("4611686018427387904 * 2")]
+    [InlineData("-(-9223372036854775807 - 1)")]
+    [InlineData("(-9223372036854775807 - 1) / -1")]
+    [InlineData("(-9223372036854775807 - 1) % -1")]
+    public void AnIntOperationThatOverflows_IsAnError(string expression)
+    {
+        // Act.
+        var value = Evaluate.Expression(expression);
+
+        // Assert.
+        var error = Assert.IsType<CelError>(value);
+        Assert.Contains("overflow", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+}
