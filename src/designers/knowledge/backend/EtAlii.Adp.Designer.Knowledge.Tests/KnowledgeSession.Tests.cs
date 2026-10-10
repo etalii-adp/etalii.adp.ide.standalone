@@ -167,10 +167,10 @@ public sealed class KnowledgeSessionTests : IDisposable
             session.OnExternalChange();
         }
 
-        // Assert: the same bytes, not rewritten, and nothing beside the file.
+        // Assert: the same bytes, not rewritten, and nothing beside the file but the table its relation names, which came with it.
         Assert.Equal(before, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
         Assert.Equal(stamp, File.GetLastWriteTimeUtc(path));
-        Assert.Equal(["cities" + extension], Directory.GetFileSystemEntries(_root).Select(entry => IoPath.GetFileName(entry)));
+        Assert.Equal(["cities" + extension, KnowledgeFiles.Related], Directory.GetFileSystemEntries(_root).Select(entry => IoPath.GetFileName(entry)).Order(StringComparer.Ordinal));
     }
 
     // ---- staying true to the file -------------------------------------------------------------
@@ -444,6 +444,12 @@ public sealed class KnowledgeSessionTests : IDisposable
 
         public KnowledgeRead Read(string bodyPath)
         {
+            // Only the table itself is scripted: the table its relation points at is read as it is.
+            if (IoPath.GetFileName(bodyPath) == KnowledgeFiles.Related)
+            {
+                return KnowledgeDocumentStore.Read(bodyPath);
+            }
+
             Reads++;
             if (ToRefuse > 0)
             {

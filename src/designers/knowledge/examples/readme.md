@@ -5,11 +5,13 @@ The files here are copied, byte for byte, from [`etalii-adp/etalii.adp`](https:/
 - `cities.yaml`, `cities.json` and `cities.xml`: one table, *Cities*, written in each of the three formats a knowledge file comes in;
 - `LICENSE.md`: that repository's `LICENSE`, verbatim.
 
+One file is not copied from there but written for ADP: `provinces.yaml`, the table the cities' relation *Province* names as its target. It exists so that the relation resolves: a city's province is shown by its name, not by the id the file holds.
+
 `.gitattributes` keeps this folder from line-ending conversion, because the module's tests read these bytes and compare them.
 
 ## What these examples do not demonstrate
 
 - **No registration here.** The `.adp` file that makes a knowledge file a document of a project is in the showcase, `src/examples/designers/knowledge/`, where each format has a folder of its own with the data file and its registration.
-- **No second table.** `cities` has a relation to `provinces.yaml`, which does not exist: a relation whose target is missing is shown, and a resolved one is not.
+- **No two-way relation and no parent relation.** `cities` relates to `provinces.yaml` one way; nothing in `provinces.yaml` shows the cities of a province, and no table nests its rows.
 - **Nothing large.** Twelve rows or so say nothing about ten thousand.
 - **No file with something wrong in it**: no unknown key, no value of the wrong type, no missing id. The module's tests write those themselves.

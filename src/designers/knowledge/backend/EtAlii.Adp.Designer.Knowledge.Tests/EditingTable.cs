@@ -21,14 +21,16 @@ internal sealed class EditingTable : IAsyncDisposable
 
     /// <param name="path">The knowledge file.</param>
     /// <param name="patience">How long a write is waited for; twenty seconds unless a test of a very large file says more.</param>
-    public EditingTable(string path, TimeSpan? patience = null)
+    /// <param name="documents">Where a written file is announced; shared between two tables that are open in one application.</param>
+    public EditingTable(string path, TimeSpan? patience = null, KnowledgeDocuments? documents = null)
     {
         Path = path;
         _patience = patience ?? TimeSpan.FromSeconds(20);
-        var documents = new KnowledgeDocuments();
+        documents ??= new KnowledgeDocuments();
         var services = new Handlers
         {
             [typeof(ICommandHandler<KnowledgeEditCommand>)] = new KnowledgeEditCommandHandler(documents),
+            [typeof(ICommandHandler<RestoreKnowledgeFilesCommand>)] = new RestoreKnowledgeFilesCommandHandler(documents),
             [typeof(ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>)] = new RestoreDocumentCommandHandler<IKnowledgeDocumentStore>(documents),
         };
         History = new HistoryStack(new CommandDispatcher(services));

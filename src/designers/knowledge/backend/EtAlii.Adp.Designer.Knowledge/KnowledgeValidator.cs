@@ -33,13 +33,16 @@ internal static class KnowledgeValidator
     public const string UnknownType = "knowledge.unknown-type";
     public const string ParentCycle = "knowledge.parent-cycle";
     public const string MissingId = "knowledge.missing-id";
+    public const string UnresolvedTarget = "knowledge.unresolved-target";
+    public const string UnresolvedRow = "knowledge.unresolved-row";
 
     /// <summary>The element types whose entries carry an id of their own in the file.</summary>
     private static readonly string[] Identified = ["Property", "Option", "View", "Row"];
 
     /// <param name="table">The table as read.</param>
     /// <param name="model">The reading it was made from, for what only the entries themselves say: whether an id is stored.</param>
-    public static List<TableFinding> Validate(KnowledgeTable table, FblModel model)
+    /// <param name="targetOf">What a relation property points at, or null where relations are not resolved and nothing is said of them.</param>
+    public static List<TableFinding> Validate(KnowledgeTable table, FblModel model, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf = null)
     {
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(model);
@@ -120,6 +123,32 @@ internal static class KnowledgeValidator
                 if (property is { ValueType: "relation", Limit: "one" } && cell.Values.Count > 1)
                 {
                     Warn(RelationOverLimit, $"'{property.Name}' relates to one row, and this cell names {cell.Values.Count}; they are kept as they are.", row.Id, property.Id);
+                }
+            }
+        }
+
+        // ---- relations: a target that is not there, and a row that is not in it. The value stays either way. ----
+
+        foreach (var relation in table.Properties.Where(property => property.ValueType == "relation" && targetOf is not null))
+        {
+            var target = targetOf!(relation);
+            if (target?.Table is not { } related)
+            {
+                Warn(UnresolvedTarget, $"'{relation.Name}' relates to a table that cannot be shown: {target?.Problem ?? "it names no file."} Its values are kept as they are.", columnId: relation.Id);
+                continue;
+            }
+
+            if (relation.IsComputed)
+            {
+                continue;
+            }
+
+            var there = related.Rows.Select(row => row.Id).ToHashSet(StringComparer.Ordinal);
+            foreach (var row in table.Rows)
+            {
+                foreach (var value in row.Cells.FirstOrDefault(cell => cell.PropertyId == relation.Id && cell.Key == "rows")?.Values.Where(value => !there.Contains(value)) ?? [])
+                {
+                    Warn(UnresolvedRow, $"This value names a row that is not in {(related.Name.Length > 0 ? related.Name : "the table it relates to")} ('{value}'); it is kept as it is.", row.Id, relation.Id);
                 }
             }
         }

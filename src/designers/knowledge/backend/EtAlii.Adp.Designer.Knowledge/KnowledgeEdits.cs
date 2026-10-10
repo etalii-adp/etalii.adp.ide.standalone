@@ -10,8 +10,11 @@ namespace EtAlii.Adp.Designer.Knowledge;
 /// <param name="Refusal">Why the gesture is refused, as a sentence for the author; empty when it is not.</param>
 /// <param name="NewRowId">The id of the row the gesture adds, or empty.</param>
 /// <param name="NewViewId">The id of the view the gesture adds, or empty.</param>
-internal sealed record KnowledgeEdit(IReadOnlyList<ModelChange> Changes, string Refusal = "", string NewRowId = "", string NewViewId = "")
+/// <param name="Others">What the same step changes in other files: the other side of a two-way relation.</param>
+internal sealed record KnowledgeEdit(IReadOnlyList<ModelChange> Changes, string Refusal = "", string NewRowId = "", string NewViewId = "", IReadOnlyList<KnowledgeOtherFile>? Others = null)
 {
+    public IReadOnlyList<KnowledgeOtherFile> Others { get; } = Others ?? [];
+
     public bool IsRefused => Refusal.Length > 0;
 
     public static KnowledgeEdit Refused(string reason) => new([], reason);
@@ -20,6 +23,12 @@ internal sealed record KnowledgeEdit(IReadOnlyList<ModelChange> Changes, string 
 
     public static KnowledgeEdit Of(params ModelChange[] changes) => new(changes);
 }
+
+/// <summary>What an edit may know of the files around the one it edits: where that file is, and what its relations point at.</summary>
+/// <param name="BodyPath">The file being edited.</param>
+/// <param name="TargetOf">What a relation property of the file points at.</param>
+/// <param name="TargetAt">What a target named from the file - a relative path, or <c>.</c> for the file itself - is.</param>
+internal sealed record KnowledgeSurroundings(string BodyPath, Func<KnowledgeProperty, KnowledgeTarget?> TargetOf, Func<string, KnowledgeTarget> TargetAt);
 
 /// <summary>
 /// The table's gestures as changes of the file: one place that knows what each gesture means for
@@ -61,7 +70,8 @@ internal static partial class KnowledgeEdits
     /// <param name="gesture">What the author did.</param>
     /// <param name="newId">Gives an id that was never used: called once for everything the gesture makes that stores an id.</param>
     /// <param name="besideItsRule">Whether the file's format adds an entry after the last one its rule reads (<see cref="KnowledgeDefinition.AddsBesideItsRule"/>).</param>
-    public static KnowledgeEdit Plan(KnowledgeTable table, string activeViewId, TableGesture gesture, Func<string> newId, bool besideItsRule = false)
+    /// <param name="files">The files around this one, for a gesture about a relation; null where there are none to know of.</param>
+    public static KnowledgeEdit Plan(KnowledgeTable table, string activeViewId, TableGesture gesture, Func<string> newId, bool besideItsRule = false, KnowledgeSurroundings? files = null)
     {
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(gesture);
@@ -70,7 +80,7 @@ internal static partial class KnowledgeEdits
         var view = table.Views.FirstOrDefault(candidate => candidate.Id == (gesture.ViewId.Length > 0 ? gesture.ViewId : activeViewId)) ?? table.ViewOrDefault(activeViewId);
         return gesture.Kind switch
         {
-            "setCell" => SetCell(table, gesture, newId),
+            "setCell" => SetCell(table, gesture, newId, files),
             "addRow" => AddRow(table, view, gesture, newId),
             "deleteRows" => DeleteRows(table, gesture),
 
@@ -79,6 +89,9 @@ internal static partial class KnowledgeEdits
             "duplicateColumn" => DuplicateColumn(table, view, gesture, newId),
             "deleteColumn" => DeleteColumn(table, gesture),
             "setColumnType" => ChangeType(table, gesture, newId),
+
+            "addRelation" => AddRelation(table, view, gesture, newId, files),
+            "setColumnParent" => SetParent(table, gesture),
 
             "addOption" => AddOption(table, gesture, newId),
             "renameOption" => ForOption(table, gesture, (property, option) => RenameOption(property, option, gesture)),
@@ -123,7 +136,7 @@ internal static partial class KnowledgeEdits
 
     // ---- cells and rows ----
 
-    private static KnowledgeEdit SetCell(KnowledgeTable table, TableGesture gesture, Func<string> newId)
+    private static KnowledgeEdit SetCell(KnowledgeTable table, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
     {
         var row = table.Rows.FirstOrDefault(candidate => candidate.Id == gesture.RowId);
         if (row is null)
@@ -182,6 +195,20 @@ internal static partial class KnowledgeEdits
             if (property is { ValueType: "relation", Limit: "one" } && values.Count > 1)
             {
                 return Refused("This relation holds one row.");
+            }
+
+            if (property.ValueType == "relation")
+            {
+                // A related row is a row of the target: one that is not there is not related to.
+                if (files?.TargetOf(property)?.Table is { } target && values.FirstOrDefault(value => target.Rows.All(candidate => candidate.Id != value)) is not null)
+                {
+                    return Refused($"That row is not in {(target.Name.Length > 0 ? target.Name : "the table this relates to")}.");
+                }
+
+                if (property.IsParent && values.Count == 1 && KnowledgeRelations.WouldCycle(table, property, row.Id, values[0]))
+                {
+                    return Refused(ParentCycle);
+                }
             }
 
             var key = property.ValueType == "relation" ? "row" : "option";
@@ -451,6 +478,107 @@ internal static partial class KnowledgeEdits
 
         changes.Add(new ModelChange.Remove(property.Id));
         return new KnowledgeEdit(changes);
+    }
+
+    // ---- relations ----
+
+    public const string ParentCycle = "A row cannot be its own ancestor.";
+
+    /// <summary>
+    /// A relation to another knowledge file, or to this one. One-way, it is a property of this file.
+    /// Two-way, the target gets the other side in the same step: a property of its own, computed and
+    /// without cells, each naming the other. Neither file is written when either refuses.
+    /// </summary>
+    private static KnowledgeEdit AddRelation(KnowledgeTable table, KnowledgeView? view, TableGesture gesture, Func<string> newId, KnowledgeSurroundings? files)
+    {
+        var targetName = (gesture.Settings.GetValueOrDefault("target") ?? "").Trim();
+        if (files is null || targetName.Length == 0)
+        {
+            return Refused(RelationNeedsTarget);
+        }
+
+        var target = files.TargetAt(targetName);
+        if (target.Table is not { } related)
+        {
+            return Refused(target.Problem);
+        }
+
+        var self = string.Equals(target.Path, Path.GetFullPath(files.BodyPath), StringComparison.OrdinalIgnoreCase);
+        var asked = (gesture.Values.FirstOrDefault() ?? "").Trim();
+        var name = UniqueName(table.Properties.Select(property => property.Name), asked.Length > 0 ? asked : related.Name.Length > 0 && !self ? related.Name : "Relation");
+        var id = newId();
+        var attributes = Attributes(
+            ("name", name),
+            ("valueType", "relation"),
+            ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(files.BodyPath, target.Path)),
+            ("limit", gesture.Settings.GetValueOrDefault("limit") == "one" ? "one" : null));
+
+        var otherName = (gesture.Settings.GetValueOrDefault("counterpart") ?? "").Trim();
+        if (otherName.Length == 0)
+        {
+            return new KnowledgeEdit(Place(table, view, id, attributes, gesture.TargetId, left: false));
+        }
+
+        // The other side: in the target, computed, naming this one - and this one naming it.
+        var otherId = newId();
+        attributes["counterpart"] = otherId;
+        var taken = self ? table.Properties.Select(property => property.Name).Append(name) : related.Properties.Select(property => property.Name);
+        var other = new ModelChange.Add(
+            "Property",
+            otherId,
+            Attributes(
+                ("name", UniqueName(taken, otherName)),
+                ("valueType", "relation"),
+                ("targetFile", self ? KnowledgeRelations.Self : KnowledgeRelations.TargetName(target.Path, files.BodyPath)),
+                ("computed", true),
+                ("counterpart", id)));
+        var changes = Place(table, view, id, attributes, gesture.TargetId, left: false);
+        if (self)
+        {
+            changes.Add(other);
+            return new KnowledgeEdit(changes);
+        }
+
+        return new KnowledgeEdit(changes, Others: [new KnowledgeOtherFile(target.Path, [other])]);
+    }
+
+    /// <summary>
+    /// Makes a relation the parent relation, or no longer that: the one a view nests its rows by.
+    /// Only a relation to the table itself that holds one row can be it, and a table has one.
+    /// </summary>
+    private static KnowledgeEdit SetParent(KnowledgeTable table, TableGesture gesture)
+    {
+        if (table.Properties.FirstOrDefault(candidate => candidate.Id == gesture.ColumnId) is not { } property)
+        {
+            return Refused(PropertyGone);
+        }
+
+        var parent = Flag(gesture, "parent");
+        if (parent == property.IsParent)
+        {
+            return KnowledgeEdit.Nothing;
+        }
+
+        if (!parent)
+        {
+            return KnowledgeEdit.Of(Set(property.Id, ("isParent", null)));
+        }
+
+        if (property is not { ValueType: "relation", TargetFile: KnowledgeRelations.Self or "", Limit: "one", IsComputed: false })
+        {
+            return Refused("Only a relation to this table that holds one row can be the parent relation.");
+        }
+
+        if (table.Properties.FirstOrDefault(other => other.IsParent) is { } already)
+        {
+            return Refused($"'{already.Name}' is the parent relation already.");
+        }
+
+        // What is there must not be a circle already: a parent relation is never one.
+        return table.Rows.Any(row => row.Cells.FirstOrDefault(cell => cell.PropertyId == property.Id && cell.Key == "rows")?.Values.FirstOrDefault() is { } above
+                                     && KnowledgeRelations.WouldCycle(table, property, row.Id, above))
+            ? Refused("Some rows of this relation are each other's ancestors, so it cannot be the parent relation.")
+            : KnowledgeEdit.Of(Set(property.Id, ("isParent", true)));
     }
 
     // ---- a selection's options ----

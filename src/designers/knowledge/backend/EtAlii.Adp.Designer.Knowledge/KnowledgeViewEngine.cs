@@ -30,7 +30,8 @@ internal static class KnowledgeViewEngine
     /// <param name="kept">Rows shown whatever the filter says: those added while this view was open.</param>
     /// <param name="unwritten">The cells whose value is an edit not yet written.</param>
     /// <param name="editable">Whether a line to add a row at is given, at the bottom and under every group.</param>
-    public static List<TableRow> Lines(KnowledgeTable table, KnowledgeView? view, IReadOnlySet<string> kept, IReadOnlySet<(string RowId, string ColumnId)> unwritten, bool editable)
+    /// <param name="labelOf">What a related row is called, by the relation's property and the row's id; null where relations are not resolved.</param>
+    public static List<TableRow> Lines(KnowledgeTable table, KnowledgeView? view, IReadOnlySet<string> kept, IReadOnlySet<(string RowId, string ColumnId)> unwritten, bool editable, Func<string, string, string>? labelOf = null)
     {
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(kept);
@@ -45,7 +46,7 @@ internal static class KnowledgeViewEngine
 
         var shown = rows.ToList();
         TableRow Line(KnowledgeRow row, int depth = 0, bool hasChildren = false, bool collapsed = false) =>
-            KnowledgeTableMapper.Row(row, unwritten) with { Depth = depth, HasChildren = hasChildren, Collapsed = collapsed };
+            KnowledgeTableMapper.Row(row, unwritten, labelOf) with { Depth = depth, HasChildren = hasChildren, Collapsed = collapsed };
 
         List<TableRow> lines = [];
         if (view is null || !properties.TryGetValue(view.GroupBy, out var grouped))
@@ -58,7 +59,7 @@ internal static class KnowledgeViewEngine
         }
         else
         {
-            Group(shown, grouped, view, Line, lines, editable);
+            Group(shown, grouped, view, Line, lines, editable, labelOf);
             return lines;
         }
 
@@ -300,7 +301,7 @@ internal static class KnowledgeViewEngine
 
     // ---- groups ----
 
-    private static void Group(List<KnowledgeRow> rows, KnowledgeProperty grouped, KnowledgeView view, Func<KnowledgeRow, int, bool, bool, TableRow> line, List<TableRow> lines, bool editable)
+    private static void Group(List<KnowledgeRow> rows, KnowledgeProperty grouped, KnowledgeView view, Func<KnowledgeRow, int, bool, bool, TableRow> line, List<TableRow> lines, bool editable, Func<string, string, string>? labelOf)
     {
         // The groups there are, in their natural order: an option each, in the options' order; unticked
         // and ticked; a related row each, as they are first met. The rows without a value come last.
@@ -308,7 +309,8 @@ internal static class KnowledgeViewEngine
         {
             "selection" or "multipleSelection" => [.. grouped.Options.Select(option => (option.Id, option.Name))],
             "checkbox" => [("false", "Not checked"), ("true", "Checked")],
-            _ => [.. rows.SelectMany(row => ValuesOf(row, grouped)).Distinct().Select(id => (id, id))],
+            // A related row is a group under its title; one that is not found, under the id it is named by.
+            _ => [.. rows.SelectMany(row => ValuesOf(row, grouped)).Distinct().Select(id => (id, labelOf?.Invoke(grouped.Id, id) is { Length: > 0 } title ? title : id))],
         };
 
         // A checkbox has no row without a value: unticked is one. Every other grouping has a group for them.

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Context;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,8 +17,10 @@ public static class ServiceCollectionAddKnowledgeExtension
 
         services.AddSingleton<IKnowledgeDocumentStore, KnowledgeDocuments>();
         services.AddSingleton<ICommandHandler<KnowledgeEditCommand>, KnowledgeEditCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreKnowledgeFilesCommand>, RestoreKnowledgeFilesCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreDocumentCommand<IKnowledgeDocumentStore>>, RestoreDocumentCommandHandler<IKnowledgeDocumentStore>>();
         services.AddSingleton<IDesignerSessionFactory, KnowledgeSessionFactory>();
+        services.AddSingleton<IContextActionProvider, KnowledgeContextActionProvider>();
         services.AddSingleton<IDesignerDocumentTemplate, KnowledgeDocumentTemplate>();
     }
 }

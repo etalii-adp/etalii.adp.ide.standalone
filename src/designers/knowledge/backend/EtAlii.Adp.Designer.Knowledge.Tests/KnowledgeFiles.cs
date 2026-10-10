@@ -61,11 +61,22 @@ internal static class KnowledgeFiles
     /// <summary>The bytes of a shipped example.</summary>
     public static byte[] ExampleBytes(string name) => File.ReadAllBytes(Example(name));
 
+    /// <summary>The table the example's relation points at.</summary>
+    public const string Related = "provinces.yaml";
+
     /// <summary>A copy of a shipped example in <paramref name="folder"/>, under its own name.</summary>
     public static string CopyExample(string name, string folder)
     {
         var path = IoPath.Combine(folder, name);
         File.Copy(Example(name), path);
+
+        // The table the example's relation names goes with it, so the relation resolves as it does where the example ships.
+        var related = IoPath.Combine(folder, Related);
+        if (name != Related && !File.Exists(related))
+        {
+            File.Copy(Example(Related), related);
+        }
+
         return path;
     }
 
