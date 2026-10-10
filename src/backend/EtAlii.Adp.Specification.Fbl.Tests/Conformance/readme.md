@@ -23,7 +23,7 @@ Splices are compared in body order, those at one offset as listed: FBL orders on
 
 ## `etalii.adp/`: the Knowledge designer's files
 
-The folder `etalii.adp/` holds a second vendored set, copied unchanged from the same repository at commit `1559b53` (`develop`, 2026-10-09, after etalii.adp #111, which moved the bindings to FBL 0.4), **in that repository's own layout**: `definitions/designers/knowledge.fbl` (the bindings `yaml`, `json` and `xml`), `definitions/designers/knowledge.des` (the specification, read here for its attribute types only), `definitions/designers/examples/`, and `specifications/fbl/fixtures/knowledge-*`. The layout is kept because those fixtures name their binding and their inputs by paths relative to that tree, and the files are never edited here.
+The folder `etalii.adp/` holds a second vendored set, copied unchanged from the same repository at commit `5c62e79` (`develop`, 2026-10-10, after etalii.adp #116, in which a fixture's `add` step names its `slot`, FBL 0.5 section 15.3), **in that repository's own layout**: `definitions/designers/knowledge.fbl` (the bindings `yaml`, `json` and `xml`), `definitions/designers/knowledge.des` (the specification, read here for its attribute types only), `definitions/designers/examples/`, and `specifications/fbl/fixtures/knowledge-*`. The layout is kept because those fixtures name their binding and their inputs by paths relative to that tree, and the files are never edited here.
 
 `.gitattributes` keeps the whole of `etalii.adp/` from line-ending conversion by its path. A rule by extension would exempt this repository's ordinary `.yaml`, `.json` and `.xml` files too.
 

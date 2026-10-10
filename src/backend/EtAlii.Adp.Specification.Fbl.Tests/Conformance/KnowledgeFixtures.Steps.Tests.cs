@@ -165,7 +165,7 @@ public class KnowledgeFixtureStepsTests
                 add.TryGetProperty("attributes", out var attributes) ? Attributes(attributes) : new Dictionary<string, object?>(),
                 add.TryGetProperty("parent", out var parent) ? parent.GetString() : null,
                 add.TryGetProperty("position", out var position) ? position.GetProperty("index").GetInt32() : null,
-                add.TryGetProperty("x-slot", out var slot) ? slot.GetString() : null);
+                add.TryGetProperty("slot", out var slot) ? slot.GetString() : null);
         }
 
         if (edit.TryGetProperty("remove", out var remove)) return new ModelChange.Remove(remove.GetProperty("element").GetString()!);

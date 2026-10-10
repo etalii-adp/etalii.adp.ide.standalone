@@ -1,4 +1,5 @@
 using EtAlii.Adp.Context;
+using EtAlii.Adp.Documents;
 using EtAlii.Adp.History;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,5 +23,6 @@ public static class ServiceCollectionAddKnowledgeExtension
         services.AddSingleton<IDesignerSessionFactory, KnowledgeSessionFactory>();
         services.AddSingleton<IContextActionProvider, KnowledgeContextActionProvider>();
         services.AddSingleton<IDesignerDocumentTemplate, KnowledgeDocumentTemplate>();
+        services.AddSingleton<IEntryRenameFollower, KnowledgeTargetRename>();
     }
 }
