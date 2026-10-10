@@ -33,9 +33,6 @@ public sealed class AadElementMapper
     /// <summary>The id of the element that carries the diagram's own settings. No file entry can have it: an id cannot hold a space.</summary>
     public const string ViewId = "diagram view";
 
-    /// <summary>What a location's second line, its folder, adds to the height the definition gives it.</summary>
-    private const double LocationFolderLine = 8;
-
     /// <summary>The member name of the status that hides a specification.</summary>
     private const string Archived = "archived";
 
@@ -71,14 +68,8 @@ public sealed class AadElementMapper
             _ => (EnvironmentType, "Environment"),
         };
 
-        // The size is the definition's, so that every host draws an element as large. A location
-        // is the one exception, and only in height: this canvas writes the folder as a second line
-        // under the branch where the definition lists it, and that line needs its eight units.
+        // The size is the definition's, so that every host draws an element as large.
         (double width, double height) = AadDefinition.SizeOf(declared);
-        if (element.Kind == AadKind.Location)
-        {
-            height += LocationFolderLine;
-        }
         var payload = new AadElementPayload
         {
             Name = element.Name,

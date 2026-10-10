@@ -22,27 +22,8 @@ export const AadElementTypes = {
 /** On the wire there is one relation type; which of the four it is follows from its two ends. */
 export const AadWireRelationType = "relation";
 
-/** The four relations the notation has, each between one pair of element types. */
-export const AadRelationTypes = {
-  projectSpecification: "project-specification",
-  specificationAgent: "specification-agent",
-  agentLocation: "agent-location",
-  locationEnvironment: "location-environment",
-} as const;
-
-/** A task's statuses in the order their groups are listed, with the words each is shown with. */
-export const AAD_TASK_GROUPS = [
-  { value: "progressing", title: "Progressing" },
-  { value: "pending", title: "Pending" },
-  { value: "inputRequired", title: "Input Required" },
-  { value: "finished", title: "Finished" },
-] as const;
-
-/** The key of a location's one group of rows. */
-export const AAD_PULL_REQUESTS_GROUP = "pullRequests";
-
-/** The canvas switch that shows archived specifications. */
-export const AAD_SHOW_ARCHIVED_SWITCH = "show-archived";
+/** The canvas switch that shows archived specifications: the specification's name for the filter. */
+export const AAD_SHOW_ARCHIVED_SWITCH = "archived";
 
 /** The id of the element that carries the diagram's own settings, and the target of its actions. */
 export const AadViewId = "diagram view";

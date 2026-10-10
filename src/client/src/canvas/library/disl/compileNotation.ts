@@ -1,12 +1,14 @@
 import type { ActionDeclaration, ActionInvocation } from "../definition/actions";
 import type { Binding, Condition } from "../definition/binding";
-import type { CalendarStep, RulerDeclaration, RulerRung } from "../definition/chrome";
+import type { CompartmentDeclaration } from "../definition/compartments";
+import type { CalendarStep, RulerDeclaration, RulerRung, SwitchDeclaration } from "../definition/chrome";
 import type {
   AnchorSet,
   BuiltInShape,
   ClassDeclaration,
   CompassPosition,
   CustomRouteRef,
+  DecorationDeclaration,
   DiagramDefinition,
   ElementTypeDefinition,
   EndpointConstraint,
@@ -14,6 +16,7 @@ import type {
   LabelDeclaration,
   LayoutDefinition,
   LayoutMode,
+  LinkDeclaration,
   RelationTypeDefinition,
   RouteLabelRule,
   SegmentDeclaration,
@@ -26,6 +29,8 @@ import {
   typeList,
   type Bindable,
   type DislAxis,
+  type DislBadge,
+  type DislCompartment,
   type DislContextMenu,
   type DislCoordinateSystem,
   type DislCustomShape,
@@ -39,7 +44,8 @@ import {
 import { libraryMarkerOf, libraryRouteOf, libraryShapeOf, shapeNameOf, type CustomShapeBinding } from "./shapeCatalog";
 
 /**
- * A DISL 0.3 notation compiled into the library's {@link DiagramDefinition}.
+ * A DISL notation compiled into the library's {@link DiagramDefinition}: DISL 0.3, and of DISL 0.4
+ * the lists inside a node, its badges, a force layout's rings and a kept switch.
  *
  * <b>One file, two readers.</b> A diagram module bundles its `.dis` (`src/diagrams/<module>/definition/`),
  * the backend runs it, and the client imports the same bytes with Vite's `?raw` and compiles them
@@ -64,8 +70,10 @@ export interface NotationBindings {
    * The specification's `x-` block holding today's wire ids, shaped as `x-abm` is: `types` (DISL
    * name to wire id; a type it does not list is its name in lower case) and `actions` (an entry's
    * operation, else its kind, to the action id; `"<Type>/<key>"` overrides that for one type).
+   * A module whose wire ids are the specification's own names states none: a type is then its name
+   * in lower case and an action its operation, else its kind - as the backend's derivation has them.
    */
-  wireIds: `x-${string}`;
+  wireIds?: `x-${string}`;
   /**
    * The payload path the backend computes for each CEL expression the notation binds, keyed by the
    * expression as written. `self.<attribute>` needs no entry: it is `payload.<attribute>`.
@@ -73,8 +81,15 @@ export interface NotationBindings {
   celPaths: Readonly<Record<string, string>>;
   /** The classes an element type's group and shape carry, which the module's stylesheet paints. */
   classNames: (type: string, node: DislNodeNotation) => readonly ClassDeclaration[];
-  /** A label's class. */
-  labelClassName?: (type: string, label: DislLabel) => string | undefined;
+  /** A label's class: a name, or a binding where the class follows the payload. */
+  labelClassName?: (type: string, label: DislLabel) => string | Binding | undefined;
+  /**
+   * The path of each CEL term a list's row binds, within the row, keyed by the term as written.
+   * `item.<attribute>` needs no entry: it is `<attribute>`.
+   */
+  rowPaths?: Readonly<Record<string, string>>;
+  /** The class of a badge the library draws as a mark, where the stylesheet paints it. */
+  badgeClassName?: (type: string, badge: DislBadge) => string | undefined;
   /** A label's inline editor box, where it should not cover the label's own line. */
   labelEditorBox?: (type: string, label: DislLabel) => { top: number; height: number } | undefined;
   /** A relation's class. */
@@ -172,6 +187,28 @@ const COMPASS: Readonly<Record<CompassPosition, readonly [number, number]>> = {
   n: [0.5, 0], ne: [1, 0], e: [1, 0.5], se: [1, 1], s: [0.5, 1], sw: [0, 1], w: [0, 0.5], nw: [0, 0],
 };
 
+/** Where the first line of text inside a node sits beneath its top, and half of it above its bottom. */
+const LABEL_LINE = 20;
+
+/** A list's own measures, which DISL leaves to the host: the gap above it, its lines and its insets. */
+const LIST_GAP = 12;
+const LIST_HEADING = 20;
+const LIST_ROW = 18;
+const LIST_BOTTOM = 8;
+const LIST_INSET = 10;
+const LIST_INDENT = 12;
+
+/** A badge's measures: its distance from the corner, a mark's radius, and a link symbol's size and top. */
+const BADGE_INSET = 9;
+const BADGE_RADIUS = 3.5;
+const BADGE_TOP = 5;
+const LINK_SIZE = 11;
+
+/** Whether a filter is a switch whose value is kept with the diagram (DISL 0.4 §6.13.1). */
+function isKeptSwitch(filter: { control?: string; persist?: boolean }): boolean {
+  return filter.control === "switch" && filter.persist === true;
+}
+
 function fail(message: string): never {
   throw new Error(`compileNotation: ${message}`);
 }
@@ -226,7 +263,7 @@ class Compiler {
     private readonly bindings: NotationBindings,
     private readonly options: CompileOptions,
   ) {
-    const wire = spec[bindings.wireIds];
+    const wire = bindings.wireIds === undefined ? {} : spec[bindings.wireIds];
     if (!isObject(wire)) {
       fail(`the specification has no "${bindings.wireIds}" block of wire ids.`);
     }
@@ -249,6 +286,7 @@ class Compiler {
     const snap = this.snap();
     const rulers = this.rulers(this.system);
     const filter = this.filter();
+    const switches = this.switches();
     const backgroundMenu = this.backgroundMenu(this.defaultViewpoint?.[0]);
     const dragging = this.dragging(elementTypes);
 
@@ -258,7 +296,7 @@ class Compiler {
       ...(acyclic.length > 0 ? { acyclic } : {}),
       ...(actions.length > 0 ? { actions } : {}),
       ...(snap !== undefined ? { snap } : {}),
-      ...(rulers.length > 0 ? { chrome: { rulers } } : {}),
+      ...(rulers.length > 0 || switches.length > 0 ? { chrome: { ...(rulers.length > 0 ? { rulers } : {}), ...(switches.length > 0 ? { switches } : {}) } } : {}),
       ...(filter !== undefined ? { filter } : {}),
       layout: this.layout(rulers, backgroundMenu, dragging),
       dragging,
@@ -372,6 +410,8 @@ class Compiler {
     const classNames = this.bindings.classNames(name, node);
     const hint = this.showsDragValue() && this.movable(node) ? [this.dragHint()] : [];
     const labels = [...(node.labels ?? []).map((label) => this.label(name, label)), ...hint];
+    const compartments = this.compartments(name, node);
+    const { links, decorations } = this.badges(name, node);
     const { sizing, resize } = this.sizing(node);
     const editOnDrop = (this.spec.toolbox?.groups ?? []).some((group) => group.tools.some((tool) => tool.creates === name && tool.after === "editLabel"));
 
@@ -380,6 +420,9 @@ class Compiler {
       shape,
       ...(classNames.length > 0 ? { classNames } : {}),
       ...(labels.length > 0 ? { labels } : {}),
+      ...(decorations.length > 0 ? { decorations } : {}),
+      ...(compartments.length > 0 ? { compartments } : {}),
+      ...(links.length > 0 ? { links } : {}),
       ...(node.tooltip !== undefined ? { tooltip: this.binding(node.tooltip, `${where} tooltip`) } : {}),
       ...(node.accessibility !== undefined ? { accessibility: this.accessibility(node, where) } : {}),
       anchors: this.anchors(name, node),
@@ -450,6 +493,10 @@ class Compiler {
       } else if (offset !== undefined) {
         declaration.offset = { x: offset[0], y: offset[1] };
       }
+    } else if (position === "top" || position === "bottom") {
+      // Inside, on the first or the last line of the node (DISL 0.4 §6.9).
+      declaration.anchorTo = position;
+      declaration.offset = { x: 0, y: position === "top" ? LABEL_LINE : -LABEL_LINE / 2 };
     } else if (position !== undefined && position !== "center") {
       fail(`${where} is positioned "${String(position)}", which the library has no placement for.`);
     }
@@ -573,7 +620,8 @@ class Compiler {
     }
 
     if (sides.size === 0) {
-      return fail(`node "${name}" states no anchors and no edge attaches to a part of it.`);
+      // Nothing stated and nothing implied: DISL's default, a line attaching anywhere on the outline.
+      return { kind: "edge", visible: false };
     }
 
     return { kind: "along", edges: [...sides] as ("top" | "bottom" | "left" | "right")[], regions: "segments", visible: false };
@@ -655,6 +703,7 @@ class Compiler {
     // A stored relation that allows no parallel instances is one per pair: per direction when it
     // is directed. A derived relation's count follows from its derivation and is not declared.
     const perPair = relation.derived === undefined && relation.allowParallel === false ? (relation.directed === false ? "unordered" : "ordered") : undefined;
+    const held = this.heldOnce(relation);
 
     return {
       id: this.typeId(name),
@@ -672,9 +721,173 @@ class Compiler {
         target: endpoint(targetTypes, "target"),
         allowSelf: relation.allowSelfLoops === true,
         ...(perPair !== undefined ? { cardinality: { perPair } } : {}),
+        ...(held !== undefined ? { cardinality: held } : {}),
       },
       ...(this.createsOnEmptyRelease(name, edge) ? { emptyRelease: "complete" as const } : {}),
     };
+  }
+
+  /**
+   * How many of a drawable derived relation one element may have (DISL 0.4 §4.11.4). A relation derived
+   * from a key on the item that names its other end is one per item: the item is the end that holds it,
+   * and an end holds one key. Only a relation a gesture can draw (`edits.connect`) is bounded here, since
+   * the bound exists to refuse the gesture before it is made. A 0.3 specification keeps what it had: there
+   * a drawn line onto an element that has one already moves it, which its module answers.
+   */
+  private heldOnce(relation: DislRelation): { maxFromSource: 1 } | { maxIntoTarget: 1 } | undefined {
+    const derived = relation.derived;
+    if (this.spec["disl"] !== "0.4" || !isObject(derived) || !isObject(derived.edits) || typeof derived.edits.connect !== "string") {
+      return undefined;
+    }
+
+    const reference = /^item\.[A-Za-z_][A-Za-z0-9_]*$/;
+    if (derived.target === "item" && typeof derived.source === "string" && reference.test(derived.source)) {
+      return { maxIntoTarget: 1 };
+    }
+    if (derived.source === "item" && typeof derived.target === "string" && reference.test(derived.target)) {
+      return { maxFromSource: 1 };
+    }
+
+    return undefined;
+  }
+
+  // ---- lists and badges (DISL 0.4) ----------------------------------------------------------
+
+  /**
+   * A CEL term a row binds, as a path within the row: `item.<attribute>`, or the module's
+   * `rowPaths`. Anything else is refused, naming it.
+   */
+  private rowPath(value: unknown, where: string): string {
+    const expression = isObject(value) && typeof value.cel === "string" ? value.cel.trim() : undefined;
+    if (expression === undefined) {
+      return fail(`${where} binds ${JSON.stringify(value)}; a row binds CEL over its item.`);
+    }
+
+    const bound = this.bindings.rowPaths?.[expression];
+    if (bound !== undefined) {
+      return bound;
+    }
+
+    const attribute = /^item\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(expression);
+    return attribute !== null ? attribute[1]! : fail(`${where}: the CEL "${expression}" has no path within a row in the module's rowPaths.`);
+  }
+
+  /**
+   * A node's lists (DISL 0.4 §6.9). Its children in a slot are the payload's list of that name; a CEL
+   * list is the payload path the module's `celPaths` gives it. Grouped by an enum attribute of the
+   * items, the groups are the enum's values in its order under their labels. Which headings are folded
+   * is the payload's `collapsed`: the backend applies the definition's defaults and what the reader set.
+   * A list with no title, no groups and nothing to fold it by is drawn as its rows alone.
+   */
+  private compartments(name: string, node: DislNodeNotation): CompartmentDeclaration[] {
+    const declared = node.compartments ?? [];
+    if (declared.length === 0) {
+      return [];
+    }
+
+    // Beneath the lowest line of text the node's labels write.
+    const lines = (node.labels ?? []).map((label) => {
+      const position = label.position;
+      return isObject(position) ? ((position.offset as readonly [number, number] | undefined)?.[1] ?? 0) : position === "top" ? LABEL_LINE : 0;
+    });
+    const top = Math.max(LABEL_LINE, ...lines) + LIST_GAP;
+
+    return declared.map((compartment: DislCompartment): CompartmentDeclaration => {
+      const where = `node "${name}" list "${compartment.id}"`;
+      const items = compartment.items;
+      const rows = "cel" in items
+        ? this.bindings.celPaths[items.cel] ?? fail(`${where}: the CEL list "${items.cel}" has no payload path in the module's celPaths.`)
+        : `payload.${items.slot}`;
+      const text = compartment.itemText === undefined ? fail(`${where} states no itemText.`) : this.rowPath(compartment.itemText, `${where} itemText`);
+      const order = compartment.itemOrder;
+      const plain = compartment.title === undefined && compartment.groupBy === undefined && compartment.collapsible !== true;
+
+      return {
+        id: compartment.id,
+        rows,
+        rowId: "id",
+        text: { path: text },
+        ...(compartment.itemLink !== undefined ? { link: this.rowPath(compartment.itemLink, `${where} itemLink`) } : {}),
+        ...(order !== undefined ? { orderBy: { path: this.rowPath({ cel: order.by }, `${where} itemOrder`), direction: order.direction ?? "ascending" } } : {}),
+        ...(compartment.groupBy !== undefined ? { groupBy: this.groups(compartment, where) } : {}),
+        ...(compartment.title !== undefined ? { title: compartment.title } : {}),
+        ...(plain ? { heading: "none" as const } : {}),
+        collapsed: "payload.collapsed",
+        top,
+        headingHeight: LIST_HEADING,
+        rowHeight: LIST_ROW,
+        bottom: LIST_BOTTOM,
+        insetX: LIST_INSET,
+        rowIndent: plain ? 0 : LIST_INDENT,
+      };
+    });
+  }
+
+  /** A list's groups: the values of the enum the items' attribute has, in the enum's order. */
+  private groups(compartment: DislCompartment, where: string): NonNullable<CompartmentDeclaration["groupBy"]> {
+    const items = compartment.items;
+    const attribute = compartment.groupBy!.attribute;
+    const type = "children" in items ? this.spec.metamodel.types[items.children[0] ?? ""]?.attributes?.[attribute]?.type : undefined;
+    const values = type === undefined ? undefined : this.spec.metamodel.enums?.[type]?.values;
+    if (values === undefined) {
+      return fail(`${where} groups by "${attribute}", which is no enum attribute of its items.`);
+    }
+
+    return {
+      path: attribute,
+      groups: Object.entries(values).map(([value, member]) => ({ value, title: member.label ?? value })),
+      otherTitle: "Other",
+    };
+  }
+
+  /**
+   * A node's badges (DISL 0.4 §6.9). One whose press opens a link - its operation's one action is
+   * `open` of an attribute - is the library's link symbol for that attribute, drawn where there is a
+   * link and nowhere else. One that runs nothing is a mark, shown while its condition holds. Any other
+   * badge is refused, naming it.
+   */
+  private badges(name: string, node: DislNodeNotation): { links: LinkDeclaration[]; decorations: DecorationDeclaration[] } {
+    const links: LinkDeclaration[] = [];
+    const decorations: DecorationDeclaration[] = [];
+    for (const badge of node.badges ?? []) {
+      const where = `node "${name}" badge "${badge.id}"`;
+      const right = badge.position === "top-right";
+      if (!right && badge.position !== "top-left") {
+        fail(`${where} sits "${String(badge.position)}"; the library places a badge at the top left or the top right.`);
+      }
+
+      if (badge.onClick !== undefined) {
+        const operation = this.spec.behavior?.operations?.[badge.onClick];
+        const actions = isObject(operation) && Array.isArray(operation.actions) ? (operation.actions as readonly unknown[]) : [];
+        const opened = actions.length === 1 && isObject(actions[0]) && typeof actions[0].open === "string" ? /^self\.([A-Za-z_][A-Za-z0-9_]*)$/.exec(actions[0].open) : null;
+        if (opened === null || !right) {
+          fail(`${where} runs "${badge.onClick}"; the library draws a pressed badge only as a link symbol at the top right, opening one attribute.`);
+        }
+        links.push({ id: badge.id, link: `payload.${opened[1]}`, at: { right: BADGE_INSET + LINK_SIZE, top: BADGE_TOP } });
+        continue;
+      }
+
+      const visible = typeof badge.visible === "string" ? badge.visible : isObject(badge.visible) ? badge.visible.cel : undefined;
+      const when = visible === undefined ? undefined : this.bindings.celConditions?.[visible] ?? fail(`${where} shows when "${visible}", which has no condition in the module's celConditions.`);
+      const className = this.bindings.badgeClassName?.(name, badge);
+      const tooltip = badge.tooltip === undefined ? undefined : typeof badge.tooltip === "string" ? { template: badge.tooltip } : this.binding(badge.tooltip, `${where} tooltip`);
+      const said = typeof badge.tooltip === "string" ? badge.tooltip.split(".")[0]! : badge.id;
+      decorations.push({
+        glyph: "circle",
+        anchor: "canvas",
+        from: {
+          x: right ? { path: "bounds.right", number: { plus: -BADGE_INSET } } : { path: "bounds.left", number: { plus: BADGE_INSET } },
+          y: { path: "bounds.top", number: { plus: BADGE_INSET } },
+        },
+        radius: BADGE_RADIUS,
+        ...(className !== undefined ? { className } : {}),
+        ...(tooltip !== undefined ? { tooltip } : {}),
+        accessibility: { role: "img", label: { template: said } },
+        ...(when !== undefined ? { when } : {}),
+      });
+    }
+
+    return { links, decorations };
   }
 
   /**
@@ -748,7 +961,10 @@ class Compiler {
       return { kind: "connection", types: menu.for };
     }
 
-    return { kind: "element", types: menu.for.flatMap((name) => this.concreteTypes(name)) };
+    // A menu for types the notation draws as rows of a list, not as nodes (DISL 0.4 §6.9), declares
+    // nothing on the canvas: a row has no gesture of its own, and its menu is the backend's.
+    const types = menu.for.flatMap((name) => this.concreteTypes(name));
+    return types.length === 0 ? null : { kind: "element", types };
   }
 
   /**
@@ -775,7 +991,7 @@ class Compiler {
 
         const key = tool.operation ?? tool.kind;
         for (const forType of menu.for) {
-          const id = this.wire.actions?.[`${forType}/${key}`] ?? this.wire.actions?.[key] ?? fail(`the "${key}" entry of the menu for ${forType} has no wire id in ${this.bindings.wireIds}.actions.`);
+          const id = this.wire.actions?.[`${forType}/${key}`] ?? this.wire.actions?.[key] ?? (this.bindings.wireIds === undefined ? key : fail(`the "${key}" entry of the menu for ${forType} has no wire id in ${this.bindings.wireIds}.actions.`));
           let action = found.find((entry) => entry.id === id && entry.kind === targets.kind);
           if (action === undefined) {
             action = { id, kind: targets.kind, types: new Set(), keys: [], gestures: [], rank: activates ? 0 : deletes ? 1 : 2 };
@@ -804,7 +1020,7 @@ class Compiler {
         continue;
       }
 
-      const id = this.wire.actions?.[`${type}/${operation}`] ?? this.wire.actions?.[operation] ?? fail(`the double-click operation "${operation}" of ${type} has no wire id in ${this.bindings.wireIds}.actions.`);
+      const id = this.wire.actions?.[`${type}/${operation}`] ?? this.wire.actions?.[operation] ?? (this.bindings.wireIds === undefined ? operation : fail(`the double-click operation "${operation}" of ${type} has no wire id in ${this.bindings.wireIds}.actions.`));
       let action = found.find((entry) => entry.id === id && entry.kind === "element");
       if (action === undefined) {
         action = { id, kind: "element", types: new Set(), keys: [], gestures: ["activate"], rank: 0 };
@@ -966,7 +1182,7 @@ class Compiler {
 
   /** The canvas's one filter box, keyed by the attribute it filters on, with the legend beneath it. */
   private filter(): FilterDeclaration | undefined {
-    const filters = Object.entries(this.spec.notation.canvas?.filters ?? {});
+    const filters = Object.entries(this.spec.notation.canvas?.filters ?? {}).filter(([, filter]) => !isKeptSwitch(filter));
     if (filters.length === 0) {
       return undefined;
     }
@@ -993,6 +1209,20 @@ class Compiler {
       ...(filter.appliesTo !== undefined ? { elementTypes: filter.appliesTo.map((type) => this.typeId(type)) } : {}),
       ...(entries.length > 0 ? { legend: entries } : {}),
     };
+  }
+
+  /**
+   * The canvas's switches: each filter drawn as a switch whose value is kept with the diagram (DISL 0.4
+   * §6.13.1). The canvas holds no value for one; it shows what the model's background says under the
+   * name the persistence binds the filter to, and raises a request under the filter's own name.
+   */
+  private switches(): SwitchDeclaration[] {
+    return Object.entries(this.spec.notation.canvas?.filters ?? {})
+      .filter(([, filter]) => isKeptSwitch(filter))
+      .map(([name, filter]) => {
+        const bound = this.spec.persistence?.view?.bind?.filters?.values?.[name] ?? fail(`the kept filter "${name}" is bound to no name by persistence.view.bind.filters.`);
+        return { id: name, caption: filter.label, on: `payload.${bound}` };
+      });
   }
 
   /** Whether the canvas background has a menu in a viewpoint: a set for `diagram` whose `when` holds there. */
@@ -1043,6 +1273,11 @@ class Compiler {
     dragging: DiagramDefinition["dragging"],
   ): LayoutDefinition {
     const defaultName = this.defaultViewpoint?.[0];
+    const rings = this.rings(this.defaultViewpoint?.[1].layout ?? this.spec.layout?.default);
+    if (rings !== undefined) {
+      return rings;
+    }
+
     const defaultMode = this.layoutMode(this.defaultViewpoint?.[1].layout ?? this.spec.layout?.default);
     const variants = Object.entries(this.spec.viewpoints ?? {}).filter(([, viewpoint]) => viewpoint.variantOf !== undefined);
     if (variants.length === 0) {
@@ -1073,6 +1308,25 @@ class Compiler {
       ...(variant.toggle !== undefined ? { toggle: { caption: variant.toggle.label, on: mode } } : {}),
       ...(mode === "row-packed" ? { rowPacked: this.rowPacked(variant, nodes) } : {}),
       modeOverrides: { [mode]: overrides },
+    };
+  }
+
+  /**
+   * A force layout with rings (DISL 0.4 §10): the library's radiating layout, each ring the concrete
+   * types its tier names, from the centre outwards. Where the layout respects what the reader pinned,
+   * a pinned element is the payload's to say.
+   */
+  private rings(algorithmName: string | undefined): LayoutDefinition | undefined {
+    const algorithm = algorithmName === undefined ? undefined : this.spec.layout?.algorithms?.[algorithmName];
+    if (algorithm?.algorithm !== "force") {
+      return undefined;
+    }
+
+    const tiers = algorithm.force?.tiers ?? fail(`the force layout "${algorithmName}" names no tiers; the library's force layout places types on rings.`);
+    return {
+      modes: ["tiered-force"],
+      tiers: tiers.map((tier) => this.concreteTypes(tier).map((type) => this.typeId(type))),
+      ...(this.spec.layout?.respect === "pinned" ? { pinned: "payload.pinned" } : {}),
     };
   }
 
