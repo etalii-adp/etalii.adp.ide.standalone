@@ -61,6 +61,21 @@ describe("OptionsEditor", () => {
     expect((screen.getByRole("button", { name: "Move Belgium down" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("stands under its header, and inside the window when the header is scrolled out of it", () => {
+    // Arrange: found in the browser - a header scrolled away to the left took its panel with it.
+    const { rerender } = render(<OptionsEditor column={column("selection")} position={{ x: 240, y: 64 }} raise={vi.fn()} onClose={vi.fn()} />);
+
+    // Assert.
+    expect(screen.getByRole("dialog").style.left).toBe("240px");
+    expect(screen.getByRole("dialog").style.top).toBe("64px");
+
+    // Act.
+    rerender(<OptionsEditor column={column("selection")} position={{ x: -635, y: 64 }} raise={vi.fn()} onClose={vi.fn()} />);
+
+    // Assert.
+    expect(screen.getByRole("dialog").style.left).toBe("8px");
+  });
+
   it("renames an option when its field is left, and not while it is typed in", () => {
     // Arrange.
     const { raise } = open();

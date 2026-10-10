@@ -3,6 +3,9 @@ import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn, TableOption } from "../api/tableModel";
 import { OPTION_COLORS, OptionTag } from "../cells/OptionTag";
 
+/** How near the window's left edge the panel may stand, in pixels. */
+const PANEL_MARGIN = 8;
+
 export interface OptionsEditorProps {
   /** The column whose options are edited. */
   column: TableColumn;
@@ -53,7 +56,8 @@ export function OptionsEditor({ column, position, raise, onClose }: OptionsEdito
   };
 
   return (
-    <div ref={panelRef} className="table-options-editor" role="dialog" aria-label={`Options of ${column.name}`} style={{ left: position.x, top: position.y }}>
+    // Under its header - and inside the window when the header is scrolled out of it to the left.
+    <div ref={panelRef} className="table-options-editor" role="dialog" aria-label={`Options of ${column.name}`} style={{ left: Math.max(PANEL_MARGIN, position.x), top: position.y }}>
       <ul className="table-options-list">
         {column.options.map((option, index) => (
           <OptionLine key={option.id} column={column} option={option} index={index} count={column.options.length} raise={raise} />
