@@ -1,3 +1,4 @@
+using EtAlii.Adp.Designer;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.Hierarchy;
@@ -521,7 +522,7 @@ public class ProjectValidatorTests : IDisposable
     private static readonly DiagramOrigin Sheet = new("fixture", "sheet");
 
     private static readonly Designer.DesignerDefinition SheetDefinition =
-        new("fixture/sheet", "Fixture sheet", Formats: [new("YAML", ".yaml")]);
+        new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
     private static ProjectValidator SubjectWithDesigner(ProjectValidatorTestValidator? validator)
     {

@@ -80,18 +80,9 @@ public sealed class AadExamplesTests
         var rows = elements.SelectMany(element => element.Rows).ToList();
         var links = elements.SelectMany(element => (string[])[element.Link, element.BranchLink, element.FolderLink]).Where(link => link.Length > 0).ToList();
         var rowLinks = rows.Select(row => row.Link).Where(link => link.Length > 0).ToList();
-        static bool Web(string link) => link.StartsWith("https://", StringComparison.Ordinal);
-        static bool ProjectPath(string link) => !link.Contains(':', StringComparison.Ordinal) && !link.StartsWith('/');
-
-        static IEnumerable<string> GroupsOf(AadModel model, string id) =>
-            model.Elements.Single(element => element.Id == id).Kind == AadKind.Specification ? AadDefinition.TaskStatus.Members.Select(member => member.Name) : [AadDefinition.PullRequestsGroup];
 
         // Assert, item by item of Requirement 10.5. Each names what is missing when it fails.
         var missing = new List<string>();
-        void Shows(bool shown, string what)
-        {
-            if (!shown) missing.Add(what);
-        }
 
         foreach (var status in AadDefinition.SpecificationStatus.Members)
         {
@@ -125,5 +116,12 @@ public sealed class AadExamplesTests
         Shows(models.Count(model => model.Elements.Count(element => element.Kind == AadKind.Project) > 1) > 0, "more than one project");
 
         Assert.True(missing.Count == 0, "No example shows: " + string.Join("; ", missing));
+        return;
+
+        void Shows(bool shown, string what) { if (!shown) missing.Add(what); }
+
+        static IEnumerable<string> GroupsOf(AadModel model, string id) => model.Elements.Single(element => element.Id == id).Kind == AadKind.Specification ? AadDefinition.TaskStatus.Members.Select(member => member.Name) : [AadDefinition.PullRequestsGroup];
+        static bool ProjectPath(string link) => !link.Contains(':', StringComparison.Ordinal) && !link.StartsWith('/');
+        static bool Web(string link) => link.StartsWith("https://", StringComparison.Ordinal);
     }
 }

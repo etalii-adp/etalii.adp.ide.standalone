@@ -24,10 +24,10 @@ public class AddDiagramContextActionProviderDesignersTests : IDisposable
         "Sheet",
         "Rows and columns.",
         "mdi-table",
-        [new("YAML", ".yaml"), new("JSON", ".json"), new("XML", ".xml")]);
+        [new DesignerFormat("YAML", ".yaml"), new DesignerFormat("JSON", ".json"), new DesignerFormat("XML", ".xml")]);
 
     /// <summary>Declares formats and registers no template: its module is incomplete.</summary>
-    private static readonly DesignerDefinition Unfinished = new("fixture/unfinished", "Unfinished", Formats: [new("YAML", ".yaml")]);
+    private static readonly DesignerDefinition Unfinished = new("fixture/unfinished", "Unfinished", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
     /// <summary>Declares no format: nothing of it can be added.</summary>
     private static readonly DesignerDefinition Fixed = new("fixture/fixed", "Fixed");

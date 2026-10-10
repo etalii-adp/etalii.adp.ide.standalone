@@ -14,7 +14,7 @@ public class DesignerFileRouterTests : IDisposable
     private static readonly DesignerDefinition Sheet = new(
         "fixture/sheet",
         "Fixture sheet",
-        Formats: [new("YAML", ".yaml"), new("JSON", ".json")]);
+        Formats: [new DesignerFormat("YAML", ".yaml"), new DesignerFormat("JSON", ".json")]);
 
     private readonly string _root;
     private readonly DesignerFileRouter _router = new(new DesignerDefinitionCatalog { All = [Sheet] });

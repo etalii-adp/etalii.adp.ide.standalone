@@ -76,9 +76,9 @@ public sealed class AddAadRowCommandHandler(IAadDocumentStore documents) : IComm
 
             var now = AadEdits.Now();
             (string Type, Dictionary<string, object?> Attributes)? row = parent.IsA("Specification")
-                ? ("Task", new(StringComparer.Ordinal) { ["title"] = "New task", ["status"] = "pending", ["updated"] = now })
+                ? ("Task", new Dictionary<string, object?>(StringComparer.Ordinal) { ["title"] = "New task", ["status"] = "pending", ["updated"] = now })
                 : parent.IsA("Location")
-                    ? ("PullRequest", new(StringComparer.Ordinal) { ["title"] = "New pull request", ["updated"] = now })
+                    ? ("PullRequest", new Dictionary<string, object?>(StringComparer.Ordinal) { ["title"] = "New pull request", ["updated"] = now })
                     : null;
             return row is { } add
                 ? AadDefinition.Apply(document, new DislTransaction([new DislChange.Create(add.Type, AadDefinition.NewIds.Next(add.Type), add.Attributes, parent.Id, null)], [], null))
