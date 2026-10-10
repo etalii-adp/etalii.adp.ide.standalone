@@ -124,9 +124,109 @@ internal sealed class BodyReading
         reading._isClaiming = false;
         reading._claiming = null;
         reading.Resolve();
+        if (options.ReportUnboundKeys) reading.ReportUnboundKeys();
         family.AfterRead(reading.ClaimedBy);
         reading._findings.InsertRange(0, family.Findings);
         return reading;
+    }
+
+    /// <summary>
+    /// Reports each key of a read entry that nothing in the binding reads: not an attribute of a
+    /// rule that reads there, not its id, not a key such a rule writes, and not the container of a
+    /// rule that reads further down. In xml that is an attribute or a child element of a read
+    /// element. What is reported is kept as it is; this only says that it is there.
+    /// </summary>
+    private void ReportUnboundKeys()
+    {
+        var known = new Dictionary<string, (HashSet<string> Keys, HashSet<string> Children, bool AnyChild)>(StringComparer.Ordinal);
+        var seen = new HashSet<Entry>();
+        foreach (var element in Elements)
+        {
+            if (element.Rule.At is not { } at || !seen.Add(element.Entry)) continue;
+            if (!known.TryGetValue(at, out var names))
+            {
+                names = KnownNames(at);
+                known[at] = names;
+            }
+
+            switch (element.Entry)
+            {
+                case TreeEntry { Value: { Kind: ValueKind.Mapping, ViaAlias: false } } entry:
+                    foreach (var member in entry.Value.Entries)
+                    {
+                        if (member.Name is { } key && !names.Keys.Contains(key) && !names.Children.Contains(key))
+                        {
+                            Unbound("key", key, member.KeySpan ?? member.Own);
+                        }
+                    }
+                    break;
+                case XmlElement xml:
+                    foreach (var attribute in xml.Attributes)
+                    {
+                        // A namespace declaration and an xml: attribute are the format's own, not a value of the entry.
+                        if (!names.Keys.Contains(attribute.Name) && !attribute.Name.StartsWith("xml", StringComparison.Ordinal))
+                        {
+                            Unbound("attribute", attribute.Name, attribute.Own);
+                        }
+                    }
+                    foreach (var child in xml.Elements)
+                    {
+                        if (!names.AnyChild && child.Name is { } name && !names.Children.Contains(name))
+                        {
+                            Unbound("element", name, child.StartTag);
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
+    private void Unbound(string kind, string name, Span at) =>
+        Family.Report(FindingCodes.UnboundKey, FindingSeverity.Info, $"The {kind} '{name}' is not one this file's binding reads; it is kept as it is.", at);
+
+    /// <summary>
+    /// What the binding knows of an entry read at a path: the keys the rules there read and write, and
+    /// the next step of every rule that reads further down. A step that is not a plain name admits any child.
+    /// </summary>
+    private (HashSet<string> Keys, HashSet<string> Children, bool AnyChild) KnownNames(string at)
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var children = new HashSet<string>(StringComparer.Ordinal);
+        var anyChild = false;
+
+        void Step(string path)
+        {
+            var step = path.Split('/')[0];
+            var name = step.Split('[')[0];
+            if (name.Length == 0 || name == "*" || name.Contains('{', StringComparison.Ordinal)) anyChild = true;
+            else children.Add(name);
+        }
+
+        var prefix = at.EndsWith('/') ? at : at + "/";
+        foreach (var rule in Binding.AllRules)
+        {
+            if (rule.At == at)
+            {
+                foreach (var slot in rule.Attributes.Select(Slot? (attribute) => attribute.Value).Append(rule.Id?.From).OfType<Slot>())
+                {
+                    if (slot.Child is { } child) Step(child);
+                    else if ((slot.Key ?? slot.XmlAttribute) is { } key) keys.Add(key);
+                }
+                keys.UnionWith(rule.Insert?.Keys ?? []);
+            }
+            else if (rule.At is { } below && below.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                Step(below[prefix.Length..]);
+            }
+        }
+        if (at == "/")
+        {
+            // The root also holds the marks a file is known by, and may name its schema.
+            if (Binding.Header?.Key is { } header) keys.Add(header);
+            if (Binding.Claims.Marker?.RootKey is { } marker) keys.Add(marker);
+            keys.Add("$schema");
+        }
+        return (keys, children, anyChild);
     }
 
     private BodyReading MakeUnreadable(int offset, string message)
