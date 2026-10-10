@@ -354,6 +354,53 @@ public class RenameEntryCommandHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_ARenameInAProject_IsFollowed_AndSoIsItsUndo()
+    {
+        // Arrange.
+        var path = CreateFile("original.txt");
+        var follower = new RecordingFollower();
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), followers: [follower]);
+
+        // Act: renamed in a project, and undone by its inverse.
+        var result = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt", _root), TestContext.Current.CancellationToken);
+        var inverse = Assert.IsType<RenameEntryCommand>(result.Inverse);
+        var undone = await handler.ExecuteAsync(inverse, TestContext.Current.CancellationToken);
+
+        // Assert: told of the move after it happened, and of the move back, each in the same project.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.True(undone.IsSuccess, undone.Error);
+        var renamed = IoPath.Combine(_root, "renamed.txt");
+        Assert.Equal([(_root, path, renamed, true), (_root, renamed, path, true)], follower.Seen);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ARenameOutsideAProject_OrARefusedOne_IsNotFollowed()
+    {
+        // Arrange.
+        var path = CreateFile("original.txt");
+        CreateFile("taken.txt");
+        var follower = new RecordingFollower();
+        var handler = new RenameEntryCommandHandler(new EmptyCatalog(), followers: [follower]);
+
+        // Act: one refused, and one made without a project.
+        var refused = await handler.ExecuteAsync(new RenameEntryCommand(path, "taken.txt", _root), TestContext.Current.CancellationToken);
+        var plain = await handler.ExecuteAsync(new RenameEntryCommand(path, "renamed.txt"), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.False(refused.IsSuccess);
+        Assert.True(plain.IsSuccess, plain.Error);
+        Assert.Empty(follower.Seen);
+    }
+
+    /// <summary>Notes each move it is told of, and whether the entry was where it is said to be by then.</summary>
+    private sealed class RecordingFollower : IEntryRenameFollower
+    {
+        public List<(string Root, string From, string To, bool Moved)> Seen { get; } = [];
+
+        public void Renamed(string rootPath, string fromPath, string toPath) => Seen.Add((rootPath, fromPath, toPath, File.Exists(toPath) && !File.Exists(fromPath)));
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ARefusedRename_LeavesNoExpectationBehind()
     {
         // Arrange: a rename refused after it was announced - a registration's subject portion

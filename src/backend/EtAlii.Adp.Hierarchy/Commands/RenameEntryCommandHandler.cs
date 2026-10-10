@@ -11,6 +11,10 @@ namespace EtAlii.Adp.Hierarchy;
 /// </summary>
 /// <param name="FullPath">Absolute path of the entry as it stands now.</param>
 /// <param name="NewName">The new name only - not a path. A separator in it is rejected.</param>
+/// <param name="RootPath">
+/// The project the entry is in, when the rename is made in one: what names the entry elsewhere in
+/// that project follows it (<see cref="IEntryRenameFollower"/>). Empty, nothing follows.
+/// </param>
 /// <remarks>
 /// This is the commit step of the rename flow: the point at which a name the user has already
 /// typed and had validated is actually applied to disk. Its inverse is another
@@ -19,7 +23,8 @@ namespace EtAlii.Adp.Hierarchy;
 /// </remarks>
 public sealed record RenameEntryCommand(
     string FullPath,
-    string NewName) : ICommand;
+    string NewName,
+    string RootPath = "") : ICommand;
 
 /// <summary>
 /// Applies a <see cref="RenameEntryCommand"/> to disk.
@@ -41,6 +46,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
     private readonly IDiagramDefinitionCatalog _catalog;
     private readonly IHierarchyModelStore? _modelStore;
+    private readonly IReadOnlyList<IEntryRenameFollower> _followers;
 
     /// <param name="catalog">The catalog.</param>
     /// <param name="modelStore">
@@ -49,11 +55,13 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     /// wires up commands without the hierarchy area, where a rename still happens on disk and
     /// simply raises no direct model notification.
     /// </param>
-    public RenameEntryCommandHandler(IDiagramDefinitionCatalog catalog, IHierarchyModelStore? modelStore = null)
+    /// <param name="followers">What the tool types registered to follow a rename; none in a host without such a module.</param>
+    public RenameEntryCommandHandler(IDiagramDefinitionCatalog catalog, IHierarchyModelStore? modelStore = null, IEnumerable<IEntryRenameFollower>? followers = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         _catalog = catalog;
         _modelStore = modelStore;
+        _followers = [.. followers ?? []];
     }
 
     /// <summary>
@@ -155,7 +163,31 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             _modelStore!.WithdrawRename(sourcePath, targetPath);
         }
 
+        if (moved is { IsSuccess: true, Inverse: RenameEntryCommand inverse } && command.RootPath.Length > 0)
+        {
+            // What names the entry elsewhere in the project follows it, and follows it back: the
+            // inverse is a rename in the same project, so an undo runs the followers the other way.
+            Follow(command.RootPath, sourcePath, targetPath);
+            moved = CommandResult.Success(inverse with { RootPath = command.RootPath });
+        }
+
         return Task.FromResult(moved);
+    }
+
+    /// <summary>Tells each follower of the move. One that fails is logged and does not undo a rename that happened.</summary>
+    private void Follow(string rootPath, string sourcePath, string targetPath)
+    {
+        foreach (var follower in _followers)
+        {
+            try
+            {
+                follower.Renamed(rootPath, sourcePath, targetPath);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                _logger.Warning(exception, "{Follower} could not follow the rename of {SourcePath} to {TargetPath}", follower.GetType().Name, sourcePath, targetPath);
+            }
+        }
     }
 
     /// <summary>The move itself, for every shape a rename takes; the models are told by the caller.</summary>

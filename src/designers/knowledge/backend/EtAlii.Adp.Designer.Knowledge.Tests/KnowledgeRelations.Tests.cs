@@ -345,6 +345,59 @@ public sealed class KnowledgeRelationsTests : IDisposable
         Assert.DoesNotContain("otherSide", table.Session.Baseline().Columns.Single(column => column.Id == rivalled).Settings.Keys);
     }
 
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task WhenTheTargetIsRenamed_TheRelationNamesItByItsNewName_AndByItsOldOneWhenThatIsUndone(string extension)
+    {
+        // Arrange: the example relates to provinces.yaml beside it; a table elsewhere in the project relates to nothing.
+        var cities = KnowledgeFiles.CopyPlain("cities" + extension, _root);
+        var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
+        var regions = IoPath.Combine(_root, "regions.yaml");
+        var follower = new KnowledgeTargetRename(new KnowledgeDocuments());
+
+        // Act: the target is renamed, as the explorer does it.
+        File.Move(Provinces, regions);
+        follower.Renamed(_root, Provinces, regions);
+
+        // Assert: the relation names the file where it is now, and resolves; the renamed file is untouched.
+        var table = KnowledgeDocumentStore.Read(cities).Body!.Table;
+        Assert.Equal("regions.yaml", table.Properties.Single(property => property.Id == "p5").TargetFile);
+        await using (var open = new EditingTable(cities))
+        {
+            Assert.Equal(["Noord-Holland"], Cell(open.Lines(), "r1", "p5")?.Labels);
+            Assert.Empty(open.Session.Baseline().Findings);
+        }
+
+        // Act: the rename is undone, which is a rename back.
+        File.Move(regions, Provinces);
+        follower.Renamed(_root, regions, Provinces);
+
+        // Assert: byte for byte what it was.
+        Assert.Equal(before, await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task WhenAFolderIsRenamed_RelationsIntoItFollow_AndRelationsInsideItStay()
+    {
+        // Arrange: cities relates to a table in a folder; a table in that folder relates to its neighbour there.
+        var cities = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        (string old, string renamed) = (IoPath.Combine(_root, "data"), IoPath.Combine(_root, "reference"));
+        Directory.CreateDirectory(old);
+        File.Move(Provinces, IoPath.Combine(old, KnowledgeFiles.Related));
+        var text = await File.ReadAllTextAsync(cities, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(cities, text.Replace("target: provinces.yaml", "target: data/provinces.yaml", StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(old, "inside.yaml"), text, TestContext.Current.CancellationToken);
+        Assert.Equal("data/provinces.yaml", KnowledgeDocumentStore.Read(cities).Body!.Table.Properties.Single(property => property.Id == "p5").TargetFile);
+
+        // Act.
+        Directory.Move(old, renamed);
+        new KnowledgeTargetRename(new KnowledgeDocuments()).Renamed(_root, old, renamed);
+
+        // Assert.
+        Assert.Equal("reference/provinces.yaml", KnowledgeDocumentStore.Read(cities).Body!.Table.Properties.Single(property => property.Id == "p5").TargetFile);
+        Assert.Equal(text, await File.ReadAllTextAsync(IoPath.Combine(renamed, "inside.yaml"), TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public async Task WhenTheOtherFileRefuses_NeitherFileIsWritten()
     {

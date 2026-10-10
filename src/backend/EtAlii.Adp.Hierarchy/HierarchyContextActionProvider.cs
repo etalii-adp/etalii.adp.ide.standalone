@@ -164,7 +164,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
 
         return actionId switch
         {
-            RenameActionId => await DispatchAsync(target, new RenameEntryCommand(target.ResolvedFullPath, value), cancellationToken),
+            RenameActionId => await DispatchAsync(target, new RenameEntryCommand(target.ResolvedFullPath, value, target.RootPath), cancellationToken),
             DeleteActionId => await DispatchAsync(target, new DeleteEntryCommand(target.ResolvedFullPath), cancellationToken),
             AddFolderActionId when target.IsContainer => await CreateFolderAsync(target, value.Trim(), cancellationToken),
             _ => ContextCommitResult.Failed($"Unknown action '{actionId}'."),
