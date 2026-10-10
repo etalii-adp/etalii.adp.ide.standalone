@@ -3,5 +3,8 @@
   "version": "0.1-alpha",
   "publicReleaseRefSpec": [
     "^refs/heads/develop$"
-  ]
+  ],
+  "cloudBuild": {
+    "setVersionVariables": false
+  }
 }
