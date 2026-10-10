@@ -21,7 +21,7 @@ internal static class KnowledgeTableMapper
         var view = table.ViewOrDefault(viewId);
         return new TableStructureChanged(
             table.Name,
-            Columns(table, view, targetOf),
+            Columns(table, view, targetOf, Uses(table)),
             [.. table.Views.Select(candidate => new TableView(candidate.Id, candidate.Name))],
             Settings(view),
             rowCount,
@@ -32,7 +32,25 @@ internal static class KnowledgeTableMapper
     /// The columns in the view's order: the properties the view lists, as it lists them, then
     /// those it does not mention, which are shown - a property added outside ADP appears.
     /// </summary>
-    private static IReadOnlyList<TableColumn> Columns(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf)
+    /// <summary>The setting a column says under how many rows have one of its options: what deleting that option would clear.</summary>
+    private const string UsesPrefix = "uses:";
+
+    /// <summary>How many rows have each option of each selection, counted once for the whole table.</summary>
+    private static Dictionary<(string PropertyId, string OptionId), int> Uses(KnowledgeTable table)
+    {
+        var uses = new Dictionary<(string, string), int>();
+        foreach (var cell in table.Rows.SelectMany(row => row.Cells).Where(cell => cell.Key is "option" or "options"))
+        {
+            foreach (var value in cell.Values.Distinct())
+            {
+                uses[(cell.PropertyId, value)] = uses.GetValueOrDefault((cell.PropertyId, value)) + 1;
+            }
+        }
+
+        return uses;
+    }
+
+    private static IReadOnlyList<TableColumn> Columns(KnowledgeTable table, KnowledgeView? view, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses)
     {
         var listed = view?.Columns ?? [];
         var byId = table.Properties.ToDictionary(property => property.Id);
@@ -42,11 +60,11 @@ internal static class KnowledgeTableMapper
             // A view naming a property that is gone still opens, without that setting.
             if (byId.Remove(column.PropertyId, out var property))
             {
-                columns.Add(Column(property, column, targetOf));
+                columns.Add(Column(property, column, targetOf, uses));
             }
         }
 
-        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(property, null, targetOf)));
+        columns.AddRange(table.Properties.Where(property => byId.ContainsKey(property.Id)).Select(property => Column(property, null, targetOf, uses)));
         return columns;
     }
 
@@ -92,7 +110,7 @@ internal static class KnowledgeTableMapper
             finding.Location is { } at ? $"{finding.Message} (line {at.Line})" : finding.Message)),
     ];
 
-    private static TableColumn Column(KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf)
+    private static TableColumn Column(KnowledgeProperty property, KnowledgeColumn? column, Func<KnowledgeProperty, KnowledgeTarget?>? targetOf, Dictionary<(string PropertyId, string OptionId), int> uses)
     {
         var settings = new Dictionary<string, string>(StringComparer.Ordinal);
         if (property.TargetFile.Length > 0)
@@ -101,6 +119,15 @@ internal static class KnowledgeTableMapper
         }
 
         IReadOnlyList<TableOption> options = [.. property.Options.Select(option => new TableOption(option.Id, option.Name, option.Colour))];
+
+        // An option some rows have says how many: its author is told before deleting it clears them.
+        foreach (var option in property.Options)
+        {
+            if (uses.GetValueOrDefault((property.Id, option.Id)) is > 0 and var count)
+            {
+                settings[UsesPrefix + option.Id] = count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+        }
         if (property.ValueType == "relation")
         {
             settings["limit"] = property.Limit;
