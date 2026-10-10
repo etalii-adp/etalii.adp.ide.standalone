@@ -107,6 +107,27 @@ public sealed class KnowledgeOptionsTests : IDisposable
         Assert.Equal(before, table.Bytes());
     }
 
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task AnOptionSomeRowsHave_SaysHowMany_SoItsAuthorIsToldBeforeDeletingIt(string extension)
+    {
+        // Arrange: Port is a tag of both rows, Capital of one; Netherlands and Belgium are each one row's country.
+        await using var table = Open(extension);
+        IReadOnlyDictionary<string, string> Settings(string id) => table.Session.Baseline().Columns.Single(column => column.Id == id).Settings;
+
+        // Assert.
+        Assert.Equal(("2", "1"), (Settings("p4")["uses:o3"], Settings("p4")["uses:o4"]));
+        Assert.Equal(("1", "1"), (Settings("p2")["uses:o1"], Settings("p2")["uses:o2"]));
+
+        // Act: an option nobody has says nothing, and the count follows the rows.
+        await table.Edit(Option("addOption", "p2", name: "Luxembourg"));
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p4", Values: ["o4"]));
+
+        // Assert.
+        Assert.Equal(2, Settings("p2").Keys.Count(key => key.StartsWith("uses:", StringComparison.Ordinal)));
+        Assert.Equal("1", Settings("p4")["uses:o3"]);
+    }
+
     [Fact]
     public async Task AnOption_NeedsAName_ThatNoOtherOptionOfItsPropertyHas_AndAColourThereIs()
     {
