@@ -171,11 +171,18 @@ internal sealed class BodyReading
                         if (problem is not null) error ??= problem;
                         if (holds is not true) continue;
                     }
-                    _claims[entry] = rule.Name;
                     var element = new ReadElement { Rule = rule, Candidate = candidate, Line = Text.Position(entry.Own.Start).Line };
+                    ReadSlots(element);
+                    if (Mistyped(element) is { } mistyped)
+                    {
+                        // The entry is this rule's and no other's: it is not offered to a later
+                        // candidate, which would read as an element what the rule could not.
+                        error = mistyped;
+                        break;
+                    }
+                    _claims[entry] = rule.Name;
                     _byEntry[entry] = element;
                     Elements.Add(element);
-                    ReadSlots(element);
                 }
                 else
                 {
@@ -193,6 +200,21 @@ internal sealed class BodyReading
                 Family.Report(FindingCodes.UnreadableEntry, FindingSeverity.Warning, $"This entry cannot be read: {error}", entry.Own);
             }
         }
+    }
+
+    /// <summary>The first attribute whose value does not convert to the type its specification gives it, as a reason, or null.</summary>
+    private string? Mistyped(ReadElement element)
+    {
+        if (Options.AttributeType is not { } typeOf) return null;
+        foreach ((string name, object? value) in element.Attributes)
+        {
+            if (value is null || !element.Slots.TryGetValue(name, out var read) || !read.Present) continue;
+            if (typeOf(element.Rule.Type, name) is { } type && !TypedValue.Reads(type, value))
+            {
+                return $"'{name}' is not a {type}.";
+            }
+        }
+        return null;
     }
 
     private static void Offer(Dictionary<Entry, List<Candidate>> offered, Candidate candidate)
@@ -403,6 +425,28 @@ internal sealed class BodyReading
 
     private void Resolve()
     {
+        // Containment first: it needs no id, and an id derived by the caller may be built from
+        // the id of the element that contains this one. Elements are in document order, so a
+        // parent has its id before any of its children is asked for theirs.
+        foreach (var element in Elements)
+        {
+            if (element.Rule.Parent is not { } containment) continue;
+            foreach (var enclosing in Family.Enclosing(element.Entry))
+            {
+                if (_byEntry.TryGetValue(enclosing, out var parent) && containment.Rules.Contains(parent.Rule.Name))
+                {
+                    element.Parent = parent;
+                    break;
+                }
+            }
+        }
+        var positions = new Dictionary<(ReadElement? Parent, string? Slot), int>();
+        foreach (var element in Elements)
+        {
+            var slot = (element.Parent, element.Parent is null ? null : element.Rule.Parent?.Slot);
+            element.PositionInSlot = positions.GetValueOrDefault(slot);
+            positions[slot] = element.PositionInSlot + 1;
+        }
         foreach (var element in Elements.Where(e => !e.IsRelation)) AssignId(element);
         foreach (var element in Elements.Where(e => !e.IsRelation)) element.Key = KeyOf(element);
         var dangling = new List<ReadElement>();
@@ -430,18 +474,6 @@ internal sealed class BodyReading
             element.Id = PlaceId(element);
             element.IdStored = false;
             seen.Add(element.Id);
-        }
-        foreach (var element in Elements)
-        {
-            if (element.Rule.Parent is not { } containment) continue;
-            foreach (var enclosing in Family.Enclosing(element.Entry))
-            {
-                if (_byEntry.TryGetValue(enclosing, out var parent) && containment.Rules.Contains(parent.Rule.Name))
-                {
-                    element.Parent = parent;
-                    break;
-                }
-            }
         }
         foreach (var element in Elements) CheckReferences(element);
     }
@@ -471,7 +503,12 @@ internal sealed class BodyReading
                 return;
             }
         }
-        var request = new IdRequest(rule.Name, rule.Type, element.Attributes, element.SourceElement?.Id, element.TargetElement?.Id, element.Line);
+        var request = new IdRequest(rule.Name, rule.Type, element.Attributes, element.SourceElement?.Id, element.TargetElement?.Id, element.Line)
+        {
+            ParentId = element.Parent?.Id,
+            ParentSlot = element.Parent is null ? null : rule.Parent?.Slot,
+            PositionInSlot = element.PositionInSlot,
+        };
         element.Id = Options.DeriveId?.Invoke(request) ?? PlaceId(element);
     }
 

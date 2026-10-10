@@ -550,7 +550,12 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
                     Plan.Refuse($"The {Binding.Name} file has no {binding.Child} to write \"{name}\" in.");
                     return;
                 }
-                var offset = target.Attributes.Count > 0 ? target.Attributes[^1].Own.End : target.NameEnd;
+                // After the nearest attribute before it in the rule's own order, where the order
+                // places it before another that is there; else after the last attribute (FBL §6.3).
+                var order = change.Rule.WireOrder().ToList();
+                var place = order.IndexOf(name);
+                var before = place < 0 ? null : target.Attributes.LastOrDefault(attribute => order.IndexOf(attribute.Name) is >= 0 and var at && at < place);
+                var offset = before is not null ? before.Own.End : target.Attributes.Count > 0 ? target.Attributes[^1].Own.End : target.NameEnd;
                 plan.Add(SpliceOperation.InsertKey, offset, offset, $" {name}=\"{Format(read, binding, change.Value)}\"");
                 continue;
             }
@@ -660,7 +665,7 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
     /// Removes a child element holding a value with the line break before it (<c>remove-key</c>), and
     /// closes the parent again when only whitespace is left in it (<c>self-close</c>).
     /// </summary>
-    private void RemoveChild(Plan plan, XmlElement parent, XmlElement child)
+    private void RemoveChild(Plan plan, XmlElement parent, XmlElement child, SpliceOperation operation = SpliceOperation.RemoveKey)
     {
         var line = Text.LineIndexAt(child.Own.Start);
         var span = child.LineSpan is not null && line > 0 ? child.Own with { Start = Text.Lines[line - 1].ContentEnd } : child.Own;
@@ -670,11 +675,11 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
             && IsWhitespace(new Span(span.End, end.Start));
         if (!closes)
         {
-            plan.Add(SpliceOperation.RemoveKey, span, "");
+            plan.Add(operation, span, "");
             return;
         }
         plan.Add(SpliceOperation.SelfClose, parent.Close.Start, span.Start, "/>");
-        plan.Add(SpliceOperation.RemoveKey, span, "");
+        plan.Add(operation, span, "");
         plan.Add(SpliceOperation.SelfClose, span.End, parent.EndTag!.Value.End, "");
     }
 
@@ -747,6 +752,20 @@ internal sealed partial class XmlFamily(BodyText text, FblBinding binding, FblOp
             Plan.Refuse($"The document element of the {Binding.Name} file cannot be removed.");
             return;
         }
+
+        // The only child of an element that an insert may have opened for it (`last-child`, FBL §6.2),
+        // or of one that goes when it is left empty: the parent is closed again, so that adding a
+        // child and removing it leaves the bytes it started from. The
+        // entry goes with the line break before it, and its parent becomes self-closed.
+        if ((element.Rule.Remove?.RemoveContainerWhenEmpty == true || element.Rule.Insert?.Place == "last-child") &&
+            entry.Parent is XmlElement { SelfClosed: false } parent &&
+            parent != _document &&
+            parent.Elements.Count() == 1)
+        {
+            RemoveChild(plan, parent, entry, SpliceOperation.RemoveEntry);
+            return;
+        }
+
         plan.Add(SpliceOperation.RemoveEntry, entry.RemovalSpan, "");
     }
 }

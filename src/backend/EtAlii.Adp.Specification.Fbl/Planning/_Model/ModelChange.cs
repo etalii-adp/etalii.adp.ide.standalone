@@ -12,7 +12,12 @@ public abstract record ModelChange
     /// element goes: before the one now at this index, after the last when it is past them; null for
     /// last. Only a body whose children are ordered can honour it.
     /// </param>
-    public sealed record Add(string Type, string? Id, IReadOnlyDictionary<string, object?> Attributes, string? ParentId = null, int? Index = null) : ModelChange;
+    /// <param name="Slot">
+    /// The containment slot of the parent the element goes in, when the element's type can be
+    /// written in several (a view's group order, its hidden groups and its collapsed groups are
+    /// one type in three slots). Null chooses the first rule of the type that can insert.
+    /// </param>
+    public sealed record Add(string Type, string? Id, IReadOnlyDictionary<string, object?> Attributes, string? ParentId = null, int? Index = null, string? Slot = null) : ModelChange;
 
     /// <summary>
     /// Moves an element, with everything it contains, under <paramref name="NewParentId"/> (to the top

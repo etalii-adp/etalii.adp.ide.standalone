@@ -1,0 +1,250 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+import "shared.proto";      // ShortGuid
+import "connection.proto";  // Path
+
+option csharp_namespace = "EtAlii.Adp.Designer.Wire";
+
+// The designer family's calls, named for the table and not for a designer type: a designer whose
+// document is a table - rows, columns and views of them - is served by these, whichever
+// designer it is (knowledge-designer Requirements 10.2 and 10.7).
+//
+// Every call is unary. A table's content arrives on the tab's one stream, WorkspaceService.Watch,
+// as its `table` member; a feature that pushes joins that stream and never opens a second one
+// (workspace.proto says why). So a table joins the connection through OpenTable and leaves
+// through CloseTable, as a diagram does through OpenDiagram and CloseDiagram.
+service DesignerService {
+  // Starts a table stream on the connection's Watch - the baseline, then every later change -
+  // under a client-generated stream id. Refused with the permanent codes DiagramService.Open
+  // uses. Answers only once the stream is running.
+  rpc OpenTable(OpenTableRequest) returns (OpenTableResponse);
+
+  // Ends one table stream. Closing a stream that is already gone is not an error.
+  rpc CloseTable(CloseTableRequest) returns (CloseTableResponse);
+
+  // Which rows the client has in sight. The backend holds the view's row order and sends the
+  // rows of the window, never the whole table.
+  rpc SetTableWindow(SetTableWindowRequest) returns (SetTableWindowResponse);
+
+  // Which of the table's views this connection shows. Per connection: two tabs may show two
+  // views of one table.
+  rpc SetTableView(SetTableViewRequest) returns (SetTableViewResponse);
+
+  // One gesture of the author. Answered as soon as the edit is accepted, which is before it is
+  // written: the table shows it at once and the write follows (TableEditOutcome).
+  rpc Edit(TableEditRequest) returns (TableEditResponse);
+}
+
+message OpenTableRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;   // the connection this stream belongs to
+  ShortGuid stream_id = 3;  // client-generated, unique on the connection among all its streams
+  Path path = 4;            // project-relative path of the document's registration or of its body
+}
+
+message OpenTableResponse {}
+
+message CloseTableRequest {
+  ShortGuid watch_id = 1;
+  ShortGuid stream_id = 2;
+}
+
+message CloseTableResponse {}
+
+message SetTableWindowRequest {
+  ShortGuid watch_id = 1;
+  ShortGuid stream_id = 2;
+  int32 first = 3;  // index of the first row wanted, in the active view's order
+  int32 count = 4;  // how many rows from there, margin included
+}
+
+message SetTableWindowResponse {}
+
+message SetTableViewRequest {
+  ShortGuid watch_id = 1;
+  ShortGuid stream_id = 2;
+  string view_id = 3;
+}
+
+message SetTableViewResponse {}
+
+message TableEditRequest {
+  ShortGuid watch_id = 1;
+  ShortGuid stream_id = 2;
+  // Client-generated. The edit's outcome names it, so the client can mark exactly this edit as
+  // written or take exactly this edit back.
+  ShortGuid edit_id = 3;
+  TableGesture gesture = 4;
+}
+
+message TableEditResponse {
+  // Empty when the edit was accepted and will be written. Otherwise why it was refused before
+  // anything was shown or queued: the client shows the sentence and changes nothing.
+  string error = 1;
+}
+
+// What the author did, in the table's own words. The kinds are the session's to define and the
+// table library's to raise; core carries them and knows none.
+message TableGesture {
+  string kind = 1;             // e.g. "setCell", "addRow", "moveColumn"
+  string row_id = 2;           // the row it concerns, when it concerns one
+  string column_id = 3;        // the column it concerns, when it concerns one
+  string view_id = 4;          // the view it concerns, when it concerns one
+  repeated string values = 5;  // the value or values given, in their written form
+  int32 index = 6;             // a position, for a gesture that places something
+  string target_id = 7;        // a second thing it names: the row or column it is placed beside
+  map<string, string> settings = 8;  // named settings of the gesture, e.g. a type or a width
+}
+
+// One event of one table stream, told apart from the connection's other streams by its id.
+message TableStreamMessage {
+  ShortGuid stream_id = 1;
+  oneof event {
+    TableBaseline baseline = 2;
+    TableChange change = 3;
+    // The backend ended the stream itself - a session that failed. The client re-opens.
+    TableStreamEnded ended = 4;
+  }
+}
+
+message TableStreamEnded {}
+
+// The whole table as a connection first sees it: everything but the rows, and how many rows the
+// active view has. The rows follow as a change once the client has said which it has in sight.
+message TableBaseline {
+  string title = 1;
+  repeated TableColumn columns = 2;   // every column, in the active view's order
+  repeated TableView views = 3;       // every view, in their order
+  TableViewSettings settings = 4;     // the active view's
+  int32 row_count = 5;                // rows and group headings in the active view's order
+  repeated TableFinding findings = 6;
+  // Non-empty when the table cannot be edited, saying why (a newer file version, for one).
+  string read_only_reason = 7;
+}
+
+message TableColumn {
+  string id = 1;
+  string name = 2;
+  string kind = 3;                     // the value kind: text, number, checkbox, date, ...
+  repeated TableOption options = 4;    // of a selection
+  int32 width = 5;                     // in pixels; 0 for the table's default
+  bool visible = 6;                    // in the active view
+  bool is_title = 7;                   // the column that names a row
+  bool wraps = 8;
+  map<string, string> settings = 9;    // what else its kind has, e.g. a relation's target
+}
+
+message TableOption {
+  string id = 1;
+  string name = 2;
+  string color = 3;  // a colour name of the theme, never a colour value
+}
+
+message TableView {
+  string id = 1;
+  string name = 2;
+}
+
+message TableViewSettings {
+  string view_id = 1;
+  repeated TableSort sorts = 2;
+  TableFilterGroup filter = 3;       // absent when the view filters nothing
+  string group_by = 4;               // a column id, or empty
+  bool hides_empty_groups = 5;
+  map<string, string> settings = 6;  // what else the view stores
+}
+
+message TableSort {
+  string column_id = 1;
+  bool descending = 2;
+}
+
+message TableFilterGroup {
+  bool any = 1;  // true: a row passes when any item holds; false: when all do
+  repeated TableFilterItem items = 2;
+}
+
+message TableFilterItem {
+  oneof item {
+    TableCondition condition = 1;
+    TableFilterGroup group = 2;
+  }
+}
+
+message TableCondition {
+  string column_id = 1;
+  string comparison = 2;       // e.g. "contains", "isEmpty"
+  repeated string values = 3;
+}
+
+message TableChange {
+  oneof change {
+    TableRows rows = 1;                 // the rows of the window, replacing what the client holds there
+    TableStructure structure = 2;       // columns, views or the active view's settings changed
+    TableFindings findings = 3;
+    TableEditOutcome outcome = 4;
+  }
+}
+
+message TableRows {
+  int32 first = 1;       // index of the first row given
+  repeated TableRow rows = 2;
+  int32 row_count = 3;   // the view's total, which an edit or a filter may have changed
+}
+
+// A line of the view: a row of the table, the heading of a group of rows, or the place a new row
+// is added at - the bottom of the table and of every group. All three are lines, because the
+// client asks for lines by index and every line has the same height.
+message TableRow {
+  string id = 1;                 // a row's id, or a group's key
+  int32 depth = 2;               // nesting under a parent row
+  repeated TableCell cells = 3;  // of a row; only the cells that hold a value
+  bool is_group = 4;
+  string label = 5;              // of a group heading
+  int32 count = 6;               // of a group heading: the rows in it
+  bool collapsed = 7;            // of a group heading, or of a row with rows under it
+  bool has_children = 8;
+  // True for the line a new row is added at. Its id is the key of the group it ends, or empty
+  // for the bottom of a table that is not grouped.
+  bool is_new_row = 9;
+}
+
+message TableCell {
+  string column_id = 1;
+  repeated string values = 2;  // written form; several for a multiple selection or a relation
+  repeated string labels = 3;  // what to show per value where it is not the value itself
+  // True while the value shown is an edit that has not been written yet.
+  bool pending = 4;
+}
+
+message TableStructure {
+  repeated TableColumn columns = 1;
+  repeated TableView views = 2;
+  TableViewSettings settings = 3;
+  string title = 4;
+  int32 row_count = 5;
+  string read_only_reason = 6;
+}
+
+message TableFindings {
+  repeated TableFinding findings = 1;  // all of them, replacing what the client holds
+}
+
+message TableFinding {
+  string code = 1;
+  string severity = 2;   // "error", "warning" or "info"
+  string message = 3;
+  string row_id = 4;     // the cell it is about, when it is about one
+  string column_id = 5;
+}
+
+// What became of an edit the backend accepted: written, or refused with every edit that waited
+// on it.
+message TableEditOutcome {
+  ShortGuid edit_id = 1;
+  bool written = 2;
+  string error = 3;                       // why, when it was not written
+  repeated ShortGuid taken_back = 4;      // the later edits taken back with it
+}

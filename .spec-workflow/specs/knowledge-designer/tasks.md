@@ -16,7 +16,7 @@
 
 ## The definition, in etalii.adp
 
-- [ ] 1. Draft the YAML binding and settle its two open points
+- [x] 1. Draft the YAML binding and settle its two open points
   - File (etalii.adp): `definitions/designers/knowledge.fbl` (draft, binding `yaml` only), `specifications/fbl/fixtures/knowledge-yaml/` (first fixture)
   - Write the `yaml` binding for the file shape in the design (*The knowledge file*, *The model the bindings produce*) and run the repository's validator over it and one read fixture.
   - Settle, by the FBL specification's text and the validator: whether an attribute `reference` can name a rule's stored id, so that removing a property or an option cascades to the cells, columns, sorts and conditions that name it; and whether a rule at `/` can bind the root's keys as `Table`'s attributes.
@@ -26,7 +26,7 @@
   - _Leverage: `specifications/fbl/FBL-specification.md` sections 5.1 to 5.7 and 6.2, `specifications/fbl/databricks-job.fbl`, `.github/scripts/validate-examples.py`_
   - _Requirements: 1.4_
 
-- [-] 2. Measure a ten-thousand-row file in this host's FBL runtime
+- [x] 2. Measure a ten-thousand-row file in this host's FBL runtime
   - File (this repository): `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Measurements/LargeTable.Tests.cs` (new), a generated fixture written to a `TestFolder`, never committed
   - Generate a knowledge file of ten thousand rows and eight properties in the shape of task 1, in YAML, JSON and XML. Through `OpenBody` with the draft binding, measure: opening it, setting one cell, adding one row, and removing one property. Record file size, lines and each time in this task's implementation log, with the machine it ran on.
   - Judge against the Performance requirement ("shown at once", "without a perceptible pause"). If it does not hold: report the measurements to the Scrum master for the user as a selection between making the runtime incremental, batching, and L1's other option. Nothing from task 17 on starts until this is answered.
@@ -36,7 +36,7 @@
   - _Leverage: `src/backend/EtAlii.Adp.Specification.Fbl/History/OpenBody.cs`, `GhgBody.Batch` in `src/diagrams/gartner-hype-cycle-graph/backend`, `src/TestSupport/TestFolder.cs`_
   - _Requirements: 9.6_
 
-- [ ] 3. FBL 0.3 wording and DESL 0.1
+- [x] 3. FBL 0.3 wording and DESL 0.1
   - File (etalii.adp): `specifications/fbl/FBL-specification.md`, `specifications/fbl/fbl.schema.json`, `specifications/desl/DESL-specification.md`, `specifications/desl/desl.schema.json` (new), `definitions/designers/README.md`, `specifications/ded/DED-specification.md`, `specifications/ded/ded.schema.json` (new)
   - FBL 0.3: replace the wording that names the diagram specification language and its node type with wording that covers a specification of either pair (L4), and "its binding" with "the binding for the body's family" in sections 1.2 and 8.1 (L3). No behaviour changes; every existing fixture passes unchanged.
   - DESL 0.1 with the sections the design lists: `desl`, `language`, `metamodel`, `persistence` (`bindings` per family, `ids`), `constraints`, `surface` (`kind: table`, the types playing columns, rows, cells and views, and `valueTypes`), `operations`. DESL defines each of these itself: it cites, imports and depends on nothing in DISL or DID (L4, chat ruling of 2026-10-09). Each construct is named for what it does.
@@ -47,7 +47,7 @@
   - _Leverage: `specifications/fbl/FBL-specification.md` for the layout of a specification document and its schema_
   - _Requirements: 1.2, 1.6_
 
-- [ ] 4. The three bindings, their templates and their fixtures
+- [x] 4. The three bindings, their templates and their fixtures
   - File (etalii.adp): `definitions/designers/knowledge.fbl` (bindings `yaml`, `json`, `xml`), `specifications/fbl/fixtures/knowledge-yaml/`, `knowledge-json/`, `knowledge-xml/`, `knowledge-equivalence/`, `.gitattributes`
   - Complete the three bindings: every type of the design's model table, stored ids for properties, options, views and rows, the `required` header, `shared` and `registrationOnly` claims, `createOnFirstPlacement: false`, and a template of one title property, one view and no rows.
   - Fixtures per format: reading; and one step for each kind of edit the requirements name (add, rename, retype, reorder and remove a property; add, rename, recolour, reorder and remove an option; add, remove and move a row; set and clear a cell of each value key; add and remove one of several values; add, rename, duplicate, reorder and remove a view; each view setting; collapse; the active view), each with its exact splices, and an undo. One fixture reads the same table from all three and lists the same elements. One fixture has an unknown key and an unreadable cell and shows both kept.
@@ -57,7 +57,7 @@
   - _Leverage: `specifications/fbl/fixtures/timeline-edits/fixture.json`, `specifications/fbl/fixtures/databricks-pipeline-json/`_
   - _Requirements: 1.1, 1.3, 2.6, 2.7, 2.10_
 
-- [ ] 5. `knowledge.des`, `knowledge.md`, the file's schema and the terminology
+- [x] 5. `knowledge.des`, `knowledge.md`, the file's schema and the terminology
   - File (etalii.adp): `definitions/designers/knowledge.des`, `definitions/designers/knowledge.md`, `definitions/designers/knowledge.schema.json`, `definitions/designers/examples/cities.yaml`, `cities.json`, `cities.xml`, `docs/terminology.md`
   - `knowledge.des`: the metamodel, the three bindings, ids as `uuid-v4` with `base36`, the constraints, the table surface and its value types (key, editor, comparisons, sort order, conversions), and one operation per gesture of Requirements 3 to 6.
   - `knowledge.md`: the file in each format, complete enough to write one by hand, with the complete examples; the layout and behaviour of Requirement 7 and the differences from Notion that Requirement 7.7 names; the conversion table for type changes; the two-file steps and that every host makes them atomic (L5); entries without an id (Requirement 8.5); the finding codes; and a provenance note that the definition files, not any host's specification, are authoritative.
@@ -70,7 +70,7 @@
 
 ## What this host gains for the designer family
 
-- [-] 6. `EtAlii.Adp.Designer`: the definition, the catalog and registration
+- [x] 6. `EtAlii.Adp.Designer`: the definition, the catalog and registration
   - File: `src/backend/EtAlii.Adp.Designer/` (new project: `_Model/DesignerDefinition.cs`, `DesignerFormat.cs`, `IDesignerDefinitionCatalog.cs`, `DesignerDefinitionCatalog.cs`, `HostApplicationBuilder.AddDesignerDefinitions.cs`), `src/backend/EtAlii.Adp.Designer.Tests/` (new), `src/backend/EtAlii.Adp/_Model/DesignerDefinition.cs` (removed), `src/backend/EtAlii.Adp/DesignerDefinitionDiscovery.cs`, `src/backend/EtAlii.Adp.Backend.Service/Program.cs`, `src/backend/EtAlii.Adp.slnx`
   - Widen `DesignerDefinition` to `Origin`, `Title`, `Description`, `Icon`, `Formats` (a label and an extension each) and `Build`. Register what discovery finds instead of discarding it, invoking each definition's `Build`.
   - Guard: a definition from a test assembly is found, registered in the catalog and its `Build` invoked; two definitions with one origin keep the ordinal-smaller assembly's, as the other families do.
@@ -78,7 +78,7 @@
   - _Leverage: `src/backend/EtAlii.Adp.Editor/_Model/EditorDefinition.cs`, `AddEditorDefinitions`, `EditorDefinitionDiscovery`_
   - _Requirements: 10.2_
 
-- [ ] 7. Routing, the tree's tool type and findings for a designer
+- [-] 7. Routing, the tree's tool type and findings for a designer
   - File: `src/backend/EtAlii.Adp.Hierarchy/DesignerFileRouter.cs` (new), `HierarchyContextSourceResolver.cs`, `src/backend/EtAlii.Adp.Diagram/DiagramService.Open.cs`, `src/backend/EtAlii.Adp.Problems/ProjectValidator.cs`, their tests
   - A registration whose first line is a designer's origin routes to that designer, after the diagram family and before the editor family, and its body no longer opens in the plain editor by default. The tree reports the origin as the entry's tool type. A designer registers a validator by origin into the existing problem store.
   - Guard: an `.adp` with a designer origin routes to the designer; the same body file alone still resolves to an editor; a diagram registration is unaffected; a designer's validator's findings reach the problem store.
@@ -87,7 +87,7 @@
   - _Leverage: `DiagramFileRouter`, `DiagramFilePair`, `EditorResolver`, `IDiagramValidator`, `DiagramValidators`_
   - _Requirements: 10.2, 2.1_
 
-- [ ] 8. FBL runtime: reordering and positioned adds for declared bindings
+- [-] 8. FBL runtime: reordering and positioned adds for declared bindings
   - File: `src/backend/EtAlii.Adp.Specification.Fbl/Planning/EditPlanner.cs`, the `YamlFamily`, `JsonFamily` and `XmlFamily` writers, `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Planning/`, `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/` (the knowledge bindings and fixtures vendored from etalii.adp, with its commit in `Conformance/readme.md`), `.gitattributes`
   - Plan `ModelChange.Move`, and `ModelChange.Add` with an index or a before or after position, for the three tree families as FBL 0.2 section 6.4 states; accept `place: {before: key}`. Vendor the knowledge fixtures; exempt them from line-ending conversion by their path under `Conformance/`, not by extension.
   - Guard: the conformance runner passes every vendored knowledge fixture; existing fixtures are unchanged.

@@ -81,6 +81,16 @@ public sealed partial class DiagramService
             // store as a Reload and every open session as pushed deltas (Requirement 5.3).
             _reloadBridge.Track(rootPath, bodyPath, registrationPath, origin);
         }
+        else if (TryResolveDesigner(request.ProjectId, request.Path, userId, out var designerOrigin))
+        {
+            // Designers second, before the editor family: a designer's registration and its
+            // body are that designer's to open, and must not fall through to a text editor
+            // that would present a table as its raw file (knowledge-designer Requirement 10.2).
+            // The designer family has no session on this stream yet, so the answer is a
+            // refusal that names the type rather than a text stream of the wrong thing.
+            _logger.Warning("Refusing to open {Path} on watch {WatchId}: it is a {Origin} document, and designers cannot be opened on this stream", string.Join('/', request.Path.Segments), watchId, designerOrigin);
+            throw new RpcException(new Status(PermanentRefusal.NotDeployed, $"'{designerOrigin}' documents cannot be opened yet."));
+        }
         else if (TryResolveEditor(request.ProjectId, request.Path, userId, out var editorRoot, out var fullPath, out var editorDefinitionId))
         {
             var editorFactory = _editorSessionFactories.Find(editorDefinitionId);

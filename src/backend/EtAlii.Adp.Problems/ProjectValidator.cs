@@ -27,16 +27,29 @@ public sealed class ProjectValidator
 
     private readonly DiagramFileRouter _router;
     private readonly DiagramValidators _validators;
+    private readonly DesignerFileRouter? _designerRouter;
     private readonly TimeSpan _validatorTimeout;
     private readonly ConcurrentDictionary<string, Task<ValidationOutcome>> _running = new(StringComparer.OrdinalIgnoreCase);
 
-    public ProjectValidator(DiagramFileRouter router, DiagramValidators validators, TimeSpan? validatorTimeout = null)
+    /// <param name="router">Says which diagram type a file is.</param>
+    /// <param name="validators">The rules, by origin - a diagram type's or a designer type's alike.</param>
+    /// <param name="validatorTimeout">How long one validator may take for one file.</param>
+    /// <param name="designerRouter">
+    /// Says which designer type a file is, for what the diagram router does not place
+    /// (knowledge-designer Requirement 10.2). Null in a host without the designer family.
+    /// </param>
+    public ProjectValidator(
+        DiagramFileRouter router,
+        DiagramValidators validators,
+        TimeSpan? validatorTimeout = null,
+        DesignerFileRouter? designerRouter = null)
     {
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(validators);
         _router = router;
         _validators = validators;
         _validatorTimeout = validatorTimeout ?? DefaultValidatorTimeout;
+        _designerRouter = designerRouter;
     }
 
     /// <summary>
@@ -175,7 +188,19 @@ public sealed class ProjectValidator
         // `body:` header resolves to that document. Without the root the router cannot follow
         // the header, and several diagrams over one model - the reason C4 projects are written
         // the way they are - would each arrive here with nowhere to read.
-        switch (_router.Route(path, collector.Root))
+        var routing = _router.Route(path, collector.Root);
+
+        // Designers second: what the diagram router does not place may be a designer's
+        // registration or body. Asked before the unknown-type verdict below, which would
+        // otherwise report a deployed designer's document as an unknown diagram type.
+        if (routing is DiagramUnknownType or NotADiagram &&
+            _designerRouter?.Route(path, collector.Root) is { } designer and not NotADesigner)
+        {
+            await ConsiderDesignerFileAsync(designer, collector, cancellationToken);
+            return;
+        }
+
+        switch (routing)
         {
             case DiagramRouted { BodyPath: null }:
                 // The header names something outside the project, or names nothing resolvable.
@@ -192,7 +217,14 @@ public sealed class ProjectValidator
                     return;
                 }
                 collector.FilesConsidered++;
-                await ValidateRoutedAsync(routed, collector, cancellationToken);
+                await ValidateDocumentAsync(
+                    routed.Definition.Origin,
+                    bodyPath,
+                    routed.RegistrationPath,
+                    routed.Definition.HasFolderSubject,
+                    "diagram",
+                    collector,
+                    cancellationToken);
                 return;
 
             case DiagramUnknownType unknown:
@@ -231,13 +263,72 @@ public sealed class ProjectValidator
         }
     }
 
-    /// <param name="routed">A route whose <c>BodyPath</c> resolved; the caller refuses the rest.</param>
+    /// <summary>What the designer router made of a file the diagram router did not place.</summary>
+    private async ValueTask ConsiderDesignerFileAsync(DesignerRouting designer, ProblemCollector collector, CancellationToken cancellationToken)
+    {
+        switch (designer)
+        {
+            case DesignerUnreadable unreadable:
+                if (collector.MarkConsidered(unreadable.Path))
+                {
+                    collector.FilesConsidered++;
+                    collector.AddCore(unreadable.Path, unreadable.Reason);
+                }
+                return;
+
+            case DesignerRouted { BodyPath: null } missing:
+                // A designer's document is two files, and this one's body is not there: said
+                // against the registration, which is the file that names it.
+                if (collector.MarkConsidered(missing.RegistrationPath))
+                {
+                    collector.FilesConsidered++;
+                    collector.AddCore(missing.RegistrationPath, "The file this registration names does not exist.");
+                }
+                return;
+
+            case DesignerRouted { BodyPath: { } bodyPath } routed:
+                // The pair routes identically through either of its files - judge it once.
+                if (!collector.MarkConsidered(bodyPath))
+                {
+                    return;
+                }
+                collector.FilesConsidered++;
+                if (!TryOriginOf(routed.Definition.Origin, out var origin))
+                {
+                    return; // An origin that is not vendor/type can have registered no rules.
+                }
+                await ValidateDocumentAsync(origin, bodyPath, routed.RegistrationPath, hasFolderSubject: false, "document", collector, cancellationToken);
+                return;
+        }
+    }
+
+    /// <summary>
+    /// A designer's origin, <c>vendor/type</c>, as the key rules are registered under - the
+    /// same key a diagram type's rules use, so both families share one validator registry.
+    /// </summary>
+    private static bool TryOriginOf(string designerOrigin, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DiagramOrigin? origin)
+    {
+        origin = designerOrigin.Split('/') is [{ Length: > 0 } vendor, { Length: > 0 } type] ? new DiagramOrigin(vendor, type) : null;
+        return origin is not null;
+    }
+
+    /// <param name="origin">The type whose rules judge the document.</param>
+    /// <param name="bodyPath">The document, resolved; the caller refuses a route without one.</param>
+    /// <param name="registrationPath">The registration beside it, when there is one.</param>
+    /// <param name="hasFolderSubject">Whether the type's rules are about the folder around its registration.</param>
+    /// <param name="noun">What the document is called in a message: a diagram or a document.</param>
     /// <param name="collector">The problem collector.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async ValueTask ValidateRoutedAsync(DiagramRouted routed, ProblemCollector collector, CancellationToken cancellationToken)
+    private async ValueTask ValidateDocumentAsync(
+        DiagramOrigin origin,
+        string bodyPath,
+        string? registrationPath,
+        bool hasFolderSubject,
+        string noun,
+        ProblemCollector collector,
+        CancellationToken cancellationToken)
     {
-        var bodyPath = routed.BodyPath!;
-        var attribution = routed.RegistrationPath ?? bodyPath;
+        var attribution = registrationPath ?? bodyPath;
 
         string document;
         try
@@ -247,11 +338,10 @@ public sealed class ProjectValidator
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            collector.AddCore(attribution, $"The diagram could not be read: {exception.Message}");
+            collector.AddCore(attribution, $"The {noun} could not be read: {exception.Message}");
             return;
         }
 
-        var origin = routed.Definition.Origin;
         if (!_validators.TryGet(origin, out var validator))
         {
             return; // A type without rules has nothing to say (Requirement 3.3).
@@ -263,9 +353,9 @@ public sealed class ProjectValidator
         // the one MIME line the registration holds. The folder is the registration's own, so it
         // inherits the containment check the route already passed
         // (ansible-structure-diagram Requirement 2.2).
-        var request = new DiagramValidationRequest(document, baseName, collector.Root, bodyPath, routed.RegistrationPath)
+        var request = new DiagramValidationRequest(document, baseName, collector.Root, bodyPath, registrationPath)
         {
-            SubjectFolder = routed.Definition.HasFolderSubject ? IoPath.GetDirectoryName(attribution) : null,
+            SubjectFolder = hasFolderSubject ? IoPath.GetDirectoryName(attribution) : null,
         };
 
         IReadOnlyList<DiagramProblem> problems;

@@ -47,7 +47,21 @@ public sealed record IdRequest(
     IReadOnlyDictionary<string, object?> Attributes,
     string? Source,
     string? Target,
-    int Line);
+    int Line)
+{
+    /// <summary>The id of the element that contains this one (FBL §5.5), or null at the top level.</summary>
+    /// <remarks>Known before this element's id is asked for: an element is read after the one that contains it.</remarks>
+    public string? ParentId { get; init; }
+
+    /// <summary>The containment slot of the parent this element is in, or null at the top level.</summary>
+    public string? ParentSlot { get; init; }
+
+    /// <summary>
+    /// The element's zero-based place among the elements of the same parent and slot, in document
+    /// order - what an id strategy that addresses an element by its position derives from.
+    /// </summary>
+    public int PositionInSlot { get; init; }
+}
 
 /// <summary>The caller's settings for reading and writing one body.</summary>
 public sealed class FblOptions
@@ -68,6 +82,14 @@ public sealed class FblOptions
     /// element by its place. FBL defines no derivation of its own (FBL §5.3).
     /// </summary>
     public Func<IdRequest, string?>? DeriveId { get; init; }
+
+    /// <summary>
+    /// The type the tool type's specification gives an attribute of an element type, by the two
+    /// names, or null where it gives none. A binding does not carry it, and without it every value
+    /// reads as what its family makes of it; with it, an entry holding a value that does not
+    /// convert is an unreadable entry: reported, no element, and never rewritten (FBL §7.4).
+    /// </summary>
+    public Func<string, string, string?>? AttributeType { get; init; }
 
     /// <summary>
     /// The attributes whose type, in the tool type's specification, is a date or a date-time, each

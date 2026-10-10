@@ -31,6 +31,12 @@ public static class ServiceCollectionAddDiagramsExtension
         // the context stream and the diagram pump in-process, so the three services it composes
         // are resolvable as ordinary services as well as mapped as gRPC ones.
         services.AddSingleton<WorkspaceConnections>();
+
+        // The designer family rides the same stream as its table member: the session factories
+        // the modules registered, and the table streams that are running, which the calls after
+        // an open find their session through.
+        services.AddSingleton<DesignerSessionFactories>();
+        services.AddSingleton<TableStreams>();
         services.TryAddTransient<HierarchyService>();
         services.TryAddTransient<ContextService>();
         services.TryAddTransient<DiagramService>();

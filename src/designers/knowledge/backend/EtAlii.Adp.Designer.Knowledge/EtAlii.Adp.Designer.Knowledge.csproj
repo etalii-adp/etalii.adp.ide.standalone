@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!--
+      Core abstractions only: the designer family's seams and table model, and the shared file
+      helpers. The dependency runs this way and never back - the host builds, tests and runs
+      with this folder deleted (knowledge-designer Requirement 10.1).
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Designer\EtAlii.Adp.Designer.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Documents\EtAlii.Adp.Documents.csproj" />
+    <!-- What a knowledge file offers in the explorer: a relation, whose target is asked for in the file dialog. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
+    <!-- An edit is a command, written through the project's history so that it can be undone. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <!-- A knowledge file is read and written through FBL, with the bindings bundled below. The module has no parser or writer of its own. -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Specification.Fbl\EtAlii.Adp.Specification.Fbl.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The designer's specification and its bindings, bundled from etalii-adp/etalii.adp, and where they came from. -->
+    <EmbeddedResource Include="..\..\definition\knowledge.des" LogicalName="knowledge.des" />
+    <EmbeddedResource Include="..\..\definition\knowledge.fbl" LogicalName="knowledge.fbl" />
+    <EmbeddedResource Include="..\..\definition\provenance.json" LogicalName="knowledge.provenance.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Designer.Knowledge.Tests" />
+  </ItemGroup>
+
+</Project>

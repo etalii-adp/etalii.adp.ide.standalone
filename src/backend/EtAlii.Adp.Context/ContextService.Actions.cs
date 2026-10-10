@@ -121,6 +121,10 @@ public sealed partial class ContextService
             : target with { ElementId = input.InlineLabelElementId };
         var commitActionId = string.IsNullOrEmpty(input?.CommitActionId) ? owner.Action.Id : input.CommitActionId;
 
+        // A file dialog's tree is built once, here: what the provider's predicate accepts now is
+        // both what the dialog shows and the only thing its submission may be.
+        var fileDialog = execution is ContextExecutionRequiresFile requiresFile ? ToProto(requiresFile.Request, rootPath) : null;
+
         _contextInteractionStore.Begin(new ContextInteraction
         {
             Id = interactionId,
@@ -129,6 +133,7 @@ public sealed partial class ContextService
             ActionId = commitActionId,
             Provider = owner.Provider,
             RootPath = rootPath,
+            Offered = fileDialog?.Pinned.Concat(fileDialog.Files).SelectMany(Selectable).ToHashSet(StringComparer.Ordinal),
         });
 
         var prompt = new ContextPrompt { InteractionId = interactionId };
@@ -142,6 +147,9 @@ public sealed partial class ContextService
                 break;
             case ContextExecutionRequiresChoice requiresChoice:
                 prompt.ChoiceDialog = ToProto(requiresChoice.Request);
+                break;
+            case ContextExecutionRequiresFile:
+                prompt.FileDialog = fileDialog;
                 break;
         }
 
@@ -202,6 +210,18 @@ public sealed partial class ContextService
             // so the retry finds nothing to run again.
             _logger.Debug("Ignoring a submit for interaction {InteractionId}, which is no longer active", request.InteractionId);
             return new SubmitInteractionResponse { Completed = false, Error = "This dialog is no longer active." };
+        }
+
+        if (interaction.Offered is { } offered && !offered.Contains(request.Value))
+        {
+            // Not something the dialog offered: a stale client, or one that made the value up.
+            // Left in flight, as a refused commit is, so the user can pick again or cancel.
+            _logger.Warning(
+                "Refusing {Value} for {ActionId} on {TargetPath}: the dialog did not offer it",
+                request.Value,
+                interaction.ActionId,
+                interaction.Target.ResolvedFullPath);
+            return new SubmitInteractionResponse { Completed = false, Error = "That file cannot be chosen here." };
         }
 
         var commit = await interaction.Provider.CommitAsync(
@@ -410,6 +430,37 @@ public sealed partial class ContextService
         ConfirmLabel = request.ConfirmLabel,
         Danger = request.Danger,
     };
+
+    private static FileDialogPrompt ToProto(ContextFileRequest request, string rootPath)
+    {
+        var prompt = new FileDialogPrompt
+        {
+            Title = request.Title,
+            Icon = request.Icon,
+            ConfirmLabel = request.ConfirmLabel,
+            EmptyMessage = request.EmptyMessage,
+        };
+        if (rootPath.Length == 0)
+        {
+            // No project to list: the dialog says so with its empty message.
+            return prompt;
+        }
+
+        foreach (var pinned in request.Pinned)
+        {
+            if (ContextFileTree.IdOf(rootPath, pinned.FullPath) is { } id && File.Exists(pinned.FullPath))
+            {
+                prompt.Pinned.Add(new ContextOption { Id = id, Label = pinned.Label, Selectable = true, Icon = "mdi-pin-outline", Description = id });
+            }
+        }
+
+        prompt.Files.AddRange(ContextFileTree.Build(rootPath, request.Accepts).Select(ToProto));
+        return prompt;
+    }
+
+    /// <summary>The ids of every option under <paramref name="option"/>, itself included, that can be chosen.</summary>
+    private static IEnumerable<string> Selectable(ContextOption option) =>
+        option.Selectable ? [option.Id] : option.Children.SelectMany(Selectable);
 
     private static ChoiceDialogPrompt ToProto(ContextChoiceRequest request)
     {

@@ -154,6 +154,17 @@ src/client/src/generated/**   text eol=lf
 # is a module's own source or part of a corpus with rules of its own.
 src/diagrams/*/definition/*.fbl -text
 
+# `.des` is a DESL designer specification, and a designer module bundles its FBL binding beside it:
+# both are copied verbatim from etalii-adp/etalii.adp into `src/designers/<module>/definition/`, and
+# `provenance.json` there records the sha256 of each. As with `.dis`, a line-ending conversion would
+# make the hash measure git rather than the definition. The binding is exempted by its path, because
+# an `.fbl` elsewhere in the tree is ordinary text. A designer's example documents are exempted with
+# them: they are copies of the definition's examples, in formats a project is full of, and a rule by
+# extension would exempt every `.yaml`, `.json` and `.xml` in the repository.
+*.des   -text
+src/designers/*/definition/*.fbl -text
+src/designers/*/examples/** -text
+
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,
 # compose file and configuration document in the tree. Scoped to the one folder where the bytes are
@@ -197,3 +208,10 @@ src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/**/*.adp -text
 # modules rather than from here. Both are scoped more narrowly than an extension rule would be -
 # `.owm` is byte-exact under the wardley-map tests and under `examples/example 2`, but not under
 # `examples/example 1` - and both specs are still in flight. Left where their authors put them.
+
+# The Knowledge designer's bindings, examples and fixtures, vendored from etalii-adp/etalii.adp in that
+# repository's own layout. Their offsets are byte offsets and their examples are read CRLF endings
+# included, so the whole vendored tree is kept from conversion by its path, not by extension: a rule for
+# *.yaml, *.json or *.xml would exempt ordinary files of this repository too (knowledge-designer
+# Requirement 9.5).
+src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/etalii.adp/** -text

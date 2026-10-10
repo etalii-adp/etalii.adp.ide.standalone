@@ -28,6 +28,7 @@
   },
   "include": [
     "src",
-    "../diagrams/*/client"
+    "../diagrams/*/client",
+    "../designers/*/client"
   ]
 }

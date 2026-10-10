@@ -146,6 +146,7 @@ app.MapGrpcService<HierarchyService>();
 app.MapGrpcService<ContextService>();
 app.MapGrpcService<DiagramService>();
 app.MapGrpcService<EditorService>();
+app.MapGrpcService<DesignerService>();
 app.MapGrpcService<WorkspaceService>();
 
 app.MapClientApp();

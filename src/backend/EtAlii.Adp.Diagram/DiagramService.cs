@@ -26,6 +26,9 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
     private readonly DiagramDocumentReloadBridge _reloadBridge;
     private readonly IReadOnlyList<IDiagramToolboxProvider> _toolboxProviders;
 
+    /// <summary>Null in a host without the designer family, which then opens files as it always did.</summary>
+    private readonly DesignerFileRouter? _designerRouter;
+
     public DiagramService(
         IProjectStore projectStore,
         DiagramFileRouter router,
@@ -34,7 +37,8 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         EditorSessionFactories editorSessionFactories,
         IDiagramViewportRegistry viewports,
         DiagramDocumentReloadBridge reloadBridge,
-        IEnumerable<IDiagramToolboxProvider> toolboxProviders)
+        IEnumerable<IDiagramToolboxProvider> toolboxProviders,
+        DesignerFileRouter? designerRouter = null)
     {
         _projectStore = projectStore;
         _router = router;
@@ -44,6 +48,7 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         _viewports = viewports;
         _reloadBridge = reloadBridge;
         _toolboxProviders = [.. toolboxProviders];
+        _designerRouter = designerRouter;
     }
 
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
@@ -179,6 +184,24 @@ public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceB
         }
 
         editorId = routed.Definition.Id;
+        return true;
+    }
+
+    /// <summary>
+    /// Whether what the client names is a designer's document - its registration, or the body
+    /// that registration names - and of which designer type.
+    /// </summary>
+    private bool TryResolveDesigner(Documents.Wire.ShortGuid projectId, Path path, ShortGuid userId, out string origin)
+    {
+        origin = "";
+        if (_designerRouter is null ||
+            !TryResolveTextFile(projectId, path, userId, out var rootPath, out var fullPath) ||
+            _designerRouter.Route(fullPath, rootPath) is not DesignerRouted routed)
+        {
+            return false;
+        }
+
+        origin = routed.Definition.Origin;
         return true;
     }
 

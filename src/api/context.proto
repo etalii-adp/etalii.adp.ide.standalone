@@ -222,6 +222,19 @@ message ChoiceDialogPrompt {
   ContextTextField name_field = 6;    // unset: the dialog is a pure choice
 }
 
+// A dialog asking the user to pick one file of the workspace. The backend has already limited
+// the tree to the files the asking provider accepts, so the client renders what it is given and
+// knows nothing of why a file is or is not there. A folder is an option that is not selectable;
+// a file's `id` is its project-relative path, which is the value SubmitInteraction sends back.
+message FileDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string confirm_label = 3;
+  repeated ContextOption files = 4;   // the top level of the workspace's tree
+  repeated ContextOption pinned = 5;  // shown before the tree, in this order; each is selectable
+  string empty_message = 6;           // shown instead when there is neither a file nor a pinned entry
+}
+
 // Backend-initiated: pushed down the connection's already-open Watch stream.
 message ContextPrompt {
   ShortGuid interaction_id = 1;
@@ -230,6 +243,7 @@ message ContextPrompt {
     ConfirmDialogPrompt confirm_dialog = 3;
     ContextInteractionClosed closed = 4; // backend-initiated dismissal
     ChoiceDialogPrompt choice_dialog = 5;
+    FileDialogPrompt file_dialog = 6;
   }
 }
 

@@ -1,5 +1,6 @@
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import type { Delta } from "../../generated/deltas_pb";
+import type { TableBaseline, TableChange, TableStreamMessage } from "../../generated/designers_pb";
 import type { HierarchyMessage } from "../../generated/hierarchy_pb";
 import type { DiagramStreamMessage } from "../../generated/workspace_pb";
 
@@ -77,6 +78,12 @@ class Feed<T> implements AsyncIterable<T> {
   }
 }
 
+/**
+ * One event of a table stream as its consumer reads it: the table as the connection first sees
+ * it, or something that changed in it.
+ */
+export type TableStreamEvent = { kind: "baseline"; baseline: TableBaseline } | { kind: "change"; change: TableChange };
+
 /** What a diagram stream needs from the connection that carries it: its two unary calls. */
 export interface DiagramStreamCalls {
   open: (streamId: Uint8Array) => Promise<unknown>;
@@ -99,6 +106,7 @@ export class WorkspaceStreams {
   private generation = 0;
   private readonly connectedWaiters = new Set<() => void>();
   private readonly diagrams = new Map<string, Feed<Delta>>();
+  private readonly tables = new Map<string, Feed<TableStreamEvent>>();
   private readonly hierarchies = new Set<Feed<HierarchyMessage>>();
 
   /** The number of diagram streams this tab has open on its connection. */
@@ -126,6 +134,10 @@ export class WorkspaceStreams {
       feed.end();
     }
     this.diagrams.clear();
+    for (const feed of this.tables.values()) {
+      feed.end();
+    }
+    this.tables.clear();
     for (const feed of this.hierarchies) {
       feed.fail(new Error(HIERARCHY_LOST_TEXT));
     }
@@ -152,6 +164,22 @@ export class WorkspaceStreams {
     }
   }
 
+  table(message: TableStreamMessage) {
+    const streamId = message.streamId?.value;
+    const feed = streamId === undefined ? undefined : this.tables.get(base64Encode(streamId));
+    if (feed === undefined) {
+      // A stream this tab already closed, whose last events were on their way.
+      return;
+    }
+    if (message.event.case === "baseline") {
+      feed.push({ kind: "baseline", baseline: message.event.value });
+    } else if (message.event.case === "change") {
+      feed.push({ kind: "change", change: message.event.value });
+    } else if (message.event.case === "ended") {
+      feed.end();
+    }
+  }
+
   /** The hierarchy's changes, until the connection drops or `signal` aborts. */
   async *watchHierarchy(signal: AbortSignal): AsyncGenerator<HierarchyMessage> {
     const feed = new Feed<HierarchyMessage>();
@@ -171,14 +199,26 @@ export class WorkspaceStreams {
    * and closed through `calls.close` when the consumer stops. The stream id is generated here, so
    * deltas that overtake the open call's answer are already routed to this stream.
    */
-  async *openDiagram(calls: DiagramStreamCalls, signal: AbortSignal): AsyncGenerator<Delta> {
+  openDiagram(calls: DiagramStreamCalls, signal: AbortSignal): AsyncGenerator<Delta> {
+    return this.open(this.diagrams, crypto.getRandomValues(new Uint8Array(16)), calls, signal);
+  }
+
+  /**
+   * One table's events on the connection, under a stream id the caller made: the calls that
+   * follow an open - the window, the view, an edit - name the stream, so its consumer has to
+   * know the id, which a diagram's consumer never does. Otherwise a diagram stream's shape.
+   */
+  openTable(streamId: Uint8Array, calls: DiagramStreamCalls, signal: AbortSignal): AsyncGenerator<TableStreamEvent> {
+    return this.open(this.tables, streamId, calls, signal);
+  }
+
+  private async *open<T>(feeds: Map<string, Feed<T>>, streamId: Uint8Array, calls: DiagramStreamCalls, signal: AbortSignal): AsyncGenerator<T> {
     await this.whenConnected(signal);
     const generation = this.generation;
-    const streamId = crypto.getRandomValues(new Uint8Array(16));
     const key = base64Encode(streamId);
-    const feed = new Feed<Delta>();
+    const feed = new Feed<T>();
     const stop = () => feed.end();
-    this.diagrams.set(key, feed);
+    feeds.set(key, feed);
     signal.addEventListener("abort", stop);
     try {
       // Deliberately not aborted with the signal: an open whose answer is abandoned may still start
@@ -187,7 +227,7 @@ export class WorkspaceStreams {
       yield* feed;
     } finally {
       signal.removeEventListener("abort", stop);
-      this.diagrams.delete(key);
+      feeds.delete(key);
       // A connection that dropped took the stream with it, and a new one never had it. A refused
       // open is closed too: closing a stream that never started is not an error, and an open that
       // failed in transit may have started one.

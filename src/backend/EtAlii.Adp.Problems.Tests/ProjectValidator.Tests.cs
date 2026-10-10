@@ -516,5 +516,86 @@ public class ProjectValidatorTests : IDisposable
         return new ProjectValidator(new DiagramFileRouter(catalog), validators, timeout);
     }
 
+    // ---- designers, by the same validator registry (knowledge-designer Requirement 10.2) --------
 
+    private static readonly DiagramOrigin Sheet = new("fixture", "sheet");
+
+    private static readonly Designer.DesignerDefinition SheetDefinition =
+        new("fixture/sheet", "Fixture sheet", Formats: [new("YAML", ".yaml")]);
+
+    private static ProjectValidator SubjectWithDesigner(ProjectValidatorTestValidator? validator)
+    {
+        var validators = new DiagramValidators(validator is null ? [] : [validator]);
+        return new ProjectValidator(
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog(MindmapDefinition)),
+            validators,
+            designerRouter: new DesignerFileRouter(new Designer.DesignerDefinitionCatalog { All = [SheetDefinition] }));
+    }
+
+    private void CreateSheet(string baseName, string body)
+    {
+        File.WriteAllText(IoPath.Combine(_root, baseName + ".adp"), "fixture/sheet\n");
+        File.WriteAllText(IoPath.Combine(_root, baseName + ".yaml"), body);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ADesignersDocument_IsJudgedByTheRulesRegisteredForItsOrigin()
+    {
+        // Arrange.
+        CreateSheet("cities", "a: 1\n");
+        var problem = new DiagramProblem(DiagramProblemSeverity.Warning, "The table has no title property.", "sheet.no-title");
+        var validator = new ProjectValidatorTestValidator(Sheet, [problem], false, false);
+
+        // Act.
+        var outcome = await SubjectWithDesigner(validator).ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken);
+
+        // Assert: found once though the walk met both files of the pair, and said against the registration.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Same(problem, stored.Problem);
+        Assert.Equal("cities.adp", stored.RelativePath);
+        Assert.Equal(1, outcome.FilesConsidered);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ADesignersRegistration_IsNotReportedAsAnUnknownDiagramType()
+    {
+        // Arrange: the diagram router does not know "fixture/sheet", and the designer router does.
+        CreateSheet("cities", "a: 1\n");
+
+        // Act: a designer type without rules has nothing to say.
+        var outcome = await SubjectWithDesigner(validator: null).ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(outcome.Problems);
+        Assert.Equal(1, outcome.FilesConsidered);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ADesignersRegistrationWithoutItsBody_SaysTheFileIsMissing()
+    {
+        // Arrange: a designer's document is two files, and this one has only its registration.
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "cities.adp"), "fixture/sheet\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        var outcome = await SubjectWithDesigner(validator: null).ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken);
+
+        // Assert.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Equal("cities.adp", stored.RelativePath);
+        Assert.Contains("does not exist", stored.Problem.Message);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithoutTheDesignerFamily_ADesignersRegistrationIsStillAnUnknownType()
+    {
+        // Arrange: a host in which no designer module is deployed.
+        CreateSheet("cities", "a: 1\n");
+
+        // Act.
+        var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
+
+        // Assert: said by the diagram router, as before the designer family existed.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Equal(CoreRuleIds.UnknownType, stored.Problem.RuleId);
+    }
 }

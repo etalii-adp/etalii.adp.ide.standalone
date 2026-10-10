@@ -25,8 +25,9 @@ public class LargeTableTests(ITestOutputHelper output)
     private const int Rows = 10_000;
     private const int Properties = 8;
 
-    private static string DraftBinding => Path.Combine(
-        Repository.Root, "src", "backend", "EtAlii.Adp.Specification.Fbl.Tests", "Measurements", "knowledge-draft.fbl");
+    /// <summary>The Knowledge designer's bindings, vendored from etalii-adp/etalii.adp with the conformance corpus.</summary>
+    private static string KnowledgeBinding => Path.Combine(
+        Repository.Conformance, "etalii.adp", "definitions", "designers", "knowledge.fbl");
 
     private static string PropertyId(int index) => string.Create(CultureInfo.InvariantCulture, $"p{index}");
 
@@ -37,7 +38,7 @@ public class LargeTableTests(ITestOutputHelper output)
     {
         string[] types = ["text", "text", "text", "text", "number", "number", "checkbox", "date"];
         var text = new StringBuilder();
-        text.Append("knowledge: \"0.1\"\nname: Large\nactiveView: v1\nproperties:\n");
+        text.Append("ded: \"0.1\"\ndesigner: etalii/knowledge\nname: Large\nactiveView: v1\nproperties:\n");
         for (var property = 0; property < Properties; property++)
         {
             text.Append(CultureInfo.InvariantCulture, $"  - id: {PropertyId(property)}\n    name: Property {property}\n    type: {types[property]}\n");
@@ -67,9 +68,9 @@ public class LargeTableTests(ITestOutputHelper output)
 
     private static FblBinding LoadBinding()
     {
-        // The draft is written in FBL 0.2 and this library reads it with a warning, so only an
-        // error is a reason not to measure.
-        var problems = FblDocumentLoader.Load(DraftBinding, out var document);
+        // The binding is written in a newer FBL than this library names, which it reads with a
+        // warning, so only an error is a reason not to measure.
+        var problems = FblDocumentLoader.Load(KnowledgeBinding, out var document);
         Assert.DoesNotContain(problems, problem => problem.Severity == ProblemSeverity.Error);
         return document!.Bindings["yaml"];
     }

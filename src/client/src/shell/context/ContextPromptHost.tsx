@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { Dialog } from "../../components/Dialog";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ChoicePromptDialog } from "./ChoicePromptDialog";
+import { FilePromptDialog } from "./FilePromptDialog";
 import { useContextPromptEntry } from "./useContextPromptEntry";
 import type { ContextPrompt } from "../../generated/context_pb";
 
@@ -34,7 +35,7 @@ export interface ContextPromptHostProps {
 }
 
 /** The prompt kinds this host knows how to put on screen. */
-const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialog", "closed"]);
+const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialog", "fileDialog", "closed"]);
 
 /**
  * Renders whichever dialog the backend's current prompt asks for. It is driven purely by
@@ -138,6 +139,19 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel, notic
         <ChoicePromptDialog
           // Remounted per interaction for the same reason as the input dialog: the chosen
           // option, the expansion state and any error belong to one interaction only.
+          key={keyOf(prompt)}
+          prompt={prompt.prompt.value}
+          onPropose={onPropose}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
+      );
+
+    case "fileDialog":
+      return (
+        <FilePromptDialog
+          // Remounted per interaction, as the choice dialog is: the chosen file, the open folders
+          // and any refusal belong to one interaction only.
           key={keyOf(prompt)}
           prompt={prompt.prompt.value}
           onPropose={onPropose}

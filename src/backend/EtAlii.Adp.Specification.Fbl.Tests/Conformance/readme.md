@@ -21,6 +21,16 @@ Three things the runner does for those fixtures, each because FBL leaves it to t
 
 Splices are compared in body order, those at one offset as listed: FBL orders only splices at the same offset, and the 0.3 fixtures list a cascaded removal bottom-up where this library lists every edit in body order.
 
+## `etalii.adp/`: the Knowledge designer's files
+
+The folder `etalii.adp/` holds a second vendored set, copied unchanged from the same repository at commit `1559b53` (`develop`, 2026-10-09, after etalii.adp #111, which moved the bindings to FBL 0.4), **in that repository's own layout**: `definitions/designers/knowledge.fbl` (the bindings `yaml`, `json` and `xml`), `definitions/designers/knowledge.des` (the specification, read here for its attribute types only), `definitions/designers/examples/`, and `specifications/fbl/fixtures/knowledge-*`. The layout is kept because those fixtures name their binding and their inputs by paths relative to that tree, and the files are never edited here.
+
+`.gitattributes` keeps the whole of `etalii.adp/` from line-ending conversion by its path. A rule by extension would exempt this repository's ordinary `.yaml`, `.json` and `.xml` files too.
+
+`KnowledgeFixtures.Tests.cs` runs each fixture's `read`, an unchanged save, the byte-coverage invariant, and that the one example reads as the same model in all three formats. `KnowledgeFixtures.Steps.Tests.cs` runs their edit steps: all 138 of each of the three large fixtures, and the 11 of `knowledge-kept`, go through. The reading is told the attribute types of `knowledge.des`, which a binding does not carry: that is what makes the cell of `knowledge-kept` whose number is not a number an unreadable entry.
+
+A fixture's refusal sentence is not compared, where it is the message of the designer's own rule and not the binding's.
+
 ## What this corpus does not demonstrate
 
 - **No persistence plugin runs.** `helm-chart.fbl` and `w3c-turtle.fbl` are plugin-read bindings; only what the host declares for them (routing, recognition, the registration, templates) is exercised.

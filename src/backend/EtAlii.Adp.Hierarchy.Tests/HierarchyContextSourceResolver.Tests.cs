@@ -378,4 +378,42 @@ public class HierarchyContextSourceResolverTests : IDisposable
         Assert.Equal("editor/plain", await DiagramMimeOfAsync(resolver, "notes.txt"));
     }
 
+    // ---- a designer's document in the tree (knowledge-designer Requirement 10.2) ----------------
+
+    /// <summary>The resolver of a deployment with a diagram type and a fallback editor, which would take any file nobody else names.</summary>
+    private HierarchyContextSourceResolver ResolverWithAFallbackEditor() =>
+        new(
+            _store,
+            new DiagramFileRouter(new TestDiagramDefinitionCatalog(Mindmap)),
+            new EditorResolver(new Editor.EditorDefinitionCatalog { All = [new Editor.EditorDefinition("plain", "Plain Text", IsFallback: true)] }));
+
+    // The two tests below pin what the tree says of a designer's document, and need no designer
+    // family to say it: a registration's first line is carried as the entry's type whether or
+    // not a diagram type answers to it, and a body is answered through the registration of its
+    // own name. That is what lets the client key a designer's panel on its origin, and it is
+    // why this resolver was NOT given the designer router - an arm asking it would have changed
+    // no answer. Both fail against a resolver that drops the unknown-type answer and lets the
+    // file fall to the editor family.
+
+    [Fact]
+    public async Task ResolveAsync_ADesignersRegistration_CarriesTheOriginItsFirstLineNames()
+    {
+        // Arrange.
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "cities.adp"), "fixture/sheet\n", TestContext.Current.CancellationToken);
+        CreateFile("cities.yaml");
+
+        // Act and assert.
+        Assert.Equal("fixture/sheet", await DiagramMimeOfAsync(ResolverWithAFallbackEditor(), "cities.adp"));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ADesignersBody_CarriesItsRegistrationsOrigin_NotAnEditors()
+    {
+        // Arrange: the body is a .yaml file, which the fallback editor would otherwise take.
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "cities.adp"), "fixture/sheet\n", TestContext.Current.CancellationToken);
+        CreateFile("cities.yaml");
+
+        // Act and assert.
+        Assert.Equal("fixture/sheet", await DiagramMimeOfAsync(ResolverWithAFallbackEditor(), "cities.yaml"));
+    }
 }

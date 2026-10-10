@@ -7,6 +7,7 @@ import "hierarchy.proto"; // HierarchyMessage
 import "context.proto";   // ContextMessage
 import "diagrams.proto";  // OpenDiagramRequest
 import "deltas.proto";    // Delta
+import "designers.proto"; // TableStreamMessage
 
 option csharp_namespace = "EtAlii.Adp.Diagram.Wire";
 
@@ -27,8 +28,9 @@ option csharp_namespace = "EtAlii.Adp.Diagram.Wire";
 // The older per-source streams stay declared for the backend's own integration tests; the client
 // opens none of them.
 service WorkspaceService {
-  // The tab's pushes: the hierarchy's changes, the context's messages, and the deltas of every
-  // diagram stream OpenDiagram started on this connection. The first context message is the
+  // The tab's pushes: the hierarchy's changes, the context's messages, the deltas of every
+  // diagram stream OpenDiagram started on this connection, and the events of every table stream
+  // DesignerService.OpenTable started on it. The first context message is the
   // connection's baseline, which is also the client's sign that the connection is registered and
   // OpenDiagram may be called. Ending the call ends every diagram stream it carried.
   rpc Watch(WatchWorkspaceRequest) returns (stream WorkspaceMessage);
@@ -54,6 +56,8 @@ message WorkspaceMessage {
     HierarchyMessage hierarchy = 1;
     ContextMessage context = 2;
     DiagramStreamMessage diagram = 3;
+    // One event of a table stream DesignerService.OpenTable started on this connection.
+    TableStreamMessage table = 4;
   }
 }
 

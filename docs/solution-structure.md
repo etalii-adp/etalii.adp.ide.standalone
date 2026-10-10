@@ -11,7 +11,7 @@ flowchart LR
     src --> backend["backend/<br/>the solution and the core projects"]
     src --> client["client/<br/>the React client"]
     src --> diagrams["diagrams/<br/>one folder per diagram type"]
-    src --> designers["designers/<br/>one folder per designer type - none yet"]
+    src --> designers["designers/<br/>one folder per designer type"]
     src --> editors["editors/<br/>one folder per editor type"]
     src --> examples["examples/<br/>the showcase documents"]
     src --> fixtures["fixtures/<br/>test data both suites read"]
@@ -22,19 +22,20 @@ flowchart LR
 
 ## The solution, with its counts
 
-`src/backend/EtAlii.Adp.slnx` holds **127** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
+`src/backend/EtAlii.Adp.slnx` holds **129** projects, as a flat list rather than a folder hierarchy, so the whole thing opens and builds as one solution in Rider:
 
 | Split | Count |
 | --- | --- |
 | core | **37** |
 | diagram | **86** |
 | editor | **4** |
-| production | **87** |
-| test | **40** |
+| designer | **2** |
+| production | **88** |
+| test | **41** |
 
-Those are **two different splits of the same 127**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
+Those are **two different splits of the same 129**, and a figure appearing in both tables is a coincidence rather than a correspondence, which is exactly what makes a wrong classification look right.
 
-There are **142** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "140 projects" would be wrong in the confident direction.**
+There are **144** tracked `.csproj` files under `src/`, which is **15** more than the solution holds. Every one of the 15 is fixture or example data belonging to `src/diagrams/dotnet-dependency-graph` — a module whose subject matter *is* reading `.csproj` files, so its test fixtures and its showcase project are themselves `.csproj`. **A page claiming "144 projects" would be wrong in the confident direction.**
 
 ## The relative-path trap
 
@@ -83,7 +84,7 @@ A diagram type is `src/diagrams/<type>/` with up to five parts:
 - `examples/` — documents a reader can open
 - `definition/` — its DISL definition, bundled from etalii-adp/etalii.adp by `src/diagrams/tools/bundle-disl.sh` with a `provenance.json` beside it and embedded in the backend project, when the type derives its palette, context menus and property rows from one
 
-Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers will be too, under `src/designers` with a `Designer` project per type named the same way, once the first exists; today that folder holds only its readme. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
+Editors are the same shape under `src/editors/<type>/`, with `EtAlii.Adp.Editor.<Type>`. Designers are too, under `src/designers/<type>/`, with `EtAlii.Adp.Designer.<Type>`; the first is `src/designers/knowledge`. [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one module end to end.
 
 ## Namespaces, and the folders that do not contribute
 
@@ -105,7 +106,7 @@ A test project sits beside its subject as `<Project>.Tests`, or is named for its
 
 Showcase documents live in `src/examples/`, not in a module's `Fixtures/`. The two look alike and are not: one is read by tests, the other is opened by a person.
 
-`src/examples/` is itself one ADP project — the folder a reader opens to meet every type in a single explorer tree — and a module joins it by having its examples copied in, under `src/examples/diagrams/<type>/<set>/` or `src/examples/editors/<type>/<set>/`. **The showcase nests by how a diagram reads rather than by module, and it does so inconsistently**, so a path built by rule from a module's name will miss; list the folder instead. A tree comparison that maps one side onto the other by path will report files as missing that are simply somewhere else.
+`src/examples/` is itself one ADP project — the folder a reader opens to meet every type in a single explorer tree — and a module joins it by having its examples copied in, under `src/examples/diagrams/<type>/<set>/`, `src/examples/designers/<type>/<set>/` or `src/examples/editors/<type>/<set>/`. **The showcase nests by how a diagram reads rather than by module, and it does so inconsistently**, so a path built by rule from a module's name will miss; list the folder instead. A tree comparison that maps one side onto the other by path will report files as missing that are simply somewhere else.
 
 **The two copies are deliberately no longer identical**, since 2026-09-04. They were, byte-for-byte, with a test enforcing it — but the showcase is a working surface, and arranging a diagram in the running app writes a `layout:` block into the showcase copy while the module copy stays put. The guard read five instances of ordinary use as drift and was removed. What still holds of both trees is that every example registration opens against the deployed catalog, which `ExampleRegistration.Tests` walks in both places. **A module may still hold its own copies identical**, and three do: dependency-graph and both editors each require a byte-identical replica from their own `Examples.Tests`, so "the trees are unsynced" is true tree-wide and false for those three.
 

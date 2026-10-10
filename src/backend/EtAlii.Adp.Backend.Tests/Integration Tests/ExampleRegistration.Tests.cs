@@ -104,12 +104,64 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         }
     }
 
+    /// <summary>
+    /// Whether a registration is a designer's: one under the showcase's <c>designers</c> folder. A
+    /// designer's registration names a designer type, which the diagram catalog does not carry and
+    /// the diagram family's nesting does not place, so the theories below - which are the diagram
+    /// family's - leave it out, and <see cref="EveryDesignerExampleRegistration_IsRoutedToItsDesigner"/>
+    /// asks of it what can be asked of it.
+    /// </summary>
+    private static bool IsADesigners(string adpPath) =>
+        IoPath.GetFullPath(adpPath).Contains($"{IoPath.DirectorySeparatorChar}examples{IoPath.DirectorySeparatorChar}designers{IoPath.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase);
+
+    public static TheoryData<string> EveryDesignerExampleRegistration()
+    {
+        var data = new TheoryData<string>();
+        foreach (var examples in ExampleRoots())
+        {
+            foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories).Where(IsADesigners))
+            {
+                data.Add(IoPath.GetRelativePath(Locate(), adp));
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// An example of the designer family in the showcase opens: its registration names a designer type the
+    /// deployed catalog carries, and the data file it names is there beside it.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryDesignerExampleRegistration))]
+    public void EveryDesignerExampleRegistration_IsRoutedToItsDesigner(string relativePath)
+    {
+        // Arrange.
+        using var _ = _factory.CreateClient();
+        var router = _factory.Services.GetRequiredService<DesignerFileRouter>();
+        var adpPath = IoPath.GetFullPath(IoPath.Combine(DiagramsRoot, relativePath));
+
+        // Act.
+        var routing = router.Route(adpPath);
+
+        // Assert.
+        var routed = Assert.IsType<DesignerRouted>(routing);
+        Assert.True(File.Exists(routed.BodyPath), $"{relativePath} names a data file that is not there: {routed.BodyPath}");
+    }
+
+    [Fact]
+    public void TheWalk_FindsTheDesignerExamples()
+    {
+        // The canary: three at the time of writing, one per format of the Knowledge designer's example.
+        Assert.True(EveryDesignerExampleRegistration().Count >= 3, "the walk lost the designer examples");
+    }
+
     public static TheoryData<string> EveryExampleRegistration()
     {
         var data = new TheoryData<string>();
         foreach (var examples in ExampleRoots())
         {
-            foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories))
+            foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories).Where(adp => !IsADesigners(adp)))
             {
                 data.Add(IoPath.GetRelativePath(Locate(), adp));
             }
@@ -207,7 +259,7 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var examples in ExampleRoots())
         {
-            foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories))
+            foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories).Where(adp => !IsADesigners(adp)))
             {
                 var directory = IoPath.GetDirectoryName(adp);
                 if (directory is not null && directories.Add(directory))

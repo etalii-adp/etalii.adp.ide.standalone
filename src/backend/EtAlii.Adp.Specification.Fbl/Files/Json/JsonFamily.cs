@@ -322,9 +322,36 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
                 Plan.Refuse($"The {Binding.Name} file has no object to write \"{change.Binding.Key}\" in.");
                 return;
             }
-            (int offset, string text) = NewMember(mapping, $"{Quote(key)}: {Format(read, change.Binding, change.Value)}");
+            var added = $"{Quote(key)}: {Format(read, change.Binding, change.Value)}";
+            (int offset, string text) = MemberBefore(mapping, key, change.Rule.WireOrder()) is { } before
+                ? (before.Own.End, (before.LineSpan is not null ? "," + NewlineAt(before.Own.End) + Indentation(before.Indent) : ", ") + added)
+                : NewMember(mapping, added);
             plan.Add(SpliceOperation.InsertKey, offset, offset, text);
         }
+    }
+
+    /// <summary>
+    /// The member a new <paramref name="key"/> is written right after: the nearest one before it in
+    /// the rule's key order (FBL §6.1, "at the position <c>insert.keys</c> gives"). Null when the
+    /// order does not place the key, or places it after every member, and it goes last.
+    /// </summary>
+    private static TreeEntry? MemberBefore(TreeValue mapping, string key, IReadOnlyList<string>? order)
+    {
+        if (order is null) return null;
+        var position = PlaceIn(order, key);
+        if (position < 0) return null;
+        var before = mapping.Entries.LastOrDefault(entry => entry.Name is { } name && PlaceIn(order, name) is >= 0 and var at && at < position);
+        return before is null || before == mapping.Entries[^1] ? null : before;
+    }
+
+    /// <summary>The place of <paramref name="key"/> in a rule's key order, or -1 when the order does not name it.</summary>
+    private static int PlaceIn(IReadOnlyList<string> order, string key)
+    {
+        for (var index = 0; index < order.Count; index++)
+        {
+            if (order[index] == key) return index;
+        }
+        return -1;
     }
 
     /// <summary>A new member or item after a container's last entry, with the previous entry's separator (FBL §6.3).</summary>
@@ -341,11 +368,6 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         // FBL §5's place: {before: key} is not implemented here yet; refused, as the lines family does, rather than placed at the end.
         if (insert.Place == "before") Plan.Refuse($"A {FamilyName} body cannot place a new entry '{insert.Place}'.");
         var container = insert.Container is null ? null : Container(insert.Container, request.Parent?.Entry, CapturesOf(plan));
-        if (container is null || container.Value.Kind == ValueKind.Scalar)
-        {
-            Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
-            return;
-        }
         string text;
         if (insert.Emit is { } emit)
         {
@@ -366,6 +388,27 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
             }
             text = "{ " + string.Join(", ", members) + " }";
         }
+        if (container is null)
+        {
+            if (NewContainer(insert, request.Parent?.Entry as TreeEntry) is not { } created)
+            {
+                Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
+                return;
+            }
+
+            // A container that encloses its entries on one line cannot be written before an entry that
+            // goes inside it, so it is created as its opening and its closing with the entry between
+            // them, all three at one offset (FBL §6.2).
+            plan.Add(SpliceOperation.EnsureContainer, created.Offset, created.Offset, created.Opening);
+            plan.Add(SpliceOperation.InsertEntry, created.Offset, created.Offset, text);
+            plan.Add(SpliceOperation.EnsureContainer, created.Offset, created.Offset, "]");
+            return;
+        }
+        if (container.Value.Kind == ValueKind.Scalar)
+        {
+            Plan.Refuse($"The {Binding.Name} file has no {insert.Container ?? "container"} to add the {request.Rule.Type} to.");
+            return;
+        }
         if (insert.Place == "start" && container.Value.Entries.Count > 0)
         {
             var first = container.Value.Entries[0];
@@ -375,6 +418,24 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         }
         (int offset, string inserted) = NewMember(container.Value, text);
         plan.Add(SpliceOperation.InsertEntry, offset, offset, inserted);
+    }
+
+    /// <summary>
+    /// Where a missing container is created and how it opens (FBL §6.2 <c>create</c>): a list under
+    /// the selector's last name, right after the member <c>create.at.after</c> names in the parent
+    /// entry's object, or after that object's last member for <c>create.at: "end"</c>. Null when the rule creates no container, or creates it in a way this family
+    /// does not write yet - anywhere but after a member that stands on one line with its siblings.
+    /// </summary>
+    private static (int Offset, string Opening)? NewContainer(InsertSettings insert, TreeEntry? parent)
+    {
+        if (insert is not { Container: { } selector, Create: { At: "after" or "end", Text: null } create } || selector.StartsWith('/')) return null;
+        if (parent?.Value is not { Kind: ValueKind.Mapping, Entries.Count: > 0 } mapping) return null;
+
+        // "end" (FBL 0.4) is after the last member of the container's parent; "after" names the member.
+        var member = create.At == "end" ? mapping.Entries[^1] : create.Argument is { } after ? mapping.Member(after) : null;
+        if (member is not { LineSpan: null }) return null;
+        var name = selector.TrimEnd('/')[(selector.TrimEnd('/').LastIndexOf('/') + 1)..];
+        return (member.Own.End, $", {Quote(name)}: [");
     }
 
     private static string? WireValue(InsertRequest request, string key)
@@ -409,6 +470,34 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
         return entry.Own;
     }
 
+    /// <summary>
+    /// A move among siblings in json (FBL §5.5): the entry is removed with the one separator a
+    /// removal takes, and its own bytes are inserted with the separator its new place needs - after
+    /// it when another entry follows, before it when it becomes the last.
+    /// </summary>
+    public override void Move(Plan plan, ReadElement element, ReadElement? before, ReadElement last)
+    {
+        var entry = (TreeEntry)element.Entry;
+        var own = Text.Text(entry.Own);
+        plan.Add(SpliceOperation.RemoveEntry, RemovalSpan(entry), "");
+        if (before is not null)
+        {
+            var next = (TreeEntry)before.Entry;
+            if (next.LineSpan is { } line)
+            {
+                plan.Add(SpliceOperation.InsertEntry, line.Start, line.Start, Indentation(next.Indent) + own + "," + NewlineAt(line.Start));
+                return;
+            }
+            plan.Add(SpliceOperation.InsertEntry, next.Own.Start, next.Own.Start, own + ", ");
+            return;
+        }
+        var tail = (TreeEntry)last.Entry;
+        var inserted = tail.LineSpan is not null
+            ? "," + NewlineAt(tail.Own.End) + Indentation(tail.Indent) + own
+            : ", " + own;
+        plan.Add(SpliceOperation.InsertEntry, tail.Own.End, tail.Own.End, inserted);
+    }
+
     public override void Remove(Plan plan, ReadElement element, IReadOnlySet<ReadElement> removed)
     {
         var entry = (TreeEntry)element.Entry;
@@ -417,6 +506,25 @@ internal sealed class JsonFamily(BodyText text, FblBinding binding, FblOptions o
             Plan.Refuse($"The whole {Binding.Name} file cannot be removed.");
             return;
         }
+
+        // The only entry of a container that goes when it is left empty (FBL §6.2): the container
+        // goes with it, as what is before the entry, the entry itself, and what is after it.
+        if (element.Rule.Remove?.RemoveContainerWhenEmpty == true &&
+            entry.Parent is TreeEntry { IsRoot: false, Parent: TreeEntry, Value.Entries.Count: 1 } container)
+        {
+            // The container goes as it was created (FBL §6.2): with the separator before it, where a
+            // member stands before it, so that removing what an insert created leaves the bytes the
+            // insert started from. Only a first member takes the separator after it instead.
+            var members = ((TreeEntry)container.Parent!).Value.Entries;
+            var at = members.IndexOf(container);
+            var start = at > 0 ? members[at - 1].Own.End : container.Own.Start;
+            var end = at == 0 && members.Count > 1 ? members[1].Own.Start : container.Own.End;
+            plan.Add(SpliceOperation.RemoveContainer, start, entry.Own.Start, "");
+            plan.Add(SpliceOperation.RemoveEntry, entry.Own, "");
+            plan.Add(SpliceOperation.RemoveContainer, entry.Own.End, end, "");
+            return;
+        }
+
         plan.Add(SpliceOperation.RemoveEntry, RemovalSpan(entry), "");
     }
 }

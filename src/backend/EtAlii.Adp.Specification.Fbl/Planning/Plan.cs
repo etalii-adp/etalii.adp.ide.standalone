@@ -28,9 +28,20 @@ internal sealed class Plan(BodyReading reading)
     /// The splices in body order: sorted by start, those at one offset kept in the order they were
     /// planned (FBL §6.5). Overlapping splices are a planning error.
     /// </summary>
+    /// <remarks>
+    /// An insertion at the offset where a replaced span starts goes before that span: new text
+    /// written where an old key is taken out (a cell's number becoming its text) is an insertion in
+    /// front of the removal, whichever of the two was planned first.
+    /// </remarks>
     public IReadOnlyList<Splice> Ordered()
     {
-        var ordered = _splices.Select((s, i) => (s, i)).OrderBy(p => p.s.Start).ThenBy(p => p.i).Select(p => p.s).ToList();
+        var ordered = _splices
+            .Select((s, i) => (s, i))
+            .OrderBy(p => p.s.Start)
+            .ThenBy(p => p.s.Start == p.s.End ? 0 : 1)
+            .ThenBy(p => p.i)
+            .Select(p => p.s)
+            .ToList();
         for (var i = 1; i < ordered.Count; i++)
         {
             if (ordered[i].Start < ordered[i - 1].End)
