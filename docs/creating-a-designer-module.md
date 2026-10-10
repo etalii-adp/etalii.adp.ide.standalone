@@ -48,6 +48,10 @@ Its client is three files, and shows the whole of what a designer module's clien
 - [`KnowledgePanel.tsx`](../src/designers/knowledge/client/KnowledgePanel.tsx): `useTableStream(path)` handed to `TableSurface` - the model, the count of edits not written yet, and the three handlers. The hook reports the stream's state and every refused edit to the frame the shell puts around each tool, which says *Opening…*, why a table cannot be opened and why an edit was taken back in the one appearance all tools share; the table itself says only that it is read-only or still saving. A module draws no status either. `declarativeDesignerModules.test.ts` refuses an element written in a module's client, and counts the clients it walks.
 - [`register.ts`](../src/designers/knowledge/client/register.ts): the registration, matching the designer's origin.
 
+From the explorer a knowledge file offers one action, *Add relation*, through [`KnowledgeContextActionProvider`](../src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/KnowledgeContextActionProvider.cs): the table to relate to is asked for in the host's file dialog, which the provider tells to take knowledge files only and to offer this table first. It makes the relation with the same gesture and the same command an edit in the table uses, so the two cannot drift.
+
+Two tests go through the whole host with the module deployed: [`KnowledgeDesigner.Tests`](../src/backend/EtAlii.Adp.Backend.Tests/Integration%20Tests/KnowledgeDesigner.Tests.cs) opens, edits and closes the example in each format over gRPC, and [`DesignerModuleIsolation.Tests`](../src/backend/EtAlii.Adp.Backend.Tests/Integration%20Tests/DesignerModuleIsolation.Tests.cs) fails when a core file names the module.
+
 A module client is an npm workspace package (`designers/*/client` in [`src/package.json`](../src/package.json)); adding one means adding its entry to `src/package-lock.json` in the same change.
 
 

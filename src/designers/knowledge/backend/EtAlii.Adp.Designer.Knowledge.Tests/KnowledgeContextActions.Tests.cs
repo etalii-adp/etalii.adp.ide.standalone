@@ -124,8 +124,9 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         Assert.False(request.Accepts(registration));
 
         // And what is chosen is judged by the same rule.
-        Assert.True((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, Provinces, TestContext.Current.CancellationToken)).Valid);
-        Assert.False((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, IoPath.Combine(_root, "notes.yaml"), TestContext.Current.CancellationToken)).Valid);
+        // And what is chosen is judged by the same rule - named as the dialog names it, by its path from the project's root.
+        Assert.True((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, KnowledgeFiles.Related, TestContext.Current.CancellationToken)).Valid);
+        Assert.False((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, "notes.yaml", TestContext.Current.CancellationToken)).Valid);
     }
 
     [Theory]
@@ -140,7 +141,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         (byte[] ours, byte[] theirs) = (await File.ReadAllBytesAsync(Cities, TestContext.Current.CancellationToken), await File.ReadAllBytesAsync(Provinces, TestContext.Current.CancellationToken));
 
         // Act.
-        var committed = await _provider.CommitAsync(Target(registration), actionId, Provinces, "", TestContext.Current.CancellationToken);
+        var committed = await _provider.CommitAsync(Target(registration), actionId, KnowledgeFiles.Related, "", TestContext.Current.CancellationToken);
 
         // Assert: a relation to the other table under its name, holding what the entry said.
         Assert.True(committed.Completed, committed.Error);
@@ -177,12 +178,35 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         var registration = Registered();
 
         // Act.
-        var committed = await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.OneOneWay, Cities, "", TestContext.Current.CancellationToken);
+        var committed = await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.OneOneWay, "cities.yaml", "", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(committed.Completed, committed.Error);
         var relation = KnowledgeDocumentStore.Read(Cities).Body!.Table.Properties.Single(property => property.Name == "Relation");
         Assert.Equal((KnowledgeRelations.Self, "one"), (relation.TargetFile, relation.Limit));
+    }
+
+    /// <summary>
+    /// Found in the browser: the dialog names the chosen file by its path from the project's root, and
+    /// that was read from the folder the server was started in, where no such file is.
+    /// </summary>
+    [Fact]
+    public async Task TheChosenFile_IsNamedFromTheProjectsRoot_AlsoFromAFolderBelowIt()
+    {
+        // Arrange: the table in a folder of the project, and the one it is to relate to in another.
+        Directory.CreateDirectory(IoPath.Combine(_root, "here"));
+        Directory.CreateDirectory(IoPath.Combine(_root, "there"));
+        KnowledgeFiles.CopyExample("cities.yaml", IoPath.Combine(_root, "here"));
+        File.Copy(IoPath.Combine(_root, "here", KnowledgeFiles.Related), IoPath.Combine(_root, "there", "regions.yaml"));
+        var table = IoPath.Combine(_root, "here", "cities.yaml");
+
+        // Act: chosen as the dialog hands it over.
+        var committed = await _provider.CommitAsync(Target(table), KnowledgeContextActionProvider.ManyOneWay, "there/regions.yaml", "", TestContext.Current.CancellationToken);
+
+        // Assert: related, and named in the file by its path from the file itself.
+        Assert.True(committed.Completed, committed.Error);
+        var relation = KnowledgeDocumentStore.Read(table).Body!.Table.Properties.Single(property => property.Name == "Provinces 2" || property.Name == "Provinces");
+        Assert.Equal("../there/regions.yaml", relation.TargetFile);
     }
 
     [Fact]
@@ -193,7 +217,7 @@ public sealed class KnowledgeContextActionsTests : IDisposable
         await using var session = new KnowledgeSession(Cities, KnowledgeDocumentStore.Read, command => _histories.Get(_root).ExecuteAsync(command), _documents);
 
         // Act.
-        await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, Provinces, "", TestContext.Current.CancellationToken);
+        await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, KnowledgeFiles.Related, "", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains(session.Baseline().Columns, column => column is { Name: "Provinces", Kind: "relation" });

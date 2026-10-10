@@ -59,6 +59,12 @@ A diagram type is a folder holding up to five parts — `backend`, `api`, `clien
 
 **The dependency runs one way.** A module may depend on the core abstractions; core code must never depend on a particular diagram type, and the canvas, the storage layer and the sync machinery must not know any one type's schema. That is what lets a type be added without a core file changing. One module is worth reading in full rather than many; [creating-a-diagram-module.md](creating-a-diagram-module.md) walks one from end to end, and [creating-an-editor-module.md](creating-an-editor-module.md) does the same for the editor family.
 
+## How a designer type plugs in
+
+A designer type is a folder under `src/designers/`, discovered at runtime exactly as a diagram type is, and no core file names it either. What differs is what crosses the wire. A designer's document is a **table**, not a diagram: its module opens one session per connection, which speaks a table model that names no designer type - columns, views, the active view's settings, and the lines of the window the client has in sight. The backend filters, sorts and groups; the client draws a window, so a table of ten thousand rows is never sent or drawn whole. An edit is a gesture sent as one unary call, shown at once and written to the file behind it.
+
+On the client the counterpart of the canvas library is the **table library** under `src/client/src/table/library`: it draws the table, its headers, cells, editors, views and menus from the model and a module's declarations, and a designer module's client mounts it and writes no element of its own. [creating-a-designer-module.md](creating-a-designer-module.md) walks through the one designer there is, the Knowledge designer, from its definition to its client.
+
 ## What the canvas is
 
 **SVG, drawn by the shared canvas library in `src/client/src/canvas`.** Its library entry point is `src/client/src/canvas/library/DiagramCanvas.tsx`; a module's own canvas composes it rather than drawing its own surface.

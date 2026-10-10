@@ -92,8 +92,19 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             [new ContextPinnedFile("This table", body)])));
     }
 
-    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(IsKnowledgeFile(value) ? ContextValidationResult.Accepted : ContextValidationResult.Rejected("That file is not a table."));
+    public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return ValueTask.FromResult(IsKnowledgeFile(Chosen(target, value)) ? ContextValidationResult.Accepted : ContextValidationResult.Rejected("That file is not a table."));
+    }
+
+    /// <summary>
+    /// The file that was chosen, as a full path. The dialog names a file by its path from the
+    /// project's root, with forward slashes - never by a full path, and never from wherever this
+    /// process happens to have been started.
+    /// </summary>
+    private static string Chosen(ContextTarget target, string value) =>
+        Path.GetFullPath(Path.IsPathRooted(value) ? value : Path.Combine(target.RootPath, value.Replace('/', Path.DirectorySeparatorChar)));
 
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
@@ -109,10 +120,11 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             return ContextCommitResult.Failed(body.ReadOnlyReason);
         }
 
+        var chosen = Chosen(target, value);
         var twoWay = actionId is ManyTwoWay or OneTwoWay;
         var settings = new Dictionary<string, string>
         {
-            ["target"] = KnowledgeRelations.TargetName(bodyPath, value),
+            ["target"] = KnowledgeRelations.TargetName(bodyPath, chosen),
             ["limit"] = actionId is OneOneWay or OneTwoWay ? "one" : "none",
             // The other side starts under this table's name, as this side starts under the target's.
             ["counterpart"] = twoWay ? body.Table.Name.Length > 0 ? body.Table.Name : Path.GetFileNameWithoutExtension(bodyPath) : "",
