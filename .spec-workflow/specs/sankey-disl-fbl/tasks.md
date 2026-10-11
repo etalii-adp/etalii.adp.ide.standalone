@@ -13,7 +13,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 - **Tasks 10, 11 and 12 wait on task 9**, each on the one before it. Until then the module keeps `SankeyParser` and `SankeyWriter`, and Requirements 3.4, 4, 5, 6, 7.2 and 9.3 stay open.
 - **Tasks 1 to 8 do not wait** and nothing in them is thrown away by the wait. Task 8 needs only the bundled file and may land at any time after task 5.
 
-**This document is written against the recommended option of each amendment the design proposes; a ruling that differs is a small amendment to the tasks named.** The first amendment (strike `cel.bind` from finding A11) touches tasks 1 and 4: ruled otherwise, task 1 does not strike it and task 4 records in its pull request that nothing was added for it. The second amendment (Requirement 9.3 waits with Requirement 4) touches tasks 4 and 9: ruled otherwise, the claim of 9.3 moves from task 9 to task 4 as a change that adds nothing until the language moves.
+**The user ruled both amendments the design proposes in chat on 2026-10-11, each as the option this document is written against.** The first amendment (strike `cel.bind` from finding A11) touches tasks 1 and 4: ruled otherwise, task 1 does not strike it and task 4 records in its pull request that nothing was added for it. The second amendment (Requirement 9.3 waits with Requirement 4) touches tasks 4 and 9: ruled otherwise, the claim of 9.3 moves from task 9 to task 4 as a change that adds nothing until the language moves.
 
 ---
 

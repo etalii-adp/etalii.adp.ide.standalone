@@ -193,9 +193,9 @@ Until F1 exists the binding is the appendix's without its `"as": "text"` markers
 
 One JSON file, `Parity/sankey.transcript.json`, shaped as the timeline's: `module`, `generator`, `regenerate`, `toolbox`, `documents`. Per document: `menus` (every element id, the canvas, a placement, a connect gesture, an unknown id), `rows`, `findings`, `payloads`, and `edits` (every command once, with each step's answer and the hunks it made). A new node's id is a ShortGuid, so the generator supplies a fixed id source and nothing is masked.
 
-## Amendment proposed
+## Amendments ruled
 
-Both are small amendments in the sense of the house rule (a count, and the reading of a criterion). Each is to be put to the user as a selection before the tasks card.
+Both are small amendments in the sense of the house rule (a count, and the reading of a criterion). Each was put to the user as a selection. **Ruled by the user in chat, 2026-10-11: the first option of each.** The options were as follows.
 
 **1. Finding A11 names `cel.bind` as a function the runtime lacks. It does not lack it.** `EtAlii.Adp.Specification.Cel/Parsing/CelParser.cs` parses `cel.bind` as part of the language and `Evaluation/CelNode.cs` evaluates it; the document's own *Sources* says that a macro implemented without a registration would not show in its list. Options: **strike `cel.bind` from A11 under Requirement 10.4, leaving `sum()` and `formatNumber`** (recommended, because it is what the code shows) · leave A11 as written and have step 4 record that nothing was added for it · other. This design is written against the first.
 
