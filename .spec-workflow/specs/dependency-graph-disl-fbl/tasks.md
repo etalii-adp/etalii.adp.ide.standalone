@@ -12,7 +12,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 - **Task 6** has a part done in etalii-adp/etalii.adp, through that repository's own pull request, and cannot be bundled here before that is merged there. **Task 9** offers the binding and a conformance fixture there, and changes the companion there, in the same way.
 - **Gaps 2 and 3 do not block.** Where FBL does not answer them, the module's stand-in `DependencyGraphReading` does (task 7).
 
-**This document is written against the recommended option of each amendment the design proposes; a ruling that differs is a small amendment to the tasks named.** The design proposes one: Requirement 1.4 against Requirement 4.1, with "the comparison follows the oracle" recommended. It touches task 2, which adds the comparison to `ModuleCrossCheck.Tests` while the parser is product code, and task 8, which moves the same comparison to the module's test project when the parser becomes the oracle.
+**The user ruled the amendment the design proposes in chat on 2026-10-11 as its recommended option, which is what this document is written against.** The design proposes one: Requirement 1.4 against Requirement 4.1, with "the comparison follows the oracle" recommended. It touches task 2, which adds the comparison to `ModuleCrossCheck.Tests` while the parser is product code, and task 8, which moves the same comparison to the module's test project when the parser becomes the oracle.
 
 ---
 

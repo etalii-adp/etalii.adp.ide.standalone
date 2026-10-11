@@ -161,11 +161,11 @@ The binding is the appendix's draft, with `"as": "text"` and `"unreadable": "def
 
 Unchanged in shape. It changes four times, each named: step 1 (documents added), step 4 (`undoAll`), step 7 (the repeated key), step 8 (edit hunks).
 
-## Amendment proposed
+## Amendments ruled
 
 **Requirement 1.4** has the 13 files compared with `DependencyGraphParser` by `ModuleCrossCheck.Tests`. **Requirement 4.1** moves that parser to the module's test project. `ModuleCrossCheck.Tests` is in `EtAlii.Adp.Specification.Fbl.Tests`, which reaches a module's parser through a reference to its **product** project. From step 8 on there is no such parser to reach.
 
-To be put to the user as a selection before the tasks card:
+Ruled by the user in chat on 2026-10-11 as the first, recommended option below:
 
 - **The comparison follows the oracle (recommended).** 1.4 is read as: by `ModuleCrossCheck.Tests` while the parser is product code (steps 2 to 7), and from step 8 by the same comparison in the module's test project, against the oracle. It keeps the check for good and adds no reference between test projects. This design is written against it.
 - **The library's tests reference the module's test project.** The check stays where 1.4 names it; a test project then depends on another, which no project here does.

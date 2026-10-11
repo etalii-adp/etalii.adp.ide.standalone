@@ -109,7 +109,7 @@ The product direction (2026-09-26) is one definition per tool, interpreted by a 
 1. WHEN the work starts THEN one document SHALL be added to the corpus for each finding marked Read (A4, B1, B2 for FBL's side, B6, B7, B9 to B11, B14, B16, B17), the transcript regenerated from today's unchanged code, and the diff of the checked-in file reviewed as showing only the new documents.
 2. Each *read* finding SHALL then be shown by a test that reads or edits its document through the drafted binding and compares with the transcript, seen to fail for the reason the finding gives, or the finding SHALL be struck from this document with that test as the reason.
 3. WHEN a later step changes the transcript THEN the change SHALL be one this document names (Q1, Q2, Q4, Q5), regenerated on purpose. Any other difference is a regression.
-4. The 13 `.dgr` files of this repository SHALL be read through the binding by `ModuleCrossCheck.Tests` and compared, ids per type, with `DependencyGraphParser`, and every disagreement SHALL be an entry of `RealFiles/divergences.json` or a repaired binding.
+4. The 13 `.dgr` files of this repository SHALL be read through the binding by `ModuleCrossCheck.Tests` and compared, ids per type, with `DependencyGraphParser`, and every disagreement SHALL be an entry of `RealFiles/divergences.json` or a repaired binding. WHEN `DependencyGraphParser` leaves the product code (Requirement 4.1) THEN the same comparison SHALL be made in the module's test project, against the oracle.
 
 ### Requirement 2: The body is read through the binding
 
