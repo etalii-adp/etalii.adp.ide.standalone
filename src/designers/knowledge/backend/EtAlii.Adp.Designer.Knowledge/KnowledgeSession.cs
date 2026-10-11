@@ -85,6 +85,8 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <summary>True while an edit of this session is being written: the file is then read when that write ends.</summary>
     private bool _writing;
 
+    private readonly string _rootPath;
+
     public KnowledgeSession(string bodyPath)
         : this(bodyPath, KnowledgeDocumentStore.Read)
     {
@@ -98,8 +100,10 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// <param name="read">How the file is read.</param>
     /// <param name="write">How an edit is written: through the project's history, so it can be undone. Null for a session that only shows.</param>
     /// <param name="documents">Where the module's commands say a file was written, or null.</param>
-    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null)
+    /// <param name="rootPath">The project the file is in: how far is looked for rows that relate to a row of this file. Empty, nowhere.</param>
+    internal KnowledgeSession(string bodyPath, Func<string, KnowledgeRead> read, Func<KnowledgeEditCommand, Task<CommandResult>>? write = null, IKnowledgeDocumentStore? documents = null, string rootPath = "")
     {
+        _rootPath = rootPath;
         ArgumentNullException.ThrowIfNull(bodyPath);
         ArgumentNullException.ThrowIfNull(read);
         _bodyPath = bodyPath;
@@ -244,6 +248,16 @@ internal sealed class KnowledgeSession : IDesignerSession
             if (_write is null)
             {
                 return NoWriter;
+            }
+
+            // Rows of other tables may relate to a row that is about to go: its author is told how many first.
+            if (gesture.Kind == "deleteRows" && _rootPath.Length > 0 && gesture.Settings.GetValueOrDefault("confirmed") != "true")
+            {
+                IReadOnlyList<string> ids = gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId];
+                if (KnowledgeProject.RowsRelatingTo(_rootPath, _bodyPath, ids) is > 0 and var relating)
+                {
+                    return KnowledgeEdits.AskFirst(relating, ids.Count);
+                }
             }
 
             var files = new KnowledgeSurroundings(_bodyPath, TargetOf, TargetOf);

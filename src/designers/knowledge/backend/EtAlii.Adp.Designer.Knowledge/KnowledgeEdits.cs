@@ -357,6 +357,14 @@ internal static partial class KnowledgeEdits
         return new KnowledgeEdit(changes, NewRowId: id);
     }
 
+    /// <summary>What an answer starts with when it is a question to confirm and not a refusal: the gesture is made again, confirmed.</summary>
+    private const string ConfirmPrefix = "confirm:";
+
+    /// <summary>The question put before rows are deleted that rows of other tables relate to.</summary>
+    public static string AskFirst(int relating, int deleted) =>
+        $"{ConfirmPrefix}{(relating == 1 ? "1 row in another table relates" : $"{relating} rows in other tables relate")} to {(deleted == 1 ? "this row" : "these rows")}. "
+        + $"Deleting {(deleted == 1 ? "it" : "them")} leaves {(relating == 1 ? "that relation" : "those relations")} pointing at nothing.";
+
     private static KnowledgeEdit DeleteRows(KnowledgeTable table, TableGesture gesture)
     {
         var ids = (gesture.Values.Count > 0 ? gesture.Values : [gesture.RowId]).Where(id => table.Rows.Any(row => row.Id == id)).Distinct().ToList();

@@ -1554,7 +1554,7 @@
         "add": {
           "type": "GroupSetting",
           "parent": "v1",
-          "x-slot": "groupOrder",
+          "slot": "groupOrder",
           "attributes": {
             "key": "o5"
           }
@@ -1588,7 +1588,7 @@
         "add": {
           "type": "GroupSetting",
           "parent": "v1",
-          "x-slot": "groupOrder",
+          "slot": "groupOrder",
           "attributes": {
             "key": "o1"
           }
@@ -1637,7 +1637,7 @@
         "add": {
           "type": "GroupSetting",
           "parent": "v1",
-          "x-slot": "hiddenGroups",
+          "slot": "hiddenGroups",
           "attributes": {
             "key": "o5"
           }
@@ -1671,7 +1671,7 @@
         "add": {
           "type": "GroupSetting",
           "parent": "v1",
-          "x-slot": "collapsed",
+          "slot": "collapsed",
           "attributes": {
             "key": "o1"
           }

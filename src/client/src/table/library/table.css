@@ -554,6 +554,19 @@
   font-size: 0.8125rem;
 }
 
+.table-ask {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--color-danger-bg);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+}
+
 .table-options-button:disabled {
   opacity: 0.4;
   cursor: default;

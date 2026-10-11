@@ -26,6 +26,9 @@ export type ColumnAction =
   | "duplicate"
   | "delete";
 
+/** What a row's menu may offer. A module's definition lists the ones its table has. */
+export type RowAction = "delete";
+
 /** One way a kind of value can be compared in a filter. */
 export interface TableComparison {
   /** The name the document knows the comparison by. */
@@ -59,6 +62,8 @@ export interface TableDefinition {
   kinds: Readonly<Record<string, TableKindDefinition>>;
   /** The entries a column's menu offers. Left out, a header names its column and has no menu. */
   columnActions?: readonly ColumnAction[];
+  /** The entries a row's menu offers. Left out, a row has no menu. */
+  rowActions?: readonly RowAction[];
   /** The kind a column inserted beside another starts as; the first that can be added when left out. */
   defaultKind?: string;
   /** The height of every row in pixels; the library's default when left out. */

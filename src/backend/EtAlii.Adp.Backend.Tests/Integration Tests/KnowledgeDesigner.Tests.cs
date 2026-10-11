@@ -2,6 +2,7 @@ using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.History;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
@@ -219,6 +220,35 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         back.Values.Add("r2");
         var refused = await session.Designer.EditAsync(new Proto.TableEditRequest { WatchId = session.WatchId, StreamId = provinces, EditId = ShortGuid.NewShortGuid(), Gesture = back }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("This side of the relation is filled in from the other table.", refused.Error);
+    }
+
+    [Fact]
+    public async Task RenamingATableInTheExplorer_TakesTheRelationsThatNameItAlong_InOneStepThatOneUndoTakesBack()
+    {
+        // Arrange: the example relates to provinces.yaml.
+        Seed(".yaml");
+        var cities = IoPath.Combine(_projectFolder, "cities.yaml");
+        var provinces = IoPath.Combine(_projectFolder, "provinces.yaml");
+        var before = await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken);
+        var history = _factory.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
+
+        // Act: the rename the explorer makes.
+        var renamed = await history.ExecuteAsync(new RenameEntryCommand(provinces, "regions.yaml", _projectFolder), TestContext.Current.CancellationToken);
+
+        // Assert: the file has its new name, and the relation names it by that.
+        Assert.True(renamed.IsSuccess, renamed.Error);
+        Assert.True(File.Exists(IoPath.Combine(_projectFolder, "regions.yaml")));
+        var text = await File.ReadAllTextAsync(cities, TestContext.Current.CancellationToken);
+        Assert.Contains("target: regions.yaml", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("provinces.yaml", text, StringComparison.Ordinal);
+
+        // Act: one undo.
+        var undone = await history.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert: both as they were.
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.True(File.Exists(provinces));
+        Assert.Equal(before, await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken));
     }
 
     /// <summary>The id the cities' file gave the relation named Near: the id on the line before its name.</summary>

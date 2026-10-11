@@ -5,6 +5,12 @@ import type { RowWindow } from "../rows/windowing";
  * of what it does to a document; the designer's backend session gives each kind its meaning, and
  * the host only carries it.
  */
+/**
+ * What an answer to a gesture starts with when it is a question and not a refusal: nothing was
+ * done, and the same gesture made again with the setting `confirmed` set to `true` does it.
+ */
+export const CONFIRM_PREFIX = "confirm:";
+
 export interface TableGesture {
   /** What was done, e.g. `setCell`. */
   kind: string;
