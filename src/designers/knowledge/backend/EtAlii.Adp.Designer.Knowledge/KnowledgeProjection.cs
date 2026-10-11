@@ -225,24 +225,6 @@ internal static class KnowledgeProjection
 
         var under = items.GroupBy(item => item.ParentId!).ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
         var addressed = new Dictionary<FblElement, FblElement>(ReferenceEqualityComparer.Instance);
-        void Walk(string parentWas, string parentIs, string prefix)
-        {
-            if (!under.TryGetValue(parentWas, out var children))
-            {
-                return;
-            }
-
-            for (var index = 0; index < children.Count; index++)
-            {
-                var id = FormattableString.Invariant($"{prefix}/{index}");
-                if (children[index].Id != id || children[index].ParentId != parentIs)
-                {
-                    addressed[children[index]] = children[index] with { Id = id, ParentId = parentIs };
-                }
-
-                Walk(children[index].Id, id, id);
-            }
-        }
 
         foreach (var view in elements.Where(element => element.Type == "View").ToList())
         {
@@ -259,6 +241,27 @@ internal static class KnowledgeProjection
             if (addressed.TryGetValue(elements[index], out var readdressed))
             {
                 elements[index] = readdressed;
+            }
+        }
+
+        return;
+
+        void Walk(string parentWas, string parentIs, string prefix)
+        {
+            if (!under.TryGetValue(parentWas, out var children))
+            {
+                return;
+            }
+
+            for (var index = 0; index < children.Count; index++)
+            {
+                var id = FormattableString.Invariant($"{prefix}/{index}");
+                if (children[index].Id != id || children[index].ParentId != parentIs)
+                {
+                    addressed[children[index]] = children[index] with { Id = id, ParentId = parentIs };
+                }
+
+                Walk(children[index].Id, id, id);
             }
         }
     }

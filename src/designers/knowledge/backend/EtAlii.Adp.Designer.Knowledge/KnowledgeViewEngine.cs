@@ -45,8 +45,6 @@ internal static class KnowledgeViewEngine
         }
 
         var shown = rows.ToList();
-        TableRow Line(KnowledgeRow row, int depth = 0, bool hasChildren = false, bool collapsed = false) =>
-            KnowledgeTableMapper.Row(row, unwritten, labelOf) with { Depth = depth, HasChildren = hasChildren, Collapsed = collapsed };
 
         List<TableRow> lines = [];
         if (view is null || !properties.TryGetValue(view.GroupBy, out var grouped))
@@ -69,6 +67,9 @@ internal static class KnowledgeViewEngine
         }
 
         return lines;
+
+        TableRow Line(KnowledgeRow row, int depth = 0, bool hasChildren = false, bool collapsed = false) =>
+            KnowledgeTableMapper.Row(row, unwritten, labelOf) with { Depth = depth, HasChildren = hasChildren, Collapsed = collapsed };
     }
 
     // ---- the filter ----
@@ -80,14 +81,14 @@ internal static class KnowledgeViewEngine
             return true;
         }
 
+        return group.Any ? group.Items.Any(ItemHolds) : group.Items.All(ItemHolds);
+
         bool ItemHolds(KnowledgeFilterItem item) => item switch
         {
             KnowledgeFilterGroup nested => Passes(nested, row, properties),
             KnowledgeCondition condition => Holds(condition, row, properties),
             _ => true,
         };
-
-        return group.Any ? group.Items.Any(ItemHolds) : group.Items.All(ItemHolds);
     }
 
     /// <summary>The values a row has for a property, as values of the property's own type: none when the cell holds none, or holds one of another type.</summary>
@@ -352,6 +353,13 @@ internal static class KnowledgeViewEngine
         order.AddRange(groups.Select(group => group.Key).Where(key => !order.Contains(key)));
         var labels = groups.ToDictionary(group => group.Key, group => group.Label, StringComparer.Ordinal);
 
+        foreach (var key in order)
+        {
+            Emit(key, labels[key], members[key]);
+        }
+
+        return;
+
         void Emit(string key, string label, List<KnowledgeRow> under)
         {
             if (view.HiddenGroups.Contains(key) || (view.HideEmptyGroups && under.Count == 0))
@@ -371,11 +379,6 @@ internal static class KnowledgeViewEngine
             {
                 lines.Add(new TableRow(key, IsNewRow: true));
             }
-        }
-
-        foreach (var key in order)
-        {
-            Emit(key, labels[key], members[key]);
         }
     }
 
@@ -411,6 +414,20 @@ internal static class KnowledgeViewEngine
         }
 
         var emitted = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var row in top)
+        {
+            Emit(row, 0);
+        }
+
+        // Rows that name each other as parent, round in a circle, are under nobody that was reached.
+        foreach (var row in rows.Where(row => !emitted.Contains(row.Id)))
+        {
+            Emit(row, 0);
+        }
+
+        return;
+
         void Emit(KnowledgeRow row, int depth)
         {
             if (!emitted.Add(row.Id))
@@ -444,17 +461,6 @@ internal static class KnowledgeViewEngine
                     Mark(deeper);
                 }
             }
-        }
-
-        foreach (var row in top)
-        {
-            Emit(row, 0);
-        }
-
-        // Rows that name each other as parent, round in a circle, are under nobody that was reached.
-        foreach (var row in rows.Where(row => !emitted.Contains(row.Id)))
-        {
-            Emit(row, 0);
         }
     }
 }

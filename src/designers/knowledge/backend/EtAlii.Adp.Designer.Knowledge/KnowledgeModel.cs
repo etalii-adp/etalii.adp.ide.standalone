@@ -98,7 +98,6 @@ internal static class KnowledgeModelReader
             .Where(element => element.ParentId is not null)
             .GroupBy(element => (element.ParentId!, element.ParentSlot ?? ""))
             .ToDictionary(group => group.Key, group => (IReadOnlyList<FblElement>)group.ToList());
-        IReadOnlyList<FblElement> ChildrenOf(FblElement parent, string slot) => children.GetValueOrDefault((parent.Id, slot)) ?? [];
 
         var table = model.Elements.FirstOrDefault(element => element.Type == "Table");
         var properties = model.Elements.Where(element => element.Type == "Property").Select(property => new KnowledgeProperty(
@@ -114,10 +113,6 @@ internal static class KnowledgeModelReader
             Text(property, "counterpart"),
             KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("computed")),
             KnowledgeValues.IsTrue(property.Attributes.GetValueOrDefault("isParent")))).ToList();
-
-        KnowledgeFilterItem FilterItemOf(FblElement element) => element.Type == "FilterGroup"
-            ? new KnowledgeFilterGroup(Text(element, "match") == "any", [.. ChildrenOf(element, "conditions").Select(FilterItemOf)])
-            : new KnowledgeCondition(Text(element, "property"), Text(element, "operator"), ValueOf(element, out _));
 
         var views = model.Elements.Where(element => element.Type == "View").Select(view => new KnowledgeView(
             view.Id,
@@ -153,6 +148,12 @@ internal static class KnowledgeModelReader
             })])).ToList();
 
         return new KnowledgeTable(table is null ? "" : Text(table, "name"), table is null ? "" : Text(table, "activeView"), properties, views, rows);
+
+        KnowledgeFilterItem FilterItemOf(FblElement element) => element.Type == "FilterGroup"
+            ? new KnowledgeFilterGroup(Text(element, "match") == "any", [.. ChildrenOf(element, "conditions").Select(FilterItemOf)])
+            : new KnowledgeCondition(Text(element, "property"), Text(element, "operator"), ValueOf(element, out _));
+
+        IReadOnlyList<FblElement> ChildrenOf(FblElement parent, string slot) => children.GetValueOrDefault((parent.Id, slot)) ?? [];
     }
 
     private static string Text(FblElement element, string attribute) => KnowledgeValues.Text(element.Attributes.GetValueOrDefault(attribute));

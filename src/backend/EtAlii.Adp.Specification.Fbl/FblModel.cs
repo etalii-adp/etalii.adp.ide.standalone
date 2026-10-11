@@ -99,6 +99,14 @@ public sealed class FblOptions
     /// </summary>
     public IReadOnlySet<string> TimeAttributes { get; init; } = new HashSet<string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Whether a key of a read entry that no rule of the binding reads is reported, as
+    /// <see cref="FindingCodes.UnboundKey"/> of severity info. Such a key is kept on every write either
+    /// way (FBL §6.1); this only says so, for a tool type whose specification asks that its author
+    /// is told. Off unless asked for; in xml it is an attribute or a child element of a read element.
+    /// </summary>
+    public bool ReportUnboundKeys { get; init; }
+
     /// <summary>The registration's headers, visible to CEL as <c>registration</c>.</summary>
     public IReadOnlyDictionary<string, string> RegistrationHeaders { get; init; } = new Dictionary<string, string>();
 

@@ -126,6 +126,39 @@ describe("OptionsEditor", () => {
     ]);
   });
 
+  it("tells how many rows have an option before deleting it, and deletes only when that is confirmed", () => {
+    // Arrange: two rows have Netherlands; nobody has Belgium.
+    const raise = vi.fn();
+    render(<OptionsEditor column={{ ...column("selection"), settings: { "uses:o1": "2" } }} position={{ x: 10, y: 20 }} raise={raise} onClose={vi.fn()} />);
+
+    // Act.
+    fireEvent.click(screen.getByRole("button", { name: "Delete Netherlands" }));
+
+    // Assert: asked, with the number, and nothing deleted yet.
+    const ask = screen.getByRole("alertdialog", { name: "Delete Netherlands?" });
+    expect(ask.textContent).toContain("2 rows have this option. Deleting it clears those values.");
+    expect(raise).not.toHaveBeenCalled();
+
+    // Act: kept.
+    fireEvent.click(within(ask).getByRole("button", { name: "Keep" }));
+
+    // Assert.
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(raise).not.toHaveBeenCalled();
+
+    // Act: asked again, and confirmed.
+    fireEvent.click(screen.getByRole("button", { name: "Delete Netherlands" }));
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete" }));
+
+    // Assert.
+    expect(raise).toHaveBeenCalledWith({ kind: "deleteOption", columnId: "p2", targetId: "o1" });
+
+    // An option nobody has is deleted without a question.
+    fireEvent.click(screen.getByRole("button", { name: "Delete Belgium" }));
+    expect(raise).toHaveBeenLastCalledWith({ kind: "deleteOption", columnId: "p2", targetId: "o2" });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
   it("adds an option by its name, on Enter or the button, and never an empty one", () => {
     // Arrange.
     const { raise } = open();

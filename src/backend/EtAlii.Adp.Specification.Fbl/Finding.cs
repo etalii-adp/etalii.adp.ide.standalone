@@ -26,6 +26,7 @@ public sealed record SourceLocation(string File, int Line, int Column, int Lengt
 public static class FindingCodes
 {
     public const string UnboundStatement = "fbl.unbound-statement";
+    public const string UnboundKey = "fbl.unbound-key";
     public const string DanglingReference = "fbl.dangling-reference";
     public const string HeaderMismatch = "fbl.header-mismatch";
     public const string DuplicateKey = "fbl.duplicate-key";

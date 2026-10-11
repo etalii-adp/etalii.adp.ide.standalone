@@ -50,34 +50,34 @@ public sealed class KnowledgeViewTests
             List<KnowledgeCell> cells = [new("name", [$"{"abcdefgh"[index % 8]}{(index * 7) % 13} city {index}"], "text")];
             if (index % 5 != 0)
             {
-                cells.Add(new("people", [((index * 37) % 101 * (index % 3 == 0 ? 1 : 10)).ToString(CultureInfo.InvariantCulture)], "number"));
+                cells.Add(new KnowledgeCell("people", [((index * 37) % 101 * (index % 3 == 0 ? 1 : 10)).ToString(CultureInfo.InvariantCulture)], "number"));
             }
 
             if (index % 2 == 0)
             {
-                cells.Add(new("seen", ["true"], "checked"));
+                cells.Add(new KnowledgeCell("seen", ["true"], "checked"));
             }
 
             if (index % 7 != 0)
             {
-                cells.Add(new("founded", [new DateOnly(1200 + ((index * 53) % 800), 1 + (index % 12), 1 + (index % 28)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)], "date"));
+                cells.Add(new KnowledgeCell("founded", [new DateOnly(1200 + ((index * 53) % 800), 1 + (index % 12), 1 + (index % 28)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)], "date"));
             }
 
             if (index % 4 != 0)
             {
-                cells.Add(new("size", [Sizes[index % 3].Id], "option"));
+                cells.Add(new KnowledgeCell("size", [Sizes[index % 3].Id], "option"));
             }
 
             if (index % 3 != 0)
             {
-                cells.Add(new("tags", index % 6 == 1 ? [Tags[0].Id, Tags[2].Id] : [Tags[index % 3].Id], "options"));
+                cells.Add(new KnowledgeCell("tags", index % 6 == 1 ? [Tags[0].Id, Tags[2].Id] : [Tags[index % 3].Id], "options"));
             }
 
             // A value of a type the property had before: text where a number is expected.
             if (index % 41 == 0)
             {
                 cells.RemoveAll(cell => cell.PropertyId == "people");
-                cells.Add(new("people", ["a great many"], "text"));
+                cells.Add(new KnowledgeCell("people", ["a great many"], "text"));
             }
 
             rows.Add(new KnowledgeRow($"r{index}", cells));
@@ -238,8 +238,6 @@ public sealed class KnowledgeViewTests
         var large = new KnowledgeCondition("size", "is", "large");
         var seen = new KnowledgeCondition("seen", "is-checked", "");
         var many = new KnowledgeCondition("people", "at-least", "500");
-        HashSet<string> Shown(KnowledgeFilterGroup filter) => [.. Lines(table, View(filter)).Select(line => line.Id)];
-        bool Is(KnowledgeRow row, KnowledgeCondition condition) => Means(row, condition.PropertyId, condition.Operator, condition.Value);
 
         // Act.
         var all = Shown(new KnowledgeFilterGroup(false, [large, seen]));
@@ -251,6 +249,11 @@ public sealed class KnowledgeViewTests
         Assert.All(table.Rows, row => Assert.Equal(Is(row, large) || Is(row, seen), any.Contains(row.Id)));
         Assert.All(table.Rows, row => Assert.Equal(Is(row, large) && (Is(row, seen) || Is(row, many)), nested.Contains(row.Id)));
         Assert.True(all.Count < nested.Count && nested.Count < any.Count);
+        return;
+
+        bool Is(KnowledgeRow row, KnowledgeCondition condition) => Means(row, condition.PropertyId, condition.Operator, condition.Value);
+
+        HashSet<string> Shown(KnowledgeFilterGroup filter) => [.. Lines(table, View(filter)).Select(line => line.Id)];
     }
 
     [Fact]
@@ -316,7 +319,6 @@ public sealed class KnowledgeViewTests
         // Arrange.
         var table = Table();
         var byId = table.Rows.ToDictionary(row => row.Id);
-        int Size(KnowledgeRow row) => One(row, "size", "option") is { } id ? Array.FindIndex(Sizes, option => option.Id == id) : int.MaxValue;
 
         // Act: by size - in the options' order, not by their names - and within a size by number, descending.
         var rows = Lines(table, View(sorts: [new KnowledgeSort("size", false), new KnowledgeSort("people", true)])).Select(line => byId[line.Id]).ToList();
@@ -333,6 +335,9 @@ public sealed class KnowledgeViewTests
 
         // Small, Medium, Large is the options' order; by name it would be Large, Medium, Small.
         Assert.Equal(["small", "medium", "large"], rows.Select(row => One(row, "size", "option")).OfType<string>().Distinct());
+        return;
+
+        int Size(KnowledgeRow row) => One(row, "size", "option") is { } id ? Array.FindIndex(Sizes, option => option.Id == id) : int.MaxValue;
     }
 
     [Fact]
@@ -475,7 +480,7 @@ public sealed class KnowledgeViewTests
         "v",
         Properties,
         [],
-        [.. rows.Select(row => new KnowledgeRow(row.Id, row.Under.Length > 0 ? [new("name", [row.Id], "text"), new("under", [row.Under], "rows")] : [new KnowledgeCell("name", [row.Id], "text")]))]);
+        [.. rows.Select(row => new KnowledgeRow(row.Id, row.Under.Length > 0 ? [new KnowledgeCell("name", [row.Id], "text"), new KnowledgeCell("under", [row.Under], "rows")] : [new KnowledgeCell("name", [row.Id], "text")]))]);
 
     [Fact]
     public void GroupedByTheParentRelation_RowsAreNestedUnderTheirParents_ToAnyDepth()

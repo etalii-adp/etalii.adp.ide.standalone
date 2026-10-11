@@ -1,6 +1,6 @@
 # The Knowledge designer's examples
 
-The files here are copied, byte for byte, from [`etalii-adp/etalii.adp`](https://github.com/etalii-adp/etalii.adp), folder `definitions/designers/examples/`, at commit `1559b53f13239c05b73748b151d3a2efad9dcc53` (`develop`, 2026-10-09):
+The files here are copied, byte for byte, from [`etalii-adp/etalii.adp`](https://github.com/etalii-adp/etalii.adp), folder `definitions/designers/examples/`, at commit `5ec503d2c25720416c866853a0741d38abe8a4fa` (etalii.adp #120, 2026-10-11, which added Peter's extra cities):
 
 - `cities.yaml`, `cities.json` and `cities.xml`: one table, *Cities*, written in each of the three formats a knowledge file comes in;
 - `LICENSE.md`: that repository's `LICENSE`, verbatim.

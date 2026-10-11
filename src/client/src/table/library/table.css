@@ -538,6 +538,22 @@
   cursor: pointer;
 }
 
+.table-options-line {
+  flex-wrap: wrap;
+}
+
+.table-options-ask {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--color-danger-bg);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+}
+
 .table-options-button:disabled {
   opacity: 0.4;
   cursor: default;

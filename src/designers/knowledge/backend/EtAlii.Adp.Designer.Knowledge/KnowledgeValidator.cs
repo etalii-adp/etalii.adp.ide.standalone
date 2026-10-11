@@ -34,6 +34,7 @@ internal static class KnowledgeValidator
     public const string ParentCycle = "knowledge.parent-cycle";
     public const string MissingId = "knowledge.missing-id";
     public const string UnresolvedTarget = "knowledge.unresolved-target";
+    public const string UnknownKey = "knowledge.unknown-key";
     public const string UnresolvedRow = "knowledge.unresolved-row";
 
     /// <summary>The element types whose entries carry an id of their own in the file.</summary>
@@ -48,8 +49,6 @@ internal static class KnowledgeValidator
         ArgumentNullException.ThrowIfNull(model);
 
         List<TableFinding> findings = [];
-        void Warn(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Warning, message, rowId, columnId));
-        void Error(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Error, message, rowId, columnId));
 
         var properties = new Dictionary<string, KnowledgeProperty>(StringComparer.Ordinal);
         foreach (var property in table.Properties)
@@ -216,6 +215,10 @@ internal static class KnowledgeValidator
         }
 
         return findings;
+
+        void Error(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Error, message, rowId, columnId));
+
+        void Warn(string code, string message, string rowId = "", string columnId = "") => findings.Add(new TableFinding(code, TableFindingSeverity.Warning, message, rowId, columnId));
     }
 
     private static IEnumerable<KnowledgeCondition> Conditions(KnowledgeFilterGroup group) => group.Items.SelectMany(item => item switch

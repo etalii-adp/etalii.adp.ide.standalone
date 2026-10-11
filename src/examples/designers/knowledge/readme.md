@@ -36,5 +36,5 @@ The three data files are copied from the module's own examples in
 - **No two-way relation.** *Cities* relates to *Provinces* one way: a city shows its province by
   name, and a province does not show its cities.
 - **No parent relation**, so no rows nested under rows.
-- **Nothing large.** Two rows say nothing about ten thousand; the module's tests make their own.
+- **Nothing large.** Nine rows say nothing about ten thousand; the module's tests make their own.
 - **Nothing wrong.** No unknown option, no value of the wrong type, no entry without an id.

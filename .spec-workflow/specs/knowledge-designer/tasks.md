@@ -78,7 +78,7 @@
   - _Leverage: `src/backend/EtAlii.Adp.Editor/_Model/EditorDefinition.cs`, `AddEditorDefinitions`, `EditorDefinitionDiscovery`_
   - _Requirements: 10.2_
 
-- [-] 7. Routing, the tree's tool type and findings for a designer
+- [x] 7. Routing, the tree's tool type and findings for a designer
   - File: `src/backend/EtAlii.Adp.Hierarchy/DesignerFileRouter.cs` (new), `HierarchyContextSourceResolver.cs`, `src/backend/EtAlii.Adp.Diagram/DiagramService.Open.cs`, `src/backend/EtAlii.Adp.Problems/ProjectValidator.cs`, their tests
   - A registration whose first line is a designer's origin routes to that designer, after the diagram family and before the editor family, and its body no longer opens in the plain editor by default. The tree reports the origin as the entry's tool type. A designer registers a validator by origin into the existing problem store.
   - Guard: an `.adp` with a designer origin routes to the designer; the same body file alone still resolves to an editor; a diagram registration is unaffected; a designer's validator's findings reach the problem store.
@@ -87,7 +87,7 @@
   - _Leverage: `DiagramFileRouter`, `DiagramFilePair`, `EditorResolver`, `IDiagramValidator`, `DiagramValidators`_
   - _Requirements: 10.2, 2.1_
 
-- [-] 8. FBL runtime: reordering and positioned adds for declared bindings
+- [x] 8. FBL runtime: reordering and positioned adds for declared bindings
   - File: `src/backend/EtAlii.Adp.Specification.Fbl/Planning/EditPlanner.cs`, the `YamlFamily`, `JsonFamily` and `XmlFamily` writers, `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Planning/`, `src/backend/EtAlii.Adp.Specification.Fbl.Tests/Conformance/` (the knowledge bindings and fixtures vendored from etalii.adp, with its commit in `Conformance/readme.md`), `.gitattributes`
   - Plan `ModelChange.Move`, and `ModelChange.Add` with an index or a before or after position, for the three tree families as FBL 0.2 section 6.4 states; accept `place: {before: key}`. Vendor the knowledge fixtures; exempt them from line-ending conversion by their path under `Conformance/`, not by extension.
   - Guard: the conformance runner passes every vendored knowledge fixture; existing fixtures are unchanged.
@@ -96,7 +96,7 @@
   - _Leverage: `Conformance/ConformanceFixtures.Tests.cs`, `Planning/EditPlanner.cs`_
   - _Requirements: 2.7, 9.5_
 
-- [ ] 9. Adding a designer document, with its format
+- [x] 9. Adding a designer document, with its format
   - File: `src/backend/EtAlii.Adp.Hierarchy/AddDesignerContextActionProvider.cs` (new), `src/backend/EtAlii.Adp.Hierarchy/Commands/CreateDiagramFileCommandHandler.cs` (reused, or its generalisation), `src/backend/EtAlii.Adp.Designer/DesignerDocumentTemplates.cs` (new), tests
   - Offer a designer type in the Add tree with its formats as leaves under it. Committing creates the body from the binding's template for that format through `TemplateWriter`, and the registration beside it holding the origin line and, when the names differ, a `body:` line, as one undoable step. No action offers to change a document's format.
   - Guard: adding in each format creates exactly two files; the body reads through its binding with no finding; the registration holds no line beyond origin and body; undo removes both.
@@ -105,7 +105,7 @@
   - _Leverage: `AddDiagramContextActionProvider`, `DiagramOptionTree`, `Routing/TemplateWriter`, `AdpFileWriter.CreateAll`_
   - _Requirements: 10.4, 2.1, 2.2, 2.4, 2.5_
 
-- [ ] 10. The table model, the session seam and the wire
+- [x] 10. The table model, the session seam and the wire
   - File: `src/api/designers.proto` (new), `src/api/workspace.proto`, `src/backend/EtAlii.Adp.Designer/IDesignerSession.cs`, `IDesignerSessionFactory.cs`, `DesignerSessionFactories.cs`, `TableModel/` (columns, rows, cells, views, findings, changes), `DesignerService.cs`, the workspace stream's pump, tests
   - A table model that names no designer type. `DesignerService`: open and close a table stream, set the window and the active view, and `Edit` carrying a gesture. `WorkspaceMessage` gains a `table` member carrying a baseline and then changes. A session is per connection and dies with its stream.
   - Guard: a fake session's baseline and changes arrive on `Watch` under its stream id; `oneStreamPerTab` still passes; closing the connection disposes the session.
@@ -114,7 +114,7 @@
   - _Leverage: `IEditorSession`, `EditorSessionAdapter`, `WorkspaceService.OpenDiagram`, `src/client/src/oneStreamPerTab.test.tsx`_
   - _Requirements: 10.2, 10.7_
 
-- [ ] 11. A file dialog prompt
+- [x] 11. A file dialog prompt
   - File: `src/api/context.proto`, `src/backend/EtAlii.Adp.Context/_Model/ContextExecutionRequiresFile.cs` (new), the interaction store, `src/client/src/shell/context/FilePromptDialog.tsx` (new), `ContextPromptHost.tsx`, tests
   - A fourth prompt kind: the workspace's files as a tree, limited to those the asking provider's predicate accepts, with optional pinned entries first; the answer is a workspace path. It names no tool type.
   - Guard: a provider asking with a predicate receives the chosen path; a file the predicate refuses is not offered; cancelling writes nothing.
@@ -122,7 +122,7 @@
   - _Leverage: `ChoiceDialogPrompt`, `ChoicePromptDialog.tsx`, `ContextExecutionRequiresChoice`_
   - _Requirements: 10.6, 5.1_
 
-- [ ] 12. The table library: model, surface and stream
+- [x] 12. The table library: model, surface and stream
   - File: `src/client/src/table/library/TableSurface.tsx`, `definition/tableDefinition.ts`, `api/tableModel.ts`, `api/tableEvents.ts`, `rows/windowing.ts`, `table.css`, `src/client/src/designers/useTableStream.ts`, guards `tableStreamOpensOnlyInHook.test.ts` and `declarativeDesignerModules.test.ts`, `src/client/vitest.config.ts`, `src/package.json`, `docs/guards.md`
   - The surface: a header row with type icons, rows drawn only for the window in sight at a fixed row height, the window reported to the backend, roles of a grid, the host's theme tokens and fonts and none of Notion's artwork. `useTableStream` is the one place a table stream is opened. `designers/*/client` joins vitest's `include` and the workspaces. A module client holds declarations and handlers and renders nothing.
   - Guard: windowing arithmetic as plain functions; the surface draws only the window's rows for a model of ten thousand; the two guards above.
@@ -131,7 +131,7 @@
   - _Leverage: `src/client/src/canvas/library/` (layout of `definition/`, `api/`, `testing/`), `useDiagramStream.ts`, `declarativeModules`, `diagramStreamOpensOnlyInHook.test.ts`_
   - _Requirements: 10.3, 7.8_
 
-- [ ] 13. Cell editors and the keyboard
+- [x] 13. Cell editors and the keyboard
   - File: `src/client/src/table/library/cells/` (one editor per value kind), `src/client/src/components/SearchList.tsx` (new), `cells/keyboard.ts`, tests
   - Editors that open in place over the cell: text, number, checkbox, date, date and time, time on the browser's own inputs; a searchable list that picks and creates, for options and for related rows. Arrow keys between cells, Enter to edit and commit, Escape to cancel, Tab to the next cell, a key for a new row. A value its type cannot hold is refused in the editor with the backend's reason and the cell is unchanged.
   - Guard: each editor raises the right event with a typed value; every keyboard path; a refusal leaves the editor open with its reason.
@@ -140,7 +140,7 @@
   - _Leverage: `components/TagInput.tsx`, `canvas/label/InlineLabelEditor.tsx`, `useContextPromptEntry.ts`_
   - _Requirements: 4.3, 4.4, 4.5, 7.5_
 
-- [ ] 14. Column headers: menu, adding, reordering, resizing
+- [x] 14. Column headers: menu, adding, reordering, resizing
   - File: `src/client/src/table/library/header/ColumnHeader.tsx`, `ColumnMenu.tsx`, `AddColumn.tsx`, tests
   - A header's menu with the entries a module's definition offers (rename, change type, filter, sort ascending and descending, group, hide, wrap, insert left, insert right, duplicate, delete); the `+` after the last column; dragging a header to reorder; dragging a border to resize; the first column kept visible.
   - Guard: each menu entry raises its event; a drag raises one reorder with the target index; a border drag raises one width on release, not one per pixel.
@@ -149,7 +149,7 @@
   - _Leverage: `shell/context/ContextMenu.tsx`, `canvas/gesture/usePointerGesture.ts`_
   - _Requirements: 3.2, 7.2_
 
-- [ ] 15. Views bar, filter and sort items, groups, nested rows and the new row
+- [x] 15. Views bar, filter and sort items, groups, nested rows and the new row
   - File: `src/client/src/table/library/views/ViewTabs.tsx`, `ViewBar.tsx`, `FilterEditor.tsx`, `SortEditor.tsx`, `GroupEditor.tsx`, `rows/GroupHeading.tsx`, `rows/NestedRow.tsx`, `rows/NewRow.tsx`, tests
   - Views as tabs with add, rename, duplicate, delete and drag to reorder; controls for filter, sort, group and property visibility; each filter and sort shown as a removable item between tabs and table that opens for editing; filter groups nested to three levels with all or any; sorts ordered by dragging; group headings with value, count and a collapse toggle; nested rows with toggles; a *new* row at the bottom of the table and of every group.
   - Guard: each control raises its event; a heading shows the count the model gives; a fourth level of filter nesting is not offered.
@@ -158,7 +158,7 @@
   - _Leverage: `shell/panes/TabbedPane.tsx`, `components/Dialog.tsx`_
   - _Requirements: 7.1, 7.3_
 
-- [ ] 16. Option tags and their colours
+- [x] 16. Option tags and their colours
   - File: `src/client/src/table/library/cells/OptionTag.tsx`, `src/client/src/index.css` (twenty tokens: ten names, light and dark), `themeTokens.test.ts` and the contrast guards, tests
   - A rounded tag in its option's colour; the ten names of the design; each token under the existing contrast guard in both themes.
   - Guard: every colour name resolves to a token in both themes and passes the contrast guard against its text.
@@ -169,7 +169,7 @@
 
 ## The module
 
-- [ ] 17. The module opens a knowledge file
+- [x] 17. The module opens a knowledge file
   - File: `src/designers/knowledge/definition/` (`knowledge.des`, `knowledge.md`, `knowledge.fbl`, `provenance.json`), `src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/` (`Designer.cs`, `KnowledgeBody.cs`, `KnowledgeModel.cs`, `KnowledgeDocumentStore.cs`, `KnowledgeSession.cs`, `KnowledgeSessionFactory.cs`, `KnowledgeTableMapper.cs`, `ServiceCollection.AddKnowledge.cs`, the project's `.DotSettings`), `EtAlii.Adp.Designer.Knowledge.Tests/`, `src/backend/EtAlii.Adp.slnx`
   - Copy the definition files from etalii.adp at a named commit. Open a body through `OpenBody` with the binding its extension selects; the module has no parser or writer of its own. Map the file model onto the table model. Hold everything the designer shows in the file and nothing elsewhere. Watch the file with the editor family's obligations and retry, and push a re-read. A file that is not well-formed opens with the format's error and position and is never written; one of a newer version opens read-only; unknown keys are kept and reported once as info.
   - Guard: each example opens as the expected table model in all three formats; the watcher-obligation and read-retry tests of the editor family, applied to this session; an unreadable body is not written by any command; a newer version refuses every edit; an unknown key survives an edit byte for byte.
@@ -178,7 +178,7 @@
   - _Leverage: `GhgBody`, `GhgDocumentStore`, `MarkdownEditorSession` and its `WatcherObligations` and `ReadRetry` tests, `WritableDocumentLifecycle`_
   - _Requirements: 10.1, 10.5, 2.3, 2.9, 2.10, 8.1, 8.3_
 
-- [ ] 18. Property commands
+- [x] 18. Property commands
   - File: `src/designers/knowledge/backend/EtAlii.Adp.Designer.Knowledge/Commands/` (`AddPropertyCommand`, `RenamePropertyCommand`, `MovePropertyCommand`, `DuplicatePropertyCommand`, `DeletePropertyCommand`, `SetTitlePropertyCommand` and their handlers), `KnowledgeEdits.cs`, tests
   - The nine types. Adding at the end or left or right of a property; the new property visible in the current view. Rename, duplicate, move and delete, each one undoable step. Deleting removes the property's cells from every row and its entries from every view in the same step. Exactly one title property: not deletable, not hidden, not retyped. A second property with an existing name is refused through `ProposeInput` with its reason. Every new property gets a ShortGuid that is never reused.
   - Guard: one test per command over each format, asserting the file's bytes and the undo; the refusals.
@@ -187,7 +187,7 @@
   - _Leverage: `GhgEdits`, `RestoreDocumentCommand`, `ICommandHandler<T>`, `ShortGuid.NewShortGuid`_
   - _Requirements: 3.1, 3.2, 3.3, 3.7, 3.8, 3.9, 2.6_
 
-- [ ] 19. Option commands
+- [x] 19. Option commands
   - File: `Commands/` (`AddOptionCommand`, `RenameOptionCommand`, `RecolourOptionCommand`, `MoveOptionCommand`, `DeleteOptionCommand`), tests
   - Options with id, name and colour; created while filling in a cell; renamed, recoloured and reordered without touching any row, since rows hold option ids. Deleting an option in use asks first with the number of rows that use it, then clears those values in the same undoable step.
   - Guard: rename changes one place in the file; delete in use prompts with the right count and, confirmed, leaves no cell naming the option; undo restores both.
@@ -196,7 +196,7 @@
   - _Leverage: `ContextExecutionRequiresConfirmation`_
   - _Requirements: 3.5, 3.6_
 
-- [ ] 20. Changing a property's type
+- [x] 20. Changing a property's type
   - File: `KnowledgeConversions.cs`, `Commands/ChangePropertyTypeCommand.cs`, tests driven by the conversion table in `definition/knowledge.md`
   - Convert every value that has a meaning in the new type; leave every other value under its old key, byte for byte, as a finding on its cell. One undoable step. No value is discarded.
   - Guard: one test per row of the conversion table, read from `knowledge.md` so that the table and the tests cannot drift; a value that does not convert is still in the file after the change.
@@ -204,7 +204,7 @@
   - _Waits on: task 18_
   - _Requirements: 3.3, 3.4_
 
-- [ ] 21. Row and cell commands
+- [x] 21. Row and cell commands
   - File: `Commands/` (`AddRowCommand`, `DeleteRowsCommand`, `MoveRowsCommand`, `SetCellCommand`, `AddCellValueCommand`, `RemoveCellValueCommand`), the row's properties for the property grid, tests
   - Add a row at the end or inside a group, with the value that puts it there; a new row stays in the current view until the view is next opened. Set and clear a cell of each type; add and remove one of several values. Dates and times written in ISO 8601, a date and time with its offset. Delete several rows as one step; move rows where the view has no sort. A selected row's values in the property grid. Every edit undoable and saved as other tools' are.
   - Guard: one test per command and value type over each format; the ISO forms; a row added under a filter that excludes it is still in the session's window.
@@ -213,7 +213,7 @@
   - _Leverage: `PropertyGridPanel`'s backend seam (`describeProperties`, `setProperty`)_
   - _Requirements: 4.1, 4.2, 4.6, 4.7, 4.8_
 
-- [ ] 22. Relations
+- [x] 22. Relations
   - File: `KnowledgeRelations.cs`, `Commands/` (`AddRelationPropertyCommand`, `SetRelationCommand`, `DeleteRelationSideCommand`, `AssignParentRelationCommand`), `KnowledgeTargetRename.cs`, tests
   - Create a relation: the file dialog offers only knowledge files, *this file* first; then one row or any number; then one-way or two-way with a name for the other side. The property stores the target's path relative to its own file; values are the target's row ids. A two-way relation adds the counterpart property to the target file, computed and without cells, in the same undoable step, writing neither file if either refuses. Editing from either side changes the side that holds the values, and both sides show it at once. A relation cell's values carry the related rows' titles and open their rows. Renaming or moving a target file in ADP rewrites every relation naming it in the workspace in the same step. Deleting a row that others relate to asks first with the count. A relation to the same file can be the parent relation: one row per cell, and never a cycle. Deleting one side of a two-way relation asks whether to delete the other or keep it one-way.
   - Guard: each of these over two files, with undo restoring both; a failure on the second file leaves the first unwritten; a cycle is refused.
@@ -222,7 +222,7 @@
   - _Leverage: `IHistoryStackStore`, `RestoreDocumentCommand`, the hierarchy's rename command_
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.8, 5.9, 5.10_
 
-- [ ] 23. View commands
+- [x] 23. View commands
   - File: `Commands/` (`AddViewCommand`, `RenameViewCommand`, `DuplicateViewCommand`, `MoveViewCommand`, `DeleteViewCommand`, `SetColumnCommand`, `SetSortsCommand`, `SetFilterCommand`, `SetGroupCommand`, `SetCollapsedCommand`, `SetActiveViewCommand`), tests
   - Views stored in the file, each with an id; at least one, and the last cannot be deleted. Column visibility, order, width and wrap; the title property always shown. Sorts; the filter tree; the grouping with hidden groups, group order and hide-empty; collapsed groups and parents; the view the file was last left in. Every one is an edit of the file: undoable, saved, and leaving rows, properties and other views untouched.
   - Guard: one test per command over each format asserting that only that view's bytes change; the last view's delete is refused; a column entry is written only when it differs from the default.
@@ -230,7 +230,7 @@
   - _Waits on: task 17_
   - _Requirements: 6.1, 6.2, 6.3, 6.8, 6.9, 6.10_
 
-- [ ] 24. The view engine: filter, sort, group and nesting
+- [x] 24. The view engine: filter, sort, group and nesting
   - File: `KnowledgeView.cs`, `KnowledgeComparisons.cs`, tests
   - Compute a view's rows on the backend: every comparison of the design's table per type, with *is empty* and *is not empty* for all; several sorts in order, each in the way its type calls for; groups by selection, multiple selection, checkbox or relation, with a heading for rows without a value and a row under each of its values; nesting under parents to any depth. Serve the window the client asks for.
   - Guard: properties of the result rather than examples alone: every row shown satisfies the filter and every row hidden does not; the order is a stable sort by the keys in turn; a row with two values appears under both headings; the counts equal the rows beneath.
@@ -238,7 +238,7 @@
   - _Waits on: task 23_
   - _Requirements: 6.4, 6.5, 6.6, 6.7_
 
-- [ ] 25. Findings, and entries without an id
+- [x] 25. Findings, and entries without an id
   - File: `KnowledgeValidator.cs`, `KnowledgeIdentify.cs`, tests
   - One finding code per condition in the design's list, each with its place in the file. Nothing unreadable is removed on a write. A relation whose target is missing, unreadable or not a knowledge file, or whose value names no row, keeps its value, shows it unresolved and reports a finding. A view naming a missing property opens without that setting and reports it. An entry added outside ADP without an id is shown, reported as info, and given an id by the first edit made in ADP.
   - Guard: one test per finding code from a file that has the condition; the unreadable entry's bytes are the same after an unrelated edit; an id-less row has an id after the first edit and not before.
@@ -247,7 +247,7 @@
   - _Leverage: `IDiagramValidator`, `DiagramProblem`, FBL's `std.unreadableEntry`_
   - _Requirements: 8.2, 8.5, 5.7, 6.11_
 
-- [ ] 26. The guard against `knowledge.des`
+- [x] 26. The guard against `knowledge.des`
   - File: `EtAlii.Adp.Designer.Knowledge.Tests/DefinitionConformance.Tests.cs`, `docs/guards.md`
   - Read `definition/knowledge.des` and fail when the module's property types, value keys, comparisons per type, or view settings differ from it, in either direction.
   - Guard: this test.
@@ -255,7 +255,7 @@
   - _Waits on: tasks 20, 24_
   - _Requirements: 10.5_
 
-- [ ] 27. The module's client
+- [x] 27. The module's client
   - File: `src/designers/knowledge/client/register.ts`, `KnowledgePanel.tsx`, `knowledgeDefinition.ts`, `knowledge.css`, `package.json`, tests
   - Register a panel for `etalii/knowledge`. Declare the table definition: the column menu's entries, the value kinds, the relation flow in Notion's order (target, limit, show on the other side and its name, confirm). Handlers call `DesignerService`. No rendering in the module.
   - Guard: `register.test.ts` for the claim; the panel raises the right call for each event; the declarative guard of task 12 passes against it.
@@ -266,7 +266,7 @@
 
 ## Examples, tests, documentation and checks
 
-- [ ] 28. Examples and their tests
+- [x] 28. Examples and their tests
   - File: `src/designers/knowledge/examples/`, `src/examples/designers/knowledge/`, `EtAlii.Adp.Designer.Knowledge.Tests/Examples.Tests.cs`, `Equivalence.Tests.cs`, `.gitattributes`, licence and readme files beside any vendored data
   - Examples that between them show every property type, a one-way and a two-way relation between two files, a parent relation, and views with visibility, widths, sorts, filters and each grouping; one example in all three formats. For data from `correlate/test/data` or elsewhere: read the data set's own licence statement at acquisition, refuse share-alike, vendor the licence file, and say in the readme what the corpus does not demonstrate; where no licence can be established, reproduce the shape with data written for ADP and say so.
   - Guard: every example reads without errors and, written unchanged, keeps its bytes; the same table read from each format gives the same model, and again after each kind of edit.
@@ -274,7 +274,7 @@
   - _Waits on: tasks 22 to 25_
   - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 29. Ten thousand rows through the designer
+- [x] 29. Ten thousand rows through the designer
   - File: `EtAlii.Adp.Designer.Knowledge.Tests/LargeTable.Tests.cs`
   - Open a ten-thousand-row file through the session; edit one cell; change the sort, the filter and the grouping; ask for windows. Record the times in the implementation log. Assert that one cell edit writes splices, not the whole file, and that no baseline or change carries more rows than the window asked for.
   - Guard: this test.
@@ -282,7 +282,7 @@
   - _Waits on: tasks 21, 24_
   - _Requirements: 9.6_
 
-- [ ] 30. Over gRPC, and without the module
+- [x] 30. Over gRPC, and without the module
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/KnowledgeDesigner.Tests.cs`, `DesignerModuleIsolation.Tests.cs`
   - Open, edit and close a knowledge file in each format over gRPC, asserting the pushed table model and the file. A two-way relation edited from both sides across two open files. An edit on disk appearing on the stream. Isolation: with the module's assembly absent the host starts, the designer type is not offered, and no core file names it.
   - Guard: these tests.
@@ -291,7 +291,7 @@
   - _Leverage: `EditorModuleIsolation.Tests.cs`_
   - _Requirements: 10.1, 8.1, 5.5_
 
-- [ ] 31. Documentation
+- [x] 31. Documentation
   - File: `docs/creating-a-designer-module.md`, `docs/architecture.md`, `docs/solution-structure.md`, `docs/guards.md`, `docs/tools.md`, `src/designers/readme.md`
   - The designer page as a walk through this module from end to end. The architecture page gains the designer family, the table library and the `table` member of `Watch`; the structure page its projects and recomputed counts. The catalogue row moves to its new state with this specification named.
   - Guard: `ArchitecturePages.Tests` and `GuardInventory.Tests` pass; the terminology check passes.
@@ -299,14 +299,14 @@
   - _Waits on: task 30_
   - _Requirements: 10.8_
 
-- [ ] 32. The browser pass
+- [x] 32. The browser pass
   - File: `tests.md`, `docs/screenshots/` where a new image is warranted
   - In a real browser, in both themes: everything Requirement 11.1 lists. Then each part of Requirement 7 side by side with Notion's help pages; every difference found is either corrected or sent to the Scrum master as a selection for the user, to be added to Requirement 7.7 by ruling. A check that needs signing in is run with the checked-in placeholder, not recorded as pending.
   - Guard: the recorded pass. jsdom is not evidence for any part of it.
   - _Waits on: tasks 27, 28_
   - _Requirements: 11.1, 11.2, 11.3_
 
-- [ ] 33. Coverage, before and after
+- [x] 33. Coverage, before and after
   - File: this document
   - Before the tasks card: extract every requirement reference from this document, list every acceptance criterion in the requirements, and diff the two sets. After implementing: trace each criterion to files and strings, and read two traces back to their artefacts to see that the evidence is that criterion's and not a neighbour's. Confirm that every task named the defect its guard failed against.
   - _Waits on: every other task (the second run)_

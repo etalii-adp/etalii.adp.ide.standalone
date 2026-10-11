@@ -192,17 +192,17 @@ public sealed class KnowledgeEditingTests : IDisposable
         await table.Edit(new TableGesture("addRow", TargetId: "r1"));
         await table.Edit(new TableGesture("addRow", ViewId: "v1", Settings: Settings(("group", "o2"))));
 
-        // Assert: three new rows, each with an id never used; one after r1, the others at the end.
+        // Assert: three new rows beside the example's nine, each with an id never used; one after r1, the others at the end.
         var rows = table.OnDisk().Rows;
-        Assert.Equal(5, rows.Count);
+        Assert.Equal(12, rows.Count);
         Assert.Equal("r1", rows[0].Id);
         Assert.Equal("r2", rows[2].Id);
-        Assert.Equal(5, rows.Select(row => row.Id).Distinct().Count());
+        Assert.Equal(12, rows.Select(row => row.Id).Distinct().Count());
 
         // The row added in the group of Belgium is a row of Belgium.
-        Assert.Equal(["o2"], Cell(table.OnDisk(), rows[4].Id, "p2"));
+        Assert.Equal(["o2"], Cell(table.OnDisk(), rows[^1].Id, "p2"));
         Assert.Empty(rows[1].Cells);
-        Assert.Empty(rows[3].Cells);
+        Assert.Empty(rows[^2].Cells);
     }
 
     [Theory]
@@ -213,8 +213,8 @@ public sealed class KnowledgeEditingTests : IDisposable
         await using var table = Open(extension);
         var before = table.Bytes();
 
-        // Act.
-        await table.Edit(new TableGesture("deleteRows", Values: ["r1", "r2"]));
+        // Act: every row of the table.
+        await table.Edit(new TableGesture("deleteRows", Values: [.. table.OnDisk().Rows.Select(row => row.Id)]));
 
         // Assert.
         Assert.Empty(table.OnDisk().Rows);
@@ -340,7 +340,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         var copy = properties[2];
         Assert.Equal("Country 2", copy.Name);
         Assert.Equal("selection", copy.ValueType);
-        Assert.Equal(["Netherlands:blue", "Belgium:yellow"], copy.Options.Select(option => $"{option.Name}:{option.Colour}"));
+        Assert.Equal(["Netherlands:blue", "Belgium:yellow", "Germany:default", "France:default", "Finland:default", "Italy:default"], copy.Options.Select(option => $"{option.Name}:{option.Colour}"));
         Assert.Empty(copy.Options.Select(option => option.Id).Intersect(["o1", "o2", "o3", "o4"]));
         Assert.NotEqual("p2", copy.Id);
     }
@@ -443,7 +443,6 @@ public sealed class KnowledgeEditingTests : IDisposable
     {
         // Arrange: v1 sorts by population, descending.
         await using var table = Open(extension);
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
 
         // Act.
         await table.Edit(new TableGesture("addSort", ColumnId: "p1", ViewId: "v1", Settings: Settings(("direction", "ascending"))));
@@ -460,6 +459,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Assert: none left, and the file still reads without a word.
         Assert.Empty(View().Sorts);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
+        return;
+
+        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     [Theory]
@@ -468,7 +470,6 @@ public sealed class KnowledgeEditingTests : IDisposable
     {
         // Arrange: v1 has one condition, Country is Netherlands.
         await using var table = Open(extension);
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
 
         // Act: a second condition, a group with a condition of its own, and any instead of all.
         await table.Edit(new TableGesture("addFilter", ColumnId: "p3", ViewId: "v1", Settings: Settings(("comparison", "greater-than"))));
@@ -505,6 +506,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         // Assert.
         Assert.Empty(View().Filter.Items);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
+        return;
+
+        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     [Fact]
@@ -528,7 +532,6 @@ public sealed class KnowledgeEditingTests : IDisposable
     {
         // Arrange: v1 is grouped by Country.
         await using var table = Open(extension);
-        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
 
         // Act.
         await table.Edit(new TableGesture("toggleGroup", ViewId: "v1", TargetId: "o1", Settings: Settings(("collapsed", "true"))));
@@ -555,6 +558,9 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal("A view is grouped by a selection, a checkbox or a relation.", refused);
         Assert.Equal("", View().GroupBy);
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
+        return;
+
+        KnowledgeView View() => table.OnDisk().Views.Single(view => view.Id == "v1");
     }
 
     // ---- shown at once, written behind ------------------------------------------------------------------
@@ -626,7 +632,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         (ShortGuid first, _) = table.Begin(SetCell("r2", "p1", "Antwerpen"));
         (ShortGuid second, _) = table.Begin(SetCell("r2", "p3", "529247"));
         (ShortGuid third, _) = table.Begin(new TableGesture("addRow"));
-        Assert.Equal(4, table.Lines().Count);
+        Assert.Equal(11, table.Lines().Count);
         table.Release();
         var settled = await table.Settled(first);
 
@@ -635,7 +641,7 @@ public sealed class KnowledgeEditingTests : IDisposable
         Assert.Equal("cities.yaml could not be written: the disk is full.", settled.Error);
         Assert.Equal([second, third], settled.TakenBack);
         var lines = table.Lines();
-        Assert.Equal(3, lines.Count);
+        Assert.Equal(10, lines.Count);
         Assert.Equal(["Antwerp"], lines.Single(line => line.Id == "r2").Cells.Single(cell => cell.ColumnId == "p1").Values);
 
         // And none of the later edits was written after all.

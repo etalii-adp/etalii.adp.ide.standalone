@@ -36,7 +36,7 @@ public class DesignerRoutingFlowTests : IClassFixture<WebApplicationFactory<Prog
     private const string SessionTokenHeader = "session-token";
 
     private static readonly DesignerDefinition Sheet =
-        new("fixture/sheet", "Fixture sheet", Formats: [new("YAML", ".yaml")]);
+        new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
     private readonly string _appDataRoot;
     private readonly string _projectFolder;

@@ -39,10 +39,10 @@ public sealed class TableStreamFlowTests : IClassFixture<WebApplicationFactory<P
     private const string SessionTokenHeader = "session-token";
     private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
 
-    private static readonly DesignerDefinition Sheet = new("fixture/sheet", "Fixture sheet", Formats: [new("YAML", ".yaml")]);
+    private static readonly DesignerDefinition Sheet = new("fixture/sheet", "Fixture sheet", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
     /// <summary>Routed, and no module serves it.</summary>
-    private static readonly DesignerDefinition Orphan = new("fixture/orphan", "Fixture orphan", Formats: [new("YAML", ".yaml")]);
+    private static readonly DesignerDefinition Orphan = new("fixture/orphan", "Fixture orphan", Formats: [new DesignerFormat("YAML", ".yaml")]);
 
     private readonly WebApplicationFactory<Program> _factory;
     private readonly string _appDataRoot;

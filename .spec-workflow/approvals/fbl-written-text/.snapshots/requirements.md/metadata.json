@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/fbl-written-text/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-11T14:14:14.694Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791728053766_027skhjwz",
+      "approvalTitle": "requirements.md: FBL 0.5 in the standalone library (a scalar read as written)"
+    }
+  ]
+}

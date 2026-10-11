@@ -48,6 +48,9 @@ const MENU_ORDER: readonly (readonly ColumnAction[])[] = [
 
 const TITLE_STAYS = "The column that names a row is always there.";
 
+/** The setting a column names the other side of its two-way relation under, and a delete says what becomes of that side under. */
+export const OTHER_SIDE = "otherSide";
+
 export interface ColumnMenuHandlers {
   raise: (gesture: TableGesture) => void;
   /** Renaming is done in the header itself; the menu only starts it. */
@@ -116,7 +119,22 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
         return { id: action, label: "Insert right", icon: "mdi-table-column-plus-after", onSelect: () => raise({ kind: "addColumn", targetId: column.id, settings: { side: "right", type: defaultKind(definition) } }) };
       case "duplicate":
         return { id: action, label: "Duplicate", icon: "mdi-content-duplicate", onSelect: () => raise({ kind: "duplicateColumn", columnId: column.id }) };
-      case "delete":
+      case "delete": {
+        // One side of a two-way relation is not deleted on one press: its author chooses what becomes of the other side.
+        const otherSide = column.settings[OTHER_SIDE];
+        if (otherSide !== undefined && otherSide !== "") {
+          return {
+            id: action,
+            label: "Delete",
+            icon: "mdi-trash-can-outline",
+            items: [
+              [
+                { id: "delete:both", label: `Delete '${otherSide}' too`, icon: "mdi-trash-can-outline", onSelect: () => raise({ kind: "deleteColumn", columnId: column.id, settings: { [OTHER_SIDE]: "delete" } }) },
+                { id: "delete:keep", label: `Keep '${otherSide}' as a one-way relation`, icon: "mdi-arrow-right-thin", onSelect: () => raise({ kind: "deleteColumn", columnId: column.id, settings: { [OTHER_SIDE]: "keep" } }) },
+              ],
+            ],
+          };
+        }
         return {
           id: action,
           label: "Delete",
@@ -125,6 +143,7 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
           disabledReason: column.isTitle ? TITLE_STAYS : undefined,
           onSelect: () => raise({ kind: "deleteColumn", columnId: column.id }),
         };
+      }
     }
   };
 

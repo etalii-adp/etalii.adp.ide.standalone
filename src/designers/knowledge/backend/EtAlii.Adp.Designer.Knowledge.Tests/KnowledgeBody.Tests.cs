@@ -31,7 +31,9 @@ public class KnowledgeBodyTests
             ["p1 Name text", "p2 Country selection", "p3 Population number", "p4 Tags multipleSelection", "p5 Province relation", "p6 Visited checkbox"],
             table.Properties.Take(6).Select(property => $"{property.Id} {property.Name} {property.ValueType}"));
         Assert.Equal(["p1"], table.Properties.Where(property => property.IsTitle).Select(property => property.Id));
-        Assert.Equal(["o1 Netherlands blue", "o2 Belgium yellow"], table.Properties[1].Options.Select(option => $"{option.Id} {option.Name} {option.Colour}"));
+        Assert.Equal(
+            ["o1 Netherlands blue", "o2 Belgium yellow", "b4ff5lo4rezgty4ge7siqndey Germany default", "dn1qx45l0fu88pip2l9ua7joz France default", "7h1eyx85f462uj3sb6jlxdxvu Finland default", "2xc52nefzictwc49wy8ldxh7t Italy default"],
+            table.Properties[1].Options.Select(option => $"{option.Id} {option.Name} {option.Colour}"));
         // A colour the file does not give is the default, in every format.
         Assert.Equal(["default", "red"], table.Properties[3].Options.Select(option => option.Colour));
         Assert.Equal(("provinces.yaml", "one"), (table.Properties[4].TargetFile, table.Properties[4].Limit));
