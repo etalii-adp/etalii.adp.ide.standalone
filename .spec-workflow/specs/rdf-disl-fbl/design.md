@@ -12,7 +12,7 @@ Three classes carry the conversion:
 - `RdfTurtlePlugin`: the persistence plugin `net.etalii.adp.w3c.turtle`, whose `read` is `RdfTokenizer` and `RdfParser`.
 - `RdfBody`: one `.ttl` or `.nt` body opened through the module's binding, giving the plugin's reading and, per reading, the DISL model built from it.
 
-**One point of the approved requirements is proposed for amendment** before the tasks are written, in *Amendment proposed*. It concerns Requirement 6.3 (the default of Q3) and its conflict with Requirement 4.6.
+**One point of the approved requirements was amended by the user's ruling in chat on 2026-10-11**, in *Amendments ruled*. It concerns Requirement 6.3 (the default of Q3) and its conflict with Requirement 4.6.
 
 ## Steering Document Alignment
 
@@ -36,7 +36,7 @@ Three classes carry the conversion:
 - **The `Parity/` folders** of the timeline, the mind map and the hype cycle graph (`TimelineTranscript.cs`, `TranscriptText.cs`, `HandWrittenGhg.cs`): the generator, the comparison and the oracle are copied in shape.
 - **`RdfDocumentStore` and `WritableDocumentLifecycle`**: one entry per path, shared by the four sessions. That is already the one open body of Requirement 7.2 and it stays.
 - **`RdfEdits.Run` and `RestoreDocumentCommand`**: one gesture is one command and one snapshot undo today, and stays so in stage one (Requirement 5.2).
-- **`SetRegistrationLayoutCommand` and `RegistrationLayout`** (`EtAlii.Adp.Hierarchy`): positions are read and written as today (see *Amendment proposed*).
+- **`SetRegistrationLayoutCommand` and `RegistrationLayout`** (`EtAlii.Adp.Hierarchy`): positions are read and written as today (see *Amendments ruled*).
 - **`parseDisl`, `compileNotation`, `NotationBindings`** (`client/src/canvas/library/disl/`) and **`src/diagrams/tools/bundle-disl.sh`**.
 
 ### Integration Points
@@ -167,7 +167,7 @@ The tables are a reading of the four projections against DISL 0.3, not a run. Ea
 | The label for the header's language | A list attribute, chosen by `SkosLabelLanguage` |
 | `skos.hierarchy-cycle` | A constraint over `inCycle` (D5) |
 | `skos.duplicate-preflabel`, `missing-preflabel`, `nonconcept-target`, `related-overlap`, `unfiled-concept`, `xl-labels` | Constraints |
-| `skos.misplaced-header` | Module code, about the registration (see *Amendment proposed*) |
+| `skos.misplaced-header` | Module code, about the registration (see *Amendments ruled*) |
 
 | SHACL | Derived by |
 | --- | --- |
@@ -277,7 +277,7 @@ One JSON file per reading in `Parity/`, shaped as the timeline's: per document `
 | `RdfLayout`, `OwlLayout`, `SkosLayout`, `ShaclLayout` | DISL names a layout for a plugin (finding A11). |
 | The four element mappers, `RdfViewport`, the `.proto` payloads | The host's wire and the viewport filter. |
 | The sessions, `RdfDocumentStore`, the reloader, the factories | The shared document lifecycle; a factory returns the binding's template. |
-| `SkosLabelLanguage`, `SkosValidator`'s header rule | Gap 5, and the registration (see *Amendment proposed*). |
+| `SkosLabelLanguage`, `SkosValidator`'s header rule | Gap 5, and the registration (see *Amendments ruled*). |
 | `RdfVocabulary` and the sibling vocabularies | Only what the writers and the plugin functions still read; the rest goes with the projections. |
 | The four projections, the validators' rules, the provider logic | They do not stay: each moves to `Parity/` at its reading's step. |
 
@@ -290,7 +290,7 @@ One JSON file per reading in `Parity/`, shaped as the timeline's: per document `
 | 3 | Step 5; *RdfTurtlePlugin*; F1, F3 |
 | 4 | Steps 6 to 9; *What each reading derives*; Error scenario 3 |
 | 5 | 5.2, 5.4, 5.6: unchanged commands, held by the transcripts. 5.5: step 10. 5.1 and 5.3: *What waits* |
-| 6 | 6.1: the id rules and D3. 6.2: the positions test. 6.3 and 6.4: *Amendment proposed* |
+| 6 | 6.1: the id rules and D3. 6.2: the positions test. 6.3 and 6.4: *Amendments ruled* |
 | 7 | 7.1: steps 2 and 4. 7.2: *RdfBody* and the store. 7.3: *Integration Points*, `SkosLabelLanguage`. 7.4: *Templates* |
 | 8 | *What remains in the module*; step 15 |
 | 9 | Step 3; *Library work* |
