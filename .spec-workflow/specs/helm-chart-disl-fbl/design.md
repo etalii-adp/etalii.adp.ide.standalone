@@ -200,11 +200,11 @@ One JSON file, `Parity/helm-chart.transcript.json`, shaped as the hype cycle's: 
 | Removing `HelmFindingOrder`, if it was needed | DISL gap 9 |
 | Legacy as information, a non-chart as an error, `fbl.stale-view-data`, the second same-named dependency as ephemeral | Each a small change of its own after this conversion (Q3, Q4), raised in the delivery report |
 
-## Amendment proposed
+## Amendments ruled
 
 Requirement 5.2 says the findings are derived by `ConstraintEvaluator` "with the tool's eleven codes". Requirement 5.4 and Q3's default keep `helm.not-a-chart` a module finding until gap 8 is answered, because a built-in's severity cannot be computed (finding B10). Both cannot hold as written: ten codes can pass through the evaluator and the eleventh cannot.
 
-The amendment, to be put to the user as a selection before the tasks card:
+The amendment, put to the user as a selection. **Ruled by the user in chat, 2026-10-11: the first.**
 
 1. **5.2 reads "with ten of the tool's eleven codes; `helm.not-a-chart` is as 5.4 says"** (recommended: it is what Q3's default already rules, and it changes no behaviour).
 2. 5.2 stands, and `helm.not-a-chart` is reported through `std.unparseable` as an error, which is Q3's other option and a change users see.
