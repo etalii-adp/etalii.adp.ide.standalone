@@ -13,7 +13,7 @@ The module ends in the shape the hype cycle graph has. Two classes carry the con
 
 Everything else is deleted, moved to the test project as the oracle, or kept as host code or as a named stand-in with its reason (the table under *What remains*).
 
-**Two points of the approved requirements are proposed for a small amendment** before the tasks are written, in *Amendment proposed* below. Neither changes what the tool does.
+**Two points of the approved requirements were amended**, each ruled by the user in chat on 2026-10-11, in *Amendments ruled* below. Neither changes what the tool does.
 
 ## Steering Document Alignment
 
@@ -48,7 +48,7 @@ Each was opened and its members checked against the use named here.
 ### Integration Points
 
 - **etalii-adp/etalii.adp**: `definitions/diagrams/functional-decomposition-graph.dis` and `.md` are rewritten there, and `specifications/disl/functional-decomposition.dis` is brought in line (step 2), through that repository's own pull request and checks. Step 3 depends on that pull request being merged. Steps 7 and 8 depend on a second change there, to FBL (see *What waits*).
-- **`EtAlii.Adp.Specification.Fbl.Tests`**: `ModuleCrossCheck.Tests` gains a case for `.fdg` at step 7 (see *Amendment proposed*, 2).
+- **`EtAlii.Adp.Specification.Fbl.Tests`**: `ModuleCrossCheck.Tests` gains a case for `.fdg` at step 7 (see *Amendments ruled*, 2).
 - **Other specifications of the series**: the graph functions of DISL 12.4 are needed by `causal-loop-disl-fbl` (its L1, `diagram.cycles`) and `azure-devops-pipeline-disl-fbl` (its 8.1, `reachable` and `inCycle`). They are one piece of work in one file and are delivered once, by whichever specification reaches its library step first; the others take them as given.
 
 ## Architecture
