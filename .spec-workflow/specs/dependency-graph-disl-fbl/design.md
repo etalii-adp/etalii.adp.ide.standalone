@@ -11,7 +11,7 @@ The module ends in the shape the hype cycle graph has today. Two classes carry i
 - `DependencyGraphDefinition`, which exists and loses its model builder and its shape checks.
 - `DependencyGraphBody`, new: one `.dgr` body opened through the module's binding, giving the binding's reading, the one DISL model built from it, and `Change(ModelChange)`.
 
-**Verification found three things the requirements did not record.** `DislWrite.ToFbl` has no case for a `DislChange.Connect`, so a transaction that connects cannot be planned "as it is" today (library item L1). The library's cascade compares the written key and not what the reference resolves to, so it reproduces finding B11 and does not repair it (L2). And Requirement 1.4 and Requirement 4.1 cannot both hold after the parser leaves the product code; that one is in *Amendment proposed* and changes no behaviour.
+**Verification found three things the requirements did not record.** `DislWrite.ToFbl` has no case for a `DislChange.Connect`, so a transaction that connects cannot be planned "as it is" today (library item L1). The library's cascade compares the written key and not what the reference resolves to, so it reproduces finding B11 and does not repair it (L2). And Requirement 1.4 and Requirement 4.1 could not both hold after the parser leaves the product code; that one was amended, ruled by the user in chat on 2026-10-11, in *Amendments ruled*, and changes no behaviour.
 
 ## Steering Document Alignment
 
@@ -44,7 +44,7 @@ Each was opened and the member named was found with the shape assumed.
 ### Integration Points
 
 - **etalii-adp/etalii.adp**: three pull requests there. The language change for gap 1 is that repository's own specification (out of scope here). The definition's `persistence` and companion are changed there (step 6). The binding and a conformance fixture are offered there (step 9).
-- **`EtAlii.Adp.Specification.Fbl.Tests`**: `RealFiles/ModuleCrossCheck.Tests.cs` gains this tool, and `RealFiles/divergences.json` gains an entry per disagreement that is a recorded finding. The project references module **product** projects (the timeline's, the mind map's and two more) and calls `TimelineParser` directly, which is what *Amendment proposed* turns on.
+- **`EtAlii.Adp.Specification.Fbl.Tests`**: `RealFiles/ModuleCrossCheck.Tests.cs` gains this tool, and `RealFiles/divergences.json` gains an entry per disagreement that is a recorded finding. The project references module **product** projects (the timeline's, the mind map's and two more) and calls `TimelineParser` directly, which is what *Amendments ruled* turns on.
 - **`timeline-disl-fbl`**: the same blocking gap and the same Q3. The library work for it (L3) is shared and delivered once, by whichever of the two specifications reaches it first; the other consumes it.
 
 ## Architecture
@@ -214,7 +214,7 @@ Ruled by the user in chat on 2026-10-11 as the first, recommended option below:
 - **One test per Read finding** (step 2). Each is first written as an equality with the transcript and seen to fail for the finding's reason, then kept as a pinned difference that the repairing step removes.
 - **Guards for B11 to B14**, each seen to fail against today's code: the second holder's removal, undo of a relabel that lost a comment, the first node of a graph with no `elements` key, a key on a dash line with a wide gap.
 - **Round trip:** every document of the corpus read and stored without a change gives no splice and the same bytes, the line-ending pair and the one without a final newline included (Requirement 3.7).
-- **The cross-check** of Requirement 1.4, as *Amendment proposed* settles it.
+- **The cross-check** of Requirement 1.4, as *Amendments ruled* settles it.
 - The parser's and the writer's own tests move with them to the oracle; the store, session and reload tests stay and pass unchanged.
 
 ### End-to-End Testing
@@ -239,7 +239,7 @@ Gone from the product code: `DependencyGraphParser`, `DependencyGraphWriter`, `D
 
 | Requirement | Where |
 | --- | --- |
-| 1 | Steps 1 and 2; Testing Strategy; *Amendment proposed* (1.4) |
+| 1 | Steps 1 and 2; Testing Strategy; *Amendments ruled* (1.4) |
 | 2 | Steps 6 and 7; `DependencyGraphBody`, `DependencyGraphReading`, `DependencyGraphFindings`; *The binding's reading* |
 | 3 | Step 4 (3.6) and step 8; `Apply`; L1 and L2; Error scenarios 3 and 4 |
 | 4 | Steps 4, 7, 8 and 9; *What remains in the module* |
