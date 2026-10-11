@@ -26,7 +26,7 @@ Read on 2026-10-09: the module at `develop` `9a646009`; `definitions/diagrams/az
 | A parity transcript | None. |
 | Registrations | Eleven `.adp` files in `examples/`, each one line, `azure-devops/pipeline`. No `layout:` block exists anywhere, because nothing about the drawing is stored and dragging is switched off. |
 
-**How each finding below is known** is marked, because none of them was run: *read* is a reading of the code or the definition against the specification text; *recorded* is a sentence in the code or in the definition's companion that a reviewer already holds; *measured* is a search whose command is in *Sources*. Requirement 1 turns every *read* finding into a fixture before anything is changed.
+**How each finding below is known** is marked, because none of them was run: *read* is a reading of the code or the definition against the specification text; *recorded* is a sentence in the code or in the definition's companion that a reviewer already holds; *measured* is a search whose command is in *Sources*. Requirement 1 turns every *read* finding that a pipeline document can show into a fixture before anything is changed.
 
 ## Findings
 
@@ -374,10 +374,6 @@ The rest of the definition is the existing file brought to 0.3 (Requirement 2.1)
       "pool": "azure-pipeline.pool", "environment": "azure-pipeline.environment", "strategy": "azure-pipeline.strategy", "multiplicity": "azure-pipeline.multiplicity",
       "timeout": "azure-pipeline.timeout", "continueOnError": "azure-pipeline.continue-on-error", "enabled": "azure-pipeline.enabled",
       "identifier": "azure-pipeline.identifier", "hook": "azure-pipeline.hook"
-    },
-    "findings": {
-      "std.unparseable": "azure-pipeline.unparseable", "danglingDependency": "azure-pipeline.dangling-dependency", "cycle": "azure-pipeline.cycle",
-      "unreachable": "azure-pipeline.unreachable", "noStartingStage": "azure-pipeline.no-starting-stage", "unnamed": "azure-pipeline.unnamed", "templateNotFollowed": "azure-pipeline.template-not-followed"
     }
   }
 }

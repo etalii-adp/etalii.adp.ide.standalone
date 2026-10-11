@@ -10,7 +10,7 @@ The design is written against the defaults of all six questions. Q2 decides its 
 - `PipelineYamlPlugin`: the FBL 11 plugin `net.etalii.adp.azure-devops.pipelineYaml`, with `read`, `plan` and `template`.
 - `PipelineBody`: one `.yml` body opened through the module's binding with that plugin, giving the plugin's reading, the DISL model built from it, the `PipelineModel` the canvas addresses, and `Change(ModelChange)`.
 
-Everything else is deleted, moved to the test project as the oracle, or kept as host code with its reason (*What remains*). What waits for a language change is in one section, *What waits, and on what*. **Three points of the approved requirements are proposed for a small amendment** in *Amendment proposed*; none changes what a user sees.
+Everything else is deleted, moved to the test project as the oracle, or kept as host code with its reason (*What remains*). What waits for a language change is in one section, *What waits, and on what*. **Three points of the approved requirements were amended**, each ruled by the user in chat on 2026-10-11, in *Amendments ruled*; none changes what a user sees.
 
 ## Steering Document Alignment
 
@@ -98,7 +98,7 @@ Steps 5 and 6 change derivation and keep reading; step 7 changes reading and kee
 - **Interfaces:** `Specification`; `Toolbox`; `Menus(body, view, elementId)`; `Rows(body, elementId)`; `Findings(body)`; `ElementOf(diagram, wireId)`; `Apply(body, transaction)`.
 - **Reuses:** the shape of `GhgDefinition`, and `MindmapDefinition.ModelOf(document, view)` for a model that carries viewer state: the open or closed state of a stage and a job comes from `PipelineConnectionView`, so "Show jobs" and "Hide jobs" are one CEL message over it and the toggle is a `view` action that the provider turns into `PipelineViewState.Toggle`.
 - **Wire ids.** The definition's derived id rules yield today's ids, so the model's ids are the ids the client sends. Positional ids are marked `ephemeral`. Two stages of one name share an id as today, and the first is the one a gesture finds; `std.duplicateId` is switched off in `constraints.builtIn` (Q3, finding A8). `DislModelBuilder` adds a finding of its own when a derived id is computed twice; it is in `DislModel.Findings`, which the validator does not report.
-- **Finding codes** are each rule's and each built-in's `code` in the definition, as the hype cycle's are (`"code": "ghg.dangling-reference"`). See *Amendment proposed*, 1.
+- **Finding codes** are each rule's and each built-in's `code` in the definition, as the hype cycle's are (`"code": "ghg.dangling-reference"`). See *Amendments ruled*, 1.
 
 ### PipelineReadContext (the named type of Requirement 4.1)
 
@@ -137,7 +137,7 @@ Steps 5 and 6 change derivation and keep reading; step 7 changes reading and kee
 - **The three providers** hand out `PipelineDefinition.Toolbox`, `.Menus` and `.Rows`.
 - **`PipelineValidator`** returns `PipelineDefinition.Findings(PipelineBody.Parse(text))` mapped to `DiagramProblem`.
 - **Commands** keep their records and their handlers' signatures, so the wire and the client are untouched. A handler opens the entry's body, runs the definition's operation through `OperationInterpreter`, and applies the transaction. Every refusal is the definition's: the Reason lists, and for a cycle or a pipeline left with no starting stage a precondition over `reachable` and `inCycle`, evaluated before anything is planned (Requirement 5.8).
-- **Undo** is one command, `RestorePipelineSpanCommand`, replacing `RestorePipelineLinesCommand` and the per-command inverses: it carries the one span that differs between the bytes before and after the edit, its replacement, and the SHA-256 of the bytes it expects. Its handler refuses with `SplicedFile.DriftUndo` when the file on disk has another digest, otherwise applies the splice with `Edit.Apply` and returns its own inverse. See *Amendment proposed*, 2.
+- **Undo** is one command, `RestorePipelineSpanCommand`, replacing `RestorePipelineLinesCommand` and the per-command inverses: it carries the one span that differs between the bytes before and after the edit, its replacement, and the SHA-256 of the bytes it expects. Its handler refuses with `SplicedFile.DriftUndo` when the file on disk has another digest, otherwise applies the splice with `Edit.Apply` and returns its own inverse. See *Amendments ruled*, 2.
 
 ### The client
 
@@ -269,11 +269,11 @@ The user ruled each of the three in chat on 2026-10-11 as its recommended option
 
 | Requirement | Where |
 | --- | --- |
-| 1 | Steps 1 and 2; *The transcript*; Testing Strategy; *Amendment proposed*, 3 |
-| 2 | Steps 3 and 4; *PipelineDefinition*; *Amendment proposed*, 1 |
+| 1 | Steps 1 and 2; *The transcript*; Testing Strategy; *Amendments ruled*, 3 |
+| 2 | Steps 3 and 4; *PipelineDefinition*; *Amendments ruled*, 1 |
 | 3 | Steps 5 and 6; providers and validator; *The plugin's reading and the metamodel* (3.4) |
 | 4 | Step 7; *PipelineReadContext*, *PipelineYamlPlugin*, *PipelineBody*; Error scenarios 2 and 3 |
-| 5 | Step 8; *PipelinePlanner*; the commands and undo; Error scenarios 4 and 5; *Amendment proposed*, 2 |
+| 5 | Step 8; *PipelinePlanner*; the commands and undo; Error scenarios 4 and 5; *Amendments ruled*, 2 |
 | 6 | *What remains in the module*; step 10 |
 | 7 | Step 9; *The client*; L5 |
 | 8 | Step 4; *Library work*; *What waits* (8.2) |
