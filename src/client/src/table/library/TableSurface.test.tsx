@@ -223,6 +223,28 @@ describe("TableSurface", () => {
     expect(screen.queryByRole("menuitem", { name: "Delete row" })).toBeNull();
   });
 
+  it("draws what it is told about a cell on that cell, as the most serious of it, and on no other", () => {
+    // Arrange: two findings about one cell, one about the table as a whole.
+    const model = applyTableEvent(tableOf(2, 0, [row("r1", { p1: "Amsterdam", p2: "many" }), row("r2", { p1: "Antwerp" })]), {
+      kind: "findings",
+      findings: [
+        { code: "a", severity: "info", message: "Kept as it was.", rowId: "r1", columnId: "p2" },
+        { code: "b", severity: "warning", message: "Not a number.", rowId: "r1", columnId: "p2" },
+        { code: "c", severity: "warning", message: "No title.", rowId: "", columnId: "" },
+      ],
+    });
+
+    // Act.
+    render(<TableSurface model={model} definition={definition} />);
+
+    // Assert.
+    const cells = within(bodyRows()[0]!).getAllByRole("gridcell");
+    expect(cells[1]!.className).toContain("table-cell-finding table-cell-finding-warning");
+    expect(cells[1]!.getAttribute("title")).toBe("Kept as it was.\nNot a number.");
+    expect(cells[1]!.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getAllByRole("gridcell").filter((cell) => cell.className.includes("table-cell-finding"))).toHaveLength(1);
+  });
+
   it("says nothing about itself while all is well", () => {
     // Act.
     render(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={0} />);

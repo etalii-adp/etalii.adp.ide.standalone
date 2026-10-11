@@ -71,6 +71,19 @@
   font-style: italic;
 }
 
+/* A cell the table is told something about: marked at its corner, and said when it is pointed at. */
+.table-cell-finding {
+  box-shadow: inset 0 -2px 0 var(--color-text-muted);
+}
+
+.table-cell-finding-warning {
+  box-shadow: inset 0 -2px 0 var(--color-warning);
+}
+
+.table-cell-finding-error {
+  box-shadow: inset 0 -2px 0 var(--color-danger);
+}
+
 .table-row-loading {
   background: var(--color-surface-raised);
 }
