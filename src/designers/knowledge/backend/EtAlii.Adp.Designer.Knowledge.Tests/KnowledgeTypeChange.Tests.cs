@@ -211,7 +211,7 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task TextBecomingASelection_GetsTheOptionOfThatName_MadeOnceWhenThereIsNone(string extension)
     {
-        // Arrange: the same word in both rows.
+        // Arrange: the same word in the first two rows.
         await using var table = new EditingTable(KnowledgeFiles.CopyExample("cities" + extension, _root));
         await table.Edit(new TableGesture("addColumn", Settings: new Dictionary<string, string> { ["type"] = "text" }));
         var id = table.OnDisk().Properties[^1].Id;
@@ -225,7 +225,7 @@ public sealed class KnowledgeTypeChangeTests : IDisposable
         var disk = table.OnDisk();
         var option = Assert.Single(disk.Properties.Single(property => property.Id == id).Options);
         Assert.Equal("Large", option.Name);
-        Assert.All(disk.Rows, row => Assert.Equal([option.Id], row.Cells.Single(cell => cell.PropertyId == id).Values));
+        Assert.All(disk.Rows.Where(row => row.Id is "r1" or "r2"), row => Assert.Equal([option.Id], row.Cells.Single(cell => cell.PropertyId == id).Values));
     }
 
     [Theory]

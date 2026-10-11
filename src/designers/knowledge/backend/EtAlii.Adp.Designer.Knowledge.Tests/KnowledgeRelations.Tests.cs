@@ -412,12 +412,12 @@ public sealed class KnowledgeRelationsTests : IDisposable
     [Fact]
     public async Task TheParentRelation_NestsRows_AndNeverMakesARowItsOwnAncestor()
     {
-        // Arrange: a relation to the table itself that holds one row, and a third row.
+        // Arrange: a relation to the table itself that holds one row, and a new row at the end.
         await using var table = Open();
         await table.Edit(new TableGesture("addRelation", Values: ["Part of"], Settings: Settings(("target", KnowledgeRelations.Self), ("limit", "one"))));
         var part = Property(table, "Part of").Id;
         await table.Edit(new TableGesture("addRow"));
-        var third = table.OnDisk().Rows[2].Id;
+        var third = table.OnDisk().Rows[^1].Id;
 
         // Act: it becomes the parent relation, and the rows get their parents.
         await table.Edit(new TableGesture("setColumnParent", ColumnId: part, Settings: Settings(("parent", "true"))));
@@ -432,8 +432,8 @@ public sealed class KnowledgeRelationsTests : IDisposable
         // Act: a view grouped by it.
         await table.Edit(new TableGesture("groupBy", ColumnId: part, ViewId: "v2"));
 
-        // Assert: each row under its parent, a level deeper.
-        Assert.Equal(["r1:0", "r2:1", $"{third}:2"], table.Lines().Where(line => !line.IsNewRow).Select(line => $"{line.Id}:{line.Depth}"));
+        // Assert: each row under its parent, a level deeper, and the rows that have none at the top.
+        Assert.Equal(["r1:0", "r2:1", $"{third}:2", .. new[] { "45ako65f2m2wasyxq3mam8ikt", "a8q7ddqb6zyubcyf5vuky6iwb", "8heh3sdyy0a63fyq7gicize5a", "7pa30fmuw51bv1vyl5jnmf5jh", "8rj09k224141g98x6rguz7f5h", "e1v5f01oi4bx1syl7x6ty3zeo", "1dytemy0l8cen9xxkpcxzlgwq" }.Select(id => $"{id}:0")], table.Lines().Where(line => !line.IsNewRow).Select(line => $"{line.Id}:{line.Depth}"));
         Assert.Empty(table.Session.Baseline().Findings);
     }
 

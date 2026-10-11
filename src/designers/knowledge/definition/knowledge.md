@@ -222,7 +222,7 @@ A property, option, view or row written without an id (by hand or by a language 
 
 ## Complete examples
 
-The examples in [examples/](examples/) are one table, the Cities of the Low Countries, written in each format. Each validates against [knowledge.schema.json](knowledge.schema.json) (XML through the mapping of section 3) and reads through its binding without findings; the validator checks both on every pull request.
+The examples in [examples/](examples/) are one table, Cities, written in each format: cities of the Low Countries and a few beyond them. Each validates against [knowledge.schema.json](knowledge.schema.json) (XML through the mapping of section 3) and reads through its binding without findings; the validator checks both on every pull request.
 
 ### YAML ([examples/cities.yaml](examples/cities.yaml))
 
@@ -247,6 +247,14 @@ properties:
       - id: o2
         name: Belgium
         colour: yellow
+      - id: b4ff5lo4rezgty4ge7siqndey
+        name: Germany
+      - id: dn1qx45l0fu88pip2l9ua7joz
+        name: France
+      - id: 7h1eyx85f462uj3sb6jlxdxvu
+        name: Finland
+      - id: 2xc52nefzictwc49wy8ldxh7t
+        name: Italy
   - id: p3
     name: Population
     type: number
@@ -325,6 +333,53 @@ rows:
       - property: p4
         options:
           - option: o3
+  - id: 45ako65f2m2wasyxq3mam8ikt
+    cells:
+      - property: p2
+        option: o1
+      - property: p3
+        number: 345345
+      - property: p1
+        text: Sevenum
+      - property: p4
+        options:
+          - option: o3
+  - id: a8q7ddqb6zyubcyf5vuky6iwb
+    cells:
+      - property: p2
+        option: o1
+      - property: p1
+        text: Venlo
+  - id: 8heh3sdyy0a63fyq7gicize5a
+    cells:
+      - property: p2
+        option: b4ff5lo4rezgty4ge7siqndey
+      - property: p1
+        text: Berlin
+  - id: 7pa30fmuw51bv1vyl5jnmf5jh
+    cells:
+      - property: p2
+        option: dn1qx45l0fu88pip2l9ua7joz
+      - property: p1
+        text: Paris
+  - id: 8rj09k224141g98x6rguz7f5h
+    cells:
+      - property: p2
+        option: 7h1eyx85f462uj3sb6jlxdxvu
+      - property: p1
+        text: Helsinki
+  - id: e1v5f01oi4bx1syl7x6ty3zeo
+    cells:
+      - property: p2
+        option: 2xc52nefzictwc49wy8ldxh7t
+      - property: p1
+        text: Venice
+  - id: 1dytemy0l8cen9xxkpcxzlgwq
+    cells:
+      - property: p1
+        text: Ahlen
+      - property: p2
+        option: b4ff5lo4rezgty4ge7siqndey
 ```
 
 ### JSON ([examples/cities.json](examples/cities.json))
@@ -337,7 +392,7 @@ rows:
   "activeView": "v1",
   "properties": [
     { "id": "p1", "name": "Name", "type": "text", "title": true },
-    { "id": "p2", "name": "Country", "type": "selection", "options": [{ "id": "o1", "name": "Netherlands", "colour": "blue" }, { "id": "o2", "name": "Belgium", "colour": "yellow" }] },
+    { "id": "p2", "name": "Country", "type": "selection", "options": [{ "id": "o1", "name": "Netherlands", "colour": "blue" }, { "id": "o2", "name": "Belgium", "colour": "yellow" }, { "id": "b4ff5lo4rezgty4ge7siqndey", "name": "Germany" }, { "id": "dn1qx45l0fu88pip2l9ua7joz", "name": "France" }, { "id": "7h1eyx85f462uj3sb6jlxdxvu", "name": "Finland" }, { "id": "2xc52nefzictwc49wy8ldxh7t", "name": "Italy" }] },
     { "id": "p3", "name": "Population", "type": "number" },
     { "id": "p4", "name": "Tags", "type": "multipleSelection", "options": [{ "id": "o3", "name": "Port" }, { "id": "o4", "name": "Capital", "colour": "red" }] },
     { "id": "p5", "name": "Province", "type": "relation", "target": "provinces.yaml", "limit": "one" },
@@ -352,7 +407,14 @@ rows:
   ],
   "rows": [
     { "id": "r1", "cells": [{ "property": "p1", "text": "Amsterdam" }, { "property": "p2", "option": "o1" }, { "property": "p3", "number": 931298 }, { "property": "p4", "options": [{ "option": "o3" }, { "option": "o4" }] }, { "property": "p5", "rows": [{ "row": "nh" }] }, { "property": "p6", "checked": true }, { "property": "p7", "date": "1275-10-27" }, { "property": "p8", "dateTime": "2026-10-08T09:30:00Z" }, { "property": "p9", "time": "09:00" }] },
-    { "id": "r2", "cells": [{ "property": "p1", "text": "Antwerp" }, { "property": "p2", "option": "o2" }, { "property": "p4", "options": [{ "option": "o3" }] }] }
+    { "id": "r2", "cells": [{ "property": "p1", "text": "Antwerp" }, { "property": "p2", "option": "o2" }, { "property": "p4", "options": [{ "option": "o3" }] }] },
+    { "id": "45ako65f2m2wasyxq3mam8ikt", "cells": [{ "property": "p2", "option": "o1" }, { "property": "p3", "number": 345345 }, { "property": "p1", "text": "Sevenum" }, { "property": "p4", "options": [{ "option": "o3" }] }] },
+    { "id": "a8q7ddqb6zyubcyf5vuky6iwb", "cells": [{ "property": "p2", "option": "o1" }, { "property": "p1", "text": "Venlo" }] },
+    { "id": "8heh3sdyy0a63fyq7gicize5a", "cells": [{ "property": "p2", "option": "b4ff5lo4rezgty4ge7siqndey" }, { "property": "p1", "text": "Berlin" }] },
+    { "id": "7pa30fmuw51bv1vyl5jnmf5jh", "cells": [{ "property": "p2", "option": "dn1qx45l0fu88pip2l9ua7joz" }, { "property": "p1", "text": "Paris" }] },
+    { "id": "8rj09k224141g98x6rguz7f5h", "cells": [{ "property": "p2", "option": "7h1eyx85f462uj3sb6jlxdxvu" }, { "property": "p1", "text": "Helsinki" }] },
+    { "id": "e1v5f01oi4bx1syl7x6ty3zeo", "cells": [{ "property": "p2", "option": "2xc52nefzictwc49wy8ldxh7t" }, { "property": "p1", "text": "Venice" }] },
+    { "id": "1dytemy0l8cen9xxkpcxzlgwq", "cells": [{ "property": "p1", "text": "Ahlen" }, { "property": "p2", "option": "b4ff5lo4rezgty4ge7siqndey" }] }
   ]
 }
 ```
@@ -367,6 +429,10 @@ rows:
     <property id="p2" name="Country" type="selection">
       <option id="o1" name="Netherlands" colour="blue"/>
       <option id="o2" name="Belgium" colour="yellow"/>
+      <option id="b4ff5lo4rezgty4ge7siqndey" name="Germany"/>
+      <option id="dn1qx45l0fu88pip2l9ua7joz" name="France"/>
+      <option id="7h1eyx85f462uj3sb6jlxdxvu" name="Finland"/>
+      <option id="2xc52nefzictwc49wy8ldxh7t" name="Italy"/>
     </property>
     <property id="p3" name="Population" type="number"/>
     <property id="p4" name="Tags" type="multipleSelection">
@@ -410,6 +476,38 @@ rows:
       <cell property="p4">
         <item option="o3"/>
       </cell>
+    </row>
+    <row id="45ako65f2m2wasyxq3mam8ikt">
+      <cell property="p2" option="o1"/>
+      <cell property="p3" number="345345"/>
+      <cell property="p1" text="Sevenum"/>
+      <cell property="p4">
+        <item option="o3"/>
+      </cell>
+    </row>
+    <row id="a8q7ddqb6zyubcyf5vuky6iwb">
+      <cell property="p2" option="o1"/>
+      <cell property="p1" text="Venlo"/>
+    </row>
+    <row id="8heh3sdyy0a63fyq7gicize5a">
+      <cell property="p2" option="b4ff5lo4rezgty4ge7siqndey"/>
+      <cell property="p1" text="Berlin"/>
+    </row>
+    <row id="7pa30fmuw51bv1vyl5jnmf5jh">
+      <cell property="p2" option="dn1qx45l0fu88pip2l9ua7joz"/>
+      <cell property="p1" text="Paris"/>
+    </row>
+    <row id="8rj09k224141g98x6rguz7f5h">
+      <cell property="p2" option="7h1eyx85f462uj3sb6jlxdxvu"/>
+      <cell property="p1" text="Helsinki"/>
+    </row>
+    <row id="e1v5f01oi4bx1syl7x6ty3zeo">
+      <cell property="p2" option="2xc52nefzictwc49wy8ldxh7t"/>
+      <cell property="p1" text="Venice"/>
+    </row>
+    <row id="1dytemy0l8cen9xxkpcxzlgwq">
+      <cell property="p1" text="Ahlen"/>
+      <cell property="p2" option="b4ff5lo4rezgty4ge7siqndey"/>
     </row>
   </rows>
 </ded>
