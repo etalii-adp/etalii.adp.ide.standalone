@@ -67,7 +67,7 @@ graph TD
 | --- | --- | --- |
 | 1 | The transcript, its generator, the new fixtures of Requirement 1.2 and the test that today's code reproduces it. No product code changes. | Requirement 1 |
 | 2 | In etalii.adp: the definition at DISL 0.3 with `x-cld`, `typeMap` and `persistence.format: "fbl"`; the companion rewritten. | Requirement 2.1 to 2.3 |
-| 3 | Library work L1 to L4. The definition bundled and loaded with no error; `BundledDefinition.Tests`. Nothing derives from it yet. | Requirements 2.4, 2.5, 9 |
+| 3 | Library work L1 to L5. The definition bundled and loaded with no error; `BundledDefinition.Tests`. Nothing derives from it yet. | Requirements 2.4, 2.5, 9 |
 | 4 | Toolbox, menus and rows derived; the providers hand out. The hand-written logic moves to `Parity/HandWrittenCausalLoop.cs`. The model is still built from `CausalLoopParser` at this step, through a small adapter, so that derivation is proven before reading changes. | Requirement 3.1, 3.2, 3.4, 3.5 |
 | 5 | The binding embedded; `CausalLoopBody`; the model built by `DislModelBuilder` from FBL's reading; the adapter of step 4 deleted. Findings derived by `ConstraintEvaluator`; `CausalLoopValidator` becomes a call to it. | Requirements 3.3, 4 |
 | 6 | Every command writes through `CausalLoopBody.Change`. `CausalLoopWriter` and `CausalLoopParser` leave the product code. The transcript's edit hunks are regenerated once (Q1) and the diff reviewed. | Requirements 5, 7.2 |
@@ -90,7 +90,7 @@ Steps 4 and 5 are separate on purpose. If derivation and reading changed togethe
 - **Interfaces:** `Toolbox`; `Menus(entry, elementId)`; `Rows(entry, elementId)`; `ElementOf(diagram, wireId)`; `Apply(body, transaction)`; `Findings(body)`.
 - **Dependencies:** `EtAlii.Adp.Specification.Disl`.
 - **Reuses:** the shape of `GhgDefinition`.
-- **Wire ids.** An element is found by today's wire id: `variable:` and the name, `link:` and both ends joined by `|`, `loop:` and the identifier. The definition's `persistence.ids` states them (`strategy: "natural"` with a `prefix` per type), so the model's ids are the wire ids and the registration's `layout:` keys, and no id is computed in module code (Requirement 4.5, 6.1).
+- **Wire ids.** An element is found by today's wire id: `variable:` and the name, `link:` and both ends joined by `|`, `loop:` and the identifier. The definition's `persistence.ids` states them (`strategy: "natural"` with a `prefix` per type, which the library applies by L5), so the model's ids are the wire ids and the registration's `layout:` keys, and no id is computed in module code (Requirement 4.5, 6.1).
 - **A menu target** is an element, the empty canvas, a placement or a connect gesture, parsed from the gesture id as today.
 
 ### CausalLoopBody
@@ -128,6 +128,7 @@ Each is added to `EtAlii.Adp.Specification.Disl` with a test seen to fail first.
 | L2 | The CEL helpers the definition calls and the library lacks. From the draft: `lists.range`, `sortBy`, `cel.bind`, `upperAscii`, `indexOf`, `join`, optional `first()`/`last()` with `orValue`. Each is checked against `EtAlii.Adp.Specification.Cel` first; only those missing are added, there. | Finding A6 |
 | L3 | Whatever `ConstraintEvaluator` lacks for a diagram-scoped rule with `forEach` over a list of lists, a `target` of `item`, and a finding without a line. | Requirement 3.3 |
 | L4 | Whatever `ToolboxDerivation` lacks for a tool with `drop.targets` naming a node type and a `refusal` elsewhere. | Requirement 3.1, "Drop a link or a loop onto a variable." |
+| L5 | Apply `persistence.ids.prefix`: the id of an element is the prefix its type declares followed by its natural id, as DISL 11.5 states, so that the model's ids are the wire ids of *Wire ids*. The library does not do it today: `DislIdRule` carries a strategy and an expression only, and a search of `EtAlii.Adp.Specification.Disl` for `prefix` finds no code that reads the key. The loader does not refuse the key, so the load at the start of step 3 does not show this item. | Requirements 4.5 and 6.1, finding B10 and Q3; a runtime gap beside finding A6. **Ruled by the user in chat, 2026-10-11:** it is library work of step 3. |
 
 L1 is compared with `CycleFinder` over the corpus before the module's finder is removed (step 8). If the orders differ on any document, the module's finder stays, declared as the definition's plugin function, and the difference is recorded as a finding for etalii.adp.
 
@@ -149,11 +150,13 @@ L1 is compared with `CycleFinder` over the corpus before the module's finder is 
 
 One JSON file, `Parity/causal-loop.transcript.json`, shaped as the timeline's: `module`, `generator`, `regenerate`, `toolbox`, `documents`. Per document: `menus` (every element id, the canvas, a placement, a connect gesture, an unknown id), `rows`, `findings`, `payloads`, and `edits` (a script of every command once, with each step's answer and the hunks it made). A read-only variant is recorded for a document that cannot be read. The loop identifiers an edit mints are deterministic, so nothing is masked.
 
-## Amendment proposed
+## Amendments ruled
 
 Requirement 6.2 says a move and Arrange diagram write the registration "through the library's registration writer". No module does: a search of `src/diagrams` and the core projects finds no caller of the FBL library's registration classes, and this module writes positions through core's `SetRegistrationLayoutCommand` and `RegistrationLayout` today. Using FBL's registration writer here alone would also bring FBL 8.5's pruning of stale entries, which today nothing does for this tool.
 
-The amendment, to be put to the user as a selection before the tasks card: **6.2 reads "through core's `SetRegistrationLayoutCommand` and `RegistrationLayout`, as today"** (recommended), or the requirement stands and this design adds a step that moves the module to FBL's writer with pruning ruled on separately. This design is written against the first.
+The amendment was put to the user as a selection. **Ruled by the user in chat, 2026-10-09: the first option**, and the requirements carry it. The options were: **6.2 reads "through core's `SetRegistrationLayoutCommand` and `RegistrationLayout`, as today"** (recommended), or the requirement stands and this design adds a step that moves the module to FBL's writer with pruning ruled on separately. This design is written against the first.
+
+A second point was found after this design was approved. *Wire ids* takes the element ids from `persistence.ids` with a `prefix` per type, and `EtAlii.Adp.Specification.Disl` has no code that reads `prefix`. The options were: add applying it to the library work of step 3, or leave the documents and have whoever does step 3 notice it. **Ruled by the user in chat, 2026-10-11: the first option**, which is L5 under *Library work*.
 
 ## Error Handling
 
@@ -183,7 +186,7 @@ The amendment, to be put to the user as a selection before the tasks card: **6.2
 
 ### Unit Testing
 
-- Library: one test class per item L1 to L4, each seen to fail before its change. L1 has the cases of DISL 12.4 (a self-loop, two cycles sharing a member, the bound, the order) and a comparison with `CycleFinder` over the corpus.
+- Library: one test class per item L1 to L5, each seen to fail before its change. L1 has the cases of DISL 12.4 (a self-loop, two cycles sharing a member, the bound, the order) and a comparison with `CycleFinder` over the corpus.
 - `CausalLoopUnreadable`: each of the four sentences from its statement.
 - `BundledDefinition.Tests`: the embedded bytes equal `definition/`, the recorded sha256 holds, the definition loads with no error.
 
