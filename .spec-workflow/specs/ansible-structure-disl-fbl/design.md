@@ -15,7 +15,7 @@ The module ends as four things that carry the conversion:
 
 Everything else is deleted, moved to the test project as the oracle, or kept with its reason (the table under *What remains*).
 
-**One point of the approved requirements is proposed for a small amendment** before the tasks are written, in *Amendment proposed* below. It concerns Requirements 3.2 and 6.1 and changes no behaviour.
+**One point of the approved requirements was amended**, ruled by the user in chat on 2026-10-11, in *Amendments ruled* below. It concerns Requirements 3.2 and 6.1 and changes no behaviour.
 
 ## Steering Document Alignment
 
@@ -261,7 +261,7 @@ This design is written against the first: `AnsibleFindings` composes the sentenc
 | --- | --- |
 | 1 | Step 1; *The transcript*; Testing Strategy (the fixtures) |
 | 2 | Steps 2 and 3; *AnsibleDefinition* |
-| 3 | Steps 4 and 5; *AnsibleDefinition*, *AnsibleFindings*; *Amendment proposed* |
+| 3 | Steps 4 and 5; *AnsibleDefinition*, *AnsibleFindings*; *Amendments ruled* |
 | 4 | Step 6; *AnsibleFolderPlugin*, *AnsibleFolderListing*, *The binding*; the real-file check |
 | 5 | Steps 6 and 9; *AnsibleFolder, the session and the client*; `ZeroWrites.Tests` |
 | 6 | Steps 5, 7, 9 and 11; *What remains in the module* |
