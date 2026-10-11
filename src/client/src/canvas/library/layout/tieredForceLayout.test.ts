@@ -260,8 +260,9 @@ describe("the radiating layout at about two hundred elements", () => {
       pass = Math.min(pass, timed(() => placed(grown, settled)));
     }
 
-    // Measured at about 105 sweeps; with the step counts raised tenfold, about 555.
-    expect(pass / reference).toBeLessThan(250);
+    // Measured at about 105 sweeps; with the step counts raised tenfold, about 555. Beside the whole
+    // backend suite a pass was once timed at 314, so the bound sits between that and the defect.
+    expect(pass / reference).toBeLessThan(420);
     // The ratio is the bound, not the clock: on a slow build server the measuring itself outran
     // the runner's default five seconds, so this test names its own deadline.
   }, 60_000);

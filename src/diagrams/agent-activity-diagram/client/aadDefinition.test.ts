@@ -5,10 +5,10 @@ import disText from "../definition/agent-activity-diagram.dis?raw";
 import { AAD_DEFINITION } from "./aadDefinition";
 
 /**
- * The canvas's definition is declared by hand until the client's DISL reader reads 0.4, and the
- * bundled `.dis` is what every other host reads. This holds the two together where they can be
- * compared (agent-activity-diagram Requirement 10.2): a change to the definition that the canvas
- * does not follow, or a change to the canvas the definition does not have, fails here.
+ * The canvas's definition is compiled from the bundled `.dis`, which is what every other host reads
+ * (agent-activity-diagram Requirement 10.2). This holds the result to the specification in the
+ * specification's own terms, so that a binding, a stand-in or a compiler change that makes the canvas
+ * draw something the definition does not say fails here, whatever the compiler's own tests think.
  */
 
 interface Spec {
@@ -84,6 +84,19 @@ describe("the agent activity diagram's canvas definition, held to the bundled .d
     expect(AAD_DEFINITION.layout.tiers).toEqual(rings.force!.tiers.map((type) => [idOf(type)]));
     expect(SPEC.layout.respect).toBe("pinned");
     expect(AAD_DEFINITION.layout.pinned).toBe("payload.pinned");
+  });
+
+  it("refuses a second line where an element holds one key, and declares the keys the definition's menus give", () => {
+    // A specification names one project, an agent one specification, a location one agent and one environment.
+    expect(AAD_DEFINITION.relationTypes.map((type) => [type.id, type.endpoints.cardinality])).toEqual([
+      ["projectspecification", { maxIntoTarget: 1 }],
+      ["specificationagent", { maxIntoTarget: 1 }],
+      ["agentlocation", { maxIntoTarget: 1 }],
+      ["locationenvironment", { maxFromSource: 1 }],
+    ]);
+    // F2 and a double-click rename, Delete deletes: the ids are the definition's, which the backend answers to.
+    expect((AAD_DEFINITION.actions ?? []).map((action) => action.id)).toEqual(["editLabel", "delete"]);
+    expect(AAD_DEFINITION.backgroundMenu).toBe(true);
   });
 
   it("joins exactly the pairs the definition's relations join, each end the type the definition gives it", () => {

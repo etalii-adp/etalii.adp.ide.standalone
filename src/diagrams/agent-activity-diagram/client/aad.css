@@ -1,7 +1,7 @@
 /*
  * What this notation needs that the shared appearance has no opinion about: a fill per kind of
- * element, the colour a status is written in, the line that splits a location, and the mark a
- * locked element carries. Everything else - lists, link symbols, the switch - comes from canvas.css.
+ * element, the colour a status is written in, and the mark a locked element carries. Everything
+ * else - lists, link symbols, the switch - comes from canvas.css.
  *
  * The colours are theme tokens from index.css, with their dark values beside them there. A kind is
  * told apart by its shape first and its fill second, and a status by its word first.
@@ -68,11 +68,6 @@
 .aad-status-archived {
   font-style: italic;
   text-decoration: line-through;
-}
-
-.aad-split {
-  stroke: var(--color-border-strong);
-  stroke-width: 1;
 }
 
 .aad-lock {

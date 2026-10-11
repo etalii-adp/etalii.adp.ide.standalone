@@ -12,17 +12,9 @@ import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistratio
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
 import { viewReportOf } from "@client/diagrams/viewReport";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { AAD_DEFINITION } from "./aadDefinition";
-import { AAD_SHOW_ARCHIVED_SWITCH, AadActions, AadElementTypes, AadRelationTypes, AadViewId } from "./aadIds";
+import { AAD_DEFINITION, AAD_RELATION_BY_ENDS } from "./aadDefinition";
+import { AAD_SHOW_ARCHIVED_SWITCH, AadActions, AadElementTypes, AadViewId } from "./aadIds";
 import { applyDelta, emptyModel, type AadElement, type AadModel } from "./aadModel";
-
-/** Which of the four relations joins two kinds of element, by the kind at each end. */
-const RELATION_BY_ENDS: ReadonlyMap<string, string> = new Map([
-  [`${AadElementTypes.project}>${AadElementTypes.specification}`, AadRelationTypes.projectSpecification],
-  [`${AadElementTypes.specification}>${AadElementTypes.agent}`, AadRelationTypes.specificationAgent],
-  [`${AadElementTypes.agent}>${AadElementTypes.location}`, AadRelationTypes.agentLocation],
-  [`${AadElementTypes.location}>${AadElementTypes.environment}`, AadRelationTypes.locationEnvironment],
-]);
 
 /** What a toolbox drop adds, by the element type dropped. */
 const DROPPED_ACTIONS: ReadonlyMap<string, string> = new Map([
@@ -45,6 +37,9 @@ function drawn(element: AadElement): DiagramModelElement {
     label: payload.name,
     payload: {
       name: payload.name,
+      // A location is named by its branch, and its folder is the one line of a list of its own.
+      branch: payload.name,
+      folderRows: element.type === AadElementTypes.location ? [{ id: "", title: payload.folder, link: payload.folderLink }] : [],
       status: payload.status,
       statusLabel: payload.statusLabel,
       link: payload.link,
@@ -66,7 +61,7 @@ export function diagramModelOf(model: AadModel): DiagramModel {
   const connections = [...model.relations.values()].flatMap((relation): DiagramModelConnection[] => {
     const from = model.elements.get(relation.payload.fromElementId);
     const to = model.elements.get(relation.payload.toElementId);
-    const type = from === undefined || to === undefined ? undefined : RELATION_BY_ENDS.get(`${from.type}>${to.type}`);
+    const type = from === undefined || to === undefined ? undefined : AAD_RELATION_BY_ENDS.get(`${from.type}>${to.type}`);
     // An end that is not drawn, or a pair no relation joins: a line to nothing is worse than none.
     return type === undefined ? [] : [{ id: relation.id, type, sourceId: relation.payload.fromElementId, targetId: relation.payload.toElementId }];
   });

@@ -31,6 +31,11 @@ import type { ShapeBounds } from "./diagramDefinition";
  * Resolution is pure, like `layoutLabels`, so the acceptance can be asserted without a canvas.
  */
 export interface CompartmentDeclaration {
+  /**
+   * `none` draws the rows alone: no heading line, no count, and nothing to fold the list by. For a
+   * list that is one fixed line of an element rather than a group of entries - a location's folder.
+   */
+  heading?: "none";
   /** Names the compartment: the key of its one heading when it is not grouped, and part of every row's key. */
   id: string;
   /** A path to the rows: an array of objects. Anything else draws no rows. */
@@ -142,16 +147,19 @@ export function layoutCompartments(
     const groups = groupsOf(declaration, source);
     let y: number = cursor ?? bounds.y + declaration.top;
     for (const group of groups) {
-      const isCollapsed = collapsed.has(group.key);
-      headings.push({
-        compartmentId: declaration.id,
-        key: group.key,
-        title: group.title,
-        count: group.rows.length,
-        collapsed: isCollapsed,
-        box: { x: bounds.x + declaration.insetX, y, width: bounds.width - 2 * declaration.insetX, height: declaration.headingHeight },
-      });
-      y += declaration.headingHeight;
+      // A list without a heading has nothing to fold it by, so it is never folded.
+      const isCollapsed = declaration.heading !== "none" && collapsed.has(group.key);
+      if (declaration.heading !== "none") {
+        headings.push({
+          compartmentId: declaration.id,
+          key: group.key,
+          title: group.title,
+          count: group.rows.length,
+          collapsed: isCollapsed,
+          box: { x: bounds.x + declaration.insetX, y, width: bounds.width - 2 * declaration.insetX, height: declaration.headingHeight },
+        });
+        y += declaration.headingHeight;
+      }
       if (isCollapsed) {
         continue;
       }
@@ -195,7 +203,7 @@ export function compartmentsHeight(
   }
   // Laid out from y = 0 at any width: heights do not depend on the width, only shortening does.
   const laidOut = layoutCompartments(declarations, source, { x: 0, y: 0, width: 0, height: 0 });
-  return laidOut.headings.length === 0 ? null : laidOut.bottom;
+  return laidOut.headings.length === 0 && laidOut.rows.length === 0 ? null : laidOut.bottom;
 }
 
 /**

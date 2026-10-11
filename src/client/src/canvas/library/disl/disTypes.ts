@@ -1,5 +1,6 @@
 /**
- * The part of a DISL 0.3 diagram specification (`*.dis`) the client reads, typed.
+ * The part of a DISL diagram specification (`*.dis`) the client reads, typed: DISL 0.3, and of
+ * DISL 0.4 the lists inside a node, its badges, the rings of a force layout and a kept filter.
  *
  * <b>A subset, on purpose.</b> The backend loads the whole specification and runs its CEL; the
  * client reads only what turns into a {@link DiagramDefinition}: the metamodel's types and
@@ -29,8 +30,10 @@ export interface DislDocument extends Extensions {
   toolbox?: DislToolbox;
   viewpoints?: Readonly<Record<string, DislViewpoint>>;
   layout?: DislLayout;
-  /** The operations a node's `doubleClick` may name (DISL §9.3). */
+  /** The operations a node's `doubleClick` or a badge's `onClick` may name (DISL §9.3). */
   behavior?: { operations?: Readonly<Record<string, unknown>> };
+  /** Where the reader's own settings are kept (DISL 0.4 §11.6): the name a kept filter's value has. */
+  persistence?: { view?: { bind?: { filters?: { values?: Readonly<Record<string, string>> } } } };
 }
 
 export interface DislMetamodel {
@@ -59,6 +62,8 @@ export interface DislType extends Extensions {
   attributes?: Readonly<Record<string, DislAttribute>>;
   /** Present when the type may hold children (DISL §4.6 containment). */
   children?: { allowed: readonly string[]; ordered?: boolean; min?: number; max?: number };
+  /** The attribute a rename writes and a row is listed by. */
+  labelAttribute?: string;
 }
 
 /** A relation end: a type name, a list of them, or an end object naming its types and role (DISL §4.9). */
@@ -208,6 +213,32 @@ export interface DislAnchors extends Extensions {
   drawnFrom?: "point" | "outline";
 }
 
+/** A list inside a node (DISL 0.4 §6.9): its items, how one reads, their order and their groups. */
+export interface DislCompartment extends Extensions {
+  id: string;
+  title?: string;
+  /** The node's children of these types in a slot, or a CEL list. */
+  items: { children: readonly string[]; slot: string } | { cel: string };
+  itemText?: Bindable<string>;
+  itemLink?: Bindable<string>;
+  itemOrder?: { by: string; direction?: "ascending" | "descending" };
+  /** One group per value of the items' attribute, in the enum's order; `collapsed` says which come folded. */
+  groupBy?: { attribute: string; collapsed?: Readonly<Record<string, boolean>> };
+  collapsible?: boolean;
+  collapsed?: boolean;
+}
+
+/** A small symbol on a node (DISL 0.4 §6.9): where it sits, when it shows, and what a press runs. */
+export interface DislBadge extends Extensions {
+  id: string;
+  icon?: string;
+  position?: string;
+  visible?: boolean | string | { cel: string };
+  tooltip?: Bindable<string>;
+  /** The operation a press runs. */
+  onClick?: string;
+}
+
 export interface DislNodeNotation extends Extensions {
   shape: DislShapeRef;
   style?: string | Readonly<Record<string, unknown>>;
@@ -222,6 +253,8 @@ export interface DislNodeNotation extends Extensions {
   connectable?: boolean;
   deletable?: boolean;
   conditions?: readonly { when: string; style: string }[];
+  compartments?: readonly DislCompartment[];
+  badges?: readonly DislBadge[];
 }
 
 export interface DislEndAnchoring {
@@ -301,6 +334,8 @@ export interface DislFilter {
   label: string;
   control?: string;
   appliesTo?: readonly string[];
+  /** Whether the value is kept with the diagram (DISL 0.4 §6.13.1), rather than gone when it closes. */
+  persist?: boolean;
 }
 
 export interface DislCanvas {
@@ -325,11 +360,15 @@ interface DislLayoutAlgorithm extends Extensions {
   rowPacked?: { gap?: number; followConnections?: string } & Readonly<Record<string, unknown>>;
   rows?: Readonly<Record<string, unknown>>;
   tidyTree?: Readonly<Record<string, unknown>>;
+  /** A force layout's rings (DISL 0.4 §10): the types on each, from the centre outwards. */
+  force?: { tiers?: readonly string[]; gap?: number };
 }
 
 export interface DislLayout {
   algorithms?: Readonly<Record<string, DislLayoutAlgorithm>>;
   default?: string;
+  /** What an automatic layout leaves where it is (DISL 0.4 §10): the elements the reader pinned. */
+  respect?: string;
 }
 
 /**
@@ -338,8 +377,8 @@ export interface DislLayout {
  */
 export function parseDisl(text: string): DislDocument {
   const document = JSON.parse(text) as DislDocument;
-  if (document.disl !== "0.3") {
-    throw new Error(`This client reads DISL 0.3; the bundled specification declares "${String(document.disl)}".`);
+  if (document.disl !== "0.3" && document.disl !== "0.4") {
+    throw new Error(`This client reads DISL 0.3 and 0.4; the bundled specification declares "${String(document.disl)}".`);
   }
 
   return document;

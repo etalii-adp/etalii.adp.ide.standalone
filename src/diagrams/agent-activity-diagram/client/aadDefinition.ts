@@ -1,182 +1,71 @@
-import type { DiagramDefinition, ElementTypeDefinition, RelationTypeDefinition } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
-import { AAD_PULL_REQUESTS_GROUP, AAD_SHOW_ARCHIVED_SWITCH, AAD_TASK_GROUPS, AadElementTypes, AadRelationTypes } from "./aadIds";
+import { compileNotation, type NotationBindings } from "@client/canvas/library/disl/compileNotation";
+import { parseDisl } from "@client/canvas/library/disl/disTypes";
+import disText from "../definition/agent-activity-diagram.dis?raw";
 
 /**
- * What the agent activity diagram allows, declared.
- *
- * <b>Written by hand for now, and that is the open half of the specification's task 15.</b> The
- * definition in etalii.adp states all of this in DISL 0.4, and the end state is this object
- * compiled from the bundled `.dis` by `compileNotation`, as the hype cycle graph's is. The
- * compiler does not read DISL 0.4's lists, links, rings and kept switch yet; until it does, what
- * is declared here must be kept equal to the bundled definition by whoever changes either.
- *
- * `aadDefinition.test.ts` holds this object to the bundled `.dis` meanwhile: the element types,
- * their shapes, the rings, the relations and their ends, the task groups and their order, the
- * rows' order, the links and the switch. What it cannot compare - where a label sits - is not held.
- *
- * Five element types, each with its own shape so that a kind is told apart without colour
- * (Requirement 7.2), as the definition names them: a specification a rounded card, an agent a pill,
- * a location a box split in two, an environment a hexagon. A project is the definition's `folder`,
- * which this library does not draw yet; it stands in as a superellipse, the one shape no other
- * kind has, and the test names the stand-in so that it goes when the library gains the shape.
+ * What the agent activity diagram allows: compiled from the bundled DISL specification
+ * (`definition/agent-activity-diagram.dis`), the same bytes the backend loads and every other host
+ * reads. Nothing about the notation is restated here; what follows is only what the library cannot
+ * read from a specification, which is {@link AAD_BINDINGS}.
  */
 
-// Every label names its colour by a class: an SVG text with none is black, whatever the theme.
-const name = { text: { path: "payload.name" }, className: "aad-label", typography: { fontWeight: "bold" as const, fontSize: 13 }, truncate: true, tooltip: { path: "payload.name" } };
+/** The bundled specification, read by Vite as text. */
+const AAD_SPEC = parseDisl(disText);
 
-const lock = {
-  glyph: "circle" as const,
-  anchor: "canvas" as const,
-  from: { x: { path: "bounds.left", number: { plus: 9 } }, y: { path: "bounds.top", number: { plus: 9 } } },
-  radius: 3.5,
-  className: "aad-lock",
-  tooltip: { template: "Position locked" },
-  accessibility: { role: "img", label: { template: "Position locked" } },
-  when: { path: "payload.pinned", is: "true" as const },
+/** The CEL a node's label binds, as the specification writes it - so no expression is copied here. */
+function labelCel(node: string, label: string): string {
+  const text = AAD_SPEC.notation.nodes[node]?.labels?.find((candidate) => candidate.id === label)?.text;
+  if (typeof text !== "object" || text === null || !("cel" in text)) {
+    throw new Error(`The agent activity specification's ${node} has no CEL label "${label}".`);
+  }
+
+  return text.cel;
+}
+
+/**
+ * What the library cannot read from the specification.
+ *
+ * <b>The payload paths of what the backend computes.</b> The library has no CEL: a status in words,
+ * an environment's kind in words and a location's folder as its one-line list each arrive on the
+ * payload, and the expression that asks for one is mapped to where it is.
+ *
+ * <b>The classes the stylesheet paints</b>, by kind of element and by a label's style.
+ *
+ * <b>Two shapes the library's DISL catalog does not draw</b>: `folder`, which stands in as a
+ * superellipse, the one shape no other kind has, and `roundedRect`, which the library draws under
+ * its own name. `aadDefinition.test.ts` names both as debts and fails when the catalog draws them.
+ *
+ * <b>The connect gesture</b>, which the specification leaves to the host: a right drag from an
+ * element's body, as this host's other diagrams with unmarked anchors draw a relation.
+ */
+export const AAD_BINDINGS: NotationBindings = {
+  celPaths: {
+    [labelCel("Specification", "status")]: "payload.statusLabel",
+    [labelCel("Environment", "environmentKind")]: "payload.kindLabel",
+    "[self.folder]": "payload.folderRows",
+  },
+  rowPaths: { item: "title", "self.folderLink": "link" },
+  celConditions: { "self.view.pinned": { path: "payload.pinned", is: "true" } },
+  classNames: (type) => [{ className: `aad-${type.toLowerCase()}` }],
+  // Every label names its colour by a class: an SVG text with none is black, whatever the theme.
+  labelClassName: (_type, label) =>
+    label.style === "status" ? { template: "aad-status aad-status-{payload.status}" } : label.style === "muted" ? "aad-detail" : "aad-label",
+  badgeClassName: () => "aad-lock",
+  relationClassName: () => "aad-relation",
+  builtInShapes: { folder: "superellipse", roundedRect: "rounded-rectangle" },
+  extras: () => ({ connectOnRightDrag: true }),
 };
 
-function elementType(id: string, shape: ElementTypeDefinition["shape"], extra: Partial<ElementTypeDefinition> = {}): ElementTypeDefinition {
-  return {
-    id,
-    shape,
-    anchors: { kind: "edge", visible: false },
-    sizing: "model",
-    classNames: [{ className: `aad-${id}` }],
-    data: { kind: id },
-    tooltip: { path: "payload.name" },
-    labels: [name],
-    decorations: [lock],
-    links: [{ id: "link", link: "payload.link", at: { right: 20, top: 5 } }],
-    ...extra,
-  };
-}
+export const AAD_DEFINITION: DiagramDefinition = assertValidDiagramDefinition(compileNotation(AAD_SPEC, AAD_BINDINGS));
 
-const elementTypes: ElementTypeDefinition[] = [
-  elementType(AadElementTypes.project, "superellipse"),
-  elementType(AadElementTypes.specification, "rounded-rectangle", {
-    labels: [
-      { ...name, anchorTo: "top", offset: { x: 0, y: 20 } },
-      // The status in words, and by colour through its class - never by colour alone.
-      {
-        text: { path: "payload.statusLabel" },
-        anchorTo: "top",
-        offset: { x: 0, y: 38 },
-        className: { template: "aad-status aad-status-{payload.status}" },
-        typography: { fontSize: 11 },
-      },
-    ],
-    compartments: [
-      {
-        id: "tasks",
-        rows: "payload.tasks",
-        rowId: "id",
-        text: { path: "title" },
-        link: "link",
-        orderBy: { path: "updated", direction: "descending" },
-        groupBy: { path: "status", groups: AAD_TASK_GROUPS, otherTitle: "Other" },
-        collapsed: "payload.collapsed",
-        top: 48,
-        headingHeight: 20,
-        rowHeight: 18,
-        bottom: 8,
-        insetX: 10,
-        rowIndent: 12,
-      },
-    ],
-  }),
-  elementType(AadElementTypes.agent, "pill"),
-  elementType(AadElementTypes.location, "box", {
-    tooltip: { template: "{payload.name} in {payload.folder}" },
-    labels: [
-      { ...name, anchorTo: "top", offset: { x: 0, y: 21 } },
-      { text: { path: "payload.folder" }, className: "aad-detail", anchorTo: "top", offset: { x: 0, y: 53 }, truncate: true, tooltip: { path: "payload.folder" }, typography: { fontSize: 11 } },
-    ],
-    decorations: [
-      lock,
-      // The line that splits the branch above from the folder below.
-      {
-        glyph: "line",
-        anchor: "canvas",
-        from: { x: { path: "bounds.left" }, y: { path: "bounds.top", number: { plus: 34 } } },
-        to: { x: { path: "bounds.right" }, y: { path: "bounds.top", number: { plus: 34 } } },
-        className: "aad-split",
-      },
-    ],
-    links: [
-      { id: "branch", link: "payload.branchLink", at: { right: 20, top: 9 }, label: "branch" },
-      { id: "folder", link: "payload.folderLink", at: { right: 20, top: 42 }, label: "folder" },
-    ],
-    compartments: [
-      {
-        id: AAD_PULL_REQUESTS_GROUP,
-        rows: "payload.pullRequests",
-        rowId: "id",
-        text: { path: "title" },
-        link: "link",
-        orderBy: { path: "updated", direction: "descending" },
-        title: "Pull requests",
-        collapsed: "payload.collapsed",
-        top: 70,
-        headingHeight: 20,
-        rowHeight: 18,
-        bottom: 8,
-        insetX: 10,
-        rowIndent: 12,
-      },
-    ],
-  }),
-  elementType(AadElementTypes.environment, "hexagon", {
-    labels: [
-      { ...name, offset: { x: 0, y: 2 } },
-      { text: { path: "payload.kindLabel" }, className: "aad-detail", offset: { x: 0, y: 17 }, typography: { fontSize: 10 } },
-    ],
-  }),
-];
-
-/** A relation is a plain line: its two ends say what it means (Requirement 7.4). */
-function relation(id: string, source: string, target: string, cardinality: RelationTypeDefinition["endpoints"]["cardinality"]): RelationTypeDefinition {
-  return {
-    id,
-    route: "straight",
-    className: "aad-relation",
-    selectable: true,
-    endpoints: {
-      source: { elementTypes: [source], anchors: "edge" },
-      target: { elementTypes: [target], anchors: "edge" },
-      allowSelf: false,
-      cardinality: { perPair: "unordered", ...cardinality },
-    },
-  };
-}
-
-const relationTypes: RelationTypeDefinition[] = [
-  // A specification has one project; a project any number of specifications.
-  relation(AadRelationTypes.projectSpecification, AadElementTypes.project, AadElementTypes.specification, { maxIntoTarget: 1 }),
-  // An agent has one specification at a time; a specification any number of agents.
-  relation(AadRelationTypes.specificationAgent, AadElementTypes.specification, AadElementTypes.agent, { maxIntoTarget: 1 }),
-  // A location has one agent; an agent any number of locations.
-  relation(AadRelationTypes.agentLocation, AadElementTypes.agent, AadElementTypes.location, { maxIntoTarget: 1 }),
-  // A location has one environment; an environment any number of locations.
-  relation(AadRelationTypes.locationEnvironment, AadElementTypes.location, AadElementTypes.environment, { maxFromSource: 1 }),
-];
-
-export const AAD_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
-  elementTypes,
-  relationTypes,
-  layout: {
-    modes: ["tiered-force"],
-    tiers: [
-      [AadElementTypes.project],
-      [AadElementTypes.specification],
-      [AadElementTypes.agent],
-      [AadElementTypes.location],
-      [AadElementTypes.environment],
-    ],
-    pinned: "payload.pinned",
-  },
-  dragging: "enabled",
-  connectOnRightDrag: true,
-  backgroundMenu: true,
-  chrome: { switches: [{ id: AAD_SHOW_ARCHIVED_SWITCH, caption: "Show archived", on: "payload.showArchived" }] },
-});
+/**
+ * Which relation joins two kinds of element, keyed `<source>><target>` by the kind at each end: read
+ * from the specification's relations, each of which joins one pair of types. On the wire a relation
+ * carries its two ends and no type, so the canvas names it from its ends.
+ */
+export const AAD_RELATION_BY_ENDS: ReadonlyMap<string, string> = new Map(
+  Object.entries(AAD_SPEC.metamodel.relations ?? {}).map(([name, relation]): [string, string] =>
+    [`${String(relation.source).toLowerCase()}>${String(relation.target).toLowerCase()}`, name.toLowerCase()]),
+);
