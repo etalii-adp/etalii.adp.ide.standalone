@@ -204,7 +204,7 @@ One JSON file per reading in `Parity/`, shaped as the timeline's: per document `
 | The plugin told the body's name; the `language` header read in CEL | Gap 5 | `RdfSyntax` on the plugin; `SkosLabelLanguage` |
 | Inverse-splice undo and its drift refusal (finding B13) | The host's history moving to the library's, which is no part of this series' steps | The snapshot restore, as in the hype cycle graph and the behavior model |
 
-## Amendment proposed
+## Amendments ruled
 
 **The requirement.** Requirement 6.3, at the default of Q3, says the registration behaviours other than the bare-file refusal "SHALL be FBL's": a stale position pruned, a renamed resource keeping its position, a `language:` header standing anywhere, a missing body reported. Requirement 4.6 says the twenty-three findings keep their codes.
 
@@ -217,7 +217,7 @@ One JSON file per reading in `Parity/`, shaped as the timeline's: per document `
 - **C: the requirement stands.** This specification changes core's registration reader and writer, which changes every tool and removes `skos.misplaced-header`, with Requirement 4.6 amended to twenty-two.
 - **Other.**
 
-This design is written against A.
+**Ruled by the user in chat, 2026-10-11: A.** This design is written against A.
 
 ## Error Handling
 
