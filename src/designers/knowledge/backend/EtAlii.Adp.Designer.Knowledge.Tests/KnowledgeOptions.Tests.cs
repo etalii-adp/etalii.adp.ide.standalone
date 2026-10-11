@@ -63,14 +63,14 @@ public sealed class KnowledgeOptionsTests : IDisposable
 
         // Act.
         await table.Edit(Option("addOption", "p2", name: "Luxembourg"));
-        var added = Options(table, "p2")[2];
+        var added = Options(table, "p2")[6];
         await table.Edit(Option("recolourOption", "p2", added.Id, colour: "green"));
         await table.Edit(Option("recolourOption", "p2", "o1", colour: "default"));
         await table.Edit(Option("moveOption", "p2", added.Id, index: 0));
 
-        // Assert: an id of its own, first of the three, green; and blue given up for the default.
+        // Assert: an id of its own, first of them all, green; and blue given up for the default.
         Assert.DoesNotContain(added.Id, new[] { "o1", "o2", "o3", "o4" });
-        Assert.Equal(["Luxembourg:green", "Netherlands:default", "Belgium:yellow"], Options(table, "p2").Select(option => $"{option.Name}:{option.Colour}"));
+        Assert.Equal(["Luxembourg:green", "Netherlands:default", "Belgium:yellow", "Germany:default", "France:default", "Finland:default", "Italy:default"], Options(table, "p2").Select(option => $"{option.Name}:{option.Colour}"));
         Assert.Empty(KnowledgeDocumentStore.Read(table.Path).Body!.Model.Findings);
     }
 
@@ -78,7 +78,7 @@ public sealed class KnowledgeOptionsTests : IDisposable
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task ADeletedOption_TakesEveryValueThatNamesItWithIt_InOneStep(string extension)
     {
-        // Arrange: Port is a tag of both rows, and v1 filters on Netherlands and folds its group.
+        // Arrange: Port is a tag of three rows, and v1 filters on Netherlands and folds its group.
         await using var table = Open(extension);
         await table.Edit(new TableGesture("toggleGroup", ViewId: "v1", TargetId: "o1", Settings: new Dictionary<string, string> { ["collapsed"] = "true" }));
         var before = table.Bytes();
@@ -90,7 +90,7 @@ public sealed class KnowledgeOptionsTests : IDisposable
         // Assert: no option, no value, no condition and no group setting names either any more, and nothing is reported.
         var body = KnowledgeDocumentStore.Read(table.Path).Body!;
         Assert.Equal(["Capital"], body.Table.Properties.Single(property => property.Id == "p4").Options.Select(option => option.Name));
-        Assert.Equal(["Belgium"], body.Table.Properties.Single(property => property.Id == "p2").Options.Select(option => option.Name));
+        Assert.Equal(["Belgium", "Germany", "France", "Finland", "Italy"], body.Table.Properties.Single(property => property.Id == "p2").Options.Select(option => option.Name));
         Assert.DoesNotContain(body.Model.Elements, element => element.Attributes.Values.Any(value => KnowledgeValues.Text(value) is "o1" or "o3"));
         var view = body.Table.Views.Single(candidate => candidate.Id == "v1");
         Assert.Empty(view.Filter.Items);
@@ -111,21 +111,21 @@ public sealed class KnowledgeOptionsTests : IDisposable
     [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
     public async Task AnOptionSomeRowsHave_SaysHowMany_SoItsAuthorIsToldBeforeDeletingIt(string extension)
     {
-        // Arrange: Port is a tag of both rows, Capital of one; Netherlands and Belgium are each one row's country.
+        // Arrange: Port is a tag of three rows, Capital of one; Netherlands is three rows' country, Belgium one's.
         await using var table = Open(extension);
         IReadOnlyDictionary<string, string> Settings(string id) => table.Session.Baseline().Columns.Single(column => column.Id == id).Settings;
 
         // Assert.
-        Assert.Equal(("2", "1"), (Settings("p4")["uses:o3"], Settings("p4")["uses:o4"]));
-        Assert.Equal(("1", "1"), (Settings("p2")["uses:o1"], Settings("p2")["uses:o2"]));
+        Assert.Equal(("3", "1"), (Settings("p4")["uses:o3"], Settings("p4")["uses:o4"]));
+        Assert.Equal(("3", "1"), (Settings("p2")["uses:o1"], Settings("p2")["uses:o2"]));
 
         // Act: an option nobody has says nothing, and the count follows the rows.
         await table.Edit(Option("addOption", "p2", name: "Luxembourg"));
         await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p4", Values: ["o4"]));
 
         // Assert.
-        Assert.Equal(2, Settings("p2").Keys.Count(key => key.StartsWith("uses:", StringComparison.Ordinal)));
-        Assert.Equal("1", Settings("p4")["uses:o3"]);
+        Assert.Equal(6, Settings("p2").Keys.Count(key => key.StartsWith("uses:", StringComparison.Ordinal)));
+        Assert.Equal("2", Settings("p4")["uses:o3"]);
     }
 
     [Fact]

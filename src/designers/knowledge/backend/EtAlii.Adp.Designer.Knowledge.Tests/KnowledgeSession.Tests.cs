@@ -63,7 +63,7 @@ public sealed class KnowledgeSessionTests : IDisposable
 
         // A selection carries its options and their colours; a relation says where it points.
         var country = baseline.Columns.Single(column => column.Id == "p2");
-        Assert.Equal(["Netherlands:blue", "Belgium:yellow"], country.Options.Select(option => $"{option.Name}:{option.Color}"));
+        Assert.Equal(["Netherlands:blue", "Belgium:yellow", "Germany:default", "France:default", "Finland:default", "Italy:default"], country.Options.Select(option => $"{option.Name}:{option.Color}"));
         var province = baseline.Columns.Single(column => column.Id == "p5");
         Assert.Equal(("provinces.yaml", "one"), (province.Settings["targetFile"], province.Settings["limit"]));
 
@@ -72,10 +72,10 @@ public sealed class KnowledgeSessionTests : IDisposable
         Assert.Equal("v1", baseline.Settings.ViewId);
 
         // The lines of that view, which shows the cities of the Netherlands grouped by country: a
-        // heading for each country and for the cities without one, the one city the filter lets
-        // through, and under every heading the line a new row is added at.
+        // heading for each of the six countries and for the cities without one, the three cities the
+        // filter lets through, and under every heading the line a new row is added at.
         Assert.Equal("p2", baseline.Settings.GroupBy);
-        Assert.Equal(3 + 1 + 3, baseline.RowCount);
+        Assert.Equal(7 + 3 + 7, baseline.RowCount);
     }
 
     [Fact]

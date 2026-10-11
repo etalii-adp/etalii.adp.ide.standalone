@@ -126,8 +126,8 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         await session.Designer.SetTableViewAsync(new Proto.SetTableViewRequest { WatchId = session.WatchId, StreamId = streamId, ViewId = "v2" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await session.Designer.SetTableWindowAsync(new Proto.SetTableWindowRequest { WatchId = session.WatchId, StreamId = streamId, First = 0, Count = 50 }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
-        // Assert: both rows and the line a row is added at; the related row by its title.
-        var rows = await UntilAsync(watch.ResponseStream, streamId, message => message.Change?.Rows is { } pushed && pushed.Rows.Select(row => row.Id).SequenceEqual(["r1", "r2", ""]), cts.Token);
+        // Assert: every row and the line a row is added at; the related row by its title.
+        var rows = await UntilAsync(watch.ResponseStream, streamId, message => message.Change?.Rows is { } pushed && pushed.Rows.Select(row => row.Id).SequenceEqual(["r1", "r2", "45ako65f2m2wasyxq3mam8ikt", "a8q7ddqb6zyubcyf5vuky6iwb", "8heh3sdyy0a63fyq7gicize5a", "7pa30fmuw51bv1vyl5jnmf5jh", "8rj09k224141g98x6rguz7f5h", "e1v5f01oi4bx1syl7x6ty3zeo", "1dytemy0l8cen9xxkpcxzlgwq", ""]), cts.Token);
         var related = rows.Change.Rows.Rows[0].Cells.Single(cell => cell.ColumnId == province.Id);
         Assert.Equal(["nh"], related.Values);
         Assert.Equal(["Noord-Holland"], related.Labels);
