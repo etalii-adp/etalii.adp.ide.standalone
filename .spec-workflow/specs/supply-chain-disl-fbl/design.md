@@ -11,7 +11,7 @@ The module ends in the shape the hype cycle graph has. Two classes carry the con
 - `SupplyChainDefinition`: the bundled definition loaded once, and what the providers derive from it, mapped to today's wire ids by its `x-supply-chain` block.
 - `SupplyChainBody` (waits): one `.supply` body opened through the module's FBL binding, giving the binding's reading, the DISL model built from it, and `Change(ModelChange)`.
 
-**Three points of the approved requirements are proposed for small amendments** in *Amendment proposed*. None changes what the tool does.
+**Three points of the approved requirements are small amendments** in *Amendment proposed*: the first and the third were ruled by the user in chat on 2026-10-11, and the second is not ruled yet. None changes what the tool does.
 
 ## Steering Document Alignment
 
