@@ -138,7 +138,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 #### Acceptance Criteria
 
 1. The property rows of every node and relation SHALL be derived from the bundled definition through `FormDerivation`, mapped to the row ids of `x-ansible`, every row read-only with today's reason "Defined in &lt;file>; edit it in a text editor." naming the file it names today, and a row with nothing to say absent. WHERE DISL cannot state the rows of an inventory (finding A9) THEN those rows SHALL come from module code named in the companion as standing in for the gap.
-2. The five findings SHALL be derived by `ConstraintEvaluator` with the tool's codes (`ansible.role-missing`, `ansible.dangling-import`, `ansible.unmatched-hosts`, `ansible.unreadable-yaml`, `ansible.empty-role`), severities, sentences, files, lines and order. An expression target SHALL be reported by none, and the `unconventional` fixture SHALL report nothing.
+2. The five findings SHALL be derived by `ConstraintEvaluator` with the tool's codes (`ansible.role-missing`, `ansible.dangling-import`, `ansible.unmatched-hosts`, `ansible.unreadable-yaml`, `ansible.empty-role`), severities, sentences, files, lines and order. An expression target SHALL be reported by none, and the `unconventional` fixture SHALL report nothing. WHERE DISL cannot state the sentence of `ansible.unreadable-yaml` (finding A8) THEN it SHALL be composed by the code that hands the findings to the host, named as standing in for the gap.
 3. No finding the tool does not give today SHALL appear (Q2, Q3), and WHERE DISL cannot state today's order (finding A12) THEN the order SHALL be kept by the code that hands the findings to the host, named as standing in for the gap.
 4. The toolbox SHALL stay empty and no context action SHALL be offered, each asserted by a test; the refusal of a property write and of a reparenting move SHALL keep today's sentences, stated once (finding A6).
 5. WHEN the derived answers are compared with the transcript of Requirement 1 THEN the rows, findings and payloads SHALL be byte-identical.
@@ -175,7 +175,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 
 #### Acceptance Criteria
 
-1. The module SHALL keep: the plugin and the reader, YAML and graph code it wraps (finding B1), the layout (finding A14), the element mapper and the viewport filter, the selection resolver, the session, the `.proto` payloads, and the stand-ins of Requirements 3.1, 3.3 and 4.3.
+1. The module SHALL keep: the plugin and the reader, YAML and graph code it wraps (finding B1), the layout (finding A14), the element mapper and the viewport filter, the selection resolver, the session, the `.proto` payloads, and the stand-ins of Requirements 3.1, 3.2, 3.3 and 4.3.
 2. `AnsibleRuleSet`, `AnsibleValidator`'s rules and the logic of `AnsibleContextPropertyProvider` SHALL leave the product code. `AnsibleProjectStore` and `AnsibleWatchedFolder` SHALL leave it when the library's folder body (Requirement 8.1) watches, settles and re-reads, and not before.
 3. WHEN the conversion is complete THEN the companion SHALL list every remaining module class beside the gap or the host concern that keeps it, and a class with neither SHALL be removed.
 

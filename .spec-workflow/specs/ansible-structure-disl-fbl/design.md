@@ -168,11 +168,11 @@ Six of the 34 stored positions hold a `/` in their key; the definition's widened
 
 One JSON file, `Parity/ansible-structure.transcript.json`, shaped as the .NET dependency graph's: `module`, `generator`, `regenerate`, `toolbox` (the empty answer), `refusals` (the five sentences) and `folders`. Per folder: `payloads` in delivery order with an unbounded viewport, `rows` (every node, every relation and an unknown id), `findings` (code, severity, sentence, file, line, in order) and `selection` (text and path of every element). Folders git cannot hold (an empty role, an empty `meta/`, a link) are built in a temporary folder by the generator and recorded under a fixed name, so the file holds no machine path.
 
-## Amendment proposed
+## Amendments ruled
 
 Requirement 3.2 says the five findings are derived by `ConstraintEvaluator` "with the tool's codes, severities, sentences, files, lines and order". Finding A8 of the same document records that DISL cannot state the sentence of `ansible.unreadable-yaml`: `std.unparseable` gives its message one detail, `reason`, and the tool's sentence opens with the file's path. Requirement 3.3 allows a stand-in for the order and 3.1 for the inventory rows, but no criterion allows one for this sentence, and Requirement 6.1 lists the stand-ins "of Requirements 3.1, 3.3 and 4.3" only. As written, 3.2 and the usability requirement (every sentence read unchanged) cannot both hold.
 
-The amendment, to be put to the user as a selection before the tasks card:
+The amendment, which the user ruled in chat on 2026-10-11 as the first, recommended option below:
 
 - **(recommended) 3.2 gains a clause**, "WHERE DISL cannot state the sentence of `ansible.unreadable-yaml` (finding A8) THEN it SHALL be composed by the code that hands the findings to the host, named as standing in for the gap", and 6.1 names the stand-in of 3.2. It costs one sentence in each and keeps every word a user reads. Recommended because it is what 3.3 already does for the order, in the same class.
 - **The sentence becomes DISL's**: the reason alone, with the path in the finding's location. No stand-in, and a change every user of a broken file sees, named in the transcript's diff.
