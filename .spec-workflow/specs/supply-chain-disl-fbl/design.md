@@ -11,7 +11,7 @@ The module ends in the shape the hype cycle graph has. Two classes carry the con
 - `SupplyChainDefinition`: the bundled definition loaded once, and what the providers derive from it, mapped to today's wire ids by its `x-supply-chain` block.
 - `SupplyChainBody` (waits): one `.supply` body opened through the module's FBL binding, giving the binding's reading, the DISL model built from it, and `Change(ModelChange)`.
 
-**Three points of the approved requirements are small amendments** in *Amendment proposed*: the first and the third were ruled by the user in chat on 2026-10-11, and the second is not ruled yet. None changes what the tool does.
+**Three points of the approved requirements were small amendments**, each ruled by the user in chat on 2026-10-11, in *Amendments ruled*. None changes what the tool does.
 
 ## Steering Document Alignment
 
@@ -120,7 +120,7 @@ Derivation and reading never change in the same step. Steps 4 to 6 change what d
 - **The three providers** hand out `SupplyChainDefinition.Toolbox`, `.Menus` and `.Rows`.
 - **`SupplyChainValidator`**: `SupplyChainDefinition.Findings` through `SupplyChainFindings`.
 - **Commands** keep their records and handler signatures, so history and the wire are untouched. A handler body becomes: open the document, build the model, run the operation or the gesture, apply the transaction, store the text. `SupplyChainEdits.Run` keeps the one place a command refuses an unreadable document.
-- **Removing a group** is the definition's deletion of a `Group`: `DeletionPolicy.Changes` unsets every reference attribute that names a removed element (`references: "unset"`, its default), which is the `group` key of each member (*Amendment proposed*, 1). **Removing a node** removes its flows by the same policy (`relations: "delete"`), and the confirmation with its count is `DeletionPolicy.Confirmation`.
+- **Removing a group** is the definition's deletion of a `Group`: `DeletionPolicy.Changes` unsets every reference attribute that names a removed element (`references: "unset"`, its default), which is the `group` key of each member (*Amendments ruled*, 1). **Removing a node** removes its flows by the same policy (`relations: "delete"`), and the confirmation with its count is `DeletionPolicy.Confirmation`.
 - **Moving** stays a handler (`MoveSupplyChainEntryCommandHandler`). Finding A13 is confirmed as a language gap: the hook context holds `self`, `old`, `event`, `diagram` and `env` (`DislContexts`), no frame of another element, and the frames are the layout plugin's. The handler builds one transaction: the position, the `group` it joins, and the place of a group left empty.
 - **Arrange diagram** stays a host action (`HostAction.Layout`), written as one edit.
 
@@ -139,7 +139,7 @@ Each is added with a test seen to fail first. The list is a reading of the 0.1 d
 | --- | --- | --- |
 | L1 | `reachable(relType)` and `predecessors(relType)` on an element, as DISL 12.2, subtypes included. Declared in `DislCelLibrary.Methods`, implemented in `DislElement`. Shared with the series. | Searched `EtAlii.Adp.Specification.Disl` for `reachable`, `predecessors`, `successors`: none. `Methods` holds twelve names. |
 | L2 | `formatNumber(n, pattern)`, DISL 12.4, if the rewritten definition still calls it from `formatAmount`. A fixture decides whether its pattern gives today's text; if not, the difference is a gap and the amount stays the payload's. Shared with the series. | Searched `.Cel` and `.Disl` for `formatNumber`: none. |
-| L3 | A test that `self.view.selected` evaluates from a bound view. No new member is expected (*Amendment proposed*, 2). | `DislElement.View` exists, a `CelMap` a host binds; searched for `selected`: none. |
+| L3 | A test that `self.view.selected` evaluates from a bound view. No new member is expected (*Amendments ruled*, 2). | `DislElement.View` exists, a `CelMap` a host binds; searched for `selected`: none. |
 | L4 (waits) | What FBL gains for findings B1 and B2, in `EtAlii.Adp.Specification.Fbl`. | Searched the project for `"as"`: none. `YamlScalars.Typed` types every plain scalar by the core schema. |
 
 **Checked and present, so not listed:** `lower`, `upper`, `trim`, `join`, `indexOf` (`CelStrings`), `lists.range`, `sortBy` (`CelLists`), `cel.bind` (`CelParser`), `math.round`, `math.abs`, `math.greatest`, `math.least` (`CelMath`), `max` and `clamp` (`DislCelLibrary`). **Constructs of finding A2 checked and present:** a menu for `diagram` (`ContextMenuDerivation`), a confirmation with `count` and `threshold` (`DeletionPolicy.Confirmation`), a tool's `initial` and a drop on the canvas (`OperationInterpreter.Drop`), a form item of kind `type` (`FormDerivation`, unused under Q2). Requirement 9.2's list is therefore expected to be empty and is confirmed by the load.
@@ -174,12 +174,12 @@ Steps 9 to 11 wait for **one thing: FBL's construct for a YAML scalar read as wr
 
 If FBL's answer differs from the appendix's `as`, the binding changes and nothing else does.
 
-## Amendment proposed
+## Amendments ruled
 
-Amendments 1 and 3 were put to the user as selections and **ruled by the user in chat, 2026-10-11: the first option of each.** Amendment 2 is not ruled yet and is to be put to the user as a selection. This design is written against the recommended option of each.
+All three were put to the user as selections and **ruled by the user in chat, 2026-10-11: the first option of each**, which this design was written against. The options stay listed, so that the record shows what was chosen from.
 
 1. **Q5 says removing a group "clears the key by a hook".** The library clears it without one: `DeletionPolicy.Changes` unsets every reference attribute that names a removed element, and `HookRunner` runs only `change` hooks. Options: **read it as "by the reference's deletion policy" (recommended)**, which needs no library work and meets Requirement 5.5 as written; keep the hook and add `delete` hooks to `HookRunner` as library work; other. **Ruled by the user in chat, 2026-10-11: the first option.**
-2. **Finding A7 says "nothing in the library reads a selection".** `DislElement.View` is what `self.view` reads and a host binds it; only the two graph functions are missing. Options: **amend A7 to say so (recommended)**, leaving Requirement 9.1 met by L1 and the test of L3; leave A7 and add a second way to supply a selection; other.
+2. **Finding A7 says "nothing in the library reads a selection".** `DislElement.View` is what `self.view` reads and a host binds it; only the two graph functions are missing. Options: **amend A7 to say so (recommended)**, leaving Requirement 9.1 met by L1 and the test of L3; leave A7 and add a second way to supply a selection; other. **Ruled by the user in chat, 2026-10-11: the first option.**
 3. **Finding B3 says a dangling flow is "reported by `std.references`".** It cannot give today's list: a flow from a missing node to itself is a self-flow only today and would be reported twice more, and a flow with an absent end is not reported today when some node has no id, because the validator's set of node ids then holds the empty text. Options: **report by rules over the written ends, as the timeline's definition does (recommended)**, which keeps Requirement 4.4; use `std.references` and name both differences in the transcript's diff; other. **Ruled by the user in chat, 2026-10-11: the first option.**
 
 ## Gaps added by this design (Requirement 10.1)
@@ -261,5 +261,5 @@ Amendments 1 and 3 were put to the user as selections and **ruled by the user in
 | 7 | Step 8 and step 11; *What remains in the module* |
 | 8 | Step 7; *The client* |
 | 9 | Step 3 (9.1, 9.2, 9.4); step 9 (9.3); *Library work* |
-| 10 | Steps 2, 8 and 11; the companion; *Gaps added*; *Amendment proposed* |
+| 10 | Steps 2, 8 and 11; the companion; *Gaps added*; *Amendments ruled* |
 | 11 | Steps 8 and 11; Testing Strategy (the fresh worktree) |
