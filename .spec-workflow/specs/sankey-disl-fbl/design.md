@@ -12,7 +12,7 @@ The module ends in the shape the hype cycle graph has, with three classes carryi
 - `SankeyBody`: one `.skv` body opened through the module's FBL binding, giving the binding's reading, the DISL model built from it, and `Change(ModelChange)`. It arrives at step 9.
 - `SankeyFunctions`: the host's implementations of the definition's plugin functions, over the layout the module keeps.
 
-Everything else is deleted, moved to the test project as the oracle, or kept as host code with its reason (the table under *What remains*). **Two small amendments to the approved requirements are proposed**, in *Amendment proposed* below. Neither changes behaviour.
+Everything else is deleted, moved to the test project as the oracle, or kept as host code with its reason (the table under *What remains*). **Two small amendments to the approved requirements were ruled by the user in chat on 2026-10-11**, in *Amendments ruled* below. Neither changes behaviour.
 
 ## Steering Document Alignment
 
