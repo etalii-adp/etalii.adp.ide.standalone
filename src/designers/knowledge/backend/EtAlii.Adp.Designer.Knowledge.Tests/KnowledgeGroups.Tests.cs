@@ -1,0 +1,101 @@
+using EtAlii.Adp.Designer.TableModel;
+using Xunit;
+
+namespace EtAlii.Adp.Designer.Knowledge.Tests;
+
+/// <summary>
+/// What an author does to single groups of a grouped view (knowledge-designer Requirement 6.6):
+/// hide one, show the hidden ones again, and move one up or down - each stored in the view, in
+/// every format, and each what the table shows from then on.
+/// </summary>
+public sealed class KnowledgeGroupsTests : IDisposable
+{
+    private readonly string _root = Directory.CreateTempSubdirectory("adp-knowledge-groups-").FullName;
+
+    public void Dispose()
+    {
+        try
+        {
+            Directory.Delete(_root, recursive: true);
+        }
+        catch (IOException)
+        {
+            // A watcher may still be letting go; the temp folder is the system's to clear.
+        }
+    }
+
+    /// <summary>The example: its first view is grouped by the country its cities are in.</summary>
+    private EditingTable Grouped(string extension)
+    {
+        var table = new EditingTable(KnowledgeFiles.CopyExample("cities" + extension, _root));
+        Assert.Equal("p2", table.OnDisk().Views.Single(view => view.Id == "v1").GroupBy);
+        return table;
+    }
+
+    private static List<string> Headings(EditingTable table) => [.. table.Lines().Where(line => line.IsGroup).Select(line => line.Id)];
+
+    private static TableGesture Move(string key, string direction) =>
+        new("moveGroup", ViewId: "v1", TargetId: key, Settings: new Dictionary<string, string> { ["direction"] = direction });
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task AGroup_IsMovedOnePlaceAmongThoseShown_AndTheViewNamesEveryGroupFromThenOn(string extension)
+    {
+        // Arrange: at least three groups, in the order the options and the rows without a country give them.
+        await using var table = Grouped(extension);
+        var before = Headings(table);
+        Assert.True(before.Count >= 3, $"The example has fewer than three groups to order: {string.Join(", ", before)}.");
+        Assert.Empty(table.OnDisk().Views.Single(view => view.Id == "v1").GroupOrder);
+
+        // Act: the second group goes up.
+        await table.Edit(Move(before[1], "up"));
+
+        // Assert: it changed places with the first, on the screen and in the file, and nothing else moved.
+        List<string> expected = [before[1], before[0], .. before.Skip(2)];
+        Assert.Equal(expected, Headings(table));
+        Assert.Equal(expected, table.OnDisk().Views.Single(view => view.Id == "v1").GroupOrder);
+
+        // Act: and down again; then the last one down, which has nowhere to go.
+        await table.Edit(Move(before[1], "down"));
+        var bytes = table.Bytes();
+        (_, string answer) = table.Begin(Move(before[^1], "down"));
+
+        // Assert.
+        Assert.Equal(before, Headings(table));
+        Assert.Equal("", answer);
+        Assert.Equal(bytes, table.Bytes());
+    }
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task AGroup_IsHidden_SaidToBeHidden_SteppedOverByAMove_AndShownAgain(string extension)
+    {
+        // Arrange.
+        await using var table = Grouped(extension);
+        var before = Headings(table);
+        Assert.DoesNotContain("hiddenGroups", table.Session.Baseline().Settings.Settings.Keys);
+
+        // Act: the second group is hidden.
+        await table.Edit(new TableGesture("hideGroup", ViewId: "v1", TargetId: before[1]));
+
+        // Assert: gone from the screen, in the file, and counted for the control that shows it again.
+        Assert.Equal([before[0], .. before.Skip(2)], Headings(table));
+        Assert.Equal([before[1]], table.OnDisk().Views.Single(view => view.Id == "v1").HiddenGroups);
+        Assert.Equal("1", table.Session.Baseline().Settings.Settings["hiddenGroups"]);
+
+        // Act: the third group goes up: over the hidden one, to the place before the first.
+        await table.Edit(Move(before[2], "up"));
+
+        // Assert.
+        Assert.Equal([before[2], before[0], .. before.Skip(3)], Headings(table));
+
+        // Act: every hidden group is shown again.
+        await table.Edit(new TableGesture("showGroups", ViewId: "v1"));
+
+        // Assert: none is hidden, and the one that was stands where the order has it.
+        Assert.Empty(table.OnDisk().Views.Single(view => view.Id == "v1").HiddenGroups);
+        Assert.DoesNotContain("hiddenGroups", table.Session.Baseline().Settings.Settings.Keys);
+        Assert.Equal(before.Order(StringComparer.Ordinal), Headings(table).Order(StringComparer.Ordinal));
+        Assert.Equal(before[2], Headings(table)[0]);
+    }
+}
