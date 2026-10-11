@@ -14,7 +14,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 - **Task 11 depends on task 5 only** and may be worked in any place after it. It is still the same Developer's.
 - **Five things wait on a language change in etalii-adp/etalii.adp and have no task here**: a declared reader for the file with a plugin for templates only (language gaps 1 to 8), an entry for this tool in the real-file corpus (the declared reader), findings B14 and B15 and `std.duplicateId` (each a small change of its own after this conversion, Q3), and `PipelineLayout` leaving (gap 10). Task 12 records each beside what it waits on.
 
-**The amendments the design proposes.** This document is written against the recommended option of each amendment the design proposes; a ruling that differs is a small amendment to the tasks named.
+**The amendments the design proposes.** The user ruled each of the three amendments in chat on 2026-10-11 as its recommended option, which is what this document is written against.
 
 - Amendment 1, the finding codes stated as `code` on each rule and built-in, with `x-azure-pipeline` mapping tools, actions and properties: tasks 3 and 7, and task 4 if `WireIdMap` is to gain a `findings` map instead.
 - Amendment 2, the host's history keeps the stack and the undo command carries the library's inverse splice and digest: task 10.

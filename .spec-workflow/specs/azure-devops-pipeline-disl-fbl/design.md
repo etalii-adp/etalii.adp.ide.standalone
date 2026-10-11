@@ -190,9 +190,9 @@ One JSON file, `Parity/azure-pipeline.transcript.json`, shaped as the timeline's
 | Findings B14 and B15, and `std.duplicateId` (A8) | Each a small change of its own after this conversion (Q3). |
 | `PipelineLayout` leaving | DISL defining `layered` (gap 10). |
 
-## Amendment proposed
+## Amendments ruled
 
-Each is to be put to the user as a selection before the tasks card. The design is written against the recommended option.
+The user ruled each of the three in chat on 2026-10-11 as its recommended option, the first of the options listed. The design is written against the recommended option.
 
 1. **Requirement 2.2, the `findings` member of `x-azure-pipeline`.** `WireIdMap.Of` reads `tools`, `actions`, `properties` and `types` (searched `WireIdMap.cs` for `findings`: none), and `ConstraintEvaluator` takes a finding's code from the rule's or the built-in's `code`. Options: **the codes are stated as `code` on each rule and built-in, and the block maps tools, actions and properties** (recommended: it is how the hype cycle does it and needs no library change); or `WireIdMap` gains a `findings` map for every tool; or other.
 2. **Q2's "the history becomes the library's", with Requirement 5.9.** No module calls `SplicedFile.Undo` (searched `src/diagrams` for `.Undo(` and `.Redo(` outside tests: none); the host's undo is its command history, and the library's history lives in one open body and is cleared by a reload. Options: **the host's history keeps the stack, and the undo command carries the library's inverse splice and digest and refuses on drift with the library's sentence** (recommended: 5.5 and 5.9 are met and undo survives a reload); or the store keeps each body open and the undo command calls `SplicedFile.Undo`, with "There is nothing to undo." after a reload; or other.
