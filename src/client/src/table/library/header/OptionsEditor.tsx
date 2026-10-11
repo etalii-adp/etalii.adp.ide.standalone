@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type HTMLAttributes } from "react";
+import { usePointerGesture } from "../../../canvas/gesture/usePointerGesture";
 import type { TableGesture } from "../api/tableEvents";
 import type { TableColumn, TableOption } from "../api/tableModel";
 import { OPTION_COLORS, OptionTag } from "../cells/OptionTag";
+import { dropIndex } from "./columnActions";
 
 /** The setting a column says under how many rows have one of its options. */
 export const USES_PREFIX = "uses:";
@@ -29,6 +31,27 @@ export interface OptionsEditorProps {
 export function OptionsEditor({ column, position, raise, onClose }: OptionsEditorProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [adding, setAdding] = useState("");
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // An option is put in its place by dragging its handle: one gesture, when the drag ends, as a sort's is.
+  const drag = usePointerGesture<TableOption>({
+    onPress: () => {},
+    onDragEnd: (option, _dx, dy) => {
+      const lines = Array.from(listRef.current?.querySelectorAll<HTMLElement>("li") ?? [], (line) => {
+        const rect = line.getBoundingClientRect();
+        return { left: rect.top, right: rect.bottom };
+      });
+      const from = column.options.findIndex((candidate) => candidate.id === option.id);
+      const line = lines[from];
+      if (line === undefined) {
+        return;
+      }
+      const to = dropIndex(from, (line.left + line.right) / 2 + dy, lines);
+      if (to !== from) {
+        raise({ kind: "moveOption", columnId: column.id, targetId: option.id, index: to });
+      }
+    },
+  });
 
   // Leaving the panel - a press anywhere else, or Escape - closes it.
   useEffect(() => {
@@ -61,9 +84,9 @@ export function OptionsEditor({ column, position, raise, onClose }: OptionsEdito
   return (
     // Under its header - and inside the window when the header is scrolled out of it to the left.
     <div ref={panelRef} className="table-options-editor" role="dialog" aria-label={`Options of ${column.name}`} style={{ left: Math.max(PANEL_MARGIN, position.x), top: position.y }}>
-      <ul className="table-options-list">
+      <ul className="table-options-list" ref={listRef}>
         {column.options.map((option, index) => (
-          <OptionLine key={option.id} column={column} option={option} index={index} count={column.options.length} raise={raise} />
+          <OptionLine key={option.id} column={column} option={option} index={index} count={column.options.length} raise={raise} handle={drag.press(option)} />
         ))}
       </ul>
       <div className="table-options-add">
@@ -91,12 +114,14 @@ export function OptionsEditor({ column, position, raise, onClose }: OptionsEdito
 interface OptionLineProps {
   column: TableColumn;
   option: TableOption;
+  /** What makes the line's handle start a drag of it. */
+  handle: HTMLAttributes<HTMLElement>;
   index: number;
   count: number;
   raise: (gesture: TableGesture) => void;
 }
 
-function OptionLine({ column, option, index, count, raise }: OptionLineProps) {
+function OptionLine({ column, option, index, count, raise, handle }: OptionLineProps) {
   const [name, setName] = useState(option.name);
 
   // The model's name is the truth: a rename that was refused, or made elsewhere, shows here.
@@ -123,6 +148,7 @@ function OptionLine({ column, option, index, count, raise }: OptionLineProps) {
 
   return (
     <li className="table-options-line" data-option-id={option.id}>
+      <span className="mdi mdi-drag-vertical table-sort-handle" role="img" aria-label={`Move option ${option.name}`} {...handle} />
       <OptionTag label={option.name} color={option.color} />
       <input
         type="text"

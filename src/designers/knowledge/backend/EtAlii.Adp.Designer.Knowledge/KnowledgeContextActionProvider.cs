@@ -187,7 +187,7 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
     /// registration names - by a <c>body:</c> line, or as the file of its own name in one of the formats.
     /// Null for an entry that is neither.
     /// </summary>
-    private static string? BodyOf(string path)
+    internal static string? BodyOf(string path)
     {
         if (!File.Exists(path))
         {

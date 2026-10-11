@@ -1,4 +1,5 @@
 using EtAlii.Adp.Authentication.Wire;
+using EtAlii.Adp.Context.Wire;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Hierarchy;
@@ -12,7 +13,9 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
+using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using DesignerService = EtAlii.Adp.Designer.Wire.DesignerService;
+using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path;
 using Path = EtAlii.Adp.Documents.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;
@@ -251,6 +254,48 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         Assert.Equal(before, await File.ReadAllBytesAsync(cities, TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task ARowSelectedInATable_AnswersThePropertyGrid_AndIsEditedThroughIt()
+    {
+        // Arrange: a connection that watches its selection, and the entry of the table's registration.
+        Seed(".yaml");
+        var session = await OpenSessionAsync();
+        var hierarchy = new HierarchyService.HierarchyServiceClient(session.Channel);
+        var context = new ContextService.ContextServiceClient(session.Channel);
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchy, session.ProjectId, session.WatchId, session.Headers, "cities.adp");
+        using var watch = context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken);
+
+        // Act: the row, selected under the file as an element of a diagram is.
+        var selection = new ContextSelection
+        {
+            Source = Documents.Wire.ContextSelectionSource.Explorer,
+            Id = new Documents.Wire.ContextSource { EntryId = entryId },
+            Path = new Path(),
+            Child = new ContextSelection
+            {
+                Source = Documents.Wire.ContextSelectionSource.DiagramCanvas,
+                Id = new Documents.Wire.ContextSource { ElementId = new Documents.Wire.ElementId { Value = "r1" } },
+                Path = new Path(),
+                None = new Google.Protobuf.WellKnownTypes.Empty(),
+            },
+        };
+        var selected = await context.SelectAsync(new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = selection }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: accepted, and the grid has the row's values under its properties.
+        Assert.Equal("", selected.Error);
+        var described = await context.DescribePropertiesAsync(new DescribePropertiesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var rows = described.Properties.ToDictionary(property => property.Id, property => property.Value);
+        Assert.Equal(("Amsterdam", "Netherlands"), (rows["p1"], rows["p2"]));
+
+        // Act: a value changed in the grid.
+        var set = await context.SetPropertyAsync(new SetPropertyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, PropertyId = "p1", Value = "Mokum" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: in the file.
+        Assert.True(set.Accepted, set.Error);
+        Assert.Contains("text: Mokum", await File.ReadAllTextAsync(IoPath.Combine(_projectFolder, "cities.yaml"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
     /// <summary>The id the cities' file gave the relation named Near: the id on the line before its name.</summary>
     private async Task<string> NearIdAsync()
     {
@@ -326,7 +371,8 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
             added.Added.Id,
             ShortGuid.NewShortGuid(),
             new WorkspaceService.WorkspaceServiceClient(channel),
-            new DesignerService.DesignerServiceClient(channel));
+            new DesignerService.DesignerServiceClient(channel),
+            channel);
     }
 
     private sealed record Session(
@@ -334,5 +380,6 @@ public sealed class KnowledgeDesignerTests : IClassFixture<WebApplicationFactory
         Documents.Wire.ShortGuid ProjectId,
         Documents.Wire.ShortGuid WatchId,
         WorkspaceService.WorkspaceServiceClient Workspace,
-        DesignerService.DesignerServiceClient Designer);
+        DesignerService.DesignerServiceClient Designer,
+        GrpcChannel Channel);
 }

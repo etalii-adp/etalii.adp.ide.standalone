@@ -98,4 +98,41 @@ public sealed class KnowledgeGroupsTests : IDisposable
         Assert.Equal(before.Order(StringComparer.Ordinal), Headings(table).Order(StringComparer.Ordinal));
         Assert.Equal(before[2], Headings(table)[0]);
     }
+
+    [Theory]
+    [MemberData(nameof(KnowledgeFiles.Extensions), MemberType = typeof(KnowledgeFiles))]
+    public async Task Rows_AreMovedTogetherBesideAnotherRow_InAViewWithoutASort_AndNotInOneWithASort(string extension)
+    {
+        // Arrange: the example's second view has no sort; four rows are added so that there is something to move.
+        await using var table = new EditingTable(KnowledgeFiles.CopyPlain("cities" + extension, _root));
+        Assert.Empty(table.OnDisk().Views.Single(view => view.Id == "v2").Sorts);
+        for (var added = 0; added < 2; added++)
+        {
+            await table.Edit(new TableGesture("addRow", ViewId: "v2"));
+        }
+
+        List<string> before = [.. table.OnDisk().Rows.Select(row => row.Id)];
+        Assert.True(before.Count >= 4, "The example has fewer than four rows to move.");
+
+        // Act: the first and the third row go after the last, together.
+        await table.Edit(new TableGesture("moveRows", ViewId: "v2", Values: [before[2], before[0]], TargetId: before[^1], Settings: new Dictionary<string, string> { ["place"] = "after" }));
+
+        // Assert: in the file's order, which is the order they were in.
+        List<string> expected = [.. before.Where(id => id != before[0] && id != before[2]), before[0], before[2]];
+        Assert.Equal(expected, table.OnDisk().Rows.Select(row => row.Id));
+
+        // Act: one of them back before the first.
+        await table.Edit(new TableGesture("moveRows", ViewId: "v2", RowId: before[0], TargetId: expected[0]));
+
+        // Assert.
+        Assert.Equal([before[0], .. expected.Where(id => id != before[0])], table.OnDisk().Rows.Select(row => row.Id));
+
+        // Act: in the view that sorts, nothing moves.
+        var bytes = table.Bytes();
+        (_, string answer) = table.Begin(new TableGesture("moveRows", ViewId: "v1", RowId: before[0], TargetId: before[^1]));
+
+        // Assert.
+        Assert.Equal(KnowledgeEdits.SortedRowsStay, answer);
+        Assert.Equal(bytes, table.Bytes());
+    }
 }

@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { applyTableEvent, EMPTY_TABLE, type TableColumn, type TableModel, type TableRow } from "./api/tableModel";
 import type { TableDefinition } from "./definition/tableDefinition";
 import { DEFAULT_MARGIN, DEFAULT_ROW_HEIGHT } from "./rows/windowing";
+import { pointer } from "../../canvas/library/testing/canvasHarness";
+import type { TableGesture } from "./api/tableEvents";
 import { TableSurface } from "./TableSurface";
 
 const definition: TableDefinition = {
@@ -243,6 +245,72 @@ describe("TableSurface", () => {
     expect(cells[1]!.getAttribute("title")).toBe("Kept as it was.\nNot a number.");
     expect(cells[1]!.getAttribute("aria-invalid")).toBe("true");
     expect(screen.getAllByRole("gridcell").filter((cell) => cell.className.includes("table-cell-finding"))).toHaveLength(1);
+  });
+
+  it("selects rows by their handles, says which, and deletes those selected together", async () => {
+    // Arrange.
+    const onGesture = vi.fn(async () => "");
+    const onSelectRows = vi.fn();
+    const rows = [row("r1", { p1: "Amsterdam" }), row("r2", { p1: "Antwerp" }), row("r3", { p1: "Utrecht" })];
+    render(<TableSurface model={tableOf(3, 0, rows)} definition={{ ...definition, rowActions: ["delete", "move"] }} onGesture={onGesture} onSelectRows={onSelectRows} />);
+    const press = (name: string) => {
+      const handle = screen.getByRole("checkbox", { name });
+      fireEvent(handle, pointer("pointerdown", { pointerId: 1, button: 0, clientX: 5, clientY: 5 }));
+      fireEvent(handle, pointer("pointerup", { pointerId: 1, button: 0, clientX: 5, clientY: 5 }));
+    };
+
+    // Act: two rows selected, one after the other.
+    press("Select row 1");
+    press("Select row 3");
+
+    // Assert.
+    expect(onSelectRows.mock.calls.map((call) => call[0])).toEqual([["r1"], ["r1", "r3"]]);
+    expect(bodyRows().map((line) => line.getAttribute("aria-selected"))).toEqual(["true", "false", "true"]);
+
+    // Act: the menu of one of them.
+    fireEvent.contextMenu(bodyRows()[2]!, { clientX: 20, clientY: 40 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete 2 rows" }));
+
+    // Assert: one gesture for both, and nothing selected any more.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "deleteRows", values: ["r1", "r3"] });
+    expect(onSelectRows).toHaveBeenLastCalledWith([]);
+
+    // A row that is not among the selected ones is deleted alone.
+    press("Select row 1");
+    press("Select row 3");
+    fireEvent.contextMenu(bodyRows()[1]!, { clientX: 20, clientY: 40 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete row" }));
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "deleteRows", rowId: "r2" });
+  });
+
+  it("moves a row by dragging its handle to another row, and has nothing to drag by in a sorted view", () => {
+    // Arrange.
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    const rows = [row("r1", { p1: "Amsterdam" }), row("r2", { p1: "Antwerp" }), row("r3", { p1: "Utrecht" })];
+    const moving = { ...definition, rowActions: ["move"] as const };
+    const { rerender } = render(<TableSurface model={tableOf(3, 0, rows)} definition={moving} onGesture={onGesture} />);
+    const dragBy = (name: string, dy: number) => {
+      const handle = screen.getByRole("checkbox", { name });
+      fireEvent(handle, pointer("pointerdown", { pointerId: 1, button: 0, clientX: 5, clientY: 5 }));
+      fireEvent(handle, pointer("pointermove", { pointerId: 1, clientX: 5, clientY: 5 + dy }));
+      fireEvent(handle, pointer("pointerup", { pointerId: 1, button: 0, clientX: 5, clientY: 5 + dy }));
+    };
+
+    // Act: the first row is let go two lines further down, and the last one line up.
+    dragBy("Select row 1", 2 * DEFAULT_ROW_HEIGHT);
+    dragBy("Select row 3", -DEFAULT_ROW_HEIGHT);
+
+    // Assert: one gesture each, naming the row it lands beside and on which side.
+    expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
+      { kind: "moveRows", rowId: "r1", targetId: "r3", settings: { place: "after" } },
+      { kind: "moveRows", rowId: "r3", targetId: "r2", settings: { place: "before" } },
+    ]);
+
+    // A sorted view has its own order: a drag there moves nothing.
+    const sorted = tableOf(3, 0, rows);
+    rerender(<TableSurface model={{ ...sorted, settings: { ...sorted.settings, sorts: [{ columnId: "p1", descending: false }] } }} definition={{ ...moving, rowActions: ["move", "delete"] }} onGesture={onGesture} />);
+    dragBy("Select row 1", 2 * DEFAULT_ROW_HEIGHT);
+    expect(onGesture).toHaveBeenCalledTimes(2);
   });
 
   it("says nothing about itself while all is well", () => {
