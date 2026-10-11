@@ -72,7 +72,8 @@
   - _Leverage: `RestoreDocumentCommand`, `SelfWriteGuard`_
   - _Requirements: 9.6_
 
-- [ ] 7. The wire: locked, group states and the switch
+- [x] 7. The wire: locked, group states and the switch
+  - **Retired by the user in chat, 2026-10-11.** The three travel in the module's own payload instead of the core contract: `AadElementPayload.pinned` and `.collapsed` and `AadViewPayload.show_archived` in `src/diagrams/agent-activity-diagram/api/agent-activity-diagram.proto` (pull request 159). `DiagramDiff` compares an element's payload bytes, so a change to any of them still reaches an open canvas as a delta on the `Watch` stream. No core field is added and the guard below is not written; what follows is the task as it stood.
   - File: `src/api/elements.proto`, `src/api/deltas.proto`, `src/api/diagrams.proto`, their mappers in `EtAlii.Adp.Diagram`
   - Carry on the core contract, for any module: whether an element is locked; which of an element's groups are collapsed; and the value of a canvas switch. A change to any of them reaches an open canvas as a delta on the existing `Watch` stream.
   - Guard: a `DiagramDiff` test for each: a change in the field alone produces a delta for that element and no other.
