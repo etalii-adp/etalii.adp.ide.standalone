@@ -138,11 +138,36 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
     setActive(to);
   }, []);
 
+  // The columns there were when one was asked for, until it arrives: the column that was not
+  // among them is the new one, and its name is asked for at once.
+  const columnsRef = useRef(model.columns);
+  columnsRef.current = model.columns;
+  const columnsBeforeAdd = useRef<ReadonlySet<string> | null>(null);
+  const [naming, setNaming] = useState<string | null>(null);
+  const namingStarted = useCallback(() => setNaming(null), []);
+  useEffect(() => {
+    const before = columnsBeforeAdd.current;
+    const added = before === null ? undefined : model.columns.find((column) => !before.has(column.id));
+    if (added !== undefined) {
+      columnsBeforeAdd.current = null;
+      setNaming(added.id);
+    }
+  }, [model.columns]);
+
   /** Raises a gesture made outside an editor, and shows a refusal on the table's own line. */
   const raise = useCallback(
     (gesture: TableGesture) => {
       setRefusal("");
-      void onGesture?.(gesture).then(setRefusal);
+      if (gesture.kind === "addColumn") {
+        columnsBeforeAdd.current = new Set(columnsRef.current.map((column) => column.id));
+      }
+      void onGesture?.(gesture).then((answer) => {
+        if (answer !== "" && gesture.kind === "addColumn") {
+          // Refused: no column is coming.
+          columnsBeforeAdd.current = null;
+        }
+        setRefusal(answer);
+      });
     },
     [onGesture],
   );
@@ -294,6 +319,8 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
             editable={editable}
             raise={raise}
             onResizePreview={onResizePreview}
+            nameAtOnce={naming === column.id}
+            onNamingStarted={namingStarted}
           />
         ))}
         {editable && <AddColumn definition={definition} raise={raise} />}

@@ -269,6 +269,35 @@ describe("adding a column", () => {
     expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", settings: { type: "number" } });
   });
 
+  it("asks for the name of the column that was added, as soon as it is there", async () => {
+    // Arrange.
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    const before = table();
+    const { rerender } = render(<TableSurface model={before} definition={definition} onGesture={onGesture} />);
+
+    // Act: a column is asked for, and the model comes back with it.
+    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
+    await choose("Number");
+    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+    const structure = { title: before.title, columns: [...before.columns, column("p9", "Number", "number")], views: [], settings: before.settings, rowCount: 0, readOnlyReason: "" };
+    await act(async () => {
+      rerender(<TableSurface model={applyTableEvent(before, { kind: "structure", structure })} definition={definition} onGesture={onGesture} />);
+    });
+
+    // Assert: the new column's header is its name field, holding the name it was given; no other header is.
+    const field = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
+    expect(field.value).toBe("Number");
+    expect(field.closest("[data-column-id]")!.getAttribute("data-column-id")).toBe("p9");
+
+    // Act: named.
+    fireEvent.change(field, { target: { value: "People" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    // Assert.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "renameColumn", columnId: "p9", values: ["People"] });
+    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+  });
+
   it("is not a column of the grid", () => {
     // Act.
     renderTable();

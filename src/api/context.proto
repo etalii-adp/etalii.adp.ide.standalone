@@ -233,6 +233,7 @@ message FileDialogPrompt {
   repeated ContextOption files = 4;   // the top level of the workspace's tree
   repeated ContextOption pinned = 5;  // shown before the tree, in this order; each is selectable
   string empty_message = 6;           // shown instead when there is neither a file nor a pinned entry
+  ContextTextField name_field = 7;    // unset: the dialog asks for a file and nothing else
 }
 
 // Backend-initiated: pushed down the connection's already-open Watch stream.

@@ -19,6 +19,10 @@ export interface ColumnHeaderProps {
   raise: (gesture: TableGesture) => void;
   /** The width a drag of the border would give, while it is dragged; null when the drag ends. */
   onResizePreview: (columnId: string, width: number | null) => void;
+  /** True for a column that was just added: its name is asked for at once, as if Rename had been chosen. */
+  nameAtOnce?: boolean;
+  /** Told when that naming has begun, so that it begins once. */
+  onNamingStarted?: () => void;
 }
 
 /**
@@ -29,11 +33,19 @@ export interface ColumnHeaderProps {
  * the pointer as a preview the table draws, and the width is sent once on release - a resize
  * that wrote on every pointer move would be a write per pixel.
  */
-export function ColumnHeader({ column, index, width, definition, editable, raise, onResizePreview }: ColumnHeaderProps) {
+export function ColumnHeader({ column, index, width, definition, editable, raise, onResizePreview, nameAtOnce = false, onNamingStarted }: ColumnHeaderProps) {
   const kind = kindOf(definition, column.kind);
   const cellRef = useRef<HTMLDivElement>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const [renaming, setRenaming] = useState(false);
+
+  // A column just added has its type's name: its own is asked for before anything else.
+  useEffect(() => {
+    if (nameAtOnce && editable) {
+      setRenaming(true);
+      onNamingStarted?.();
+    }
+  }, [nameAtOnce, editable, onNamingStarted]);
   // Where the panel of the column's options stands while it is open: under the header, in the window.
   const [optionsAt, setOptionsAt] = useState<{ x: number; y: number } | null>(null);
 

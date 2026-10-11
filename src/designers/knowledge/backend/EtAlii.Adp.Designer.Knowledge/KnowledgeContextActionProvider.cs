@@ -34,6 +34,13 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
 
     private const string Icon = "mdi-arrow-top-right";
 
+    public const string OtherSideLabel = "Name in the other table";
+    public const string OtherSideNeedsName = "The relation needs a name in the other table.";
+
+    /// <summary>What the other side of a two-way relation is called until its author says otherwise: this table's name.</summary>
+    private static string OtherSideName(string bodyPath) =>
+        KnowledgeDocumentStore.Read(bodyPath).Body?.Table.Name is { Length: > 0 } name ? name : Path.GetFileNameWithoutExtension(bodyPath);
+
     private static readonly string[] Extensions = [".yaml", ".yml", ".json", ".xml"];
 
     public ContextScope Scope => ContextScope.Hierarchy;
@@ -89,12 +96,20 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
             "Relate",
             IsKnowledgeFile,
             "There is no other table in this project.",
-            [new ContextPinnedFile("This table", body)])));
+            [new ContextPinnedFile("This table", body)],
+            // A relation shown in both tables is a property of the other table too: its name there is its author's to give.
+            actionId is ManyTwoWay or OneTwoWay ? new ContextTextFieldRequest(OtherSideLabel, OtherSideName(body)) : null)));
     }
 
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
+        // What is typed in a dialog with a name field is the name; the file is checked against what the dialog offered.
+        if (actionId is ManyTwoWay or OneTwoWay)
+        {
+            return ValueTask.FromResult(value.Trim().Length > 0 ? ContextValidationResult.Accepted : ContextValidationResult.Rejected(OtherSideNeedsName));
+        }
+
         return ValueTask.FromResult(IsKnowledgeFile(Chosen(target, value)) ? ContextValidationResult.Accepted : ContextValidationResult.Rejected("That file is not a table."));
     }
 
@@ -126,8 +141,8 @@ internal sealed class KnowledgeContextActionProvider(IHistoryStackStore historie
         {
             ["target"] = KnowledgeRelations.TargetName(bodyPath, chosen),
             ["limit"] = actionId is OneOneWay or OneTwoWay ? "one" : "none",
-            // The other side starts under this table's name, as this side starts under the target's.
-            ["counterpart"] = twoWay ? body.Table.Name.Length > 0 ? body.Table.Name : Path.GetFileNameWithoutExtension(bodyPath) : "",
+            // The other side has the name its author gave it; this table's name when none was given.
+            ["counterpart"] = !twoWay ? "" : text.Trim().Length > 0 ? text.Trim() : OtherSideName(bodyPath),
         };
 
         var surroundings = new KnowledgeSurroundings(bodyPath, property => TargetAt(bodyPath, body.Table, property.TargetFile), name => TargetAt(bodyPath, body.Table, name));

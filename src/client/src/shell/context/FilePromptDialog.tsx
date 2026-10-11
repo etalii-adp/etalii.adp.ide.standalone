@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { create } from "@bufbuild/protobuf";
-import { ChoiceDialogPromptSchema, type FileDialogPrompt } from "../../generated/context_pb";
+import { ChoiceDialogPromptSchema, ContextOptionSchema, type ContextOption, type FileDialogPrompt } from "../../generated/context_pb";
 import { ChoicePromptDialog } from "./ChoicePromptDialog";
 import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 
@@ -20,9 +20,14 @@ export interface FilePromptDialogProps {
  * here as well would be a second copy of a rule this build cannot see.
  *
  * A file tree is a tree of options of which the folders cannot be chosen, which is exactly what
- * the choice dialog draws - so this is that dialog with no name field, and gets its keyboard
+ * the choice dialog draws - so this is that dialog, with a name field only when one is asked for, and gets its keyboard
  * paths, its roles and its refusal handling from it rather than repeating them.
  */
+/** An option and those under it, each suggesting the same name: the choice dialog names by what the chosen option suggests. */
+function suggesting(option: ContextOption, name: string): ContextOption {
+  return name === "" ? option : create(ContextOptionSchema, { ...option, suggestedValue: name, children: option.children.map((child) => suggesting(child, name)) });
+}
+
 export function FilePromptDialog({ prompt, onPropose, onSubmit, onCancel }: FilePromptDialogProps) {
   const choice = useMemo(
     () =>
@@ -31,7 +36,9 @@ export function FilePromptDialog({ prompt, onPropose, onSubmit, onCancel }: File
         icon: prompt.icon,
         confirmLabel: prompt.confirmLabel,
         emptyMessage: prompt.emptyMessage,
-        options: [...prompt.pinned, ...prompt.files],
+        // The name the dialog starts with is not a file's to change: choosing a file keeps it.
+        options: [...prompt.pinned, ...prompt.files].map((option) => suggesting(option, prompt.nameField?.initialValue ?? "")),
+        nameField: prompt.nameField,
       }),
     [prompt],
   );

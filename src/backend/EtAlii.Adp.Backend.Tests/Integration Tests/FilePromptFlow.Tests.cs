@@ -87,6 +87,7 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         // Assert: what the provider said, carried as it said it.
         Assert.Equal(ContextPrompt.PromptOneofCase.FileDialog, asked.Prompt.PromptCase);
         Assert.Equal(("Relate to", "mdi-link-variant", "Choose", "No table in this project."), (dialog.Title, dialog.Icon, dialog.ConfirmLabel, dialog.EmptyMessage));
+        Assert.Equal(("Name there", "Cities"), (dialog.NameField.Label, dialog.NameField.InitialValue));
 
         // The pinned entry comes first and is offered although the predicate refuses its file.
         var pinned = Assert.Single(dialog.Pinned);
@@ -102,11 +103,12 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         // Act: the answer is a workspace path.
         var submitted = await asked.Context.SubmitInteractionAsync(
-            new SubmitInteractionRequest { InteractionId = asked.InteractionId, Value = "data/deep/rivers.yaml" }, asked.Headers, cancellationToken: TestContext.Current.CancellationToken);
+            new SubmitInteractionRequest { InteractionId = asked.InteractionId, Value = "data/deep/rivers.yaml", Text = "Seats" }, asked.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
-        // Assert.
+        // Assert: the file, and beside it what was typed in the name field.
         Assert.True(submitted.Completed, submitted.Error);
         Assert.Equal(["data/deep/rivers.yaml"], _provider.Committed);
+        Assert.Equal(["Seats"], _provider.Named);
     }
 
     [Theory]
@@ -215,6 +217,9 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         public List<string> Committed { get; } = [];
 
+        /// <summary>What was typed in the dialog's name field, per commit.</summary>
+        public List<string> Named { get; } = [];
+
         public ContextScope Scope => ContextScope.Hierarchy;
 
         public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken) =>
@@ -228,7 +233,8 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
                 "Choose",
                 path => path.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase),
                 "No table in this project.",
-                [new ContextPinnedFile("This file", pinnedPath)])));
+                [new ContextPinnedFile("This file", pinnedPath)],
+                new ContextTextFieldRequest("Name there", "Cities"))));
 
         public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
             ValueTask.FromResult(ContextValidationResult.Accepted);
@@ -236,6 +242,7 @@ public sealed class FilePromptFlowTests : IClassFixture<WebApplicationFactory<Pr
         public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
         {
             Committed.Add(value);
+            Named.Add(text);
             return ValueTask.FromResult(ContextCommitResult.Succeeded);
         }
     }
