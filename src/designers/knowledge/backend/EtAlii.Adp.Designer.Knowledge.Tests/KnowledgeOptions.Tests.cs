@@ -113,7 +113,6 @@ public sealed class KnowledgeOptionsTests : IDisposable
     {
         // Arrange: Port is a tag of three rows, Capital of one; Netherlands is three rows' country, Belgium one's.
         await using var table = Open(extension);
-        IReadOnlyDictionary<string, string> Settings(string id) => table.Session.Baseline().Columns.Single(column => column.Id == id).Settings;
 
         // Assert.
         Assert.Equal(("3", "1"), (Settings("p4")["uses:o3"], Settings("p4")["uses:o4"]));
@@ -126,6 +125,9 @@ public sealed class KnowledgeOptionsTests : IDisposable
         // Assert.
         Assert.Equal(6, Settings("p2").Keys.Count(key => key.StartsWith("uses:", StringComparison.Ordinal)));
         Assert.Equal("2", Settings("p4")["uses:o3"]);
+        return;
+
+        IReadOnlyDictionary<string, string> Settings(string id) => table.Session.Baseline().Columns.Single(column => column.Id == id).Settings;
     }
 
     [Fact]
