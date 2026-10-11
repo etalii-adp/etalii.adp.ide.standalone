@@ -14,7 +14,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 - **Task 3 waits on task 1 only** and can be done while task 2 is in review.
 - **No task waits on a language change.** The seven gaps of the requirements' section C and the eighth of `SparqlChrome` are reproduced as today's behaviour and recorded (task 11); the three changes of Q3 and the four defects of Q4 are reproduced with their fixtures and raised afterwards, outside this specification. A binding's `args` for a plugin waits on a second tool that needs it and is not built here.
 
-**The user ruled the amendment the design proposes in chat on 2026-10-11, as the option this document is written against.** The design proposes one: Requirement 9.2 reads that the design lists the library items from a reading and a load of the rewritten definition at the start of the library step confirms the list. It touches tasks 4 and 5, whose first action is that load.
+**The user ruled the amendment the design proposes in chat on 2026-10-11, as the option this document is written against.** The design has one: Requirement 9.2 reads that the design lists the library items from a reading and a load of the rewritten definition at the start of the library step confirms the list. It touches tasks 4 and 5, whose first action is that load.
 
 ---
 
@@ -98,7 +98,7 @@ Four claims are worth a sentence, because a criterion is claimed once and the wo
 - [ ] 5. Library work: ephemeral ids, a finding's location and subject, budgets, refusals and the diagram's own rows
   - Waits on task 2 merged in etalii.adp. Begins with the same search of the library on `develop` as task 4.
   - Files: `src/backend/EtAlii.Adp.Specification.Disl/Loading/DislSpecification.cs`, `Loading/DislMetamodel.cs`, `Loading/DislLoader.cs`, `Derivation/DislFinding.cs`, `Derivation/ConstraintEvaluator.cs`, `Derivation/GestureConstraintEvaluator.cs`, `Derivation/FormDerivation.cs`, `Expressions/DislCelLibrary.cs`, `Model/DislDiagram.cs`, `src/backend/EtAlii.Adp.Specification.Disl.Tests/ConstraintEvaluation.Tests.cs`, `FormDerivation.Tests.cs`, `EphemeralIds.Tests.cs` (new), `Budgets.Tests.cs` (new), `GestureRefusals.Tests.cs` (new)
-  - Start by loading the definition of task 2 and running each backend derivation this tool needs against it. The list of what is checked and not evaluated confirms the design's L3 to L7 and replaces them where they differ, and is put in the pull request. This is the load Requirement 9.2 asks for, under the recommended option of the design's amendment.
+  - Start by loading the definition of task 2 and running each backend derivation this tool needs against it. The list of what is checked and not evaluated confirms the design's L3 to L7 and replaces them where they differ, and is put in the pull request. This is the load Requirement 9.2 asks for, under the option of the design's amendment that the user ruled.
   - L3: `ephemeral` on an id rule with its `reason`, and the refusal of a placement of an ephemeral element with that reason.
   - L4: a constraint's `location` and `subject`, carried on `DislFinding`.
   - L5: `limits.budgets` with a `count` measure, `max`, `order` and `truncate`, the rule that a relation is kept only with both ends, and the CEL function `budget(id)` with `shown` and `total`, with the example of DISL 3.2.1 as a case.

@@ -12,7 +12,7 @@ The module ends as three classes that carry the conversion, and the host code Re
 - `SparqlQueryPlugin`: the FBL persistence plugin `net.etalii.adp.w3c.sparqlQuery`. It wraps `SparqlTokenizer` and `SparqlParser`, delivers the stored records with their spans, and refuses every plan.
 - `SparqlBody`: one `.rq` body opened through the module's binding, giving the plugin's reading and the DISL model built from it. It has no `Change` and no `Save`.
 
-**One point of the approved requirements is proposed for a small amendment**, in *Amendment proposed* below. It concerns Requirement 9.2 and changes no behaviour.
+**One point of the approved requirements was ruled a small amendment by the user in chat on 2026-10-11**, in *Amendments ruled* below. It concerns Requirement 9.2 and changes no behaviour.
 
 ## Steering Document Alignment
 
@@ -277,7 +277,7 @@ This design is written against the first.
 | 6 | Step 6; `Plan`; Error scenario 4; Testing Strategy (no writer) |
 | 7 | Steps 5 and 6; *Wire ids*; `SparqlSession`; *What waits* |
 | 8 | Steps 5 and 8; *What remains in the module* |
-| 9 | Step 4; *Library work*; *Amendment proposed* |
+| 9 | Step 4; *Library work*; *Amendments ruled* |
 | 10 | Step 7; *The client*; items C1 to C4 |
 | 11 | Step 8; *What waits*; *SparqlChrome* (the eighth gap); the order fixture of A11 |
 | 12 | Step 8; Testing Strategy (the fresh worktree) |
