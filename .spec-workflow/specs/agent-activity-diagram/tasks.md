@@ -14,7 +14,7 @@
 
 ## The definition, in etalii.adp
 
-- [ ] 1. Try the file shape against FBL and DISL
+- [x] 1. Try the file shape against FBL and DISL
   - File (etalii.adp): `definitions/diagrams/agent-activity-diagram.fbl` (draft), `specifications/fbl/fixtures/agent-activity/` (first fixture), a draft `agent-activity-diagram.dis` holding the metamodel only
   - Write the YAML binding for the file in the design (*The activity file*, *Data Models*) and run the repository's validator over it and one read fixture.
   - Settle, by the specifications' text and the validator: whether a relation can be derived from a reference attribute and drawn, with connect and disconnect mapped onto setting and clearing it (L8); how a placement and a group-state entry are identified when they carry no id key of their own; and whether a rule at `/` can bind `view.showArchived`.
@@ -24,7 +24,7 @@
   - _Leverage: `specifications/fbl/FBL-specification.md` sections 5 to 8, `definitions/designers/knowledge.fbl`, `definitions/diagrams/agent-behavior-modelling.dis` (its derived relation), `.github/scripts/validate-examples.py`_
   - _Requirements: 1.4_
 
-- [ ] 2. DISL 0.4
+- [x] 2. DISL 0.4
   - File (etalii.adp): `specifications/disl/DISL-specification.md`, `specifications/disl/disl.schema.json`, one worked example per construct beside them
   - Add, each named for what it does and none for this diagram: `groupBy` on a compartment with a collapse default per value (L1); how a declared collapse default and a stored state meet (L2); `persist` on a canvas filter (L3); `pin`, `unpin` and `unpinAll` as standard context entries, `pinned` on the `view` action, and "a drag pins" under `respect: "pinned"` (L4); `tiers` on `force` with the properties a result must have (L5); the `open` action, `itemLink`, and a relative path in `uri` (L6); `persistence.view.bind` (L7); and whatever task 1 showed L8 needs. List them under *Changes from 0.3*.
   - Waits on: 1.
@@ -33,7 +33,7 @@
   - _Leverage: DISL sections 6.9, 6.13.1, 7.3, 9.4, 10, 11.6 and Appendix D.2_
   - _Requirements: 1.2_
 
-- [ ] 3. The binding and its fixtures
+- [x] 3. The binding and its fixtures
   - File (etalii.adp): `definitions/diagrams/agent-activity-diagram.fbl`, `specifications/fbl/fixtures/agent-activity/`
   - Complete the binding `aad`: the five element lists, tasks and pull requests as nested entries, the references, the `view` part, the header, the empty-file template, `empty: remove` on optional keys, and `remove.cascade` from an element to its references and its view entries.
   - Fixtures: one read fixture covering every key; one per kind of edit (add, set, clear and remove for an element, a row, a reference, a placement, a group state and the switch), each asserting that comments, key order and untouched lines stay byte for byte.
@@ -43,7 +43,7 @@
   - _Leverage: `definitions/designers/knowledge.fbl`, the hype cycle graph's binding in this host_
   - _Requirements: 1.1_
 
-- [ ] 4. `agent-activity-diagram.dis`, `.md`, the schema and the Notion page
+- [-] 4. `agent-activity-diagram.dis`, `.md`, the schema and the Notion page
   - File (etalii.adp): `definitions/diagrams/agent-activity-diagram.dis`, `agent-activity-diagram.md`, `agent-activity-diagram.schema.json`; the tool's page in the Notion "Tools" database
   - Write the specification as the design outlines it (*The DISL specification*), with origin `etalii/agent-activity-diagram`, language id `net.etalii.adp.etalii.agent-activity-diagram` and extension `aad`.
   - Write the companion under its siblings' headings: what the diagram is for; the file in full with one complete example, enough to write one by hand; the reference layout algorithm with its numbers; how a host opens each kind of link; the instruction text for agents; the examples; what DISL 0.4 still cannot state; and the rule that these files win over this specification.
