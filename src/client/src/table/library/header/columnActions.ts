@@ -41,7 +41,7 @@ export function resizedWidth(start: number, dx: number): number {
 /** The order the menu shows its entries in, and where a line separates them. */
 const MENU_ORDER: readonly (readonly ColumnAction[])[] = [
   ["rename", "changeType", "options"],
-  ["filter", "sortAscending", "sortDescending", "group"],
+  ["filter", "sortAscending", "sortDescending", "group", "nest"],
   ["hide", "wrap"],
   ["insertLeft", "insertRight", "duplicate", "delete"],
 ];
@@ -50,6 +50,10 @@ const TITLE_STAYS = "The column that names a row is always there.";
 
 /** The setting a column names the other side of its two-way relation under, and a delete says what becomes of that side under. */
 export const OTHER_SIDE = "otherSide";
+
+/** The setting a column says under that its rows can be nested by it, and the one it says under that they are. */
+const NESTABLE = "nestable";
+const NESTS = "parent";
 
 export interface ColumnMenuHandlers {
   raise: (gesture: TableGesture) => void;
@@ -67,6 +71,11 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
   if (editOptions === undefined || (editor !== "option" && editor !== "options")) {
     offered.delete("options");
   }
+  // Only a column that says its rows can be nested by it has the entry that does so.
+  if (column.settings[NESTABLE] !== "true") {
+    offered.delete("nest");
+  }
+  const nests = column.settings[NESTS] === "true";
   const entry = (action: ColumnAction): ContextMenuItem => {
     switch (action) {
       case "rename":
@@ -112,6 +121,13 @@ export function columnMenuGroups(column: TableColumn, definition: TableDefinitio
           label: column.wraps ? "Do not wrap" : "Wrap text",
           icon: "mdi-wrap",
           onSelect: () => raise({ kind: "setColumnWrap", columnId: column.id, settings: { wrap: column.wraps ? "false" : "true" } }),
+        };
+      case "nest":
+        return {
+          id: action,
+          label: nests ? "Do not nest rows by this" : "Nest rows by this",
+          icon: "mdi-file-tree-outline",
+          onSelect: () => raise({ kind: "setColumnParent", columnId: column.id, settings: { parent: nests ? "false" : "true" } }),
         };
       case "insertLeft":
         return { id: action, label: "Insert left", icon: "mdi-table-column-plus-before", onSelect: () => raise({ kind: "addColumn", targetId: column.id, settings: { side: "left", type: defaultKind(definition) } }) };

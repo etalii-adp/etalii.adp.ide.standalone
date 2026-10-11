@@ -491,6 +491,28 @@ public sealed class KnowledgeRelationsTests : IDisposable
     }
 
     [Fact]
+    public async Task OnlyARelationThatCanBeTheParentRelation_SaysItsRowsCanBeNestedByIt()
+    {
+        // Arrange: a relation to the table itself that holds one row, one that holds several, and the example's relation to another table.
+        await using var table = Open();
+        await table.Edit(new TableGesture("addRelation", Values: ["Part of"], Settings: Settings(("target", KnowledgeRelations.Self), ("limit", "one"))));
+        await table.Edit(new TableGesture("addRelation", Values: ["Twinned with"], Settings: Settings(("target", KnowledgeRelations.Self))));
+        IReadOnlyDictionary<string, string> Of(string name) => table.Session.Baseline().Columns.Single(column => column.Name == name).Settings;
+
+        // Assert.
+        Assert.Equal("true", Of("Part of")["nestable"]);
+        Assert.DoesNotContain("nestable", Of("Twinned with").Keys);
+        Assert.DoesNotContain("nestable", table.Session.Baseline().Columns.Single(column => column.Id == "p5").Settings.Keys);
+        Assert.DoesNotContain("parent", Of("Part of").Keys);
+
+        // Act: made the parent relation, as the column's menu does.
+        await table.Edit(new TableGesture("setColumnParent", ColumnId: Property(table, "Part of").Id, Settings: Settings(("parent", "true"))));
+
+        // Assert.
+        Assert.Equal("true", Of("Part of")["parent"]);
+    }
+
+    [Fact]
     public async Task TheParentRelation_NestsRows_AndNeverMakesARowItsOwnAncestor()
     {
         // Arrange: a relation to the table itself that holds one row, and a new row at the end.

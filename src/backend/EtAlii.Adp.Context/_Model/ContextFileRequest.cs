@@ -20,13 +20,15 @@ namespace EtAlii.Adp.Context;
 /// <param name="Accepts">Whether the file at this full path may be chosen.</param>
 /// <param name="EmptyMessage">Shown in the tree's place when no file qualifies and nothing is pinned.</param>
 /// <param name="Pinned">Entries shown before the tree, in this order.</param>
+/// <param name="NameField">A text field shown beside the choice, whose value comes back as the submission's text; none when null.</param>
 public sealed record ContextFileRequest(
     string Title,
     string Icon,
     string ConfirmLabel,
     Func<string, bool> Accepts,
     string EmptyMessage,
-    IReadOnlyList<ContextPinnedFile>? Pinned = null)
+    IReadOnlyList<ContextPinnedFile>? Pinned = null,
+    ContextTextFieldRequest? NameField = null)
 {
     public IReadOnlyList<ContextPinnedFile> Pinned { get; } = Pinned ?? [];
 }

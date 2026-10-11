@@ -227,6 +227,27 @@ describe("columnMenuGroups", () => {
     expect(asked).toHaveBeenLastCalledWith({ kind: "deleteColumn", columnId: "p2" });
   });
 
+  it("offers nesting rows by a column only when the column says they can be, and says which way it goes", () => {
+    // Arrange.
+    const asked = vi.fn();
+    const offered: TableDefinition = { ...definition, columnActions: [...ALL_ACTIONS, "nest"] };
+    const nest = (settings: Record<string, string>) =>
+      columnMenuGroups(column("p2", "Part of", "text", { settings }), offered, { raise: asked, startRename }).flat().find((candidate) => candidate.id === "nest");
+
+    // Assert: not for a column that does not say so.
+    expect(nest({})).toBeUndefined();
+    expect(nest({ nestable: "true" })!.label).toBe("Nest rows by this");
+    expect(nest({ nestable: "true", parent: "true" })!.label).toBe("Do not nest rows by this");
+
+    // Act.
+    nest({ nestable: "true" })!.onSelect!();
+    nest({ nestable: "true", parent: "true" })!.onSelect!();
+
+    // Assert.
+    expect(asked).toHaveBeenNthCalledWith(1, { kind: "setColumnParent", columnId: "p2", settings: { parent: "true" } });
+    expect(asked).toHaveBeenNthCalledWith(2, { kind: "setColumnParent", columnId: "p2", settings: { parent: "false" } });
+  });
+
   it("separates its entries into the four groups, leaving out a group with nothing offered", () => {
     expect(columnMenuGroups(column("p2", "Population", "number"), definition, { raise, startRename }).map((group) => group.length)).toEqual([2, 4, 2, 4]);
     expect(columnMenuGroups(column("p2", "Population", "number"), { ...definition, columnActions: ["filter", "delete"] }, { raise, startRename }).map((group) => group.map((item) => item.id))).toEqual([["filter"], ["delete"]]);
@@ -246,6 +267,35 @@ describe("adding a column", () => {
     // Assert.
     expect(onGesture).toHaveBeenCalledTimes(1);
     expect(onGesture).toHaveBeenCalledWith({ kind: "addColumn", settings: { type: "number" } });
+  });
+
+  it("asks for the name of the column that was added, as soon as it is there", async () => {
+    // Arrange.
+    const onGesture = vi.fn(async (_gesture: TableGesture) => "");
+    const before = table();
+    const { rerender } = render(<TableSurface model={before} definition={definition} onGesture={onGesture} />);
+
+    // Act: a column is asked for, and the model comes back with it.
+    fireEvent.click(screen.getByRole("button", { name: "Add a property" }));
+    await choose("Number");
+    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+    const structure = { title: before.title, columns: [...before.columns, column("p9", "Number", "number")], views: [], settings: before.settings, rowCount: 0, readOnlyReason: "" };
+    await act(async () => {
+      rerender(<TableSurface model={applyTableEvent(before, { kind: "structure", structure })} definition={definition} onGesture={onGesture} />);
+    });
+
+    // Assert: the new column's header is its name field, holding the name it was given; no other header is.
+    const field = screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
+    expect(field.value).toBe("Number");
+    expect(field.closest("[data-column-id]")!.getAttribute("data-column-id")).toBe("p9");
+
+    // Act: named.
+    fireEvent.change(field, { target: { value: "People" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    // Assert.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "renameColumn", columnId: "p9", values: ["People"] });
+    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
   });
 
   it("is not a column of the grid", () => {

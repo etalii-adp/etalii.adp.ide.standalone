@@ -501,6 +501,40 @@ describe("grouping and which properties are shown", () => {
     ]);
   });
 
+  it("moves one group up or down and hides it, from its heading", () => {
+    // Arrange: a grouped view with one heading in sight.
+    const { onGesture } = renderTable(table({ groupBy: "p3" }, [line("capital", { isGroup: true, label: "Capital", count: 2 })]));
+
+    // Act.
+    fireEvent.click(screen.getByRole("button", { name: "Move Capital up" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move Capital down" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide Capital" }));
+
+    // Assert: one gesture each, naming the group by its key.
+    expect(onGesture.mock.calls.map((call) => call[0])).toEqual([
+      { kind: "moveGroup", targetId: "capital", settings: { direction: "up" } },
+      { kind: "moveGroup", targetId: "capital", settings: { direction: "down" } },
+      { kind: "hideGroup", targetId: "capital" },
+    ]);
+  });
+
+  it("offers to show the hidden groups again only when the view hides some, and says how many", () => {
+    // Arrange: nothing hidden.
+    const { onGesture } = renderTable(table({ groupBy: "p3" }));
+    open("Group");
+    expect(screen.queryByRole("button", { name: /hidden group/ })).toBeNull();
+    cleanup();
+
+    // Act: two hidden.
+    const hiding = renderTable(table({ groupBy: "p3", settings: { hiddenGroups: "2" } }));
+    open("Group");
+    fireEvent.click(screen.getByRole("button", { name: "Show 2 hidden groups" }));
+
+    // Assert.
+    expect(onGesture).not.toHaveBeenCalled();
+    expect(hiding.onGesture).toHaveBeenCalledWith({ kind: "showGroups" });
+  });
+
   it("shows and hides a property, and never the one that names a row", () => {
     // Arrange.
     const { onGesture } = renderTable();

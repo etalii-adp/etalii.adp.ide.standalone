@@ -123,6 +123,11 @@ internal static partial class KnowledgeEdits
             "setHideEmptyGroups" => KnowledgeEdit.Of(Set(view.Id, ("hideEmptyGroups", Flag(gesture, "hide") ? true : null))),
             "toggleGroup" => Collapse(view, gesture.TargetId, Flag(gesture, "collapsed")),
             "toggleRow" => Collapse(view, gesture.RowId, Flag(gesture, "collapsed")),
+            "hideGroup" => gesture.TargetId.Length == 0 || view.HiddenGroups.Contains(gesture.TargetId)
+                ? KnowledgeEdit.Nothing
+                : KnowledgeEdit.Of(new ModelChange.Add("GroupSetting", null, Attributes(("key", gesture.TargetId)), view.Id, Slot: "hiddenGroups")),
+            "showGroups" => new KnowledgeEdit([.. view.HiddenGroups.Select(key => (ModelChange)new ModelChange.Remove($"{view.Id}/hiddenGroups/{key}"))]),
+            "moveGroup" => MoveGroup(table, view, gesture),
 
             "addFilter" => AddFilter(table, view, gesture, besideItsRule),
             "addFilterGroup" => AddFilterGroup(view, gesture, besideItsRule),
@@ -1056,6 +1061,46 @@ internal static partial class KnowledgeEdits
             .Concat(view.HiddenGroups.Select(key => $"{view.Id}/hiddenGroups/{key}"))
             .Concat(view.Collapsed.Select(key => $"{view.Id}/collapsed/{key}"))
             .Select(id => (ModelChange)new ModelChange.Remove(id));
+
+    /// <summary>
+    /// Moves a group one place up or down among the groups that are shown. The view's order names
+    /// every group from then on: those it did not name yet are added in the order they stood in.
+    /// </summary>
+    private static KnowledgeEdit MoveGroup(KnowledgeTable table, KnowledgeView view, TableGesture gesture)
+    {
+        if (table.Properties.FirstOrDefault(candidate => candidate.Id == view.GroupBy) is not { } grouped)
+        {
+            return Refused("This view is not grouped.");
+        }
+
+        // The groups there are, as the view shows them: an option each, unticked and ticked, or a related row each; then the rows without a value.
+        List<string> natural = grouped.ValueType switch
+        {
+            "selection" or "multipleSelection" => [.. grouped.Options.Select(option => option.Id)],
+            "checkbox" => ["false", "true"],
+            _ => [.. table.Rows.SelectMany(row => row.Cells.Where(cell => cell.PropertyId == grouped.Id && cell.Key == KeyOf(grouped.ValueType)).SelectMany(cell => cell.Values)).Distinct()],
+        };
+        if (grouped.ValueType != "checkbox")
+        {
+            natural.Add(KnowledgeViewEngine.NoValue);
+        }
+
+        List<string> missing = [.. natural.Where(key => !view.GroupOrder.Contains(key))];
+        List<string> order = [.. view.GroupOrder, .. missing];
+        List<string> shown = [.. order.Where(key => natural.Contains(key) && !view.HiddenGroups.Contains(key))];
+        var at = shown.IndexOf(gesture.TargetId);
+        var beside = at + (gesture.Settings.GetValueOrDefault("direction") == "up" ? -1 : 1);
+        if (at < 0 || beside < 0 || beside >= shown.Count)
+        {
+            return KnowledgeEdit.Nothing;
+        }
+
+        return new KnowledgeEdit(
+        [
+            .. missing.Select(key => (ModelChange)new ModelChange.Add("GroupSetting", null, Attributes(("key", key)), view.Id, Slot: "groupOrder")),
+            .. MoveTo($"{view.Id}/groupOrder/{gesture.TargetId}", view.Id, [.. order.Select(key => $"{view.Id}/groupOrder/{key}")], order.IndexOf(shown[beside])).Changes,
+        ]);
+    }
 
     private static KnowledgeEdit Collapse(KnowledgeView view, string key, bool collapsed)
     {

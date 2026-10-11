@@ -440,6 +440,11 @@ public sealed partial class ContextService
             ConfirmLabel = request.ConfirmLabel,
             EmptyMessage = request.EmptyMessage,
         };
+        if (request.NameField is { } nameField)
+        {
+            prompt.NameField = new ContextTextField { Label = nameField.Label, InitialValue = nameField.InitialValue };
+        }
+
         if (rootPath.Length == 0)
         {
             // No project to list: the dialog says so with its empty message.

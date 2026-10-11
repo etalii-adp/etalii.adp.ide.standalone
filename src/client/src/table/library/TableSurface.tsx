@@ -16,6 +16,9 @@ import { ViewBar } from "./views/ViewBar";
 import { ViewTabs } from "./views/ViewTabs";
 import "./table.css";
 
+/** A finding's severities, least serious first. */
+const SEVERITY_ORDER: readonly string[] = ["info", "warning", "error"];
+
 export interface TableSurfaceProps extends TableEvents {
   model: TableModel;
   definition: TableDefinition;
@@ -138,11 +141,36 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
     setActive(to);
   }, []);
 
+  // The columns there were when one was asked for, until it arrives: the column that was not
+  // among them is the new one, and its name is asked for at once.
+  const columnsRef = useRef(model.columns);
+  columnsRef.current = model.columns;
+  const columnsBeforeAdd = useRef<ReadonlySet<string> | null>(null);
+  const [naming, setNaming] = useState<string | null>(null);
+  const namingStarted = useCallback(() => setNaming(null), []);
+  useEffect(() => {
+    const before = columnsBeforeAdd.current;
+    const added = before === null ? undefined : model.columns.find((column) => !before.has(column.id));
+    if (added !== undefined) {
+      columnsBeforeAdd.current = null;
+      setNaming(added.id);
+    }
+  }, [model.columns]);
+
   /** Raises a gesture made outside an editor, and shows a refusal on the table's own line. */
   const raise = useCallback(
     (gesture: TableGesture) => {
       setRefusal("");
-      void onGesture?.(gesture).then(setRefusal);
+      if (gesture.kind === "addColumn") {
+        columnsBeforeAdd.current = new Set(columnsRef.current.map((column) => column.id));
+      }
+      void onGesture?.(gesture).then((answer) => {
+        if (answer !== "" && gesture.kind === "addColumn") {
+          // Refused: no column is coming.
+          columnsBeforeAdd.current = null;
+        }
+        setRefusal(answer);
+      });
     },
     [onGesture],
   );
@@ -259,6 +287,24 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
     resizing?.columnId === column.id ? resizing.width : column.width > 0 ? column.width : (definition.columnWidth ?? DEFAULT_COLUMN_WIDTH),
   );
   const editable = model.readOnlyReason === "" && onGesture !== undefined;
+  // What the table is told about single cells, by cell: drawn on the cell it is about.
+  const cellFindings = useMemo(() => {
+    const byCell = new Map<string, { severity: string; messages: string[] }>();
+    for (const finding of model.findings) {
+      if (finding.rowId === "" || finding.columnId === "") {
+        continue;
+      }
+      const key = `${finding.rowId}/${finding.columnId}`;
+      const held = byCell.get(key) ?? { severity: finding.severity, messages: [] };
+      held.messages.push(finding.message);
+      // The most serious of a cell's findings is the one it is drawn as.
+      if (SEVERITY_ORDER.indexOf(finding.severity) > SEVERITY_ORDER.indexOf(held.severity)) {
+        held.severity = finding.severity;
+      }
+      byCell.set(key, held);
+    }
+    return byCell;
+  }, [model.findings]);
   const rowMenuOffered = editable && (definition.rowActions ?? []).includes("delete");
   const template = widths.map((width) => `${width}px`).join(" ");
   const rowStyle = { gridTemplateColumns: template, height: rowHeight };
@@ -294,6 +340,8 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
             editable={editable}
             raise={raise}
             onResizePreview={onResizePreview}
+            nameAtOnce={naming === column.id}
+            onNamingStarted={namingStarted}
           />
         ))}
         {editable && <AddColumn definition={definition} raise={raise} />}
@@ -348,11 +396,13 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
               const kind = kindOf(definition, column.kind);
               const isActive = active?.row === index && active.column === columnIndex;
               const editor = isActive && editing !== null && kind.editor !== "checkbox" ? kind.editor : undefined;
+              const told = cellFindings.get(`${row.id}/${column.id}`);
               const classes = [
                 "table-cell",
                 columnIndex === 0 ? "table-cell-first" : "",
                 column.wraps ? "table-cell-wraps" : "",
                 cell?.pending ? "table-cell-pending" : "",
+                told !== undefined ? `table-cell-finding table-cell-finding-${told.severity}` : "",
                 isActive ? "table-cell-active" : "",
                 editor !== undefined ? "table-cell-editing" : "",
               ]
@@ -368,6 +418,8 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
                   aria-readonly={kind.editor === undefined || model.readOnlyReason !== "" ? true : undefined}
                   data-column-id={column.id}
                   data-cell={`${index}:${columnIndex}`}
+                  title={told?.messages.join("\n")}
+                  aria-invalid={told !== undefined && told.severity !== "info" ? true : undefined}
                   tabIndex={entry.row === index && entry.column === columnIndex ? 0 : -1}
                   style={column.isTitle && row.depth > 0 ? { paddingInlineStart: CELL_PADDING + row.depth * INDENT } : undefined}
                   onFocus={() => {

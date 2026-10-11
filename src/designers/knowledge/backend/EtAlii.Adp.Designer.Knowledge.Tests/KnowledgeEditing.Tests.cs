@@ -727,7 +727,8 @@ public sealed class KnowledgeEditingTests : IDisposable
             // Assert.
             Assert.True(settled.Written, $"{gesture.Kind}: {settled.Error}");
             var disk = table.OnDisk();
-            Assert.Equal(KnowledgeFiles.Describe(disk), KnowledgeFiles.Describe(shown));
+            (string held, string seen) = (KnowledgeFiles.Describe(disk), KnowledgeFiles.Describe(shown));
+            Assert.True(held == seen, $"After {gesture.Kind} the file and what was shown differ.{Environment.NewLine}File:{Environment.NewLine}{held}{Environment.NewLine}Shown:{Environment.NewLine}{seen}");
         }
     }
 }

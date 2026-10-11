@@ -7,6 +7,9 @@ export function groupableColumns(columns: readonly TableColumn[], definition: Ta
   return columns.filter((column) => kindOf(definition, column.kind).groupable === true);
 }
 
+/** The setting a view says under how many of its groups are hidden. */
+const HIDDEN_GROUPS = "hiddenGroups";
+
 export interface GroupEditorProps {
   settings: TableViewSettings;
   columns: readonly TableColumn[];
@@ -15,11 +18,13 @@ export interface GroupEditorProps {
 }
 
 /**
- * The view's grouping, open for editing: which property its rows are grouped by, if any, and
- * whether a group without rows is left out.
+ * The view's grouping, open for editing: which property its rows are grouped by, if any,
+ * whether a group without rows is left out, and the groups hidden one by one shown again.
  */
 export function GroupEditor({ settings, columns, definition, raise }: GroupEditorProps) {
   const offered = groupableColumns(columns, definition);
+  // How many groups the view hides, as its settings say it; nothing said is none.
+  const hidden = Number(settings.settings[HIDDEN_GROUPS] ?? "0") || 0;
   return (
     <div className="table-group-editor" role="group" aria-label="Group">
       <label>
@@ -48,6 +53,12 @@ export function GroupEditor({ settings, columns, definition, raise }: GroupEdito
         />
         <span>Hide empty groups</span>
       </label>
+      {hidden > 0 && (
+        // Groups hidden one by one are brought back together: the view does not say which they were by name.
+        <button type="button" className="table-group-show-hidden" onClick={() => raise({ kind: "showGroups" })}>
+          {hidden === 1 ? "Show 1 hidden group" : `Show ${hidden} hidden groups`}
+        </button>
+      )}
     </div>
   );
 }

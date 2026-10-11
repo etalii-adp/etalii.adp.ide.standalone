@@ -75,7 +75,9 @@ internal static class KnowledgeTableMapper
             [.. view.Sorts.Select(sort => new TableSort(sort.PropertyId, sort.Descending))],
             view.Filter.Items.Count == 0 ? null : Filter(view.Filter),
             view.GroupBy,
-            view.HideEmptyGroups);
+            view.HideEmptyGroups,
+            // How many groups the view hides: what there is to show again.
+            view.HiddenGroups.Count == 0 ? null : new Dictionary<string, string> { ["hiddenGroups"] = view.HiddenGroups.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) });
 
     /// <summary>
     /// One row as a line of the view, holding the cells that have a value. A cell among
@@ -140,6 +142,12 @@ internal static class KnowledgeTableMapper
             if (property.IsParent)
             {
                 settings["parent"] = "true";
+            }
+
+            // A relation to the table itself that holds one row can be the one its rows are nested by.
+            if (property is { TargetFile: KnowledgeRelations.Self or "", Limit: "one", IsComputed: false })
+            {
+                settings["nestable"] = "true";
             }
 
             // The other side of a two-way relation, by its name: deleting this side asks what becomes of it.

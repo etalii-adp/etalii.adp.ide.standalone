@@ -172,6 +172,33 @@ public sealed class KnowledgeContextActionsTests : IDisposable
     }
 
     [Fact]
+    public async Task ARelationShownInBothTables_AsksForItsNameInTheOtherTable_AndIsMadeUnderIt()
+    {
+        // Arrange.
+        var registration = Registered();
+
+        // Act: asked for, both ways.
+        var twoWay = Assert.IsType<ContextExecutionRequiresFile>(await _provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, TestContext.Current.CancellationToken)).Request;
+        var oneWay = Assert.IsType<ContextExecutionRequiresFile>(await _provider.ExecuteAsync(Target(registration), KnowledgeContextActionProvider.ManyOneWay, TestContext.Current.CancellationToken)).Request;
+
+        // Assert: only the relation shown in both tables has a name to give, and it starts as this table's name.
+        Assert.Equal(new ContextTextFieldRequest(KnowledgeContextActionProvider.OtherSideLabel, "Cities"), twoWay.NameField);
+        Assert.Null(oneWay.NameField);
+
+        // What is typed there is judged as a name.
+        Assert.True((await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, "Seats", TestContext.Current.CancellationToken)).Valid);
+        var empty = await _provider.ValidateAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, "  ", TestContext.Current.CancellationToken);
+        Assert.Equal((false, KnowledgeContextActionProvider.OtherSideNeedsName), (empty.Valid, empty.Reason));
+
+        // Act: made, with a name given.
+        var committed = await _provider.CommitAsync(Target(registration), KnowledgeContextActionProvider.ManyTwoWay, KnowledgeFiles.Related, " Seats ", TestContext.Current.CancellationToken);
+
+        // Assert: the other table has the property under that name.
+        Assert.True(committed.Completed, committed.Error);
+        Assert.Contains(KnowledgeDocumentStore.Read(Provinces).Body!.Table.Properties, property => property is { Name: "Seats", IsComputed: true });
+    }
+
+    [Fact]
     public async Task ARelationToTheTableItself_IsMadeByChoosingThisTable()
     {
         // Arrange.

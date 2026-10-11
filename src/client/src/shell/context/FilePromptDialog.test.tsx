@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import { ContextPromptSchema, FileDialogPromptSchema, type ContextOption, type FileDialogPrompt } from "../../generated/context_pb";
+import { ContextPromptSchema, ContextTextFieldSchema, FileDialogPromptSchema, type ContextOption, type FileDialogPrompt } from "../../generated/context_pb";
 import { ContextPromptHost } from "./ContextPromptHost";
 import { FilePromptDialog } from "./FilePromptDialog";
 
@@ -93,6 +93,25 @@ describe("FilePromptDialog", () => {
 
     // Assert.
     expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("asks for a name beside the file when its prompt has a name field, and answers with both", async () => {
+    // Arrange: the name starts as the prompt gives it.
+    const prompt = filePrompt();
+    prompt.nameField = create(ContextTextFieldSchema, { label: "Name in the other table", initialValue: "Cities" });
+    const { onSubmit } = renderDialog(prompt);
+    const field = screen.getByRole("textbox", { name: "Name in the other table" }) as HTMLInputElement;
+    expect(field.value).toBe("Cities");
+
+    // Act: a file is chosen, which leaves the name as it is, and the choice is confirmed.
+    fireEvent.click(row("cities.yaml"));
+    expect(field.value).toBe("Cities");
+    await act(async () => {
+      fireEvent.click(confirmButton());
+    });
+
+    // Assert.
+    expect(onSubmit).toHaveBeenCalledWith("cities.yaml", "Cities");
   });
 
   it("says so when there is nothing to choose", () => {

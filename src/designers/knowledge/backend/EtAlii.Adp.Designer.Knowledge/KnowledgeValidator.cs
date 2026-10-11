@@ -35,6 +35,7 @@ internal static class KnowledgeValidator
     public const string MissingId = "knowledge.missing-id";
     public const string UnresolvedTarget = "knowledge.unresolved-target";
     public const string UnknownKey = "knowledge.unknown-key";
+    public const string NewerVersion = "knowledge.newer-version";
     public const string UnresolvedRow = "knowledge.unresolved-row";
 
     /// <summary>The element types whose entries carry an id of their own in the file.</summary>

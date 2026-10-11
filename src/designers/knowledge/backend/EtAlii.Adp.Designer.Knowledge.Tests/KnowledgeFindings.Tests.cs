@@ -202,6 +202,24 @@ public sealed class KnowledgeFindingsTests : IDisposable
     }
 
     [Fact]
+    public async Task AFileOfAnotherVersion_IsToldSoInOneFinding_AndIsNotChanged()
+    {
+        // Arrange.
+        var path = Write(Changed("ded: \"0.1\"", "ded: \"9.0\""));
+        var before = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
+
+        // Act.
+        await using var session = new KnowledgeSession(path);
+        var baseline = session.Baseline();
+
+        // Assert: the one finding the designer's definition names for it, and a table nobody can edit.
+        var finding = Assert.Single(baseline.Findings);
+        Assert.Equal((KnowledgeValidator.NewerVersion, TableFindingSeverity.Warning, KnowledgeBody.AnotherVersion), (finding.Code, finding.Severity, finding.Message));
+        Assert.NotEqual("", baseline.ReadOnlyReason);
+        Assert.Equal(before, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void ATableWithoutAView_IsShownAsIfItHadOne_AndSaysSo()
     {
         // Arrange.
