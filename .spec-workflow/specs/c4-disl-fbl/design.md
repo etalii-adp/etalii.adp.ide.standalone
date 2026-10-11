@@ -172,9 +172,9 @@ Client library, in `src/client/src/canvas/library`:
 
 One JSON file, `Parity/c4.transcript.json`, shaped as the timeline's: `module`, `generator`, `regenerate`, then per origin the `toolbox`, then `documents`. Per document: `findings` once, and per view `menus` (every element, every drawn line, the empty canvas, an unknown id), `rows`, `payloads`, and `edits` (every command once, with each step's answer and the hunks it made to the body and to the sidecar). A document whose bytes equal an earlier one is written as `sameAs` it. Nothing an edit makes is random, so nothing is masked.
 
-## Amendment proposed
+## Amendments ruled
 
-**1. Finding A5 and Requirement 10.1: a derived relation's `key`.** A5 says "Derived relations are implemented". They are, without grouping: `DislModelBuilder.DerivedRelations` answers a declaration that has `key` with a finding and derives nothing. Requirement 3.4 needs it, because several relationships that land on one drawn pair are one line that keeps the first one's line. The options, to be put to the user as a selection:
+**1. Finding A5 and Requirement 10.1: a derived relation's `key`.** A5 says "Derived relations are implemented". They are, without grouping: `DislModelBuilder.DerivedRelations` answers a declaration that has `key` with a finding and derives nothing. Requirement 3.4 needs it, because several relationships that land on one drawn pair are one line that keeps the first one's line. The options, of which the user ruled the first in chat on 2026-10-11:
 
 - **Add "a derived relation's `key`" to the list of Requirement 10.1 and correct the last sentence of A5** (recommended: it is a count and a sentence, the work is library work of the kind 10.1 already holds, and this design lists it as L6).
 - Leave 10.1 as it is and keep the merge in `C4ElementMapper`, named as standing in for a runtime gap. Requirement 3.4 is then met for the lines that are not merged only.
@@ -182,7 +182,7 @@ One JSON file, `Parity/c4.transcript.json`, shaped as the timeline's: `module`, 
 
 This design is written against the first.
 
-**2. Requirement 2.2 under the default of Q5: the binding a definition names.** Requirement 2.2 has each definition name the module's binding by URL. Requirement 4.1, which creates that file, waits with the rest of Requirement 4. Between the two stages the six definitions would name a file that is not there. The options:
+**2. Requirement 2.2 under the default of Q5: the binding a definition names.** Requirement 2.2 has each definition name the module's binding by URL. Requirement 4.1, which creates that file, waits with the rest of Requirement 4. Between the two stages the six definitions would name a file that is not there. The options, of which the user ruled the first in chat on 2026-10-11:
 
 - **The module's binding is committed in step 4, in the state FBL 0.2 can express** (findings B1, B2, B8, B10, B11 and B23 repaired, none of the six keys the appendix marks as not FBL 0.2), embedded, held by a test that loads it without an error, and on no reading path (recommended: the definitions then name a real file, and the second stage starts from a binding that already loads).
 - The definitions name the URL and the file arrives with the second stage. Nothing here resolves the URL, so nothing fails; a reader of the definition finds a dead link.
