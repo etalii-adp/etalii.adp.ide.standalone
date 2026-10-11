@@ -76,3 +76,36 @@ public class CelStringsTests
         Assert.Equal(-1L, Evaluate.Expression("[1, 2].indexOf(3)"));
     }
 }
+
+/// <summary>
+/// A <c>matches</c> that cannot finish is an error value, like every other failed call. A match that
+/// ran past its time bound, and a pattern .NET cannot parse, escaped as exceptions instead, out of
+/// <see cref="CelProgram.Evaluate(IReadOnlyDictionary{string, object?})"/> and into its caller.
+/// </summary>
+public class CelMatchesFailureTests
+{
+    [Fact]
+    public void AMatchThatRunsPastItsTimeBound_IsAnError()
+    {
+        // Arrange: nested quantifiers backtrack exponentially on a near miss.
+        var variables = new Dictionary<string, object?> { ["text"] = new string('a', 40) + "!" };
+
+        // Act.
+        var value = Evaluate.Expression("text.matches('^(a+)+$')", variables);
+
+        // Assert.
+        var error = Assert.IsType<CelError>(value);
+        Assert.Contains("matches()", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void APatternThatDoesNotParse_IsAnError()
+    {
+        // Act.
+        var value = Evaluate.Expression("'abc'.matches('(')");
+
+        // Assert.
+        var error = Assert.IsType<CelError>(value);
+        Assert.Contains("matches()", error.Message, StringComparison.Ordinal);
+    }
+}

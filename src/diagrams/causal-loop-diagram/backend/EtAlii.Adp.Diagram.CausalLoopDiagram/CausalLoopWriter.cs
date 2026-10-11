@@ -36,6 +36,9 @@ public static class CausalLoopWriter
     /// <summary>A name the format cannot round-trip.</summary>
     public const string UnusableName = "A name needs at least one character and no whitespace, because a statement is read as words on one line.";
 
+    /// <summary>A label or loop name the format cannot round-trip: it is written between quotes and has no escape for one.</summary>
+    public const string UnusableText = "A label or loop name cannot hold a double quote, because it is written between double quotes.";
+
     // ---- variables -------------------------------------------------------------------------
 
     /// <summary>
@@ -198,6 +201,11 @@ public static class CausalLoopWriter
             return AlreadyDeclared;
         }
 
+        if (!IsUsableText(label))
+        {
+            return UnusableText;
+        }
+
         document.Insert(AfterLast(document, model.Variables.Select(v => v.Lines)), [VariableStatement(id, label)]);
         return "";
     }
@@ -279,6 +287,11 @@ public static class CausalLoopWriter
             return NoSuchVariable;
         }
 
+        if (!IsUsableText(label))
+        {
+            return UnusableText;
+        }
+
         document.Replace(variable.Lines, [VariableStatement(id, label)]);
         return "";
     }
@@ -358,7 +371,7 @@ public static class CausalLoopWriter
     /// <summary>Sets a link's label.</summary>
     public static string SetLinkLabel(
         CausalLoopDocument document, CausalLoopModel model, string from, string to, string label) =>
-        Rewrite(document, model, from, to, link => link with { Label = label });
+        IsUsableText(label) ? Rewrite(document, model, from, to, link => link with { Label = label }) : UnusableText;
 
     /// <summary>Withdraws a link. Loops through it are left alone: a loop is a claim of its own.</summary>
     public static string RemoveLink(CausalLoopDocument document, CausalLoopModel model, string from, string to)
@@ -396,6 +409,11 @@ public static class CausalLoopWriter
             return "A loop of that identifier is already stated in this diagram.";
         }
 
+        if (!IsUsableText(name))
+        {
+            return UnusableText;
+        }
+
         if (variables.Count < 1)
         {
             return "A loop runs through at least one variable.";
@@ -413,7 +431,7 @@ public static class CausalLoopWriter
 
     /// <summary>Renames a loop, without touching what it runs through.</summary>
     public static string SetLoopName(CausalLoopDocument document, CausalLoopModel model, string identifier, string name) =>
-        RewriteLoop(document, model, identifier, loop => loop with { Name = name });
+        IsUsableText(name) ? RewriteLoop(document, model, identifier, loop => loop with { Name = name }) : UnusableText;
 
     /// <summary>Restates a loop's identifier, without touching what it runs through.</summary>
     /// <remarks>
@@ -580,4 +598,6 @@ public static class CausalLoopWriter
     /// <summary>A name the line-oriented format can round-trip: one word, at least one character.</summary>
     private static bool IsUsableName(string name) =>
         name.Length > 0 && !name.Any(char.IsWhiteSpace) && !name.Contains('"', StringComparison.Ordinal);
+
+    private static bool IsUsableText(string text) => !text.Contains('"', StringComparison.Ordinal);
 }

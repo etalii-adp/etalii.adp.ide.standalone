@@ -247,6 +247,7 @@ public static class LineSplice
             value.EndsWith(' ') ||
             value.StartsWith('"') ||
             value.StartsWith('\'') ||
+            StartsWithIndicator(value) ||
             value.Contains('\n', StringComparison.Ordinal) ||
             value.Contains('\r', StringComparison.Ordinal);
 
@@ -262,4 +263,8 @@ public static class LineSplice
             .Replace("\n", "\\n", StringComparison.Ordinal);
         return $"\"{escaped}\"";
     }
+
+    // A plain scalar may not begin with one of YAML's indicators: "[x] y" would be read as a flow
+    // sequence, "&x" as an anchor and "*x" as an alias. A dash, a hash, a colon and the quotes are handled above.
+    private static bool StartsWithIndicator(string value) => "[]{}&*!|>%@`?,".Contains(value[0], StringComparison.Ordinal);
 }

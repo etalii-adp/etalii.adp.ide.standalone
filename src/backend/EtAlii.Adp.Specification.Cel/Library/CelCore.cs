@@ -47,8 +47,23 @@ public static class CelCore
         _ => throw new CelException("size() needs a string, a list or a map."),
     };
 
-    private static bool Matches(object? text, object? pattern) =>
-        Regex.IsMatch(CelValues.AsString(text), RegexSubset.ToDotNet(CelValues.AsString(pattern), false), RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+    // A pattern that does not parse, or a match past its time bound, is an error value like any failed call:
+    // CelProgram.Evaluate turns only a CelException into one, so anything else would reach its caller.
+    private static bool Matches(object? text, object? pattern)
+    {
+        try
+        {
+            return Regex.IsMatch(CelValues.AsString(text), RegexSubset.ToDotNet(CelValues.AsString(pattern), false), RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            throw new CelException("matches() took longer than its time bound.");
+        }
+        catch (ArgumentException e)
+        {
+            throw new CelException($"matches() cannot use its pattern: {e.Message}");
+        }
+    }
 
     private static long Int(object? value) => value switch
     {
