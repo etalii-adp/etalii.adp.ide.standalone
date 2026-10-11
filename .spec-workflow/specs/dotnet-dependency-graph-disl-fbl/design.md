@@ -155,13 +155,13 @@ Values are handed over as the builder types them: a list for `targetFrameworks` 
 
 Unchanged in shape. Step 1 adds documents; step 9 changes the new-document entry. Sources, watch paths and the registration's bytes are not in the transcript and are held by tests of their own.
 
-## Amendment proposed
+## Amendments ruled
 
 **The requirement.** Q4's default makes a new document a `.slnx`, and the appendix puts `.slnx` first in `claims.extensions`, "the reverse of the definition's primary and alternate today". The Reliability requirement says "No solution that opens today opens differently."
 
 **The evidence.** Core creates a new sibling as `baseName + definition.Extension` and writes a registration with no `body:` header. `DiagramFilePair.ResolveSibling` derives a header-less registration's body from `definition.Extension` alone; `DiagramDefinition` says of the alternate extension that "it does not derive registration siblings". So today a header-less registration opens `X.sln` and never `X.slnx`. Making `.slnx` the primary reverses that: a header-less registration beside a lone `X.sln` stops opening, and beside `Both.sln` and `Both.slnx` it opens the other file. The fixture of Requirement 1.1 for finding B11 will show both in step 1.
 
-**The options**, to be put to the user as a selection before the tasks card:
+**The options**, put to the user as a selection. **Ruled by the user in chat, 2026-10-11: the first.**
 
 - **`.slnx` becomes the primary, and core's sibling derivation falls back to the alternate extension when the primary's file does not exist** (recommended). It is FBL 8.2's rule ("the first that exists, in the order of `claims.extensions`"), it keeps the appendix as drafted, and the only opening that changes is the header-less registration beside both files, which is named as a Q4 change. It costs a change in `EtAlii.Adp.Hierarchy` that the RDF tools' `.nt` alternate also gains.
 - **`.sln` stays the primary and the new document alone is `.slnx`.** Nothing that opens today changes. It costs two core changes (a new-document extension on `DiagramDefinition`, and a `body:` header on a created registration) and `claims.extensions` in today's order.
