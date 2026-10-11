@@ -182,11 +182,11 @@ Three points the requirements left to the design:
 
 One JSON file, `Parity/sparql.transcript.json`, shaped as the timeline's: `module`, `generator`, `regenerate`, `documents`. Per document: `payloads` with positions, `rows` for every element and for an unknown id, `selection`, `findings`, and `gestures`: the scripted sequence of Requirement 1.1, each step with its answer, the registration's bytes after it, and `bodyUnchanged`, the comparison of the `.rq` bytes before and after (Requirement 1.4).
 
-## Amendment proposed
+## Amendments ruled
 
 Requirement 9.2 says the design lists what else of finding A5 the backend derivations need "from a load of the rewritten definition". The rewritten definition is written at step 2 and does not exist when this design is approved, so no load can be made now. The list above (L3 to L7) is a reading of the draft and of the requirements' appendix against the library.
 
-The amendment, to be put to the user as a selection before the tasks card:
+The amendment was put to the user as a selection. **Ruled by the user in chat, 2026-10-11: the first option.** The options were:
 
 - **9.2 reads "the design lists them from a reading, and a load of the rewritten definition at the start of the library step confirms the list; the loader's output replaces it where they differ"** (recommended: it is what the causal loop design does, and it keeps the design ahead of the etalii.adp pull request).
 - The requirement stands, and the definition is rewritten and loaded before this design is approved.

@@ -14,7 +14,7 @@ One Developer owns this specification, per CLAUDE.md's one-owner-per-specificati
 - **Task 3 waits on task 1 only** and can be done while task 2 is in review.
 - **No task waits on a language change.** The seven gaps of the requirements' section C and the eighth of `SparqlChrome` are reproduced as today's behaviour and recorded (task 11); the three changes of Q3 and the four defects of Q4 are reproduced with their fixtures and raised afterwards, outside this specification. A binding's `args` for a plugin waits on a second tool that needs it and is not built here.
 
-**This document is written against the recommended option of each amendment the design proposes; a ruling that differs is a small amendment to the tasks named.** The design proposes one: Requirement 9.2 reads that the design lists the library items from a reading and a load of the rewritten definition at the start of the library step confirms the list. It touches tasks 4 and 5, whose first action is that load.
+**The user ruled the amendment the design proposes in chat on 2026-10-11, as the option this document is written against.** The design proposes one: Requirement 9.2 reads that the design lists the library items from a reading and a load of the rewritten definition at the start of the library step confirms the list. It touches tasks 4 and 5, whose first action is that load.
 
 ---
 

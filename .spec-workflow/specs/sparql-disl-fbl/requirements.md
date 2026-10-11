@@ -205,7 +205,7 @@ The product direction (2026-09-26) is that every tool is a markup definition int
 #### Acceptance Criteria
 
 1. WHERE Q1 is the default THEN `EtAlii.Adp.Specification.Disl` SHALL compute derived node types as DISL 4.11.2 and 4.11.5 define them, with `key`, `parent` and `sources`, and derived relations with `key` and `owner`, each proven by a library test seen to fail first.
-2. It SHALL evaluate `ephemeral` id rules with their `reason`, and a constraint's `location` and `subject`; the design SHALL list what else of finding A5 this tool's backend derivations need, from a load of the rewritten definition.
+2. It SHALL evaluate `ephemeral` id rules with their `reason`, and a constraint's `location` and `subject`; the design SHALL list what else of finding A5 this tool's backend derivations need, from a reading, and a load of the rewritten definition at the start of the library step SHALL confirm that list, the loader's output replacing it where they differ (ruled by the user in chat, 2026-10-11).
 3. `EtAlii.Adp.Specification.Fbl` SHALL pass a binding's `args` to a plugin (finding B12) only if a second tool needs it; this tool does not.
 4. No module name SHALL appear in a library change.
 
