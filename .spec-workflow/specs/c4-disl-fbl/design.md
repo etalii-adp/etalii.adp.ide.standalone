@@ -12,7 +12,7 @@ The first stage ends in the shape the timeline has today: the palette, the menus
 
 Nothing a user sees changes in this stage except the two empty-canvas labels of finding A14, fixed on purpose in a step of its own.
 
-**Two points of the approved requirements are proposed for a small amendment** before the tasks are written, in *Amendment proposed* below. Neither changes what the tool does.
+**Two points of the approved requirements were amended**, each ruled by the user in chat on 2026-10-11, in *Amendments ruled* below. Neither changes what the tool does.
 
 ## Steering Document Alignment
 
@@ -34,7 +34,7 @@ Nothing a user sees changes in this stage except the two empty-canvas labels of 
 - **`BundledDefinition.Load(assembly, logicalName, plugins)`**: loads one embedded `.dis` and reads its provenance from the resource `<name>.provenance.json`. It already takes a name per definition, so six definitions need six pairs of embedded resources and no change to this class.
 - **`WireIdMap.Of(specification, "x-c4")`, `ToolboxDerivation.Derive(specification, ids)`, `ContextMenuDerivation.Derive(specification, target, env, ids)`, `FormDerivation.Derive(specification, element, env, ids)`, `ConstraintEvaluator.Evaluate(specification, diagram, options)`, `OperationInterpreter.Run`, `DislIds.Fixed`**: used as `TimelineDefinition.cs` uses them. Each takes the specification as an argument, so choosing one of six is the caller's.
 - **`DislModelBuilder.From(FblModel, DislSpecification)`** with hand-made `FblElement` records, as `TimelineDisl.cs` does: this is how a model is built from the module's own parser. `DislConstraintOptions.WrittenId` and an element's `HostAttributes` carry what the parser read and the metamodel does not hold.
-- **Derived relations** (`DislModelBuilder.DerivedRelations`): `from`, `source`, `target`, `id`, `sources` and `attributes` are computed. `key` is refused (see *Amendment proposed*, 1).
+- **Derived relations** (`DislModelBuilder.DerivedRelations`): `from`, `source`, `target`, `id`, `sources` and `attributes` are computed. `key` is refused (see *Amendments ruled*, 1).
 - **The timeline's `Parity/` folder** (`TimelineTranscript.cs`, `TranscriptText.cs`) and the hype cycle's `HandWrittenGhg.cs` and `GhgRuleSet.cs` kept under `Parity/`: the generator, the comparison and the place of the oracle are copied in shape.
 - **`ContextTarget.Origin`**: a context target already carries its origin, so a provider can find the definition without a new seam.
 - **`parseDisl`, `compileNotation`, `NotationBindings`** (client library) and the `cylinder` member of `BuiltInShape`.
