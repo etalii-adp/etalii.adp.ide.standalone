@@ -11,7 +11,7 @@ The module ends in the shape the hype cycle graph has today. Two classes carry t
 
 Everything else is either deleted, moved to the test project as the oracle, or kept as host code with its reason (the table under *What remains*).
 
-**One point of the approved requirements is proposed for a small amendment** before the tasks are written, in *Amendment proposed* below. It concerns Requirement 6.2 and changes no behaviour.
+**One point of the approved requirements was ruled a small amendment by the user in chat on 2026-10-09**, in *Amendments ruled* below. It concerns Requirement 6.2 and changes no behaviour.
 
 ## Steering Document Alignment
 
@@ -224,7 +224,7 @@ A second point was found after this design was approved. *Wire ids* takes the el
 | 3 | Steps 4 and 5; providers and validator |
 | 4 | Step 5; *CausalLoopBody*, *CausalLoopUnreadable*, *The binding's reading* |
 | 5 | Step 6; commands; Error scenarios 3 |
-| 6 | *Wire ids*; *Amendment proposed* |
+| 6 | *Wire ids*; *Amendments ruled* |
 | 7 | Step 8; *What remains in the module* |
 | 8 | Step 7; *The client* |
 | 9 | Step 3; *Library work* |
