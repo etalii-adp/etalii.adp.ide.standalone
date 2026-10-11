@@ -12,7 +12,7 @@ Three classes carry stage one:
 - `DatabricksDisl`: the DISL model of one reading, built from what `BundleParser`, `JobParser` or `PipelineParser` read. It is the adapter stage two deletes.
 - `DatabricksFindings`: the findings of the file, joined from the three definitions in today's order. It is the stand-in Q3 names.
 
-**One point of the approved requirements is proposed for a small amendment** (*Amendment proposed*): Requirement 5.5, which changes no behaviour. **One finding is expected to be struck** under Requirement 10.4: A12, which a reading of `WireIdMap` shows does not occur.
+**One point of the approved requirements was proposed for a small amendment, and the user ruled on 2026-10-11 that it stands as written** (*Amendments ruled*): Requirement 5.5. Positions are written as today until a step of stage two moves them to the FBL library's registration writer (*What waits, and on what*). **One finding is expected to be struck** under Requirement 10.4: A12, which a reading of `WireIdMap` shows does not occur.
 
 ## Steering Document Alignment
 
@@ -39,7 +39,7 @@ Each was opened and its members checked against what this design assumes.
 - **`DislModelBuilder.From(FblModel, DislSpecification)`** fed with `FblElement` records made in module code: the pattern of `TimelineDisl.cs`, including its host attribute for the written id and its ephemeral model id for a second holder of one id.
 - **`DislPluginFunctions`**: how a definition calls a function its host implements, as `TimelineTimes.Plugins()` does. It carries the stand-in for finding A11.
 - **The timeline's and the hype cycle's `Parity/` folders** (`TimelineTranscript.cs`, `TranscriptText.cs`, `HandWrittenGhg.cs`, `GhgDerivedMenus.Tests.cs`): copied in shape.
-- **`RestoreDocumentCommand`, `DatabricksEdits`, `SetRegistrationLayoutCommand`** (core): undo and positions stay as today.
+- **`RestoreDocumentCommand`, `DatabricksEdits`, `SetRegistrationLayoutCommand`** (core): undo stays as today, and positions stay as today until the registration step of stage two (*What waits, and on what*).
 - **`parseDisl`, `compileNotation`** (`src/client/src/canvas/library/disl/`): used as `TimelineCanvas.tsx` uses them, with a `?raw` import of the bundled file.
 
 ### Integration Points
@@ -169,17 +169,21 @@ In stage one each definition says `persistence.format: "plugin:net.etalii.adp.da
 
 One JSON file, `Parity/databricks.transcript.json`, shaped as the timeline's. Per document **and per reading** (and per resource a registration could name): `menus`, `rows`, `findings`, `payloads` and `edits`. A document that does not parse records its read-only variant.
 
-## Amendment proposed
+## Amendments ruled
 
 Requirement 5.5 says a move writes the registration "through the library's registration writer". No module does: a search of `src/diagrams` and the core projects for `OpenRegistration` and `RegistrationDocument` finds no caller outside `EtAlii.Adp.Specification.Fbl`, and `DatabricksSession` dispatches core's `SetRegistrationLayoutCommand` today. The same sentence in `causal-loop-disl-fbl` (its 6.2) was amended by the chat ruling of 2026-10-09 to name core's command.
 
-The amendment, to be put to the user as a selection:
+The amendment was put to the user as a selection:
 
 - **5.5 reads "through core's `SetRegistrationLayoutCommand`, as today"** (recommended: it is what the tool does, it matches the ruling already made for the causal loop diagram, and FBL's own writer would bring the pruning of stale entries, which Q4 switches off).
 - The requirement stands, and stage two adds a step that moves the module to FBL's registration writer, with pruning ruled on separately.
 - Other.
 
-This design is written against the first.
+**Ruled by the user in chat, 2026-10-11: the second.** Requirement 5.5 stands as written, and this design is written against it. Until the registration step of stage two (*What waits, and on what*) a move is written as today, through core's `SetRegistrationLayoutCommand`.
+
+What the library offers was read in the `Registration` folder of `EtAlii.Adp.Specification.Fbl`. `OpenRegistration.Open` reads a registration's bytes in FBL's line form as a `RegistrationDocument`. `OpenRegistration.Change` with a `ModelChange.Place` plans one layout entry as splices and applies them: the numbers of an existing entry are replaced in place, a new entry is inserted in the ordinal order of ids, and the `layout:` block is created after the headers when the registration has none. Core's `RegistrationLayout` rewrites the whole block today.
+
+**FBL 8.5's pruning of stale entries is not adopted by that step. The user rules on it separately.** `OpenRegistration` removes a layout entry only for an id that is not in its `KnownIds`, and plans no removal while `KnownIds` is not set. The step leaves `KnownIds` and `KnownKeys` unset, so a move writes one entry and removes none, as a move does today: a search of the module for `Prune` finds no caller. The step does not report `RegistrationDocument.StaleEntries` either, which is the `fbl.stale-view-data` Q4 keeps off, and it leaves `IsEphemeral` unset, so that no move is refused that is answered today. A guard holds this: a registration with a layout entry for an id the file does not have keeps that entry after a move, seen to fail once with `KnownIds` set.
 
 ## What waits, and on what
 
@@ -187,6 +191,7 @@ This design is written against the first.
 | --- | --- | --- |
 | The binding `databricks.fbl`, `DatabricksBody`, reading through FBL; the parsers, `DatabricksHeaders`, `DatabricksYaml` and `DatabricksDisl` leave (Requirements 4, 5.1, 5.4, 7.2) | Gaps 1, 2 and 3 answered in etalii-adp/etalii.adp, then implemented in `EtAlii.Adp.Specification.Fbl` with vendored conformance fixtures (Requirement 9.2). The library reads `registration.resource.capture` as one string today (`FblDocumentLoader`). | One step. Finding A3 is repaired in the definitions with it. The appendix draft of the requirements is its starting point. |
 | Every command writes through `DatabricksBody.Change`; the three writers and `DatabricksSplices` leave; B11, B13, B15, B16 and the rest of B12; the transcript's edit hunks regenerated once (Requirements 6, Q1) | The step above, and gaps 4 to 7 for the parts that stay module code behind a named stand-in until answered | One step, after reading, never with it. |
+| A move writes the registration through the FBL library's registration writer, `OpenRegistration` with a `ModelChange.Place`, where `DatabricksSession` dispatches core's `SetRegistrationLayoutCommand` today (Requirement 5.5, ruled 2026-10-11) | The writing step above, so that a difference in what a move writes can be attributed to this change alone. Nothing in the languages. | One step, alone. `KnownIds` and `KnownKeys` stay unset, so no stale entry is pruned until the user has ruled on FBL 8.5 separately (*Amendments ruled*). |
 | `persistence.ids.prefix` applied when a model is read | Searched `EtAlii.Adp.Specification.Disl` for `prefix`: one comment. Shared with `causal-loop-disl-fbl`, whose design relies on it. | Needed before the binding's natural ids can equal today's wire ids. |
 | The removal of the two `registration-resource` entries of `divergences.json` | The example bindings in etalii.adp brought in line and vendored again | With the binding step. |
 | The mock run, deploy and update as the definitions' `simulate` (Requirement 8.2) | A player for `simulate` in the client's canvas library. Searched `src/client/src/canvas/library` for `simulat`: a comment and a test. Shared, delivered once. | A client step; `useSimulatedRun.ts` leaves. |
@@ -265,7 +270,7 @@ Until the writers leave, B11 and B13 keep today's behaviour and the Reliability 
 | 2 | Steps 3 and 4; L2; *Persistence in the three definitions* |
 | 3 | Steps 5 and 6; *DatabricksDefinition*, *DatabricksFindings*, the providers |
 | 4 | *What waits* (the binding step); 4.3 to 4.5 hold in stage one through the parsers and *DatabricksDisl* |
-| 5 | Step 2 (5.2, 5.3); *Ids* (5.4); *What waits* (5.1's divergences); *Amendment proposed* (5.5) |
+| 5 | Step 2 (5.2, 5.3); *Ids* (5.4); *What waits* (5.1's divergences); *Amendments ruled* and *What waits* (the registration step) (5.5) |
 | 6 | Step 2 (6.4, for B9, B10 and B12); *What waits* (the writing step) for the rest |
 | 7 | Step 8; *What remains in the module* |
 | 8 | Step 7; *The client*; *What waits* (8.2) |
