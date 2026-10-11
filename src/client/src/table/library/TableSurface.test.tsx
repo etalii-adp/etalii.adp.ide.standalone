@@ -177,6 +177,52 @@ describe("TableSurface", () => {
     expect(within(bodyRows()[0]!).getAllByRole("gridcell")[0]!.textContent).toBe("Netherlands, b2");
   });
 
+  it("deletes a row from the row's menu, and puts a question it is answered with before deleting", async () => {
+    // Arrange: a table whose rows have a menu; the first delete is answered with a question, the second is made.
+    const answers = ["confirm:2 rows in other tables relate to this row.", ""];
+    const onGesture = vi.fn(async () => answers.shift() ?? "");
+    const rows = [row("r1", { p1: "Amsterdam" }), row("r2", { p1: "Antwerp" })];
+    render(<TableSurface model={tableOf(2, 0, rows)} definition={{ ...definition, rowActions: ["delete"] }} onGesture={onGesture} />);
+
+    // Act: the menu of the first row, and its one entry.
+    fireEvent.contextMenu(bodyRows()[0]!, { clientX: 20, clientY: 40 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete row" }));
+
+    // Assert: asked for, and the question put with nothing confirmed yet.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "deleteRows", rowId: "r1" });
+    const ask = await screen.findByRole("alertdialog");
+    expect(ask.textContent).toContain("2 rows in other tables relate to this row.");
+    expect(onGesture).toHaveBeenCalledTimes(1);
+
+    // Act.
+    fireEvent.click(within(ask).getByRole("button", { name: "Delete" }));
+
+    // Assert: the same gesture, confirmed, and the question gone.
+    expect(onGesture).toHaveBeenLastCalledWith({ kind: "deleteRows", rowId: "r1", settings: { confirmed: "true" } });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("keeps the row when the question is answered with Keep, and has no row menu unless its definition offers one", async () => {
+    // Arrange.
+    const onGesture = vi.fn(async () => "confirm:1 row in another table relates to this row.");
+    const rows = [row("r1", { p1: "Amsterdam" })];
+    const { rerender } = render(<TableSurface model={tableOf(1, 0, rows)} definition={{ ...definition, rowActions: ["delete"] }} onGesture={onGesture} />);
+    fireEvent.contextMenu(bodyRows()[0]!, { clientX: 20, clientY: 40 });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Delete row" }));
+
+    // Act.
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Keep" }));
+
+    // Assert: nothing more was raised.
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(onGesture).toHaveBeenCalledTimes(1);
+
+    // A definition that offers no row action has no menu on its rows.
+    rerender(<TableSurface model={tableOf(1, 0, rows)} definition={definition} onGesture={onGesture} />);
+    fireEvent.contextMenu(bodyRows()[0]!, { clientX: 20, clientY: 40 });
+    expect(screen.queryByRole("menuitem", { name: "Delete row" })).toBeNull();
+  });
+
   it("says nothing about itself while all is well", () => {
     // Act.
     render(<TableSurface model={tableOf(0, 0, [])} definition={definition} pendingEdits={0} />);

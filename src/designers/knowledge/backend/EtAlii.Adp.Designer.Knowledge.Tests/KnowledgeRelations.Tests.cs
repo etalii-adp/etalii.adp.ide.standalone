@@ -399,6 +399,34 @@ public sealed class KnowledgeRelationsTests : IDisposable
     }
 
     [Fact]
+    public async Task DeletingARowOtherTablesRelateTo_TellsHowManyFirst_AndDeletesWhenConfirmed()
+    {
+        // Arrange: in the example, Amsterdam relates to the province nh; a second city is made to as well.
+        var cities = KnowledgeFiles.CopyPlain("cities.yaml", _root);
+        await using (var edited = new EditingTable(cities))
+        {
+            await edited.Edit(new TableGesture("setCell", RowId: "r2", ColumnId: "p5", Values: ["nh"]));
+        }
+
+        await using var provinces = new EditingTable(Provinces, rootPath: _root);
+        var before = provinces.Bytes();
+
+        // Act: the row is deleted without more.
+        (_, string asked) = provinces.Begin(new TableGesture("deleteRows", RowId: "nh"));
+
+        // Assert: a question that says how many, and nothing deleted.
+        Assert.Equal("confirm:2 rows in other tables relate to this row. Deleting it leaves those relations pointing at nothing.", asked);
+        Assert.Equal(before, provinces.Bytes());
+
+        // Act: a row nobody relates to is deleted at once; the other one when confirmed.
+        await provinces.Edit(new TableGesture("deleteRows", RowId: "an"));
+        await provinces.Edit(new TableGesture("deleteRows", RowId: "nh", Settings: Settings(("confirmed", "true"))));
+
+        // Assert.
+        Assert.Equal(["zh"], provinces.OnDisk().Rows.Select(row => row.Id));
+    }
+
+    [Fact]
     public async Task WhenTheOtherFileRefuses_NeitherFileIsWritten()
     {
         // Arrange: the edit is accepted and shown, and waits to be written.

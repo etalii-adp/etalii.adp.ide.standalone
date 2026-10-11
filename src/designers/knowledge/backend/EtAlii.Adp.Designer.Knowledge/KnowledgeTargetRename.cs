@@ -17,14 +17,9 @@ internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents) :
 {
     private static readonly ILogger _logger = Log.ForContext<KnowledgeTargetRename>();
 
-    /// <summary>What a knowledge file says of itself in each of its three formats: a file without it is not read.</summary>
-    private const string Mark = "etalii/knowledge";
-
-    private static readonly string[] _extensions = [".yaml", ".yml", ".json", ".xml"];
-
     public void Renamed(string rootPath, string fromPath, string toPath)
     {
-        foreach (var path in Candidates(rootPath))
+        foreach (var path in KnowledgeProject.Files(rootPath))
         {
             if (KnowledgeDocumentStore.Read(path).Body is not { ReadOnlyReason.Length: 0 } body)
             {
@@ -67,43 +62,5 @@ internal sealed class KnowledgeTargetRename(IKnowledgeDocumentStore documents) :
 
         var folder = Path.TrimEndingDirectorySeparator(fromPath) + Path.DirectorySeparatorChar;
         return path.StartsWith(folder, StringComparison.OrdinalIgnoreCase) ? Path.Combine(toPath, path[folder.Length..]) : null;
-    }
-
-    /// <summary>The files of the project that say they are knowledge files, folders of tools' own left out.</summary>
-    private static IEnumerable<string> Candidates(string folder)
-    {
-        IEnumerable<string> files;
-        IEnumerable<string> folders;
-        try
-        {
-            files = [.. Directory.EnumerateFiles(folder)];
-            folders = [.. Directory.EnumerateDirectories(folder)];
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            yield break;
-        }
-
-        foreach (var file in files.Where(file => _extensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase) && Says(file)))
-        {
-            yield return file;
-        }
-
-        foreach (var inner in folders.Where(inner => Path.GetFileName(inner) is not ['.', ..] and not "node_modules" and not "bin" and not "obj").SelectMany(Candidates))
-        {
-            yield return inner;
-        }
-    }
-
-    private static bool Says(string file)
-    {
-        try
-        {
-            return SharedDocumentReader.ReadAllText(file).Contains(Mark, StringComparison.Ordinal);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
     }
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import type { TableEvents, TableGesture } from "./api/tableEvents";
+import { ContextMenu } from "../../shell/context/ContextMenu";
+import { CONFIRM_PREFIX, type TableEvents, type TableGesture } from "./api/tableEvents";
 import { cellText, type TableCell, type TableColumn, type TableModel, type TableRow } from "./api/tableModel";
 import { CellEditor, type AfterEdit } from "./cells/CellEditor";
 import { keyOutcome, tabTarget, type CellPosition } from "./cells/keyboard";
@@ -64,6 +65,9 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
   const [active, setActive] = useState<CellPosition | null>(null);
   const [editing, setEditing] = useState<{ replace?: string } | null>(null);
   const [refusal, setRefusal] = useState("");
+  // The row whose menu is open, and where; and the question a delete was answered with, until it is answered.
+  const [rowMenu, setRowMenu] = useState<{ rowId: string; x: number; y: number } | null>(null);
+  const [asking, setAsking] = useState<{ gesture: TableGesture; question: string } | null>(null);
   // The width a column is being dragged to, until the drag ends: a preview, and nothing written.
   const [resizing, setResizing] = useState<{ columnId: string; width: number } | null>(null);
   // Whether the active cell should take the focus when it next renders: after the keyboard or a
@@ -139,6 +143,24 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
     (gesture: TableGesture) => {
       setRefusal("");
       void onGesture?.(gesture).then(setRefusal);
+    },
+    [onGesture],
+  );
+
+  /**
+   * Raises a gesture that may be answered with a question: the question is put, and the gesture
+   * is made again as confirmed only when its author says so.
+   */
+  const raiseAsking = useCallback(
+    (gesture: TableGesture) => {
+      setRefusal("");
+      void onGesture?.(gesture).then((answer) => {
+        if (answer.startsWith(CONFIRM_PREFIX)) {
+          setAsking({ gesture, question: answer.slice(CONFIRM_PREFIX.length) });
+        } else {
+          setRefusal(answer);
+        }
+      });
     },
     [onGesture],
   );
@@ -237,6 +259,7 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
     resizing?.columnId === column.id ? resizing.width : column.width > 0 ? column.width : (definition.columnWidth ?? DEFAULT_COLUMN_WIDTH),
   );
   const editable = model.readOnlyReason === "" && onGesture !== undefined;
+  const rowMenuOffered = editable && (definition.rowActions ?? []).includes("delete");
   const template = widths.map((width) => `${width}px`).join(" ");
   const rowStyle = { gridTemplateColumns: template, height: rowHeight };
   // The header has one more track than the rows: the room of the button that adds a column.
@@ -304,7 +327,22 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
 
         const byColumn = new Map(row.cells.map((cell) => [cell.columnId, cell]));
         return (
-          <div key={index} className="table-row" role="row" aria-rowindex={rowIndex} data-row-id={row.id} style={rowStyle}>
+          <div
+            key={index}
+            className="table-row"
+            role="row"
+            aria-rowindex={rowIndex}
+            data-row-id={row.id}
+            style={rowStyle}
+            onContextMenu={
+              rowMenuOffered
+                ? (event) => {
+                    event.preventDefault();
+                    setRowMenu({ rowId: row.id, x: event.clientX, y: event.clientY });
+                  }
+                : undefined
+            }
+          >
             {columns.map((column, columnIndex) => {
               const cell = byColumn.get(column.id);
               const kind = kindOf(definition, column.kind);
@@ -366,6 +404,30 @@ export function TableSurface({ model, definition, pendingEdits = 0, onWindow, on
           {refusal}
         </p>
       )}
+      {asking !== null && (
+        // A gesture answered with a question is not made until its author has read the answer.
+        <div className="table-ask" role="alertdialog" aria-label="Delete?">
+          <span>{asking.question}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setAsking(null);
+              raise({ ...asking.gesture, settings: { ...asking.gesture.settings, confirmed: "true" } });
+            }}
+          >
+            Delete
+          </button>
+          <button type="button" onClick={() => setAsking(null)}>
+            Keep
+          </button>
+        </div>
+      )}
+      <ContextMenu
+        open={rowMenu !== null}
+        groups={[[{ id: "delete", label: "Delete row", icon: "mdi-trash-can-outline", onSelect: () => rowMenu !== null && raiseAsking({ kind: "deleteRows", rowId: rowMenu.rowId }) }]]}
+        position={rowMenu ?? { x: 0, y: 0 }}
+        onClose={() => setRowMenu(null)}
+      />
     </div>
     </div>
   );

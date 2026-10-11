@@ -62,5 +62,6 @@ export const knowledgeTable: TableDefinition = {
     relation: { icon: "mdi-arrow-top-right", label: "Relation", editor: "rows", comparisons: SEVERAL, groupable: true, addable: false },
   },
   columnActions: ["rename", "changeType", "options", "filter", "sortAscending", "sortDescending", "group", "hide", "wrap", "insertLeft", "insertRight", "duplicate", "delete"],
+  rowActions: ["delete"],
   defaultKind: "text",
 };
