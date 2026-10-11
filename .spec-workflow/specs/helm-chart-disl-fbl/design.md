@@ -12,7 +12,7 @@ The module ends as its bundled definition, its binding, one plugin and the host 
 - `HelmBody`: one chart folder opened through the module's FBL binding with the library's new folder body, giving the plugin's reading and the DISL model built from it.
 - `HelmChartFolderPlugin`: `IPersistencePlugin` with the id `net.etalii.adp.helm.chartFolder`. It holds today's reading, working from the files it is handed.
 
-Four small classes stand in for language gaps, each named for its gap and deleted when the gap is answered (*Components*). **One point of the approved requirements is proposed for a small amendment**, in *Amendment proposed*. It concerns the wording of Requirement 5.2 and changes no behaviour.
+Four small classes stand in for language gaps, each named for its gap and deleted when the gap is answered (*Components*). **One point of the approved requirements was amended**, ruled by the user in chat on 2026-10-11, in *Amendments ruled*. It concerns the wording of Requirement 5.2 and changes no behaviour.
 
 ## Steering Document Alignment
 
@@ -292,7 +292,7 @@ Deleted from the product code: `HelmRuleSet`, `HelmRules`, `HelmGraph`, `HelmNod
 | 2 | Steps 2 and 3; *HelmDefinition*; *Data Models* (ids, the partial) |
 | 3 | Steps 2 and 6; *HelmChartFolderPlugin*; *The four stand-ins*; *The binding*; Error scenarios 3 and 4 |
 | 4 | Step 5; Library work F1 to F6; *The store* |
-| 5 | Steps 3 and 4; *HelmDefinition*; Library work D1 to D3; *Amendment proposed*; Error scenarios 2 and 5 |
+| 5 | Steps 3 and 4; *HelmDefinition*; Library work D1 to D3; *Amendments ruled*; Error scenarios 2 and 5 |
 | 6 | Steps 4, 6 and 8; *What remains in the module* |
 | 7 | Step 7; *The client*; Library work C1 |
 | 8 | Steps 1, 6 and 8; *What waits*; the cross-check; Error scenario 6 |
