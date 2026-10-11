@@ -555,7 +555,9 @@ internal sealed class KnowledgeSession : IDesignerSession
     /// rules find in the table as it is shown - so an edit that puts something right is seen to at once.
     /// </summary>
     private List<TableFinding> Findings(KnowledgeBody body) =>
-        body.Unreadable.Length > 0 ? [.. KnowledgeTableMapper.Findings(body.Model)] : [.. KnowledgeTableMapper.Findings(body.Model), .. KnowledgeValidator.Validate(_view, _shownModel, TargetOf)];
+        // A file of a version this application does not know is one finding of its own, not the reader's complaint about its first line.
+        body.Unreadable == KnowledgeBody.AnotherVersion ? [new TableFinding(KnowledgeValidator.NewerVersion, TableFindingSeverity.Warning, KnowledgeBody.AnotherVersion)]
+        : body.Unreadable.Length > 0 ? [.. KnowledgeTableMapper.Findings(body.Model)] : [.. KnowledgeTableMapper.Findings(body.Model), .. KnowledgeValidator.Validate(_view, _shownModel, TargetOf)];
 
     private TableStructureChanged Structure() => KnowledgeTableMapper.Structure(_view, _body?.ReadOnlyReason ?? "", _viewId, Lines().Count, TargetOf);
 

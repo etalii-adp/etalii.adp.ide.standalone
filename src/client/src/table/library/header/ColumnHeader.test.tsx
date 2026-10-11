@@ -227,6 +227,27 @@ describe("columnMenuGroups", () => {
     expect(asked).toHaveBeenLastCalledWith({ kind: "deleteColumn", columnId: "p2" });
   });
 
+  it("offers nesting rows by a column only when the column says they can be, and says which way it goes", () => {
+    // Arrange.
+    const asked = vi.fn();
+    const offered: TableDefinition = { ...definition, columnActions: [...ALL_ACTIONS, "nest"] };
+    const nest = (settings: Record<string, string>) =>
+      columnMenuGroups(column("p2", "Part of", "text", { settings }), offered, { raise: asked, startRename }).flat().find((candidate) => candidate.id === "nest");
+
+    // Assert: not for a column that does not say so.
+    expect(nest({})).toBeUndefined();
+    expect(nest({ nestable: "true" })!.label).toBe("Nest rows by this");
+    expect(nest({ nestable: "true", parent: "true" })!.label).toBe("Do not nest rows by this");
+
+    // Act.
+    nest({ nestable: "true" })!.onSelect!();
+    nest({ nestable: "true", parent: "true" })!.onSelect!();
+
+    // Assert.
+    expect(asked).toHaveBeenNthCalledWith(1, { kind: "setColumnParent", columnId: "p2", settings: { parent: "true" } });
+    expect(asked).toHaveBeenNthCalledWith(2, { kind: "setColumnParent", columnId: "p2", settings: { parent: "false" } });
+  });
+
   it("separates its entries into the four groups, leaving out a group with nothing offered", () => {
     expect(columnMenuGroups(column("p2", "Population", "number"), definition, { raise, startRename }).map((group) => group.length)).toEqual([2, 4, 2, 4]);
     expect(columnMenuGroups(column("p2", "Population", "number"), { ...definition, columnActions: ["filter", "delete"] }, { raise, startRename }).map((group) => group.map((item) => item.id))).toEqual([["filter"], ["delete"]]);

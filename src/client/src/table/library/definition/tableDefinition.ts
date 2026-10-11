@@ -21,6 +21,7 @@ export type ColumnAction =
   | "group"
   | "hide"
   | "wrap"
+  | "nest"
   | "insertLeft"
   | "insertRight"
   | "duplicate"
