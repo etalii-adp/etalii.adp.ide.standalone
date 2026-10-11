@@ -211,7 +211,7 @@ The product direction (2026-09-26) is one definition per tool, interpreted by a 
 
 ### Reliability
 
-- No solution that opens today opens differently. No stored position is lost. Nothing under a solution is ever written, and a test SHALL hold that no file of the corpus other than a registration changes during any step of the transcript.
+- No solution that opens today opens differently, except through a registration without a `body:` line beside both a `.sln` and a `.slnx`, which is the change Q4 names. No stored position is lost. Nothing under a solution is ever written, and a test SHALL hold that no file of the corpus other than a registration changes during any step of the transcript.
 
 ### Usability
 

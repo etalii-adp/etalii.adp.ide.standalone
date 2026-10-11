@@ -13,7 +13,7 @@ The module ends with three new classes and loses three:
 - `DotNetBody`: one solution opened through the binding, giving the graph, the DISL model built by `DislModelBuilder`, and the paths to watch.
 - `DotNetSolutionDocumentFactory`, `SolutionWatcher` and `DotNetDefinition.Build` leave the product code (Requirement 6.2).
 
-**One point of the approved requirements is proposed for amendment** before the tasks are written, in *Amendment proposed* below. It concerns Q4 and the order of `claims.extensions`.
+**One point of the approved requirements was amended**, ruled by the user in chat on 2026-10-11, in *Amendments ruled* below. It concerns Q4 and the order of `claims.extensions`.
 
 ## Steering Document Alignment
 
@@ -45,7 +45,7 @@ The module ends with three new classes and loses three:
 
 - **etalii-adp/etalii.adp**: `definitions/diagrams/dotnet-dependency-graph.dis` and its companion change there (step 3), through that repository's own pull request. Step 4 depends on that pull request being merged. The example binding of Requirement 8.2 is offered in the same pull request.
 - **Other specifications of the series**: library items L1 to L5 are tool-neutral and are delivered once, here, because this is the first tool read by a plugin over several files. The Helm chart, the Ansible structure and the Azure DevOps pipeline reuse them (the requirements say the finding is "owed" to them). L6 and the registration command of step 8 are equally shared: any tool whose requirements ask for the library's registration writer or a template-made document uses them.
-- **`EtAlii.Adp.Hierarchy`**: `AddDiagramContextActionProvider` names a new sibling `baseName + definition.Extension`, and `DiagramFilePair.ResolveSibling` derives a header-less registration's body from that one extension. Both matter to Q4 (see *Amendment proposed*).
+- **`EtAlii.Adp.Hierarchy`**: `AddDiagramContextActionProvider` names a new sibling `baseName + definition.Extension`, and `DiagramFilePair.ResolveSibling` derives a header-less registration's body from that one extension. Both matter to Q4 (see *Amendments ruled*).
 
 ## Architecture
 
@@ -78,7 +78,7 @@ graph TD
 | 6 | **Derivation.** `DotNetDefinition.Rows` reads the model `DislModelBuilder` built. `Build` moves to the test project as `Parity/HandBuiltDotNetModel.cs`, the oracle of the step 5 test. | 3.7, 3.9, 6.2 | Step 5 |
 | 7 | **Watching.** The session watches the plugin's `Watch` paths through `PathWatch`; `SolutionWatcher` and its tests leave the module (the tests move to the library with their subject). The two tests of 4.4 are seen to fail against today's watcher first. | 4.1 to 4.4, 6.2 | Step 2 (L3, L4), step 5 |
 | 8 | **The registration.** A move is written by `OpenRegistration` as one undo step. The fixtures of finding B14 are run first, and a difference is put to the user before the step lands. | 5.1, 5.2, 5.4 | Step 2 (L5); a ruling where 5.2 finds a difference |
-| 9 | **The new document.** Created from the binding's `template` as a `.slnx`; `DotNetSolutionDocumentFactory` leaves. The transcript's new-document entry is regenerated on purpose (Q4). | 5.3, 1.3, 6.2 | L6; the ruling of *Amendment proposed* |
+| 9 | **The new document.** Created from the binding's `template` as a `.slnx`; `DotNetSolutionDocumentFactory` leaves. The transcript's new-document entry is regenerated on purpose (Q4). | 5.3, 1.3, 6.2 | L6 |
 | 10 | The companion's table of remaining classes and gaps; the readmes and the two architecture pages where a sentence became false; the delivery report. | 6.1, 6.3, 8.1, 8.3, 8.4, 9.1 | Step 3's companion, updated in etalii.adp |
 
 Steps 5 and 6 are separate on purpose: reading and derivation never change together, so a difference in the transcript is attributable. Steps 7, 8 and 9 are independent of each other and may land in any order after step 6.
@@ -244,10 +244,10 @@ Step 9 is written against the first.
 | Requirement | Where |
 | --- | --- |
 | 1 | Step 1; Testing Strategy (one fixture per finding); steps 5 to 9 for 1.3 |
-| 2 | Steps 3 and 4; *The refusal, stated once*; *Amendment proposed* for the order of `claims.extensions` |
+| 2 | Steps 3 and 4; *The refusal, stated once*; *Amendments ruled* for the order of `claims.extensions` |
 | 3 | Steps 5 and 6; *DotNetSolutionPlugin*, *DotNetSolutionSubject*, *DotNetBody*; *What the plugin delivers* |
 | 4 | Step 7; *The session, watching and the registration*; L3, L4 |
-| 5 | Steps 8 and 9; `PlaceInRegistrationCommand`; L6; *Amendment proposed* |
+| 5 | Steps 8 and 9; `PlaceInRegistrationCommand`; L6; *Amendments ruled* |
 | 6 | Steps 6, 7, 9 and 10; *What remains in the module* |
 | 7 | Step 2; *Library work* |
 | 8 | Steps 3 and 10; `DotNetSolutionSubject` as the named stand-in; the companion |
