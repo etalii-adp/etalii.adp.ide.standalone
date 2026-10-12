@@ -73,7 +73,6 @@ public class RdfFlowTests(HostFixture host) : IClassFixture<HostFixture>
         // looking at.
         using var session = await FlowSession.OpenAsync(host, _projectFolder, TestContext.Current.CancellationToken);
         var client = new DiagramService.DiagramServiceClient(session.Channel);
-        var contextClient = session.Context;
         var watchId = ShortGuid.NewShortGuid();
         var bodyPath = IoPath.Combine(_projectFolder, "curie.ttl");
         var adpPath = IoPath.Combine(_projectFolder, "curie.adp");

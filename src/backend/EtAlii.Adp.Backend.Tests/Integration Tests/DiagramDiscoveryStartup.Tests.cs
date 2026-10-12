@@ -1,11 +1,9 @@
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Documents;
 using EtAlii.Adp.TestSupport.Host;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
 

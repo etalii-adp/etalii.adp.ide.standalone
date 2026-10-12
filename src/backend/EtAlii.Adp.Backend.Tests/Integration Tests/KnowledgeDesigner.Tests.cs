@@ -6,7 +6,6 @@ using EtAlii.Adp.History;
 using EtAlii.Adp.TestSupport.Host;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using ContextService = EtAlii.Adp.Context.Wire.ContextService;
 using DesignerService = EtAlii.Adp.Designer.Wire.DesignerService;
