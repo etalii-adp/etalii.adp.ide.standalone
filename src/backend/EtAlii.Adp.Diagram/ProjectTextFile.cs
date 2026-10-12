@@ -33,20 +33,12 @@ internal static class ProjectTextFile
 
         var combined = System.IO.Path.Combine([rootPath, .. path.Segments]);
         var full = System.IO.Path.GetFullPath(combined);
-        if (!IsInside(rootPath, full) || !File.Exists(full))
+        if (!PathContainment.IsInside(rootPath, full) || !File.Exists(full))
         {
             return false;
         }
 
         fullPath = full;
         return true;
-    }
-
-    /// <summary>Whether <paramref name="fullPath"/> lies under <paramref name="rootPath"/>.</summary>
-    public static bool IsInside(string rootPath, string fullPath)
-    {
-        var root = System.IO.Path.GetFullPath(rootPath)
-            .TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar;
-        return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
     }
 }
