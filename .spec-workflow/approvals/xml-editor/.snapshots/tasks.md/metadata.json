@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/xml-editor/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-10-12T21:52:48.162Z",
+      "trigger": "initial",
+      "approvalId": "approval_1791841967324_p0iexv97q",
+      "approvalTitle": "XML editor tasks (10 tasks; waits on json-editor tasks 1 to 6)"
+    }
+  ]
+}
