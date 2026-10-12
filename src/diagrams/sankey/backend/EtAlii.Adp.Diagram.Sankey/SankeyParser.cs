@@ -30,6 +30,21 @@ public static class SankeyParser
     internal const string NodesKey = "nodes";
     internal const string FlowsKey = "flows";
 
+    /// <summary>The text of a new, empty <c>.skv</c> document.</summary>
+    /// <remarks>
+    /// <para>
+    /// The header and the two sections written flow-empty - <c>nodes: []</c> and <c>flows: []</c> -
+    /// because a bare <c>nodes:</c> parses as a null rather than an empty sequence. The first added
+    /// entry opens the flow form into a block one, which <c>LineSplice.InsertionPointFor</c> does.
+    /// </para>
+    /// <para>CRLF, the repository's house style, because a new file has no style of its own to keep.</para>
+    /// </remarks>
+    internal static string EmptyDocument { get; } = string.Join(
+        "\r\n",
+        $"{HeaderKey}: {SankeyModel.CurrentVersion}",
+        $"{NodesKey}: []",
+        $"{FlowsKey}: []") + "\r\n";
+
     private static readonly string[] RootKeys = [HeaderKey, FormatKey, FlowColorKey, ThicknessKey, NodesKey, FlowsKey];
 
     private static readonly string[] NodeKeys = ["id", "name", "color", "note", "format", "column", "description"];
