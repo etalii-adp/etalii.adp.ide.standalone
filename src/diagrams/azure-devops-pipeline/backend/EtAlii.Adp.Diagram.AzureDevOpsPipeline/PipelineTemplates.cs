@@ -139,9 +139,7 @@ public sealed class PipelineTemplates
     /// with the workspace's - <c>work</c> and <c>workspace-backup</c> - is not mistaken for being
     /// inside it.
     /// </remarks>
-    private bool IsInsideWorkspace(string fullPath) =>
-        fullPath.Equals(WorkspaceRoot, StringComparison.OrdinalIgnoreCase) ||
-        fullPath.StartsWith(WorkspaceRoot + IoPath.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    private bool IsInsideWorkspace(string fullPath) => PathContainment.IsAtOrInside(WorkspaceRoot, fullPath);
 
     /// <summary>
     /// Whether a path is decided at compile or run time rather than written out - the three

@@ -34,19 +34,30 @@ public static class PathContainment
     /// <summary>
     /// Whether <paramref name="path"/> lies under <paramref name="rootPath"/>, once both are made
     /// absolute and every link along them is followed. The root itself is not under itself. A
-    /// path whose links cannot be followed - a loop, or one too many - is not inside.
+    /// path whose links cannot be followed - a loop, one too many, or an entry this process may
+    /// not read - is not inside.
     /// </summary>
-    public static bool IsInside(string rootPath, string path)
+    public static bool IsInside(string rootPath, string path) => Compare(rootPath, path, orAt: false);
+
+    /// <summary>
+    /// Whether <paramref name="path"/> is <paramref name="rootPath"/> itself or lies under it,
+    /// judged as <see cref="IsInside"/> judges.
+    /// </summary>
+    public static bool IsAtOrInside(string rootPath, string path) => Compare(rootPath, path, orAt: true);
+
+    private static bool Compare(string rootPath, string path, bool orAt)
     {
         ArgumentNullException.ThrowIfNull(rootPath);
         ArgumentNullException.ThrowIfNull(path);
 
         try
         {
-            var root = Resolve(IoPath.GetFullPath(rootPath), 0).TrimEnd(Separators) + IoPath.DirectorySeparatorChar;
-            return Resolve(IoPath.GetFullPath(path), 0).StartsWith(root, NameComparison);
+            var root = Resolve(IoPath.GetFullPath(rootPath), 0).TrimEnd(Separators);
+            var full = Resolve(IoPath.GetFullPath(path), 0).TrimEnd(Separators);
+            return full.StartsWith(root + IoPath.DirectorySeparatorChar, NameComparison)
+                   || (orAt && string.Equals(full, root, NameComparison));
         }
-        catch (IOException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             return false;
         }

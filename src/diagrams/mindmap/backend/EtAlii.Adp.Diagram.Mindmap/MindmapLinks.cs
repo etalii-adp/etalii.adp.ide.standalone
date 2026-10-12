@@ -89,9 +89,5 @@ public static class MindmapLinks
         return rewritten;
     }
 
-    private static bool IsInside(string rootPath, string fullPath)
-    {
-        var root = IoPath.GetFullPath(rootPath).TrimEnd(IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar) + IoPath.DirectorySeparatorChar;
-        return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsInside(string rootPath, string fullPath) => PathContainment.IsInside(rootPath, fullPath);
 }

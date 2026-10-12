@@ -77,16 +77,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     }
 
     /// <summary>Whether <paramref name="path"/> is the folder <paramref name="root"/> itself or something inside it.</summary>
-    private static bool Contains(string root, string path)
-    {
-        if (string.Equals(root, path, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        var prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
-        return path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool Contains(string root, string path) => PathContainment.IsAtOrInside(root, path);
 
     public void Remove(ShortGuid watchId)
     {
