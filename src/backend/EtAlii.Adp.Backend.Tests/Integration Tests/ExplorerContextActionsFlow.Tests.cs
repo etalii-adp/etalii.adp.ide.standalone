@@ -20,43 +20,6 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
 {
     private readonly string _projectFolder = host.NewProjectFolder();
 
-    /// <summary>
-    /// Reads the context stream until a prompt arrives, skipping the selection baseline and
-    /// any selection change that precedes it.
-    /// </summary>
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
-    }
-
-    /// <summary>
-    /// Reads until the wanted kind of hierarchy change arrives. A recursive folder delete
-    /// legitimately emits other changes first (the folder's has-children flag flips as its
-    /// contents go), so a test after the removal must look past those.
-    /// </summary>
-    private static async Task<HierarchyChange> ReadUntilChangeAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, HierarchyChange.ChangeOneofCase wanted, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            var message = stream.Current;
-            if (message.MessageCase == HierarchyMessage.MessageOneofCase.Change && message.Change.ChangeCase == wanted)
-            {
-                return message.Change;
-            }
-        }
-
-        throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
-    }
-
     [Fact]
     public async Task TheFullRenameArc_ValidatesThenRenamesOnDisk_AndReportsTheRenameOnTheSameStream()
     {
@@ -77,7 +40,7 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act and assert, step by step.
         var source = new ContextSource { EntryId = entryId };
@@ -117,7 +80,7 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         Assert.True(accepted.Valid);
         Assert.Equal(2u, accepted.Revision);
 
-        var pendingChange = ReadUntilChangeAsync(call.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
+        var pendingChange = call.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
 
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "renamed.txt" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -151,7 +114,7 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         await StreamProbe.WaitUntilHierarchyLiveAsync(call.ResponseStream, _projectFolder, cts.Token);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act and assert, step by step.
         var interactionId = ShortGuid.NewShortGuid();
@@ -173,7 +136,7 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         Assert.True(prompt.ConfirmDialog.Danger);
         Assert.Contains("doomed", prompt.ConfirmDialog.Message);
 
-        var pendingChange = ReadUntilChangeAsync(call.ResponseStream, HierarchyChange.ChangeOneofCase.Removed, cts.Token);
+        var pendingChange = call.ResponseStream.ReadUntilChangeAsync(HierarchyChange.ChangeOneofCase.Removed, cts.Token);
 
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -205,7 +168,7 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act.
         var executed = await contextClient.ExecuteActionAsync(
@@ -376,7 +339,7 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         var nothingSelected = await contextClient.ExecuteActionAsync(
@@ -435,7 +398,7 @@ public class ExplorerContextActionsFlowTests(HostFixture host) : IClassFixture<H
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();

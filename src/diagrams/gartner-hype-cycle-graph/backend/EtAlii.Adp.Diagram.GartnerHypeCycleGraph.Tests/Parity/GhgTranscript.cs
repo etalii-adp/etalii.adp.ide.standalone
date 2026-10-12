@@ -179,8 +179,8 @@ internal static class GhgTranscript
         var lines = new List<(string Target, int Menu, int MenuReadOnly, IReadOnlyList<string>? Rows, IReadOnlyList<string>? RowsReadOnly)>();
         foreach (var target in targets)
         {
-            var menu = menus.IndexOfOrAdd(TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)));
-            var menuReadOnly = menus.IndexOfOrAdd(TranscriptText.MenuLines(await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)));
+            var menu = menus.IndexOfOrAdd((await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
+            var menuReadOnly = menus.IndexOfOrAdd((await session.ReadOnlyActions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
             IReadOnlyList<string>? rows = null;
             IReadOnlyList<string>? rowsReadOnly = null;
             if (withRows.Contains(target, StringComparer.Ordinal))

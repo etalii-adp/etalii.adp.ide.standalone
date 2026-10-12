@@ -172,7 +172,7 @@ internal static class TimelineTranscript
         var lines = new List<(string Target, int Menu, IReadOnlyList<string> Rows)>();
         foreach (var target in targets)
         {
-            var menu = menus.IndexOfOrAdd(TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)));
+            var menu = menus.IndexOfOrAdd((await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines());
             IReadOnlyList<string> rows = [.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine(choices))];
             lines.Add((target, menu, rows));
         }

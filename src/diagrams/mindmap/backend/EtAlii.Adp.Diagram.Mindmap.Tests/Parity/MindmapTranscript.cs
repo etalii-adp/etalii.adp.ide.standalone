@@ -157,8 +157,8 @@ internal static partial class MindmapTranscript
         var lines = new List<(string Target, int Menu, int MenuFlipped, IReadOnlyList<string> Rows)>();
         foreach (var target in targets)
         {
-            var menu = menus.IndexOfOrAdd(session.Mask(TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target), cancellationToken))));
-            var flipped = menus.IndexOfOrAdd(session.Mask(TranscriptText.MenuLines(await session.Actions.DiscoverAsync(session.Target(target, flipped: true), cancellationToken))));
+            var menu = menus.IndexOfOrAdd(session.Mask((await session.Actions.DiscoverAsync(session.Target(target), cancellationToken)).MenuLines()));
+            var flipped = menus.IndexOfOrAdd(session.Mask((await session.Actions.DiscoverAsync(session.Target(target, flipped: true), cancellationToken)).MenuLines()));
             IReadOnlyList<string> rows = session.Mask([.. (await session.Properties.DescribeAsync(session.Target(target), cancellationToken)).Select(row => row.RowLine([]))]);
             lines.Add((target, menu, flipped, rows));
         }

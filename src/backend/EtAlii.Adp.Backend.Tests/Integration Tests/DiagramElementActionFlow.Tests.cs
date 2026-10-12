@@ -48,7 +48,7 @@ public class DiagramElementActionFlowTests(HostFixture host) : IClassFixture<Hos
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         // The canvas's click: the nested file -> node selection.
@@ -109,7 +109,7 @@ public class DiagramElementActionFlowTests(HostFixture host) : IClassFixture<Hos
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         await contextClient.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
@@ -175,7 +175,7 @@ public class DiagramElementActionFlowTests(HostFixture host) : IClassFixture<Hos
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         // Only the file is selected - no node level in the chain.
@@ -229,7 +229,7 @@ public class DiagramElementActionFlowTests(HostFixture host) : IClassFixture<Hos
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // The tab the user left: its file is still the selection.
         await contextClient.SelectAsync(
@@ -272,7 +272,7 @@ public class DiagramElementActionFlowTests(HostFixture host) : IClassFixture<Hos
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await StreamProbe.WaitUntilContextLiveAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act. Nothing is selected.
         var executed = await contextClient.ExecuteActionAsync(
@@ -425,18 +425,5 @@ public class DiagramElementActionFlowTests(HostFixture host) : IClassFixture<Hos
         }
 
         throw new InvalidOperationException("The stream ended before a selection with actions arrived.");
-    }
-
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 }

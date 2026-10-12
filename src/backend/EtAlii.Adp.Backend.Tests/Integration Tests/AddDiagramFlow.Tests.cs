@@ -26,19 +26,6 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         return stream.Current.Selection;
     }
 
-    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
-    {
-        while (await stream.MoveNext(cancellationToken))
-        {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
-            {
-                return stream.Current.Prompt;
-            }
-        }
-
-        throw new InvalidOperationException("The stream ended before a prompt arrived.");
-    }
-
     //private string[] ProjectListing() => Directory.GetFileSystemEntries(_projectFolder, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToArray();
 
     /// <summary>
@@ -129,7 +116,7 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         // No source: the explorer's empty space.
@@ -186,7 +173,7 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Act and assert, step by step.
         var discovered = await contextClient.DiscoverActionsAsync(
@@ -262,7 +249,7 @@ public class AddDiagramFlowTests(HostFixture host) : IClassFixture<HostFixture>
         using var cts = FlowSession.CreateMessageTimeout(TestContext.Current.CancellationToken);
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
-        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        var pendingPrompt = contextCall.ResponseStream.ReadUntilPromptAsync(cts.Token);
 
         // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();

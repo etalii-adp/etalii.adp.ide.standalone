@@ -82,7 +82,7 @@ public static class TranscriptText
     }
 
     /// <summary>A shortcut as a person reads it: its modifiers in a fixed order, then its key ("Ctrl+Shift+Z").</summary>
-    public static string ToShortcutText(this ContextShortcutDefinition key)
+    private static string ToShortcutText(this ContextShortcutDefinition key)
     {
         var builder = new StringBuilder();
         if (key.Ctrl)
