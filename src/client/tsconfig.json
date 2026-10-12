@@ -29,6 +29,7 @@
   "include": [
     "src",
     "../diagrams/*/client",
-    "../designers/*/client"
+    "../designers/*/client",
+    "../editors/*/client"
   ]
 }
