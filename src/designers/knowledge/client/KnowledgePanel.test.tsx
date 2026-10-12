@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { applyTableEvent, EMPTY_TABLE, type TableModel } from "@client/table/library/api/tableModel";
+import { applyTableEvent, EMPTY_TABLE, type TableColumn, type TableModel } from "@client/table/library/api/tableModel";
 import type { TableGesture } from "@client/table/library/api/tableEvents";
 import { KnowledgePanel } from "./KnowledgePanel";
 
@@ -25,9 +25,10 @@ vi.mock("@client/designers/useTableStream", () => ({
 const surface = vi.hoisted(() => ({
   onGesture: undefined as ((gesture: TableGesture) => Promise<string>) | undefined,
   onSelectRows: undefined as ((rowIds: readonly string[]) => void) | undefined,
+  onOpenValue: undefined as ((column: TableColumn, value: string) => void) | undefined,
 }));
 
-const connection = vi.hoisted(() => ({ select: vi.fn() }));
+const connection = vi.hoisted(() => ({ select: vi.fn(), revealPath: vi.fn() }));
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({ useContextConnection: () => connection }));
 
@@ -38,6 +39,7 @@ vi.mock("@client/table/library/TableSurface", async (original) => {
     TableSurface: (props: Parameters<typeof actual.TableSurface>[0]) => {
       surface.onGesture = props.onGesture;
       surface.onSelectRows = props.onSelectRows;
+      surface.onOpenValue = props.onOpenValue;
       return actual.TableSurface(props);
     },
   };
@@ -123,6 +125,27 @@ describe("KnowledgePanel", () => {
     expect(selections[0].path.segments).toEqual(["tables", "cities.adp"]);
     expect(selections[0].detail.value.id.source.value.value).toBe("r1");
     expect(selections.slice(1)).toEqual([null, null]);
+  });
+
+  it("opens a related row where it lives: the other table's file, or this table's own row", () => {
+    // Arrange: the table is in a folder, and relates to a table beside it and to itself.
+    stream.current = streamOf(cities("v1"));
+    connection.select.mockClear();
+    render(<KnowledgePanel projectId={ID} entryId={ID} path={["tables", "cities.adp"]} />);
+    const relation = (targetFile: string): TableColumn => ({ id: "p5", name: "Province", kind: "relation", options: [], width: 0, visible: true, isTitle: false, wraps: false, settings: { targetFile } });
+
+    // Act.
+    surface.onOpenValue!(relation("provinces.yaml"), "nh");
+    surface.onOpenValue!(relation("../shared/regions.yaml"), "x");
+    surface.onOpenValue!(relation("."), "r2");
+
+    // Assert: the files, from the table's own folder; and the row of this table as the selection.
+    expect(connection.revealPath.mock.calls.map((call) => call[0])).toEqual([
+      ["tables", "provinces.yaml"],
+      ["shared", "regions.yaml"],
+    ]);
+    expect(connection.select).toHaveBeenCalledTimes(1);
+    expect(connection.select.mock.calls[0]![0].detail.value.id.source.value.value).toBe("r2");
   });
 
   it("leaves a view an edit names itself alone", async () => {

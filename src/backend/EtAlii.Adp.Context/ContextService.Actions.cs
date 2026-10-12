@@ -136,22 +136,7 @@ public sealed partial class ContextService
             Offered = fileDialog?.Pinned.Concat(fileDialog.Files).SelectMany(Selectable).ToHashSet(StringComparer.Ordinal),
         });
 
-        var prompt = new ContextPrompt { InteractionId = interactionId };
-        switch (execution)
-        {
-            case ContextExecutionRequiresInput requiresInput:
-                prompt.InputDialog = ToProto(requiresInput.Request);
-                break;
-            case ContextExecutionRequiresConfirmation requiresConfirmation:
-                prompt.ConfirmDialog = ToProto(requiresConfirmation.Request);
-                break;
-            case ContextExecutionRequiresChoice requiresChoice:
-                prompt.ChoiceDialog = ToProto(requiresChoice.Request);
-                break;
-            case ContextExecutionRequiresFile:
-                prompt.FileDialog = fileDialog;
-                break;
-        }
+        var prompt = PromptOf(interactionId, execution, fileDialog);
 
         if (!_contextInteractionStore.TryPush(request.WatchId, prompt))
         {
@@ -255,6 +240,27 @@ public sealed partial class ContextService
         // the response does carry is where the new thing lives, so the client that asked for it
         // can recognise its own EntryCreated among the ones flowing down that feed.
         var response = new SubmitInteractionResponse { Completed = true };
+        if (commit.Next is { } next and not (ContextExecutionCompleted or ContextExecutionFailed))
+        {
+            // A further question of the same action: an interaction of its own, for the same
+            // target and provider, answered under the action id the provider gave it. It rides
+            // this response and not the watch stream, so the client can put it where the answered
+            // dialog was without the two crossing.
+            var nextId = ShortGuid.NewShortGuid();
+            var nextFile = next is ContextExecutionRequiresFile nextRequiresFile ? ToProto(nextRequiresFile.Request, interaction.RootPath) : null;
+            _contextInteractionStore.Begin(new ContextInteraction
+            {
+                Id = nextId,
+                WatchId = interaction.WatchId,
+                Target = interaction.Target,
+                ActionId = commit.NextActionId.Length > 0 ? commit.NextActionId : interaction.ActionId,
+                Provider = interaction.Provider,
+                RootPath = interaction.RootPath,
+                Offered = nextFile?.Pinned.Concat(nextFile.Files).SelectMany(Selectable).ToHashSet(StringComparer.Ordinal),
+            });
+            response.NextPrompt = PromptOf(nextId, next, nextFile);
+        }
+
         if (commit.CreatedFullPath.Length > 0)
         {
             response.CreatedPath = ToRelativePath(interaction.RootPath, commit.CreatedFullPath);
@@ -271,6 +277,29 @@ public sealed partial class ContextService
     }
 
     private static ExecuteActionResponse Rejected(string error) => new() { Accepted = false, Error = error };
+
+    /// <summary>The dialog an execution asks for, as the prompt of one interaction.</summary>
+    private static ContextPrompt PromptOf(ShortGuid interactionId, ContextExecutionResult execution, FileDialogPrompt? fileDialog)
+    {
+        var prompt = new ContextPrompt { InteractionId = interactionId };
+        switch (execution)
+        {
+            case ContextExecutionRequiresInput requiresInput:
+                prompt.InputDialog = ToProto(requiresInput.Request);
+                break;
+            case ContextExecutionRequiresConfirmation requiresConfirmation:
+                prompt.ConfirmDialog = ToProto(requiresConfirmation.Request);
+                break;
+            case ContextExecutionRequiresChoice requiresChoice:
+                prompt.ChoiceDialog = ToProto(requiresChoice.Request);
+                break;
+            case ContextExecutionRequiresFile:
+                prompt.FileDialog = fileDialog;
+                break;
+        }
+
+        return prompt;
+    }
 
     /// <summary>Names what a call pointed at, for the log: an explicit source, or the selection.</summary>
     private static string Describe(ContextSource? source) => source?.SourceCase switch

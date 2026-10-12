@@ -39,7 +39,7 @@ internal static class KnowledgeValidator
     public const string UnresolvedRow = "knowledge.unresolved-row";
 
     /// <summary>The element types whose entries carry an id of their own in the file.</summary>
-    private static readonly string[] Identified = ["Property", "Option", "View", "Row"];
+    internal static readonly string[] Identified = ["Property", "Option", "View", "Row"];
 
     /// <param name="table">The table as read.</param>
     /// <param name="model">The reading it was made from, for what only the entries themselves say: whether an id is stored.</param>

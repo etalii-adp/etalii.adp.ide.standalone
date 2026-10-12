@@ -84,6 +84,17 @@
   box-shadow: inset 0 -2px 0 var(--color-danger);
 }
 
+.table-cell-link {
+  border: 0;
+  margin-inline-end: 6px;
+  padding: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .table-row-loading {
   background: var(--color-surface-raised);
 }

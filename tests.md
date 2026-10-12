@@ -3547,7 +3547,7 @@ writes a size - is evidenced by the module's own suites. Requirements 13.1 and 1
   5. With the table open, change a city's name in the file from outside ADP. Do not touch the table.
   6. Edit a cell, press Undo, press Redo. Read the cell and the two buttons after each.
   7. From *Country*'s menu choose *Edit options*. Rename an option and give it another colour. Read the group heading, the cell and the tag's fill.
-  8. Select `cities.adp` in the explorer and choose *Add relation*, then *To any number of rows, shown in both tables*. Read the dialog, choose `provinces.yaml` and confirm. Read both files.
+  8. Select `cities.adp` in the explorer and choose *Add relation…*. Choose `provinces.yaml` and *Next*; choose *Any number of rows* and *Next*; choose *In both tables*, read the name it offers for the other table, and confirm. Read both files.
   9. Compare the file with the example it was copied from.
   10. Add a knowledge file in each format from the explorer and count the files; resize and reorder columns by dragging; build a filter with a group inside it; make a relation the parent relation and group by it; edit a two-way relation from both tables.
   11. Compare each part of Requirement 7 with Notion's help pages, side by side.

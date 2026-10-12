@@ -2,6 +2,8 @@ import { useCallback } from "react";
 import { elementSelectionOf } from "@client/canvas/selection";
 import { useTableStream } from "@client/designers/useTableStream";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { openLink } from "@client/shell/links/openLink";
+import type { TableColumn } from "@client/table/library/api/tableModel";
 import type { ToolContentProps } from "@client/shell/panels/toolPanelRegistration";
 import type { TableGesture } from "@client/table/library/api/tableEvents";
 import { TableSurface } from "@client/table/library/TableSurface";
@@ -26,8 +28,22 @@ export function KnowledgePanel({ path, entryId }: ToolContentProps) {
 
   // One selected row is the selection of the whole application, as an element of a diagram is: the
   // property grid then shows that row's values. Several rows, or none, are no selection of this kind.
-  const { select } = useContextConnection();
+  const { select, revealPath } = useContextConnection();
   const onSelectRows = useCallback((rowIds: readonly string[]) => select(rowIds.length === 1 ? elementSelectionOf(entryId, path, rowIds[0]!) : null), [select, entryId, path]);
+
+  // A related row is opened where it lives: a row of this table becomes the selection, and a row of
+  // another table opens that table's file, found from this one as the relation names it.
+  const onOpenValue = useCallback(
+    (column: TableColumn, rowId: string) => {
+      const target = column.settings.targetFile ?? "";
+      if (target === "" || target === ".") {
+        select(elementSelectionOf(entryId, path, rowId));
+      } else {
+        openLink(target, path, { revealPath });
+      }
+    },
+    [select, revealPath, entryId, path],
+  );
 
   return (
     <TableSurface
@@ -38,6 +54,7 @@ export function KnowledgePanel({ path, entryId }: ToolContentProps) {
       onView={table.setView}
       onGesture={onGesture}
       onSelectRows={onSelectRows}
+      onOpenValue={onOpenValue}
     />
   );
 }

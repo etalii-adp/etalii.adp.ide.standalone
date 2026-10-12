@@ -220,6 +220,66 @@ public sealed class KnowledgeFindingsTests : IDisposable
     }
 
     [Fact]
+    public async Task EntriesWithoutAnId_AreGivenOne_ByTheFirstEdit_WhichMayBeAnEditOfOneOfThem()
+    {
+        // Arrange: a property, an option, a view and a row written by hand, each without an id.
+        var path = Write(Sound
+            .Replace("  - id: p2\n    name: People\n", "  - name: People\n", StringComparison.Ordinal)
+            .Replace("      - id: o1\n        name: Large\n", "      - name: Large\n", StringComparison.Ordinal)
+            .Replace("  - id: v1\n    name: All\n", "  - name: All\n", StringComparison.Ordinal)
+            .Replace("  - id: r2\n    cells:\n", "  - cells:\n", StringComparison.Ordinal)
+            .Replace("      - property: p2\n        number: 931298\n", "", StringComparison.Ordinal)
+            .Replace("        option: o1\n", "        text: kept\n", StringComparison.Ordinal));
+        await using var table = new EditingTable(path);
+        var missing = table.Session.Baseline().Findings.Where(finding => finding.Code == KnowledgeValidator.MissingId).ToList();
+        Assert.Equal(4, missing.Count);
+        var unnamed = Assert.Single(missing, finding => finding.RowId.Length > 0).RowId;
+
+        // Act: the first edit, of the row that has no id.
+        await table.Edit(new TableGesture("setCell", RowId: unnamed, ColumnId: "p1", Values: ["Antwerpen"]));
+
+        // Assert: the edit is made, every such entry has an id in the file, and nothing is said of them any more.
+        var after = KnowledgeDocumentStore.Read(path).Body!;
+        Assert.All(after.Model.Elements.Where(element => element.Type is "Property" or "Option" or "View" or "Row"), element => Assert.True(element.IdIsStored, $"The {element.Type} on line {element.Line} still has no id."));
+        Assert.Equal(["Antwerpen"], after.Table.Rows[1].Cells.Single(cell => cell.PropertyId == "p1").Values);
+        Assert.DoesNotContain('@', after.Table.Rows[1].Id);
+        Assert.DoesNotContain(table.Session.Baseline().Findings, finding => finding.Code == KnowledgeValidator.MissingId);
+        Assert.Equal(["Name", "People", "Size"], after.Table.Properties.Select(property => property.Name));
+        Assert.Equal("All", after.Table.Views.Single().Name);
+
+        // Act: one undo.
+        Assert.True((await table.History.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+
+        // Assert: the ids go with the edit that gave them.
+        Assert.Equal(4, KnowledgeDocumentStore.Read(path).Body!.Model.Elements.Count(element => element is { IdIsStored: false, Type: "Property" or "Option" or "View" or "Row" }));
+    }
+
+    [Theory]
+    [InlineData("cities.json", "{ \"id\": \"r2\", ", "{ ", "{ \"id\": \"v2\", ", "{ ")]
+    [InlineData("cities.xml", "<row id=\"r2\">", "<row>", "<view id=\"v2\" ", "<view ")]
+    public async Task EntriesWithoutAnId_AreGivenOne_InTheOtherFormatsToo(string example, string row, string rowWithout, string view, string viewWithout)
+    {
+        // Arrange: the shipped example, with a row and a view that lost their ids.
+        var path = KnowledgeFiles.CopyExample(example, _root);
+        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        Assert.Contains(row, text, StringComparison.Ordinal);
+        Assert.Contains(view, text, StringComparison.Ordinal);
+        await File.WriteAllTextAsync(path, text.Replace(row, rowWithout, StringComparison.Ordinal).Replace(view, viewWithout, StringComparison.Ordinal), TestContext.Current.CancellationToken);
+        await using var table = new EditingTable(path);
+        Assert.Equal(2, table.Session.Baseline().Findings.Count(finding => finding.Code == KnowledgeValidator.MissingId));
+
+        // Act: an edit of another row altogether.
+        await table.Edit(new TableGesture("setCell", RowId: "r1", ColumnId: "p1", Values: ["Mokum"]));
+
+        // Assert: both have an id, the file still reads without a complaint, and the rest of it is as it was.
+        var after = KnowledgeDocumentStore.Read(path).Body!;
+        Assert.All(after.Model.Elements.Where(element => element.Type is "View" or "Row"), element => Assert.True(element.IdIsStored, $"The {element.Type} on line {element.Line} still has no id."));
+        Assert.DoesNotContain(table.Session.Baseline().Findings, finding => finding.Code == KnowledgeValidator.MissingId || finding.Severity == TableFindingSeverity.Error);
+        Assert.Equal("Map", after.Table.Views[1].Name);
+        Assert.Equal(["Antwerp"], after.Table.Rows[1].Cells.Single(cell => cell.PropertyId == "p1").Values);
+    }
+
+    [Fact]
     public void ATableWithoutAView_IsShownAsIfItHadOne_AndSaysSo()
     {
         // Arrange.
