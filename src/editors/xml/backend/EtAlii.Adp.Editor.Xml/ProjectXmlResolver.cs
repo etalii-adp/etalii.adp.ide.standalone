@@ -19,6 +19,7 @@ internal sealed class ProjectXmlResolver : XmlResolver
 
     private readonly string _rootPath;
     private readonly List<string> _read = [];
+    private readonly List<string> _attempted = [];
     private readonly List<RefusedReference> _refused = [];
 
     public ProjectXmlResolver(string rootPath)
@@ -29,6 +30,12 @@ internal sealed class ProjectXmlResolver : XmlResolver
 
     /// <summary>The full paths of the project files read, in the order they were first read.</summary>
     public IReadOnlyList<string> Read => _read;
+
+    /// <summary>
+    /// The full paths of the project files asked for, read or not: a file that is missing now
+    /// is one whose arrival changes the answer.
+    /// </summary>
+    public IReadOnlyList<string> Attempted => _attempted;
 
     /// <summary>The references refused, each with the reason said to the user.</summary>
     public IReadOnlyList<RefusedReference> Refused => _refused;
@@ -76,6 +83,26 @@ internal sealed class ProjectXmlResolver : XmlResolver
             throw new XmlException($"'{absoluteUri.OriginalString}' is not a file of the project.");
         }
 
+        return new MemoryStream(Encoding.UTF8.GetBytes(ReadText(fullPath)), writable: false);
+    }
+
+    /// <summary>
+    /// The text of a file of the project, read through <see cref="TextFileBuffer"/> and recorded;
+    /// an <see cref="XmlException"/> with the buffer's reason when it cannot be read.
+    /// </summary>
+    public string ReadText(string fullPath)
+    {
+        fullPath = Path.GetFullPath(fullPath);
+        if (!IsInsideRoot(fullPath))
+        {
+            throw new XmlException($"'{fullPath}' is not a file of the project.");
+        }
+
+        if (!_attempted.Contains(fullPath, StringComparer.Ordinal))
+        {
+            _attempted.Add(fullPath);
+        }
+
         var opened = TextFileBuffer.Open(fullPath);
         if (opened.Buffer is null)
         {
@@ -87,8 +114,14 @@ internal sealed class ProjectXmlResolver : XmlResolver
             _read.Add(fullPath);
         }
 
-        return new MemoryStream(Encoding.UTF8.GetBytes(opened.Buffer.Content), writable: false);
+        return opened.Buffer.Content;
     }
+
+    /// <summary>The full path of a file of the project, from its path segments.</summary>
+    public string FullPathOf(IReadOnlyList<string> projectPath) => Path.Combine([_rootPath, .. projectPath]);
+
+    /// <summary>The project path of a file, its file name last, or null when it is outside the root.</summary>
+    public string[]? ProjectPathOf(string fullPath) => DocumentPathOf(new Uri(Path.GetFullPath(fullPath)));
 
     /// <summary>The address a document at <paramref name="fullPath"/> is read under, so its references resolve against its folder.</summary>
     public static string BaseUriOf(string fullPath) => new Uri(Path.GetFullPath(fullPath)).AbsoluteUri;

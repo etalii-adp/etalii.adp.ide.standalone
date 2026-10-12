@@ -9,7 +9,22 @@ namespace EtAlii.Adp.Editor.Xml;
 /// </summary>
 public sealed class XmlAnalyzer : IEditorAnalyzer
 {
+    public const string NoSchema = "No schema";
+    public const string DtdChecked = "DTD: checked, no suggestions.";
+
     private static readonly ILogger _logger = Log.ForContext<XmlAnalyzer>();
+
+    private readonly SchemaCache _schemas;
+
+    public XmlAnalyzer()
+        : this(new SchemaCache())
+    {
+    }
+
+    internal XmlAnalyzer(SchemaCache schemas)
+    {
+        _schemas = schemas;
+    }
 
     public string EditorId => Editor.Xml.Id;
 
@@ -20,6 +35,7 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
         var resolver = new ProjectXmlResolver(rootPath);
         var positions = new TextPositions(content);
         var findings = new List<TextFinding>();
+        var dependsOn = new List<string>();
 
         if (WellFormedness.DeclaredEncoding(content, TextFileBuffer.Open(filePath).Buffer) is { } encoding)
         {
@@ -28,12 +44,140 @@ public sealed class XmlAnalyzer : IEditorAnalyzer
 
         var wellFormed = WellFormedness.Check(content, filePath, resolver, positions);
         findings.AddRange(wellFormed.Findings);
-        var status = wellFormed.Stopped ? WellFormedness.NotChecked : "Well-formed.";
 
+        var association = SchemaAssociation.Read(content, filePath, resolver, positions);
+        findings.AddRange(association.Unsupported);
+
+        var applied = Applied(rootPath, filePath, content, association, resolver, findings, dependsOn);
+        string status;
+        if (wellFormed.Stopped)
+        {
+            // Requirement 6.5: no schema finding for a text that is not well-formed.
+            status = association.NamesASchema ? $"{WellFormedness.NotChecked} Schema not checked." : WellFormedness.NotChecked;
+        }
+        else
+        {
+            status = applied.Status;
+            if (applied.Validate)
+            {
+                findings.AddRange(SchemaValidation.Validate(content, filePath, resolver, positions, applied.Set?.Set));
+            }
+        }
+
+        dependsOn.AddRange(resolver.Read);
         _logger.Debug("Analysed {Path}: {Findings} finding(s)", Path.GetRelativePath(rootPath, filePath), findings.Count);
-        return Task.FromResult(new TextAnalysis(findings, status, resolver.Read));
+        return Task.FromResult(new TextAnalysis(
+            findings,
+            status,
+            dependsOn.Distinct(StringComparer.Ordinal).Where(path => !string.Equals(path, Path.GetFullPath(filePath), StringComparison.Ordinal)).ToArray()));
     }
 
     public Task<IReadOnlyList<TextCompletion>> CompleteAsync(string rootPath, string filePath, string content, int offset, bool isExplicit, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<TextCompletion>>([]);
+
+    /// <summary>Which schema applies, and whether the document is to be validated against it.</summary>
+    private sealed record Application(string Status, bool Validate, CompiledSchema? Set);
+
+    private Application Applied(
+        string rootPath,
+        string filePath,
+        string content,
+        SchemaAssociation association,
+        ProjectXmlResolver resolver,
+        List<TextFinding> findings,
+        List<string> dependsOn)
+    {
+        if (association.IsSchema)
+        {
+            // Requirement 5.5: a schema is checked as a schema, from its text as typed.
+            var compiled = _schemas.CompileText(rootPath, filePath, content);
+            dependsOn.AddRange(compiled.Files);
+            if (compiled.Problem is { } problem)
+            {
+                var at = string.Equals(problem.FullPath, Path.GetFullPath(filePath), StringComparison.Ordinal)
+                    ? new TextPositions(content).NameAt(problem.Line, problem.Column)
+                    : (0, 0);
+                findings.Add(new TextFinding(at.Item1, at.Item2, TextFindingSeverity.Error, Named(problem), SchemaValidation.Source));
+                return new Application("XSD: does not compile.", false, null);
+            }
+
+            return new Application(compiled.Version11 is null ? "XSD: compiles." : "XSD 1.1: not checked.", false, null);
+        }
+
+        if (association.Xsd.Count > 0)
+        {
+            return AppliedXsd(rootPath, filePath, association, resolver, findings, dependsOn);
+        }
+
+        if (association.HasDoctype)
+        {
+            return new Application(DtdChecked, true, null);
+        }
+
+        return new Application(NoSchema, false, null);
+    }
+
+    private Application AppliedXsd(
+        string rootPath,
+        string filePath,
+        SchemaAssociation association,
+        ProjectXmlResolver resolver,
+        List<TextFinding> findings,
+        List<string> dependsOn)
+    {
+        var documentPath = resolver.ProjectPathOf(filePath) ?? [Path.GetFileName(filePath)];
+        var resolved = new List<(SchemaReference Reference, string FullPath)>();
+        foreach (var reference in association.Xsd)
+        {
+            switch (SchemaReferenceRules.Resolve(reference.Location, documentPath, new HashSet<string>()))
+            {
+                case SchemaTarget.Project project when File.Exists(resolver.FullPathOf(project.Path)):
+                    resolved.Add((reference, Path.GetFullPath(resolver.FullPathOf(project.Path))));
+                    break;
+                case SchemaTarget.Project project:
+                    dependsOn.Add(Path.GetFullPath(resolver.FullPathOf(project.Path)));
+                    findings.Add(Info(reference, $"'{reference.Location}' is not in the project, so no schema is checked from it."));
+                    break;
+                case SchemaTarget.None none:
+                    findings.Add(Info(reference, $"'{reference.Location}' {none.Reason}."));
+                    break;
+            }
+        }
+
+        if (resolved.Count == 0)
+        {
+            return new Application(NoSchema, false, null);
+        }
+
+        var compiled = _schemas.Get(rootPath, resolved.Select(schema => schema.FullPath).Distinct(StringComparer.Ordinal).ToArray());
+        dependsOn.AddRange(compiled.Files);
+        if (compiled.Version11 is { } version11)
+        {
+            var reference = resolved.First(schema => schema.FullPath == version11).Reference;
+            findings.Add(Info(reference, $"'{reference.Location}' declares XSD 1.1, which this editor does not check: it checks XSD 1.0."));
+            return new Application("Schema not supported: XSD 1.1.", false, null);
+        }
+
+        if (compiled.Problem is { } problem)
+        {
+            // Requirement 6.6: said once, where the schema is named, and no schema findings.
+            findings.Add(Info(resolved[0].Reference, Named(problem)));
+            return new Application($"Schema: {Path.GetFileName(problem.FullPath ?? resolved[0].FullPath)} does not compile.", false, null);
+        }
+
+        var names = resolved
+            .Select(schema => schema.Reference.Namespace.Length > 0 ? schema.Reference.Namespace : Path.GetFileName(schema.FullPath))
+            .Distinct(StringComparer.Ordinal);
+        return new Application($"Schema: {string.Join(", ", names)}", true, compiled);
+    }
+
+    private static TextFinding Info(SchemaReference reference, string message) =>
+        new(reference.From, reference.To, TextFindingSeverity.Info, message, SchemaValidation.Source);
+
+    private static string Named(SchemaProblem problem)
+    {
+        var file = problem.FullPath is null ? "The schema" : $"'{Path.GetFileName(problem.FullPath)}'";
+        var where = problem.Line > 0 ? $" (line {problem.Line})" : "";
+        return $"{file} does not compile: {problem.Sentence}{where}";
+    }
 }
